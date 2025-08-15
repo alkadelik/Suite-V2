@@ -9,9 +9,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "vue": "^3.5.18"
+    "@iconify/vue": "^5.0.0",
+    "@tailwindcss/vite": "^4.1.11",
+    "tailwindcss": "^4.1.11",
+    "vee-validate": "^4.15.1",
+    "vue": "^3.5.18",
+    "vue-router": "^4.5.1",
+    "yup": "^1.7.0"
   },
   "devDependencies": {
+    "@types/vue-router": "^2.0.0",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vue/tsconfig": "^0.7.0",
     "typescript": "~5.8.3",
