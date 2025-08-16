@@ -8,11 +8,6 @@ const authRoutes: RouteRecordRaw[] = [
     component: () => import("./views/login.vue"),
   },
   {
-    path: "register",
-    name: "Register",
-    component: () => import("./views/register.vue"),
-  },
-  {
     path: "signup",
     name: "Signup",
     component: () => import("./views/signup.vue"),

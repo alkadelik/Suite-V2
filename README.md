@@ -1,18 +1,18 @@
-# Suite v2 - Business Management Application
+# Leyyow Suite v2
 
-A modern, modular business management application built with Vue 3, TypeScript, and Vite. Suite v2 provides comprehensive tools for managing customers, inventory, orders, and business operations.
+A comprehensive business management web application built with Vue3, TypeScript, Tailwindv4 and Vite.
+
+> Leyyow improves business operational efficiency, - collects data and process them to help businesses make informed decisions.
 
 ## 🚀 Features
 
 - **Modular Architecture**: Clean, organized modules for different business functions
-- **Modern Tech Stack**: Vue 3 with Composition API, TypeScript, and Vite
-- **Responsive Design**: Mobile-friendly interface with Tailwind CSS
-- **Authentication System**: Secure user authentication and authorization
-- **Business Management**: Complete tools for inventory, orders, and customer management
+- **Core Stack**: Vue 3 with Composition API, TypeScript, and Vite
+- **Styling Design**: Responsive mobile friendly design using Tailwind CSS v4
 
 ## 🏗️ Architecture
 
-The application follows a modular architecture with separate modules for different business domains:
+The application follows a modular architecture with separate modules for different parent features:
 
 ### Core Modules
 
@@ -20,11 +20,12 @@ The application follows a modular architecture with separate modules for differe
 - **👥 [Customers Module](src/modules/customers/README.md)** - Customer relationship management
 - **📦 [Inventory Module](src/modules/inventory/README.md)** - Product and stock management
 - **🛒 [Orders Module](src/modules/orders/README.md)** - Order processing and fulfillment
-- **💬 [Popups Module](src/modules/popups/README.md)** - Modal dialogs and notifications
+- **💬 [Popups Module](src/modules/popups/README.md)** - Popup Events management
+- **🏡 [Landing Module](src/modules/landing/README.md)** - Landing Page and other public pages
 
 ### Layouts
 
-- **HomeLayout** - Landing page and public content
+- **LandingLayout** - Landing pages and public content
 - **AuthLayout** - Authentication pages (login, register, signup)
 - **MainLayout** - Main application interface for authenticated users
 
@@ -37,6 +38,7 @@ The application follows a modular architecture with separate modules for differe
 - **Routing**: Vue Router 4
 - **Code Quality**: ESLint + Prettier
 - **Fonts**: Custom Sato font family
+- **State Management**: Pinia
 
 ## 📁 Project Structure
 
@@ -52,8 +54,8 @@ suite-v2/
 │   │   ├── customers/     # Customer management
 │   │   ├── inventory/     # Inventory management
 │   │   ├── orders/        # Order processing
-│   │   ├── popups/        # Modal system
-│   │   └── others/        # Utility pages (404, home)
+│   │   ├── popups/        # Popup events management
+│   │   └── landing/       # Landing pages (home, privacy policy, etc)
 │   ├── router/            # Routing configuration
 │   ├── utils/             # Utility functions
 │   ├── App.vue           # Root component
@@ -107,8 +109,8 @@ npm run dev
 The application uses Tailwind CSS v4 for styling with a custom design system:
 
 - **Typography**: Custom Sato font family (Light, Regular, Medium, Semi, Bold, Heavy)
-- **Theme**: Customizable color scheme and spacing
-- **Components**: Consistent styling across all modules
+- **Theme**: Customizable color scheme and spacing - assets/css/theme.css
+- **Components**: Consistent base styling across all modules
 
 ## 🔧 Development
 
@@ -147,31 +149,6 @@ npm run build
 
 The built files will be in the `dist/` directory.
 
-## 📋 Todo & Roadmap
-
-### Authentication
-
-- [ ] Backend integration
-- [ ] Form validation
-- [ ] Password recovery
-- [ ] Social login options
-
-### Business Modules
-
-- [ ] Customer database implementation
-- [ ] Inventory tracking system
-- [ ] Order processing workflow
-- [ ] Payment gateway integration
-- [ ] Reporting dashboard
-
-### System Features
-
-- [ ] Dark mode support
-- [ ] Offline functionality
-- [ ] Real-time notifications
-- [ ] Advanced search
-- [ ] Data export/import
-
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -180,10 +157,7 @@ The built files will be in the `dist/` directory.
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📄 License
+## 🔗 Preview Links
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 📞 Support
-
-For support and questions, please refer to the individual module documentation or create an issue in the repository.
+- Production: [https://suite-v2.vercel.app](https://suite-v2.vercel.app)
+- Staging: [https://staging-suite-v2.vercel.app](https://staging-suite-v2.vercel.app)

@@ -4,7 +4,7 @@
       <AuthHeader title="Sign in to your account" />
       <p class="mt-2 text-center text-sm text-gray-600">
         Don't have an account?
-        <router-link to="/register" class="font-medium text-indigo-600 hover:text-indigo-500">
+        <router-link to="/signup" class="font-medium text-indigo-600 hover:text-indigo-500">
           Create one here
         </router-link>
       </p>
@@ -85,6 +85,9 @@
 <script setup lang="ts">
 import { reactive } from "vue"
 import AuthHeader from "../components/AuthHeader.vue"
+import { useRouter } from "vue-router"
+
+const router = useRouter()
 
 const form = reactive({
   email: "",
@@ -92,8 +95,9 @@ const form = reactive({
   rememberMe: false,
 })
 
-const handleLogin = () => {
+const handleLogin = async () => {
   // TODO: Implement actual login logic here
   // For now, just a simple demo
+  await router.push("/dashboard")
 }
 </script>

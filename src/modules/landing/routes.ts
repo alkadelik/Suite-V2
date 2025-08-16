@@ -1,11 +1,11 @@
 import type { RouteRecordRaw } from "vue-router"
 
-const ordersRoutes: RouteRecordRaw[] = [
+const landingRoutes: RouteRecordRaw[] = [
   {
-    path: "orders",
-    name: "Orders",
+    path: "",
+    name: "Home",
     component: () => import("./views/index.vue"),
   },
 ]
 
-export default ordersRoutes
+export default landingRoutes

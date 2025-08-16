@@ -1,7 +1,7 @@
 <template>
   <div class="flex min-h-full flex-col justify-center py-12 sm:px-6 lg:px-8">
     <div class="sm:mx-auto sm:w-full sm:max-w-md">
-      <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">Join our platform</h2>
+      <AuthHeader title="Create a new account" />
       <p class="mt-2 text-center text-sm text-gray-600">
         Already have an account?
         <router-link to="/login" class="font-medium text-indigo-600 hover:text-indigo-500">
@@ -128,6 +128,7 @@
 
 <script setup lang="ts">
 import { reactive } from "vue"
+import AuthHeader from "../components/AuthHeader.vue"
 
 const form = reactive({
   email: "",

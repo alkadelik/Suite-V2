@@ -5,7 +5,6 @@ const popupsRoutes: RouteRecordRaw[] = [
     path: "popups",
     name: "Popups",
     component: () => import("./views/index.vue"),
-    meta: { requiresAuth: true },
   },
 ]
 
