@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from "vue-router"
 import type { RouteRecordRaw } from "vue-router"
 
 // Layout imports
-import HomeLayout from "@/layouts/HomeLayout.vue"
+import LandingLayout from "@/layouts/LandingLayout.vue"
 import MainLayout from "@/layouts/MainLayout.vue"
 import AuthLayout from "@/layouts/AuthLayout.vue"
 
@@ -10,32 +10,26 @@ import AuthLayout from "@/layouts/AuthLayout.vue"
 import inventoryRoutes from "@modules/inventory/routes"
 import authRoutes from "@modules/auth/routes"
 import customersRoutes from "@modules/customers/routes"
-import ordersRoutes from "@modules/orders/routes"
+import landingRoutes from "@modules/landing/routes"
 import popupsRoutes from "@modules/popups/routes"
+import ordersRoutes from "@modules/orders/routes"
 
 const routes: RouteRecordRaw[] = [
-  // Home routes with HomeLayout
+  // Public pages routes with LandingLayout
   {
     path: "/",
-    component: HomeLayout,
-    children: [
-      {
-        path: "",
-        name: "Home",
-        component: () => import("@modules/others/index.vue"),
-      },
-    ],
+    component: LandingLayout,
+    children: [...landingRoutes],
   },
 
   // Auth routes with AuthLayout
   {
     path: "/",
     component: AuthLayout,
-    meta: { requiresAuth: true },
     children: [...authRoutes],
   },
 
-  // Main app routes with MainLayout
+  // Main app routes with MainLayout - authenticated users only
   {
     path: "/",
     component: MainLayout,
@@ -47,7 +41,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: "/:pathMatch(.*)*",
     name: "NotFound",
-    component: () => import("@modules/others/404.vue"),
+    component: () => import("@modules/404.vue"),
   },
 ]
 
@@ -55,11 +49,8 @@ const router = createRouter({
   history: createWebHistory(),
   routes,
   scrollBehavior(_to, _from, savedPosition) {
-    if (savedPosition) {
-      return savedPosition
-    } else {
-      return { top: 0 }
-    }
+    if (savedPosition) return savedPosition
+    else return { top: 0, behavior: "smooth" }
   },
 })
 
