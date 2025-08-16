@@ -153,9 +153,59 @@ The built files will be in the `dist/` directory.
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+3. Commit your changes using **Conventional Commits** format (`git commit -m 'feat: add some amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
+
+### Commit Message Format
+
+This project enforces [Conventional Commits](https://www.conventionalcommits.org/) specification. All commit messages must follow this format:
+
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+**Common Types:**
+
+- `feat` - A new feature
+- `fix` - A bug fix
+- `docs` - Documentation only changes
+- `style` - Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)
+- `refactor` - A code change that neither fixes a bug nor adds a feature
+- `perf` - A code change that improves performance
+- `test` - Adding missing tests or correcting existing tests
+- `build` - Changes that affect the build system or external dependencies
+- `ci` - Changes to our CI configuration files and scripts
+- `chore` - Other changes that don't modify src or test files
+- `revert` - Reverts a previous commit
+
+**Examples:**
+
+- `feat: add user authentication system`
+- `feat(auth): implement login with OAuth`
+- `fix: resolve inventory calculation bug`
+- `fix(orders): correct total price calculation`
+- `docs: update installation instructions`
+- `docs(api): add endpoint documentation`
+- `style: format code with prettier`
+- `style(components): fix indentation in ProductCard`
+- `refactor: restructure auth module`
+- `refactor(utils): simplify currency formatting function`
+- `perf: optimize database queries`
+- `perf(inventory): cache product search results`
+- `test: add unit tests for auth service`
+- `test(orders): add integration tests`
+- `build: update vite to version 5.0`
+- `build(deps): bump vue from 3.3.0 to 3.4.0`
+- `ci: add automated deployment workflow`
+- `ci(github): update node version in actions`
+- `chore: update gitignore`
+- `chore(deps): update development dependencies`
+- `revert: revert "feat: add experimental feature"`
 
 ## 🔗 Preview Links
 
