@@ -129,14 +129,17 @@
 <script setup lang="ts">
 import { reactive } from "vue"
 import AuthHeader from "../components/AuthHeader.vue"
+import { useRouter } from "vue-router"
 
 const form = reactive({
   email: "",
   password: "",
   subscribeNewsletter: false,
 })
+const router = useRouter()
 
-const handleSignup = () => {
+const handleSignup = async () => {
   // TODO: Implement actual signup logic here
+  await router.push("/orders")
 }
 </script>

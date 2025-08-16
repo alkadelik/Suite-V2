@@ -98,6 +98,6 @@ const form = reactive({
 const handleLogin = async () => {
   // TODO: Implement actual login logic here
   // For now, just a simple demo
-  await router.push("/dashboard")
+  await router.push("/orders")
 }
 </script>
