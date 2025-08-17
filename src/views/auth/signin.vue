@@ -41,7 +41,7 @@ const currentPassword = ref("")
       <img
         src="../../../public/images/logos/leyyow-logo-2.svg"
         alt="leyyow logo"
-        class="mb-6 h-8"
+        class="mb-40 h-8"
       />
       <h1 class="mb-3.5 text-4xl font-medium md:text-5xl">Welcome back!</h1>
       <p class="text-neutral-600">Sign in to your Leyyow account to continue.</p>
