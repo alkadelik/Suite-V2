@@ -1,5 +1,6 @@
-@import "./assets/fonts/font.css";
 @import "tailwindcss";
+@import "./font.css";
+@import "./theme.css"; /* tailwind custom variables */
 
 @theme {
   --font-sato: "Sato", sans-serif;

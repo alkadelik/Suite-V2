@@ -1,0 +1,21 @@
+@theme {
+  --font-sans: "Sato", sans-serif;
+
+  /* colors - core / neutral */
+  --color-core-100: #ffffff;
+  --color-core-200: #e5e4e4;
+  --color-core-300: #ccc8c8;
+  --color-core-400: #b4aaaa;
+  --color-core-500: #9d8c8c;
+  --color-core-600: #866f6e;
+  --color-core-700: #6a5554;
+  --color-core-800: #4e3d3b;
+  --color-core-900: #312623;
+  --color-core-1000: #14110e;
+  /* colors - primary */
+  --color-primary-100: #ffd49f;
+  --color-primary-200: #ffa940;
+  --color-primary-300: #df7b00;
+  --color-primary-400: #ae6000;
+  --color-primary-500: #7c4500;
+}
