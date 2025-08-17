@@ -1,3 +1,23 @@
 @import "tailwindcss";
 @import "./font.css";
 @import "./theme.css"; /* tailwind custom variables */
+
+@theme {
+  --font-sato: "Sato", sans-serif;
+  --font-outfit: "Outfit", sans-serif;
+
+  --color-brand-200: #FFE5B8;
+  --color-brand-300: #FFD085;
+  --color-brand-400: #FFA940;
+  --color-brand-500: #BB5A02;
+  --color-neutral-0: #FBFBFB;
+  --color-neutral-50: #E9E9E9;
+  --color-neutral-600: #866F6E;
+  --color-neutral-800: #4E3D3B;
+  --color-disabled: #ECEFF1;
+  --color-disabled-text: #AEB7BF;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-sato);
+}

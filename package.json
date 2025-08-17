@@ -12,13 +12,17 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@tailwindcss/vite": "^4.1.12",
-    "@types/node": "^24.3.0",
-    "tailwindcss": "^4.1.12",
+    "@iconify/vue": "^5.0.0",
+    "@tailwindcss/vite": "^4.1.11",
+    "tailwindcss": "^4.1.11",
+    "vee-validate": "^4.15.1",
     "vue": "^3.5.18",
-    "vue-router": "^4.5.1"
+    "vue-router": "^4.5.1",
+    "yup": "^1.7.0",
+    "@types/node": "^24.3.0"
   },
   "devDependencies": {
+    "@types/vue-router": "^2.0.0",
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
     "@eslint/js": "^9.33.0",
