@@ -2,7 +2,7 @@
   <div>
     <label
       v-if="label"
-      class="mb-1 block text-brand-400 capitalize"
+      class="text-brand-400 mb-1 block capitalize"
       :class="dense ? 'text-xs' : 'text-sm'"
     >
       {{ label }}<span v-if="required" class="text-red-500">*</span>
@@ -101,7 +101,7 @@
       :required="required"
       autoCapitalize="off"
       autoComplete="off"
-      class="w-full z-0 h-[1px] select-none text-transparent bg-transparent absolute bottom-0 left-0 !outline-none opacity-0 pointer-events-none shadow-none appearance-none"
+      class="pointer-events-none absolute bottom-0 left-0 z-0 h-[1px] w-full appearance-none bg-transparent text-transparent opacity-0 shadow-none !outline-none select-none"
       @click.prevent
       @change.prevent
     >
@@ -111,14 +111,14 @@
       </option>
     </select>
 
-    <p v-if="error" class="text-red-500 text-xs mt-1">{{ error }}</p>
-    <p v-if="hint && !error" class="text-brand-300 text-xs mt-1">{{ hint }}</p>
+    <p v-if="error" class="mt-1 text-xs text-red-500">{{ error }}</p>
+    <p v-if="hint && !error" class="text-brand-300 mt-1 text-xs">{{ hint }}</p>
   </div>
 </template>
 
 <script>
-import Multiselect from "vue-multiselect";
-import { computed } from "vue";
+import Multiselect from "vue-multiselect"
+import { computed } from "vue"
 
 export default {
   name: "SelectField",
@@ -257,43 +257,43 @@ export default {
     const selectedValue = computed({
       get: () => props.modelValue,
       set: (val) => emit("update:modelValue", val),
-    });
+    })
 
     const getOptionValue = (option) => {
       if (typeof option === "object" && option !== null) {
-        return option[props.trackBy] || option.value;
+        return option[props.trackBy] || option.value
       }
-      return option;
-    };
+      return option
+    }
 
     const getOptionLabel = (option) => {
       if (typeof option === "object" && option !== null) {
-        return option[props.optionLabel] || option.label;
+        return option[props.optionLabel] || option.label
       }
-      return option;
-    };
+      return option
+    }
 
     const getValidationValue = () => {
-      if (!selectedValue.value) return "";
+      if (!selectedValue.value) return ""
 
       if (props.multiple) {
         if (Array.isArray(selectedValue.value)) {
-          return selectedValue.value.map(getOptionValue).join(",");
+          return selectedValue.value.map(getOptionValue).join(",")
         }
-        return "";
+        return ""
       }
 
-      return getOptionValue(selectedValue.value);
-    };
+      return getOptionValue(selectedValue.value)
+    }
 
     return {
       selectedValue,
       getOptionValue,
       getOptionLabel,
       getValidationValue,
-    };
+    }
   },
-};
+}
 </script>
 
 <!-- Add Multiselect CSS. Can be added as a static asset or inside a component. -->

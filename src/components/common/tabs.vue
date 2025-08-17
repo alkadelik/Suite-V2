@@ -1,48 +1,48 @@
 <script setup>
-import { computed } from "vue";
+import { computed } from "vue"
 
 const props = defineProps({
   tabs: Array, // Can be ["Tab1", "Tab2"] OR [{ title: "Tab 1", key: "tab-1" }] OR [{ label: "Tab 1", value: "tab-1" }]
   modelValue: [String, Number], // Default active tab
   equal: { type: Boolean, default: true },
   class: String || Array,
-});
+})
 
-const emit = defineEmits(["update:modelValue"]);
+const emit = defineEmits(["update:modelValue"])
 
 const processedTabs = computed(() =>
   props.tabs.map((tab) => {
-    if (typeof tab === "string") return { title: tab, key: tab.replace(/\s+/g, "-").toLowerCase() };
+    if (typeof tab === "string") return { title: tab, key: tab.replace(/\s+/g, "-").toLowerCase() }
     if ("title" in tab)
-      return { title: tab.title, key: tab.key || tab.title.replace(/\s+/g, "-").toLowerCase() };
+      return { title: tab.title, key: tab.key || tab.title.replace(/\s+/g, "-").toLowerCase() }
     if ("label" in tab)
-      return { title: tab.label, key: tab.value || tab.label.replace(/\s+/g, "-").toLowerCase() };
-    return tab;
+      return { title: tab.label, key: tab.value || tab.label.replace(/\s+/g, "-").toLowerCase() }
+    return tab
   }),
-);
+)
 
 const activeTab = computed({
   get: () => props.modelValue || processedTabs.value[0]?.key,
   set: (value) => emit("update:modelValue", value), // Fix: Emit `update:modelValue`
-});
+})
 
 const changeTab = (tabKey) => {
-  activeTab.value = tabKey;
-};
+  activeTab.value = tabKey
+}
 </script>
 
 <template>
   <div :class="props.class">
     <!-- Tabs Header -->
-    <div ref="tabContainer" class="tabheader flex overflow-x-auto border-b border-brand-200">
+    <div ref="tabContainer" class="tabheader border-brand-200 flex overflow-x-auto border-b">
       <button
         v-for="tab in processedTabs"
         :key="tab.key"
         class="px-3 py-1.5 text-sm font-medium transition-colors"
         :class="[
           tab.key === activeTab
-            ? 'border-b-2 border-brand-500 text-brand-500 bg-brand-500/5'
-            : 'text-brand-300  hover:text-brand-400',
+            ? 'border-brand-500 text-brand-500 bg-brand-500/5 border-b-2'
+            : 'text-brand-300 hover:text-brand-400',
           equal && 'flex-1',
         ]"
         @click="changeTab(tab.key)"

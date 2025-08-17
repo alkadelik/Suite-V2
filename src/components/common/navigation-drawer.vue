@@ -1,6 +1,6 @@
 <script setup>
-import { defineProps, defineEmits } from "vue";
-import AppButton from "./app-button.vue";
+import { defineProps, defineEmits } from "vue"
+import AppButton from "./app-button.vue"
 
 // Props
 const props = defineProps({
@@ -8,16 +8,16 @@ const props = defineProps({
   title: String,
   position: { type: String, default: "right" }, // left or right
   persistent: { type: Boolean, default: false }, // Prevent closing on overlay click
-});
+})
 
-const emit = defineEmits(["update:open"]);
+const emit = defineEmits(["update:open"])
 
 // Close handler
 const closeDrawer = () => {
   if (!props.persistent) {
-    emit("update:open", false);
+    emit("update:open", false)
   }
-};
+}
 </script>
 
 <template>
@@ -26,7 +26,7 @@ const closeDrawer = () => {
     <transition name="fade">
       <div
         v-if="open"
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+        class="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
         @click="closeDrawer"
       ></div>
     </transition>
@@ -35,7 +35,7 @@ const closeDrawer = () => {
     <transition :name="position === 'left' ? 'slide-left' : 'slide-right'">
       <div
         v-if="open"
-        class="fixed inset-y-0 bg-white shadow-xl z-50 flex flex-col transition-all w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg"
+        class="fixed inset-y-0 z-50 flex w-full max-w-xs flex-col bg-white shadow-xl transition-all sm:max-w-sm md:max-w-md lg:max-w-lg"
         :class="{
           'left-0': position === 'left',
           'right-0': position === 'right',
@@ -43,13 +43,13 @@ const closeDrawer = () => {
       >
         <!-- Header -->
         <div
-          class="py-3 px-4 border-b border-gray-200 dark:border-brand-800 bg-white dark:bg-brand-800 sticky top-0 z-20 flex items-center gap-8 truncate"
+          class="dark:border-brand-800 dark:bg-brand-800 sticky top-0 z-20 flex items-center gap-8 truncate border-b border-gray-200 bg-white px-4 py-3"
         >
           <div class="flex-1 truncate">
-            <h2 v-if="title" class="text-lg font-semibold dark:text-white truncate">
+            <h2 v-if="title" class="truncate text-lg font-semibold dark:text-white">
               {{ title }}
             </h2>
-            <p v-if="subtitle" class="text-sm text-gray-600 dark:text-gray-300 truncate">
+            <p v-if="subtitle" class="truncate text-sm text-gray-600 dark:text-gray-300">
               {{ subtitle }}
             </p>
           </div>

@@ -7,21 +7,21 @@ const props = defineProps({
   required: Boolean,
   dense: Boolean,
   disabled: Boolean,
-});
+})
 
-const emit = defineEmits(["update:modelValue"]);
+const emit = defineEmits(["update:modelValue"])
 
 const onChange = (option) => {
   if (!props.disabled && !option.disabled) {
-    emit("update:modelValue", option.value);
+    emit("update:modelValue", option.value)
   }
-};
+}
 </script>
 
 <template>
   <div>
     <!-- Group Label -->
-    <label class="mb-1 block text-brand-400" :class="dense ? 'text-xs' : 'text-sm'">
+    <label class="text-brand-400 mb-1 block" :class="dense ? 'text-xs' : 'text-sm'">
       {{ label }}
       <span v-if="required" class="text-red-500">*</span>
     </label>
@@ -32,8 +32,8 @@ const onChange = (option) => {
         v-for="option in options"
         :key="option.value"
         :class="[
-          'bg-brand-50 flex items-center gap-1 border border-brand-200 rounded-lg cursor-pointer transition-all',
-          dense ? 'h-8 pl-2 pr-3' : 'h-10 pl-3 pr-4',
+          'bg-brand-50 border-brand-200 flex cursor-pointer items-center gap-1 rounded-lg border transition-all',
+          dense ? 'h-8 pr-3 pl-2' : 'h-10 pr-4 pl-3',
           { 'border-brand-500': modelValue === option.value },
           { 'opacity-70': disabled || option.disabled },
         ]"
@@ -45,8 +45,8 @@ const onChange = (option) => {
           :value="option.value"
           :checked="modelValue === option.value"
           :class="[
-            'w-4 h-4 text-brand-500 bg-brand-50 border-brand-300',
-            'focus:outline-none focus:ring-0 accent-brand-500',
+            'text-brand-500 bg-brand-50 border-brand-300 h-4 w-4',
+            'accent-brand-500 focus:ring-0 focus:outline-none',
           ]"
           :disabled="disabled || option.disabled"
           :required="required"

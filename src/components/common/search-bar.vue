@@ -1,15 +1,15 @@
 <script setup>
-import { computed } from "vue";
+import { computed } from "vue"
 
 const props = defineProps({
   modelValue: String,
   placeholder: { type: String, default: "Search..." },
   class: { type: [String, Array], default: "" },
-});
+})
 
-const emit = defineEmits(["update:modelValue"]);
+const emit = defineEmits(["update:modelValue"])
 
-const hasText = computed(() => props.modelValue?.length);
+const hasText = computed(() => props.modelValue?.length)
 </script>
 
 <template>
@@ -20,7 +20,7 @@ const hasText = computed(() => props.modelValue?.length);
       height="32"
       viewBox="0 0 24 24"
       fill="none"
-      class="absolute left-3 top-1/2 h-5 w-5 text-brand-500 -translate-y-1/2"
+      class="text-brand-500 absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2"
     >
       <path
         opacity=".4"
@@ -39,8 +39,8 @@ const hasText = computed(() => props.modelValue?.length);
       :placeholder="placeholder"
       :value="modelValue"
       :class="[
-        'h-11 w-full rounded-lg border border-brand-200 bg-brand-50 pl-10 pr-10 py-2.5',
-        'text-sm placeholder:text-brand-300 focus:border-brand-500 focus:outline-none focus:ring focus:ring-brand-500/10',
+        'border-brand-200 bg-brand-50 h-11 w-full rounded-lg border py-2.5 pr-10 pl-10',
+        'placeholder:text-brand-300 focus:border-brand-500 focus:ring-brand-500/10 text-sm focus:ring focus:outline-none',
       ]"
       @input="emit('update:modelValue', $event.target.value)"
     />
@@ -49,7 +49,7 @@ const hasText = computed(() => props.modelValue?.length);
     <button
       v-if="hasText"
       type="button"
-      class="absolute right-3 top-1/2 -translate-y-1/2 text-brand-300"
+      class="text-brand-300 absolute top-1/2 right-3 -translate-y-1/2"
       @click="emit('update:modelValue', '')"
     >
       <svg

@@ -1,5 +1,5 @@
 <script setup>
-import { VsxIcon } from "vue-iconsax";
+import { VsxIcon } from "vue-iconsax"
 
 defineProps({
   name: {
@@ -18,9 +18,9 @@ defineProps({
     type: String,
     default: "bulk", // can be 'linear', 'bold', 'bulk', 'broken', 'outline', 'twotone'
   },
-});
+})
 
-const emit = defineEmits(["click"]);
+const emit = defineEmits(["click"])
 </script>
 
 <template>

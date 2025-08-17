@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from "vue";
+import { computed } from "vue"
 
 const props = defineProps({
   modelValue: Boolean,
@@ -19,15 +19,15 @@ const props = defineProps({
     type: [Number, String],
     default: null,
   },
-});
+})
 
-const emit = defineEmits(["update:modelValue"]);
+const emit = defineEmits(["update:modelValue"])
 
-const checkboxId = `checkbox-${Math.random().toString(36).substr(2, 9)}`;
+const checkboxId = `checkbox-${Math.random().toString(36).substr(2, 9)}`
 
-const resolvedCheckColor = computed(() => props.checkColor || "#008060");
+const resolvedCheckColor = computed(() => props.checkColor || "#008060")
 
-const isRight = computed(() => props.checkPosition === "right");
+const isRight = computed(() => props.checkPosition === "right")
 </script>
 
 <template>
@@ -37,7 +37,7 @@ const isRight = computed(() => props.checkPosition === "right");
       type="checkbox"
       :checked="modelValue"
       :disabled="disabled"
-      class="rounded border-brand-300 text-brand-500 focus:ring-brand-400"
+      class="border-brand-300 text-brand-500 focus:ring-brand-400 rounded"
       :class="!size ? (dense ? 'h-4 w-4' : 'h-5 w-5') : ''"
       :style="{
         accentColor: resolvedCheckColor,

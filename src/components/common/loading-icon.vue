@@ -2,15 +2,15 @@
 const props = defineProps({
   class: { type: [String, Array], default: "" },
   iconClass: { type: [String, Array], default: "" },
-});
+})
 </script>
 
 <template>
-  <div class="flex justify-center items-center py-16" :class="props.class">
+  <div class="flex items-center justify-center py-16" :class="props.class">
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
-      class="h-20 w-20 text-brand-300"
+      class="text-brand-300 h-20 w-20"
       :class="iconClass"
     >
       <circle cx="12" cy="2" r="0" fill="currentColor">

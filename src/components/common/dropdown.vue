@@ -1,14 +1,14 @@
 <script setup>
-import { Icon } from "@iconify/vue";
-import { Dropdown } from "floating-vue";
-import "floating-vue/dist/style.css";
-import AppIcon from "./app-icon.vue";
+import { Icon } from "@iconify/vue"
+import { Dropdown } from "floating-vue"
+import "floating-vue/dist/style.css"
+import AppIcon from "./app-icon.vue"
 
 defineProps({
   items: { type: Array, required: true },
   menuClass: { type: [String, Array], default: "" },
-});
-const emit = defineEmits(["toggle"]);
+})
+const emit = defineEmits(["toggle"])
 </script>
 
 <template>
@@ -40,15 +40,15 @@ const emit = defineEmits(["toggle"]);
 
     <template #popper="{ hide }">
       <div
-        class="bg-white rounded-md shadow p-2 w-max min-w-40 divide-y divide-brand-100"
+        class="divide-brand-100 w-max min-w-40 divide-y rounded-md bg-white p-2 shadow"
         :class="menuClass"
       >
         <slot name="preprend" />
-        <div v-for="item in items" :key="item.label" class="py-0.5 px-px">
+        <div v-for="item in items" :key="item.label" class="px-px py-0.5">
           <button
             type="button"
             :class="[
-              'group flex w-full items-center gap-2 px-2 py-2 text-sm font-medium rounded-md',
+              'group flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm font-medium',
               item.class || '',
               item.isDisabled
                 ? 'text-brand-200'
@@ -57,8 +57,8 @@ const emit = defineEmits(["toggle"]);
             :disabled="item.isDisabled"
             @click.stop="
               () => {
-                item.action?.();
-                hide();
+                item.action?.()
+                hide()
               }
             "
           >
@@ -81,7 +81,7 @@ const emit = defineEmits(["toggle"]);
               :icon="item.appendIcon"
               :name="item.appendIcon"
               :size="20"
-              class="text-brand-300 h-5 w-5 group-hover:text-brand-500"
+              class="text-brand-300 group-hover:text-brand-500 h-5 w-5"
             />
           </button>
         </div>

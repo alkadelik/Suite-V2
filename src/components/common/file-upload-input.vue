@@ -1,57 +1,57 @@
 <script setup>
-import { ref, defineEmits } from "vue";
-import { Icon } from "@iconify/vue";
+import { ref, defineEmits } from "vue"
+import { Icon } from "@iconify/vue"
 
-const emit = defineEmits(["update:modelValue"]);
-const props = defineProps({ label: { type: String, default: "Upload File" } });
+const emit = defineEmits(["update:modelValue"])
+const props = defineProps({ label: { type: String, default: "Upload File" } })
 
-const fileName = ref("");
+const fileName = ref("")
 
 const handleFileChange = (event) => {
-  if (fileName.value) return;
-  const file = event.target.files[0];
+  if (fileName.value) return
+  const file = event.target.files[0]
   if (file) {
-    fileName.value = file.name;
-    emit("update:modelValue", file);
+    fileName.value = file.name
+    emit("update:modelValue", file)
   }
-};
+}
 
 const handleDrop = (event) => {
-  event.preventDefault();
-  const file = event.dataTransfer.files[0];
+  event.preventDefault()
+  const file = event.dataTransfer.files[0]
   if (file) {
-    fileName.value = file.name;
-    emit("update:modelValue", file);
+    fileName.value = file.name
+    emit("update:modelValue", file)
   }
-};
+}
 
 const preventDefaults = (event) => {
-  event.preventDefault();
-};
+  event.preventDefault()
+}
 
 const removeFile = (event) => {
-  event.stopPropagation();
-  fileName.value = "";
+  event.stopPropagation()
+  fileName.value = ""
   // Reset the input field value
-  const fileInput = event.target.closest("div").querySelector("input[type='file']");
+  const fileInput = event.target.closest("div").querySelector("input[type='file']")
   if (fileInput) {
-    fileInput.value = ""; // Clear the file input
+    fileInput.value = "" // Clear the file input
   }
-  emit("update:modelValue", null);
-};
+  emit("update:modelValue", null)
+}
 </script>
 
 <template>
   <div>
-    <label class="mb-1 block text-sm text-brand-400">{{ props.label }}</label>
+    <label class="text-brand-400 mb-1 block text-sm">{{ props.label }}</label>
     <div
-      class="relative w-full rounded-lg bg-brand-50 border border-brand-200 px-4 py-4 text-sm text-brand-600 cursor-pointer flex items-center justify-between"
+      class="bg-brand-50 border-brand-200 text-brand-600 relative flex w-full cursor-pointer items-center justify-between rounded-lg border px-4 py-4 text-sm"
       @dragover="preventDefaults"
       @drop="handleDrop"
     >
-      <div v-if="fileName" class="flex items-center gap-2 w-full">
-        <Icon icon="mdi:file" class="h-5 w-5 text-brand-500" />
-        <p class="flex-1 truncate text-brand-400">
+      <div v-if="fileName" class="flex w-full items-center gap-2">
+        <Icon icon="mdi:file" class="text-brand-500 h-5 w-5" />
+        <p class="text-brand-400 flex-1 truncate">
           {{ fileName }}
         </p>
         <button type="button" class="text-brand-300 text-lg" @click.stop="removeFile">
@@ -59,17 +59,17 @@ const removeFile = (event) => {
         </button>
       </div>
       <slot v-else name="placeholder">
-        <div class="flex flex-col items-center justify-center gap-2 text-center w-full">
+        <div class="flex w-full flex-col items-center justify-center gap-2 text-center">
           <Icon icon="meteor-icons:upload-cloud" class="text-brand-500 text-2xl" />
-          <span class="text-sm text-brand-400">Click to upload or drag & drop</span>
-          <span class="text-sm text-brand-300">Max size: (3MB)</span>
+          <span class="text-brand-400 text-sm">Click to upload or drag & drop</span>
+          <span class="text-brand-300 text-sm">Max size: (3MB)</span>
         </div>
       </slot>
 
       <input
         v-if="!fileName"
         type="file"
-        class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+        class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
         @change="handleFileChange"
       />
     </div>

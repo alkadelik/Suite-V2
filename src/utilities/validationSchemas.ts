@@ -1,4 +1,4 @@
-import * as yup from "yup";
+import * as yup from "yup"
 
 export const passwordSchema = yup
   .string()
@@ -6,4 +6,4 @@ export const passwordSchema = yup
   .matches(/[A-Z]/, "Password must contain at least one uppercase letter")
   .matches(/[a-z]/, "Password must contain at least one lowercase letter")
   .matches(/[^A-Za-z0-9]/, "Password must contain at least one special character")
-  .required("Password is required");
+  .required("Password is required")

@@ -1,6 +1,6 @@
 <script setup>
-import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from "@headlessui/vue";
-import AppButton from "./app-button.vue";
+import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from "@headlessui/vue"
+import AppButton from "./app-button.vue"
 
 // Props
 const props = defineProps({
@@ -12,14 +12,14 @@ const props = defineProps({
   fullscreen: Boolean,
   back: { type: Function, default: null }, // Show back button
   contentClass: { type: String, default: "" }, // Additional classes for content area
-});
+})
 
-const emit = defineEmits(["update:open"]);
+const emit = defineEmits(["update:open"])
 
 // Close handler (respects persistent prop)
 const closeModal = () => {
-  if (!props.persistent) emit("update:open", false);
-};
+  if (!props.persistent) emit("update:open", false)
+}
 </script>
 
 <template>
@@ -40,7 +40,7 @@ const closeModal = () => {
 
       <!-- Modal Wrapper -->
       <div
-        class="fixed inset-0 flex md:items-center justify-center md:p-4"
+        class="fixed inset-0 flex justify-center md:items-center md:p-4"
         :class="centered ? 'items-center p-2' : 'items-end'"
       >
         <TransitionChild
@@ -73,7 +73,7 @@ const closeModal = () => {
 
             <!-- Modal Content -->
             <div
-              class="overflow-y-auto bg-brand-100"
+              class="bg-brand-100 overflow-y-auto"
               :class="[
                 { 'rounded-b-2xl': centered },
                 fullscreen ? 'h-screen' : 'max-h-[calc(90vh-64px)] rounded-t-2xl md:rounded-b-2xl',
@@ -83,9 +83,9 @@ const closeModal = () => {
               <DialogTitle
                 v-if="title"
                 as="div"
-                class="flex gap-2 py-2 px-4 border-b border-brand-200 bg-brand-100 sticky top-0 z-20"
+                class="border-brand-200 bg-brand-100 sticky top-0 z-20 flex gap-2 border-b px-4 py-2"
               >
-                <div class="flex gap-3 items-center">
+                <div class="flex items-center gap-3">
                   <AppButton
                     v-if="props.back"
                     variant="text"
@@ -95,7 +95,7 @@ const closeModal = () => {
                     @click="props.back"
                   />
                   <slot name="title">
-                    <h2 class="text-lg font-semibold flex-1">{{ title }}</h2>
+                    <h2 class="flex-1 text-lg font-semibold">{{ title }}</h2>
                   </slot>
                 </div>
                 <AppButton

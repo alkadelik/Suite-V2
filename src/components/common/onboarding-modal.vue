@@ -8,7 +8,7 @@
 
     <!-- Modal -->
     <div
-      class="relative w-[95vw] max-w-[350px] bg-white rounded-xl shadow-lg z-30 p-3"
+      class="relative z-30 w-[95vw] max-w-[350px] rounded-xl bg-white p-3 shadow-lg"
       :style="{ top: top }"
     >
       <!-- Header Slot -->
@@ -30,7 +30,7 @@
       </div>
 
       <!-- Close Button -->
-      <div class="flex justify-between items-center">
+      <div class="flex items-center justify-between">
         <div class="flex items-center gap-1">
           <span
             v-for="step in totalSteps"
@@ -56,9 +56,9 @@
 </template>
 
 <script setup>
-import { useOnboardingStore } from "../../stores/onboarding";
-import AppButton from "./app-button.vue";
-import ModalBg from "../../assets/images/onboarding-modal-bg.png";
+import { useOnboardingStore } from "../../stores/onboarding"
+import AppButton from "./app-button.vue"
+import ModalBg from "../../assets/images/onboarding-modal-bg.png"
 
 defineProps({
   buttonText: {
@@ -85,7 +85,7 @@ defineProps({
     type: Number,
     required: false,
   },
-});
+})
 
-const onboardingStore = useOnboardingStore();
+const onboardingStore = useOnboardingStore()
 </script>
