@@ -42,7 +42,7 @@ const currentPassword = ref("")
 </script>
 
 <template>
-  <div class="px-4 py-10 text-neutral-800 md:p-24">
+  <div class="px-4 py-10 text-neutral-800 md:p-20">
     <div class="mb-4">
       <img
         src="../../../public/images/logos/leyyow-logo-2.svg"

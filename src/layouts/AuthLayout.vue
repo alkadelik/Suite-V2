@@ -1,7 +1,7 @@
 <template>
   <div class="flex h-screen">
     <!-- Left Side -->
-    <div class="relative hidden w-[45%] lg:block">
+    <div class="relative hidden flex-1 lg:block">
       <div class="relative h-full w-full overflow-hidden">
         <img
           src="../assets/images/jpegs/auth-layout-image.jpeg"
