@@ -4,8 +4,6 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from "axios"
 
 const baseURL = (import.meta.env.VITE_API_BASE_URL as string) || ""
 
-console.log("Base API URL:", baseURL)
-
 const baseApi = axios.create({
   baseURL,
   headers: { "Content-Type": "application/json" },

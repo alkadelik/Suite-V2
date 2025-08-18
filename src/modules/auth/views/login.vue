@@ -69,7 +69,7 @@ import * as yup from "yup"
 import { onInvalidSubmit } from "@/utils/validations"
 import { passwordSchema } from "@/utils/validationSchemas"
 import { useLogin } from "../api"
-import { formatError } from "@/utils/error-handler"
+import { displayError, formatError } from "@/utils/error-handler"
 import Icon from "@components/common/icon.vue"
 
 // Define the form data type
@@ -97,8 +97,10 @@ const onSubmit = (values: Record<string, unknown>) => {
       console.log("Login successful", response)
     },
     onError: (error) => {
+      displayError(error)
+      // or handle separately
       const errorMsg = formatError(error)
-      console.error("Login failed", errorMsg)
+      console.error("Login failed!!!", errorMsg)
     },
   })
 }

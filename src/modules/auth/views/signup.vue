@@ -160,7 +160,7 @@ const currentPassword = ref("")
     <div class="mt-5 pb-4">
       <p class="text-center text-sm font-normal text-gray-500">
         Already have an account?
-        <RouterLink to="/auth/signin" class="text-primary-500 text-sm font-medium underline">
+        <RouterLink to="/login" class="text-primary-500 text-sm font-medium underline">
           Sign In
         </RouterLink>
       </p>
