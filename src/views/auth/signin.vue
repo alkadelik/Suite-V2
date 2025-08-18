@@ -38,11 +38,7 @@ const currentPassword = ref("")
 <template>
   <div class="px-4 py-10 text-neutral-800 md:p-24">
     <div class="mb-4">
-      <img
-        src="../../../public/images/logos/leyyow-logo-2.svg"
-        alt="leyyow logo"
-        class="mb-40 h-8"
-      />
+      <img src="./images/logos/leyyow-logo-2.svg" alt="leyyow logo" class="mb-40 h-8" />
       <h1 class="mb-3.5 text-4xl font-medium md:text-5xl">Welcome back!</h1>
       <p class="text-neutral-600">Sign in to your Leyyow account to continue.</p>
     </div>
