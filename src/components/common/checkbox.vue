@@ -37,7 +37,7 @@ const isRight = computed(() => props.checkPosition === "right")
       type="checkbox"
       :checked="modelValue"
       :disabled="disabled"
-      class="border-brand-300 text-brand-500 focus:ring-brand-400 rounded"
+      class="border-primary-300 text-primary-500 focus:ring-primary-400 rounded"
       :class="!size ? (dense ? 'h-4 w-4' : 'h-5 w-5') : ''"
       :style="{
         accentColor: resolvedCheckColor,
@@ -50,7 +50,7 @@ const isRight = computed(() => props.checkPosition === "right")
     <label
       v-if="label || $slots.default"
       :for="checkboxId"
-      class="text-brand-300"
+      class="text-primary-300"
       :class="[dense ? 'text-xs' : 'text-sm', disabled ? 'cursor-not-allowed' : 'cursor-pointer']"
     >
       <slot>{{ label }}</slot>

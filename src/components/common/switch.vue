@@ -20,15 +20,15 @@ const value = computed({
 <template>
   <SwitchGroup>
     <div class="flex items-center gap-1">
-      <SwitchLabel v-if="label" :passive="disabled" class="text-brand-400 text-sm">
+      <SwitchLabel v-if="label" :passive="disabled" class="text-primary-400 text-sm">
         {{ label }}
       </SwitchLabel>
       <Switch
         v-model="value"
         :disabled="disabled"
-        class="focus-visible:ring-brand-300 relative inline-flex items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2"
+        class="focus-visible:ring-primary-300 relative inline-flex items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2"
         :class="[
-          value ? 'bg-brand-500' : 'bg-gray-300',
+          value ? 'bg-primary-500' : 'bg-gray-300',
           dense ? 'h-5 w-9' : 'h-6 w-11',
           disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
         ]"

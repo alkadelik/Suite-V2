@@ -40,7 +40,7 @@ const emit = defineEmits(["toggle"])
 
     <template #popper="{ hide }">
       <div
-        class="divide-brand-100 w-max min-w-40 divide-y rounded-md bg-white p-2 shadow"
+        class="divide-primary-100 w-max min-w-40 divide-y rounded-md bg-white p-2 shadow"
         :class="menuClass"
       >
         <slot name="preprend" />
@@ -51,8 +51,8 @@ const emit = defineEmits(["toggle"])
               'group flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm font-medium',
               item.class || '',
               item.isDisabled
-                ? 'text-brand-200'
-                : 'text-brand-400 hover:text-brand-500 hover:bg-brand-100',
+                ? 'text-primary-200'
+                : 'text-primary-400 hover:text-primary-500 hover:bg-primary-100',
             ]"
             :disabled="item.isDisabled"
             @click.stop="
@@ -71,7 +71,9 @@ const emit = defineEmits(["toggle"])
               :class="[
                 'h-5 w-5',
                 item.iconClass || '',
-                item.isDisabled ? 'text-brand-200' : 'text-brand-300 group-hover:text-brand-500',
+                item.isDisabled
+                  ? 'text-primary-200'
+                  : 'text-primary-300 group-hover:text-primary-500',
               ]"
             />
             <span class="flex-1 text-left">{{ item.label }}</span>
@@ -81,7 +83,7 @@ const emit = defineEmits(["toggle"])
               :icon="item.appendIcon"
               :name="item.appendIcon"
               :size="20"
-              class="text-brand-300 group-hover:text-brand-500 h-5 w-5"
+              class="text-primary-300 group-hover:text-primary-500 h-5 w-5"
             />
           </button>
         </div>

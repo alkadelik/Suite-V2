@@ -40,22 +40,22 @@ const removeTag = (tag) => {
 <template>
   <div>
     <!-- Label -->
-    <label v-if="label" class="text-brand-400 mb-1 block text-sm">
+    <label v-if="label" class="text-primary-400 mb-1 block text-sm">
       {{ label }}<span v-if="required" class="text-red-500">*</span>
     </label>
 
     <!-- Tag Input Container -->
     <div
       :class="[
-        'bg-brand-50 border-brand-200 flex min-h-12 w-full flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-sm',
-        'text-brand-600 focus-within:border-brand-500 focus-within:ring-brand-500/10 focus-within:ring',
+        'bg-primary-50 border-primary-200 flex min-h-12 w-full flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-sm',
+        'text-primary-600 focus-within:border-primary-500 focus-within:ring-primary-500/10 focus-within:ring',
       ]"
     >
       <!-- Tags -->
       <span
         v-for="tag in uniqueTags"
         :key="tag"
-        class="bg-brand-500/20 text-brand-500 flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium"
+        class="bg-primary-500/20 text-primary-500 flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium"
       >
         <span>{{ tag }}</span>
         <Icon icon="mdi:close" class="h-3 w-3" @click="removeTag(tag)" />
@@ -65,7 +65,7 @@ const removeTag = (tag) => {
       <input
         v-model="inputValue"
         :placeholder="placeholder"
-        class="placeholder:text-brand-300 flex-1 bg-transparent focus:outline-none"
+        class="placeholder:text-primary-300 flex-1 bg-transparent focus:outline-none"
         @keydown.enter.prevent="addTag"
         @keydown="
           (e) => {
@@ -78,6 +78,6 @@ const removeTag = (tag) => {
         @keydown.backspace="handleBackspace"
       />
     </div>
-    <p class="text-brand-300 mt-1 text-xs">Press Enter or use a Comma to save.</p>
+    <p class="text-primary-300 mt-1 text-xs">Press Enter or use a Comma to save.</p>
   </div>
 </template>

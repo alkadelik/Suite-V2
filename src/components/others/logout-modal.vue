@@ -14,7 +14,7 @@ const { logout } = useAuthStore()
     <div class="flex flex-col items-center justify-center gap-2 text-center">
       <Icon icon="solar:logout-3-bold-duotone" class="text-error h-14 w-14" />
       <h4 class="text-base font-semibold">Confirm Logout</h4>
-      <p class="text-brand-400 text-sm">
+      <p class="text-primary-400 text-sm">
         Are you sure you want to log out? You will be signed out of your account.
       </p>
       <AppButton label="Yes, Log Out" class="bg-error focus:ring-error/20 w-full" @click="logout" />

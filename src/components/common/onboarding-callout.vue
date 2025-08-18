@@ -32,14 +32,14 @@
           :key="step"
           :class="[
             'h-1 w-6 rounded-full transition-colors duration-200',
-            step <= currentStep ? 'bg-brand-500' : 'bg-gray-300',
+            step <= currentStep ? 'bg-primary-500' : 'bg-gray-300',
           ]"
         ></span>
       </div>
       <button
         v-else
         type="button"
-        class="text-brand-300 text-sm underline"
+        class="text-primary-300 text-sm underline"
         @click="onboardingStore.closeCallout"
       >
         Don't show this again

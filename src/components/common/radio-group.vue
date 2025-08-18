@@ -21,7 +21,7 @@ const onChange = (option) => {
 <template>
   <div>
     <!-- Group Label -->
-    <label class="text-brand-400 mb-1 block" :class="dense ? 'text-xs' : 'text-sm'">
+    <label class="text-primary-400 mb-1 block" :class="dense ? 'text-xs' : 'text-sm'">
       {{ label }}
       <span v-if="required" class="text-red-500">*</span>
     </label>
@@ -32,9 +32,9 @@ const onChange = (option) => {
         v-for="option in options"
         :key="option.value"
         :class="[
-          'bg-brand-50 border-brand-200 flex cursor-pointer items-center gap-1 rounded-lg border transition-all',
+          'bg-primary-50 border-primary-200 flex cursor-pointer items-center gap-1 rounded-lg border transition-all',
           dense ? 'h-8 pr-3 pl-2' : 'h-10 pr-4 pl-3',
-          { 'border-brand-500': modelValue === option.value },
+          { 'border-primary-500': modelValue === option.value },
           { 'opacity-70': disabled || option.disabled },
         ]"
         @click="onChange(option)"
@@ -45,8 +45,8 @@ const onChange = (option) => {
           :value="option.value"
           :checked="modelValue === option.value"
           :class="[
-            'text-brand-500 bg-brand-50 border-brand-300 h-4 w-4',
-            'accent-brand-500 focus:ring-0 focus:outline-none',
+            'text-primary-500 bg-primary-50 border-primary-300 h-4 w-4',
+            'accent-primary-500 focus:ring-0 focus:outline-none',
           ]"
           :disabled="disabled || option.disabled"
           :required="required"
@@ -57,7 +57,7 @@ const onChange = (option) => {
           :class="[
             'w-full cursor-pointer',
             dense ? 'text-xs' : 'text-sm',
-            modelValue === option.value ? 'text-brand-500' : 'text-brand-400',
+            modelValue === option.value ? 'text-primary-500' : 'text-primary-400',
           ]"
         >
           {{ option.label }}
