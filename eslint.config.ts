@@ -5,26 +5,24 @@ import prettier from "eslint-plugin-prettier"
 import prettierConfig from "eslint-config-prettier"
 import vueParser from "vue-eslint-parser"
 import tsParser from "@typescript-eslint/parser"
+import globals from "globals"
 
 export default tseslint.config(
   // Ignore build + tooling files
-  { ignores: ["dist", "coverage", "node_modules", "*.config.*", "src/components/common/**", "src/components/others"] },
+  {
+    ignores: [
+      "dist",
+      "coverage",
+      "node_modules",
+      "*.config.*",
+      "src/components/common/**",
+      "src/components/others",
+    ],
+  },
 
   // Base configs
   js.configs.recommended,
   prettierConfig,
-
-  // ✅ For plain JS files (no type-aware rules)
-  {
-    files: ["**/*.{js,cjs,mjs}"],
-    languageOptions: {
-      ecmaVersion: "latest",
-      sourceType: "module",
-    },
-    rules: {
-      "no-unused-vars": "warn",
-    },
-  },
 
   // ✅ For TS + Vue files (type-aware linting enabled)
   ...tseslint.configs.recommendedTypeChecked,
@@ -35,19 +33,21 @@ export default tseslint.config(
       parser: vueParser,
       parserOptions: {
         parser: tsParser,
-        project: "./tsconfig.app.json", // 👈 point to your typed config
+        // project: "./tsconfig.app.json", // 👈 point to your typed config
+        projectService: true,
         tsconfigRootDir: import.meta.dirname,
         extraFileExtensions: [".vue"],
+      },
+      globals: {
+        ...globals.browser,
+        ...globals.node,
       },
     },
     plugins: { prettier },
     rules: {
-      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+      "@typescript-eslint/no-unused-vars": ["error"],
       "@typescript-eslint/no-explicit-any": "error",
-      "@typescript-eslint/no-unsafe-assignment": "error",
-      "@typescript-eslint/no-unsafe-call": "error",
-      "@typescript-eslint/no-unsafe-member-access": "error",
-      "@typescript-eslint/no-unsafe-argument": "error",
+      "@typescript-eslint/no-unsafe-return": "off",
 
       // Disable duplicate base rule
       "no-unused-vars": "off",

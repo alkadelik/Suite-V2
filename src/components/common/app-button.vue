@@ -1,6 +1,5 @@
 <script setup>
-import { Icon } from "@iconify/vue"
-import Loader from "../../assets/icons/loader.vue"
+import Icon from "./icon.vue"
 
 const props = defineProps({
   label: String,
@@ -66,13 +65,13 @@ const emitClick = (event) => {
     @click="emitClick"
   >
     <template v-if="loading">
-      <Loader class="mr-2 flex-shrink-0 animate-spin" />
+      <Icon name="loader" class="flex-shrink-0 animate-spin" />
       <span v-if="label">{{ label }}</span>
     </template>
     <template v-else>
       <Icon
         v-if="icon"
-        :icon="icon"
+        :name="icon"
         :class="[
           'flex-shrink-0',
           variant == 'filled' ? 'text-white' : 'text-primary-500',

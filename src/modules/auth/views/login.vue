@@ -1,9 +1,9 @@
 <template>
   <div class="text-core-800 px-4 py-10 md:p-24">
     <div class="mb-4">
-      <img src="/images/logos/leyyow-logo-2.svg" alt="leyyow logo" class="mb-40 h-8" />
+      <img src="/images/logos/leyyow-logo-2.svg?url" alt="leyyow logo" class="mb-40 h-8" />
       <h1 class="mb-3.5 text-4xl font-medium md:text-5xl">Welcome back!</h1>
-      <p class="text-core-600">Sign in to your Leyyow account to continue.</p>
+      <p class="text-core-600">Sign in to your Leyyow account to continue. <Icon name="vue" /></p>
     </div>
 
     <Form
@@ -35,14 +35,13 @@
               name="password"
               required
               :error="fieldErrors[0]"
-              @update:model-value="currentPassword = $event"
             />
           </div>
         </Field>
 
         <AppButton
           type="submit"
-          :loading="false"
+          :loading="isPending"
           label="Log In"
           class="w-full"
           :disabled="Object.keys(errors).length > 0"
@@ -61,15 +60,23 @@
   </div>
 </template>
 
-<script setup>
-import { ref } from "vue"
+<script setup lang="ts">
 // import { useRouter } from "vue-router";
 import AppButton from "@components/common/app-button.vue"
 import TextInput from "@components/common/text-input.vue"
 import { Form, Field } from "vee-validate"
 import * as yup from "yup"
-import { onInvalidSubmit } from "@/utilities/validations"
-import { passwordSchema } from "@/utilities/validationSchemas"
+import { onInvalidSubmit } from "@/utils/validations"
+import { passwordSchema } from "@/utils/validationSchemas"
+import { useLogin } from "../api"
+import { formatError } from "@/utils/error-handler"
+import Icon from "@components/common/icon.vue"
+
+// Define the form data type
+type LoginFormData = {
+  email: string
+  password: string
+}
 
 // const { mutate: signupFn, isPending: loading } = useRegisterApi();
 // const authStore = useAuthStore();
@@ -81,19 +88,18 @@ const validationSchema = yup.object().shape({
   password: passwordSchema,
 })
 
-const currentPassword = ref("")
+const { mutate: loginFn, isPending } = useLogin()
 
-// const onSubmit = (values) => {
-//   signupFn(values, {
-//     onSuccess: (response) => {
-//       const { data } = response;
-//       const { tokens, user } = data;
-//       authStore.setAuth(tokens.access, tokens.refresh, user);
-//       authStore.setUserEmail(values.email);
-//       toast.success("Registration successful");
-//       router.push("/auth/confirm-email");
-//     },
-//   });
-// console.log(values)
-// }
+const onSubmit = (values: Record<string, unknown>) => {
+  const loginData = values as LoginFormData
+  loginFn(loginData, {
+    onSuccess: (response) => {
+      console.log("Login successful", response)
+    },
+    onError: (error) => {
+      const errorMsg = formatError(error)
+      console.error("Login failed", errorMsg)
+    },
+  })
+}
 </script>
