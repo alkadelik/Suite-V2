@@ -6,8 +6,8 @@ import TextInput from "@/components/common/text-input.vue"
 import PasswordStrength from "@/components/others/password-strength.vue"
 import { Form, Field } from "vee-validate"
 import * as yup from "yup"
-import { onInvalidSubmit } from "@/utilities/validations"
-import { passwordSchema } from "@/utilities/validationSchemas"
+import { onInvalidSubmit } from "@/utils/validations"
+import { passwordSchema } from "@/utils/validationSchemas"
 
 // const { mutate: signupFn, isPending: loading } = useRegisterApi();
 // const authStore = useAuthStore();
@@ -44,7 +44,7 @@ const currentPassword = ref("")
 <template>
   <div class="text-core-800 px-4 py-10 md:p-20">
     <div class="mb-4">
-      <img src="/images/logos/leyyow-logo-2.svg" alt="leyyow logo" class="mb-40 h-8" />
+      <img src="/images/logos/leyyow-logo-2.svg?url" alt="leyyow logo" class="mb-40 h-8" />
       <h1 class="mb-3.5 text-4xl font-medium md:text-5xl">Let's get started</h1>
       <p class="text-core-600">Create your free Leyyow account and get your store online today.</p>
     </div>
@@ -160,7 +160,7 @@ const currentPassword = ref("")
     <div class="mt-5 pb-4">
       <p class="text-center text-sm font-normal text-gray-500">
         Already have an account?
-        <RouterLink to="/auth/signin" class="text-primary-500 text-sm font-medium underline">
+        <RouterLink to="/login" class="text-primary-500 text-sm font-medium underline">
           Sign In
         </RouterLink>
       </p>

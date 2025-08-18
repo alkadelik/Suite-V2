@@ -1,12 +1,13 @@
 import { defineConfig, loadEnv } from "vite"
 import vue from "@vitejs/plugin-vue"
 import tailwindcss from "@tailwindcss/vite"
+import svgLoader from "vite-svg-loader"
 
 export default defineConfig(({ mode }) => {
   process.env = { ...process.env, ...loadEnv(mode, process.cwd()) }
 
   return {
-    plugins: [vue(), tailwindcss()],
+    plugins: [vue(), tailwindcss(), svgLoader({ svgo: true })],
     resolve: {
       alias: {
         "@components": "/src/components",

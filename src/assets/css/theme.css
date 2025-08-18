@@ -1,8 +1,9 @@
 @theme {
-  --font-sans: "Sato", sans-serif;
-  /*  */
+  /* font-family */
   --font-sato: "Sato", sans-serif;
   --font-outfit: "Outfit", sans-serif;
+  --font-sans: var(--font-outfit);
+  --font-serif: var(--font-sato);
 
   /* colors - core / neutral */
   --color-core-100: #ffffff;
