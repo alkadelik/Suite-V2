@@ -37,7 +37,7 @@
             :key="step"
             :class="[
               'h-1 w-6 rounded-full transition-colors duration-200',
-              step <= currentStep ? 'bg-brand-500' : 'bg-gray-300',
+              step <= currentStep ? 'bg-primary-500' : 'bg-gray-300',
             ]"
           ></span>
         </div>

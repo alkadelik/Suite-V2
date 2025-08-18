@@ -15,7 +15,7 @@ const emit = defineEmits(["click"])
 const variantClass = computed(() => {
   switch (props.variant) {
     case "success":
-      return "bg-brand-500/10 text-brand-500"
+      return "bg-primary-500/10 text-primary-500"
     case "warning":
       return "bg-yellow-600/20 text-yellow-600"
     case "error":
@@ -23,7 +23,7 @@ const variantClass = computed(() => {
     case "none":
       return "border-0"
     default:
-      return "bg-brand-50 text-brand-400 border border-brand-200"
+      return "bg-primary-50 text-primary-400 border border-primary-200"
   }
 })
 </script>

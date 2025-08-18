@@ -20,7 +20,7 @@ const hasText = computed(() => props.modelValue?.length)
       height="32"
       viewBox="0 0 24 24"
       fill="none"
-      class="text-brand-500 absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2"
+      class="text-primary-500 absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2"
     >
       <path
         opacity=".4"
@@ -39,8 +39,8 @@ const hasText = computed(() => props.modelValue?.length)
       :placeholder="placeholder"
       :value="modelValue"
       :class="[
-        'border-brand-200 bg-brand-50 h-11 w-full rounded-lg border py-2.5 pr-10 pl-10',
-        'placeholder:text-brand-300 focus:border-brand-500 focus:ring-brand-500/10 text-sm focus:ring focus:outline-none',
+        'border-primary-200 bg-primary-50 h-11 w-full rounded-lg border py-2.5 pr-10 pl-10',
+        'placeholder:text-primary-300 focus:border-primary-500 focus:ring-primary-500/10 text-sm focus:ring focus:outline-none',
       ]"
       @input="emit('update:modelValue', $event.target.value)"
     />
@@ -49,7 +49,7 @@ const hasText = computed(() => props.modelValue?.length)
     <button
       v-if="hasText"
       type="button"
-      class="text-brand-300 absolute top-1/2 right-3 -translate-y-1/2"
+      class="text-primary-300 absolute top-1/2 right-3 -translate-y-1/2"
       @click="emit('update:modelValue', '')"
     >
       <svg

@@ -2,7 +2,7 @@
   <div>
     <label
       v-if="label"
-      class="text-brand-400 mb-1 block capitalize"
+      class="text-primary-400 mb-1 block capitalize"
       :class="dense ? 'text-xs' : 'text-sm'"
     >
       {{ label }}<span v-if="required" class="text-red-500">*</span>
@@ -112,7 +112,7 @@
     </select>
 
     <p v-if="error" class="mt-1 text-xs text-red-500">{{ error }}</p>
-    <p v-if="hint && !error" class="text-brand-300 mt-1 text-xs">{{ hint }}</p>
+    <p v-if="hint && !error" class="text-primary-300 mt-1 text-xs">{{ hint }}</p>
   </div>
 </template>
 

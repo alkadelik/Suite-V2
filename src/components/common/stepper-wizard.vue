@@ -46,10 +46,10 @@ const stepPercentage = computed(() => ((currentStep.value + 1) / props.steps.len
     <!-- Stepper Header -->
     <div v-if="showIndicators" class="relative mb-4">
       <!-- Progress Line Background -->
-      <div class="bg-brand-200 absolute top-4 h-0.5 w-full"></div>
+      <div class="bg-primary-200 absolute top-4 h-0.5 w-full"></div>
       <!-- Progress Line Fill -->
       <div
-        class="bg-brand-500 absolute top-4 h-0.5 transition-all"
+        class="bg-primary-500 absolute top-4 h-0.5 transition-all"
         :style="{ width: stepPercentage + '%' }"
       ></div>
 
@@ -61,10 +61,10 @@ const stepPercentage = computed(() => ((currentStep.value + 1) / props.steps.len
             :class="[
               'relative z-[2] flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition-all',
               isActive(index)
-                ? 'bg-brand-50 border-brand-500 text-brand-500 border'
+                ? 'bg-primary-50 border-primary-500 text-primary-500 border'
                 : isCompleted(index)
-                  ? 'bg-brand-500 text-white'
-                  : 'bg-brand-50 border-brand-200 text-brand-300/60 border',
+                  ? 'bg-primary-500 text-white'
+                  : 'bg-primary-50 border-primary-200 text-primary-300/60 border',
             ]"
           >
             {{ index + 1 }}
@@ -75,10 +75,10 @@ const stepPercentage = computed(() => ((currentStep.value + 1) / props.steps.len
             :class="[
               'mt-px text-center text-xs font-medium transition-all',
               isActive(index)
-                ? 'text-brand-500'
+                ? 'text-primary-500'
                 : isCompleted(index)
-                  ? 'text-brand-600'
-                  : 'text-brand-300/60',
+                  ? 'text-primary-600'
+                  : 'text-primary-300/60',
             ]"
           >
             {{ step }}

@@ -23,14 +23,14 @@ const onChange = (option) => {
       :key="option.value"
       class="w-1/2 cursor-pointer rounded-md border p-3 transition-all"
       :class="[
-        modelValue === option.value ? 'border-brand-500 bg-brand-50' : 'border-brand-200',
+        modelValue === option.value ? 'border-primary-500 bg-primary-50' : 'border-primary-200',
         option.disabled ? 'pointer-events-none opacity-60' : '',
       ]"
       @click="onChange(option)"
     >
       <!-- Top Section: Label Slot + Radio -->
       <div class="flex items-center justify-between">
-        <div class="text-brand-600 text-sm">
+        <div class="text-primary-600 text-sm">
           <slot :name="`${option.value}-label`">
             {{ option.label }}
           </slot>
@@ -40,14 +40,14 @@ const onChange = (option) => {
           :name="name"
           :value="option.value"
           :checked="modelValue === option.value"
-          class="text-brand-500 accent-brand-500 h-4 w-4"
+          class="text-primary-500 accent-primary-500 h-4 w-4"
           :disabled="disabled || option.disabled"
           @change="onChange(option)"
         />
       </div>
 
       <!-- Bottom Section: Description Slot -->
-      <div class="text-brand-400 mt-2 text-xs">
+      <div class="text-primary-400 mt-2 text-xs">
         <slot :name="`${option.value}-description`" />
       </div>
     </div>

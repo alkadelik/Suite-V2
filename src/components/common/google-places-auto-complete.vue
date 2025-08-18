@@ -1,6 +1,6 @@
 <template>
   <div>
-    <label v-if="label" class="text-brand-400 mb-1 block" :class="dense ? 'text-xs' : 'text-sm'">
+    <label v-if="label" class="text-primary-400 mb-1 block" :class="dense ? 'text-xs' : 'text-sm'">
       {{ label }}<span v-if="required" class="text-red-500">*</span>
     </label>
 
@@ -11,10 +11,10 @@
         type="text"
         :placeholder="placeholder"
         :class="[
-          'bg-brand-50 border-brand-200 w-full rounded-lg border',
+          'bg-primary-50 border-primary-200 w-full rounded-lg border',
           dense ? 'h-10 px-3 py-1.5' : 'h-12 px-4 py-2.5',
-          'text-brand-600 placeholder:text-brand-300 text-sm placeholder:font-light',
-          'focus:border-brand-500 focus:ring-brand-500/10 focus:ring focus:outline-none disabled:bg-gray-200 disabled:opacity-80',
+          'text-primary-600 placeholder:text-primary-300 text-sm placeholder:font-light',
+          'focus:border-primary-500 focus:ring-primary-500/10 focus:ring focus:outline-none disabled:bg-gray-200 disabled:opacity-80',
           error ? 'border-red-500' : '',
         ]"
         :required="required"
@@ -31,7 +31,7 @@
           v-for="(item, index) in suggestions"
           :key="index"
           :class="[
-            'hover:bg-brand-100 hover:text-brand-500 text-brand-600 cursor-pointer px-4 py-2 select-none',
+            'hover:bg-primary-100 hover:text-primary-500 text-primary-600 cursor-pointer px-4 py-2 select-none',
             dense ? 'text-xs' : 'text-sm',
           ]"
           @click="selectSuggestion(item)"
@@ -41,7 +41,7 @@
       </div>
     </div>
 
-    <p v-if="error || hint" :class="[error ? 'text-red-500' : 'text-brand-300', 'mt-1 text-xs']">
+    <p v-if="error || hint" :class="[error ? 'text-red-500' : 'text-primary-300', 'mt-1 text-xs']">
       {{ error || hint }}
     </p>
   </div>

@@ -93,7 +93,7 @@ const handlePaste = (e, index) => {
 
 <template>
   <div>
-    <label v-if="label" class="text-brand-400 mb-1 block" :class="dense ? 'text-xs' : 'text-sm'">
+    <label v-if="label" class="text-primary-400 mb-1 block" :class="dense ? 'text-xs' : 'text-sm'">
       {{ label }}
     </label>
     <div class="flex gap-3" :class="props.class">
@@ -106,7 +106,7 @@ const handlePaste = (e, index) => {
         :inputmode="digitsOnly ? 'numeric' : 'text'"
         :pattern="digitsOnly ? '[0-9]*' : undefined"
         maxlength="1"
-        class="bg-brand-50 border-brand-200 text-brand-600 focus:ring-brand-500/10 focus:border-brand-500 w-11 rounded-lg border text-center text-lg font-semibold focus:ring focus:outline-none"
+        class="bg-primary-50 border-primary-200 text-primary-600 focus:ring-primary-500/10 focus:border-primary-500 w-11 rounded-lg border text-center text-lg font-semibold focus:ring focus:outline-none"
         :class="[dense ? 'h-10' : 'h-12', disabled ? 'bg-gray-200 opacity-80' : '']"
         :disabled="disabled"
         @input="(e) => handleInput(e, i)"
@@ -114,7 +114,7 @@ const handlePaste = (e, index) => {
         @paste="(e) => handlePaste(e, i)"
       />
     </div>
-    <p v-if="error || hint" :class="[error ? 'text-red-500' : 'text-brand-300', 'mt-1 text-xs']">
+    <p v-if="error || hint" :class="[error ? 'text-red-500' : 'text-primary-300', 'mt-1 text-xs']">
       {{ error || hint }}
     </p>
   </div>

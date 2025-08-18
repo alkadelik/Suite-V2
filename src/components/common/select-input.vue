@@ -47,7 +47,7 @@ const filteredOptions = computed(() => {
   <div>
     <label
       v-if="label"
-      class="text-brand-400 mb-1 block capitalize"
+      class="text-primary-400 mb-1 block capitalize"
       :class="dense ? 'text-xs' : 'text-sm'"
     >
       {{ label }}
@@ -58,17 +58,17 @@ const filteredOptions = computed(() => {
       <div class="relative">
         <!-- Clickable button containing the input -->
         <ComboboxButton
-          class="bg-brand-50 relative flex w-full cursor-text items-center rounded-lg border px-3 text-left"
+          class="bg-primary-50 relative flex w-full cursor-text items-center rounded-lg border px-3 text-left"
           :class="[
             dense ? 'h-10 text-xs' : 'h-12 text-sm',
             error
               ? 'border-error'
-              : 'border-brand-200 focus-within:ring-brand-500/10 focus-within:ring',
+              : 'border-primary-200 focus-within:ring-primary-500/10 focus-within:ring',
             !searchable ? 'cursor-pointer' : 'cursor-text',
           ]"
         >
           <ComboboxInput
-            class="placeholder:text-brand-300 text-brand-600 w-full border-none bg-transparent focus:ring-0 focus:outline-none"
+            class="placeholder:text-primary-300 text-primary-600 w-full border-none bg-transparent focus:ring-0 focus:outline-none"
             :class="!searchable ? 'cursor-pointer' : 'cursor-text'"
             :placeholder="placeholder"
             :display-value="(item) => item?.label"
@@ -77,7 +77,7 @@ const filteredOptions = computed(() => {
           />
           <Icon
             icon="mdi:menu-down"
-            class="text-brand-300 ml-2 shrink-0"
+            class="text-primary-300 ml-2 shrink-0"
             :class="dense ? 'h-5 w-5' : 'h-6 w-6'"
             aria-hidden="true"
           />
@@ -111,7 +111,7 @@ const filteredOptions = computed(() => {
           >
             <div
               v-if="!filteredOptions.length && query !== ''"
-              class="text-brand-300 cursor-default px-4 py-2 text-sm select-none"
+              class="text-primary-300 cursor-default px-4 py-2 text-sm select-none"
             >
               No options found.
             </div>
@@ -125,7 +125,7 @@ const filteredOptions = computed(() => {
             >
               <li
                 :class="[
-                  active ? 'bg-brand-100 text-brand-500' : 'text-brand-600',
+                  active ? 'bg-primary-100 text-primary-500' : 'text-primary-600',
                   'cursor-pointer px-4 py-2 select-none',
                   dense ? 'text-xs' : 'text-sm',
                 ]"

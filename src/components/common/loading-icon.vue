@@ -10,7 +10,7 @@ const props = defineProps({
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
-      class="text-brand-300 h-20 w-20"
+      class="text-primary-300 h-20 w-20"
       :class="iconClass"
     >
       <circle cx="12" cy="2" r="0" fill="currentColor">
