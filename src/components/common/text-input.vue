@@ -1,6 +1,7 @@
 <script setup>
 import { Icon } from "@iconify/vue"
 import { ref, computed } from "vue"
+import CustomIcon from "./icon.vue"
 
 const props = defineProps({
   modelValue: { type: [String, Number] },
@@ -60,7 +61,9 @@ const inputType = computed(() =>
           dense ? 'h-10 px-3 py-1.5' : 'h-12 px-4 py-2.5',
           prefix && '!pl-14',
           'text-primary-600 placeholder:text-disabled-text text-sm placeholder:font-light',
-          'focus:border-primary-500 focus:ring-primary-500/10 focus:ring focus:outline-none disabled:bg-gray-200 disabled:opacity-80',
+            'focus:border-primary-300 focus:ring-primary-500/10 focus:ring focus:outline-none disabled:bg-gray-200 disabled:opacity-80',
+            'placeholder:text-core-400',
+          error ? 'border-red-500' : '',
         ]"
         :required="required"
         :min="min"
@@ -112,8 +115,12 @@ const inputType = computed(() =>
         {{ suffix }}
       </span>
     </div>
-    <p v-if="error || hint" :class="[error ? 'text-red-500' : 'text-core-800', 'mt-1 text-xs']">
-      {{ error || hint }}
+    <p
+      v-if="error || hint"
+      :class="[error ? 'text-red-500' : 'text-core-800', 'mt-1 flex items-start text-xs']"
+    >
+      <CustomIcon v-if="error" name="info-circle" class="mr-2 inline-block" />
+      <span>{{ hint }} {{ error || hint }}</span>
     </p>
   </div>
 </template>

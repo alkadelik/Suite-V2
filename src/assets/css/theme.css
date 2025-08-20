@@ -6,10 +6,12 @@
   --font-serif: var(--font-sato);
 
   /* colors - core / neutral */
+  --color-core-25: #FBFBFB;
+  --color-core-50: #E9E9E9;
   --color-core-100: #ffffff;
   --color-core-200: #e5e4e4;
   --color-core-300: #ccc8c8;
-  --color-core-400: #b4aaaa;
+  --color-core-400: #B4AAAA;
   --color-core-500: #9d8c8c;
   --color-core-600: #866f6e;
   --color-core-700: #6a5554;
@@ -19,7 +21,8 @@
   /* colors - primary */
   --color-primary-100: #ffd49f;
   --color-primary-200: #ffa940;
-  --color-primary-300: #df7b00;
+  --color-primary-300: #EEA563;
   --color-primary-400: #ae6000;
   --color-primary-500: #7c4500;
+  --color-primary-600: #B65702;
 }

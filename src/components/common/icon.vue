@@ -3,7 +3,7 @@
     :is="IconComponent"
     :width="size"
     :height="size"
-    class="inline-block align-middle"
+    class="inline-block align-middle overflow-visible"
     :class="props.class"
   />
 </template>
