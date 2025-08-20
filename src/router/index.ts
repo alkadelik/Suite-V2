@@ -39,9 +39,15 @@ const routes: RouteRecordRaw[] = [
 
   // 404 - Catch all route (must be last)
   {
-    path: "/:pathMatch(.*)*",
-    name: "NotFound",
-    component: () => import("@modules/404.vue"),
+    path: "/",
+    component: MainLayout,
+    children: [
+      {
+        path: ":pathMatch(.*)*",
+        name: "NotFound",
+        component: () => import("@modules/404.vue"),
+      },
+    ],
   },
 ]
 
