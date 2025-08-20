@@ -3,11 +3,11 @@
     <div class="mb-4">
       <img src="/images/logos/leyyow-logo-2.svg?url" alt="leyyow logo" class="mb-40 h-8" />
       <h1 class="mb-3.5 text-4xl font-medium md:text-5xl">Welcome back!</h1>
-      <p class="text-core-600">Sign in to your Leyyow account to continue. <Icon name="vue" /></p>
+      <p class="text-core-600">Good to see you again—pick up right where you left off.</p>
     </div>
 
     <Form
-      v-slot="{ errors }"
+      v-slot="{ meta }"
       :validation-schema="validationSchema"
       @submit="onSubmit"
       @invalid-submit="onInvalidSubmit"
@@ -44,7 +44,7 @@
           :loading="isPending"
           label="Log In"
           class="w-full"
-          :disabled="Object.keys(errors).length > 0"
+          :disabled="!meta.valid"
         />
       </div>
     </Form>
@@ -61,7 +61,7 @@
 </template>
 
 <script setup lang="ts">
-// import { useRouter } from "vue-router";
+import { useRouter } from "vue-router"
 import AppButton from "@components/common/app-button.vue"
 import TextInput from "@components/common/text-input.vue"
 import { Form, Field } from "vee-validate"
@@ -70,7 +70,9 @@ import { onInvalidSubmit } from "@/utils/validations"
 import { passwordSchema } from "@/utils/validationSchemas"
 import { useLogin } from "../api"
 import { displayError, formatError } from "@/utils/error-handler"
-import Icon from "@components/common/icon.vue"
+import { useAuthStore } from "../store"
+import { ILoginResponse } from "../types"
+import { toast } from "vue3-toastify"
 
 // Define the form data type
 type LoginFormData = {
@@ -78,9 +80,8 @@ type LoginFormData = {
   password: string
 }
 
-// const { mutate: signupFn, isPending: loading } = useRegisterApi();
-// const authStore = useAuthStore();
-// const router = useRouter();
+const authStore = useAuthStore()
+const router = useRouter()
 
 // Validation schema using yup
 const validationSchema = yup.object().shape({
@@ -93,8 +94,29 @@ const { mutate: loginFn, isPending } = useLogin()
 const onSubmit = (values: Record<string, unknown>) => {
   const loginData = values as LoginFormData
   loginFn(loginData, {
-    onSuccess: (response) => {
-      console.log("Login successful", response)
+    onSuccess: (response: { data: { data: ILoginResponse } }) => {
+      const loginData = response.data.data
+      console.log("Login successful", loginData)
+      console.log({
+        accessToken: loginData.access,
+        refreshToken: loginData.refresh,
+      })
+      toast.success("Login successful!")
+      void router.push("/dashboard")
+      authStore.setTokens({
+        accessToken: loginData.access,
+        refreshToken: loginData.refresh,
+      })
+
+      authStore.setAuthUser({
+        avatar_url: loginData.avatar_url,
+        first_name: loginData.first_name,
+        last_name: loginData.last_name,
+        is_email_verified: loginData.is_email_verified,
+        assigned_locations: loginData.assigned_locations,
+        roles: loginData.roles,
+        subscription: loginData.subscription,
+      })
     },
     onError: (error) => {
       displayError(error)

@@ -1,15 +1,26 @@
 export interface IUser {
-  avatar_url?: string
+  avatar_url?: string | null
   first_name: string
   last_name: string
   is_email_verified: boolean
   assigned_locations: { id: number }[]
   roles: string[]
   subscription: string | null
-  store_id: number
 }
 
-export type TAuthTokens = {
+export interface IAuthTokens {
   accessToken: string
   refreshToken: string
+}
+
+export interface ILoginResponse {
+  access: string
+  refresh: string
+  avatar_url?: string | null
+  first_name: string
+  last_name: string
+  is_email_verified: boolean
+  assigned_locations: { id: number }[]
+  roles: string[]
+  subscription: string | null
 }
