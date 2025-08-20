@@ -6,7 +6,6 @@ import piniaPluginPersistedstate from "pinia-plugin-persistedstate"
 import Vue3Toastify, { ToastContainerOptions } from "vue3-toastify"
 import "vue3-toastify/dist/index.css"
 import { VueQueryPlugin } from "@tanstack/vue-query"
-// @ts-expect-error: No type definitions available for 'floating-vue'
 import FloatingVue from "floating-vue"
 import "floating-vue/dist/style.css"
 
