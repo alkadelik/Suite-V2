@@ -85,8 +85,10 @@
                 <Icon name="setting" size="20" />
               </button>
 
-              <!-- User -->
+              <!-- User or CTA -->
+              <Avatar v-if="isMobile" name="John Doe" clickable />
               <AppButton
+                v-else
                 size="md"
                 class="!ring-primary-200 !rounded-full !ring-4"
                 icon="add-circle"
@@ -106,54 +108,13 @@
           class="fixed right-0 bottom-0 left-0 z-30 border-t border-gray-200 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80"
         >
           <div class="flex items-center justify-around px-2 py-2">
-            <!-- Home -->
-            <router-link
-              to="/dashboard"
-              class="flex flex-col items-center gap-1 rounded-lg px-3 py-2 text-xs font-medium transition-colors hover:bg-gray-100"
-              :class="$route.path === '/dashboard' ? 'text-primary-600' : 'text-gray-600'"
-            >
-              <Icon name="house" size="20" />
-              <span>Home</span>
-            </router-link>
-
-            <!-- Orders -->
-            <router-link
-              to="/orders"
-              class="flex flex-col items-center gap-1 rounded-lg px-3 py-2 text-xs font-medium transition-colors hover:bg-gray-100"
-              :class="$route.path.startsWith('/orders') ? 'text-primary-600' : 'text-gray-600'"
-            >
-              <Icon name="box" size="20" />
-              <span>Orders</span>
-            </router-link>
-
-            <!-- Inventory -->
-            <router-link
-              to="/inventory"
-              class="flex flex-col items-center gap-1 rounded-lg px-3 py-2 text-xs font-medium transition-colors hover:bg-gray-100"
-              :class="$route.path.startsWith('/inventory') ? 'text-primary-600' : 'text-gray-600'"
-            >
-              <Icon name="folder" size="20" />
-              <span>Inventory</span>
-            </router-link>
-
-            <!-- Customers -->
-            <router-link
-              to="/customers"
-              class="flex flex-col items-center gap-1 rounded-lg px-3 py-2 text-xs font-medium transition-colors hover:bg-gray-100"
-              :class="$route.path.startsWith('/customers') ? 'text-primary-600' : 'text-gray-600'"
-            >
-              <Icon name="people" size="20" />
-              <span>Customers</span>
-            </router-link>
-
-            <!-- More/Menu -->
-            <button
-              @click="mobileSidebarOpen = true"
-              class="flex flex-col items-center gap-1 rounded-lg px-3 py-2 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100"
-            >
-              <Icon name="setting" size="20" />
-              <span>More</span>
-            </button>
+            <SidebarLink v-for="link in SALES_SUITES.slice(0, 2)" :key="link.label" v-bind="link" />
+            <AppButton
+              size="sm"
+              class="!ring-primary-200 !rounded-full !ring-4"
+              icon="add-circle"
+            />
+            <SidebarLink v-for="link in SALES_SUITES.slice(2)" :key="link.label" v-bind="link" />
           </div>
         </nav>
       </div>
@@ -162,7 +123,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue"
+import { computed, ref } from "vue"
 import AppButton from "@components/AppButton.vue"
 import SidebarLink from "./parts/SidebarLink.vue"
 import Avatar from "@components/Avatar.vue"
@@ -180,11 +141,4 @@ const SALES_SUITES = [
   { icon: "calendar-tick", label: "Popups", to: "/popups" },
   { icon: "people", label: "Customers", to: "/customers" },
 ]
-
-onMounted(() => {
-  const onResize = () => {
-    if (!isMobile.value) mobileSidebarOpen.value = false
-  }
-  window.addEventListener("resize", onResize)
-})
 </script>
