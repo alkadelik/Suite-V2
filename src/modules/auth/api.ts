@@ -2,12 +2,12 @@ import { useApiMutation } from "@/composables/baseApi"
 
 /** Login api request  */
 export function useLogin() {
-  return useApiMutation({ url: "/account/get_auth_token/" })
+  return useApiMutation({ url: "/accounts/auth/login/" })
 }
 
 /** Register api request  */
 export function useRegister() {
-  return useApiMutation({ url: "/account/register/" })
+  return useApiMutation({ url: "/accounts/signup/" })
 }
 
 /** Verify email api request  */

@@ -17,6 +17,7 @@ export default tseslint.config(
       "*.config.*",
       "src/components/common/**",
       "src/components/others",
+      "src/directives/**",
     ],
   },
 

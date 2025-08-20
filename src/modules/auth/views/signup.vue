@@ -1,46 +1,3 @@
-<script setup>
-import { ref } from "vue"
-// import { useRouter } from "vue-router"
-import AppButton from "@/components/common/app-button.vue"
-import TextInput from "@/components/common/text-input.vue"
-import PasswordStrength from "@/components/others/password-strength.vue"
-import { Form, Field } from "vee-validate"
-import * as yup from "yup"
-import { onInvalidSubmit } from "@/utils/validations"
-import { passwordSchema } from "@/utils/validationSchemas"
-
-// const { mutate: signupFn, isPending: loading } = useRegisterApi();
-// const authStore = useAuthStore();
-// const router = useRouter()
-
-// Validation schema using yup
-const validationSchema = yup.object().shape({
-  first_name: yup.string().required("First name is required"),
-  last_name: yup.string(),
-  email: yup.string().email("Enter a valid email address").required("Email is required"),
-  password: passwordSchema,
-  confirm_password: yup
-    .string()
-    .oneOf([yup.ref("password")], "Passwords do not match")
-    .required("Please confirm your password"),
-})
-
-const currentPassword = ref("")
-
-// const onSubmit = (values) => {
-//   signupFn(values, {
-//     onSuccess: (response) => {
-//       const { data } = response;
-//       const { tokens, user } = data;
-//       authStore.setAuth(tokens.access, tokens.refresh, user);
-//       authStore.setUserEmail(values.email);
-//       toast.success("Registration successful");
-//       router.push("/auth/confirm-email");
-//     },
-//   });
-// }
-</script>
-
 <template>
   <div class="text-core-800 px-4 py-10 md:p-20">
     <div class="mb-4">
@@ -50,7 +7,7 @@ const currentPassword = ref("")
     </div>
 
     <Form
-      v-slot="{ errors }"
+      v-slot="{ meta }"
       :validation-schema="validationSchema"
       @submit="onSubmit"
       @invalid-submit="onInvalidSubmit"
@@ -149,10 +106,10 @@ const currentPassword = ref("")
 
         <AppButton
           type="submit"
-          :loading="false"
+          :loading="loading"
           label="Create account"
           class="w-full"
-          :disabled="Object.keys(errors).length > 0"
+          :disabled="!meta.valid"
         />
       </div>
     </Form>
@@ -167,3 +124,81 @@ const currentPassword = ref("")
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref } from "vue"
+import { useRouter } from "vue-router"
+import AppButton from "@/components/common/app-button.vue"
+import TextInput from "@/components/common/text-input.vue"
+import PasswordStrength from "@/components/others/password-strength.vue"
+import { Form, Field } from "vee-validate"
+import * as yup from "yup"
+import { onInvalidSubmit } from "@/utils/validations"
+import { passwordSchema } from "@/utils/validationSchemas"
+import { useRegister } from "../api"
+import { displayError, formatError } from "@/utils/error-handler"
+import { useAuthStore } from "../store"
+import { ILoginResponse } from "../types"
+import { toast } from "vue3-toastify"
+
+const { mutate: signupFn, isPending: loading } = useRegister()
+const authStore = useAuthStore()
+const router = useRouter()
+
+// Validation schema using yup
+const validationSchema = yup.object().shape({
+  first_name: yup.string().required("First name is required"),
+  last_name: yup.string(),
+  email: yup.string().email("Enter a valid email address").required("Email is required"),
+  password: passwordSchema,
+  confirm_password: yup
+    .string()
+    .oneOf([yup.ref("password")], "Passwords do not match")
+    .required("Please confirm your password"),
+})
+
+const currentPassword = ref("")
+
+interface SignupFormValues {
+  first_name: string
+  last_name?: string
+  email: string
+  password: string
+  confirm_password: string
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const onSubmit = (values: Record<string, any>) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { confirm_password, ...signupData } = values as SignupFormValues
+  // Remove confirm_password from signupData before sending to API
+  signupFn(signupData, {
+    onSuccess: (response: { data: { data: ILoginResponse } }) => {
+      const signupData = response.data.data
+      console.log("Signup successful", signupData)
+      toast.success("Signup successful!")
+      void router.push("/dashboard")
+      authStore.setTokens({
+        accessToken: signupData.access,
+        refreshToken: signupData.refresh,
+      })
+
+      authStore.setAuthUser({
+        avatar_url: signupData.avatar_url,
+        first_name: signupData.first_name,
+        last_name: signupData.last_name,
+        is_email_verified: signupData.is_email_verified,
+        assigned_locations: signupData.assigned_locations,
+        roles: signupData.roles,
+        subscription: signupData.subscription,
+      })
+    },
+    onError: (error) => {
+      displayError(error)
+      // or handle separately
+      const errorMsg = formatError(error)
+      console.error("Signup failed!!!", errorMsg)
+    },
+  })
+}
+</script>
