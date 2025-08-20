@@ -7,7 +7,16 @@ export default defineConfig(({ mode }) => {
   process.env = { ...process.env, ...loadEnv(mode, process.cwd()) }
 
   return {
-    plugins: [vue(), tailwindcss(), svgLoader({ svgo: true })],
+    plugins: [
+      vue(),
+      tailwindcss(),
+      svgLoader({
+        svgo: true,
+        svgoConfig: {
+          plugins: [{ name: "removeDimensions" }],
+        },
+      }),
+    ],
     resolve: {
       alias: {
         "@components": "/src/components",
