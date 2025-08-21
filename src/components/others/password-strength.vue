@@ -71,22 +71,22 @@ const passwordStrength = computed(() => {
     <ul class="space-y-1 text-sm text-gray-600">
       <li class="flex items-center gap-2">
         <div v-if="!hasMinLength" class="h-2.5 w-2.5 rounded-full bg-gray-300"></div>
-        <Icon name="Icon-right" v-else />
+        <Icon name="check-circle" v-else />
         Minimum 8 characters
       </li>
       <li class="flex items-center gap-2">
         <div v-if="!hasUppercase" class="h-2.5 w-2.5 rounded-full bg-gray-300"></div>
-        <Icon name="Icon-right" v-else />
+        <Icon name="check-circle" v-else />
         At least one uppercase letter
       </li>
       <li class="flex items-center gap-2">
         <div v-if="!hasLowercase" class="h-2.5 w-2.5 rounded-full bg-gray-300"></div>
-        <Icon name="Icon-right" v-else />
+        <Icon name="check-circle" v-else />
         At least one lowercase letter
       </li>
       <li class="flex items-center gap-2">
         <div v-if="!hasSpecialChar" class="h-2.5 w-2.5 rounded-full bg-gray-300"></div>
-        <Icon name="Icon-right" v-else />
+        <Icon name="check-circle" v-else />
         At least one special character (@#$%)
       </li>
     </ul>

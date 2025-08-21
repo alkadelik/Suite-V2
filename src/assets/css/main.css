@@ -2,6 +2,10 @@
 @import "tailwindcss";
 @import "./theme.css"; /* tailwind custom variables */
 
+body {
+  color: var(--color-core-800);
+}
+
 h1,
 h2,
 h3,
