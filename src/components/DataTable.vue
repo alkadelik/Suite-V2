@@ -1,7 +1,7 @@
 <template>
   <div>
-    <div class="w-full overflow-x-auto px-1">
-      <table class="min-w-[1000px] border-0">
+    <div class="w-full overflow-x-auto px-px">
+      <table class="min-w-full border-0">
         <thead class="bg-gray-200">
           <tr
             v-for="headerGroup in table.getHeaderGroups()"
@@ -99,10 +99,10 @@
           :key="cell.id"
           class="flex justify-between gap-4 border-b border-gray-200 px-4 py-3 text-sm last:border-0"
         >
-          <span className="font-medium text-gray-600">
+          <span className="font-medium text-core-600">
             <FlexRender :render="cell.column.columnDef.header" :props="cell.getContext()" />
           </span>
-          <span className="text-right text-gray-900">
+          <span className="text-right text-core-800">
             <FlexRender :render="cell.column.columnDef.cell" :props="cell.getContext()" />
           </span>
         </div>
@@ -114,10 +114,10 @@
       <div v-if="loading" class="flex items-center justify-center">
         <Icon name="loader" class="text-primary-500 h-20 w-20 animate-spin" />
       </div>
-      <div v-else class="flex max-w-screen-sm flex-col items-center gap-3 text-gray-600">
+      <div v-else class="text-core-600 flex max-w-screen-sm flex-col items-center gap-3">
         <div class="relative h-24 w-24">
-          <Icon name="star" class="h-28 w-28 text-gray-300" />
-          <Icon name="box" class="absolute right-0 bottom-1 h-12 w-12 text-gray-900" />
+          <Icon name="star" class="text-core-300 h-28 w-28" />
+          <Icon name="box" class="text-core-900 absolute right-0 bottom-1 h-12 w-12" />
         </div>
         <p class="text-base font-semibold">No Data Available</p>
         <p class="text-sm">There are currently no records to display.</p>
@@ -125,11 +125,11 @@
     </div>
 
     <!--  -->
-    <!-- pagination section -->
+    <!-- pagination Controls -->
     <!--  -->
     <div
       v-if="data.length && showPagination"
-      class="flex flex-col-reverse items-center justify-between gap-4 px-4 py-3 md:flex-row"
+      class="text-core-800 flex flex-col-reverse items-center justify-between gap-4 px-4 py-3 md:flex-row"
     >
       <!-- Select Entries PerPage -->
       <div class="inline-flex items-center gap-1 text-sm">

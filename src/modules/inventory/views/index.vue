@@ -1,5 +1,5 @@
 <template>
-  <div class="overflow-hidden">
+  <div>
     <h1 class="text-core-600">Inventory</h1>
 
     <TextField
