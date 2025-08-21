@@ -67,7 +67,11 @@
 
       <!-- Main column -->
       <div
-        :class="['flex min-h-screen flex-1 flex-col transition-all duration-200', sidebarPadding]"
+        :class="[
+          'flex min-h-screen flex-1 flex-col overflow-x-hidden transition-all duration-200',
+          'pb-16 lg:pb-0',
+          sidebarPadding,
+        ]"
       >
         <!-- Topbar -->
         <header
@@ -98,7 +102,7 @@
         </header>
 
         <!-- Content -->
-        <main class="p-4 pb-20 sm:p-6 lg:pb-6">
+        <main class="p-4 sm:p-6">
           <router-view />
         </main>
 

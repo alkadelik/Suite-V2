@@ -7,6 +7,7 @@
         ? 'text-primary-700 bg-primary-50 font-medium lg:font-semibold'
         : 'text-core-800 hover:bg-primary-50 lg:font-medium',
       isMobile ? 'flex-col gap-1 p-2 text-xs' : 'flex-row gap-3 px-3 py-2.5 text-base',
+      isActive && isMobile && '!bg-transparent',
     ]"
   >
     <Icon :name="props.icon" :size="isMobile ? 18 : 24" />
