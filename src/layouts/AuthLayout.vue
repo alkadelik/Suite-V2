@@ -12,8 +12,13 @@
     </div>
 
     <!-- Right Side -->
-    <div class="flex flex-1 items-center justify-center overflow-auto p-4">
-      <div class="w-full">
+    <div class="flex flex-1 justify-center overflow-auto p-4">
+      <div class="w-full px-4 pt-5 pb-10 md:px-24">
+        <img
+          src="/images/logos/leyyow-logo-2.svg?url"
+          alt="leyyow logo"
+          class="mb-10 h-8 md:mb-20"
+        />
         <router-view />
       </div>
     </div>
