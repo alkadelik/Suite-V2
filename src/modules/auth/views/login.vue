@@ -1,8 +1,7 @@
 <template>
-  <div class="text-core-800 px-4 py-10 md:p-24">
-    <div class="mb-4">
-      <img src="/images/logos/leyyow-logo-2.svg?url" alt="leyyow logo" class="mb-40 h-8" />
-      <h1 class="mb-3.5 text-4xl font-medium md:text-5xl">Welcome back!</h1>
+  <div class="text-core-800">
+    <div class="mb-10">
+      <h3 class="mb-3.5 text-3xl font-medium">Welcome back!</h3>
       <p class="text-core-600">Good to see you again—pick up right where you left off.</p>
     </div>
 
@@ -12,7 +11,7 @@
       @submit="onSubmit"
       @invalid-submit="onInvalidSubmit"
     >
-      <div class="flex flex-col gap-4">
+      <div class="flex flex-col gap-8">
         <Field v-slot="{ field, errors: fieldErrors }" name="email" validate-on-model-update>
           <TextInput
             v-bind="field"
@@ -51,8 +50,8 @@
 
     <div class="mt-5 pb-4">
       <p class="text-center text-sm font-normal text-gray-500">
-        New to Leyyow?
-        <RouterLink to="/signup" class="text-primary-500 text-sm font-medium underline">
+        I don't have an account?
+        <RouterLink to="/signup" class="text-primary-600 text-sm font-semibold">
           Sign Up
         </RouterLink>
       </p>
@@ -67,7 +66,6 @@ import TextInput from "@components/common/text-input.vue"
 import { Form, Field } from "vee-validate"
 import * as yup from "yup"
 import { onInvalidSubmit } from "@/utils/validations"
-import { passwordSchema } from "@/utils/validationSchemas"
 import { useLogin } from "../api"
 import { displayError, formatError } from "@/utils/error-handler"
 import { useAuthStore } from "../store"
@@ -86,7 +84,7 @@ const router = useRouter()
 // Validation schema using yup
 const validationSchema = yup.object().shape({
   email: yup.string().email("Enter a valid email address").required("Email is required"),
-  password: passwordSchema,
+  password: yup.string().required("Password is required"),
 })
 
 const { mutate: loginFn, isPending } = useLogin()

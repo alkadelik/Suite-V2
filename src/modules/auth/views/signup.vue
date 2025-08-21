@@ -1,8 +1,7 @@
 <template>
-  <div class="text-core-800 px-4 py-10 md:p-20">
+  <div class="text-core-800">
     <div class="mb-4">
-      <img src="/images/logos/leyyow-logo-2.svg?url" alt="leyyow logo" class="mb-40 h-8" />
-      <h1 class="mb-3.5 text-4xl font-medium md:text-5xl">Let's get started</h1>
+      <h3 class="mb-3.5 text-3xl font-medium">Let's get started</h3>
       <p class="text-core-600">Create your free Leyyow account and get your store online today.</p>
     </div>
 
@@ -12,7 +11,7 @@
       @submit="onSubmit"
       @invalid-submit="onInvalidSubmit"
     >
-      <div class="flex flex-col gap-4">
+      <div class="flex flex-col gap-8">
         <div class="grid gap-3 md:grid-cols-2">
           <Field v-slot="{ field, errors: fieldErrors }" name="first_name" validate-on-model-update>
             <TextInput
@@ -31,6 +30,7 @@
               label="Last Name"
               placeholder="e.g. Doe"
               name="last_name"
+              required
               :error="fieldErrors[0]"
             />
           </Field>
@@ -89,7 +89,7 @@
             href="https://leyyow.notion.site/Refund-policy-162f3934f3148085a337fc0d3cbffb99?pvs=4"
             target="_blank"
             rel="noopener noreferrer"
-            class="text-primary-500 underline"
+            class="text-primary-600"
           >
             Privacy Policy
           </a>
@@ -98,7 +98,7 @@
             href="https://leyyow.notion.site/Refund-policy-162f3934f3148085a337fc0d3cbffb99?pvs=4"
             target="_blank"
             rel="noopener noreferrer"
-            class="text-primary-500 underline"
+            class="text-primary-600"
           >
             Terms of Services
           </a>
@@ -117,7 +117,7 @@
     <div class="mt-5 pb-4">
       <p class="text-center text-sm font-normal text-gray-500">
         Already have an account?
-        <RouterLink to="/login" class="text-primary-500 text-sm font-medium underline">
+        <RouterLink to="/login" class="text-primary-600 text-sm font-semibold">
           Sign In
         </RouterLink>
       </p>
