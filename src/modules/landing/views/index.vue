@@ -131,14 +131,8 @@
       </div>
     </div>
   </div>
-
-  <section class="p-4">
-    <TestTable />
-  </section>
 </template>
 
 <script setup lang="ts">
-import TestTable from "@components/TestTable.vue"
-
 // Home page content
 </script>
