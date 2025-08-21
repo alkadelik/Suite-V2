@@ -43,7 +43,7 @@ const closeDrawer = () => {
       >
         <!-- Header -->
         <div
-          class="dark:border-brand-800 dark:bg-brand-800 sticky top-0 z-20 flex items-center gap-8 truncate border-b border-gray-200 bg-white px-4 py-3"
+          class="dark:border-primary-800 dark:bg-primary-800 sticky top-0 z-20 flex items-center gap-8 truncate border-b border-gray-200 bg-white px-4 py-3"
         >
           <div class="flex-1 truncate">
             <h2 v-if="title" class="truncate text-lg font-semibold dark:text-white">

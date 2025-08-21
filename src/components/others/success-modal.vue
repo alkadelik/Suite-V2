@@ -19,9 +19,9 @@ const onClick = () => {
 <template>
   <Modal :open="successModal.open" size="md" centered @update:open="closeSuccessModal">
     <div class="flex flex-col items-center justify-center text-center">
-      <Icon icon="flowbite:badge-check-solid" class="text-brand-500 h-28 w-28" />
+      <Icon icon="flowbite:badge-check-solid" class="text-primary-500 h-28 w-28" />
       <h4 class="my-1 text-xl font-semibold">{{ successModal.title }}</h4>
-      <p class="text-brand-400 mb-3 text-base">
+      <p class="text-primary-400 mb-3 text-base">
         {{ successModal.subtitle }}
       </p>
       <AppButton

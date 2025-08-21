@@ -73,7 +73,7 @@ const closeModal = () => {
 
             <!-- Modal Content -->
             <div
-              class="bg-brand-100 overflow-y-auto"
+              class="bg-primary-100 overflow-y-auto"
               :class="[
                 { 'rounded-b-2xl': centered },
                 fullscreen ? 'h-screen' : 'max-h-[calc(90vh-64px)] rounded-t-2xl md:rounded-b-2xl',
@@ -83,7 +83,7 @@ const closeModal = () => {
               <DialogTitle
                 v-if="title"
                 as="div"
-                class="border-brand-200 bg-brand-100 sticky top-0 z-20 flex gap-2 border-b px-4 py-2"
+                class="border-primary-200 bg-primary-100 sticky top-0 z-20 flex gap-2 border-b px-4 py-2"
               >
                 <div class="flex items-center gap-3">
                   <AppButton
@@ -91,7 +91,7 @@ const closeModal = () => {
                     variant="text"
                     :icon="'solar:square-arrow-left-bold-duotone'"
                     small
-                    icon-class="!h-7 !w-7 !text-brand-400"
+                    icon-class="!h-7 !w-7 !text-primary-400"
                     @click="props.back"
                   />
                   <slot name="title">

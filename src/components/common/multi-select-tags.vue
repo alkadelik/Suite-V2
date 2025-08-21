@@ -45,28 +45,28 @@ watch(
 
 <template>
   <div>
-    <label v-if="label" class="text-brand-400 mb-1 block text-xs capitalize">
+    <label v-if="label" class="text-primary-400 mb-1 block text-xs capitalize">
       {{ label }}<span v-if="required" class="text-red-500">*</span>
     </label>
 
     <div class="relative">
       <!-- Button-like input with tags -->
       <div
-        class="bg-brand-50 border-brand-200 text-brand-600 focus-within:border-brand-500 focus-within:ring-brand-500/10 relative flex w-full cursor-pointer flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-sm focus-within:ring"
+        class="bg-primary-50 border-primary-200 text-primary-600 focus-within:border-primary-500 focus-within:ring-primary-500/10 relative flex w-full cursor-pointer flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-sm focus-within:ring"
         @click="open = !open"
       >
         <template v-if="selected.length">
           <span
             v-for="item in selected"
             :key="item.value"
-            class="bg-brand-500/20 text-brand-500 flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium"
+            class="bg-primary-500/20 text-primary-500 flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium"
           >
             <span>{{ item.label }}</span>
             <Icon icon="mdi:close" class="h-3 w-3 cursor-pointer" @click.stop="removeTag(item)" />
           </span>
         </template>
-        <span v-else class="text-brand-300">{{ placeholder }}</span>
-        <Icon icon="mdi:menu-down" class="text-brand-300 ml-auto h-5 w-5" />
+        <span v-else class="text-primary-300">{{ placeholder }}</span>
+        <Icon icon="mdi:menu-down" class="text-primary-300 ml-auto h-5 w-5" />
       </div>
 
       <!-- Dropdown -->
@@ -86,14 +86,14 @@ watch(
           <li
             v-for="item in options"
             :key="item.value"
-            class="hover:bg-brand-100 text-brand-600 flex cursor-pointer items-center gap-2 px-4 py-2 text-sm"
+            class="hover:bg-primary-100 text-primary-600 flex cursor-pointer items-center gap-2 px-4 py-2 text-sm"
             @click.stop="toggleSelection(item)"
           >
             <!-- <input type="checkbox" class="form-checkbox" :checked="isSelected(item)" /> -->
             <checkbox :model-value="isSelected(item)" />
             <span>{{ item.label }}</span>
           </li>
-          <li v-if="!options.length" class="text-brand-300 py-2 text-center text-sm">
+          <li v-if="!options.length" class="text-primary-300 py-2 text-center text-sm">
             No options available
           </li>
         </ul>
@@ -106,6 +106,6 @@ watch(
 
 <style scoped>
 .form-checkbox {
-  accent-color: var(--color-brand-500);
+  accent-color: var(--color-primary-500);
 }
 </style>

@@ -1,103 +1,127 @@
 <template>
-  <div class="flex min-h-full flex-col justify-center py-12 sm:px-6 lg:px-8">
-    <div class="sm:mx-auto sm:w-full sm:max-w-md">
-      <AuthHeader title="Sign in to your account" />
-      <p class="mt-2 text-center text-sm text-gray-600">
-        Don't have an account?
-        <router-link to="/signup" class="font-medium text-indigo-600 hover:text-indigo-500">
-          Create one here
-        </router-link>
-      </p>
+  <div class="text-core-800">
+    <div class="mb-10">
+      <h3 class="mb-3.5 text-3xl font-medium">Welcome back!</h3>
+      <p class="text-core-600">Good to see you again—pick up right where you left off.</p>
     </div>
 
-    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-      <div class="bg-white px-4 py-8 shadow sm:rounded-lg sm:px-10">
-        <form class="space-y-6" @submit.prevent="handleLogin">
+    <Form
+      v-slot="{ meta }"
+      :validation-schema="validationSchema"
+      @submit="onSubmit"
+      @invalid-submit="onInvalidSubmit"
+    >
+      <div class="flex flex-col gap-8">
+        <Field v-slot="{ field, errors: fieldErrors }" name="email" validate-on-model-update>
+          <TextInput
+            v-bind="field"
+            type="email"
+            label="Email"
+            placeholder="example@gmail.com"
+            name="email"
+            required
+            :error="fieldErrors[0]"
+          />
+        </Field>
+
+        <Field v-slot="{ field, errors: fieldErrors }" name="password" validate-on-model-update>
           <div>
-            <label for="email" class="block text-sm font-medium text-gray-700">
-              Email address
-            </label>
-            <div class="mt-1">
-              <input
-                id="email"
-                v-model="form.email"
-                name="email"
-                type="email"
-                autocomplete="email"
-                required
-                class="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm"
-                placeholder="Enter your email"
-              />
-            </div>
+            <TextInput
+              v-bind="field"
+              type="password"
+              label="Password"
+              placeholder="Enter password"
+              name="password"
+              required
+              :error="fieldErrors[0]"
+            />
           </div>
+        </Field>
 
-          <div>
-            <label for="password" class="block text-sm font-medium text-gray-700"> Password </label>
-            <div class="mt-1">
-              <input
-                id="password"
-                v-model="form.password"
-                name="password"
-                type="password"
-                autocomplete="current-password"
-                required
-                class="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm"
-                placeholder="Enter your password"
-              />
-            </div>
-          </div>
-
-          <div class="flex items-center justify-between">
-            <div class="flex items-center">
-              <input
-                id="remember-me"
-                v-model="form.rememberMe"
-                name="remember-me"
-                type="checkbox"
-                class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-              />
-              <label for="remember-me" class="ml-2 block text-sm text-gray-900">
-                Remember me
-              </label>
-            </div>
-
-            <div class="text-sm">
-              <a href="#" class="font-medium text-indigo-600 hover:text-indigo-500">
-                Forgot your password?
-              </a>
-            </div>
-          </div>
-
-          <div>
-            <button
-              type="submit"
-              class="group relative flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
-            >
-              Sign in
-            </button>
-          </div>
-        </form>
+        <AppButton
+          type="submit"
+          :loading="isPending"
+          label="Log In"
+          class="w-full"
+          :disabled="!meta.valid"
+        />
       </div>
+    </Form>
+
+    <div class="mt-5 pb-4">
+      <p class="text-center text-sm font-normal text-gray-500">
+        I don't have an account?
+        <RouterLink to="/signup" class="text-primary-600 text-sm font-semibold">
+          Sign Up
+        </RouterLink>
+      </p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { reactive } from "vue"
-import AuthHeader from "../components/AuthHeader.vue"
 import { useRouter } from "vue-router"
+import AppButton from "@components/common/app-button.vue"
+import TextInput from "@components/common/text-input.vue"
+import { Form, Field } from "vee-validate"
+import * as yup from "yup"
+import { onInvalidSubmit } from "@/utils/validations"
+import { useLogin } from "../api"
+import { displayError, formatError } from "@/utils/error-handler"
+import { useAuthStore } from "../store"
+import { ILoginResponse } from "../types"
+import { toast } from "vue3-toastify"
 
+// Define the form data type
+type LoginFormData = {
+  email: string
+  password: string
+}
+
+const authStore = useAuthStore()
 const router = useRouter()
 
-const form = reactive({
-  email: "",
-  password: "",
-  rememberMe: false,
+// Validation schema using yup
+const validationSchema = yup.object().shape({
+  email: yup.string().email("Enter a valid email address").required("Email is required"),
+  password: yup.string().required("Password is required"),
 })
 
-const handleLogin = async () => {
-  // TODO: Implement actual login logic here
-  // For now, just a simple demo
-  await router.push("/orders")
+const { mutate: loginFn, isPending } = useLogin()
+
+const onSubmit = (values: Record<string, unknown>) => {
+  const loginData = values as LoginFormData
+  loginFn(loginData, {
+    onSuccess: (response: { data: { data: ILoginResponse } }) => {
+      const loginData = response.data.data
+      console.log("Login successful", loginData)
+      console.log({
+        accessToken: loginData.access,
+        refreshToken: loginData.refresh,
+      })
+      toast.success("Login successful!")
+      void router.push("/dashboard")
+      authStore.setTokens({
+        accessToken: loginData.access,
+        refreshToken: loginData.refresh,
+      })
+
+      authStore.setAuthUser({
+        avatar_url: loginData.avatar_url,
+        first_name: loginData.first_name,
+        last_name: loginData.last_name,
+        is_email_verified: loginData.is_email_verified,
+        assigned_locations: loginData.assigned_locations,
+        roles: loginData.roles,
+        subscription: loginData.subscription,
+      })
+    },
+    onError: (error) => {
+      displayError(error)
+      // or handle separately
+      const errorMsg = formatError(error)
+      console.error("Login failed!!!", errorMsg)
+    },
+  })
 }
 </script>

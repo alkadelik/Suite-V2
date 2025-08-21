@@ -1,145 +1,204 @@
 <template>
-  <div class="flex min-h-full flex-col justify-center py-12 sm:px-6 lg:px-8">
-    <div class="sm:mx-auto sm:w-full sm:max-w-md">
-      <AuthHeader title="Create a new account" />
-      <p class="mt-2 text-center text-sm text-gray-600">
-        Already have an account?
-        <router-link to="/login" class="font-medium text-indigo-600 hover:text-indigo-500">
-          Sign in here
-        </router-link>
-      </p>
+  <div class="text-core-800">
+    <div class="mb-4">
+      <h3 class="mb-3.5 text-3xl font-medium">Let's get started</h3>
+      <p class="text-core-600">Create your free Leyyow account and get your store online today.</p>
     </div>
 
-    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-      <div class="bg-white px-4 py-8 shadow sm:rounded-lg sm:px-10">
-        <form class="space-y-6" @submit.prevent="handleSignup">
-          <div>
-            <label for="email" class="block text-sm font-medium text-gray-700">
-              Email address
-            </label>
-            <div class="mt-1">
-              <input
-                id="email"
-                v-model="form.email"
-                name="email"
-                type="email"
-                autocomplete="email"
-                required
-                class="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm"
-                placeholder="Enter your email"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label for="password" class="block text-sm font-medium text-gray-700"> Password </label>
-            <div class="mt-1">
-              <input
-                id="password"
-                v-model="form.password"
-                name="password"
-                type="password"
-                autocomplete="new-password"
-                required
-                class="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm"
-                placeholder="Create a password"
-              />
-            </div>
-          </div>
-
-          <div class="flex items-center">
-            <input
-              id="newsletter"
-              v-model="form.subscribeNewsletter"
-              name="newsletter"
-              type="checkbox"
-              class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+    <Form
+      v-slot="{ meta }"
+      :validation-schema="validationSchema"
+      @submit="onSubmit"
+      @invalid-submit="onInvalidSubmit"
+    >
+      <div class="flex flex-col gap-8">
+        <div class="grid gap-3 md:grid-cols-2">
+          <Field v-slot="{ field, errors: fieldErrors }" name="first_name" validate-on-model-update>
+            <TextInput
+              v-bind="field"
+              label="First Name"
+              placeholder="e.g. John"
+              name="first_name"
+              required
+              :error="fieldErrors[0]"
             />
-            <label for="newsletter" class="ml-2 block text-sm text-gray-900">
-              Subscribe to our newsletter
-            </label>
-          </div>
+          </Field>
 
+          <Field v-slot="{ field, errors: fieldErrors }" name="last_name" validate-on-model-update>
+            <TextInput
+              v-bind="field"
+              label="Last Name"
+              placeholder="e.g. Doe"
+              name="last_name"
+              required
+              :error="fieldErrors[0]"
+            />
+          </Field>
+        </div>
+
+        <Field v-slot="{ field, errors: fieldErrors }" name="email" validate-on-model-update>
+          <TextInput
+            v-bind="field"
+            type="email"
+            label="Email"
+            placeholder="example@gmail.com"
+            name="email"
+            required
+            :error="fieldErrors[0]"
+          />
+        </Field>
+
+        <Field
+          v-slot="{ field, errors: fieldErrors, value }"
+          name="password"
+          validate-on-model-update
+        >
           <div>
-            <button
-              type="submit"
-              class="flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
-            >
-              Sign Up
-            </button>
+            <TextInput
+              v-bind="field"
+              type="password"
+              label="Password"
+              placeholder="Enter password"
+              name="password"
+              required
+              :error="fieldErrors[0]"
+              @update:model-value="currentPassword = $event"
+            />
+            <PasswordStrength v-if="value" :model-value="value" />
           </div>
+        </Field>
 
-          <div class="mt-6">
-            <div class="relative">
-              <div class="absolute inset-0 flex items-center">
-                <div class="w-full border-t border-gray-300" />
-              </div>
-              <div class="relative flex justify-center text-sm">
-                <span class="bg-white px-2 text-gray-500">Or continue with</span>
-              </div>
-            </div>
+        <Field
+          v-slot="{ field, errors: fieldErrors }"
+          name="confirm_password"
+          validate-on-model-update
+        >
+          <TextInput
+            v-bind="field"
+            type="password"
+            label="Confirm Password"
+            placeholder="Re-enter password"
+            name="confirm_password"
+            required
+            :error="fieldErrors[0]"
+          />
+        </Field>
+        <p class="mt-2 text-center text-sm">
+          By signing up, I agree to the Leyyow
+          <a
+            href="https://leyyow.notion.site/Refund-policy-162f3934f3148085a337fc0d3cbffb99?pvs=4"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-primary-600"
+          >
+            Privacy Policy
+          </a>
+          and
+          <a
+            href="https://leyyow.notion.site/Refund-policy-162f3934f3148085a337fc0d3cbffb99?pvs=4"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-primary-600"
+          >
+            Terms of Services
+          </a>
+        </p>
 
-            <div class="mt-6 grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                class="inline-flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-500 shadow-sm hover:bg-gray-50"
-              >
-                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                  <path
-                    fill-rule="evenodd"
-                    d="M10 0C4.477 0 0 4.484 0 10.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0110 4.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.203 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.942.359.31.678.921.678 1.856 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0020 10.017C20 4.484 15.522 0 10 0z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-                <span class="ml-2">GitHub</span>
-              </button>
-
-              <button
-                type="button"
-                class="inline-flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-500 shadow-sm hover:bg-gray-50"
-              >
-                <svg class="h-5 w-5" viewBox="0 0 24 24">
-                  <path
-                    fill="#4285F4"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                  />
-                </svg>
-                <span class="ml-2">Google</span>
-              </button>
-            </div>
-          </div>
-        </form>
+        <AppButton
+          type="submit"
+          :loading="loading"
+          label="Create account"
+          class="w-full"
+          :disabled="!meta.valid"
+        />
       </div>
+    </Form>
+
+    <div class="mt-5 pb-4">
+      <p class="text-center text-sm font-normal text-gray-500">
+        Already have an account?
+        <RouterLink to="/login" class="text-primary-600 text-sm font-semibold">
+          Sign In
+        </RouterLink>
+      </p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { reactive } from "vue"
-import AuthHeader from "../components/AuthHeader.vue"
+import { ref } from "vue"
 import { useRouter } from "vue-router"
+import AppButton from "@/components/common/app-button.vue"
+import TextInput from "@/components/common/text-input.vue"
+import PasswordStrength from "@/components/others/password-strength.vue"
+import { Form, Field } from "vee-validate"
+import * as yup from "yup"
+import { onInvalidSubmit } from "@/utils/validations"
+import { passwordSchema } from "@/utils/validationSchemas"
+import { useRegister } from "../api"
+import { displayError, formatError } from "@/utils/error-handler"
+import { useAuthStore } from "../store"
+import { ILoginResponse } from "../types"
+import { toast } from "vue3-toastify"
 
-const form = reactive({
-  email: "",
-  password: "",
-  subscribeNewsletter: false,
-})
+const { mutate: signupFn, isPending: loading } = useRegister()
+const authStore = useAuthStore()
 const router = useRouter()
 
-const handleSignup = async () => {
-  // TODO: Implement actual signup logic here
-  await router.push("/orders")
+// Validation schema using yup
+const validationSchema = yup.object().shape({
+  first_name: yup.string().required("First name is required"),
+  last_name: yup.string(),
+  email: yup.string().email("Enter a valid email address").required("Email is required"),
+  password: passwordSchema,
+  confirm_password: yup
+    .string()
+    .oneOf([yup.ref("password")], "Passwords do not match")
+    .required("Please confirm your password"),
+})
+
+const currentPassword = ref("")
+
+interface SignupFormValues {
+  first_name: string
+  last_name?: string
+  email: string
+  password: string
+  confirm_password: string
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const onSubmit = (values: Record<string, any>) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { confirm_password, ...signupData } = values as SignupFormValues
+  // Remove confirm_password from signupData before sending to API
+  signupFn(signupData, {
+    onSuccess: (response: { data: { data: ILoginResponse } }) => {
+      const signupData = response.data.data
+      console.log("Signup successful", signupData)
+      toast.success("Signup successful!")
+      void router.push("/dashboard")
+      authStore.setTokens({
+        accessToken: signupData.access,
+        refreshToken: signupData.refresh,
+      })
+
+      authStore.setAuthUser({
+        avatar_url: signupData.avatar_url,
+        first_name: signupData.first_name,
+        last_name: signupData.last_name,
+        is_email_verified: signupData.is_email_verified,
+        assigned_locations: signupData.assigned_locations,
+        roles: signupData.roles,
+        subscription: signupData.subscription,
+      })
+    },
+    onError: (error) => {
+      displayError(error)
+      // or handle separately
+      const errorMsg = formatError(error)
+      console.error("Signup failed!!!", errorMsg)
+    },
+  })
 }
 </script>

@@ -21,16 +21,16 @@ const setupStore = () => {
 </script>
 
 <template>
-  <div class="text-brand-600 mb-3 w-full rounded-lg border border-[#DDAF5D] bg-[#FFE9C3] p-4">
+  <div class="text-primary-600 mb-3 w-full rounded-lg border border-[#DDAF5D] bg-[#FFE9C3] p-4">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <AppIcon name="InfoCircle" class="text-brand-600 h-6 w-6" />
+        <AppIcon name="InfoCircle" class="text-primary-600 h-6 w-6" />
         <p class="text-sm font-bold">Your storefront isn't live yet</p>
       </div>
       <Icon
         v-if="closable"
         icon="material-symbols-light:close"
-        class="text-brand-600 h-6 w-6 cursor-pointer"
+        class="text-primary-600 h-6 w-6 cursor-pointer"
         @click="onboardingStore.toggleStoreNotLiveBanner(false)"
       />
     </div>

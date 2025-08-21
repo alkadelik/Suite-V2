@@ -1,6 +1,6 @@
 <script setup>
-import { Icon } from "@iconify/vue"
-import Loader from "../../assets/icons/loader.vue"
+import Loader from "@/assets/icons/loader.vue"
+import Icon from "./icon.vue"
 
 const props = defineProps({
   label: String,
@@ -14,6 +14,7 @@ const props = defineProps({
   smaller: { type: Boolean, default: false }, // small size button
   disabled: { type: Boolean, default: false },
   loading: { type: Boolean, default: false }, // New loading state
+  loadingText: String, // Optional loading text
   class: { type: [String, Array], default: "" },
   iconClass: { type: [String, Array], default: "" },
   variant: {
@@ -38,13 +39,13 @@ const emitClick = (event) => {
       'inline-flex items-center justify-center rounded-2xl font-semibold',
       'relative transition-all duration-200 ease-in-out',
       'focus:ring-2 focus:outline-none',
-      variant === 'filled' && 'bg-brand-500 focus:ring-brand-500/50 text-white',
+      variant === 'filled' && 'bg-primary-600 focus:ring-primary-500/50 text-white',
       variant === 'outlined' &&
-        'border-brand-200 text-brand-500 bg-brand-50 focus:ring-brand-500/50 border',
+        'border-primary-200 text-primary-500 bg-primary-50 focus:ring-primary-500/50 border',
       variant === 'tonal' &&
-        'border-brand-200 text-brand-500 bg-brand-500/20 focus:ring-brand-500/50 border',
+        'border-primary-200 text-primary-500 bg-primary-600/20 focus:ring-primary-500/50 border',
       variant === 'text'
-        ? 'text-brand-500 focus:ring-brand-500/0 gap-1.5 text-sm underline underline-offset-4'
+        ? 'text-primary-500 focus:ring-primary-500/0 gap-1.5 text-sm underline underline-offset-4'
         : icon && !label && smaller
           ? 'h-7 w-7'
           : icon && !label && small
@@ -56,9 +57,11 @@ const emitClick = (event) => {
                 : small
                   ? 'h-10 gap-2 px-4 text-sm'
                   : 'h-12 gap-2 px-6 text-sm',
-      disabled
-        ? 'bg-disabled text-disabled-text hover:disabled:bg-disabled cursor-not-allowed'
-        : 'cursor-pointer hover:opacity-85',
+      disabled && !loading
+        ? 'bg-disabled text-disabled-text hover:disabled:bg-disabled cursor-not-allowed opacity-50'
+        : disabled && loading
+          ? 'bg-disabled text-disabled-text hover:disabled:bg-disabled cursor-not-allowed'
+          : 'cursor-pointer hover:opacity-85',
       props.class,
     ]"
     :disabled="disabled || loading"
@@ -66,16 +69,17 @@ const emitClick = (event) => {
     @click="emitClick"
   >
     <template v-if="loading">
-      <Loader class="mr-2 flex-shrink-0 animate-spin" />
-      <span v-if="label">{{ label }}</span>
+      <Loader class="animate-spin" />
+      <span v-if="loadingText">{{ loadingText }}</span>
+      <span v-else-if="label">{{ label }}</span>
     </template>
     <template v-else>
       <Icon
         v-if="icon"
-        :icon="icon"
+        :name="icon"
         :class="[
           'flex-shrink-0',
-          variant == 'filled' ? 'text-white' : 'text-brand-500',
+          variant == 'filled' ? 'text-white' : 'text-primary-500',
           icon && !label && 'h-5 w-5',
           props.iconClass,
         ]"

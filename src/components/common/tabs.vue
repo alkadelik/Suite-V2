@@ -34,15 +34,15 @@ const changeTab = (tabKey) => {
 <template>
   <div :class="props.class">
     <!-- Tabs Header -->
-    <div ref="tabContainer" class="tabheader border-brand-200 flex overflow-x-auto border-b">
+    <div ref="tabContainer" class="tabheader border-primary-200 flex overflow-x-auto border-b">
       <button
         v-for="tab in processedTabs"
         :key="tab.key"
         class="px-3 py-1.5 text-sm font-medium transition-colors"
         :class="[
           tab.key === activeTab
-            ? 'border-brand-500 text-brand-500 bg-brand-500/5 border-b-2'
-            : 'text-brand-300 hover:text-brand-400',
+            ? 'border-primary-500 text-primary-500 bg-primary-500/5 border-b-2'
+            : 'text-primary-300 hover:text-primary-400',
           equal && 'flex-1',
         ]"
         @click="changeTab(tab.key)"
