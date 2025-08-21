@@ -13,7 +13,7 @@ const props = defineProps({
   },
   checkColor: {
     type: String,
-    default: "", // fallback to default if not provided
+    default: "#b65702", // fallback to default if not provided
   },
   size: {
     type: [Number, String],
@@ -37,7 +37,7 @@ const isRight = computed(() => props.checkPosition === "right")
       type="checkbox"
       :checked="modelValue"
       :disabled="disabled"
-      class="border-primary-300 text-primary-500 focus:ring-primary-400 rounded"
+      class="border-core-800 text-primary-500 focus:ring-primary-400 rounded cursor-pointer"
       :class="!size ? (dense ? 'h-4 w-4' : 'h-5 w-5') : ''"
       :style="{
         accentColor: resolvedCheckColor,
@@ -50,7 +50,7 @@ const isRight = computed(() => props.checkPosition === "right")
     <label
       v-if="label || $slots.default"
       :for="checkboxId"
-      class="text-primary-300"
+      class="text-core-800 font-normal"
       :class="[dense ? 'text-xs' : 'text-sm', disabled ? 'cursor-not-allowed' : 'cursor-pointer']"
     >
       <slot>{{ label }}</slot>

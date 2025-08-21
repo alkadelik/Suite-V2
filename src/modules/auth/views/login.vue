@@ -38,6 +38,21 @@
           </div>
         </Field>
 
+        <div class="flex items-center justify-between">
+          <Checkbox
+            v-model="rememberMe"
+            name="remember_me"
+            label="Remember me"
+            class="text-core-600 text-sm"
+          />
+          <RouterLink
+            to="/forgot-password"
+            class="text-primary-600 text-sm font-medium transition-colors duration-200 hover:underline"
+          >
+            Forgot Password?
+          </RouterLink>
+        </div>
+
         <AppButton
           type="submit"
           :loading="isPending"
@@ -51,7 +66,10 @@
     <div class="mt-5 pb-4">
       <p class="text-center text-sm font-normal text-gray-500">
         I don't have an account?
-        <RouterLink to="/signup" class="text-primary-600 text-sm font-semibold">
+        <RouterLink
+          to="/signup"
+          class="text-primary-600 text-sm font-semibold transition-colors duration-200 hover:underline"
+        >
           Sign Up
         </RouterLink>
       </p>
@@ -68,9 +86,11 @@ import * as yup from "yup"
 import { onInvalidSubmit } from "@/utils/validations"
 import { useLogin } from "../api"
 import { displayError, formatError } from "@/utils/error-handler"
+import { toast } from "vue3-toastify"
 import { useAuthStore } from "../store"
 import { ILoginResponse } from "../types"
-import { toast } from "vue3-toastify"
+import Checkbox from "@components/common/checkbox.vue"
+import { ref } from "vue"
 
 // Define the form data type
 type LoginFormData = {
@@ -80,6 +100,7 @@ type LoginFormData = {
 
 const authStore = useAuthStore()
 const router = useRouter()
+const rememberMe = ref(false)
 
 // Validation schema using yup
 const validationSchema = yup.object().shape({

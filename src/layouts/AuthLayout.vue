@@ -13,7 +13,7 @@
 
     <!-- Right Side -->
     <div class="flex flex-1 justify-center overflow-auto p-4">
-      <div class="w-full px-4 pt-5 pb-10 md:px-24">
+      <div class="w-full px-4 py-10 md:px-24">
         <img
           src="/images/logos/leyyow-logo-2.svg?url"
           alt="leyyow logo"

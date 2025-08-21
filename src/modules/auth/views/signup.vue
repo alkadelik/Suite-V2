@@ -89,7 +89,7 @@
             href="https://leyyow.notion.site/Refund-policy-162f3934f3148085a337fc0d3cbffb99?pvs=4"
             target="_blank"
             rel="noopener noreferrer"
-            class="text-primary-600"
+            class="text-primary-600 transition-colors duration-200 hover:underline"
           >
             Privacy Policy
           </a>
@@ -98,7 +98,7 @@
             href="https://leyyow.notion.site/Refund-policy-162f3934f3148085a337fc0d3cbffb99?pvs=4"
             target="_blank"
             rel="noopener noreferrer"
-            class="text-primary-600"
+            class="text-primary-600 transition-colors duration-200 hover:underline"
           >
             Terms of Services
           </a>
@@ -117,7 +117,10 @@
     <div class="mt-5 pb-4">
       <p class="text-center text-sm font-normal text-gray-500">
         Already have an account?
-        <RouterLink to="/login" class="text-primary-600 text-sm font-semibold">
+        <RouterLink
+          to="/login"
+          class="text-primary-600 text-sm font-semibold transition-colors duration-200 hover:underline"
+        >
           Sign In
         </RouterLink>
       </p>
