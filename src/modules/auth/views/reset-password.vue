@@ -9,7 +9,7 @@
     </RouterLink>
 
     <StepperWizard v-model="activeStep" :steps="[1, 2]" :show-indicators="false">
-      <template #default="{ step, onPrev, onNext }">
+      <template #default="{ step, onNext }">
         <div v-if="step === 0" class="flex flex-col gap-6">
           <div>
             <h3 class="mb-3 text-3xl font-medium">Check Your Inbox</h3>
