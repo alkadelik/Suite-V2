@@ -10,3 +10,16 @@ h5,
 h6 {
   font-family: var(--font-sato);
 }
+
+button {
+  cursor: pointer;
+}
+
+svg [fill^="#"],
+svg path[fill^="#"] {
+  fill: currentColor;
+}
+svg [stroke^="#"],
+svg path[stroke^="#"] {
+  stroke: currentColor;
+}

@@ -84,10 +84,9 @@ export const useApiQuery = <T>({ url, params, enabled }: TQueryArg) => {
 
 export type TMutationArg = {
   url: string
-  body?: Record<string, string | number | boolean>
   method?: "post" | "put" | "patch" | "delete" | "get"
 }
-export const useApiMutation = ({ url, method = "post" }: Omit<TMutationArg, "body">) => {
+export const useApiMutation = ({ url, method = "post" }: TMutationArg) => {
   return useMutation({
     mutationKey: ["apiMutation"],
     mutationFn: async (body?: Record<string, string | number | boolean>) => {

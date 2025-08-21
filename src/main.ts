@@ -1,4 +1,4 @@
-import { createApp } from "vue"
+import { createApp, Plugin } from "vue"
 import App from "./App.vue"
 import router from "./router"
 import { createPinia } from "pinia"
@@ -17,8 +17,7 @@ const pinia = createPinia()
 pinia.use(piniaPluginPersistedstate)
 app.use(pinia)
 
-// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-app.use(FloatingVue)
+app.use(FloatingVue as Plugin<unknown>)
 
 // Configure Vue3Toastify
 app.use(Vue3Toastify, { autoClose: 6000 } as ToastContainerOptions)
