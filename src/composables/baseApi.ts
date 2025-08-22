@@ -1,6 +1,8 @@
+import { formatError } from "@/utils/error-handler"
 import { useAuthStore } from "@modules/auth/store"
 import { useMutation, useQuery } from "@tanstack/vue-query"
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios"
+// import axios from "axios"
 
 const baseURL = (import.meta.env.VITE_API_BASE_URL as string) || ""
 
@@ -40,8 +42,14 @@ baseApi.interceptors.response.use(
     }
     const originalRequest = error.config as CustomRequestConfig
 
+    const errorMsg = formatError(error)
+
     // Check if the error is a 401 and we haven't already retried this request
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (
+      error.response?.status === 401 &&
+      errorMsg.includes("token not valid") &&
+      !originalRequest._retry
+    ) {
       console.log("Access token expired. Attempting to refresh...")
       // Mark this request as retried to prevent infinite loops
       originalRequest._retry = true
@@ -54,6 +62,8 @@ baseApi.interceptors.response.use(
       } catch (refreshError) {
         // If refresh fails, perform a logout or redirect
         console.error("Token refresh failed:", refreshError)
+        const authStore = useAuthStore()
+        authStore.clearAuth()
         window.location.href = "/login"
         return Promise.reject(refreshError as Error)
       }
@@ -86,11 +96,23 @@ export type TMutationArg = {
   url: string
   method?: "post" | "put" | "patch" | "delete" | "get"
 }
+
+export type TMutationData =
+  | Record<string, unknown>
+  | { url: string; body: Record<string, unknown> | undefined }
+
 export const useApiMutation = ({ url, method = "post" }: TMutationArg) => {
   return useMutation({
     mutationKey: ["apiMutation"],
-    mutationFn: async (body?: Record<string, string | number | boolean>) => {
-      const response = await baseApi[method](url, body)
+    mutationFn: async (data?: TMutationData) => {
+      // Check if data contains a custom URL (for dynamic URLs like with ID)
+      if (data && typeof data === "object" && "url" in data && "body" in data) {
+        const customData = data as { url: string; body: Record<string, unknown> | undefined }
+        const response = await baseApi[method](customData.url, customData.body)
+        return response
+      }
+      // Default behavior
+      const response = await baseApi[method](url, data as Record<string, unknown>)
       return response
     },
   })

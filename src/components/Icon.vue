@@ -1,5 +1,5 @@
 <template>
-  <component :is="IconComponent" v-bind="$attrs" :style="svgStyle" />
+  <component :is="IconComponent" v-bind="$attrs" :style="svgStyle" @click="emit('click', $event)" />
 </template>
 
 <script setup lang="ts">
@@ -13,6 +13,10 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+
+const emit = defineEmits<{
+  (e: "click", event: MouseEvent): void
+}>()
 
 const size = computed(() => (props.size == null ? "1.25em" : props.size))
 

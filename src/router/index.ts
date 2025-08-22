@@ -13,6 +13,8 @@ import customersRoutes from "@modules/customers/routes"
 import landingRoutes from "@modules/landing/routes"
 import popupsRoutes from "@modules/popups/routes"
 import ordersRoutes from "@modules/orders/routes"
+import settingsRoutes from "@modules/settings/routes"
+import sharedRoutes from "@modules/shared/routes"
 
 const routes: RouteRecordRaw[] = [
   // Public pages routes with LandingLayout
@@ -34,7 +36,14 @@ const routes: RouteRecordRaw[] = [
     path: "/",
     component: MainLayout,
     meta: { requiresAuth: true },
-    children: [...inventoryRoutes, ...customersRoutes, ...ordersRoutes, ...popupsRoutes],
+    children: [
+      ...inventoryRoutes,
+      ...customersRoutes,
+      ...ordersRoutes,
+      ...popupsRoutes,
+      ...settingsRoutes,
+      ...sharedRoutes,
+    ],
   },
 
   // 404 - Catch all route (must be last)

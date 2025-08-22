@@ -12,13 +12,14 @@ export const formatError = (error: unknown): string => {
 
   const { code, response } = error as AxiosError
   const data = (response?.data as ErrorResponse) ?? {}
-  const errors = data.errors || data // fallback to root-level fields if `errors` is missing
+  const errors = data.errors || data.error || data // fallback to root-level fields if `errors` is missing
   const message = data.message
 
   let nestedVal: string | null = null
 
   if (typeof errors === "object" && errors !== null) {
     const entries = Object.entries(errors)
+
     if (entries.length) {
       const [key, value] = entries[0]
 
