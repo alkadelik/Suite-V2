@@ -1,7 +1,12 @@
 <template>
   <div>
+    <!-- table header and title -->
+    <div v-if="props.title" class="flex items-center justify-between px-1 py-4">
+      <h2 class="text-lg font-semibold">{{ props.title }}</h2>
+    </div>
+    <!--  -->
     <div class="w-full overflow-x-auto px-px">
-      <table class="min-w-full border-0">
+      <table class="min-w-full border-0" :class="props.layout">
         <thead class="bg-gray-200">
           <tr
             v-for="headerGroup in table.getHeaderGroups()"
@@ -26,14 +31,16 @@
             </th>
           </tr>
         </thead>
-        <tr v-if="loading && data.length">
-          <td :colspan="columns.length" class="px-0">
-            <div class="bg-primary-50 h-1.5 w-full overflow-hidden">
-              <div class="progress left-right bg-primary-500 h-full w-full rounded" />
-            </div>
-          </td>
-        </tr>
-        <tbody v-if="data.length" :class="{ 'opacity-60': loading }">
+        <template v-if="loading && data.length">
+          <tr>
+            <td :colspan="columns.length" class="px-1 pt-2">
+              <div class="bg-primary-50 h-1.5 w-full overflow-hidden rounded-xl">
+                <div class="progress left-right bg-primary-500 h-full w-full rounded" />
+              </div>
+            </td>
+          </tr>
+        </template>
+        <tbody v-if="data.length" :class="{ 'opacity-50': loading }">
           <tr class="h-2">
             <td :colspan="columns.length" class="p-0"></td>
           </tr>
@@ -41,9 +48,9 @@
             <tr
               :class="[
                 'text-core-800 rounded-xl bg-white shadow-xs',
-                { 'cursor-pointer hover:bg-gray-50': !!onRowClick },
+                { 'cursor-pointer hover:bg-gray-50': hasRowClickListener },
               ]"
-              @click="props.onRowClick?.(row.original as TableRowData)"
+              @click="handleRowClick(row.original as T)"
             >
               <td
                 v-for="(cell, cellIndex) in row.getVisibleCells()"
@@ -89,10 +96,10 @@
         v-for="row in table.getRowModel().rows"
         :key="row.id"
         :class="[
-          'rounded-lg border border-gray-200',
-          { 'cursor-pointer hover:bg-gray-50': !!onRowClick },
+          'rounded-lg border border-gray-200 bg-white',
+          { 'cursor-pointer hover:bg-gray-50': hasRowClickListener },
         ]"
-        @click="props.onRowClick?.(row.original as TableRowData)"
+        @click="handleRowClick(row.original as T)"
       >
         <div
           v-for="cell in row.getVisibleCells()"
@@ -112,15 +119,12 @@
     <!-- empty table -->
     <div v-if="!data.length" class="mx-auto flex w-full items-center justify-center px-4 py-16">
       <div v-if="loading" class="flex items-center justify-center">
-        <Icon name="loader" class="text-primary-500 h-20 w-20 animate-spin" />
+        <Icon name="loader" size="80" class="text-primary-500 animate-spin" />
       </div>
-      <div v-else class="text-core-600 flex max-w-screen-sm flex-col items-center gap-3">
-        <div class="relative h-24 w-24">
-          <Icon name="star" class="text-core-300 h-28 w-28" />
-          <Icon name="box" class="text-core-900 absolute right-0 bottom-1 h-12 w-12" />
-        </div>
-        <p class="text-base font-semibold">No Data Available</p>
-        <p class="text-sm">There are currently no records to display.</p>
+      <div v-else class="flex max-w-screen-sm flex-col items-center">
+        <Icon name="box" size="64" class="mb-3" />
+        <h4 class="text-base font-semibold">No Data Available</h4>
+        <p class="text-core-600 text-sm">There are currently no records to display.</p>
       </div>
     </div>
 
@@ -225,7 +229,7 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends Record<string, unknown> = Record<string, unknown>">
 import {
   FlexRender,
   getCoreRowModel,
@@ -240,10 +244,13 @@ import Icon from "./Icon.vue"
 import AppButton from "./AppButton.vue"
 
 // Type definitions
-export interface TableColumn {
-  accessor: string
+export interface TableColumn<T = Record<string, unknown>> {
+  accessor: keyof T | string
   header: string
-  cell?: (props: { value: unknown; item: unknown }) => VNode
+  cell?: (props: {
+    value: unknown
+    item: T
+  }) => VNode | string | number | boolean | null | undefined
   class?: string
 }
 
@@ -252,40 +259,67 @@ interface PaginationChangeParams {
   itemsPerPage: number
 }
 
-interface TableRowData {
-  [key: string]: unknown
-}
-
 interface Props {
-  data: TableRowData[]
-  columns: TableColumn[]
+  /** Optional title for the table */
+  title?: string
+  /** Array of data to display in the table */
+  data: T[]
+  /** Column definitions for the table */
+  columns: TableColumn<T>[]
+  /** Data to show when table is empty */
   emptyTableData?: Record<string, unknown>
+  /** Whether the table is in loading state */
   loading?: boolean
+  /** Enable row selection functionality */
   enableRowSelection?: boolean
-  onRowSelectionChange?: (selected: TableRowData[]) => void
-  onRowClick?: (row: TableRowData) => void
+  /** Search filter string for filtering table data */
   searchFilter?: string
+  /** Function to set the search filter */
   setSearchFilter?: (filter: string) => void
+  /** Enable server-side pagination */
   serverPagination?: boolean
+  /** Show pagination controls */
   showPagination?: boolean
+  /** Current page number (1-based) */
   currentPage?: number
+  /** Number of items per page */
   itemsPerPage?: number
+  /** Available options for items per page */
   perPageOptions?: number[]
+  /** Total number of pages (for server pagination) */
   totalPageCount?: number
+  /** Total number of items (for server pagination) */
   totalItemsCount?: number
-  onPaginationChange?: (params: PaginationChangeParams) => void
+  /** Table layout style */
   layout?: "table-auto" | "table-fixed"
 }
 
-const goToPageNumber = ref<number>()
-const rowSelection = ref<Record<string, boolean>>({})
+// Define emits
+interface Emits {
+  /** Emitted when row selection changes */
+  "row-selection-change": [selected: T[]]
+  /** Emitted when a row is clicked */
+  "row-click": [row: T]
+  /** Emitted when pagination changes */
+  "pagination-change": [params: PaginationChangeParams]
+}
+
+interface DataTableSlots<T> {
+  [name: `cell:${string}`]: (props: {
+    value: string | number | boolean | null | undefined | Record<string, unknown>
+    item: T
+  }) => VNode[]
+}
+
+defineSlots<DataTableSlots<T>>()
+
+const emit = defineEmits<Emits>()
 
 const props = withDefaults(defineProps<Props>(), {
-  data: () => [],
+  data: () => [] as T[],
   emptyTableData: () => ({}),
   loading: false,
   enableRowSelection: false,
-  onRowSelectionChange: () => () => {},
   searchFilter: "",
   serverPagination: false,
   showPagination: true,
@@ -293,32 +327,41 @@ const props = withDefaults(defineProps<Props>(), {
   itemsPerPage: 10,
   perPageOptions: () => [5, 10, 25, 50, 100],
   totalPageCount: -1,
-  onPaginationChange: () => () => {},
   layout: "table-auto",
 })
 
+const goToPageNumber = ref<number>()
+const rowSelection = ref<Record<string, boolean>>({})
 const slots = useSlots()
 const data = computed(() => props.data)
-const columnHelper = createColumnHelper<TableRowData>()
+const columnHelper = createColumnHelper<T>()
+
+// Computed property to check if row-click should be enabled
+const hasRowClickListener = computed(() => true) // Always enable click for better UX
+
+// Handler functions
+const handleRowClick = (row: T) => {
+  emit("row-click", row)
+}
 
 const columns = [
   ...(props.enableRowSelection
     ? [
         {
           id: "select" as const,
-          header: ({ table }: { table: Table<TableRowData> }) => {
+          header: ({ table }: { table: Table<T> }) => {
             return h("input", {
               type: "checkbox",
-              class: "h-3.5 w-3.5 cursor-pointer hidden md:inline-block",
+              class: "h-3.5 w-3.5 cursor-pointer hidden md:inline-block accent-primary-600",
               checked: table.getIsAllRowsSelected(),
               indeterminate: table.getIsSomeRowsSelected(),
               onChange: table.getToggleAllRowsSelectedHandler(),
             })
           },
-          cell: ({ row }: { row: Row<TableRowData> }) => {
+          cell: ({ row }: { row: Row<T> }) => {
             return h("input", {
               type: "checkbox",
-              class: "h-3.5 w-3.5 cursor-pointer",
+              class: "h-3.5 w-3.5 cursor-pointer accent-primary-600",
               checked: row.getIsSelected(),
               disabled: !row.getCanSelect(),
               onChange: row.getToggleSelectedHandler(),
@@ -328,17 +371,30 @@ const columns = [
       ]
     : []),
   ...props.columns.map((col) =>
+    // @ts-expect-error - TanStack table has complex accessor typing that conflicts with our generic approach
     columnHelper.accessor(col.accessor, {
       header: col.header,
       meta: { class: col.class },
       cell: (info) => {
-        const cellSlotName = `cell:${col.accessor}`
+        const cellSlotName = `cell:${String(col.accessor)}`
         const [value, item] = [info.getValue(), info.row.original]
-        return slots[cellSlotName]
-          ? slots[cellSlotName]({ value, item })
-          : col.cell
-            ? col.cell({ value, item })
-            : value || "--"
+
+        if (slots[cellSlotName]) {
+          return slots[cellSlotName]({ value, item })
+        }
+
+        if (col.cell) {
+          const result = col.cell({ value, item })
+          // If the result is already a VNode, return it as is
+          // Otherwise, convert primitive values to text VNodes
+          if (typeof result === "object" && result !== null) {
+            return result // Assume it's a VNode
+          }
+          // Convert primitives to string and return as text
+          return String(result)
+        }
+
+        return value || "--"
       },
     }),
   ),
@@ -347,7 +403,7 @@ const columns = [
 const pagination = ref({ pageIndex: 0, pageSize: 10 })
 
 const table = computed(() =>
-  useVueTable<TableRowData>({
+  useVueTable<T>({
     get data() {
       return data.value
     },
@@ -378,9 +434,8 @@ const table = computed(() =>
 watch(
   () => pagination.value.pageSize,
   (newVal, oldVal) => {
-    console.log({ newVal, oldVal })
     if (newVal !== oldVal) {
-      props.onPaginationChange?.({ currentPage: 1, itemsPerPage: newVal })
+      emit("pagination-change", { currentPage: 1, itemsPerPage: newVal })
     }
   },
 )
@@ -390,7 +445,7 @@ watch(
   (newVal, oldVal) => {
     if (newVal !== oldVal) {
       const [currentPage, itemsPerPage] = [newVal + 1, pagination.value.pageSize]
-      props.onPaginationChange?.({ currentPage, itemsPerPage })
+      emit("pagination-change", { currentPage, itemsPerPage })
     }
   },
 )
@@ -400,7 +455,7 @@ watch(rowSelection, (newVal) => {
   const selected = Object.keys(newVal)
     .map((n) => props.data[+n])
     .filter(Boolean)
-  props.onRowSelectionChange?.(selected)
+  emit("row-selection-change", selected)
 })
 
 const handleGoToPage = (e: Event) => {

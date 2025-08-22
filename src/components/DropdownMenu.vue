@@ -1,30 +1,33 @@
 <template>
   <Dropdown
-    :placement="floatingPlacement"
+    :placement="props.placement"
     :triggers="['click']"
     :auto-placement="props.placement === 'auto'"
     :auto-hide="closeOnClickOutside"
   >
     <template #default="{ toggle, shown }">
       <!-- Trigger Button -->
-      <button type="button" :disabled="disabled" @click="handleToggle(toggle, shown)">
+      <button
+        type="button"
+        :class="$slots.trigger ? triggerClass : triggerClasses"
+        :disabled="disabled"
+        @click="handleToggle(toggle, shown)"
+      >
         <slot name="trigger" :open="shown" :disabled="disabled">
-          <div :class="triggerClasses">
-            <div v-if="leftIcon" class="text-core-400 flex items-center">
-              <Icon :name="leftIcon" :class="iconSizeClasses" />
-            </div>
+          <div v-if="leftIcon" class="text-core-400 flex items-center">
+            <Icon :name="leftIcon" :class="iconSizeClasses" />
+          </div>
 
-            <div :class="contentClasses">
-              <span v-if="label" class="flex-1 truncate text-left">{{ label }}</span>
-              <span v-else class="text-core-400 flex-1 truncate text-left">{{ placeholder }}</span>
-            </div>
+          <div :class="contentClasses">
+            <span v-if="label" class="flex-1 truncate text-left">{{ label }}</span>
+            <span v-else class="text-core-400 flex-1 truncate text-left">{{ placeholder }}</span>
+          </div>
 
-            <div v-if="rightIcon || showChevron" class="text-core-400 ml-3 flex items-center">
-              <Icon
-                :name="rightIcon || 'arrow-down-double'"
-                :class="[iconSizeClasses, shown ? 'rotate-180 transform' : '']"
-              />
-            </div>
+          <div v-if="rightIcon || showChevron" class="text-core-400 ml-3 flex items-center">
+            <Icon
+              :name="rightIcon || 'arrow-down-double'"
+              :class="[iconSizeClasses, shown ? 'rotate-180 transform' : '']"
+            />
           </div>
         </slot>
       </button>
@@ -146,7 +149,7 @@ interface Props {
   /** Size variant of the dropdown */
   size?: "sm" | "md" | "lg"
   /** Placement direction of the dropdown menu */
-  placement?: "bottom" | "top" | "auto"
+  placement?: Placement
   /** Width of the dropdown menu */
   menuWidth?: "auto" | "trigger" | "full"
   /** Maximum height of the dropdown menu */
@@ -166,7 +169,7 @@ const props = withDefaults(defineProps<Props>(), {
   showChevron: true,
   disabled: false,
   size: "md",
-  placement: "bottom",
+  placement: "bottom-end",
   menuWidth: "auto",
   maxHeight: "12rem",
   closeOnClickOutside: true,
@@ -183,18 +186,6 @@ const emit = defineEmits<{
   /** Emitted when an item is selected */
   select: [item: DropdownItem, index: number]
 }>()
-
-// Reactive state - not needed with Floating Vue
-// Computed properties
-// Floating Vue placement mapping
-const floatingPlacement = computed(() => {
-  const placementMap = {
-    bottom: "bottom-start",
-    top: "top-start",
-    auto: "bottom-start", // auto-placement is handled by the auto-placement prop
-  }
-  return placementMap[props.placement] as Placement
-})
 
 // Styling computed properties
 const triggerClasses = computed(() => {
@@ -263,7 +254,7 @@ const getItemClasses = (item: DropdownItem): string => {
 
   const stateClasses = item.disabled
     ? "text-core-300 cursor-not-allowed"
-    : "text-core-700 hover:bg-core-50 focus:bg-core-100 focus:outline-none"
+    : "text-core-800 hover:bg-core-25 focus:bg-core-100 focus:outline-none"
 
   return [base, stateClasses, item.class || ""].filter(Boolean).join(" ")
 }
