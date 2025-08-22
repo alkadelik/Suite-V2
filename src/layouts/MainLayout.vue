@@ -23,7 +23,7 @@
 
         <!-- User Info -->
         <div class="bg-gray-50 px-4 py-6">
-          <Avatar name="John Doe" extraText="john.doe@example.com" clickable />
+          <Avatar :name="getFullName(user)" :extraText="getFullName(user)" clickable />
           <!-- Select Location -->
           <DropdownMenu
             trigger-class="w-full"
@@ -115,7 +115,7 @@
               <Icon name="bell" size="20" />
             </button>
             <!-- Settings -->
-            <button class="rounded-xl p-2 hover:bg-gray-100">
+            <button class="rounded-xl p-2 hover:bg-gray-100" @click="$router.push('/settings')">
               <Icon name="setting" size="20" />
             </button>
             <!-- User or CTA -->
@@ -163,6 +163,10 @@ import Icon from "@components/common/icon.vue"
 import { useMediaQuery } from "@vueuse/core"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import Chip from "@components/Chip.vue"
+import { useAuthStore } from "@modules/auth/store"
+import { getFullName } from "@/utils/format-strings"
+
+const { user } = useAuthStore()
 
 const mobileSidebarOpen = ref(false)
 const isMobile = useMediaQuery("(max-width: 1024px)")

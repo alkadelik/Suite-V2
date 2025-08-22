@@ -30,3 +30,9 @@ export function getInitials(name: string): string {
   if (parts.length === 1) return parts[0].charAt(0).toUpperCase()
   return parts[0].charAt(0).toUpperCase() + parts[1].charAt(0).toUpperCase()
 }
+
+export function getFullName(obj: { first_name?: string; last_name?: string }): string {
+  const firstName = obj.first_name ? obj.first_name : ""
+  const lastName = obj.last_name ? obj.last_name : ""
+  return startCase(`${firstName} ${lastName}`.trim())
+}

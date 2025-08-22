@@ -1,91 +1,47 @@
 <template>
-  <div class="orders-page">
-    <div class="page-header">
-      <h1>Orders</h1>
-      <p class="page-description">Manage and track all customer orders</p>
-    </div>
+  <div class="flex min-h-screen flex-col rounded-xl bg-white p-4">
+    <header class="border-b border-gray-200 pb-4">
+      <BackButton />
+      <h2 class="mt-3 text-2xl font-bold">Settings</h2>
+      <p>shop.leyyow.com</p>
+    </header>
 
-    <div class="page-content">
-      <div class="content-placeholder">
-        <div class="placeholder-icon">📦</div>
-        <h2>Order Management</h2>
-        <p>This is the orders module. Features coming soon:</p>
-        <ul>
-          <li>Order creation and editing</li>
-          <li>Order status tracking</li>
-          <li>Order history and search</li>
-          <li>Invoice generation</li>
-          <li>Shipping and delivery management</li>
-        </ul>
-      </div>
+    <div class="grid h-full flex-1 grid-cols-5 gap-6">
+      <aside class="h-full border-r border-gray-200 py-3">
+        <nav>
+          <ul class="space-y-1">
+            <li v-for="link in LINKS" :key="link.path">
+              <router-link
+                :to="link.path"
+                :class="[
+                  'hover:text-primary-700 block px-3.5 py-2 font-medium',
+                  { 'text-primary-700 border-primary-700 border-l-2': $route.path === link.path },
+                ]"
+              >
+                {{ link.label }}
+              </router-link>
+            </li>
+          </ul>
+        </nav>
+      </aside>
+      <main class="col-span-4 h-full px-3 py-3">
+        <router-view />
+      </main>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-// Component logic will go here
+import BackButton from "@components/BackButton.vue"
+
+const LINKS = [
+  { label: "Profile", path: "/settings/profile" },
+  { label: "Store Details", path: "/settings/store-details" },
+  { label: "Password", path: "/settings/password" },
+  { label: "Teams", path: "/settings/teams" },
+  { label: "Plans & Billing", path: "/settings/billing" },
+  { label: "Locations", path: "/settings/locations" },
+  { label: "Design", path: "/settings/design" },
+  { label: "Delivery Options", path: "/settings/delivery-options" },
+]
 </script>
-
-<style scoped>
-.orders-page {
-  padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.page-header {
-  margin-bottom: 2rem;
-  border-bottom: 1px solid #e5e5e5;
-  padding-bottom: 1rem;
-}
-
-.page-header h1 {
-  font-size: 2.5rem;
-  margin-bottom: 0.5rem;
-  color: #333;
-}
-
-.page-description {
-  color: #666;
-  font-size: 1.1rem;
-}
-
-.page-content {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 400px;
-}
-
-.content-placeholder {
-  text-align: center;
-  max-width: 500px;
-}
-
-.placeholder-icon {
-  font-size: 4rem;
-  margin-bottom: 1rem;
-}
-
-.content-placeholder h2 {
-  font-size: 1.8rem;
-  margin-bottom: 1rem;
-  color: #333;
-}
-
-.content-placeholder p {
-  color: #666;
-  margin-bottom: 1.5rem;
-  line-height: 1.6;
-}
-
-.content-placeholder ul {
-  text-align: left;
-  color: #555;
-  line-height: 1.8;
-}
-
-.content-placeholder li {
-  margin-bottom: 0.5rem;
-}
-</style>

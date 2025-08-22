@@ -1,53 +1,200 @@
 <template>
   <!-- Overlay -->
-  <div v-if="open" class="fixed inset-0 z-40 flex items-center justify-center bg-black/40">
-    <!-- Modal Card -->
-    <div class="relative w-full max-w-lg rounded-lg bg-white shadow-lg">
-      <!-- Header -->
-      <slot name="header">
-        <div class="flex items-center justify-between px-6 py-4">
-          <h2 class="text-lg font-semibold text-gray-800">
-            {{ title }}
-          </h2>
-          <button @click="close" class="text-gray-400 transition hover:text-gray-600">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
+  <Transition name="modal-overlay">
+    <div v-if="open" class="fixed inset-0 z-40 bg-black/40" :class="overlayClasses" @click="close">
+      <!-- Modal Card -->
+      <Transition name="modal-content">
+        <div v-if="open" class="relative bg-white shadow-lg" :class="modalClasses" @click.stop>
+          <!-- Header -->
+          <slot name="header">
+            <div class="flex items-center justify-between px-6 py-4">
+              <h2 class="text-core-800 text-lg font-semibold">
+                {{ title }}
+              </h2>
+              <button
+                type="button"
+                @click="close"
+                class="text-core-800 hover:text-core-600 transition-colors"
+              >
+                <Icon name="close-circle" size="20" />
+              </button>
+            </div>
+          </slot>
+
+          <!-- Body -->
+          <div class="bg-core-50 px-6 py-4" :class="[bodyClasses, props.bodyClass]">
+            <slot />
+          </div>
+
+          <!-- Footer -->
+          <div v-if="$slots.footer" class="px-6 py-4">
+            <slot name="footer" />
+          </div>
         </div>
-      </slot>
-
-      <!-- Body -->
-      <div class="bg-core-50 max-h-[70vh] overflow-y-auto px-6 py-4">
-        <slot />
-      </div>
-
-      <!-- Footer -->
-      <div v-if="$slots.footer" class="px-6 py-4">
-        <slot name="footer" />
-      </div>
+      </Transition>
     </div>
-  </div>
+  </Transition>
 </template>
 
 <script setup lang="ts">
-defineProps<{
+import { computed } from "vue"
+import Icon from "./Icon.vue"
+
+/**
+ * Modal variant types
+ */
+type ModalVariant = "centered" | "fullscreen" | "bottom-nav"
+
+/**
+ * Props interface for the Modal component
+ */
+interface Props {
+  /** Whether the modal is open/visible */
   open: boolean
+  /** Optional title for the modal header */
   title?: string
-}>()
+  /** Modal variant - determines positioning and size behavior */
+  variant?: ModalVariant
+  /** Custom max width for the modal (e.g., 'sm', 'md', 'lg', 'xl', '2xl', '500px') */
+  maxWidth?: string
+  /** Additional classes for the modal body */
+  bodyClass?: string
+}
 
-const emit = defineEmits(["close"])
+/**
+ * Events emitted by the Modal component
+ */
+interface Emits {
+  /** Emitted when the modal should be closed */
+  (e: "close"): void
+}
 
+// Define props with defaults
+const props = withDefaults(defineProps<Props>(), {
+  variant: "centered",
+  maxWidth: "lg",
+})
+
+// Define emits
+const emit = defineEmits<Emits>()
+
+/**
+ * Close the modal
+ */
 const close = () => emit("close")
+
+/**
+ * Computed classes for the overlay
+ */
+const overlayClasses = computed(() => {
+  switch (props.variant) {
+    case "fullscreen":
+      return ""
+    case "bottom-nav":
+      return "flex items-end justify-center md:items-center"
+    case "centered":
+    default:
+      return "flex items-center justify-center"
+  }
+})
+
+/**
+ * Computed classes for the modal content
+ */
+const modalClasses = computed(() => {
+  const baseClasses = []
+
+  // Width and max-width classes
+  if (props.variant === "fullscreen") {
+    baseClasses.push("w-full h-full")
+  } else {
+    baseClasses.push("w-full")
+
+    // Max width handling
+    const maxWidthMap: Record<string, string> = {
+      sm: "max-w-sm",
+      md: "max-w-md",
+      lg: "max-w-lg",
+      xl: "max-w-xl",
+      "2xl": "max-w-2xl",
+      "3xl": "max-w-3xl",
+      "4xl": "max-w-4xl",
+    }
+
+    if (maxWidthMap[props.maxWidth]) {
+      baseClasses.push(maxWidthMap[props.maxWidth])
+    } else {
+      baseClasses.push(`max-w-[${props.maxWidth}]`)
+    }
+  }
+
+  // Border radius and positioning
+  switch (props.variant) {
+    case "fullscreen":
+      baseClasses.push("")
+      break
+    case "bottom-nav":
+      baseClasses.push("rounded-t-lg md:rounded-lg mb-0 md:mb-auto")
+      break
+    case "centered":
+    default:
+      baseClasses.push("rounded-lg")
+      break
+  }
+
+  return baseClasses.join(" ")
+})
+
+/**
+ * Computed classes for the modal body
+ */
+const bodyClasses = computed(() => {
+  const classes = []
+
+  if (props.variant === "fullscreen") {
+    classes.push("h-full overflow-y-auto")
+  } else {
+    classes.push("max-h-[70vh] overflow-y-auto")
+  }
+
+  return classes.join(" ")
+})
 </script>
+
+<style scoped>
+/* Modal overlay transitions */
+.modal-overlay-enter-active,
+.modal-overlay-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.modal-overlay-enter-from,
+.modal-overlay-leave-to {
+  opacity: 0;
+}
+
+/* Modal content transitions */
+.modal-content-enter-active,
+.modal-content-leave-active {
+  transition: all 0.3s ease;
+}
+
+.modal-content-enter-from,
+.modal-content-leave-to {
+  opacity: 0;
+  transform: scale(0.95) translateY(-10px);
+}
+
+/* Bottom nav variant specific transitions */
+.modal-content-enter-from.bottom-nav,
+.modal-content-leave-to.bottom-nav {
+  transform: translateY(100%);
+}
+
+@media (max-width: 768px) {
+  .modal-content-enter-from,
+  .modal-content-leave-to {
+    transform: translateY(100%);
+  }
+}
+</style>

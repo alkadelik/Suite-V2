@@ -110,6 +110,7 @@ const onSubmit = (values: Record<string, unknown>) => {
         avatar_url: loginData.avatar_url,
         first_name: loginData.first_name,
         last_name: loginData.last_name,
+        email: (values as LoginFormData).email,
         is_email_verified: loginData.is_email_verified,
         assigned_locations: loginData.assigned_locations,
         roles: loginData.roles,

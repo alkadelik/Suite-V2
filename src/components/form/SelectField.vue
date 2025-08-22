@@ -5,7 +5,7 @@
       <span v-if="required" class="text-red-500">*</span>
     </label>
 
-    <div class="relative w-full" ref="selectContainer" @click="toggleDropdown">
+    <div class="relative w-full" ref="selectContainer" @click.stop="toggleDropdown">
       <div :class="containerClasses">
         <div v-if="leftIcon" class="text-core-400 flex items-center pl-3">
           <Icon :name="leftIcon" class="h-4 w-4" />
@@ -60,7 +60,7 @@
         leave-from-class="transform opacity-100 scale-100"
         leave-to-class="transform opacity-0 scale-95"
       >
-        <div v-if="open" :class="dropdownClasses">
+        <div v-if="open" :class="dropdownClasses" @click.stop>
           <!-- Search Input (inside dropdown) -->
           <div v-if="searchable" class="border-core-100 border-b p-3">
             <input
@@ -81,7 +81,7 @@
             <div
               v-for="(opt, idx) in filteredOptions"
               :key="getOptionKey(opt, idx)"
-              :class="getOptionClasses(opt, idx)"
+              :class="[getOptionClasses(opt, idx)]"
               @click="select(opt)"
               @mouseenter="highlightedIndex = idx"
             >
@@ -194,6 +194,12 @@ const search = ref("")
 const highlightedIndex = ref(-1)
 const selectContainer = ref<HTMLElement>()
 const searchInput = ref<HTMLInputElement>()
+
+// Check if we're inside a modal
+const isInsideModal = computed(() => {
+  if (!selectContainer.value) return false
+  return !!selectContainer.value.closest('[class*="fixed"][class*="inset-0"]')
+})
 
 // Computed properties
 const htmlFor = computed(() => props.id || props.name || props.label)
@@ -321,8 +327,9 @@ const searchInputClasses = computed(() => {
 })
 
 const dropdownClasses = computed(() => {
-  const baseClasses =
-    "absolute z-50 w-full overflow-hidden rounded-xl border bg-white shadow-lg border-core-100"
+  // Use higher z-index when inside a modal (z-60) vs normal usage (z-50)
+  const zIndex = isInsideModal.value ? "z-[70]" : "z-[60]"
+  const baseClasses = `absolute ${zIndex} w-full overflow-hidden rounded-xl border bg-white shadow-lg border-core-100 py-2`
   const placementClasses = {
     bottom: "mt-1 top-full",
     top: "mb-1 bottom-full",
@@ -335,7 +342,7 @@ const getOptionClasses = (opt: OptionValue, index: number): string => {
   const selectedClasses = isSelected(opt)
     ? "bg-primary-50 text-primary-700 font-semibold"
     : "text-core-700"
-  const highlightedClasses = index === highlightedIndex.value ? "bg-core-100" : "hover:bg-core-50"
+  const highlightedClasses = index === highlightedIndex.value ? "bg-core-25" : "hover:bg-core-25"
   return [base, selectedClasses, highlightedClasses].join(" ")
 }
 
@@ -396,12 +403,43 @@ const highlightPrevious = () => {
 
 // Outside click handler
 const onClickOutside = (event: MouseEvent) => {
-  if (open.value && !selectContainer.value?.contains(event.target as Node)) {
-    open.value = false
-    search.value = ""
+  if (
+    open.value &&
+    selectContainer.value &&
+    !selectContainer.value.contains(event.target as Node)
+  ) {
+    const target = event.target as HTMLElement
+
+    // Special handling for clicks inside modals
+    if (isInsideModal.value) {
+      // Check if the click is on the modal overlay (which should close the dropdown)
+      const isClickOnModalOverlay =
+        target.classList.contains("fixed") &&
+        target.classList.contains("inset-0") &&
+        (target.classList.contains("bg-black") || target.style.backgroundColor)
+
+      // Check if click is on the modal close button
+      const isModalCloseButton =
+        target.closest('[class*="close"]') ||
+        target.closest('button[aria-label*="close"]') ||
+        target.closest('button[title*="close"]')
+
+      if (isClickOnModalOverlay || isModalCloseButton) {
+        open.value = false
+        search.value = ""
+      }
+    } else {
+      // Normal outside click behavior for non-modal usage
+      open.value = false
+      search.value = ""
+    }
   }
 }
 
-onMounted(() => document.addEventListener("click", onClickOutside))
-onUnmounted(() => document.removeEventListener("click", onClickOutside))
+onMounted(() => {
+  document.addEventListener("click", onClickOutside, true) // Use capture phase
+})
+onUnmounted(() => {
+  document.removeEventListener("click", onClickOutside, true)
+})
 </script>
