@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen w-full bg-gray-50 text-gray-800">
+  <div class="min-h-screen w-full bg-gray-50">
     <!-- Mobile overlay -->
     <div
       v-if="isMobile && mobileSidebarOpen"
@@ -25,17 +25,45 @@
         <div class="bg-gray-50 px-4 py-6">
           <Avatar name="John Doe" extraText="john.doe@example.com" clickable />
           <!-- Select Location -->
-          <button
-            type="button"
-            :class="[
-              'bg-core-100 text-core-800 hover:bg-core-200 mt-6 w-full rounded-xl px-2 py-1.5',
-              'flex items-center gap-2 text-sm font-medium',
-            ]"
+          <DropdownMenu
+            trigger-class="w-full"
+            :items="
+              ['HQ', 'Lekki', 'Surulere', 'Abuja'].map((el, i) => ({
+                label: `Smile Socks (${el})`,
+                id: i + 1,
+              }))
+            "
+            @select="({ id }) => $router.push('/settings/locations?id=' + id)"
+            placement="right-start"
           >
-            <Avatar name="S" size="sm" />
-            Smile Socks (HQ)
-            <Icon name="arrow-down-double" size="20" class="mr-2 ml-auto" />
-          </button>
+            <template #trigger="{ open }">
+              <button
+                type="button"
+                :class="[
+                  'bg-core-100 text-core-800 hover:bg-core-200 mt-6 w-full rounded-xl px-2 py-1.5',
+                  'flex items-center gap-2 text-sm font-medium',
+                ]"
+              >
+                <Avatar name="S" size="sm" />
+                Smile Socks (HQ)
+                <Icon
+                  name="arrow-down-double"
+                  size="20"
+                  :class="['ml-auto', 'transition-transform', open ? 'rotate-180' : '']"
+                />
+              </button>
+            </template>
+            <template #append>
+              <div class="border-core-100 mt-1 border-t pt-1">
+                <button
+                  class="hover:bg-primary-50 text-primary-700 flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm"
+                >
+                  Add New Location
+                  <Icon name="add" class="h-4 w-4" />
+                </button>
+              </div>
+            </template>
+          </DropdownMenu>
         </div>
 
         <!-- Home & Get Started -->
@@ -60,7 +88,7 @@
             <p class="mb-4 text-sm text-gray-600">
               Get advanced tools to manage every aspect of your business.
             </p>
-            <AppButton label="Go Premium" class="w-full" />
+            <AppButton label="Go Premium" class="w-full flex-row-reverse" icon="star" />
           </div>
         </section>
       </aside>
@@ -69,35 +97,35 @@
       <div
         :class="[
           'flex min-h-screen flex-1 flex-col overflow-x-hidden transition-all duration-200',
-          'pb-16 lg:pb-0',
+          'pt-16 pb-16 lg:pb-0', // height of header
           sidebarPadding,
         ]"
       >
         <!-- Topbar -->
-        <header
-          class="sticky top-0 z-20 border-b border-gray-200 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60"
-        >
-          <div class="flex h-16 items-center justify-end gap-3 px-4">
-            <!-- Actions -->
-            <div class="ml-auto flex items-center gap-2 sm:ml-3">
-              <!-- Notifications -->
-              <button class="rounded-xl p-2 hover:bg-gray-100">
-                <Icon name="bell" size="20" />
-              </button>
-
-              <button class="rounded-xl p-2 hover:bg-gray-100">
-                <Icon name="setting" size="20" />
-              </button>
-
-              <!-- User or CTA -->
-              <Avatar v-if="isMobile" name="John Doe" clickable />
-              <AppButton
-                v-else
-                size="md"
-                class="!ring-primary-200 !rounded-full !ring-4"
-                icon="add-circle"
-              />
-            </div>
+        <header class="fixed top-0 right-0 left-0 z-20 border-b border-gray-200 bg-white">
+          <div class="flex h-16 items-center justify-end gap-1.5 px-4">
+            <!-- Storefront status -->
+            <Chip color="alt" label="Storefront" class="!pr-1">
+              <template #append>
+                <Chip size="sm" showDot label="Not live" color="error" />
+              </template>
+            </Chip>
+            <!-- Notifications -->
+            <button class="rounded-xl p-2 hover:bg-gray-100">
+              <Icon name="bell" size="20" />
+            </button>
+            <!-- Settings -->
+            <button class="rounded-xl p-2 hover:bg-gray-100">
+              <Icon name="setting" size="20" />
+            </button>
+            <!-- User or CTA -->
+            <Avatar v-if="isMobile" name="John Doe" clickable />
+            <AppButton
+              v-else
+              size="md"
+              class="!ring-primary-200 !rounded-full !ring-4"
+              icon="add-circle"
+            />
           </div>
         </header>
 
@@ -109,7 +137,7 @@
         <!-- Bottom navigation for mobile -->
         <nav
           v-if="isMobile"
-          class="fixed right-0 bottom-0 left-0 z-30 border-t border-gray-200 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80"
+          class="fixed right-0 bottom-0 left-0 z-30 border-t border-gray-200 bg-white"
         >
           <div class="flex items-center justify-around px-2 py-2">
             <SidebarLink v-for="link in SALES_SUITES.slice(0, 2)" :key="link.label" v-bind="link" />
@@ -133,6 +161,8 @@ import SidebarLink from "./parts/SidebarLink.vue"
 import Avatar from "@components/Avatar.vue"
 import Icon from "@components/common/icon.vue"
 import { useMediaQuery } from "@vueuse/core"
+import DropdownMenu from "@components/DropdownMenu.vue"
+import Chip from "@components/Chip.vue"
 
 const mobileSidebarOpen = ref(false)
 const isMobile = useMediaQuery("(max-width: 1024px)")

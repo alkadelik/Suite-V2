@@ -21,9 +21,9 @@ const svgStyle = computed(() => ({ width: size.value, height: size.value }))
 // Dynamically import all SVG icons from the assets folder
 // This allows us to use the icon name directly as a prop
 // e.g. <Icon name="check" /> will load check.svg
-const icons = import.meta.glob("../../assets/icons/*.svg", { eager: true })
+const icons = import.meta.glob("../assets/icons/*.svg", { eager: true })
 const IconComponent = computed(() => {
-  const key = `../../assets/icons/${props.name}.svg`
+  const key = `../assets/icons/${props.name}.svg`
   return (icons[key] as { default: unknown })?.default ?? null
 })
 </script>

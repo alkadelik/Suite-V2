@@ -1,33 +1,53 @@
 <template>
   <DataTable
+    title="Inventory Management"
     :data="INVENTORY_DATA"
     :columns="INVENTORY_COLUMNS"
-    title="Inventory Management"
     :loading="false"
-    :showPagination="true"
+    :show-pagination="true"
     :itemsPerPage="5"
     :perPageOptions="[5, 10, 20, 50]"
     :enableRowSelection="true"
-    @onRowClick="handleRowClick"
-    @onRowSelectionChange="handleSelectionChange"
+    @row-click="handleRowClick"
+    @row-selection-change="handleSelectionChange"
+    @pagination-change="handlePaginationChange"
   >
     <template #cell:status="{ value }">
-      <span
-        :class="{
-          'text-red-500': value === 'Out of Stock',
-          'text-yellow-500': value === 'Low Stock',
-          'text-green-500': value === 'In Stock',
-        }"
-      >
-        {{ value }}
-      </span>
+      <Chip
+        showDot
+        :label="String(value)"
+        :color="getStatusColor(value as string)"
+        variant="outlined"
+      />
+    </template>
+
+    <template #cell:price="{ value }">
+      <span class="font-medium text-green-600"> ${{ Number(value).toFixed(2) }} </span>
     </template>
   </DataTable>
 </template>
 <script setup lang="ts">
 import DataTable, { TableColumn } from "@components/DataTable.vue"
+import Chip from "@components/Chip.vue"
 
-const INVENTORY_DATA = [
+type InventoryItem = {
+  id: number
+  sku: string
+  name: string
+  category: string
+  brand: string
+  quantity: number
+  price: number
+  cost: number
+  status: "In Stock" | "Low Stock" | "Out of Stock"
+  supplier: string
+  location: string
+  lastUpdated: string
+  reorderLevel: number
+  description: string
+}
+
+const INVENTORY_DATA: InventoryItem[] = [
   {
     id: 1,
     sku: "INV-001",
@@ -158,27 +178,40 @@ const INVENTORY_DATA = [
   },
 ]
 
-const INVENTORY_COLUMNS: TableColumn[] = [
-  {
-    header: "Product",
-    accessor: "name",
-    class: "min-w-[200px]",
-  },
+const INVENTORY_COLUMNS: TableColumn<InventoryItem>[] = [
+  { header: "Product", accessor: "name", class: "min-w-[200px]" },
   { header: "SKU", accessor: "sku", class: "font-mono text-xs" },
   { header: "Category", accessor: "category" },
   { header: "Brand", accessor: "brand", class: "uppercase" },
   { header: "Quantity", accessor: "quantity", class: "text-right font-bold" },
-  { header: "Price", accessor: "price", class: "text-right text-green-600 font-medium" },
-  { header: "Status", accessor: "status", class: "text-center" },
+  { header: "Price", accessor: "price" },
+  { header: "Status", accessor: "status" },
   { header: "Location", accessor: "location" },
 ]
 
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "In Stock":
+      return "success"
+    case "Low Stock":
+      return "warning"
+    case "Out of Stock":
+      return "error"
+    default:
+      return "alt"
+  }
+}
+
 // Event handlers
-const handleRowClick = (row: Record<string, unknown>) => {
+const handleRowClick = (row: InventoryItem) => {
   console.log("Row clicked:", row)
 }
 
-const handleSelectionChange = (selectedRows: Record<string, unknown>[]) => {
+const handleSelectionChange = (selectedRows: InventoryItem[]) => {
   console.log("Selection changed:", selectedRows)
+}
+
+const handlePaginationChange = (params: { currentPage: number; itemsPerPage: number }) => {
+  console.log("Pagination changed:", params)
 }
 </script>
