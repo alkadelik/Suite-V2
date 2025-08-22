@@ -96,11 +96,23 @@ export type TMutationArg = {
   url: string
   method?: "post" | "put" | "patch" | "delete" | "get"
 }
+
+export type TMutationData =
+  | Record<string, unknown>
+  | { url: string; body: Record<string, unknown> | undefined }
+
 export const useApiMutation = ({ url, method = "post" }: TMutationArg) => {
   return useMutation({
     mutationKey: ["apiMutation"],
-    mutationFn: async (body?: Record<string, string | number | boolean>) => {
-      const response = await baseApi[method](url, body)
+    mutationFn: async (data?: TMutationData) => {
+      // Check if data contains a custom URL (for dynamic URLs like with ID)
+      if (data && typeof data === "object" && "url" in data && "body" in data) {
+        const customData = data as { url: string; body: Record<string, unknown> | undefined }
+        const response = await baseApi[method](customData.url, customData.body)
+        return response
+      }
+      // Default behavior
+      const response = await baseApi[method](url, data as Record<string, unknown>)
       return response
     },
   })

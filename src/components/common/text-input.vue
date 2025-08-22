@@ -61,8 +61,8 @@ const inputType = computed(() =>
           dense ? 'h-10 px-3 py-1.5' : 'h-12 px-4 py-2.5',
           prefix && '!pl-14',
           'text-core-800 placeholder:text-disabled-text text-sm placeholder:font-light',
-            'focus:border-primary-300 focus:ring-primary-500/10 focus:ring focus:outline-none disabled:bg-gray-200 disabled:opacity-80',
-            'placeholder:text-core-400',
+          'focus:border-primary-300 focus:ring-primary-500/10 focus:ring focus:outline-none disabled:bg-gray-200 disabled:opacity-80',
+          'placeholder:text-core-400',
           error ? 'border-red-500' : '',
         ]"
         :required="required"

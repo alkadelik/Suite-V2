@@ -23,7 +23,11 @@
 
         <!-- User Info -->
         <div class="bg-gray-50 px-4 py-6">
-          <Avatar :name="getFullName(user)" :extraText="getFullName(user)" clickable />
+          <Avatar
+            :name="getFullName(user as TNameObj)"
+            :extraText="getFullName(user as TNameObj)"
+            clickable
+          />
           <!-- Select Location -->
           <DropdownMenu
             trigger-class="w-full"
@@ -164,7 +168,7 @@ import { useMediaQuery } from "@vueuse/core"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import Chip from "@components/Chip.vue"
 import { useAuthStore } from "@modules/auth/store"
-import { getFullName } from "@/utils/format-strings"
+import { getFullName, TNameObj } from "@/utils/format-strings"
 
 const { user } = useAuthStore()
 

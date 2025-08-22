@@ -52,6 +52,7 @@ import { useGetLocations } from "../api"
 const showModal = ref(false)
 
 const { data: locations, isPending } = useGetLocations()
+console.log("Locations:", locations)
 
 const handleAction = (action: "view" | "edit", item: TLocation) => {
   alert(`Action: ${action} ==> ${item.name}`)
