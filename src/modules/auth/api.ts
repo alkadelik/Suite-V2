@@ -1,6 +1,6 @@
 import baseApi, { TApiPromise } from "@/composables/baseApi"
 import { useMutation } from "@tanstack/vue-query"
-import { ILoginResponse, TLoginPayload } from "./types"
+import { ILoginResponse, TLoginPayload, TSignupPayload } from "./types"
 
 /** Login api request  */
 export function useLogin() {
@@ -13,7 +13,8 @@ export function useLogin() {
 /** Register api request  */
 export function useRegister() {
   return useMutation({
-    mutationFn: (body) => baseApi.post("/accounts/signup/", body),
+    mutationFn: (body: TSignupPayload): TApiPromise<ILoginResponse> =>
+      baseApi.post("/accounts/signup/", body),
   })
 }
 

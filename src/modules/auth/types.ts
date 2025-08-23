@@ -29,3 +29,11 @@ export interface ILoginResponse {
     subscription: string | null
   }
 }
+
+export type TSignupPayload = {
+  first_name: string
+  last_name: string
+  email: string
+  password: string
+  confirm_password: string
+}
