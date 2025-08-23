@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router"
 import type { RouteRecordRaw } from "vue-router"
+import { useAuthStore } from "@modules/auth/store"
 
 // Layout imports
 import LandingLayout from "@/layouts/LandingLayout.vue"
@@ -69,10 +70,17 @@ const router = createRouter({
   },
 })
 
-// Navigation guards
-router.beforeEach((_to, _from, next) => {
-  // TODO: Add authentication checks here
-  next()
+/**
+ * ======= Navigation guards =======
+ *  */
+router.beforeEach((to, _from, next) => {
+  const { isAuthenticated } = useAuthStore()
+  // route requiresAuth but user is not authenticated ==> login page
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    next({ path: "/login", query: { redirect: to.fullPath } })
+  } else {
+    next()
+  }
 })
 
 export default router

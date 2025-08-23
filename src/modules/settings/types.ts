@@ -6,3 +6,8 @@ export type TLocation = {
   membersCount: number
   status: "Active" | "Archived"
 }
+
+export type TLocationFormData = {
+  name: string
+  address: string
+}

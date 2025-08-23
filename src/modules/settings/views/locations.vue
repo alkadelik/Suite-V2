@@ -5,12 +5,12 @@
       subtitle="Keep track of all your business locations in one place."
     >
       <template #action>
-        <AppButton icon="add" label="Add new location" @click="showModal = true" />
+        <AppButton icon="add" size="sm" label="Add new location" @click="showModal = true" />
       </template>
     </SectionHeader>
 
     <DataTable
-      :data="LOCATIONS"
+      :data="(locations as TLocation[]) || LOCATIONS"
       :columns="LOCATION_COLUMNS"
       :loading="isPending"
       :show-pagination="false"
@@ -39,20 +39,21 @@
 
 <script lang="ts" setup>
 import DataTable from "@components/DataTable.vue"
-import SectionHeader from "../../../components/SectionHeader.vue"
+import SectionHeader from "@/components/SectionHeader.vue"
 import AppButton from "@components/AppButton.vue"
 import { LOCATION_COLUMNS, LOCATIONS } from "../constants"
 import { TLocation } from "../types"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
 import AddLocationModal from "../components/AddLocationModal.vue"
-import { ref } from "vue"
+import { ref, watch } from "vue"
 import { useGetLocations } from "../api"
+import { displayError } from "@/utils/error-handler"
 
 const showModal = ref(false)
 
-const { data: locations, isPending } = useGetLocations()
-console.log("Locations:", locations)
+const { data: locations, isPending, error } = useGetLocations()
+watch(error, displayError)
 
 const handleAction = (action: "view" | "edit", item: TLocation) => {
   alert(`Action: ${action} ==> ${item.name}`)

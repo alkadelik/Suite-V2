@@ -1,8 +1,7 @@
 import { formatError } from "@/utils/error-handler"
 import { useAuthStore } from "@modules/auth/store"
-import { useMutation, useQuery } from "@tanstack/vue-query"
-import axios, { AxiosError, InternalAxiosRequestConfig } from "axios"
-// import axios from "axios"
+import { useQuery } from "@tanstack/vue-query"
+import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from "axios"
 
 const baseURL = (import.meta.env.VITE_API_BASE_URL as string) || ""
 
@@ -62,9 +61,7 @@ baseApi.interceptors.response.use(
       } catch (refreshError) {
         // If refresh fails, perform a logout or redirect
         console.error("Token refresh failed:", refreshError)
-        const authStore = useAuthStore()
-        authStore.clearAuth()
-        window.location.href = "/login"
+        useAuthStore().clearAuth()
         return Promise.reject(refreshError as Error)
       }
     }
@@ -92,30 +89,6 @@ export const useApiQuery = <T>({ url, params, enabled }: TQueryArg) => {
   })
 }
 
-export type TMutationArg = {
-  url: string
-  method?: "post" | "put" | "patch" | "delete" | "get"
-}
-
-export type TMutationData =
-  | Record<string, unknown>
-  | { url: string; body: Record<string, unknown> | undefined }
-
-export const useApiMutation = ({ url, method = "post" }: TMutationArg) => {
-  return useMutation({
-    mutationKey: ["apiMutation"],
-    mutationFn: async (data?: TMutationData) => {
-      // Check if data contains a custom URL (for dynamic URLs like with ID)
-      if (data && typeof data === "object" && "url" in data && "body" in data) {
-        const customData = data as { url: string; body: Record<string, unknown> | undefined }
-        const response = await baseApi[method](customData.url, customData.body)
-        return response
-      }
-      // Default behavior
-      const response = await baseApi[method](url, data as Record<string, unknown>)
-      return response
-    },
-  })
-}
+export type TApiPromise<T> = Promise<AxiosResponse<T>>
 
 export default baseApi

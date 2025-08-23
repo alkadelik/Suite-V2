@@ -23,11 +23,22 @@
 
         <!-- User Info -->
         <div class="bg-gray-50 px-4 py-6">
-          <Avatar
-            :name="getFullName(user as TNameObj)"
-            :extraText="getFullName(user as TNameObj)"
-            clickable
-          />
+          <div class="flex items-center gap-3">
+            <Avatar
+              :name="getFullName(user as TNameObj)"
+              :extraText="getFullName(user as TNameObj)"
+              clickable
+              class="flex-1"
+            />
+            <AppButton
+              size="xs"
+              color="error"
+              variant="text"
+              icon="signout"
+              iconSize="20"
+              @click="logout = true"
+            />
+          </div>
           <!-- Select Location -->
           <DropdownMenu
             trigger-class="w-full"
@@ -155,6 +166,9 @@
         </nav>
       </div>
     </div>
+
+    <!--  -->
+    <LogoutModal :open="logout" @close="logout = false" />
   </div>
 </template>
 
@@ -169,10 +183,12 @@ import DropdownMenu from "@components/DropdownMenu.vue"
 import Chip from "@components/Chip.vue"
 import { useAuthStore } from "@modules/auth/store"
 import { getFullName, TNameObj } from "@/utils/format-strings"
+import LogoutModal from "@components/core/LogoutModal.vue"
 
 const { user } = useAuthStore()
 
 const mobileSidebarOpen = ref(false)
+const logout = ref(false)
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
 const sidebarPadding = computed(() => (isMobile.value ? "lg:pl-72" : "pl-72"))

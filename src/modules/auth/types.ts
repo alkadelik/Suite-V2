@@ -14,14 +14,18 @@ export interface IAuthTokens {
   refreshToken: string
 }
 
+export type TLoginPayload = { email: string; password: string }
+
 export interface ILoginResponse {
-  access: string
-  refresh: string
-  avatar_url?: string | null
-  first_name: string
-  last_name: string
-  is_email_verified: boolean
-  assigned_locations: { id: number }[]
-  roles: string[]
-  subscription: string | null
+  data: {
+    access: string
+    refresh: string
+    avatar_url?: string | null
+    first_name: string
+    last_name: string
+    is_email_verified: boolean
+    assigned_locations: { id: number }[]
+    roles: string[]
+    subscription: string | null
+  }
 }
