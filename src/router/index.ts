@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router"
 import type { RouteRecordRaw } from "vue-router"
 import { useAuthStore } from "@modules/auth/store"
+import { toast } from "@/composables/useToast"
 
 // Layout imports
 import LandingLayout from "@/layouts/LandingLayout.vue"
@@ -77,10 +78,16 @@ router.beforeEach((to, _from, next) => {
   const { isAuthenticated } = useAuthStore()
   // route requiresAuth but user is not authenticated ==> login page
   if (to.meta.requiresAuth && !isAuthenticated) {
-    next({ path: "/login", query: { redirect: to.fullPath } })
-  } else {
-    next()
+    return next({ path: "/login", query: { redirect: to.fullPath } })
   }
+
+  // route is public but user is authenticated ==> dashboard
+  if (!to.meta.requiresAuth && isAuthenticated) {
+    toast.info("You already have an active session.")
+    return next({ path: "/dashboard" })
+  }
+
+  next()
 })
 
 export default router

@@ -1,5 +1,5 @@
 import { AxiosError } from "axios"
-import { toast } from "vue3-toastify"
+import { toast } from "@/composables/useToast"
 
 interface ErrorResponse {
   errors?: Record<string, unknown>

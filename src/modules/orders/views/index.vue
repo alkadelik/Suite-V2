@@ -19,10 +19,14 @@
         </ul>
       </div>
     </div>
+
+    <ToastExample />
   </div>
 </template>
 
 <script setup lang="ts">
+import ToastExample from "@components/examples/ToastExample.vue"
+
 // Component logic will go here
 </script>
 
