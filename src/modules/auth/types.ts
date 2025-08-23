@@ -37,3 +37,9 @@ export type TSignupPayload = {
   password: string
   confirm_password: string
 }
+
+export type TResetPasswordPayload = {
+  new_password: string
+  confirm_password: string
+  otp: string
+}

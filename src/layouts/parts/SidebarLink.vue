@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import Icon from "@components/common/icon.vue"
+import Icon from "@components/Icon.vue"
 import { useMediaQuery } from "@vueuse/core"
 import { computed } from "vue"
 import { useRoute } from "vue-router"

@@ -46,4 +46,6 @@
   --color-gray-950: #0c111d;
 
   --animate-spin: spin 2s linear infinite;
+  /* colors - neutral */
+  --color-neutral-700: #6a5554;
 }

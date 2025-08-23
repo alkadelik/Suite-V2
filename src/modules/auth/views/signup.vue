@@ -1,7 +1,6 @@
 <template>
   <div class="text-core-800">
     <SectionHeader
-      size="lg"
       title="Let's get started"
       subtitle="Create your free Leyyow account and get your store online today."
       class="mb-4"
@@ -68,7 +67,10 @@
     <div class="mt-5 pb-4">
       <p class="text-center text-sm font-normal text-gray-500">
         Already have an account?
-        <RouterLink to="/login" class="text-primary-600 text-sm font-semibold">
+        <RouterLink
+          to="/login"
+          class="text-primary-600 text-sm font-semibold transition-colors duration-200 hover:underline"
+        >
           Sign In
         </RouterLink>
       </p>
@@ -79,7 +81,6 @@
 <script setup lang="ts">
 import { ref } from "vue"
 import { useRouter } from "vue-router"
-import AppButton from "@/components/common/app-button.vue"
 import PasswordStrength from "@/components/others/password-strength.vue"
 import * as yup from "yup"
 import { passwordSchema } from "@/utils/validationSchemas"
@@ -91,6 +92,7 @@ import { toast } from "vue3-toastify"
 import AppForm from "@components/form/AppForm.vue"
 import FormField from "@components/form/FormField.vue"
 import SectionHeader from "@components/SectionHeader.vue"
+import AppButton from "@components/AppButton.vue"
 
 const { mutate: signupFn, isPending } = useRegister()
 const authStore = useAuthStore()

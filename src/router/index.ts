@@ -82,7 +82,9 @@ router.beforeEach((to, _from, next) => {
   }
 
   // route is public but user is authenticated ==> dashboard
-  if (!to.meta.requiresAuth && isAuthenticated) {
+  // (only if it’s a valid matched route, not a 404)
+  const is404 = to.matched.some((v) => v.name === "NotFound")
+  if (!to.meta.requiresAuth && isAuthenticated && !is404) {
     toast.info("You already have an active session.")
     return next({ path: "/dashboard" })
   }

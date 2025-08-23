@@ -39,7 +39,7 @@
         class="text-core-400 hover:text-core-600 flex items-center pr-3"
         @click="togglePasswordVisibility"
       >
-        <Icon :name="showPassword ? 'eye-slash' : 'eye-slash'" class="h-4 w-4" />
+        <Icon :name="showPassword ? 'eye' : 'eye-slash'" class="h-4 w-4" />
       </button>
 
       <!-- Right Icon -->
@@ -54,7 +54,7 @@
     </div>
     <div v-if="error" class="mt-1 flex items-center text-sm text-red-600">
       <Icon name="info-circle" size="16" class="mr-1" />
-      {{ error }}
+      {{ capitalizeFirstChar(error) }}
     </div>
     <div v-if="hint && !error" class="mt-1 flex items-center text-sm text-gray-500">
       <slot name="hint">
@@ -65,7 +65,8 @@
 </template>
 
 <script setup lang="ts">
-import Icon from "@components/common/icon.vue"
+import { capitalizeFirstChar } from "@/utils/format-strings"
+import Icon from "@components/Icon.vue"
 import { computed, ref } from "vue"
 
 interface Props {

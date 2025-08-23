@@ -43,3 +43,11 @@ export function getFullName(obj: TNameObj = {}, fallback: string = "Unknown User
   const lastName = obj?.last_name ? obj.last_name : ""
   return startCase(`${firstName} ${lastName}`.trim()) || fallback
 }
+
+/** Capitalizes the first character of a string
+ * @param str - The input string
+ * @returns The input string with the first character capitalized
+ */
+export function capitalizeFirstChar(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1)
+}

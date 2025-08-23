@@ -103,7 +103,7 @@
 
 <script setup lang="ts">
 import { Dropdown, Placement } from "floating-vue"
-import Icon from "@components/common/icon.vue"
+import Icon from "@components/Icon.vue"
 import { computed } from "vue"
 
 interface DropdownItem {

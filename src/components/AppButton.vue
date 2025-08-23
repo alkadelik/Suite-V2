@@ -19,7 +19,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue"
-import Icon from "./common/icon.vue"
+import Icon from "./Icon.vue"
 
 export interface AppButtonProps {
   /**
