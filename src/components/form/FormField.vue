@@ -5,7 +5,7 @@
       v-if="type === 'select'"
       v-bind="{ ...field, ...$attrs }"
       :model-value="field.value"
-      :label="label"
+      :label="hideLabel ? '' : label || startCase(name)"
       :options="options || []"
       :placeholder="placeholder"
       :required="required"
@@ -22,7 +22,7 @@
     <TextAreaField
       v-else-if="type === 'textarea'"
       v-bind="{ ...field, ...$attrs }"
-      :label="label"
+      :label="hideLabel ? '' : label || startCase(name)"
       :placeholder="placeholder"
       :required="required"
       :disabled="disabled"
@@ -43,7 +43,7 @@
     <OtpField
       v-else-if="type === 'otp'"
       v-bind="{ ...field, ...$attrs }"
-      :label="label"
+      :label="hideLabel ? '' : label || startCase(name)"
       :required="required"
       :disabled="disabled"
       :error="fieldErrors[0]"
@@ -60,7 +60,7 @@
       v-else
       v-bind="{ ...field, ...$attrs }"
       :type="type"
-      :label="label"
+      :label="hideLabel ? '' : label || startCase(name)"
       :placeholder="placeholder"
       :required="required"
       :disabled="disabled"
@@ -85,6 +85,7 @@ import TextField from "./TextField.vue"
 import SelectField from "./SelectField.vue"
 import TextAreaField from "./TextAreaField.vue"
 import OtpField from "./OtpField.vue"
+import { startCase } from "@/utils/format-strings"
 
 /**
  * Form field types supported by the dynamic FormField component
@@ -135,6 +136,8 @@ interface FormFieldProps {
   variant?: "default" | "error" | "success"
   /** The size of the field */
   size?: "sm" | "md" | "lg"
+  /** Whether to hide the label */
+  hideLabel?: boolean
 
   // Text Input specific props
   /** Maximum length for text inputs */

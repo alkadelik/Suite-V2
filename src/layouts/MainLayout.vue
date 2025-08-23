@@ -22,29 +22,37 @@
         </div>
 
         <!-- User Info -->
-        <div class="bg-gray-50 px-4 py-6">
-          <Avatar
-            :name="getFullName(user as TNameObj)"
-            :extraText="getFullName(user as TNameObj)"
-            clickable
-          />
+        <div class="bg-gray-50 px-4 py-4">
+          <div class="flex items-center gap-4">
+            <Avatar
+              :name="getFullName(user as TNameObj)"
+              :extraText="user?.email"
+              clickable
+              class="truncate"
+            />
+            <Icon
+              name="signout"
+              class="flex-shrink-0 cursor-pointer text-red-600"
+              @click="logout = true"
+            />
+          </div>
           <!-- Select Location -->
           <DropdownMenu
             trigger-class="w-full"
             :items="
-              ['HQ', 'Lekki', 'Surulere', 'Abuja'].map((el, i) => ({
+              ['Lekki', 'Surulere', 'Abuja'].map((el, i) => ({
                 label: `Smile Socks (${el})`,
                 id: i + 1,
               }))
             "
+            menuClass="!w-[248px]"
             @select="({ id }) => $router.push('/settings/locations?id=' + id)"
-            placement="right-start"
           >
             <template #trigger="{ open }">
               <button
                 type="button"
                 :class="[
-                  'bg-core-100 text-core-800 hover:bg-core-200 mt-6 w-full rounded-xl px-2 py-1.5',
+                  'bg-core-100 text-core-800 hover:bg-core-200 mt-4 w-full rounded-xl px-2 py-1.5',
                   'flex items-center gap-2 text-sm font-medium',
                 ]"
               >
@@ -57,15 +65,34 @@
                 />
               </button>
             </template>
-            <template #append>
-              <div class="border-core-100 mt-1 border-t pt-1">
-                <button
-                  class="hover:bg-primary-50 text-primary-700 flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm"
-                >
-                  Add New Location
-                  <Icon name="add" class="h-4 w-4" />
-                </button>
+
+            <template #prepend>
+              <div class="bg-primary-50 border-primary-300 mb-1 rounded-t-lg border-b px-2.5 py-3">
+                <Avatar name="Smiles HQ" backgroundColor="var(--color-core-950)" />
+                <div class="mt-2 flex items-end gap-2">
+                  <p class="truncate font-medium">Smiles Socks...</p>
+                  <Chip label="HQ" />
+                </div>
+                <div class="flex items-center gap-2 text-sm text-gray-600">
+                  <p class="truncate">{{ storefrontUrl }}</p>
+                  <Icon
+                    name="copy"
+                    size="24"
+                    class="text-primary-600 cursor-pointer"
+                    @click="clipboardCopy('https://' + storefrontUrl)"
+                  />
+                </div>
               </div>
+            </template>
+
+            <template #footer>
+              <AppButton
+                variant="text"
+                label="Add New Location"
+                size="sm"
+                icon="add"
+                class="!w-full flex-row-reverse !justify-between !px-2.5"
+              />
             </template>
           </DropdownMenu>
         </div>
@@ -78,13 +105,13 @@
 
         <!-- Navigation -->
         <section class="px-4 py-2">
-          <h4 class="mb-4 text-sm font-medium">Sales Suite</h4>
+          <h4 class="mb-3 text-sm font-medium">Sales Suite</h4>
           <div class="space-y-1">
             <SidebarLink v-for="link in SALES_SUITES" :key="link.label" v-bind="link" />
           </div>
         </section>
 
-        <section class="mt-auto px-4 pb-8">
+        <section class="mt-auto px-4 pb-4">
           <SidebarLink icon="life-buoy" label="Support" to="/support" />
 
           <div class="mt-3 w-full rounded-lg bg-gray-50 px-4 py-5 text-center">
@@ -109,9 +136,9 @@
         <header class="fixed top-0 right-0 left-0 z-20 border-b border-gray-200 bg-white">
           <div class="flex h-16 items-center justify-end gap-1.5 px-4">
             <!-- Storefront status -->
-            <Chip color="alt" label="Storefront" class="!pr-1">
+            <Chip color="alt" size="md" label="Storefront" class="!pr-1">
               <template #append>
-                <Chip size="sm" showDot label="Not live" color="error" />
+                <Chip showDot label="Not live" color="error" />
               </template>
             </Chip>
             <!-- Notifications -->
@@ -155,6 +182,9 @@
         </nav>
       </div>
     </div>
+
+    <!--  -->
+    <LogoutModal :open="logout" @close="logout = false" />
   </div>
 </template>
 
@@ -163,19 +193,25 @@ import { computed, ref } from "vue"
 import AppButton from "@components/AppButton.vue"
 import SidebarLink from "./parts/SidebarLink.vue"
 import Avatar from "@components/Avatar.vue"
-import Icon from "@components/common/icon.vue"
+import Icon from "@components/Icon.vue"
 import { useMediaQuery } from "@vueuse/core"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import Chip from "@components/Chip.vue"
 import { useAuthStore } from "@modules/auth/store"
 import { getFullName, TNameObj } from "@/utils/format-strings"
+import LogoutModal from "@components/core/LogoutModal.vue"
+import { clipboardCopy } from "@/utils/others"
 
 const { user } = useAuthStore()
-
-const mobileSidebarOpen = ref(false)
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
+const mobileSidebarOpen = ref(false)
+const logout = ref(false)
+
 const sidebarPadding = computed(() => (isMobile.value ? "lg:pl-72" : "pl-72"))
+const storefrontUrl = computed(() => {
+  return `shop.leyyow.com/smiles-socks-headquarters`
+})
 
 const SALES_SUITES = [
   { icon: "box", label: "Orders", to: "/orders" },

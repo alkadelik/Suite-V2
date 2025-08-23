@@ -37,7 +37,7 @@
     <!-- Error message -->
     <div v-if="error" class="mt-1 flex items-center text-sm text-red-600">
       <Icon name="info-circle" size="16" class="mr-1" />
-      {{ error }}
+      {{ capitalizeFirstChar(error) }}
     </div>
 
     <!-- Hint message -->
@@ -50,7 +50,8 @@
 </template>
 
 <script setup lang="ts">
-import Icon from "@components/common/icon.vue"
+import { capitalizeFirstChar } from "@/utils/format-strings"
+import Icon from "@components/Icon.vue"
 import { ref, onMounted, watch, computed } from "vue"
 
 /**

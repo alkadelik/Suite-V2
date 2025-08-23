@@ -1,16 +1,17 @@
 <template>
-  <div class="space-y-6">
-    <SectionHeader
-      title="Locations"
-      subtitle="Keep track of all your business locations in one place."
-    >
-      <template #action>
-        <AppButton icon="add" label="Add new location" @click="showModal = true" />
-      </template>
-    </SectionHeader>
+  <div class="space-y-6 rounded-xl border border-gray-200 bg-white pt-6">
+    <div class="flex items-center justify-between px-4">
+      <div>
+        <h3 class="flex items-center gap-1 text-2xl font-semibold">
+          Locations <Chip label="5 locations" />
+        </h3>
+        <p>Keep track of all your business locations in one place.</p>
+      </div>
+      <AppButton icon="add" size="sm" label="Add new location" @click="showModal = true" />
+    </div>
 
     <DataTable
-      :data="LOCATIONS"
+      :data="(locations as TLocation[]) || LOCATIONS"
       :columns="LOCATION_COLUMNS"
       :loading="isPending"
       :show-pagination="false"
@@ -18,7 +19,6 @@
       <template #cell:status="{ value }">
         <Chip
           showDot
-          size="sm"
           :label="String(value)"
           :color="value === 'Active' ? 'success' : 'error'"
           variant="outlined"
@@ -27,8 +27,8 @@
 
       <template #cell:action="{ item }">
         <div class="flex items-center gap-2">
-          <Icon name="eye" @click="handleAction('view', item)" />
-          <Icon name="folder" @click="handleAction('edit', item)" />
+          <Icon name="edit" @click="handleAction('edit', item)" />
+          <Icon name="archive" @click="handleAction('archive', item)" />
         </div>
       </template>
     </DataTable>
@@ -39,22 +39,22 @@
 
 <script lang="ts" setup>
 import DataTable from "@components/DataTable.vue"
-import SectionHeader from "../../../components/SectionHeader.vue"
 import AppButton from "@components/AppButton.vue"
 import { LOCATION_COLUMNS, LOCATIONS } from "../constants"
 import { TLocation } from "../types"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
 import AddLocationModal from "../components/AddLocationModal.vue"
-import { ref } from "vue"
+import { ref, watch } from "vue"
 import { useGetLocations } from "../api"
+import { displayError } from "@/utils/error-handler"
 
 const showModal = ref(false)
 
-const { data: locations, isPending } = useGetLocations()
-console.log("Locations:", locations)
+const { data: locations, isPending, error } = useGetLocations()
+watch(error, displayError)
 
-const handleAction = (action: "view" | "edit", item: TLocation) => {
+const handleAction = (action: "archive" | "edit", item: TLocation) => {
   alert(`Action: ${action} ==> ${item.name}`)
 }
 </script>

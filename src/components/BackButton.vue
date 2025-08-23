@@ -1,9 +1,12 @@
 <template>
   <button
     @click="to ? $router.push(to) : $router.back()"
-    class="text-primary-700 flex items-center gap-2 text-sm font-medium hover:underline"
+    :class="[
+      'text-primary-700 flex items-center gap-2 text-sm font-medium hover:underline',
+      props.class,
+    ]"
   >
-    <Icon name="chevron-left" size="20" />
+    <Icon :name="icon || 'chevron-left'" size="20" />
     {{ label || "Back to Dashboard" }}
   </button>
 </template>
@@ -16,7 +19,11 @@ interface Props {
   to?: string
   /** Custom label text for the button (defaults to "Back to Dashboard") */
   label?: string
+  /** Optional icon name instead of the default "chevron-left" */
+  icon?: string
+  /** Additional CSS classes to apply to the button */
+  class?: string
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 </script>

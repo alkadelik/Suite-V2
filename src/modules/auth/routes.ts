@@ -17,6 +17,11 @@ const authRoutes: RouteRecordRaw[] = [
     name: "ForgotPassword",
     component: () => import("./views/forgot-password.vue"),
   },
+  {
+    path: "reset-password",
+    name: "ResetPassword",
+    component: () => import("./views/reset-password.vue"),
+  },
 ]
 
 export default authRoutes

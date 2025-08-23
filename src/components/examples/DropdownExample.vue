@@ -216,7 +216,7 @@
 <script setup lang="ts">
 import { ref } from "vue"
 import DropdownMenu from "../DropdownMenu.vue"
-import Icon from "../common/icon.vue"
+import Icon from "../Icon.vue"
 
 interface DropdownItem {
   id?: string | number

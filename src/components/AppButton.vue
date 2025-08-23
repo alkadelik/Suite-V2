@@ -8,7 +8,8 @@
     <Icon
       v-if="icon || loading"
       :name="loading ? 'loader' : icon || ''"
-      :class="[iconClasses.join(' '), loading ? 'animate-spin' : '']"
+      :size="iconSize || iconSizes[props.size] || 20"
+      :class="['flex-shrink-0', loading ? 'animate-spin' : '']"
     />
     <slot>
       <span v-if="loadingText || label">{{ loadingText || label }}</span>
@@ -18,7 +19,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue"
-import Icon from "./common/icon.vue"
+import Icon from "./Icon.vue"
 
 export interface AppButtonProps {
   /**
@@ -32,6 +33,12 @@ export interface AppButtonProps {
    * @example "arrow-right"
    */
   icon?: string
+
+  /**
+   * The size of the icon (overrides default sizing based on button size)
+   * @example 16
+   */
+  iconSize?: number | string
 
   /**
    * The HTML button type
@@ -167,17 +174,10 @@ const buttonClasses = computed(() => {
   ]
 })
 
-const iconClasses = computed(() => {
-  const baseClasses = ["flex-shrink-0"]
-
-  // Icon size based on button size
-  const sizeClasses = {
-    xs: "w-3.5 h-3.5",
-    sm: "w-4 h-4",
-    md: "w-5 h-5",
-    lg: "w-5 h-5",
-  }
-
-  return [...baseClasses, sizeClasses[props.size]]
-})
+const iconSizes = {
+  xs: 16,
+  sm: 20,
+  md: 24,
+  lg: 28,
+}
 </script>
