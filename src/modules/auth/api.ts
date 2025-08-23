@@ -1,5 +1,4 @@
 import { useApiMutation } from "@/composables/baseApi"
-import { ComputedRef } from "vue"
 
 /** Login api request  */
 export function useLogin() {
@@ -17,8 +16,8 @@ export function useForgotPassword() {
 }
 
 /** Reset password api request  */
-export function useResetPassword(otp: ComputedRef<string>) {
-  return useApiMutation({ url: `/accounts/auth/password/${otp.value}/reset/` })
+export function useResetPassword() {
+  return (otp: string) => useApiMutation({ url: `/accounts/auth/password/${otp}/reset/` })
 }
 
 /** Verify email api request  */

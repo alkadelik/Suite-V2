@@ -121,7 +121,7 @@ const router = useRouter()
 const route = useRoute()
 const email = route.query.email ? decodeURIComponent(route.query.email as string) : ""
 
-const { mutate: resetPassword, isPending } = useResetPassword(computed(() => otp.value))
+const { mutate: resetPassword, isPending } = useResetPassword()
 
 const schema = yup.object({
   new_password: passwordSchema,
@@ -133,7 +133,9 @@ const schema = yup.object({
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const onSubmit = (values: Record<string, any>) => {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   resetPassword(
+    otp.value,
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     { password: values.new_password },
     {
@@ -143,7 +145,7 @@ const onSubmit = (values: Record<string, any>) => {
           toast.success("Password reset successfully. Login to continue.")
         }, 100)
       },
-      onError: (error) => {
+      onError: (error: unknown) => {
         displayError(error)
         // or handle separately
         const errorMsg = formatError(error)
