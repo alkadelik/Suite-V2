@@ -37,7 +37,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, watch, onUnmounted } from "vue"
 import Icon from "./Icon.vue"
 
 /**
@@ -158,6 +158,30 @@ const bodyClasses = computed(() => {
   }
 
   return classes.join(" ")
+})
+
+/**
+ * Prevent body scrolling when modal is open
+ */
+watch(
+  () => props.open,
+  (isOpen) => {
+    if (isOpen) {
+      // Prevent body scrolling
+      document.body.style.overflow = "hidden"
+    } else {
+      // Restore body scrolling
+      document.body.style.overflow = ""
+    }
+  },
+  { immediate: true },
+)
+
+/**
+ * Cleanup: restore body scrolling when component is unmounted
+ */
+onUnmounted(() => {
+  document.body.style.overflow = ""
 })
 </script>
 

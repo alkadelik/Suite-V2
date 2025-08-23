@@ -6,7 +6,7 @@
           v-for="toast in toasts"
           :key="toast.id"
           :class="[
-            'flex w-full gap-3 rounded-xl border bg-white px-4 py-3 shadow-lg',
+            'flex w-full gap-3 rounded-xl border px-4 py-3 shadow-lg',
             toastTypeClasses[toast.type],
           ]"
           role="alert"
@@ -20,7 +20,7 @@
           <!-- Content -->
           <div class="min-w-0 flex-1">
             <p class="text-sm font-medium text-gray-900">{{ toast.title }}</p>
-            <p v-if="toast.message" :class="messageClasses[toast.type]">{{ toast.message }}</p>
+            <p class="text-core-800 mt-1 text-sm">{{ toast.message }}</p>
           </div>
 
           <!-- Close button -->
@@ -57,6 +57,7 @@
 <script setup lang="ts">
 import { h } from "vue"
 import { useToast } from "@/composables/useToast"
+import Icon from "@components/Icon.vue"
 
 const { toasts, removeToast } = useToast()
 
@@ -73,73 +74,11 @@ const iconClasses = {
   info: "text-blue-600",
 }
 
-const messageClasses = {
-  success: "text-green-700 text-sm mt-1",
-  error: "text-red-700 text-sm mt-1",
-  info: "text-blue-700 text-sm mt-1",
-}
-
 // Icons as render functions for better performance
 const toastIcons = {
-  success: () =>
-    h(
-      "svg",
-      {
-        xmlns: "http://www.w3.org/2000/svg",
-        fill: "none",
-        viewBox: "0 0 24 24",
-        stroke: "currentColor",
-        class: "h-5 w-5",
-      },
-      [
-        h("path", {
-          "stroke-linecap": "round",
-          "stroke-linejoin": "round",
-          "stroke-width": "2",
-          d: "M5 13l4 4L19 7",
-        }),
-      ],
-    ),
-
-  error: () =>
-    h(
-      "svg",
-      {
-        xmlns: "http://www.w3.org/2000/svg",
-        fill: "none",
-        viewBox: "0 0 24 24",
-        stroke: "currentColor",
-        class: "h-5 w-5",
-      },
-      [
-        h("path", {
-          "stroke-linecap": "round",
-          "stroke-linejoin": "round",
-          "stroke-width": "2",
-          d: "M6 18L18 6M6 6l12 12",
-        }),
-      ],
-    ),
-
-  info: () =>
-    h(
-      "svg",
-      {
-        xmlns: "http://www.w3.org/2000/svg",
-        fill: "none",
-        viewBox: "0 0 24 24",
-        stroke: "currentColor",
-        class: "h-5 w-5",
-      },
-      [
-        h("path", {
-          "stroke-linecap": "round",
-          "stroke-linejoin": "round",
-          "stroke-width": "2",
-          d: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
-        }),
-      ],
-    ),
+  success: () => h(Icon, { name: "check-circle", size: "20", class: iconClasses.success }),
+  error: () => h(Icon, { name: "info-circle", size: "20", class: iconClasses.error }),
+  info: () => h(Icon, { name: "info-circle", size: "20", class: `${iconClasses.info} rotate-180` }),
 }
 </script>
 

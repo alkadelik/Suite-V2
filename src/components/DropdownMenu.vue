@@ -87,13 +87,13 @@
             </div>
           </template>
 
-          <slot name="content" :close="() => handleClose(hide)" />
+          <slot v-if="!items || items.length === 0" :close="() => handleClose(hide)" />
 
           <slot name="append" :close="() => handleClose(hide)" />
         </div>
 
         <!-- Footer Slot -->
-        <div v-if="$slots.footer" class="border-core-100 border-t p-3">
+        <div v-if="$slots.footer" class="border-core-100 border-t px-3 py-2">
           <slot name="footer" :close="() => handleClose(hide)" />
         </div>
       </div>

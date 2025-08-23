@@ -3,14 +3,14 @@ import { ref } from "vue"
 export interface Toast {
   id: string
   type: "success" | "error" | "info"
-  title: string
-  message?: string
+  title?: string
+  message: string
   duration?: number
   persistent?: boolean
 }
 
 interface ToastOptions {
-  message?: string
+  title?: string
   duration?: number
   persistent?: boolean
 }
@@ -64,31 +64,31 @@ const clearAllToasts = () => {
 
 // Toast methods
 const toast = {
-  success: (title: string, options?: ToastOptions): string => {
+  success: (message: string, options?: ToastOptions): string => {
     return addToast({
       type: "success",
-      title,
-      message: options?.message,
+      title: options?.title || "Success!",
+      message,
       duration: options?.duration,
       persistent: options?.persistent,
     })
   },
 
-  error: (title: string, options?: ToastOptions): string => {
+  error: (message: string, options?: ToastOptions): string => {
     return addToast({
       type: "error",
-      title,
-      message: options?.message,
+      title: options?.title || "Failed!",
+      message,
       duration: options?.duration ?? 7000, // Errors stay longer by default
       persistent: options?.persistent,
     })
   },
 
-  info: (title: string, options?: ToastOptions): string => {
+  info: (message: string, options?: ToastOptions): string => {
     return addToast({
       type: "info",
-      title,
-      message: options?.message,
+      title: options?.title || "Info!",
+      message,
       duration: options?.duration,
       persistent: options?.persistent,
     })

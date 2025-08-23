@@ -108,21 +108,21 @@ const showInfoToast = () => {
 }
 
 const showDetailedToast = () => {
-  toast.success("File uploaded!", {
-    message: "Your document has been uploaded and processed successfully.",
+  toast.success("Your document has been uploaded and processed successfully.", {
+    title: "File uploaded!",
   })
 }
 
 const showPersistentToast = () => {
-  toast.info("Important Notice", {
-    message: "This toast will stay until manually dismissed.",
+  toast.info("This toast will stay until manually dismissed.", {
+    title: "Important Notice",
     persistent: true,
   })
 }
 
 const showCustomDurationToast = () => {
-  toast.success("Quick notification", {
-    message: "This will disappear in 2 seconds.",
+  toast.success("This will disappear in 2 seconds.", {
+    title: '"Quick notification"',
     duration: 2000,
   })
 }

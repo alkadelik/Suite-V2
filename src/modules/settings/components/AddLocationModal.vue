@@ -1,8 +1,10 @@
 <template>
-  <Modal :open="open" max-width="2xl" title="Add Location" @close="emit('close')">
-    <FormField name="name" label="Location Name" required />
+  <Modal :open="open" max-width="xl" title="Add Location" @close="emit('close')">
+    <div class="space-y-4">
+      <FormField name="name" label="Location Name" required />
 
-    <FormField name="address" type="text" required label="Location Address" />
+      <FormField name="address" type="text" required label="Location Address" />
+    </div>
 
     <template #footer>
       <AppButton

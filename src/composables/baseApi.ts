@@ -2,6 +2,7 @@ import { formatError } from "@/utils/error-handler"
 import { useAuthStore } from "@modules/auth/store"
 import { useQuery } from "@tanstack/vue-query"
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from "axios"
+import { toast } from "./useToast"
 
 const baseURL = (import.meta.env.VITE_API_BASE_URL as string) || ""
 
@@ -60,8 +61,11 @@ baseApi.interceptors.response.use(
         return baseApi(originalRequest)
       } catch (refreshError) {
         // If refresh fails, perform a logout or redirect
-        console.error("Token refresh failed:", refreshError)
+        toast.error("Session expired. Please log in again.")
         useAuthStore().clearAuth()
+        // redirect to login page with the current path as redirect query
+        const redirectPath = window.location.pathname + window.location.search
+        window.location.href = `/login?redirect=${encodeURIComponent(redirectPath)}`
         return Promise.reject(refreshError as Error)
       }
     }

@@ -77,7 +77,7 @@ const onSubmit = (values: TLoginPayload) => {
       const { access, refresh, ...user } = res.data?.data || {}
       authStore.setTokens({ accessToken: access, refreshToken: refresh })
       authStore.setAuthUser({ ...user, email: values.email })
-      toast.success("Login successful!")
+      toast.success("Your login was successful... Enjoy!")
       router.push("/dashboard")
     },
     onError: displayError,

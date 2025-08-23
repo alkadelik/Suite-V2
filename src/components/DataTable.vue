@@ -8,17 +8,8 @@
     <div class="w-full overflow-x-auto px-px">
       <table class="min-w-full border-0" :class="props.layout">
         <thead class="bg-gray-200">
-          <tr
-            v-for="headerGroup in table.getHeaderGroups()"
-            :key="headerGroup.id"
-            class="rounded-xl shadow-xs"
-          >
-            <th
-              v-for="header in headerGroup.headers"
-              :key="header.id"
-              :colSpan="header.colSpan"
-              class="first:rounded-l-xl last:rounded-r-xl"
-            >
+          <tr v-for="headerGroup in table.getHeaderGroups()" :key="headerGroup.id">
+            <th v-for="header in headerGroup.headers" :key="header.id" :colSpan="header.colSpan">
               <span
                 class="text-core-700 flex gap-1 px-4 py-3 text-left text-sm font-medium whitespace-nowrap capitalize"
               >
@@ -41,36 +32,23 @@
           </tr>
         </template>
         <tbody v-if="data.length" :class="{ 'opacity-50': loading }">
-          <tr class="h-2">
-            <td :colspan="columns.length" class="p-0"></td>
-          </tr>
-          <template v-for="row in table.getRowModel().rows" :key="row.id">
-            <tr
-              :class="[
-                'text-core-800 rounded-xl bg-white shadow-xs',
-                { 'cursor-pointer hover:bg-gray-50': hasRowClickListener },
-              ]"
-              @click="handleRowClick(row.original as T)"
+          <tr
+            v-for="row in table.getRowModel().rows"
+            :key="row.id"
+            :class="[
+              'text-core-800 cursor-pointer border-b border-gray-200 bg-white hover:bg-gray-50',
+              { 'last:border-0': !showPagination },
+            ]"
+            @click="handleRowClick(row.original as T)"
+          >
+            <td
+              v-for="cell in row.getVisibleCells()"
+              :key="cell.id"
+              :class="['p-4 text-sm', (cell.column.columnDef.meta as { class?: string })?.class]"
             >
-              <td
-                v-for="(cell, cellIndex) in row.getVisibleCells()"
-                :key="cell.id"
-                :class="[
-                  'p-4 text-sm',
-                  {
-                    'rounded-l-xl': cellIndex === 0,
-                    'rounded-r-xl': cellIndex === row.getVisibleCells().length - 1,
-                  },
-                  (cell.column.columnDef.meta as { class?: string })?.class,
-                ]"
-              >
-                <FlexRender :render="cell.column.columnDef.cell" :props="cell.getContext()" />
-              </td>
-            </tr>
-            <tr class="h-2">
-              <td :colspan="columns.length" class="p-0"></td>
-            </tr>
-          </template>
+              <FlexRender :render="cell.column.columnDef.cell" :props="cell.getContext()" />
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -97,7 +75,7 @@
         :key="row.id"
         :class="[
           'rounded-lg border border-gray-200 bg-white',
-          { 'cursor-pointer hover:bg-gray-50': hasRowClickListener },
+          { 'cursor-pointer hover:bg-gray-50': true },
         ]"
         @click="handleRowClick(row.original as T)"
       >
@@ -335,9 +313,6 @@ const rowSelection = ref<Record<string, boolean>>({})
 const slots = useSlots()
 const data = computed(() => props.data)
 const columnHelper = createColumnHelper<T>()
-
-// Computed property to check if row-click should be enabled
-const hasRowClickListener = computed(() => true) // Always enable click for better UX
 
 // Handler functions
 const handleRowClick = (row: T) => {

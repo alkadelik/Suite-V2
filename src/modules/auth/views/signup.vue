@@ -81,7 +81,7 @@
 <script setup lang="ts">
 import { ref } from "vue"
 import { useRouter } from "vue-router"
-import PasswordStrength from "@/components/others/password-strength.vue"
+import PasswordStrength from "@components/form/PasswordStrength.vue"
 import * as yup from "yup"
 import { passwordSchema } from "@/utils/validationSchemas"
 import { useRegister } from "../api"

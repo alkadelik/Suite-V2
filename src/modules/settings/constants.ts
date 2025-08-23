@@ -6,7 +6,7 @@ export const LOCATION_COLUMNS: TableColumn<TLocation>[] = [
   { header: "Address", accessor: "address" },
   { header: "Phone", accessor: "phone" },
   { header: "Status", accessor: "status" },
-  { header: "Members", accessor: "membersCount" },
+  { header: "Members", accessor: "membersCount", class: "pl-8" },
   { header: "", accessor: "action" },
 ]
 

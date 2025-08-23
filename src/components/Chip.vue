@@ -70,7 +70,7 @@ export interface ChipProps {
 }
 
 const props = withDefaults(defineProps<ChipProps>(), {
-  size: "md",
+  size: "sm",
   variant: "outlined",
   color: "primary",
   showDot: false,
