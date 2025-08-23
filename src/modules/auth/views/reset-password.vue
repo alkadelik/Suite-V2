@@ -98,7 +98,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue"
+import { ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { toast } from "vue3-toastify"
 import { Form, Field } from "vee-validate"
