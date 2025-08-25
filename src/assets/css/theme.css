@@ -48,4 +48,6 @@
   --animate-spin: spin 2s linear infinite;
   /* colors - neutral */
   --color-neutral-700: #6a5554;
+
+  --color-base-background: #f5f7f8;
 }

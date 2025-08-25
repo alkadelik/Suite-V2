@@ -7,6 +7,12 @@ const customersRoutes: RouteRecordRaw[] = [
     component: () => import("./views/index.vue"),
     meta: { requiresAuth: true },
   },
+  {
+    path: "/onboarding",
+    name: "Onboarding",
+    component: () => import("./views/onboarding.vue"),
+    meta: { requiresAuth: true },
+  },
 ]
 
 export default customersRoutes

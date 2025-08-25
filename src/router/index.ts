@@ -16,6 +16,7 @@ import landingRoutes from "@modules/landing/routes"
 import popupsRoutes from "@modules/popups/routes"
 import ordersRoutes from "@modules/orders/routes"
 import settingsRoutes from "@modules/settings/routes"
+import dashboardRoutes from "@modules/dashboard/routes"
 import sharedRoutes from "@modules/shared/routes"
 
 const routes: RouteRecordRaw[] = [
@@ -45,6 +46,7 @@ const routes: RouteRecordRaw[] = [
       ...popupsRoutes,
       ...settingsRoutes,
       ...sharedRoutes,
+      ...dashboardRoutes,
     ],
   },
 
