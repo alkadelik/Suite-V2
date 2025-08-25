@@ -1,22 +1,25 @@
 <template>
-  <button :class="buttonClasses" :disabled="disabled || loading" :type="type" @click="handleClick">
-    <template v-if="loading">
-      <div class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-      <span v-if="loadingText">{{ loadingText }}</span>
-      <span v-else-if="label">{{ label }}</span>
-    </template>
-    <template v-else>
-      <Icon v-if="icon" :name="icon" :class="iconClasses.join(' ')" />
-      <slot>
-        <span v-if="label">{{ label }}</span>
-      </slot>
-    </template>
+  <button
+    :class="[buttonClasses, { '!cursor-not-allowed': disabled || loading }]"
+    :disabled="disabled"
+    :type="type"
+    @click="handleClick"
+  >
+    <Icon
+      v-if="icon || loading"
+      :name="loading ? 'loader' : icon || ''"
+      :size="iconSize || iconSizes[props.size] || 20"
+      :class="['flex-shrink-0', loading ? 'animate-spin' : '']"
+    />
+    <slot>
+      <span v-if="loadingText || label">{{ loadingText || label }}</span>
+    </slot>
   </button>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue"
-import Icon from "./common/icon.vue"
+import Icon from "./Icon.vue"
 
 export interface AppButtonProps {
   /**
@@ -32,6 +35,12 @@ export interface AppButtonProps {
   icon?: string
 
   /**
+   * The size of the icon (overrides default sizing based on button size)
+   * @example 16
+   */
+  iconSize?: number | string
+
+  /**
    * The HTML button type
    * @default "button"
    */
@@ -39,12 +48,13 @@ export interface AppButtonProps {
 
   /**
    * The button size
+   * - xs: 32px height
    * - sm: 40px height
    * - md: 44px height (default)
    * - lg: 48px height
    * @default "md"
    */
-  size?: "sm" | "md" | "lg"
+  size?: "xs" | "sm" | "md" | "lg"
 
   /**
    * The button visual variant
@@ -126,6 +136,7 @@ const buttonClasses = computed(() => {
 
   // Size classes
   const sizeClasses = {
+    xs: props.icon && !props.label ? "w-8 h-8" : "h-8 px-3 gap-1.5 text-xs",
     sm: props.icon && !props.label ? "w-10 h-10" : "h-10 px-4 gap-2 text-sm",
     md: props.icon && !props.label ? "w-11 h-11" : "h-11 px-5 gap-2.5 text-sm",
     lg: props.icon && !props.label ? "w-12 h-12" : "h-12 px-6 gap-3 text-base",
@@ -141,12 +152,11 @@ const buttonClasses = computed(() => {
     },
     outlined: {
       primary:
-        "border border-primary-600 text-primary-600 bg-transparent hover:bg-primary-50 focus:ring-primary-500/50",
-      error:
-        "border border-red-600 text-red-600 bg-transparent hover:bg-red-50 focus:ring-red-500/50",
+        "border border-primary-600 text-primary-600 bg-primary-50 hover:bg-primary-100 focus:ring-primary-500/50",
+      error: "border border-red-600 text-red-600 bg-red-50 hover:bg-red-100 focus:ring-red-500/50",
       success:
-        "border border-green-600 text-green-600 bg-transparent hover:bg-green-50 focus:ring-green-500/50",
-      alt: "border border-core-300 text-core-600 bg-transparent hover:bg-core-50 focus:ring-core-500/50",
+        "border border-green-600 text-green-600 bg-green-50 hover:bg-green-100 focus:ring-green-500/50",
+      alt: "border border-core-300 text-core-600 bg-core-50 hover:bg-core-100 focus:ring-core-500/50",
     },
     text: {
       primary: "text-primary-600 bg-transparent hover:bg-primary-50 focus:ring-primary-500/50",
@@ -164,16 +174,10 @@ const buttonClasses = computed(() => {
   ]
 })
 
-const iconClasses = computed(() => {
-  const baseClasses = ["flex-shrink-0"]
-
-  // Icon size based on button size
-  const sizeClasses = {
-    sm: "w-4 h-4",
-    md: "w-5 h-5",
-    lg: "w-5 h-5",
-  }
-
-  return [...baseClasses, sizeClasses[props.size]]
-})
+const iconSizes = {
+  xs: 16,
+  sm: 20,
+  md: 24,
+  lg: 28,
+}
 </script>

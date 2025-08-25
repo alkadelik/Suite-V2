@@ -1,6 +1,8 @@
+import { formatError } from "@/utils/error-handler"
 import { useAuthStore } from "@modules/auth/store"
-import { useMutation, useQuery } from "@tanstack/vue-query"
-import axios, { AxiosError, InternalAxiosRequestConfig } from "axios"
+import { useQuery } from "@tanstack/vue-query"
+import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from "axios"
+import { toast } from "./useToast"
 
 const baseURL = (import.meta.env.VITE_API_BASE_URL as string) || ""
 
@@ -40,8 +42,14 @@ baseApi.interceptors.response.use(
     }
     const originalRequest = error.config as CustomRequestConfig
 
+    const errorMsg = formatError(error)
+
     // Check if the error is a 401 and we haven't already retried this request
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (
+      error.response?.status === 401 &&
+      errorMsg.includes("token not valid") &&
+      !originalRequest._retry
+    ) {
       console.log("Access token expired. Attempting to refresh...")
       // Mark this request as retried to prevent infinite loops
       originalRequest._retry = true
@@ -53,8 +61,11 @@ baseApi.interceptors.response.use(
         return baseApi(originalRequest)
       } catch (refreshError) {
         // If refresh fails, perform a logout or redirect
-        console.error("Token refresh failed:", refreshError)
-        window.location.href = "/login"
+        toast.error("Session expired. Please log in again.")
+        useAuthStore().clearAuth()
+        // redirect to login page with the current path as redirect query
+        const redirectPath = window.location.pathname + window.location.search
+        window.location.href = `/login?redirect=${encodeURIComponent(redirectPath)}`
         return Promise.reject(refreshError as Error)
       }
     }
@@ -82,18 +93,6 @@ export const useApiQuery = <T>({ url, params, enabled }: TQueryArg) => {
   })
 }
 
-export type TMutationArg = {
-  url: string
-  method?: "post" | "put" | "patch" | "delete" | "get"
-}
-export const useApiMutation = ({ url, method = "post" }: TMutationArg) => {
-  return useMutation({
-    mutationKey: ["apiMutation"],
-    mutationFn: async (body?: Record<string, string | number | boolean>) => {
-      const response = await baseApi[method](url, body)
-      return response
-    },
-  })
-}
+export type TApiPromise<T> = Promise<AxiosResponse<T>>
 
 export default baseApi

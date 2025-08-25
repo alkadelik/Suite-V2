@@ -1,67 +1,37 @@
 <template>
-  <div class="text-core-800">
-    <div class="mb-10">
-      <h3 class="mb-3.5 text-3xl font-medium">Welcome back!</h3>
-      <p class="text-core-600">Good to see you again—pick up right where you left off.</p>
-    </div>
+  <div>
+    <SectionHeader
+      title="Welcome back!"
+      subtitle="Good to see you again—pick up right where you left off"
+      class="mb-10"
+    />
 
-    <Form
-      v-slot="{ meta }"
-      :validation-schema="validationSchema"
-      @submit="onSubmit"
-      @invalid-submit="onInvalidSubmit"
-    >
-      <div class="flex flex-col gap-8">
-        <Field v-slot="{ field, errors: fieldErrors }" name="email" validate-on-model-update>
-          <TextInput
-            v-bind="field"
-            type="email"
-            label="Email"
-            placeholder="example@gmail.com"
-            name="email"
-            required
-            :error="fieldErrors[0]"
-          />
-        </Field>
+    <AppForm :schema="loginSchema" @submit="onSubmit" v-slot="{ meta }" class="space-y-8">
+      <FormField name="email" label="Email Address" placeholder="example@gmail.com" required />
 
-        <Field v-slot="{ field, errors: fieldErrors }" name="password" validate-on-model-update>
-          <div>
-            <TextInput
-              v-bind="field"
-              type="password"
-              label="Password"
-              placeholder="Enter password"
-              name="password"
-              required
-              :error="fieldErrors[0]"
-            />
-          </div>
-        </Field>
+      <FormField name="password" type="password" label="Password" required />
 
-        <div class="flex items-center justify-between">
-          <Checkbox
-            v-model="rememberMe"
-            name="remember_me"
-            label="Remember me"
-            class="text-core-600 text-sm"
-          />
-          <RouterLink
-            to="/forgot-password"
-            class="text-primary-600 text-sm font-medium transition-colors duration-200 hover:underline"
-          >
-            Forgot Password?
-          </RouterLink>
-        </div>
-
-        <AppButton
-          type="submit"
-          :loading="isPending"
-          label="Log In"
-          class="w-full"
-          :disabled="!meta.valid"
-        />
+      <div class="flex items-center justify-between">
+        <label class="flex cursor-pointer items-center gap-1.5 text-sm">
+          <input v-model="rememberMe" type="checkbox" class="accent-primary-600 h-4 w-4" />
+          Remember me
+        </label>
+        <RouterLink
+          to="/forgot-password"
+          class="text-primary-600 text-sm font-medium transition-colors duration-200 hover:underline"
+        >
+          Forgot Password?
+        </RouterLink>
       </div>
-    </Form>
+
+      <AppButton
+        type="submit"
+        :loading="isPending"
+        label="Log In"
+        class="w-full"
+        :disabled="!meta.valid"
+      />
+    </AppForm>
 
     <div class="mt-5 pb-4">
       <p class="text-center text-sm font-normal text-gray-500">
@@ -79,70 +49,38 @@
 
 <script setup lang="ts">
 import { useRouter } from "vue-router"
-import AppButton from "@components/common/app-button.vue"
-import TextInput from "@components/common/text-input.vue"
-import { Form, Field } from "vee-validate"
-import * as yup from "yup"
-import { onInvalidSubmit } from "@/utils/validations"
 import { useLogin } from "../api"
-import { displayError, formatError } from "@/utils/error-handler"
-import { toast } from "vue3-toastify"
+import * as yup from "yup"
+import { displayError } from "@/utils/error-handler"
 import { useAuthStore } from "../store"
-import { ILoginResponse } from "../types"
-import Checkbox from "@components/common/checkbox.vue"
+import { TLoginPayload } from "../types"
+import { toast } from "@/composables/useToast"
+import AppForm from "@components/form/AppForm.vue"
+import FormField from "@components/form/FormField.vue"
+import SectionHeader from "@components/SectionHeader.vue"
 import { ref } from "vue"
-
-// Define the form data type
-type LoginFormData = {
-  email: string
-  password: string
-}
+import AppButton from "@components/AppButton.vue"
 
 const authStore = useAuthStore()
 const router = useRouter()
-const rememberMe = ref(false)
+const rememberMe = ref(true)
+const { mutate: loginFn, isPending } = useLogin()
 
-// Validation schema using yup
-const validationSchema = yup.object().shape({
+const loginSchema = yup.object({
   email: yup.string().email("Enter a valid email address").required("Email is required"),
   password: yup.string().required("Password is required"),
 })
 
-const { mutate: loginFn, isPending } = useLogin()
-
-const onSubmit = (values: Record<string, unknown>) => {
-  const loginData = values as LoginFormData
-  loginFn(loginData, {
-    onSuccess: (response: { data: { data: ILoginResponse } }) => {
-      const loginData = response.data.data
-      console.log("Login successful", loginData)
-      console.log({
-        accessToken: loginData.access,
-        refreshToken: loginData.refresh,
-      })
-      toast.success("Login successful!")
-      void router.push("/dashboard")
-      authStore.setTokens({
-        accessToken: loginData.access,
-        refreshToken: loginData.refresh,
-      })
-
-      authStore.setAuthUser({
-        avatar_url: loginData.avatar_url,
-        first_name: loginData.first_name,
-        last_name: loginData.last_name,
-        is_email_verified: loginData.is_email_verified,
-        assigned_locations: loginData.assigned_locations,
-        roles: loginData.roles,
-        subscription: loginData.subscription,
-      })
+const onSubmit = (values: TLoginPayload) => {
+  loginFn(values, {
+    onSuccess: (res) => {
+      const { access, refresh, ...user } = res.data?.data || {}
+      authStore.setTokens({ accessToken: access, refreshToken: refresh })
+      authStore.setAuthUser({ ...user, email: values.email })
+      toast.success("Your login was successful... Enjoy!")
+      router.push("/dashboard")
     },
-    onError: (error) => {
-      displayError(error)
-      // or handle separately
-      const errorMsg = formatError(error)
-      console.error("Login failed!!!", errorMsg)
-    },
+    onError: displayError,
   })
 }
 </script>

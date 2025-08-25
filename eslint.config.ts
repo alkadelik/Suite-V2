@@ -15,9 +15,7 @@ export default tseslint.config(
       "coverage",
       "node_modules",
       "*.config.*",
-      "src/components/common/**",
       "src/components/others",
-      "src/directives/**",
     ],
   },
 
@@ -25,7 +23,7 @@ export default tseslint.config(
   js.configs.recommended,
   prettierConfig,
 
-  // ✅ For TS + Vue files (type-aware linting enabled)
+  // For TS + Vue files (type-aware linting enabled)
   ...tseslint.configs.recommendedTypeChecked,
   ...pluginVue.configs["flat/essential"],
   {
@@ -49,6 +47,10 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": ["error"],
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-unsafe-return": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-floating-promises": "off",
 
       // Disable duplicate base rule
       "no-unused-vars": "off",

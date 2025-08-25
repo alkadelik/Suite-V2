@@ -1,54 +1,51 @@
 <template>
-  <div class="text-core-800 flex flex-col gap-8">
-    <RouterLink
-      to="/login"
-      class="flex gap-2 text-sm font-medium text-neutral-700 transition-colors duration-200 hover:underline"
-    >
-      <Icon name="back-arrow" />
-      Back to Login
-    </RouterLink>
+  <div class="flex flex-col gap-8">
+    <BackButton icon="back-arrow" label="Back to Login" to="/login" class="!text-core-700" />
 
-    <div>
-      <h3 class="mb-3.5 text-3xl font-medium">Forgot Password</h3>
-      <p class="mb-4 text-sm">
-        Enter your email to receive instructions on how to reset your password.
-      </p>
-    </div>
+    <SectionHeader
+      title="Forgot Password"
+      subtitle="Enter your email to receive instructions on how to reset your password."
+    />
 
-    <form class="flex flex-col gap-6" @submit.prevent="onSubmit">
-      <TextInput v-model="form.email" type="email" placeholder="abc@gmail.com" required />
-
-      <AppButton type="submit" label="Next" :loading="isPending" class="w-full" />
-    </form>
+    <AppForm :schema="schema" @submit="onSubmit" v-slot="{ meta }" class="space-y-8">
+      <FormField name="email" label="Email" placeholder="abc@gmail.com" required />
+      <AppButton
+        type="submit"
+        label="Next"
+        :loading="isPending"
+        class="w-full"
+        :disabled="!meta.valid"
+      />
+    </AppForm>
   </div>
 </template>
 
-<script setup>
-import { ref } from "vue"
+<script setup lang="ts">
 import { useRouter } from "vue-router"
-import { toast } from "vue3-toastify"
-import AppButton from "@components/common/app-button.vue"
-import TextInput from "@components/common/text-input.vue"
 import { useForgotPassword } from "../api"
-import Icon from "@components/common/icon.vue"
-import { displayError, formatError } from "@/utils/error-handler"
+import { displayError } from "@/utils/error-handler"
+import BackButton from "@components/BackButton.vue"
+import AppForm from "@components/form/AppForm.vue"
+import FormField from "@components/form/FormField.vue"
+import * as yup from "yup"
+import SectionHeader from "@components/SectionHeader.vue"
+import { toast } from "@/composables/useToast"
+import AppButton from "@components/AppButton.vue"
 
-const form = ref({ email: "" })
 const router = useRouter()
-
 const { mutate: forgotPassword, isPending } = useForgotPassword()
-const onSubmit = () => {
-  forgotPassword(form.value, {
+
+const schema = yup.object({
+  email: yup.string().email("Enter a valid email address").required(),
+})
+
+const onSubmit = (values: { email: string }) => {
+  forgotPassword(values, {
     onSuccess: () => {
       toast.success("Password reset OTP sent to your email address.")
-      void router.push(`/reset-password?email=${encodeURIComponent(form.value.email)}`)
+      router.push(`/reset-password?email=${encodeURIComponent(values.email)}`)
     },
-    onError: (error) => {
-      displayError(error)
-      // or handle separately
-      const errorMsg = formatError(error)
-      console.error("Login failed!!!", errorMsg)
-    },
+    onError: displayError,
   })
 }
 </script>
