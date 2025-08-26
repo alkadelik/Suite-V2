@@ -26,7 +26,7 @@ import { useForm } from "vee-validate"
 import * as yup from "yup"
 import { useCreateLocation } from "../api"
 import { displayError } from "@/utils/error-handler"
-import { toast } from "vue3-toastify"
+import { toast } from "@/composables/useToast"
 import { TLocationFormData } from "../types"
 
 defineProps({ open: Boolean })
