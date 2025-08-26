@@ -47,6 +47,11 @@ const routes: RouteRecordRaw[] = [
       ...sharedRoutes,
     ],
   },
+  {
+    path: "/",
+    meta: { requiresAuth: true },
+    children: [...settingsRoutes],
+  },
 
   // 404 - Catch all route (must be last)
   {
