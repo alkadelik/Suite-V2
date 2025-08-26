@@ -1,5 +1,5 @@
 import { TableColumn } from "@components/DataTable.vue"
-import { TLocation } from "./types"
+import { TLocation, TTeam } from "./types"
 
 export const LOCATION_COLUMNS: TableColumn<TLocation>[] = [
   { header: "Name", accessor: "name" },
@@ -42,5 +42,37 @@ export const LOCATIONS: TLocation[] = [
     phone: "555-3456",
     membersCount: 3,
     status: "Active",
+  },
+]
+
+export const TEAMS_COLUMN: TableColumn<TTeam>[] = [
+  { header: "Name", accessor: "firstName" },
+  {
+    header: "Locations",
+    accessor: "locations",
+    cell: ({ value }) => (value as TLocation[]).map((loc) => loc.name).join(", "),
+  },
+  { header: "Roles", accessor: "role" },
+  { header: "", accessor: "action" },
+]
+
+export const TEAMS: TTeam[] = [
+  {
+    id: 1,
+    firstName: "John",
+    lastName: "Doe",
+    email: "john.doe@example.com",
+    role: "Admin",
+    status: "Active",
+    locations: [LOCATIONS[0], LOCATIONS[1]],
+  },
+  {
+    id: 2,
+    firstName: "Jane",
+    lastName: "Smith",
+    email: "jane.smith@example.com",
+    role: "Member",
+    status: "Invited",
+    locations: [LOCATIONS[1], LOCATIONS[2]],
   },
 ]
