@@ -13,7 +13,6 @@
   },
   "dependencies": {
     "@headlessui/vue": "^1.7.23",
-    "@iconify/vue": "^5.0.0",
     "@tailwindcss/vite": "^4.1.11",
     "@tanstack/vue-query": "^5.85.3",
     "@tanstack/vue-table": "^8.21.3",
