@@ -27,13 +27,13 @@
           <button
             type="button"
             @click="removeToast(toast.id)"
-            class="ml-2 flex-shrink-0 rounded-lg p-1 transition-colors hover:bg-gray-100 focus:ring-2 focus:ring-gray-300 focus:outline-none"
+            class="ml-2 flex-shrink-0 rounded-lg transition-colors focus:ring-2 focus:outline-none"
             :aria-label="`Close ${toast.type} notification`"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
+              width="20"
+              height="20"
               viewBox="0 0 24 24"
               class="text-gray-400 hover:text-gray-600"
             >
