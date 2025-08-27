@@ -12,7 +12,6 @@ const baseApi = axios.create({
 })
 
 baseApi.interceptors.request.use((config) => {
-  //user
   const { accessToken } = useAuthStore()
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`
@@ -25,7 +24,7 @@ baseApi.interceptors.request.use((config) => {
 
 const refreshToken = async (): Promise<string> => {
   const { refreshToken, setTokens } = useAuthStore()
-  const response = await baseApi.post("/auth/refresh", { refreshToken })
+  const response = await baseApi.post("/auth/refresh/", { refreshToken })
   const { access, refresh } = response.data as { access: string; refresh: string }
   setTokens({ accessToken: access, refreshToken: refresh })
   return access

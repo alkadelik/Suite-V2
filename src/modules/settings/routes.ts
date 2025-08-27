@@ -17,6 +17,11 @@ const settingsRoutes: RouteRecordRaw[] = [
         name: "Profile",
         component: () => import("./views/profile.vue"),
       },
+      {
+        path: "teams",
+        name: "Teams",
+        component: () => import("./views/teams.vue"),
+      },
     ],
   },
 ]

@@ -74,7 +74,7 @@
 <script setup lang="ts">
 import { ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
-import { toast } from "vue3-toastify"
+import { toast } from "@/composables/useToast"
 import * as yup from "yup"
 import { useResetPassword, useVerifyToken } from "../api"
 import { passwordSchema } from "@/utils/validationSchemas"
