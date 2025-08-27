@@ -46,12 +46,8 @@
   --color-gray-950: #0c111d;
   /* others */
   --color-base-background: #f5f7f8;
-
-  /* animations */
-  --animate-spin: spin 2s linear infinite;
   /* colors - neutral */
   --color-neutral-700: #6a5554;
-
   /* colors - warning */
   --color-warning-25: #FFFCF5;
   --color-warning-50: #FFFAEB;
@@ -64,6 +60,7 @@
   --color-warning-700: #B54708;
   --color-warning-800: #93370D;
   --color-warning-900: #7A2E0E;
-
-  --color-base-background: #f5f7f8;
+  
+  /* animations */
+  --animate-spin: spin 2s linear infinite;
 }
