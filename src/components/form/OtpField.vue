@@ -5,12 +5,14 @@
       <span v-if="required" class="text-red-500">*</span>
     </label>
 
-    <div class="flex items-center gap-2" :class="containerClass">
+    <div class="grid w-full grid-cols-6 items-center gap-2" :class="[containerClass, gridCols]">
       <template v-for="(_, i) in length" :key="i">
         <!-- Add separator before the second group -->
-        <span v-if="shouldShowSeparator(i)" class="text-core-400 text-lg font-medium select-none">
-          {{ separator }}
-        </span>
+        <div v-if="shouldShowSeparator(i)" class="flex justify-center">
+          <span class="text-core-400 text-lg font-medium select-none">
+            {{ separator }}
+          </span>
+        </div>
 
         <input
           :ref="(el) => setInputRef(el as HTMLInputElement, i)"
@@ -125,18 +127,27 @@ const inputs = ref<HTMLInputElement[]>([])
 
 const htmlFor = computed(() => props.id || props.name || props.label)
 
+const gridCols = computed(() => {
+  if (props.length === 4) {
+    return "grid-cols-5" // 2 inputs + separator + 2 inputs = 5 columns
+  } else if (props.length === 6) {
+    return "grid-cols-7" // 3 inputs + separator + 3 inputs = 7 columns
+  }
+  return `grid-cols-${props.length}` // No separators for other lengths
+})
+
 const containerClass = computed(() => {
   return [props.class].filter(Boolean).join(" ")
 })
 
 const inputClasses = computed(() => {
   const baseClasses =
-    "border text-center font-semibold focus:ring focus:outline-none rounded-lg bg-core-25"
+    "border text-center font-semibold focus:ring focus:outline-none rounded-lg bg-core-25 flex-1 aspect-square"
 
   const sizeClasses = {
-    sm: "w-10 h-10 text-sm",
-    md: "w-11 h-11 text-lg",
-    lg: "w-12 h-12 text-xl",
+    sm: "text-sm",
+    md: "text-lg",
+    lg: "text-xl",
   }
 
   const variantClasses = {

@@ -2,12 +2,7 @@
   <div class="flex flex-col gap-8">
     <BackButton icon="back-arrow" label="Back to Login" to="/login" class="!text-core-700" />
 
-    <StepperWizard
-      v-model="activeStep"
-      :steps="[1, 2]"
-      :show-indicators="false"
-      v-slot="{ onNext, step }"
-    >
+    <StepperWizard v-model="activeStep" :steps="[1, 2]" :show-indicators="false" v-slot="{ step }">
       <div v-if="step === 0" class="flex flex-col gap-6">
         <SectionHeader
           title="Check Your Inbox"
@@ -22,7 +17,13 @@
 
         <OtpField v-model="otp" />
 
-        <AppButton label="Continue" :disabled="otp.length !== 6" class="w-full" @click="onNext" />
+        <AppButton
+          label="Continue"
+          :disabled="otp.length !== 6"
+          :loading="verifyTokenPending"
+          class="w-full"
+          @click="verifyToken"
+        />
 
         <p class="text-core-600 text-center text-sm">
           Didn't get the code?
@@ -75,7 +76,7 @@ import { ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { toast } from "vue3-toastify"
 import * as yup from "yup"
-import { useResetPassword } from "../api"
+import { useResetPassword, useVerifyToken } from "../api"
 import { passwordSchema } from "@/utils/validationSchemas"
 import PasswordStrength from "@components/form/PasswordStrength.vue"
 import StepperWizard from "@components/StepperWizard.vue"
@@ -95,6 +96,7 @@ const router = useRouter()
 const route = useRoute()
 const email = route.query.email ? decodeURIComponent(route.query.email as string) : ""
 const { mutate: resetPassword, isPending } = useResetPassword()
+const { mutate: verifyTokenMutation, isPending: verifyTokenPending } = useVerifyToken()
 
 const schema = yup.object({
   new_password: passwordSchema,
@@ -104,15 +106,30 @@ const schema = yup.object({
     .required("Please confirm your password"),
 })
 
+const verifyToken = () => {
+  if (otp.value.length === 6) {
+    verifyTokenMutation(otp.value, {
+      onSuccess: () => {
+        // Token is valid, proceed to next step
+        activeStep.value = 1
+        toast.success("OTP verified successfully")
+      },
+      onError: (error) => {
+        displayError(error)
+      },
+    })
+  }
+}
+
 const onSubmit = (values: TResetPasswordPayload) => {
   resetPassword(
-    { ...values, otp: otp.value },
+    { ...values, forgot_password_token: otp.value },
     {
       onSuccess: () => {
         toast.success("Password reset successfully. Login to continue.")
         router.replace("/login")
       },
-      onError: displayError,
+      onError: (error) => displayError(error),
     },
   )
 }

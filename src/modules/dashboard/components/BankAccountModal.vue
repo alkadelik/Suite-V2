@@ -74,18 +74,15 @@
 import { ref, watch, computed } from "vue"
 import * as yup from "yup"
 import { toast } from "@/composables/useToast"
-// import { displayError } from "@/utils/error-handler"
+import { displayError } from "@/utils/error-handler"
 import AppButton from "@/components/AppButton.vue"
 import Modal from "@/components/Modal.vue"
 import AppForm from "@/components/form/AppForm.vue"
 import FormField from "@/components/form/FormField.vue"
 import Icon from "@components/Icon.vue"
 import WarningBox from "@components/WarningBox.vue"
-// import {
-//   useCreateBankAccount,
-//   useGetSupportedBanks,
-//   useResolveBankAccount,
-// } from "@/composables/api/business"
+import { useCreateBankAccount, useGetSupportedBanks } from "../api.ts"
+import { TCreateAccountPayload } from "../types.ts"
 
 interface BankOption {
   label: string
@@ -108,23 +105,28 @@ const resolvedAccountName = ref("")
 const errorMsg = ref("")
 
 // API hooks (uncomment when ready to use)
-// const { data: banks = [] } = useGetSupportedBanks()
+const { data: banks } = useGetSupportedBanks()
 // const { mutate: resolveAccount, isPending: isResolving } = useResolveBankAccount()
-// const { mutate: createBankAccount, isPending } = useCreateBankAccount()
+const { mutate: createBankAccount, isPending } = useCreateBankAccount()
 
 // Mock data for development (remove when API is ready)
-const banks = ref([])
 const isResolving = ref(false)
-const isPending = ref(false)
 
 interface Bank {
   name: string
   code: string
 }
 
-const supportedBanks = computed(
-  () => banks.value?.map((bank: Bank) => ({ label: bank.name, value: bank.code })) || [],
-)
+const supportedBanks = computed(() => {
+  const apiData = banks.value?.data.data
+  if (Array.isArray(apiData)) {
+    return apiData.map((bank: Bank) => ({
+      label: bank.name,
+      value: bank.code,
+    }))
+  }
+  return []
+})
 
 // Validation schema
 const bankAccountSchema = yup.object({
@@ -178,6 +180,15 @@ watch(
   { deep: true },
 )
 
+watch(
+  () => bankAccountSchema.fields,
+  (newVal) => {
+    resolvedAccountName.value = ""
+    console.log("Form values changed:", newVal)
+  },
+  { deep: true },
+)
+
 // Watch for bank code changes to reset form
 watch(
   () => bankAccountSchema.fields.bank_code,
@@ -189,21 +200,20 @@ watch(
 )
 
 const onSubmit = (values: BankAccountPayload) => {
-  const payload = {
+  const payload: TCreateAccountPayload = {
     account_number: values.account_number,
     bank_code: values.bank_code.value,
     bank_name: values.bank_code.label,
-    account_name: resolvedAccountName.value,
   }
 
-  // createBankAccount(payload, {
-  //   onSuccess: () => {
-  //     toast.success("Bank account details saved!")
-  //     emit("update:modelValue", false)
-  //     emit("refresh")
-  //   },
-  //   onError: displayError,
-  // })
+  createBankAccount(payload, {
+    onSuccess: () => {
+      toast.success("Bank account details saved!")
+      emit("update:modelValue", false)
+      emit("refresh")
+    },
+    onError: (error) => displayError(error),
+  })
 
   // Mock success for development
   console.log("Submitting bank account:", payload)
