@@ -1,7 +1,7 @@
 <template>
   <Modal
     :open="modelValue"
-    title="Add Bank Details"
+    title="Set Up Pickup"
     max-width="xl"
     @close="emit('update:modelValue', false)"
     variant="bottom-nav"

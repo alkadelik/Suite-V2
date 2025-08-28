@@ -68,6 +68,7 @@
     <BankAccountModal v-model="showBankAccountModal" />
     <SetPickupModal v-model="showPickupModal" />
     <VerifyIdentityModal v-model="showVerifyIdentityModal" />
+    <ConfigureDeliveryModal v-model="showConfigureDeliveryModal" />
   </div>
 </template>
 
@@ -78,12 +79,14 @@ import Switch from "@components/form/Switch.vue"
 import Icon from "@components/Icon.vue"
 import { ref } from "vue"
 import BankAccountModal from "../components/BankAccountModal.vue"
-import SetPickupModal from "../components/SetPickupModal.vue"
+import SetPickupModal from "../components/ConfigurePickupModal.vue"
 import VerifyIdentityModal from "../components/VerifyIdentityModal.vue"
+import ConfigureDeliveryModal from "../components/ConfigureDeliveryModal.vue"
 
 const showBankAccountModal = ref(false)
 const showPickupModal = ref(false)
 const showVerifyIdentityModal = ref(false)
+const showConfigureDeliveryModal = ref(false)
 
 const tasks = ref([
   {
@@ -130,6 +133,7 @@ const tasks = ref([
     subtext: "Offer delivery to your customers.",
     isButton: false,
     buttonLabel: "",
+    modelValue: showConfigureDeliveryModal,
     action: () => {
       // Handle button click
     },

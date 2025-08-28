@@ -7,6 +7,13 @@ export interface IUser {
   assigned_locations: { id: number }[]
   roles: string[]
   subscription: string | null
+  store?: {
+    business_name: string
+    address: string
+    phone: string
+    store_name: string
+    phone1: string
+  }
 }
 
 export interface IAuthTokens {

@@ -2,6 +2,7 @@
   /* font-family */
   --font-sato: "Sato", sans-serif;
   --font-outfit: "Outfit", sans-serif;
+  --font-manrope: "Manrope", sans-serif;
   --font-sans: var(--font-outfit);
   --font-serif: var(--font-sato);
 
@@ -60,7 +61,12 @@
   --color-warning-700: #B54708;
   --color-warning-800: #93370D;
   --color-warning-900: #7A2E0E;
-  
+  /* colors-blue */
+  --color-blue-50: #EFF8FF;
+  --color-blue-200: #B2DDFF;
+  --color-blue-500: #2E90FA;
+  --color-blue-600: #1570EF;
+  --color-blue-700: #175CD3;
   /* animations */
   --animate-spin: spin 2s linear infinite;
 }
