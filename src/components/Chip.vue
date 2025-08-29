@@ -55,7 +55,7 @@ export interface ChipProps {
    * - alt: Gray color scheme for neutral states
    * @default "primary"
    */
-  color?: "primary" | "success" | "warning" | "error" | "alt"
+  color?: "primary" | "success" | "warning" | "error" | "alt" | "blue"
 
   /**
    * Whether to show a colored dot instead of an icon
@@ -101,6 +101,7 @@ const chipClasses = computed(() => {
       warning: "bg-yellow-600 text-white",
       error: "bg-red-600 text-white",
       alt: "bg-gray-600 text-white",
+      blue: "bg-blue-600 text-white",
     },
     outlined: {
       primary: "bg-primary-50 text-primary-700 border border-primary-200",
@@ -108,6 +109,7 @@ const chipClasses = computed(() => {
       warning: "bg-yellow-50 text-yellow-700 border border-yellow-200",
       error: "bg-red-50 text-red-700 border border-red-200",
       alt: "bg-gray-50 text-gray-700 border border-gray-200",
+      blue: "bg-blue-50 text-blue-700 border border-blue-200",
     },
   }
 
@@ -147,6 +149,7 @@ const dotClasses = computed(() => {
     warning: "bg-yellow-400",
     error: "bg-red-400",
     alt: "bg-gray-400",
+    blue: "bg-blue-500",
   }
 
   // Adjust dot color for outlined variant (make it darker)
@@ -158,6 +161,7 @@ const dotClasses = computed(() => {
       warning: "bg-yellow-600",
       error: "bg-red-600",
       alt: "bg-gray-600",
+      blue: "bg-blue-600",
     },
   }
 

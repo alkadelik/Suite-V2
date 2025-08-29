@@ -7,6 +7,13 @@ export interface IUser {
   assigned_locations: { id: number }[]
   roles: string[]
   subscription: string | null
+  store?: {
+    business_name: string
+    address: string
+    phone: string
+    store_name: string
+    phone1: string
+  }
 }
 
 export interface IAuthTokens {
@@ -39,7 +46,7 @@ export type TSignupPayload = {
 }
 
 export type TResetPasswordPayload = {
-  new_password: string
+  password: string
   confirm_password: string
-  otp: string
+  forgot_password_token: string
 }

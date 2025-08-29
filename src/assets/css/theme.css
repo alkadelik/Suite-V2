@@ -2,6 +2,7 @@
   /* font-family */
   --font-sato: "Sato", sans-serif;
   --font-outfit: "Outfit", sans-serif;
+  --font-manrope: "Manrope", sans-serif;
   --font-sans: var(--font-outfit);
   --font-serif: var(--font-sato);
 
@@ -46,7 +47,26 @@
   --color-gray-950: #0c111d;
   /* others */
   --color-base-background: #f5f7f8;
-
+  /* colors - neutral */
+  --color-neutral-700: #6a5554;
+  /* colors - warning */
+  --color-warning-25: #FFFCF5;
+  --color-warning-50: #FFFAEB;
+  --color-warning-100: #FEF0C7;
+  --color-warning-200: #FEDF89;
+  --color-warning-300: #FEC84B;
+  --color-warning-400: #FDB022;
+  --color-warning-500: #F79009;
+  --color-warning-600: #DC6803;
+  --color-warning-700: #B54708;
+  --color-warning-800: #93370D;
+  --color-warning-900: #7A2E0E;
+  /* colors-blue */
+  --color-blue-50: #EFF8FF;
+  --color-blue-200: #B2DDFF;
+  --color-blue-500: #2E90FA;
+  --color-blue-600: #1570EF;
+  --color-blue-700: #175CD3;
   /* animations */
   --animate-spin: spin 2s linear infinite;
 }

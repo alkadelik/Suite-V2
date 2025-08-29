@@ -26,11 +26,19 @@ export function useForgotPassword() {
   })
 }
 
+/** Verify token api request */
+export function useVerifyToken() {
+  return useMutation({
+    mutationFn: (forgot_password_token: string) =>
+      baseApi.get(`/accounts/auth/password/${forgot_password_token}/reset/`),
+  })
+}
+
 /** Reset password api request  */
 export function useResetPassword() {
   return useMutation({
-    mutationFn: ({ otp, ...body }: TResetPasswordPayload) =>
-      baseApi.post(`/accounts/auth/password/${otp}/reset/`, body),
+    mutationFn: ({ forgot_password_token, ...body }: TResetPasswordPayload) =>
+      baseApi.post(`/accounts/auth/password/${forgot_password_token}/reset/`, body),
   })
 }
 
