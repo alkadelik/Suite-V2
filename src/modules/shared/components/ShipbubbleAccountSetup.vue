@@ -1,6 +1,7 @@
 <template>
   <div
-    class="!font-manrope fixed top-0 left-0 flex h-screen w-full flex-col items-center bg-gray-50 py-0 md:justify-around md:py-16"
+    class="!font-manrope fixed top-0 left-0 flex h-screen w-full flex-col items-center py-0 md:justify-around md:bg-gray-50 md:py-16"
+    :class="currentStep === 3 ? 'justify-center bg-white' : 'justify-start bg-white'"
   >
     <button
       class="bg-primary-25 border-primary-300 absolute top-0 left-0 flex w-full items-center justify-center border-b py-2 text-white"
@@ -265,7 +266,7 @@ interface AuthForm {
 
 interface Props {
   authForm?: AuthForm
-  courierOptions?: string[]
+  courierOptions?: number[]
   currentStep?: number
   loading?: boolean
   hasNoShippingProfile?: boolean
@@ -359,15 +360,15 @@ const selectedOptions = computed({
 
 const toggleOption = (value: string, checked: boolean) => {
   if (checked) {
-    if (!selectedOptions.value.includes(value)) {
-      selectedOptions.value.push(value)
+    if (!selectedOptions.value.includes(+value)) {
+      selectedOptions.value.push(+value)
     }
   } else {
-    selectedOptions.value = selectedOptions.value.filter((v) => v !== value)
+    selectedOptions.value = selectedOptions.value.filter((v) => v !== +value)
   }
 }
 
-const isSelected = (value: string) => selectedOptions.value.includes(value)
+const isSelected = (value: string) => selectedOptions.value.includes(+value)
 
 const handleCouriersSubmit = () => {
   emit("submitCouriers", selectedOptions.value)

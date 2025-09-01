@@ -67,6 +67,18 @@
   --color-blue-500: #2E90FA;
   --color-blue-600: #1570EF;
   --color-blue-700: #175CD3;
+  /* colors - success */
+  --color-success-25: #F6FEF9;
+  --color-success-50: #ECFDF3;
+  --color-success-100: #DCFAE6;
+  --color-success-200: #A9EFC5;
+  --color-success-300: #75E0A7;
+  --color-success-400: #47CD89;
+  --color-success-500: #17B26A;
+  --color-success-600: #079455;
+  --color-success-700: #067647;
+  --color-success-800: #085D3A;
+  --color-success-900: #074D31;
   /* animations */
   --animate-spin: spin 2s linear infinite;
 }
