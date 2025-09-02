@@ -50,7 +50,12 @@ export const TEAMS_COLUMN: TableColumn<TTeam>[] = [
   {
     header: "Locations",
     accessor: "locations",
-    cell: ({ value }) => (value as TLocation[]).map((loc) => loc.name).join(", "),
+    cell: ({ value }) => {
+      const locations = value as TLocation[] | undefined
+      return locations && Array.isArray(locations)
+        ? locations.map((loc) => loc.name).join(", ")
+        : "No locations"
+    },
   },
   { header: "Roles", accessor: "role" },
   { header: "", accessor: "action" },
@@ -75,4 +80,20 @@ export const TEAMS: TTeam[] = [
     status: "Invited",
     locations: [LOCATIONS[1], LOCATIONS[2]],
   },
+  {
+    id: 3,
+    firstName: "Alice",
+    lastName: "Johnson",
+    email: "alice.johnson@example.com",
+    role: "Member",
+    status: "Active",
+    locations: [LOCATIONS[1]],
+  },
+]
+
+export const ROLE_OPTIONS = [
+  { label: "Admin", value: "admin" },
+  { label: "Assistant", value: "assistant" },
+  { label: "Finance", value: "finance" },
+  { label: "Sales", value: "sales" },
 ]

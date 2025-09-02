@@ -1,11 +1,11 @@
 <template>
   <div>
     <!-- table header and title -->
-    <div v-if="props.title" class="flex items-center justify-between px-1 py-4">
+    <div v-if="props.title" class="hidden items-center justify-between px-1 py-4 md:flex">
       <h2 class="text-lg font-semibold">{{ props.title }}</h2>
     </div>
     <!--  -->
-    <div class="w-full overflow-x-auto px-px">
+    <div class="hidden w-full overflow-x-auto px-px md:block">
       <table class="min-w-full border-0" :class="props.layout">
         <thead class="bg-gray-200">
           <tr v-for="headerGroup in table.getHeaderGroups()" :key="headerGroup.id">
@@ -52,44 +52,110 @@
         </tbody>
       </table>
     </div>
-    <!--  -->
     <!-- MOBILE TABLE -->
     <!--  -->
-    <div className="px-1 space-y-6 md:hidden">
-      <!-- <label
-        for="select-all"
-        class="inline-flex items-center gap-1 rounded border border-gray4 py-1 px-3 text-sm"
-        v-if="enableRowSelection"
-      >
-        <input
-          type="checkbox"
-          class="h-3.5 w-3.5 cursor-pointer"
-          :checked="table.getIsAllRowsSelected()"
-          :indeterminate="table.getIsSomeRowsSelected()"
-          @change="table.getToggleAllRowsSelectedHandler()"
-        />
-        Select All
-      </label> -->
+    <div className="px-1 space-y-4 md:hidden">
       <div
         v-for="row in table.getRowModel().rows"
         :key="row.id"
         :class="[
-          'rounded-lg border border-gray-200 bg-white',
+          'border-core-300 rounded-xl border bg-white p-4',
           { 'cursor-pointer hover:bg-gray-50': true },
         ]"
         @click="handleRowClick(row.original as T)"
       >
-        <div
-          v-for="cell in row.getVisibleCells()"
-          :key="cell.id"
-          class="flex justify-between gap-4 border-b border-gray-200 px-4 py-3 text-sm last:border-0"
-        >
-          <span className="font-medium text-core-600">
-            <FlexRender :render="cell.column.columnDef.header" :props="cell.getContext()" />
-          </span>
-          <span className="text-right text-core-800">
-            <FlexRender :render="cell.column.columnDef.cell" :props="cell.getContext()" />
-          </span>
+        <div class="flex items-start gap-3">
+          <!-- Profile/Avatar Column -->
+          <div class="flex-shrink-0">
+            <!-- Render the firstName cell which contains the Avatar component -->
+            <!-- <template v-if="getMobileCell(row, 'firstName')">
+              <FlexRender
+                :render="getMobileCell(row, 'firstName')!.column.columnDef.cell"
+                :props="getMobileCell(row, 'firstName')!.getContext()"
+              />
+            </template> -->
+          </div>
+
+          <!-- Details Column -->
+          <div class="min-w-0 flex-1">
+            <!-- Name -->
+            <div class="text-core-800 mb-2 text-sm font-medium">
+              {{
+                row.original.name ||
+                row.original.fullName ||
+                `${row.original.firstName || ""} ${row.original.lastName || ""}`.trim() ||
+                "Unknown"
+              }}
+            </div>
+
+            <!-- Role with pill -->
+            <div class="mb-2 flex items-center gap-2">
+              <template v-if="getMobileCell(row, 'role')">
+                <FlexRender
+                  :render="getMobileCell(row, 'role')!.column.columnDef.cell"
+                  :props="getMobileCell(row, 'role')!.getContext()"
+                />
+              </template>
+              <span
+                v-else
+                class="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800"
+              >
+                {{
+                  row.original.role || row.original.department || row.original.position || "Role"
+                }}
+              </span>
+              <!-- Role count pill if multiple roles -->
+              <span
+                v-if="Array.isArray(row.original.roles) && row.original.roles.length > 1"
+                class="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-800"
+              >
+                +{{ (row.original.roles as unknown[]).length - 1 }}
+              </span>
+            </div>
+
+            <!-- Locations -->
+            <div class="flex items-center gap-2">
+              <span class="text-core-600 text-xs">
+                <template v-if="getMobileCell(row, 'locations')">
+                  <FlexRender
+                    :render="getMobileCell(row, 'locations')!.column.columnDef.cell"
+                    :props="getMobileCell(row, 'locations')!.getContext()"
+                  />
+                </template>
+                <template v-else>
+                  {{
+                    row.original.location ||
+                    row.original.office ||
+                    row.original.branch ||
+                    "Location"
+                  }}
+                </template>
+              </span>
+              <!-- Location count pill if multiple locations -->
+              <span
+                v-if="Array.isArray(row.original.locations) && row.original.locations.length > 1"
+                class="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-800"
+              >
+                +{{ (row.original.locations as unknown[]).length - 1 }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Actions Column -->
+          <div class="flex-shrink-0">
+            <template v-if="getMobileCell(row, 'action')">
+              <FlexRender
+                :render="getMobileCell(row, 'action')!.column.columnDef.cell"
+                :props="getMobileCell(row, 'action')!.getContext()"
+              />
+            </template>
+            <!-- Fallback action button -->
+            <div v-else class="flex items-center gap-1">
+              <button class="rounded-md p-1.5 hover:bg-gray-100">
+                <Icon name="more-vertical" size="16" class="text-gray-500" />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -317,6 +383,17 @@ const columnHelper = createColumnHelper<T>()
 // Handler functions
 const handleRowClick = (row: T) => {
   emit("row-click", row)
+}
+
+// Helper function to get column by accessor
+// const getColumnByAccessor = (accessor: string) => {
+//   return props.columns.find((col) => col.accessor === accessor)
+// }
+
+// Helper function to get the actual cell from the table for mobile rendering
+const getMobileCell = (row: Row<T>, accessor: string) => {
+  const cells = row.getVisibleCells()
+  return cells.find((cell) => String(cell.column.id) === accessor)
 }
 
 const columns = [
