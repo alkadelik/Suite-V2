@@ -23,7 +23,7 @@
 
       <div class="grid grid-cols-2 gap-5">
         <FormField name="first_name" label="First Name" placeholder="e.g. John" required />
-        <FormField name="last_name" label="Last Name" placeholder="e.g. Doe" />
+        <FormField name="last_name" label="Last Name" placeholder="e.g. Doe" required />
       </div>
 
       <div>
@@ -114,8 +114,7 @@ const isPending = ref(false)
 
 const validationSchema = yup.object().shape({
   first_name: yup.string().required("First name is required"),
-  last_name: yup.string(),
-  email: yup.string().email("Enter a valid email address").required("Email is required"),
+  last_name: yup.string().required("Last name is required"),
   password: passwordSchema,
   confirm_password: yup
     .string()
@@ -130,7 +129,7 @@ const emailFromQuery = ref((route.query.email as string) || "")
 
 const onSubmit = (values: TSignupPayload) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { email, ...rest } = values
+  const { confirm_password, email, ...rest } = values
   const payload = {
     ...rest,
     invite_code: inviteCode.value,
