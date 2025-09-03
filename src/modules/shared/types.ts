@@ -26,3 +26,21 @@ export interface IAccount {
 export type TGetSupportedAccountsResponse = {
   data: IAccount[]
 }
+
+export type TSetupShippingPayload = {
+  store_name: string
+  store_address: string
+  email: string
+  password: string
+  phone: string
+  preferred_couriers: string[]
+}
+
+export type TUpdateShippingPayload = {
+  store_name?: string
+  store_address?: string
+  email?: string
+  password?: string
+  phone?: string
+  preferred_courier_ids?: string[]
+}

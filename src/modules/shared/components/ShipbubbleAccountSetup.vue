@@ -150,7 +150,7 @@
               <!-- scrollable list -->
               <div class="no-scrollbar mt-4 min-h-0 flex-1 space-y-2 overflow-y-auto">
                 <div v-if="isGettingCouriers" class="flex items-center justify-center">
-                  <!-- <LoadingIcon icon-class="text-black h-6 w-6" /> -->
+                  <LoadingIcon icon-class="text-black h-6 w-6" />
                 </div>
                 <div
                   v-for="option in filteredOptions"
@@ -252,9 +252,10 @@ import { ref, computed } from "vue"
 import AppButton from "@components/AppButton.vue"
 import Checkbox from "@components/form/Checkbox.vue"
 import Icon from "@components/Icon.vue"
-// import LoadingIcon from "../common/loading-icon.vue"
+import LoadingIcon from "@components/LoadingIcon.vue"
 import GooglePlacesAutoComplete from "@/components/GooglePlacesAutocomplete.vue"
 import leyyowIcon from "/images/logos/leyyow-icon.svg"
+import { useGetCouriers } from "../api"
 
 interface AuthForm {
   business_name: string
@@ -295,6 +296,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const searchQuery = ref("")
+const { data: shippingOptions, isPending: isGettingCouriers } = useGetCouriers()
 
 const authForm = computed({
   get: () => props.authForm,
@@ -318,39 +320,21 @@ const backToLeyyow = () => {
   emit("close")
 }
 
-const shippingOptions = ref([
-  {
-    id: "1",
-    name: "DHL",
-    pin_image:
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/DHL_Logo.svg/2560px-DHL_Logo.svg.png",
-  },
-  {
-    id: "2",
-    name: "FedEx",
-    pin_image:
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7a/FedEx_Express.svg/2560px-FedEx_Express.svg.png",
-  },
-  {
-    id: "3",
-    name: "UPS",
-    pin_image:
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/UPS_Logo_Shield_2017.svg/2560px-UPS_Logo_Shield_2017.svg.png",
-  },
-  {
-    id: "4",
-    name: "GIG Logistics",
-    pin_image: "https://giglogistics.com/assets/images/logo.png",
-  },
-])
-
-const isGettingCouriers = ref(false)
-
 const filteredOptions = computed(() => {
-  if (searchQuery.value === "") return shippingOptions.value
-  return shippingOptions.value.filter((v: { name: string }) =>
-    v.name.toLowerCase().includes(searchQuery.value.toLowerCase()),
+  const options = (shippingOptions.value ?? []) as Array<{
+    id: string
+    name: string
+    pin_image: string
+  }>
+
+  // Filter out null/undefined values and ensure required properties exist
+  const validOptions = options.filter(
+    (option) => option && option.id && option.name && option.pin_image,
   )
+
+  if (searchQuery.value === "") return validOptions
+
+  return validOptions.filter((v) => v.name.toLowerCase().includes(searchQuery.value.toLowerCase()))
 })
 
 const selectedOptions = computed({

@@ -23,7 +23,7 @@
 
           <!-- Body -->
           <div
-            class="bg-core-50"
+            class="bg-base-background"
             :class="[
               bodyClasses,
               props.bodyClass,

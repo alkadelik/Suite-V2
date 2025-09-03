@@ -8,7 +8,8 @@
       variant="bottom-nav"
       :handle-padding="false"
     >
-      <div class="space-y-4 px-4 py-4 md:space-y-8 md:px-6">
+      <LoadingIcon v-if="isGettingShippingProfile" icon-class="text-black h-6 w-6" />
+      <div v-else class="space-y-4 px-4 py-4 md:space-y-8 md:px-6">
         <div class="space-y-4">
           <div class="flex size-10 items-center justify-center rounded-xl bg-neutral-50 p-2">
             <Icon name="truck-fast" size="20" />
@@ -122,6 +123,12 @@ import { ref, reactive, onMounted, watch } from "vue"
 import ShipbubbleAccountSetup from "./ShipbubbleAccountSetup.vue"
 import { useAuthStore } from "@modules/auth/store"
 import { useRoute, useRouter } from "vue-router"
+import {
+  useGetShippingProfile,
+  useUpdateShippingProfile,
+  useSetupShippingProfile,
+} from "@/modules/shared/api"
+import LoadingIcon from "@components/LoadingIcon.vue"
 
 defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{
@@ -134,10 +141,12 @@ const router = useRouter()
 const { user } = useAuthStore()
 const shipBubbleStep = ref<number>(1)
 const showShipbubbleScreens = ref<boolean>(false)
-// mock data
-const shippingProfileData = ref({ preferred_couriers: [{ id: 1 }] })
-const isSettingUpShipping = ref<boolean>(false)
-const isUpdatingShippingProfile = ref<boolean>(false)
+const isShippingProfileActive = ref<boolean>(false)
+
+const { data: shippingProfileData, isPending: isGettingShippingProfile } = useGetShippingProfile()
+const { mutate: setupShippingProfile, isPending: isSettingUpShipping } = useSetupShippingProfile()
+const { mutate: updateShippingProfile, isPending: isUpdatingShippingProfile } =
+  useUpdateShippingProfile()
 
 const shipbubbleAuthForm = reactive({
   business_name: user?.store?.store_name ? user.store.store_name : "",
@@ -148,7 +157,7 @@ const shipbubbleAuthForm = reactive({
 })
 const courierOptions = ref(
   shippingProfileData.value?.preferred_couriers
-    ? shippingProfileData.value.preferred_couriers.map((courier) => courier.id)
+    ? shippingProfileData.value.preferred_couriers.map((courier: { id: number }) => courier.id)
     : [],
 )
 
@@ -159,14 +168,14 @@ const handleSetupShippingProfile = () => {
     email: shipbubbleAuthForm.email,
     password: shipbubbleAuthForm.password,
     phone: shipbubbleAuthForm.phone,
-    // preferred_couriers: [1, 2, 3],
+    preferred_couriers: [],
   }
-  //   setupShippingProfile(payload, {
-  //     onSuccess: () => {
-  //       isShippingProfileActive.value = true
-  //       shipBubbleStep.value = 2
-  //     },
-  //   })
+  setupShippingProfile(payload, {
+    onSuccess: () => {
+      isShippingProfileActive.value = true
+      shipBubbleStep.value = 2
+    },
+  })
 
   console.log(payload)
 }
@@ -175,14 +184,14 @@ const handleCouriersSubmit = () => {
   const payload = {
     preferred_courier_ids: courierOptions.value,
   }
-  //   updateShippingProfile(payload, {
-  //     onSuccess: () => {
-  //       shipBubbleStep.value = 3
-  //       setTimeout(() => {
-  //         showShipBubbleScreens.value = false
-  //       }, 3000)
-  //     },
-  //   })
+  updateShippingProfile(payload, {
+    onSuccess: () => {
+      shipBubbleStep.value = 3
+      setTimeout(() => {
+        showShipbubbleScreens.value = false
+      }, 3000)
+    },
+  })
 
   console.log(payload)
 }

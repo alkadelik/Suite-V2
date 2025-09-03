@@ -18,6 +18,26 @@
       @update:model-value="field.value = $event"
     />
 
+    <!-- Select Tags Field -->
+    <SelectTagsField
+      v-else-if="type === 'tags'"
+      v-bind="{ ...field, ...$attrs }"
+      :model-value="field.value"
+      :label="hideLabel ? '' : label || startCase(name)"
+      :options="normalizedTagOptions"
+      :placeholder="placeholder"
+      :required="required"
+      :disabled="disabled"
+      :readonly="readonly"
+      :error="fieldErrors[0]"
+      :hint="hint"
+      :variant="variant"
+      :size="size"
+      :searchable="searchable"
+      :clearable="clearable"
+      @update:model-value="field.value = $event"
+    />
+
     <!-- Textarea Field -->
     <TextAreaField
       v-else-if="type === 'textarea'"
@@ -83,9 +103,11 @@
 import { Field } from "vee-validate"
 import TextField from "./TextField.vue"
 import SelectField from "./SelectField.vue"
+import SelectTagsField from "./SelectTagsField.vue"
 import TextAreaField from "./TextAreaField.vue"
 import OtpField from "./OtpField.vue"
 import { startCase } from "@/utils/format-strings"
+import { computed } from "vue"
 
 /**
  * Form field types supported by the dynamic FormField component
@@ -104,6 +126,7 @@ export type FormFieldType =
   | "week"
   | "search"
   | "select"
+  | "tags"
   | "textarea"
   | "otp"
 
@@ -153,9 +176,13 @@ interface FormFieldProps {
   /** Autocomplete attribute */
   autocomplete?: string
 
-  // Select specific props
+  // Select and Tags specific props
   /** Options for select fields */
   options?: OptionValue[]
+  /** Enable search functionality for tags field */
+  searchable?: boolean
+  /** Show clear button for tags field */
+  clearable?: boolean
 
   // Textarea specific props
   /** Number of rows for textarea */
@@ -184,6 +211,8 @@ const props = withDefaults(defineProps<FormFieldProps>(), {
   otpLength: 6,
   digitsOnly: true,
   separator: "-",
+  searchable: false,
+  clearable: false,
 })
 
 // Expose props for reactive access in template
@@ -205,6 +234,8 @@ const {
   step,
   autocomplete,
   options,
+  searchable,
+  clearable,
   rows,
   cols,
   showCharacterCount,
@@ -213,4 +244,27 @@ const {
   digitsOnly,
   separator,
 } = props
+
+// OptionWithClass type should match the expected type in SelectTagsField
+type OptionWithClass = {
+  value: string | number | Record<string, unknown>
+  label: string
+  class?: string
+}
+
+// Normalize options for SelectTagsField to OptionWithClass[]
+const normalizedTagOptions = computed<OptionWithClass[]>(() => {
+  if (!options) return []
+  return options.map((opt) => {
+    if (typeof opt === "string" || typeof opt === "number") {
+      return { value: opt, label: String(opt) }
+    }
+    // If already an object, assume it matches OptionWithClass or convert as needed
+    if ("value" in opt && "label" in opt) {
+      return opt as OptionWithClass
+    }
+    // eslint-disable-next-line @typescript-eslint/no-base-to-string
+    return { value: opt, label: String(opt) }
+  })
+})
 </script>

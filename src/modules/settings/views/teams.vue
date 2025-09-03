@@ -72,6 +72,7 @@
       </DataTable>
     </div>
 
+    <!-- modals -->
     <InviteToLocationmodal v-model="showInvitationModal" @close="showInvitationModal = false" />
     <EditMemberModal
       v-model="showEditMemberModal"
