@@ -20,6 +20,12 @@
         :required="required"
         :name="name"
         :disabled="disabled"
+        autocomplete="new-password"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+        aria-autocomplete="list"
+        inputmode="search"
       />
 
       <!-- Dropdown -->
