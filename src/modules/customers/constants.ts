@@ -30,6 +30,10 @@ export const CUSTOMERS: TCustomer[] = [
     lastOrderDate: "2023-09-15",
     phone: "555-1234",
     totalOrders: 5,
+    address: "12, Adeola Odeku Street, Victoria Island Annex",
+    city: "Lagos, Victoria Island",
+    dateOfBirth: "19 Jan, 1998",
+    instagramHandle: "Adebolapumping99",
   },
   {
     id: 2,

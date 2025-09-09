@@ -6,21 +6,82 @@
     max-width="xl"
     @close="emit('update:modelValue', false)"
   >
-    <CustomerCard v-if="customer" :customer="customer" class="mb-5" />
+    <template class="flex flex-col gap-5">
+      <CustomerCard v-if="customer" :customer="customer" />
 
-    <!-- Summary Cards -->
-    <SummaryCard :items="summaryStats" class="mb-5" />
+      <!-- Summary Cards -->
+      <SummaryCard :items="summaryStats" />
 
-    <!-- Tabs for Recent Orders and More Info -->
-    <Tabs v-model="activeStatus" :tabs="tabOptions" />
+      <div class="flex flex-col">
+        <!-- Tabs for Recent Orders and More Info -->
+        <Tabs v-model="activeStatus" :tabs="tabOptions" />
 
-    <template v-for="order in ORDERS" :key="order.id">
-      <OrderCard
-        v-if="!(order.order_ref.startsWith('2') && !order.payment_status)"
-        :key="'order-' + order.id"
-        :order="order"
-        @open:dropdown="selectedOrder = order"
-      />
+        <div v-if="activeStatus === 'recent_orders'">
+          <template v-for="order in ORDERS" :key="order.id">
+            <OrderCard
+              v-if="!(order.order_ref.startsWith('2') && !order.payment_status)"
+              :key="'order-' + order.id"
+              :order="order"
+              @open:dropdown="selectedOrder = order"
+            />
+          </template>
+        </div>
+        <div
+          v-else-if="activeStatus === 'more_info'"
+          class="text-core-800 flex-1 rounded-xl bg-white p-4 md:min-h-[20rem]"
+        >
+          <h5 class="font-outfit mb-4 text-sm font-bold md:text-lg">Other Information</h5>
+
+          <div class="space-y-5">
+            <!-- Address -->
+            <div class="flex">
+              <span class="text-core-600 w-2/5 text-xs md:text-sm">Address</span>
+              <span class="flex-1 text-xs font-semibold md:text-sm">{{ customer?.address }}</span>
+            </div>
+
+            <!-- City/State -->
+            <div class="flex">
+              <span class="text-core-600 w-2/5 text-xs md:text-sm">City/State</span>
+              <span class="flex-1 text-xs font-semibold md:text-sm">{{ customer?.city }}</span>
+            </div>
+
+            <!-- Date of Birth -->
+            <div class="flex">
+              <span class="text-core-600 w-2/5 text-xs md:text-sm">Date of Birth</span>
+              <span class="flex-1 text-xs font-semibold md:text-sm">{{
+                customer?.dateOfBirth
+              }}</span>
+            </div>
+
+            <!-- Instagram Handle -->
+            <div class="flex">
+              <span class="text-core-600 w-2/5 text-xs md:text-sm">Instagram handle</span>
+              <span class="flex-1 text-xs font-semibold md:text-sm">{{
+                customer?.instagramHandle
+              }}</span>
+            </div>
+
+            <!-- Divider -->
+            <hr class="my-4 border-gray-200" />
+
+            <!-- Date Joined -->
+            <div class="flex">
+              <span class="text-core-600 w-2/5 text-xs md:text-sm">Date joined</span>
+              <span class="flex-1 text-xs font-semibold md:text-sm">{{
+                customer?.dateOfBirth
+              }}</span>
+            </div>
+
+            <!-- Last Order Date -->
+            <div class="flex">
+              <span class="text-core-600 w-2/5 text-xs md:text-sm">Last order date</span>
+              <span class="flex-1 text-xs font-semibold md:text-sm">{{
+                customer?.lastOrderDate
+              }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </template>
   </Drawer>
 </template>
