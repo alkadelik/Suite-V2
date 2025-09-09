@@ -16,10 +16,10 @@
       :key="formKey"
     >
       <div class="flex-1 space-y-4 px-4 py-4 md:space-y-6 md:px-6">
-        <FormField name="firstName" label="First Name" type="text" placeholder="e.g. Adebola" />
+        <FormField name="first_name" label="First Name" type="text" placeholder="e.g. Adebola" />
 
         <FormField
-          name="lastName"
+          name="last_name"
           label="Last Name (optional)"
           type="text"
           placeholder="e.g. Smith"
@@ -109,8 +109,8 @@ import GooglePlacesAutocomplete from "@components/GooglePlacesAutocomplete.vue"
 
 interface FormValues {
   [key: string]: unknown
-  firstName: string
-  lastName: string
+  first_name: string
+  last_name: string
   email: string
   phone: string
   address: string
@@ -176,8 +176,8 @@ const drawerPosition = computed(() => {
 // Validation schema - updated to match form fields
 const schema = computed(() => {
   return yup.object({
-    firstName: yup.string().required("First name is required"),
-    lastName: yup.string().optional(),
+    first_name: yup.string().required("First name is required"),
+    last_name: yup.string().optional(),
     email: yup.string().email("Please enter a valid email address").optional(),
     phone: yup.string().optional(),
     address: yup.string().optional(),
@@ -192,8 +192,8 @@ const schema = computed(() => {
 const initialValues = computed<FormValues>(() => {
   if (props.mode === "edit" && props.customer) {
     return {
-      firstName: props.customer.firstName || "",
-      lastName: props.customer.lastName || "",
+      first_name: props.customer.first_name || "",
+      last_name: props.customer.last_name || "",
       email: props.customer.email || "",
       phone: props.customer.phone || "",
       address: props.customer.address || "",
@@ -205,8 +205,8 @@ const initialValues = computed<FormValues>(() => {
   }
 
   return {
-    firstName: "",
-    lastName: "",
+    first_name: "",
+    last_name: "",
     email: "",
     phone: "",
     address: "",
@@ -220,8 +220,8 @@ const initialValues = computed<FormValues>(() => {
 // Handle form submission
 const onSubmit = (values: FormValues) => {
   const payload: ICustomerFormPayload = {
-    firstName: values.firstName.trim(),
-    lastName: values.lastName.trim(),
+    first_name: values.first_name.trim(),
+    last_name: values.last_name.trim(),
     email: values.email.trim().toLowerCase(),
     phone: values.phone.trim(),
     address: values.address.trim() || undefined,

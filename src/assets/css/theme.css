@@ -47,6 +47,7 @@
   --color-gray-950: #0c111d;
   /* others */
   --color-base-background: #f5f7f8;
+  --color-green-700: #669F2A;
   /* colors - neutral */
   --color-neutral-700: #6a5554;
   /* colors - warning */
@@ -91,6 +92,18 @@
   --color-error-700: #B42318;
   --color-error-800: #912018;
   --color-error-900: #7A271A;
+  /* colors bloom */
+  --color-bloom-25: #F8F2F3;
+  --color-bloom-50: #F5EBEC;
+  --color-bloom-100: #F2E4E6;
+  --color-bloom-200: #EFDCDF;
+  --color-bloom-300: #EDD5D8;
+  --color-bloom-400: #EBCDD0;
+  --color-bloom-500: #E8C0C5;
+  --color-bloom-600: #DB9AA2;
+  --color-bloom-700: #CE747F;
+  --color-bloom-800: #BF4555;
+  --color-bloom-900: #8E2F3B;
   /* animations */
   --animate-spin: spin 2s linear infinite;
 }

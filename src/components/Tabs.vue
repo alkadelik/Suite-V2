@@ -6,7 +6,7 @@
         v-for="tab in processedTabs"
         :key="tab.key"
         :class="[
-          'px-4 py-2 text-sm font-medium transition-all duration-200',
+          'p-4 text-sm font-medium transition-all duration-200',
           getTabClasses(tab),
           equal && 'flex-1',
         ]"
@@ -106,7 +106,7 @@ const activeTab = computed({
 
 const headerClasses = computed(() => {
   const variants = {
-    default: "border-b border-core-200",
+    default: "",
     tonal: "bg-core-50 rounded-lg p-1",
     pills: "bg-core-100 rounded-xl p-1 gap-1",
   }
@@ -118,14 +118,14 @@ const getTabClasses = (tab: TabItem) => {
 
   const variants = {
     default: {
-      base: "border-b-2 border-transparent",
-      active: "border-primary-500 text-primary-600",
-      inactive: "text-core-800 hover:text-primary-700",
+      base: "border-b border-core-200",
+      active: "border-primary-700 text-primary-700 bg-primary-50 border-b-2 border-primary-700",
+      inactive: "text-gray-500 hover:text-primary-700",
     },
     tonal: {
       base: "rounded-md border-b-2 border-transparent",
       active: "bg-primary-100 text-primary-700 border-primary-500",
-      inactive: "text-core-800 hover:text-primary-700",
+      inactive: "text-gray-500 hover:text-primary-700",
     },
     pills: {
       base: "rounded-lg",

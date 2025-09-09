@@ -1,9 +1,12 @@
 <template>
   <div class="p-4">
-    <div class="page-header">
-      <h1>Customers</h1>
-      <p class="page-description">Manage your customer database and relationships</p>
-    </div>
+    <SectionHeader
+      title="Customers"
+      subtitle="View, manage, and keep track of all your customers in one place."
+      class="mb-4"
+    />
+
+    <MetricsGrid :items="customerMetrics" />
 
     <div class="mt-4 space-y-4 rounded-xl border-gray-200 bg-white pt-3 md:border">
       <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
@@ -51,16 +54,18 @@
           />
         </div>
       </div>
+
       <DataTable
         :data="CUSTOMERS"
         :columns="CUSTOMER_COLUMNS"
         :loading="false"
         :show-pagination="false"
         :enable-row-selection="true"
+        @row-click="handleRowClick"
       >
         <template #cell:name="{ item }">
           <div>
-            <Avatar :name="`${item.firstName} ${item.lastName}`" />
+            <Avatar :name="`${item.first_name} ${item.last_name}`" />
           </div>
         </template>
 
@@ -95,16 +100,21 @@
           <div class="flex items-center gap-2">
             <Icon
               name="trash-01"
-              @click="handleAction('delete', item)"
+              @click.stop="handleAction('delete', item)"
               class="hidden md:inline-block"
             />
-            <Icon name="edit" @click="handleAction('edit', item)" class="hidden md:inline-block" />
+            <Icon
+              name="edit"
+              @click.stop="handleAction('edit', item)"
+              class="hidden md:inline-block"
+            />
             <DropdownMenu
               :items="getActionItems(item)"
               placement="bottom-end"
               :show-chevron="false"
               size="sm"
               trigger-class="!p-1 !min-h-6 !w-6 hover:bg-gray-100 !border-0 md:hidden"
+              @click.stop
             >
               <template #trigger>
                 <Icon name="dots-vertical" />
@@ -117,7 +127,7 @@
         <template #mobile-content="{ item }">
           <div class="space-y-2">
             <div class="flex items-start gap-2">
-              <Avatar :name="`${item.firstName} ${item.lastName}`" class="items-start" />
+              <Avatar :name="`${item.first_name} ${item.last_name}`" class="items-start" />
               <Chip
                 :label="`${String(item.totalOrders)} orders`"
                 variant="outlined"
@@ -134,6 +144,7 @@
                   :show-chevron="false"
                   size="sm"
                   trigger-class="!p-1 !min-h-6 !w-6 hover:bg-gray-100 !border-0"
+                  @click.stop
                 >
                   <template #trigger>
                     <Icon name="sms" size="16" />
@@ -147,6 +158,7 @@
                   :show-chevron="false"
                   size="sm"
                   trigger-class="!p-1 !min-h-6 !w-6 hover:bg-gray-100 !border-0"
+                  @click.stop
                 >
                   <template #trigger>
                     <Icon name="call" size="16" />
@@ -167,6 +179,7 @@
               :show-chevron="false"
               size="sm"
               trigger-class="!p-1 !min-h-6 !w-6 hover:bg-gray-100 !border-0"
+              @click.stop
             >
               <template #trigger>
                 <Icon name="dots-vertical" />
@@ -202,10 +215,15 @@
       :customer="customer"
       @submit="handleCustomerSubmit"
     />
+    <ViewCustomerDrawer
+      v-model="showViewCustomerDrawer"
+      :mode="formMode"
+      :customer="customer"
+      @close="showViewCustomerDrawer = false"
+    />
   </div>
 </template>
 
-<!-- Key changes to the script section only -->
 <script setup lang="ts">
 import DataTable from "@components/DataTable.vue"
 import Avatar from "@components/Avatar.vue"
@@ -222,6 +240,10 @@ import { toast } from "@/composables/useToast"
 import DeleteConfirmationModal from "@components/DeleteConfirmationModal.vue"
 import CustomerFormDrawer from "../components/CustomerFormDrawer.vue"
 import ExportCustomerModal from "../components/ExportCustomerModal.vue"
+import ViewCustomerDrawer from "../components/ViewCustomerDrawer.vue"
+import { formatCurrency } from "@/utils/format-currency"
+import MetricsGrid from "@components/MetricsGrid.vue"
+import SectionHeader from "@components/SectionHeader.vue"
 
 const formMode = ref<TCustomerFormMode>("add")
 const showDeleteConfirmationModal = ref(false)
@@ -229,6 +251,33 @@ const showCustomerFormDrawer = ref(false)
 const showViewCustomerDrawer = ref(false)
 const showExportCustomerModal = ref(false)
 const customer = ref<TCustomer | null>(null)
+
+const handleRowClick = (clickedCustomer: TCustomer) => {
+  customer.value = { ...clickedCustomer }
+  formMode.value = "view"
+  showViewCustomerDrawer.value = true
+}
+
+const customerMetrics = ref([
+  {
+    label: "Total Customers",
+    value: formatCurrency(12500),
+    prev_value: formatCurrency(10500),
+    icon: "user-octagon",
+    chartData: [10, 12, 8, 14, 15, 9, 11],
+    chartColor: "#D0F8AA",
+    iconClass: "md:text-green-700",
+  },
+  {
+    label: "Unique Visitors",
+    value: formatCurrency(12500),
+    prev_value: formatCurrency(10500),
+    icon: "user-circle-add",
+    chartData: [5, 6, 5, 7, 8, 6, 7],
+    chartColor: "#FECCD6",
+    iconClass: "md:text-bloom-700",
+  },
+])
 
 // Email dropdown items
 const getEmailDropdownItems = (item: TCustomer) => [

@@ -24,8 +24,8 @@ export const CUSTOMER_COLUMNS: TableColumn<TCustomer>[] = [
 export const CUSTOMERS: TCustomer[] = [
   {
     id: 1,
-    firstName: "John",
-    lastName: "Doe",
+    first_name: "John",
+    last_name: "Doe",
     email: "john.doe@example.com",
     lastOrderDate: "2023-09-15",
     phone: "555-1234",
@@ -33,8 +33,8 @@ export const CUSTOMERS: TCustomer[] = [
   },
   {
     id: 2,
-    firstName: "Jane",
-    lastName: "Smith",
+    first_name: "Jane",
+    last_name: "Smith",
     email: "jane.smith@example.com",
     lastOrderDate: "2023-09-16",
     phone: "555-5678",
@@ -42,8 +42,8 @@ export const CUSTOMERS: TCustomer[] = [
   },
   {
     id: 3,
-    firstName: "Alice",
-    lastName: "Johnson",
+    first_name: "Alice",
+    last_name: "Johnson",
     email: "alice.johnson@example.com",
     lastOrderDate: "2023-09-17",
     phone: "555-9012",
