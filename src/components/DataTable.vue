@@ -98,8 +98,11 @@
               </slot>
             </div>
 
-            <!-- Actions Section (right side) -->
-            <div class="flex-shrink-0">
+            <!-- Actions Section (right side) - Only render if slot has content -->
+            <div
+              v-if="$slots['mobile-actions'] || hasMobileActionsContent(row)"
+              class="flex-shrink-0"
+            >
               <slot
                 name="mobile-actions"
                 :item="row.original"
@@ -383,6 +386,14 @@ const getDisplayValue = (item: T, key: string): string => {
   }
   // eslint-disable-next-line @typescript-eslint/no-base-to-string
   return String(value)
+}
+
+// Helper function to check if mobile actions slot has content
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const hasMobileActionsContent = (_row: Row<T>): boolean => {
+  // This is a fallback check - in practice, the v-if="$slots['mobile-actions']" should handle most cases
+  // But we keep this for any edge cases where we might want to conditionally show actions based on row data
+  return false
 }
 
 const columns = [

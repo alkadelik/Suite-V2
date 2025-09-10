@@ -1,14 +1,22 @@
 <template>
   <div :class="props.class">
     <!-- Tabs Header -->
-    <div ref="tabContainer" :class="['tabheader flex overflow-x-auto', headerClasses]">
+    <div
+      ref="tabContainer"
+      :class="[
+        'tabheader flex overflow-x-auto',
+        headerClasses,
+        variant === 'pills' && 'border border-gray-200',
+      ]"
+    >
       <button
         v-for="tab in processedTabs"
         :key="tab.key"
         :class="[
-          'p-4 text-sm font-medium transition-all duration-200',
+          'text-sm font-medium transition-all duration-200',
           getTabClasses(tab),
           equal && 'flex-1',
+          variant !== 'pills' ? 'p-4' : 'px-10 py-2',
         ]"
         @click="changeTab(tab.key)"
       >
@@ -108,7 +116,7 @@ const headerClasses = computed(() => {
   const variants = {
     default: "",
     tonal: "bg-core-50 rounded-lg p-1",
-    pills: "bg-core-100 rounded-xl p-1 gap-1",
+    pills: "bg-transparent rounded-full p-0.5 gap-1",
   }
   return variants[props.variant]
 })
@@ -128,7 +136,7 @@ const getTabClasses = (tab: TabItem) => {
       inactive: "text-gray-500 hover:text-primary-700",
     },
     pills: {
-      base: "rounded-lg",
+      base: "rounded-full",
       active: "bg-primary-500 text-white shadow-sm",
       inactive: "text-core-600 hover:bg-white hover:text-primary-600 hover:shadow-sm",
     },

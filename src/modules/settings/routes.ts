@@ -26,6 +26,11 @@ const settingsRoutes: RouteRecordRaw[] = [
         name: "Teams",
         component: () => import("./views/teams.vue"),
       },
+      {
+        path: "billing",
+        name: "PlansAndBilling",
+        component: () => import("./views/plans-and-billing.vue"),
+      },
     ],
   },
 ]

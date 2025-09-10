@@ -64,7 +64,7 @@
       <div class="space-y-3 bg-white px-6 py-4">
         <AppButton
           type="submit"
-          label="Invite Member"
+          label="Send CSV to my email"
           :loading="isPending"
           class="w-full"
           :disabled="!meta.valid"
@@ -150,10 +150,10 @@ const onSubmit = (values: FormValues) => {
     end_date: values.end_date,
   }
 
-  console.log("Submitting invite member payload:", payload)
+  console.log("Submitting export payload:", payload)
 
   // Mock success for development
-  toast.success("Member invitation sent!")
+  toast.success("Export request sent!")
   emit("update:modelValue", false)
   emit("refresh")
 }

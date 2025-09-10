@@ -6,7 +6,7 @@
     @click="handleClick"
   >
     <Icon
-      v-if="icon || loading"
+      v-if="(icon || loading) && iconPlacement === 'left'"
       :name="loading ? 'loader' : icon || ''"
       :size="iconSize || iconSizes[props.size] || 20"
       :class="['flex-shrink-0', loading ? 'animate-spin' : '']"
@@ -14,6 +14,12 @@
     <slot>
       <span v-if="loadingText || label">{{ loadingText || label }}</span>
     </slot>
+    <Icon
+      v-if="(icon || loading) && iconPlacement === 'right'"
+      :name="loading ? 'loader' : icon || ''"
+      :size="iconSize || iconSizes[props.size] || 20"
+      :class="['flex-shrink-0', loading ? 'animate-spin' : '']"
+    />
   </button>
 </template>
 
@@ -39,6 +45,14 @@ export interface AppButtonProps {
    * @example 16
    */
   iconSize?: number | string
+
+  /**
+   * The placement of the icon relative to the text
+   * - left: Icon appears before the text (default)
+   * - right: Icon appears after the text
+   * @default "left"
+   */
+  iconPlacement?: "left" | "right"
 
   /**
    * The HTML button type
@@ -104,6 +118,7 @@ const props = withDefaults(defineProps<AppButtonProps>(), {
   size: "md",
   variant: "filled",
   color: "primary",
+  iconPlacement: "left",
   disabled: false,
   loading: false,
 })

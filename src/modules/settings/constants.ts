@@ -1,5 +1,5 @@
 import { TableColumn } from "@components/DataTable.vue"
-import { TLocation, TTeam } from "./types"
+import { TLocation, TSubscription, TTeam } from "./types"
 
 export const LOCATION_COLUMNS: TableColumn<TLocation>[] = [
   { header: "Name", accessor: "name" },
@@ -96,4 +96,43 @@ export const ROLE_OPTIONS = [
   { label: "Assistant", value: "assistant" },
   { label: "Finance", value: "finance" },
   { label: "Sales", value: "sales" },
+]
+
+export const SUBSCRIPTION_COLUMN: TableColumn<TSubscription>[] = [
+  {
+    header: "Date",
+    accessor: "date",
+  },
+  { header: "Plan name", accessor: "planName" },
+  { header: "Amount", accessor: "amount" },
+  { header: "Billing Period", accessor: "billingPeriod" },
+  { header: "Status", accessor: "status" },
+  { header: "", accessor: "action" },
+]
+
+export const SUBSCRIPTIONS: TSubscription[] = [
+  {
+    id: 1,
+    date: "23-08-2025",
+    planName: "Bloom",
+    amount: 100000,
+    billingPeriod: "Monthly",
+    status: "Success",
+  },
+  {
+    id: 2,
+    date: "23-07-2025",
+    planName: "Bud",
+    amount: 500000,
+    billingPeriod: "Yearly",
+    status: "Failed",
+  },
+  {
+    id: 3,
+    date: "23-06-2025",
+    planName: "Burst",
+    amount: 1000000,
+    billingPeriod: "Yearly",
+    status: "Success",
+  },
 ]

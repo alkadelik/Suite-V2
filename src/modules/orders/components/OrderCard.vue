@@ -277,7 +277,7 @@ const outstandingBalance = computed(() => {
             </button>
             <div
               v-else
-              class="text-xs font-medium"
+              class="inline-flex items-center gap-1 text-xs font-medium"
               :class="
                 item.delivered_qty == item.qty
                   ? 'text-success-600'
@@ -286,12 +286,22 @@ const outstandingBalance = computed(() => {
                     : 'text-error-600'
               "
             >
+              <div
+                class="h-1.5 w-1.5 rounded-full"
+                :class="
+                  item.delivered_qty == item.qty
+                    ? 'bg-success-600'
+                    : item.delivered_qty && item.delivered_qty < item.qty
+                      ? 'bg-blue-500'
+                      : 'bg-error-600'
+                "
+              ></div>
               {{
                 item.delivered_qty == item.qty
-                  ? "• Fulfilled"
+                  ? "Fulfilled"
                   : item.delivered_qty && item.delivered_qty < item.qty
-                    ? `• Partly fulfilled ${item.delivered_qty}/${item.qty}`
-                    : "• Unfulfilled"
+                    ? `Partly fulfilled ${item.delivered_qty}/${item.qty}`
+                    : "Unfulfilled"
               }}
             </div>
           </div>

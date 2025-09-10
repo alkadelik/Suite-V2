@@ -41,14 +41,14 @@ defineProps<{
       <div
         v-for="(item, i) in items"
         :key="i"
-        class="bg-primary-25 border-primary-200 flex flex-col gap-3 rounded-lg border px-3.5 py-3 shadow-sm md:border-0 md:bg-white"
+        class="bg-primary-25 border-primary-200 flex flex-col gap-1 rounded-lg border px-3.5 py-3 shadow-sm md:gap-3 md:border-0 md:bg-white"
       >
         <!-- Top section -->
-        <div class="inline-flex flex-col gap-1">
-          <span class="flex h-6 w-6 items-center justify-center rounded-md bg-gray-50">
-            <Icon :name="item.icon" :class="['text-primary-600', item.iconClass]" />
+        <div class="md: inline-flex flex-col gap-5 md:flex-row md:items-center md:gap-2">
+          <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-gray-50">
+            <Icon :name="item.icon" :class="['text-primary-600', item.iconClass]" :size="24" />
           </span>
-          <h4 class="text-core-600 flex items-end gap-1.5 text-sm">
+          <h4 class="text-core-600 !font-outfit flex items-end gap-1.5 text-sm">
             {{ item.label }}
             <span
               v-if="item.labelTag"
@@ -73,7 +73,9 @@ defineProps<{
         </p>
 
         <!-- Previous value comparison -->
-        <p class="text-xs text-gray-500">vs. {{ item.prev_value }} last mth</p>
+        <p class="hidden text-xs text-gray-500 md:inline-block">
+          vs. {{ item.prev_value }} last mth
+        </p>
 
         <!-- Chart (hidden on mobile) -->
         <div class="hidden md:block">
