@@ -16,7 +16,7 @@
           'text-sm font-medium transition-all duration-200',
           getTabClasses(tab),
           equal && 'flex-1',
-          variant !== 'pills' ? 'p-4' : 'px-10 py-2',
+          variant !== 'pills' ? 'p-4' : 'px-5 py-2 md:px-10',
         ]"
         @click="changeTab(tab.key)"
       >
@@ -26,7 +26,7 @@
 
     <!-- Tabs Content with Transition -->
     <Transition name="fade-slide" mode="out-in">
-      <div :key="activeTab" class="py-4">
+      <div :key="activeTab" class="pb-2 md:py-4">
         <slot :name="activeTab"></slot>
       </div>
     </Transition>

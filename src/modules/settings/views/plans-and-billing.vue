@@ -35,7 +35,12 @@
 
             <p class="text-core-800 text-xs md:text-sm">Free</p>
           </div>
-          <AppButton label="Upgrade Plan" icon="arrow-right" icon-placement="right" />
+          <AppButton
+            label="Upgrade Plan"
+            icon="arrow-right"
+            icon-placement="right"
+            @click="showPlansModal = true"
+          />
         </div>
       </div>
 
@@ -91,11 +96,16 @@
         <template #cell:action="{ item }">
           <div class="flex items-center gap-2">
             <Icon
-              name="eye"
+              name="eye-outline"
               @click="handleAction('view', item)"
-              class="hidden cursor-pointer text-gray-500 hover:text-gray-700 md:inline-block"
+              class="text-core-600 hover:text-core-700 hidden cursor-pointer md:inline-block"
             />
-            <DropdownMenu
+            <Icon
+              name="import"
+              @click="handleAction('view', item)"
+              class="text-core-600 hover:text-core-700 hidden cursor-pointer md:inline-block"
+            />
+            <!-- <DropdownMenu
               :items="getActionItems(item)"
               placement="bottom-end"
               :show-chevron="false"
@@ -105,7 +115,7 @@
               <template #trigger>
                 <Icon name="dots-vertical" />
               </template>
-            </DropdownMenu>
+            </DropdownMenu> -->
           </div>
         </template>
 
@@ -149,6 +159,9 @@
         </template> -->
       </DataTable>
     </div>
+
+    <!-- modals -->
+    <PlansModal v-model="showPlansModal" @close="showPlansModal = false" />
   </div>
 </template>
 
@@ -161,12 +174,15 @@ import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
 import { formatCurrency } from "@/utils/format-currency"
 import DataTable from "@components/DataTable.vue"
-import DropdownMenu from "@components/DropdownMenu.vue"
+// import DropdownMenu from "@components/DropdownMenu.vue"
 import type { TSubscription } from "../types"
 import { SUBSCRIPTION_COLUMN, SUBSCRIPTIONS } from "../constants"
+import PlansModal from "../components/PlansModal.vue"
+import { getPlanColor } from "../constants"
 
 type colorType = "primary" | "success" | "warning" | "error" | "alt" | "blue" | "purple" | undefined
 
+const showPlansModal = ref(false)
 const activeTab = ref("monthly")
 
 const tabs = ref([
@@ -179,15 +195,6 @@ const tabs = ref([
     key: "yearly",
   },
 ])
-
-const getPlanColor = (planName: string): colorType => {
-  const planColors: Record<string, colorType> = {
-    Burst: "purple",
-    Bloom: "blue",
-    Bud: "success",
-  }
-  return planColors[planName] || "primary"
-}
 
 const getStatusColor = (status: string): colorType => {
   const statusColors: Record<string, colorType> = {
@@ -202,25 +209,25 @@ const handleAction = (action: string, item: TSubscription) => {
   console.log(`${action} action for subscription:`, item)
 }
 
-const getActionItems = (item: TSubscription) => [
-  {
-    label: "View Details",
-    icon: "eye",
-    action: () => handleAction("view", item),
-  },
-  {
-    label: "Download Invoice",
-    icon: "download",
-    action: () => handleAction("download", item),
-  },
-  ...(item.status === "Failed"
-    ? [
-        {
-          label: "Retry Payment",
-          icon: "refresh-cw",
-          action: () => handleAction("retry", item),
-        },
-      ]
-    : []),
-]
+// const getActionItems = (item: TSubscription) => [
+//   {
+//     label: "View Details",
+//     icon: "eye-outline",
+//     action: () => handleAction("view", item),
+//   },
+//   {
+//     label: "Download Invoice",
+//     icon: "import",
+//     action: () => handleAction("download", item),
+//   },
+//   ...(item.status === "Failed"
+//     ? [
+//         {
+//           label: "Retry Payment",
+//           icon: "refresh-cw",
+//           action: () => handleAction("retry", item),
+//         },
+//       ]
+//     : []),
+// ]
 </script>

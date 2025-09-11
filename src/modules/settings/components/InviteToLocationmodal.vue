@@ -9,15 +9,10 @@
   >
     <AppForm :schema="schema" @submit="onSubmit" v-slot="{ meta }">
       <div class="space-y-4 px-4 py-4 md:space-y-8 md:px-6">
-        <div class="space-y-4">
-          <div class="flex size-10 items-center justify-center rounded-xl bg-neutral-50 p-2">
-            <Icon name="profile-add" size="20" />
-          </div>
-
-          <p class="text-xs md:text-sm">
-            Invite members and assign their locations and respective roles
-          </p>
-        </div>
+        <IconHeader
+          icon-name="profile-add"
+          subtext="Invite members and assign their locations and respective roles"
+        />
 
         <FormField
           name="email"
@@ -69,7 +64,7 @@ import AppButton from "@/components/AppButton.vue"
 import Modal from "@/components/Modal.vue"
 import AppForm from "@/components/form/AppForm.vue"
 import FormField from "@/components/form/FormField.vue"
-import Icon from "@components/Icon.vue"
+import IconHeader from "@/components/IconHeader.vue"
 import { LOCATIONS, ROLE_OPTIONS } from "../constants"
 
 interface SelectOption {

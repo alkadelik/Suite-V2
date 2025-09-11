@@ -1,6 +1,8 @@
 import { TableColumn } from "@components/DataTable.vue"
 import { TLocation, TSubscription, TTeam } from "./types"
 
+type colorType = "primary" | "success" | "warning" | "error" | "alt" | "blue" | "purple" | undefined
+
 export const LOCATION_COLUMNS: TableColumn<TLocation>[] = [
   { header: "Name", accessor: "name" },
   { header: "Address", accessor: "address" },
@@ -136,3 +138,12 @@ export const SUBSCRIPTIONS: TSubscription[] = [
     status: "Success",
   },
 ]
+
+export const getPlanColor = (planName: string): colorType => {
+  const planColors: Record<string, colorType> = {
+    Burst: "purple",
+    Bloom: "blue",
+    Bud: "success",
+  }
+  return planColors[planName] || "primary"
+}
