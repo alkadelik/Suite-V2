@@ -27,6 +27,12 @@ const authRoutes: RouteRecordRaw[] = [
     name: "JoinTeam",
     component: () => import("./views/join-team.vue"),
   },
+  {
+    path: "create-store",
+    name: "CreateStore",
+    meta: { requiresAuth: true },
+    component: () => import("./views/create-store.vue"),
+  },
 ]
 
 export default authRoutes

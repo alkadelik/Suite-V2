@@ -1,12 +1,15 @@
 <template>
-  <div class="space-y-4">
+  <div class="mb-3 space-y-4">
     <div class="flex size-10 items-center justify-center rounded-xl bg-neutral-50 p-2">
       <Icon :name="iconName" :size="iconSize" />
     </div>
 
-    <p class="text-xs md:text-sm">
-      {{ subtext }}
-    </p>
+    <div class="space-y-2">
+      <h4 v-if="title" class="text-xl font-semibold md:text-2xl">{{ title }}</h4>
+      <p v-if="subtext" class="text-xs md:text-sm">
+        {{ subtext }}
+      </p>
+    </div>
   </div>
 </template>
 
@@ -19,7 +22,9 @@ interface Props {
   /** Size of the icon */
   iconSize?: string | number
   /** Descriptive text below the icon */
-  subtext: string
+  subtext?: string
+  /** Title text */
+  title?: string
 }
 
 withDefaults(defineProps<Props>(), {
