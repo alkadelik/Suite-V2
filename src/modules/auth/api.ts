@@ -1,6 +1,12 @@
 import baseApi, { TApiPromise } from "@/composables/baseApi"
 import { useMutation } from "@tanstack/vue-query"
-import { ILoginResponse, TLoginPayload, TResetPasswordPayload, TSignupPayload } from "./types"
+import {
+  ILoginResponse,
+  TLoginPayload,
+  TResetPasswordPayload,
+  TSignupPayload,
+  ICreateStorePayload,
+} from "./types"
 
 /** Login api request  */
 export function useLogin() {
@@ -26,11 +32,19 @@ export function useForgotPassword() {
   })
 }
 
+/** Verify token api request */
+export function useVerifyToken() {
+  return useMutation({
+    mutationFn: (forgot_password_token: string) =>
+      baseApi.get(`/accounts/auth/password/${forgot_password_token}/reset/`),
+  })
+}
+
 /** Reset password api request  */
 export function useResetPassword() {
   return useMutation({
-    mutationFn: ({ otp, ...body }: TResetPasswordPayload) =>
-      baseApi.post(`/accounts/auth/password/${otp}/reset/`, body),
+    mutationFn: ({ forgot_password_token, ...body }: TResetPasswordPayload) =>
+      baseApi.post(`/accounts/auth/password/${forgot_password_token}/reset/`, body),
   })
 }
 
@@ -59,5 +73,11 @@ export function useSendResetTokenEmail() {
 export function useResetPasswordApi() {
   return useMutation({
     mutationFn: (body) => baseApi.post("/account/reset_password/", body),
+  })
+}
+/** Create store api request  */
+export function useCreateStoreApi() {
+  return useMutation({
+    mutationFn: (body: ICreateStorePayload) => baseApi.post("/stores/", body),
   })
 }

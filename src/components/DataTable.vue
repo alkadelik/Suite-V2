@@ -1,11 +1,11 @@
 <template>
   <div>
     <!-- table header and title -->
-    <div v-if="props.title" class="flex items-center justify-between px-1 py-4">
+    <div v-if="props.title" class="hidden items-center justify-between px-1 py-4 md:flex">
       <h2 class="text-lg font-semibold">{{ props.title }}</h2>
     </div>
     <!--  -->
-    <div class="w-full overflow-x-auto px-px">
+    <div class="hidden w-full overflow-x-auto px-px md:block">
       <table class="min-w-full border-0" :class="props.layout">
         <thead class="bg-gray-200">
           <tr v-for="headerGroup in table.getHeaderGroups()" :key="headerGroup.id">
@@ -52,45 +52,71 @@
         </tbody>
       </table>
     </div>
-    <!--  -->
-    <!-- MOBILE TABLE -->
-    <!--  -->
-    <div className="px-1 space-y-6 md:hidden">
-      <!-- <label
-        for="select-all"
-        class="inline-flex items-center gap-1 rounded border border-gray4 py-1 px-3 text-sm"
-        v-if="enableRowSelection"
-      >
-        <input
-          type="checkbox"
-          class="h-3.5 w-3.5 cursor-pointer"
-          :checked="table.getIsAllRowsSelected()"
-          :indeterminate="table.getIsSomeRowsSelected()"
-          @change="table.getToggleAllRowsSelectedHandler()"
-        />
-        Select All
-      </label> -->
+
+    <!-- MOBILE TABLE with Responsive Slots -->
+    <div class="space-y-4 md:hidden">
       <div
         v-for="row in table.getRowModel().rows"
         :key="row.id"
         :class="[
-          'rounded-lg border border-gray-200 bg-white',
+          'border-core-300 bg-core-25 rounded-xl border p-3',
           { 'cursor-pointer hover:bg-gray-50': true },
         ]"
         @click="handleRowClick(row.original as T)"
       >
-        <div
-          v-for="cell in row.getVisibleCells()"
-          :key="cell.id"
-          class="flex justify-between gap-4 border-b border-gray-200 px-4 py-3 text-sm last:border-0"
-        >
-          <span className="font-medium text-core-600">
-            <FlexRender :render="cell.column.columnDef.header" :props="cell.getContext()" />
-          </span>
-          <span className="text-right text-core-800">
-            <FlexRender :render="cell.column.columnDef.cell" :props="cell.getContext()" />
-          </span>
-        </div>
+        <!-- Custom mobile row layout (highest priority) -->
+        <slot name="mobile-row" :item="row.original" :cells="getCellsForRow(row)" :row="row">
+          <div class="flex items-start gap-3">
+            <!-- Content Area (middle) -->
+            <div class="min-w-0 flex-1">
+              <slot
+                name="mobile-content"
+                :item="row.original"
+                :cells="getCellsForRow(row)"
+                :row="row"
+              >
+                <!-- Default content layout -->
+                <div class="space-y-2">
+                  <!-- Primary info -->
+                  <div class="font-medium text-gray-900">
+                    {{
+                      getDisplayValue(row.original, "name") ||
+                      getDisplayValue(row.original, "firstName") ||
+                      "Unknown"
+                    }}
+                  </div>
+                  <!-- Secondary info -->
+                  <div class="space-y-1 text-sm text-gray-600">
+                    <div v-if="getDisplayValue(row.original, 'email')">
+                      {{ getDisplayValue(row.original, "email") }}
+                    </div>
+                    <div v-if="getDisplayValue(row.original, 'role')">
+                      Role: {{ getDisplayValue(row.original, "role") }}
+                    </div>
+                  </div>
+                </div>
+              </slot>
+            </div>
+
+            <!-- Actions Section (right side) - Only render if slot has content -->
+            <div
+              v-if="$slots['mobile-actions'] || hasMobileActionsContent(row)"
+              class="flex-shrink-0"
+            >
+              <slot
+                name="mobile-actions"
+                :item="row.original"
+                :cells="getCellsForRow(row)"
+                :row="row"
+              >
+                <!-- Default actions fallback -->
+                <button class="rounded-md p-1.5 hover:bg-gray-100">
+                  <Icon name="more-vertical" size="16" class="text-gray-500" />
+                </button>
+              </slot>
+            </div>
+          </div>
+        </slot>
       </div>
     </div>
 
@@ -106,9 +132,7 @@
       </div>
     </div>
 
-    <!--  -->
     <!-- pagination Controls -->
-    <!--  -->
     <div
       v-if="data.length && showPagination"
       class="text-core-800 flex flex-col-reverse items-center justify-between gap-4 px-4 py-3 md:flex-row"
@@ -216,6 +240,7 @@ import {
   createColumnHelper,
   type Table,
   type Row,
+  type Cell,
 } from "@tanstack/vue-table"
 import { computed, h, onMounted, ref, useSlots, watch, type VNode } from "vue"
 import Icon from "./Icon.vue"
@@ -287,6 +312,26 @@ interface DataTableSlots<T> {
     value: string | number | boolean | null | undefined | Record<string, unknown>
     item: T
   }) => VNode[]
+  "mobile-row": (props: {
+    item: T
+    cells: Record<string, Cell<T, unknown>>
+    row: Row<T>
+  }) => VNode[]
+  "mobile-avatar": (props: {
+    item: T
+    cells: Record<string, Cell<T, unknown>>
+    row: Row<T>
+  }) => VNode[]
+  "mobile-content": (props: {
+    item: T
+    cells: Record<string, Cell<T, unknown>>
+    row: Row<T>
+  }) => VNode[]
+  "mobile-actions": (props: {
+    item: T
+    cells: Record<string, Cell<T, unknown>>
+    row: Row<T>
+  }) => VNode[]
 }
 
 defineSlots<DataTableSlots<T>>()
@@ -317,6 +362,38 @@ const columnHelper = createColumnHelper<T>()
 // Handler functions
 const handleRowClick = (row: T) => {
   emit("row-click", row)
+}
+
+// Helper function to get cells organized by accessor for mobile slots
+const getCellsForRow = (row: Row<T>) => {
+  const cellsMap: Record<string, Cell<T, unknown>> = {}
+  row.getVisibleCells().forEach((cell) => {
+    cellsMap[String(cell.column.id)] = cell
+  })
+  return cellsMap
+}
+
+// Helper function to get display value from row data
+const getDisplayValue = (item: T, key: string): string => {
+  const value = item[key]
+  if (value == null) return ""
+  if (typeof value === "object") {
+    try {
+      return JSON.stringify(value)
+    } catch {
+      return ""
+    }
+  }
+  // eslint-disable-next-line @typescript-eslint/no-base-to-string
+  return String(value)
+}
+
+// Helper function to check if mobile actions slot has content
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const hasMobileActionsContent = (_row: Row<T>): boolean => {
+  // This is a fallback check - in practice, the v-if="$slots['mobile-actions']" should handle most cases
+  // But we keep this for any edge cases where we might want to conditionally show actions based on row data
+  return false
 }
 
 const columns = [

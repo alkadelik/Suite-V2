@@ -1,13 +1,12 @@
 <template>
   <Form
-    v-slot="{ errors, meta }"
+    v-slot="{ errors, meta, values }"
     :validation-schema="props.schema"
     :initial-values="props.initialValues"
     @submit="handleFormSubmit"
     @invalid-submit="handleInvalidSubmit"
   >
-    <!-- Pass errors to slot for conditional rendering -->
-    <slot :errors="errors" :meta="meta" />
+    <slot :errors="errors" :meta="meta" :values="values" />
   </Form>
 </template>
 

@@ -5,8 +5,12 @@ const settingsRoutes: RouteRecordRaw[] = [
     path: "settings/",
     component: () => import("./views/index.vue"),
     name: "Settings",
-    redirect: { name: "Profile" },
     children: [
+      {
+        path: "",
+        name: "SettingsEntry",
+        component: () => import("./views/settings-entry.vue"),
+      },
       {
         path: "locations",
         name: "Locations",
@@ -21,6 +25,11 @@ const settingsRoutes: RouteRecordRaw[] = [
         path: "teams",
         name: "Teams",
         component: () => import("./views/teams.vue"),
+      },
+      {
+        path: "billing",
+        name: "PlansAndBilling",
+        component: () => import("./views/plans-and-billing.vue"),
       },
     ],
   },

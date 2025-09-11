@@ -22,12 +22,20 @@
           </slot>
 
           <!-- Body -->
-          <div class="bg-core-50 px-6 py-4" :class="[bodyClasses, props.bodyClass]">
+          <div
+            class="bg-base-background"
+            :class="[
+              bodyClasses,
+              props.bodyClass,
+              props.handlePadding !== false ? 'px-6 py-4' : '',
+              !$slots.footer ? 'rounded-b-2xl' : '',
+            ]"
+          >
             <slot />
           </div>
 
           <!-- Footer -->
-          <div v-if="$slots.footer" class="px-6 py-4">
+          <div v-if="$slots.footer" :class="[props.handlePadding !== false ? 'px-6 py-4' : '']">
             <slot name="footer" />
           </div>
         </div>
@@ -59,6 +67,8 @@ interface Props {
   maxWidth?: string
   /** Additional classes for the modal body */
   bodyClass?: string
+  /** Whether to handle padding for the modal */
+  handlePadding?: boolean
 }
 
 /**
@@ -73,6 +83,7 @@ interface Emits {
 const props = withDefaults(defineProps<Props>(), {
   variant: "centered",
   maxWidth: "lg",
+  handlePadding: true,
 })
 
 // Define emits
@@ -119,6 +130,8 @@ const modalClasses = computed(() => {
       "2xl": "max-w-2xl",
       "3xl": "max-w-3xl",
       "4xl": "max-w-4xl",
+      "5xl": "max-w-5xl",
+      "6xl": "max-w-6xl",
     }
 
     if (maxWidthMap[props.maxWidth]) {
@@ -134,11 +147,11 @@ const modalClasses = computed(() => {
       baseClasses.push("")
       break
     case "bottom-nav":
-      baseClasses.push("rounded-t-lg md:rounded-lg mb-0 md:mb-auto")
+      baseClasses.push("rounded-t-xl md:rounded-2xl mb-0")
       break
     case "centered":
     default:
-      baseClasses.push("rounded-lg")
+      baseClasses.push("rounded-2xl")
       break
   }
 

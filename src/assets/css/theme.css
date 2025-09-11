@@ -2,6 +2,7 @@
   /* font-family */
   --font-sato: "Sato", sans-serif;
   --font-outfit: "Outfit", sans-serif;
+  --font-manrope: "Manrope", sans-serif;
   --font-sans: var(--font-outfit);
   --font-serif: var(--font-sato);
 
@@ -46,7 +47,63 @@
   --color-gray-950: #0c111d;
   /* others */
   --color-base-background: #f5f7f8;
-
+  --color-green-700: #669F2A;
+  /* colors - neutral */
+  --color-neutral-700: #6a5554;
+  /* colors - warning */
+  --color-warning-25: #FFFCF5;
+  --color-warning-50: #FFFAEB;
+  --color-warning-100: #FEF0C7;
+  --color-warning-200: #FEDF89;
+  --color-warning-300: #FEC84B;
+  --color-warning-400: #FDB022;
+  --color-warning-500: #F79009;
+  --color-warning-600: #DC6803;
+  --color-warning-700: #B54708;
+  --color-warning-800: #93370D;
+  --color-warning-900: #7A2E0E;
+  /* colors-blue */
+  --color-blue-50: #EFF8FF;
+  --color-blue-200: #B2DDFF;
+  --color-blue-500: #2E90FA;
+  --color-blue-600: #1570EF;
+  --color-blue-700: #175CD3;
+  /* colors - success */
+  --color-success-25: #F6FEF9;
+  --color-success-50: #ECFDF3;
+  --color-success-100: #DCFAE6;
+  --color-success-200: #A9EFC5;
+  --color-success-300: #75E0A7;
+  --color-success-400: #47CD89;
+  --color-success-500: #17B26A;
+  --color-success-600: #079455;
+  --color-success-700: #067647;
+  --color-success-800: #085D3A;
+  --color-success-900: #074D31;
+  /* colors - error */
+  --color-error-25: #FFFBFA;
+  --color-error-50: #FEF3F2;
+  --color-error-100: #FEE4E2;
+  --color-error-200: #FECDCA;
+  --color-error-300: #FDA29B;
+  --color-error-400: #F97066;
+  --color-error-500: #F04438;
+  --color-error-600: #D92D20;
+  --color-error-700: #B42318;
+  --color-error-800: #912018;
+  --color-error-900: #7A271A;
+  /* colors bloom */
+  --color-bloom-25: #F8F2F3;
+  --color-bloom-50: #F5EBEC;
+  --color-bloom-100: #F2E4E6;
+  --color-bloom-200: #EFDCDF;
+  --color-bloom-300: #EDD5D8;
+  --color-bloom-400: #EBCDD0;
+  --color-bloom-500: #E8C0C5;
+  --color-bloom-600: #DB9AA2;
+  --color-bloom-700: #CE747F;
+  --color-bloom-800: #BF4555;
+  --color-bloom-900: #8E2F3B;
   /* animations */
   --animate-spin: spin 2s linear infinite;
 }

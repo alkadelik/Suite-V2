@@ -53,15 +53,22 @@
               <Icon
                 v-if="task.isButton"
                 name="arrow-right"
+                @click="task.action"
                 class="text-primary-500 inline-flex cursor-pointer md:hidden"
               />
-              <Switch v-else v-model="task.completed" />
+              <Switch v-else v-model="task.modelValue" />
             </div>
             <Icon v-else name="tick-circle" class="!size-7 text-green-500 md:!size-10" />
           </div>
         </div>
       </div>
     </div>
+
+    <!-- modals -->
+    <BankAccountModal v-model="showBankAccountModal" />
+    <SetPickupModal v-model="showPickupModal" />
+    <VerifyIdentityModal v-model="showVerifyIdentityModal" />
+    <ConfigureDeliveryModal v-model="showConfigureDeliveryModal" />
   </div>
 </template>
 
@@ -71,6 +78,15 @@ import AppButton from "@components/AppButton.vue"
 import Switch from "@components/form/Switch.vue"
 import Icon from "@components/Icon.vue"
 import { ref } from "vue"
+import BankAccountModal from "../components/BankAccountModal.vue"
+import SetPickupModal from "../components/ConfigurePickupModal.vue"
+import VerifyIdentityModal from "../components/VerifyIdentityModal.vue"
+import ConfigureDeliveryModal from "../components/ConfigureDeliveryModal.vue"
+
+const showBankAccountModal = ref(false)
+const showPickupModal = ref(false)
+const showVerifyIdentityModal = ref(false)
+const showConfigureDeliveryModal = ref(false)
 
 const tasks = ref([
   {
@@ -81,19 +97,19 @@ const tasks = ref([
     isButton: true,
     buttonLabel: "Add Bank",
     action: () => {
-      // Handle button click
+      showBankAccountModal.value = true
     },
     icon: "bank",
   },
   {
     id: 2,
     title: "Verify Your Identity",
-    completed: true,
+    completed: false,
     subtext: "Secure your account by confirming your identity.",
     isButton: true,
     buttonLabel: "Verify Identity",
     action: () => {
-      // Handle button click
+      showVerifyIdentityModal.value = true
     },
     icon: "personalcard",
   },
@@ -104,6 +120,7 @@ const tasks = ref([
     subtext: "Let customers pick up their orders directly from you.",
     isButton: false,
     buttonLabel: "",
+    modelValue: showPickupModal,
     action: () => {
       // Handle button click
     },
@@ -116,6 +133,7 @@ const tasks = ref([
     subtext: "Offer delivery to your customers.",
     isButton: false,
     buttonLabel: "",
+    modelValue: showConfigureDeliveryModal,
     action: () => {
       // Handle button click
     },

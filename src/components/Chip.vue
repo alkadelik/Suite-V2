@@ -55,13 +55,27 @@ export interface ChipProps {
    * - alt: Gray color scheme for neutral states
    * @default "primary"
    */
-  color?: "primary" | "success" | "warning" | "error" | "alt"
+  color?: "primary" | "success" | "warning" | "error" | "alt" | "blue" | "purple"
 
   /**
    * Whether to show a colored dot instead of an icon
    * @default false
    */
   showDot?: boolean
+
+  /**
+   * Border radius size
+   * - none: No border radius
+   * - sm: Small border radius (0.125rem)
+   * - md: Medium border radius (0.375rem)
+   * - lg: Large border radius (0.5rem)
+   * - xl: Extra large border radius (0.75rem)
+   * - 2xl: 2x extra large border radius (1rem)
+   * - 3xl: 3x extra large border radius (1.5rem)
+   * - full: Fully rounded (9999px)
+   * @default "full"
+   */
+  radius?: "none" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "full"
 
   /**
    * Additional CSS classes to apply to the chip
@@ -74,13 +88,13 @@ const props = withDefaults(defineProps<ChipProps>(), {
   variant: "outlined",
   color: "primary",
   showDot: false,
+  radius: "full",
 })
 
 const chipClasses = computed(() => {
   const baseClasses = [
     "inline-flex",
     "items-center",
-    "rounded-full",
     "font-medium",
     "transition-all",
     "duration-200",
@@ -93,6 +107,18 @@ const chipClasses = computed(() => {
     md: "h-8 px-3 gap-2 text-sm",
   }
 
+  // Border radius classes
+  const radiusClasses = {
+    none: "rounded-none",
+    sm: "rounded-sm",
+    md: "rounded-md",
+    lg: "rounded-lg",
+    xl: "rounded-xl",
+    "2xl": "rounded-2xl",
+    "3xl": "rounded-3xl",
+    full: "rounded-full",
+  }
+
   // Color and variant combinations
   const variantColorClasses = {
     filled: {
@@ -101,6 +127,8 @@ const chipClasses = computed(() => {
       warning: "bg-yellow-600 text-white",
       error: "bg-red-600 text-white",
       alt: "bg-gray-600 text-white",
+      blue: "bg-blue-600 text-white",
+      purple: "bg-purple-600 text-white",
     },
     outlined: {
       primary: "bg-primary-50 text-primary-700 border border-primary-200",
@@ -108,12 +136,18 @@ const chipClasses = computed(() => {
       warning: "bg-yellow-50 text-yellow-700 border border-yellow-200",
       error: "bg-red-50 text-red-700 border border-red-200",
       alt: "bg-gray-50 text-gray-700 border border-gray-200",
+      blue: "bg-blue-50 text-blue-700 border border-blue-200",
+      purple: "bg-purple-50 text-purple-700 border border-purple-200",
     },
   }
+
+  // Handle custom radius values (e.g., "rounded-[8px]")
+  const radiusClass = radiusClasses[props.radius] || props.radius
 
   return [
     ...baseClasses,
     sizeClasses[props.size],
+    radiusClass,
     variantColorClasses[props.variant][props.color],
     props.class,
   ]
@@ -147,6 +181,8 @@ const dotClasses = computed(() => {
     warning: "bg-yellow-400",
     error: "bg-red-400",
     alt: "bg-gray-400",
+    blue: "bg-blue-500",
+    purple: "bg-purple-400",
   }
 
   // Adjust dot color for outlined variant (make it darker)
@@ -158,6 +194,8 @@ const dotClasses = computed(() => {
       warning: "bg-yellow-600",
       error: "bg-red-600",
       alt: "bg-gray-600",
+      blue: "bg-blue-600",
+      purple: "bg-purple-600",
     },
   }
 
