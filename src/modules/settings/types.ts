@@ -21,3 +21,12 @@ export type TTeam = {
   status: "Active" | "Invited" | "Inactive"
   locations: TLocation[]
 }
+
+export type TSubscription = {
+  id: number
+  date: string
+  planName: string
+  amount: number
+  billingPeriod: "Yearly" | "Monthly"
+  status: "Success" | "Pending" | "Failed"
+}

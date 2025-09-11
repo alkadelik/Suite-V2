@@ -6,8 +6,10 @@
       </div>
     </div>
 
-    <h6 class="text sm mt-2 font-bold">Delete Member</h6>
-    <p class="mt-2 text-xs md:text-sm">Are you sure you want to delete this member?</p>
+    <!-- Dynamic header -->
+    <h6 class="text sm mt-2 font-bold">{{ header }}</h6>
+    <!-- Dynamic paragraph -->
+    <p class="mt-2 text-xs md:text-sm">{{ paragraph }}</p>
 
     <div
       class="border-error-300 bg-error-25 text-error-700 my-3 flex items-center gap-3 rounded-lg border p-3"
@@ -42,7 +44,12 @@ import MessageModal from "@/components/MessageModal.vue"
 import AppButton from "@components/AppButton.vue"
 import Icon from "@components/Icon.vue"
 
-defineProps<{ modelValue: boolean }>()
+defineProps<{
+  modelValue: boolean
+  header: string
+  paragraph: string
+}>()
+
 const emit = defineEmits<{
   "update:modelValue": [value: boolean]
   refresh: []

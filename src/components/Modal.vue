@@ -23,7 +23,7 @@
 
           <!-- Body -->
           <div
-            class="bg-core-50"
+            class="bg-base-background"
             :class="[
               bodyClasses,
               props.bodyClass,
@@ -130,6 +130,8 @@ const modalClasses = computed(() => {
       "2xl": "max-w-2xl",
       "3xl": "max-w-3xl",
       "4xl": "max-w-4xl",
+      "5xl": "max-w-5xl",
+      "6xl": "max-w-6xl",
     }
 
     if (maxWidthMap[props.maxWidth]) {

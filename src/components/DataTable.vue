@@ -52,111 +52,71 @@
         </tbody>
       </table>
     </div>
-    <!-- MOBILE TABLE -->
-    <!--  -->
-    <div className="px-1 space-y-4 md:hidden">
+
+    <!-- MOBILE TABLE with Responsive Slots -->
+    <div class="space-y-4 md:hidden">
       <div
         v-for="row in table.getRowModel().rows"
         :key="row.id"
         :class="[
-          'border-core-300 rounded-xl border bg-white p-4',
+          'border-core-300 bg-core-25 rounded-xl border p-3',
           { 'cursor-pointer hover:bg-gray-50': true },
         ]"
         @click="handleRowClick(row.original as T)"
       >
-        <div class="flex items-start gap-3">
-          <!-- Profile/Avatar Column -->
-          <div class="flex-shrink-0">
-            <!-- Render the firstName cell which contains the Avatar component -->
-            <!-- <template v-if="getMobileCell(row, 'firstName')">
-              <FlexRender
-                :render="getMobileCell(row, 'firstName')!.column.columnDef.cell"
-                :props="getMobileCell(row, 'firstName')!.getContext()"
-              />
-            </template> -->
-          </div>
-
-          <!-- Details Column -->
-          <div class="min-w-0 flex-1">
-            <!-- Name -->
-            <div class="text-core-800 mb-2 text-sm font-medium">
-              {{
-                row.original.name ||
-                row.original.fullName ||
-                `${row.original.firstName || ""} ${row.original.lastName || ""}`.trim() ||
-                "Unknown"
-              }}
+        <!-- Custom mobile row layout (highest priority) -->
+        <slot name="mobile-row" :item="row.original" :cells="getCellsForRow(row)" :row="row">
+          <div class="flex items-start gap-3">
+            <!-- Content Area (middle) -->
+            <div class="min-w-0 flex-1">
+              <slot
+                name="mobile-content"
+                :item="row.original"
+                :cells="getCellsForRow(row)"
+                :row="row"
+              >
+                <!-- Default content layout -->
+                <div class="space-y-2">
+                  <!-- Primary info -->
+                  <div class="font-medium text-gray-900">
+                    {{
+                      getDisplayValue(row.original, "name") ||
+                      getDisplayValue(row.original, "firstName") ||
+                      "Unknown"
+                    }}
+                  </div>
+                  <!-- Secondary info -->
+                  <div class="space-y-1 text-sm text-gray-600">
+                    <div v-if="getDisplayValue(row.original, 'email')">
+                      {{ getDisplayValue(row.original, "email") }}
+                    </div>
+                    <div v-if="getDisplayValue(row.original, 'role')">
+                      Role: {{ getDisplayValue(row.original, "role") }}
+                    </div>
+                  </div>
+                </div>
+              </slot>
             </div>
 
-            <!-- Role with pill -->
-            <div class="mb-2 flex items-center gap-2">
-              <template v-if="getMobileCell(row, 'role')">
-                <FlexRender
-                  :render="getMobileCell(row, 'role')!.column.columnDef.cell"
-                  :props="getMobileCell(row, 'role')!.getContext()"
-                />
-              </template>
-              <span
-                v-else
-                class="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800"
+            <!-- Actions Section (right side) - Only render if slot has content -->
+            <div
+              v-if="$slots['mobile-actions'] || hasMobileActionsContent(row)"
+              class="flex-shrink-0"
+            >
+              <slot
+                name="mobile-actions"
+                :item="row.original"
+                :cells="getCellsForRow(row)"
+                :row="row"
               >
-                {{
-                  row.original.role || row.original.department || row.original.position || "Role"
-                }}
-              </span>
-              <!-- Role count pill if multiple roles -->
-              <span
-                v-if="Array.isArray(row.original.roles) && row.original.roles.length > 1"
-                class="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-800"
-              >
-                +{{ (row.original.roles as unknown[]).length - 1 }}
-              </span>
-            </div>
-
-            <!-- Locations -->
-            <div class="flex items-center gap-2">
-              <span class="text-core-600 text-xs">
-                <template v-if="getMobileCell(row, 'locations')">
-                  <FlexRender
-                    :render="getMobileCell(row, 'locations')!.column.columnDef.cell"
-                    :props="getMobileCell(row, 'locations')!.getContext()"
-                  />
-                </template>
-                <template v-else>
-                  {{
-                    row.original.location ||
-                    row.original.office ||
-                    row.original.branch ||
-                    "Location"
-                  }}
-                </template>
-              </span>
-              <!-- Location count pill if multiple locations -->
-              <span
-                v-if="Array.isArray(row.original.locations) && row.original.locations.length > 1"
-                class="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-800"
-              >
-                +{{ (row.original.locations as unknown[]).length - 1 }}
-              </span>
+                <!-- Default actions fallback -->
+                <button class="rounded-md p-1.5 hover:bg-gray-100">
+                  <Icon name="more-vertical" size="16" class="text-gray-500" />
+                </button>
+              </slot>
             </div>
           </div>
-
-          <!-- Actions Column -->
-          <div class="flex-shrink-0">
-            <template v-if="getMobileCell(row, 'action')">
-              <FlexRender
-                :render="getMobileCell(row, 'action')!.column.columnDef.cell"
-                :props="getMobileCell(row, 'action')!.getContext()"
-              />
-            </template>
-            <!-- Fallback action button -->
-            <div v-else class="flex items-center gap-1">
-              <button class="rounded-md p-1.5 hover:bg-gray-100">
-                <Icon name="more-vertical" size="16" class="text-gray-500" />
-              </button>
-            </div>
-          </div>
-        </div>
+        </slot>
       </div>
     </div>
 
@@ -172,9 +132,7 @@
       </div>
     </div>
 
-    <!--  -->
     <!-- pagination Controls -->
-    <!--  -->
     <div
       v-if="data.length && showPagination"
       class="text-core-800 flex flex-col-reverse items-center justify-between gap-4 px-4 py-3 md:flex-row"
@@ -282,6 +240,7 @@ import {
   createColumnHelper,
   type Table,
   type Row,
+  type Cell,
 } from "@tanstack/vue-table"
 import { computed, h, onMounted, ref, useSlots, watch, type VNode } from "vue"
 import Icon from "./Icon.vue"
@@ -353,6 +312,26 @@ interface DataTableSlots<T> {
     value: string | number | boolean | null | undefined | Record<string, unknown>
     item: T
   }) => VNode[]
+  "mobile-row": (props: {
+    item: T
+    cells: Record<string, Cell<T, unknown>>
+    row: Row<T>
+  }) => VNode[]
+  "mobile-avatar": (props: {
+    item: T
+    cells: Record<string, Cell<T, unknown>>
+    row: Row<T>
+  }) => VNode[]
+  "mobile-content": (props: {
+    item: T
+    cells: Record<string, Cell<T, unknown>>
+    row: Row<T>
+  }) => VNode[]
+  "mobile-actions": (props: {
+    item: T
+    cells: Record<string, Cell<T, unknown>>
+    row: Row<T>
+  }) => VNode[]
 }
 
 defineSlots<DataTableSlots<T>>()
@@ -385,15 +364,36 @@ const handleRowClick = (row: T) => {
   emit("row-click", row)
 }
 
-// Helper function to get column by accessor
-// const getColumnByAccessor = (accessor: string) => {
-//   return props.columns.find((col) => col.accessor === accessor)
-// }
+// Helper function to get cells organized by accessor for mobile slots
+const getCellsForRow = (row: Row<T>) => {
+  const cellsMap: Record<string, Cell<T, unknown>> = {}
+  row.getVisibleCells().forEach((cell) => {
+    cellsMap[String(cell.column.id)] = cell
+  })
+  return cellsMap
+}
 
-// Helper function to get the actual cell from the table for mobile rendering
-const getMobileCell = (row: Row<T>, accessor: string) => {
-  const cells = row.getVisibleCells()
-  return cells.find((cell) => String(cell.column.id) === accessor)
+// Helper function to get display value from row data
+const getDisplayValue = (item: T, key: string): string => {
+  const value = item[key]
+  if (value == null) return ""
+  if (typeof value === "object") {
+    try {
+      return JSON.stringify(value)
+    } catch {
+      return ""
+    }
+  }
+  // eslint-disable-next-line @typescript-eslint/no-base-to-string
+  return String(value)
+}
+
+// Helper function to check if mobile actions slot has content
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const hasMobileActionsContent = (_row: Row<T>): boolean => {
+  // This is a fallback check - in practice, the v-if="$slots['mobile-actions']" should handle most cases
+  // But we keep this for any edge cases where we might want to conditionally show actions based on row data
+  return false
 }
 
 const columns = [

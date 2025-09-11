@@ -20,6 +20,12 @@
         :required="required"
         :name="name"
         :disabled="disabled"
+        autocomplete="new-password"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+        aria-autocomplete="list"
+        inputmode="search"
       />
 
       <!-- Dropdown -->
@@ -51,7 +57,7 @@
 <script setup>
 import { ref, watch, onMounted, computed } from "vue"
 
-const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ""
+const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "AIzaSyB-fzYq9w6782YOSnXXktPUJSLbnNSc5Fg"
 
 const props = defineProps({
   modelValue: { type: String, default: "" },

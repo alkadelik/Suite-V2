@@ -35,55 +35,25 @@
           required
         />
 
-        <!-- Dynamic Location/Role Sections -->
-        <div
-          v-for="(locationRole, index) in locationRoles"
-          :key="locationRole.id"
-          class="space-y-3 rounded-xl bg-white"
-        >
-          <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-            <p class="text-sm font-medium">
-              {{ index === 0 ? "Default Location" : `Location ${index + 1}` }}
-            </p>
-            <button v-if="index > 0" type="button" @click="removeLocationRole(index)">
-              <Icon name="x-close" size="16" />
-            </button>
-          </div>
-          <div class="flex flex-col gap-3 px-6 pb-4 md:flex-row">
-            <FormField
-              :name="`locationRoles.${index}.location`"
-              label="Location"
-              type="select"
-              :options="locations"
-              placeholder="Select Location"
-              required
-              class="flex-1"
-              placement="top"
-            />
-            <FormField
-              :name="`locationRoles.${index}.role`"
-              label="Role"
-              type="select"
-              :options="roles"
-              placeholder="Select Role"
-              required
-              class="flex-1"
-              placement="top"
-            />
-          </div>
-        </div>
+        <FormField
+          name="roles"
+          label="Role"
+          type="tags"
+          :options="roles"
+          placeholder="Select Role"
+          required
+          placement="top"
+        />
 
-        <!-- Add Location Button -->
-        <div class="flex">
-          <button
-            type="button"
-            @click="addLocationRole"
-            class="text-primary-600 flex items-center gap-2 text-sm font-medium"
-          >
-            <Icon name="add" size="16" />
-            Add Location
-          </button>
-        </div>
+        <FormField
+          name="locations"
+          label="Location"
+          type="tags"
+          :options="locations"
+          placeholder="Select Location"
+          required
+          placement="top"
+        />
       </div>
 
       <div class="space-y-3 bg-white px-6 py-4">
@@ -100,7 +70,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from "vue"
+import { ref, computed } from "vue"
 import * as yup from "yup"
 import { toast } from "@/composables/useToast"
 import AppButton from "@/components/AppButton.vue"
@@ -114,22 +84,15 @@ import { TTeam } from "../types"
 interface SelectOption {
   label: string
   value: string
-}
-
-interface LocationRoleItem {
-  id: number
-}
-
-interface LocationRoleFormData {
-  location: SelectOption
-  role: SelectOption
+  class?: string
 }
 
 interface FormValues {
   first_name: string
   last_name: string
   email: string
-  locationRoles: LocationRoleFormData[]
+  roles: string[]
+  locations: string[]
 }
 
 interface UpdateMemberPayload {
@@ -150,65 +113,14 @@ const emit = defineEmits<{
   refresh: []
 }>()
 
-// Location/Role management
-const locationRoles = ref<LocationRoleItem[]>([{ id: 1 }])
-
-// Initialize location roles based on member data
-const initializeLocationRoles = () => {
-  if (props.member?.locations && props.member.locations.length > 0) {
-    locationRoles.value = props.member.locations.map((_, index) => ({
-      id: index + 1,
-    }))
-  } else {
-    locationRoles.value = [{ id: 1 }]
-  }
-}
-
-// Watch for member prop changes to reinitialize
-watch(
-  () => props.member,
-  () => {
-    initializeLocationRoles()
-  },
-  { immediate: true },
-)
-
-const addLocationRole = () => {
-  locationRoles.value.push({
-    id: Date.now(),
-  })
-}
-
-const removeLocationRole = (index: number) => {
-  if (index > 0) {
-    locationRoles.value.splice(index, 1)
-  }
-}
-
 // Dynamic validation schema
 const schema = computed(() => {
-  const locationRoleSchema = yup.object({
-    location: yup
-      .object()
-      .shape({
-        label: yup.string().required(),
-        value: yup.string().required(),
-      })
-      .required(),
-    role: yup
-      .object()
-      .shape({
-        label: yup.string().required(),
-        value: yup.string().required(),
-      })
-      .required(),
-  })
-
   return yup.object({
     first_name: yup.string().required(),
     last_name: yup.string().required(),
     email: yup.string().email().required(),
-    locationRoles: yup.array().of(locationRoleSchema).min(1).required(),
+    roles: yup.array().of(yup.string()).min(1).required(),
+    locations: yup.array().of(yup.string()).min(1).required(),
   })
 })
 
@@ -226,46 +138,24 @@ const initialValues = computed(() => {
       first_name: "",
       last_name: "",
       email: "",
-      locationRoles: [
-        {
-          location: { label: "", value: "" },
-          role: { label: "", value: "" },
-        },
-      ],
+      roles: [], // Empty array for roles
+      locations: [], // Empty array for locations
     }
   }
 
-  // Map member locations to form format
-  const memberLocationRoles =
-    props.member.locations.length > 0
-      ? props.member.locations.map((location) => {
-          // Find matching location option
-          const locationOption = locations.value.find((loc) => loc.value === String(location.id))
+  // Extract roles - assuming member.role is a single role
+  // If member can have multiple roles, adjust this logic
+  const memberRoles = props.member.role ? [props.member.role.toLowerCase()] : []
 
-          // Find matching role option - assuming member.role applies to all locations
-          // You might need to adjust this logic based on your actual data structure
-          const roleOption = roles.value.find((role) => role.label === props.member!.role)
-
-          return {
-            location: locationOption || { label: location.name, value: String(location.id) },
-            role: roleOption || {
-              label: props.member!.role,
-              value: props.member!.role.toLowerCase(),
-            },
-          }
-        })
-      : [
-          {
-            location: { label: "", value: "" },
-            role: { label: "", value: "" },
-          },
-        ]
+  // Extract location IDs
+  const memberLocations = props.member.locations?.map((location) => String(location.id)) || []
 
   return {
     first_name: props.member.firstName,
     last_name: props.member.lastName,
     email: props.member.email,
-    locationRoles: memberLocationRoles,
+    roles: memberRoles,
+    locations: memberLocations,
   }
 })
 
@@ -275,8 +165,8 @@ const onSubmit = (values: FormValues) => {
     first_name: values.first_name,
     last_name: values.last_name,
     email: values.email,
-    roles: values.locationRoles.map((lr) => lr.role.value),
-    locations: values.locationRoles.map((lr) => lr.location.value),
+    roles: values.roles,
+    locations: values.locations,
   }
 
   console.log("Submitting update member payload:", payload)

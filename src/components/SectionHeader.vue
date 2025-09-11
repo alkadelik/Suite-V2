@@ -36,7 +36,7 @@ const titleClasses = computed(() => {
     case "sm":
       return "text-lg"
     case "lg":
-      return "text-3xl"
+      return "text-lg md:text-3xl"
     case "md":
     default:
       return "text-2xl"
@@ -48,7 +48,7 @@ const subtitleClasses = computed(() => {
     case "sm":
       return "text-xs"
     case "lg":
-      return "text-base"
+      return "text-xs md:text-base"
     case "md":
     default:
       return "text-sm"
