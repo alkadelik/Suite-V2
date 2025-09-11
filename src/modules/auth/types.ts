@@ -35,6 +35,7 @@ export interface ILoginResponse {
     assigned_locations: { id: number }[]
     roles: string[]
     subscription: string | null
+    store_uid: string
   }
 }
 
