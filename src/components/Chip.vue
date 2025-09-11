@@ -64,6 +64,20 @@ export interface ChipProps {
   showDot?: boolean
 
   /**
+   * Border radius size
+   * - none: No border radius
+   * - sm: Small border radius (0.125rem)
+   * - md: Medium border radius (0.375rem)
+   * - lg: Large border radius (0.5rem)
+   * - xl: Extra large border radius (0.75rem)
+   * - 2xl: 2x extra large border radius (1rem)
+   * - 3xl: 3x extra large border radius (1.5rem)
+   * - full: Fully rounded (9999px)
+   * @default "full"
+   */
+  radius?: "none" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "full"
+
+  /**
    * Additional CSS classes to apply to the chip
    */
   class?: string | string[] | Record<string, boolean>
@@ -74,13 +88,13 @@ const props = withDefaults(defineProps<ChipProps>(), {
   variant: "outlined",
   color: "primary",
   showDot: false,
+  radius: "full",
 })
 
 const chipClasses = computed(() => {
   const baseClasses = [
     "inline-flex",
     "items-center",
-    "rounded-full",
     "font-medium",
     "transition-all",
     "duration-200",
@@ -91,6 +105,18 @@ const chipClasses = computed(() => {
   const sizeClasses = {
     sm: "h-6 px-2.5 gap-1.5 text-xs",
     md: "h-8 px-3 gap-2 text-sm",
+  }
+
+  // Border radius classes
+  const radiusClasses = {
+    none: "rounded-none",
+    sm: "rounded-sm",
+    md: "rounded-md",
+    lg: "rounded-lg",
+    xl: "rounded-xl",
+    "2xl": "rounded-2xl",
+    "3xl": "rounded-3xl",
+    full: "rounded-full",
   }
 
   // Color and variant combinations
@@ -115,9 +141,13 @@ const chipClasses = computed(() => {
     },
   }
 
+  // Handle custom radius values (e.g., "rounded-[8px]")
+  const radiusClass = radiusClasses[props.radius] || props.radius
+
   return [
     ...baseClasses,
     sizeClasses[props.size],
+    radiusClass,
     variantColorClasses[props.variant][props.color],
     props.class,
   ]

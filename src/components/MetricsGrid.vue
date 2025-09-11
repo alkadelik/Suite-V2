@@ -98,7 +98,6 @@ defineProps<{
                 x: {
                   display: true,
                   grid: {
-                    drawBorder: true,
                     display: false, // hides vertical gridlines
                   },
                   ticks: { display: false },
