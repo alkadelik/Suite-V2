@@ -7,6 +7,7 @@ export interface IUser {
   assigned_locations: { id: number }[]
   roles: string[]
   subscription: string | null
+  store_uid: string
   store?: {
     business_name: string
     address: string
@@ -34,6 +35,7 @@ export interface ILoginResponse {
     assigned_locations: { id: number }[]
     roles: string[]
     subscription: string | null
+    store_uid: string
   }
 }
 
@@ -49,4 +51,36 @@ export type TResetPasswordPayload = {
   password: string
   confirm_password: string
   forgot_password_token: string
+}
+
+export interface IStoreFormData {
+  name: string
+  slug: string
+  industry: { label: string; value: string }
+  currency: { label: string; value: string }
+}
+
+export interface ICreateStorePayload {
+  name: string
+  industry: string
+  slug: string
+  currency: string
+}
+
+export interface IStoreApiResponse {
+  data: {
+    uid: string
+    name: string
+    slug: string
+    logo: string | null
+    industry: string
+    industry_name: string
+    created_at: string
+    locations: {
+      uid: string
+      name: string
+      address: string | null
+      created_at: string
+    }[]
+  }
 }

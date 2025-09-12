@@ -12,13 +12,13 @@ const baseApi = axios.create({
 })
 
 baseApi.interceptors.request.use((config) => {
-  const { accessToken } = useAuthStore()
+  const { accessToken, user } = useAuthStore()
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`
   }
-  //   if (user && user.store_id) {
-  //     config.headers["X-Store-ID"] = user.store_id.toString()
-  //   }
+  if (user && user.store_uid.length > 0) {
+    config.headers["X-Store-ID"] = user.store_uid.toString()
+  }
   return config
 })
 

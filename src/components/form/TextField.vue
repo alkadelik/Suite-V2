@@ -56,6 +56,11 @@
       <Icon name="info-circle" size="16" class="mr-1" />
       {{ capitalizeFirstChar(error) }}
     </div>
+    <div v-if="description && !error" class="text-core-600 mt-1 flex items-center text-sm">
+      <slot name="description">
+        {{ description }}
+      </slot>
+    </div>
     <div v-if="hint && !error" class="mt-1 flex items-center text-sm text-gray-500">
       <slot name="hint">
         {{ hint }}
@@ -110,6 +115,8 @@ interface Props {
   leftIcon?: string
   /** Icon to display on the right side */
   rightIcon?: string
+  /** Additional description text below the input */
+  description?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {

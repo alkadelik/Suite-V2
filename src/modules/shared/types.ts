@@ -44,3 +44,24 @@ export type TUpdateShippingPayload = {
   phone?: string
   preferred_courier_ids?: string[]
 }
+
+export interface IIndustry {
+  uid: string
+  name: string
+  description: string
+  is_active: boolean
+}
+
+export interface IIndustriesApiResponse {
+  data: {
+    count: number
+    next: string | null
+    previous: string | null
+    results: IIndustry[]
+  }
+}
+
+export interface ISelectOption {
+  label: string
+  value: string
+}

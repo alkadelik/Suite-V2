@@ -78,19 +78,16 @@
             v-for="(feature, index) in plan.features"
             :key="feature"
             class="flex gap-1"
-            :class="{ hidden: !expandedPlans[plan.id] && index >= 4 }"
+            :class="{ hidden: !expandPlans && index >= 4 }"
           >
             <Icon name="check" class="text-core-600 mt-0.5 flex-shrink-0" />
             <p class="text-xs md:text-sm">{{ feature }}</p>
           </div>
 
           <!-- See More Button - Centered -->
-          <div
-            v-if="plan.features.length > 4 && !expandedPlans[plan.id]"
-            class="mt-1 flex justify-center"
-          >
+          <div v-if="plan.features.length > 4 && !expandPlans" class="mt-1 flex justify-center">
             <button
-              @click="expandedPlans[plan.id] = true"
+              @click="expandPlans = true"
               class="text-primary-700 hover:text-primary-800 flex items-center gap-1 text-xs font-semibold transition-colors md:text-sm"
             >
               <span>See more</span>
@@ -124,7 +121,7 @@ import Modal from "@/components/Modal.vue"
 import Chip from "@components/Chip.vue"
 import IconHeader from "@components/IconHeader.vue"
 import Tabs from "@components/Tabs.vue"
-import { ref, reactive } from "vue"
+import { ref } from "vue"
 import { getPlanColor } from "../constants"
 import { formatCurrency } from "@/utils/format-currency"
 import Icon from "@/components/Icon.vue"
@@ -139,7 +136,7 @@ const emit = defineEmits<{
 const activeTab = ref("monthly")
 
 // Track expanded state for each plan
-const expandedPlans = reactive<Record<number, boolean>>({})
+const expandPlans = ref<boolean>(false)
 
 const tabs = ref([
   {

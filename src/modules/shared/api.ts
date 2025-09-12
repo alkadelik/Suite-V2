@@ -7,6 +7,7 @@ import {
   TSetupShippingPayload,
   TUpdateShippingPayload,
 } from "./types"
+import { IIndustriesApiResponse } from "./types"
 
 /** Create bank account  */
 export function useCreateBankAccount() {
@@ -73,5 +74,16 @@ export function useGetShippingProfile() {
     refetchOnMount: false, // Don't refetch on mount
     refetchOnReconnect: false, // Don't refetch on reconnect
     enabled: true, // Still run once on initial mount
+  })
+}
+
+/** Get store industries */
+export function useGetStoreIndustries() {
+  return useQuery<IIndustriesApiResponse>({
+    queryKey: ["industries"],
+    queryFn: async () => {
+      const res = await baseApi.get<IIndustriesApiResponse>("/stores/industries/")
+      return res.data
+    },
   })
 }

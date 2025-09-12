@@ -98,12 +98,9 @@ defineProps<{
                 x: {
                   display: true,
                   grid: {
-                    drawBorder: true,
                     display: false, // hides vertical gridlines
                   },
                   ticks: { display: false },
-                  barPercentage: 1.0,
-                  categoryPercentage: 1,
                 },
                 y: { display: false },
               },

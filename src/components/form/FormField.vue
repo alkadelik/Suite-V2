@@ -95,6 +95,7 @@
       :max="max"
       :step="step"
       :autocomplete="autocomplete"
+      :description="description"
     />
   </Field>
 </template>
@@ -175,6 +176,8 @@ interface FormFieldProps {
   step?: number | string
   /** Autocomplete attribute */
   autocomplete?: string
+  /** Additional description text below the input */
+  description?: string
 
   // Select and Tags specific props
   /** Options for select fields */
