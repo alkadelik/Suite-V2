@@ -51,14 +51,15 @@ export function useResetPassword() {
 /** Verify email api request  */
 export function useVerifyEmail() {
   return useMutation({
-    mutationFn: (body) => baseApi.post("/account/verify_email/", body),
+    mutationFn: (body: { token: string }) => baseApi.post("/accounts/verifications/email/", body),
   })
 }
 
 /** Resend verification code api request  */
 export function useResendVerificationCode() {
   return useMutation({
-    mutationFn: (body) => baseApi.post("/account/resend_verification_code/", body),
+    mutationFn: (body: unknown) =>
+      baseApi.post("/accounts/verifications/resend-email-token/", body || {}),
   })
 }
 

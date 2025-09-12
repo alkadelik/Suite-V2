@@ -19,6 +19,12 @@ export const useAuthStore = defineStore(
       user.value = user.value ? { ...user.value, ...userData } : userData
     }
 
+    const updateAuthUser = (userData: Partial<IUser>) => {
+      if (user.value) {
+        user.value = { ...user.value, ...userData }
+      }
+    }
+
     const setTokens = (tokens: IAuthTokens) => {
       accessToken.value = tokens.accessToken
       refreshToken.value = tokens.refreshToken
@@ -46,6 +52,7 @@ export const useAuthStore = defineStore(
 
       // Actions
       setAuthUser,
+      updateAuthUser,
       setTokens,
       clearAuth,
       setLoading,
