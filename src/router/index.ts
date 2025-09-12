@@ -130,7 +130,7 @@ router.beforeEach((to, from, next) => {
     }
 
     // Check payment account status (only for confirmed users)
-    if (user.is_email_verified && !user?.store_uid && !to.path.includes("/create-store")) {
+    if (user.is_email_verified && user.store_uid === "" && !to.path.includes("/create-store")) {
       toast.info("Please create your store to complete your profile.")
       return next({ path: "/create-store" })
     }

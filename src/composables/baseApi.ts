@@ -16,8 +16,8 @@ baseApi.interceptors.request.use((config) => {
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`
   }
-  if (user && user.store_uid.length > 0) {
-    config.headers["X-Store-ID"] = user.store_uid.toString()
+  if (user && user.store_uid !== "") {
+    config.headers["X-Store-Id"] = user.store_uid.toString()
   }
   return config
 })
