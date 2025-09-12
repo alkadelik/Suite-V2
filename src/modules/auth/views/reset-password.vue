@@ -42,7 +42,7 @@
 
           <div>
             <FormField
-              name="new_password"
+              name="password"
               type="password"
               placeholder="Enter password"
               required
@@ -99,10 +99,10 @@ const { mutate: resetPassword, isPending } = useResetPassword()
 const { mutate: verifyTokenMutation, isPending: verifyTokenPending } = useVerifyToken()
 
 const schema = yup.object({
-  new_password: passwordSchema,
+  password: passwordSchema,
   confirm_password: yup
     .string()
-    .oneOf([yup.ref("new_password")], "Passwords do not match")
+    .oneOf([yup.ref("password")], "Passwords do not match")
     .required("Please confirm your password"),
 })
 
@@ -123,7 +123,7 @@ const verifyToken = () => {
 
 const onSubmit = (values: TResetPasswordPayload) => {
   resetPassword(
-    { ...values, forgot_password_token: otp.value },
+    { password: values.password, forgot_password_token: otp.value },
     {
       onSuccess: () => {
         toast.success("Password reset successfully. Login to continue.")
