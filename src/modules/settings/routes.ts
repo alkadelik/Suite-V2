@@ -22,14 +22,30 @@ const settingsRoutes: RouteRecordRaw[] = [
         component: () => import("./views/profile.vue"),
       },
       {
+        path: "password",
+        name: "Password",
+        component: () => import("./views/password.vue"),
+      },
+      {
         path: "teams",
         name: "Teams",
         component: () => import("./views/teams.vue"),
       },
       {
+        path: "delivery-options",
+        name: "DeliveryOptions",
+        component: () => import("./views/delivery-options.vue"),
+      },
+      {
         path: "billing",
         name: "PlansAndBilling",
         component: () => import("./views/plans-and-billing.vue"),
+      },
+      // Catch-all route for settings 404
+      {
+        path: ":pathMatch(.*)*",
+        name: "SettingsNotFound",
+        component: () => import("@modules/404.vue"),
       },
     ],
   },
