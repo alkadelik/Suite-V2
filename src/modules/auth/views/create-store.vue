@@ -95,7 +95,9 @@ import type { ICreateStorePayload, IStoreFormData } from "../types"
 import type { IIndustriesApiResponse } from "@modules/shared/types"
 import IconHeader from "@components/IconHeader.vue"
 import { useGetStoreIndustries } from "@/modules/shared/api"
+import { useAuthStore } from "../store"
 
+const authStore = useAuthStore()
 const router = useRouter()
 // const authStore = useAuthStore()
 const { data: industriesData } = useGetStoreIndustries()
@@ -154,9 +156,10 @@ const onSubmit = (values: IStoreFormData) => {
   }
 
   createStore(payload, {
-    onSuccess: () => {
+    onSuccess: (res) => {
+      console.log("RES", res)
       toast.success("Store created successfully")
-      //   authStore.updateUserStore(res.data)
+      authStore.updateAuthUser({ store_uid: res.data?.data?.uuid, store: { ...res.data.data } })
       router.push("/dashboard")
     },
     onError: displayError,

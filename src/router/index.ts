@@ -76,25 +76,84 @@ const router = createRouter({
   },
 })
 
+// /**
+//  * ======= Navigation guards =======
+//  *  */
+// router.beforeEach((to, _from, next) => {
+//   const { isAuthenticated, user } = useAuthStore()
+//   // route requiresAuth but user is not authenticated ==> login page
+//   if (to.meta.requiresAuth && !isAuthenticated) {
+//     return next({ path: "/login", query: { redirect: to.fullPath } })
+//   }
+
+//   // user authenticated but email not verified ==> confirm-email page
+//   if (to.meta.requiresAuth && isAuthenticated && !user?.is_email_verified) {
+//     return next({ path: "/confirm-email" })
+//   }
+
+//   // route is public but user is authenticated ==> dashboard
+//   // (only if it’s a valid matched route, not a 404)
+//   const is404 = to.matched.some((v) => v.name === "NotFound")
+//   if (!to.meta.requiresAuth && isAuthenticated && !is404) {
+//     toast.info("You already have an active session.")
+//     return next({ path: "/dashboard" })
+//   }
+
+//   next()
+// })
+
 /**
  * ======= Navigation guards =======
  *  */
-router.beforeEach((to, _from, next) => {
-  const { isAuthenticated } = useAuthStore()
-  // route requiresAuth but user is not authenticated ==> login page
-  if (to.meta.requiresAuth && !isAuthenticated) {
-    return next({ path: "/login", query: { redirect: to.fullPath } })
+router.beforeEach((to, from, next) => {
+  const { isAuthenticated, user } = useAuthStore()
+
+  // Define auth-related pages that should bypass certain checks
+  const authPages = ["/login", "/signup", "/forgot-password", "/reset-password", "/confirm-email"]
+  const isAuthPage = authPages.includes(to.path)
+
+  // Allow navigation if coming from signup completion flow
+  if (from.path === "/signup" && to.path === "/confirm-email") {
+    return next()
   }
 
-  // route is public but user is authenticated ==> dashboard
-  // (only if it’s a valid matched route, not a 404)
-  const is404 = to.matched.some((v) => v.name === "NotFound")
-  if (!to.meta.requiresAuth && isAuthenticated && !is404) {
-    toast.info("You already have an active session.")
-    return next({ path: "/dashboard" })
+  // Prevent redirect loops - if already on target page, continue
+  if (to.path === from.path) {
+    return next()
+  }
+
+  // Handle authenticated users first
+  if (isAuthenticated && user) {
+    // Check email confirmation status
+    if (!user.is_email_verified && !to.path.includes("/confirm-email")) {
+      toast.info("Please confirm your email to continue.")
+      return next({ path: "/confirm-email", query: { email: user.email } })
+    }
+
+    // Check payment account status (only for confirmed users)
+    if (user.is_email_verified && !user?.store_uid && !to.path.includes("/create-store")) {
+      toast.info("Please create your store to complete your profile.")
+      return next({ path: "/create-store" })
+    }
+
+    // Redirect authenticated users away from auth pages to dashboard
+    if (isAuthPage && !to.path.includes("/confirm-email") && !to.path.includes("/create-store")) {
+      toast.info("You already have an active session.")
+      return next({ path: "/dashboard" })
+    }
+  }
+
+  // Handle unauthenticated users
+  if (!isAuthenticated) {
+    // Redirect to login if trying to access protected routes
+    if (to.meta.requiresAuth) {
+      return next({ path: "/login", query: { redirect: to.fullPath } })
+    }
   }
 
   next()
 })
 
 export default router
+
+// export default router
