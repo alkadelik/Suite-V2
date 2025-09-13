@@ -102,7 +102,7 @@ const schema = computed(() => {
 
 // Mock data for development
 const locationOptions = ref<SelectOption[]>(
-  LOCATIONS.map((loc) => ({ label: loc.name, value: String(loc.id) })),
+  LOCATIONS.map((loc) => ({ label: loc.name, value: loc.uid })),
 )
 const roles = ref<SelectOption[]>(ROLE_OPTIONS)
 const isPending = ref(false)
