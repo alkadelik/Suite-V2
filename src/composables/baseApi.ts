@@ -17,7 +17,7 @@ baseApi.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${accessToken}`
   }
   if (user && user.store_uid !== "") {
-    config.headers["X-Store-Id"] = user.store_uid.toString()
+    config.headers["X-Store-Id"] = user.store_uid
   }
   return config
 })
@@ -93,5 +93,12 @@ export const useApiQuery = <T>({ url, params, enabled }: TQueryArg) => {
 }
 
 export type TApiPromise<T> = Promise<AxiosResponse<T>>
+
+export type TPaginatedResponse<T> = AxiosResponse<{
+  count: number
+  next: string | null
+  previous: string | null
+  results: T[]
+}>
 
 export default baseApi
