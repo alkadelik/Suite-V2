@@ -1,6 +1,7 @@
 import { defineStore } from "pinia"
 import { ref, computed } from "vue"
 import type { IUser, IAuthTokens } from "./types"
+import { useRouter } from "vue-router"
 
 export const useAuthStore = defineStore(
   "auth",
@@ -36,6 +37,13 @@ export const useAuthStore = defineStore(
       refreshToken.value = null
     }
 
+    const logout = () => {
+      clearAuth()
+      // redirect to login page
+      const router = useRouter()
+      router.push("/login")
+    }
+
     const setLoading = (loading: boolean) => {
       isLoading.value = loading
     }
@@ -56,6 +64,7 @@ export const useAuthStore = defineStore(
       setTokens,
       clearAuth,
       setLoading,
+      logout,
     }
   },
   {
