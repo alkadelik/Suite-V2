@@ -1,5 +1,5 @@
 <template>
-  <section class="mx-auto flex min-h-[80vh] max-w-screen-xl items-center py-20">
+  <section class="mx-auto flex min-h-[70vh] max-w-screen-xl items-center py-20">
     <div class="mx-auto max-w-2xl space-y-8 text-center">
       <div class="space-y-4">
         <div
