@@ -37,6 +37,11 @@ const settingsRoutes: RouteRecordRaw[] = [
         component: () => import("./views/delivery-options.vue"),
       },
       {
+        path: "store-details",
+        name: "StoreDetails",
+        component: () => import("./views/store-details.vue"),
+      },
+      {
         path: "billing",
         name: "PlansAndBilling",
         component: () => import("./views/plans-and-billing.vue"),
