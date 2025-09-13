@@ -2,7 +2,7 @@
   <div :class="['flex items-center justify-between', props.class]">
     <div>
       <h3 :class="[titleClasses, 'mb-1 font-semibold']">{{ title }}</h3>
-      <p v-if="subtitle" :class="subtitleClasses">
+      <p v-if="subtitle || $slots.subtitle" :class="[subtitleClasses, 'text-core-600']">
         <slot name="subtitle">{{ subtitle }}</slot>
       </p>
     </div>
@@ -46,9 +46,9 @@ const titleClasses = computed(() => {
 const subtitleClasses = computed(() => {
   switch (props.size) {
     case "sm":
-      return "text-xs"
+      return "text-sm"
     case "lg":
-      return "text-xs md:text-base"
+      return "text-sm md:text-base"
     case "md":
     default:
       return "text-sm"

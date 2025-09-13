@@ -16,15 +16,15 @@ baseApi.interceptors.request.use((config) => {
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`
   }
-  if (user && user.store_uid.length > 0) {
-    config.headers["X-Store-ID"] = user.store_uid.toString()
+  if (user && user.store_uid !== "") {
+    config.headers["X-Store-Id"] = user.store_uid
   }
   return config
 })
 
 const refreshToken = async (): Promise<string> => {
   const { refreshToken, setTokens } = useAuthStore()
-  const response = await baseApi.post("/auth/refresh/", { refreshToken })
+  const response = await baseApi.post("/token/refresh/", { refresh: refreshToken })
   const { access, refresh } = response.data as { access: string; refresh: string }
   setTokens({ accessToken: access, refreshToken: refresh })
   return access
@@ -93,5 +93,12 @@ export const useApiQuery = <T>({ url, params, enabled }: TQueryArg) => {
 }
 
 export type TApiPromise<T> = Promise<AxiosResponse<T>>
+
+export type TPaginatedResponse<T> = AxiosResponse<{
+  count: number
+  next: string | null
+  previous: string | null
+  results: T[]
+}>
 
 export default baseApi

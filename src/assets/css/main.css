@@ -27,3 +27,15 @@ svg [stroke^="#"],
 svg path[stroke^="#"] {
   stroke: currentColor;
 }
+
+@view-transition {
+  navigation: auto;
+}
+@keyframes slide-in {
+  from {
+    transform: translateX(-100%);
+  }
+}
+::view-transition-new(root) {
+  animation: 500ms ease-in-out both slide-in;
+}

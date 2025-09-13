@@ -125,9 +125,7 @@ const schema = computed(() => {
 })
 
 // Mock data for development
-const locations = ref<SelectOption[]>(
-  LOCATIONS.map((loc) => ({ label: loc.name, value: String(loc.id) })),
-)
+const locations = ref<SelectOption[]>(LOCATIONS.map((loc) => ({ label: loc.name, value: loc.uid })))
 const roles = ref<SelectOption[]>(ROLE_OPTIONS)
 const isPending = ref(false)
 
@@ -148,7 +146,7 @@ const initialValues = computed(() => {
   const memberRoles = props.member.role ? [props.member.role.toLowerCase()] : []
 
   // Extract location IDs
-  const memberLocations = props.member.locations?.map((location) => String(location.id)) || []
+  const memberLocations = props.member.locations?.map((location) => String(location.uid)) || []
 
   return {
     first_name: props.member.firstName,

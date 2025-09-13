@@ -28,6 +28,11 @@ const authRoutes: RouteRecordRaw[] = [
     component: () => import("./views/join-team.vue"),
   },
   {
+    path: "confirm-email",
+    name: "ConfirmEmail",
+    component: () => import("./views/confirm-email.vue"),
+  },
+  {
     path: "create-store",
     name: "CreateStore",
     meta: { requiresAuth: true },

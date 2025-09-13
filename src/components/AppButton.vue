@@ -1,6 +1,10 @@
 <template>
   <button
-    :class="[buttonClasses, { '!cursor-not-allowed': disabled || loading }]"
+    :class="[
+      buttonClasses,
+      { '!cursor-not-allowed': disabled || loading || inactive },
+      { '!opacity-50': inactive },
+    ]"
     :disabled="disabled"
     :type="type"
     @click="handleClick"
@@ -94,6 +98,12 @@ export interface AppButtonProps {
    * @default false
    */
   disabled?: boolean
+
+  /**
+   * Whether the button is inactive (visually faded but still clickable)
+   * @default false
+   */
+  inactive?: boolean
 
   /**
    * Whether the button is in loading state

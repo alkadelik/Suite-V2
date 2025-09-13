@@ -23,7 +23,12 @@
         <Icon name="setting" size="20" />
       </button>
       <!-- User or CTA -->
-      <Avatar v-if="isMobile" name="John Doe" clickable />
+      <Avatar
+        v-if="isMobile"
+        name="John Doe"
+        clickable
+        @click="$router.push('/settings/profile')"
+      />
       <AppButton
         v-else
         size="md"
