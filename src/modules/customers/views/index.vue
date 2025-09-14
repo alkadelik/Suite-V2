@@ -246,7 +246,7 @@ import MetricsGrid from "@components/MetricsGrid.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import { useGetCustomers } from "../api"
 
-const { data: customersData, isPending } = useGetCustomers()
+const { data: customersData } = useGetCustomers()
 
 watch(
   () => customersData,
