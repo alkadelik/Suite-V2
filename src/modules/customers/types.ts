@@ -1,5 +1,5 @@
 export type TCustomer = {
-  id: number
+  uid: number
   store?: number
   first_name: string
   last_name: string
@@ -11,8 +11,7 @@ export type TCustomer = {
   line2?: string
   city?: string
   state?: string
-  dob?: string | null
-  instagram?: string
+  date_of_birth?: string | null
   lifetime_orders?: number
   is_customer?: boolean
   paystack_code?: string
@@ -24,22 +23,33 @@ export type TCustomer = {
   full_address?: string | null
   address?: string
   country?: string
-  dateOfBirth?: string // ISO date string
-  instagramHandle?: string
-  lastOrderDate?: string // ISO date string, e.g., "2023-09-15"
-  totalOrders?: number
+  instagram_handle?: string
+  last_order_date?: string // ISO date string, e.g., "2023-09-15"
+  total_orders?: number
+}
+
+export interface ICustomerResponse {
+  uid: string
+  full_name: string
+  phone: string
+  email: string
+  total_orders: number
+  last_active?: string | null
+  is_active: boolean
+  created_at: string
 }
 
 export type TCustomerFormMode = "add" | "edit" | "view"
 
 export interface ICustomerFormPayload {
   first_name: string
-  last_name: string
-  email: string
-  phone: string
+  last_name?: string
+  email?: string
+  phone?: string
   address?: string
   state?: string
-  country?: string
-  dateOfBirth?: string
-  instagramHandle?: string
+  city?: string
+  date_of_birth?: string
+  instagram_handle?: string
+  location: string
 }

@@ -19,6 +19,7 @@ baseApi.interceptors.request.use((config) => {
   if (user && user.store_uid !== "") {
     config.headers["X-Store-Id"] = user.store_uid.toString()
   }
+  config.headers["X-Location-Id"] = "b7c211bd-7c03-4754-8828-18081abd076e"
   return config
 })
 

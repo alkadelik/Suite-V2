@@ -129,7 +129,7 @@
             <div class="flex items-start gap-2">
               <Avatar :name="`${item.first_name} ${item.last_name}`" class="items-start" />
               <Chip
-                :label="`${String(item.totalOrders)} orders`"
+                :label="`${String(item.total_orders)} orders`"
                 variant="outlined"
                 size="sm"
                 showDot
@@ -165,7 +165,7 @@
                   </template>
                 </DropdownMenu>
 
-                <span class="text-xs">{{ formatDateLong(item.lastOrderDate) }}</span>
+                <span class="text-xs">{{ formatDateLong(item.last_order_date) }}</span>
               </div>
             </div>
           </div>
@@ -229,7 +229,7 @@ import DataTable from "@components/DataTable.vue"
 import Avatar from "@components/Avatar.vue"
 import { TCustomer, TCustomerFormMode, ICustomerFormPayload } from "../types"
 import { CUSTOMER_COLUMNS, CUSTOMERS } from "../constants"
-import { ref } from "vue"
+import { ref, watch } from "vue"
 import Icon from "@components/Icon.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import Chip from "@components/Chip.vue"
@@ -244,6 +244,21 @@ import ViewCustomerDrawer from "../components/ViewCustomerDrawer.vue"
 import { formatCurrency } from "@/utils/format-currency"
 import MetricsGrid from "@components/MetricsGrid.vue"
 import SectionHeader from "@components/SectionHeader.vue"
+import { useGetCustomers } from "../api"
+
+const { data: customersData, isPending } = useGetCustomers()
+
+watch(
+  () => customersData,
+  (newData) => {
+    if (newData) {
+      console.log("Fetched customers:", newData.value)
+      // Here you would typically update your state/store with the fetched customers
+      // For this example, we'll just log them
+    }
+  },
+  { immediate: true },
+)
 
 const formMode = ref<TCustomerFormMode>("add")
 const showDeleteConfirmationModal = ref(false)
@@ -366,7 +381,7 @@ const handleCustomerSubmit = (payload: ICustomerFormPayload, mode: TCustomerForm
 
   if (mode === "edit" && customer.value) {
     // Update logic here - you might want to call an API or update your data store
-    console.log("Updating customer:", customer.value.id, payload)
+    console.log("Updating customer:", customer.value.uid, payload)
   } else if (mode === "add") {
     // Add logic here
     console.log("Adding new customer:", payload)
