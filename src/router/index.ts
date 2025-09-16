@@ -43,7 +43,6 @@ const routes: RouteRecordRaw[] = [
       ...customersRoutes,
       ...ordersRoutes,
       ...popupsRoutes,
-      ...settingsRoutes,
       ...sharedRoutes,
     ],
   },

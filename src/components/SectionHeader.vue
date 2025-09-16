@@ -46,9 +46,9 @@ const titleClasses = computed(() => {
 const subtitleClasses = computed(() => {
   switch (props.size) {
     case "sm":
-      return "text-xs"
+      return "text-sm"
     case "lg":
-      return "text-xs md:text-base"
+      return "text-sm md:text-base"
     case "md":
     default:
       return "text-sm"

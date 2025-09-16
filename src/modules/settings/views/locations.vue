@@ -11,7 +11,7 @@
     </div>
 
     <DataTable
-      :data="(locations as TLocation[]) || LOCATIONS"
+      :data="locations?.data?.results || LOCATIONS"
       :columns="LOCATION_COLUMNS"
       :loading="isPending"
       :show-pagination="false"

@@ -55,13 +55,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import AppButton from "@components/AppButton.vue"
 import SidebarLink from "./parts/SidebarLink.vue"
 import { useMediaQuery } from "@vueuse/core"
 import LogoutModal from "@components/core/LogoutModal.vue"
 import AppHeader from "./parts/AppHeader.vue"
 import AppSidebar from "./parts/AppSidebar.vue"
+import { useGetLocations } from "@modules/settings/api"
+import { useSettingsStore } from "@modules/settings/store"
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
@@ -76,4 +78,19 @@ const SALES_SUITES = [
   { icon: "calendar-tick", label: "Popups", to: "/popups" },
   { icon: "people", label: "Customers", to: "/customers" },
 ]
+
+const { data: locations } = useGetLocations()
+const { setLocations, setActiveLocation } = useSettingsStore()
+
+watch(
+  locations,
+  (newLocations) => {
+    if (newLocations) {
+      const locs = newLocations.data.results ?? []
+      setLocations(locs)
+      setActiveLocation(locs[0] ?? null)
+    }
+  },
+  { immediate: true },
+)
 </script>

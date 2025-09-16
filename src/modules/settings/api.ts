@@ -1,4 +1,4 @@
-import baseApi, { useApiQuery } from "@/composables/baseApi"
+import baseApi, { TPaginatedResponse, useApiQuery } from "@/composables/baseApi"
 import { IInvitePayload, TLocation, TLocationFormData, IUpdateMemberPayload } from "./types"
 import { useMutation } from "@tanstack/vue-query"
 
@@ -11,7 +11,7 @@ export function useCreateLocation() {
 
 /** Fetch all store locations */
 export function useGetLocations() {
-  return useApiQuery({ url: "/stores/locations/" })
+  return useApiQuery<TPaginatedResponse<TLocation>>({ url: "/stores/locations/" })
 }
 
 /** Delete a store location by ID */
@@ -54,5 +54,13 @@ export function useSuspendMember() {
   return useMutation({
     mutationFn: ({ uid }: { uid: string }) =>
       baseApi.patch(`/stores/members/${uid}/toggle_suspension/`),
+  })
+}
+
+/** Update authenticated user's password */
+export function useUpdatePassword() {
+  return useMutation({
+    mutationFn: (body: { password: string; old_password: string }) =>
+      baseApi.post(`/accounts/auth/change-password/`, body),
   })
 }

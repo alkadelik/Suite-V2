@@ -3,10 +3,9 @@ import { IRole } from "@modules/shared/types"
 export type TLocation = {
   uid: string
   name: string
+  is_hq: boolean
   address: string
-  phone: string
-  membersCount: number
-  status: "Active" | "Archived"
+  created_at: string
 }
 
 export type TLocationFormData = {

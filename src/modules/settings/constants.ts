@@ -17,9 +17,8 @@ export const LOCATIONS: TLocation[] = [
     uid: "b7c211bd-7c03-4754-8828-18081abd076e",
     name: "Headquarters",
     address: "123 Main St",
-    phone: "555-1234",
-    membersCount: 10,
-    status: "Active",
+    is_hq: false,
+    created_at: "2023-10-01T12:00:00Z",
   },
   // {
   //   uid: "2",
