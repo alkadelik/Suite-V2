@@ -190,7 +190,7 @@ const schema = computed(() => {
     first_name: yup.string().required("First name is required"),
     last_name: yup.string().optional(),
     email: yup.string().email("Please enter a valid email address").optional(),
-    phone: yup.string().required("Phone number is required"),
+    phone: yup.string().optional(),
     address: yup.string().optional(),
     state: yup.string().optional(),
     city: yup.string().optional(),

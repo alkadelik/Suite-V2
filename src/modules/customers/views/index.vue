@@ -211,6 +211,7 @@
       :mode="formMode"
       :customer="customer"
       @close="showCustomerFormDrawer = false"
+      @refresh="refetch()"
     />
     <ViewCustomerDrawer
       v-model="showViewCustomerDrawer"

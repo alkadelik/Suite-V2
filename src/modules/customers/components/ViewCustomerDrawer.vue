@@ -167,12 +167,12 @@ const summaryStats = ref([
   },
   {
     label: "Total Spend",
-    value: formatCurrency(props.customer?.total_spend || 0),
+    value: formatCurrency(0),
     icon: "money-add",
   },
   {
     label: "Total Credit",
-    value: formatCurrency(props.customer?.total_credit || 0),
+    value: formatCurrency(0),
     icon: "coin",
   },
   {
