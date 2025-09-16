@@ -6,6 +6,7 @@ import {
   TResetPasswordPayload,
   TSignupPayload,
   ICreateStorePayload,
+  TSignupWithInvitePayload,
 } from "./types"
 
 /** Login api request  */
@@ -80,5 +81,13 @@ export function useResetPasswordApi() {
 export function useCreateStoreApi() {
   return useMutation({
     mutationFn: (body: ICreateStorePayload) => baseApi.post("/stores/", body),
+  })
+}
+
+/** sign up with invite code  */
+export function useSignupWithInvite() {
+  return useMutation({
+    mutationFn: (body: TSignupWithInvitePayload) =>
+      baseApi.post("/accounts/signup/with-invite/", body),
   })
 }

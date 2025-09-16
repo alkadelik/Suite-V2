@@ -33,6 +33,7 @@
         label="Delete"
         variant="filled"
         class="!bg-error-600 hover:!bg-error-500 flex-1"
+        :loading="loading"
         @click="emit('delete')"
       />
     </div>
@@ -48,6 +49,7 @@ defineProps<{
   modelValue: boolean
   header: string
   paragraph: string
+  loading: boolean
 }>()
 
 const emit = defineEmits<{

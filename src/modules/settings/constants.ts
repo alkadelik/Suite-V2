@@ -14,7 +14,7 @@ export const LOCATION_COLUMNS: TableColumn<TLocation>[] = [
 
 export const LOCATIONS: TLocation[] = [
   {
-    id: 1,
+    uid: "b7c211bd-7c03-4754-8828-18081abd076e",
     name: "Headquarters",
     address: "123 Main St",
     phone: "555-1234",
@@ -22,7 +22,7 @@ export const LOCATIONS: TLocation[] = [
     status: "Active",
   },
   {
-    id: 2,
+    uid: "2",
     name: "Branch Office",
     address: "456 Elm St",
     phone: "555-5678",
@@ -30,7 +30,7 @@ export const LOCATIONS: TLocation[] = [
     status: "Archived",
   },
   {
-    id: 3,
+    uid: "3",
     name: "Remote Office",
     address: "789 Oak St",
     phone: "555-9012",
@@ -38,7 +38,7 @@ export const LOCATIONS: TLocation[] = [
     status: "Active",
   },
   {
-    id: 4,
+    uid: "4",
     name: "Warehouse",
     address: "321 Pine St",
     phone: "555-3456",

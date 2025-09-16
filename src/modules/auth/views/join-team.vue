@@ -6,21 +6,7 @@
       class="mb-4"
     />
 
-    <AppForm
-      :schema="validationSchema"
-      @submit="onSubmit"
-      v-slot="{ meta }"
-      class="space-y-5"
-      :initial-values="{ email: emailFromQuery }"
-    >
-      <FormField
-        name="email"
-        label="Email Address"
-        placeholder="example@gmail.com"
-        required
-        :disabled="true"
-      />
-
+    <AppForm :schema="validationSchema" @submit="onSubmit" v-slot="{ meta }" class="space-y-5">
       <div class="grid grid-cols-2 gap-5">
         <FormField name="first_name" label="First Name" placeholder="e.g. John" required />
         <FormField name="last_name" label="Last Name" placeholder="e.g. Doe" required />
@@ -92,25 +78,28 @@
 
 <script setup lang="ts">
 import { ref } from "vue"
-import { useRoute } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
 import PasswordStrength from "@components/form/PasswordStrength.vue"
 import * as yup from "yup"
 import { passwordSchema } from "@/utils/validationSchemas"
-// import { useRegister } from "../api"
-// import { displayError } from "@/utils/error-handler"
-// import { useAuthStore } from "../store"
-import { TSignupPayload } from "../types"
-// import { toast } from "@/composables/useToast"
+import { useSignupWithInvite } from "../api"
+import { displayError } from "@/utils/error-handler"
+import { toast } from "@/composables/useToast"
 import AppForm from "@components/form/AppForm.vue"
 import FormField from "@components/form/FormField.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import AppButton from "@components/AppButton.vue"
 
-// const { mutate: signupFn, isPending } = useRegister()
-// const authStore = useAuthStore()
-// const router = useRouter()
+const { mutate: signupFn, isPending } = useSignupWithInvite()
 const route = useRoute()
-const isPending = ref(false)
+const router = useRouter()
+
+interface FormValues {
+  first_name: string
+  last_name: string
+  password: string
+  confirm_password: string
+}
 
 const validationSchema = yup.object().shape({
   first_name: yup.string().required("First name is required"),
@@ -125,11 +114,10 @@ const validationSchema = yup.object().shape({
 const currentPassword = ref("")
 // Initialize values immediately from query parameters
 const inviteCode = ref((route.query.invite_code as string) || "")
-const emailFromQuery = ref((route.query.email as string) || "")
 
-const onSubmit = (values: TSignupPayload) => {
+const onSubmit = (values: FormValues) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { confirm_password, email, ...rest } = values
+  const { confirm_password, ...rest } = values
   const payload = {
     ...rest,
     invite_code: inviteCode.value,
@@ -137,15 +125,12 @@ const onSubmit = (values: TSignupPayload) => {
 
   console.log("Payload:", payload)
 
-  //   signupFn(payload, {
-  //     onSuccess: (res) => {
-  //       const { access, refresh, ...user } = res.data?.data || {}
-  //       authStore.setTokens({ accessToken: access, refreshToken: refresh })
-  //       authStore.setAuthUser({ ...user, email: values.email })
-  //       toast.success("Signup successful!")
-  //       router.push("/dashboard")
-  //     },
-  //     onError: displayError,
-  //   })
+  signupFn(payload, {
+    onSuccess: () => {
+      toast.success("Signup successful!")
+      router.push("/login")
+    },
+    onError: displayError,
+  })
 }
 </script>

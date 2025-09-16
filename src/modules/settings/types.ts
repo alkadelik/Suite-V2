@@ -1,5 +1,7 @@
+import { IRole } from "@modules/shared/types"
+
 export type TLocation = {
-  id: number
+  uid: string
   name: string
   address: string
   phone: string
@@ -12,14 +14,23 @@ export type TLocationFormData = {
   address: string
 }
 
+export type TAssignedLocation = {
+  uid: string
+  name: string
+  is_hq: boolean
+  address: string | null
+  created_at: string
+}
+
 export type TTeam = {
-  id: number
-  firstName: string
-  lastName: string
+  uid: string
+  first_name: string
+  last_name: string
   email: string
-  role: "Admin" | "Member"
-  status: "Active" | "Invited" | "Inactive"
-  locations: TLocation[]
+  roles: IRole[]
+  assigned_locations: TAssignedLocation[]
+  is_suspended: boolean
+  suspended_at: string | null
 }
 
 export type TSubscription = {
@@ -29,4 +40,16 @@ export type TSubscription = {
   amount: number
   billingPeriod: "Yearly" | "Monthly"
   status: "Success" | "Pending" | "Failed"
+}
+
+export interface IInvitePayload {
+  email: string
+  roles: string[]
+  locations: string[]
+}
+
+export interface IUpdateMemberPayload {
+  uid: string
+  roles: string[]
+  locations: string[]
 }

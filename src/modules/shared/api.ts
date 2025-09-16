@@ -2,6 +2,7 @@ import { useApiQuery } from "@/composables/baseApi"
 import baseApi, { TApiPromise } from "@/composables/baseApi"
 import { useMutation, useQuery } from "@tanstack/vue-query"
 import {
+  IRolesApiResponse,
   TCreateAccountPayload,
   TGetSupportedAccountsResponse,
   TSetupShippingPayload,
@@ -83,6 +84,17 @@ export function useGetStoreIndustries() {
     queryKey: ["industries"],
     queryFn: async () => {
       const res = await baseApi.get<IIndustriesApiResponse>("/stores/industries/")
+      return res.data
+    },
+  })
+}
+
+/** Get user roles */
+export function useGetRoles() {
+  return useQuery<IRolesApiResponse>({
+    queryKey: ["roles"],
+    queryFn: async () => {
+      const res = await baseApi.get<IRolesApiResponse>("/accounts/auth/roles/")
       return res.data
     },
   })

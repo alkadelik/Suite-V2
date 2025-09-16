@@ -68,7 +68,7 @@
             <div class="flex">
               <span class="text-core-600 w-2/5 text-xs md:text-sm">Date joined</span>
               <span class="flex-1 text-xs font-semibold md:text-sm">{{
-                customer?.dateOfBirth
+                customer?.created_at
               }}</span>
             </div>
 
@@ -89,7 +89,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue"
 import Drawer from "@components/Drawer.vue"
-import type { TCustomer, TCustomerFormMode, ICustomerFormPayload } from "../types"
+import type { ICustomer, TCustomerFormMode, ICustomerFormPayload } from "../types"
 import CustomerCard from "./CustomerCard.vue"
 import Tabs from "@/components/Tabs.vue"
 // import { pluralize } from "@/utils/pluralize"
@@ -105,7 +105,7 @@ interface Props {
   /** Form mode - add new customer or edit existing */
   mode?: TCustomerFormMode
   /** Customer data for editing (required when mode is 'edit') */
-  customer?: TCustomer | null
+  customer?: ICustomer | null
   /** Loading state for async operations */
   loading?: boolean
 }
@@ -162,22 +162,22 @@ const tabOptions = [
 const summaryStats = ref([
   {
     label: "Total Orders",
-    value: 3,
+    value: props.customer?.total_orders || 0,
     icon: "bag-2",
   },
   {
     label: "Total Spend",
-    value: formatCurrency(15000),
+    value: formatCurrency(props.customer?.total_spend || 0),
     icon: "money-add",
   },
   {
     label: "Total Credit",
-    value: formatCurrency(10000),
+    value: formatCurrency(props.customer?.total_credit || 0),
     icon: "coin",
   },
   {
     label: "Total Returns",
-    value: 5,
+    value: props.customer?.total_returns || 0,
     icon: "refresh-2",
   },
 ])

@@ -3,16 +3,16 @@
     <div class="flex items-start gap-3">
       <!-- Custom Avatar on the left -->
       <span
-        :aria-label="`${customer.first_name} ${customer.last_name} avatar`"
+        :aria-label="`${customer.full_name.split(' ')[0]} ${customer.full_name.split(' ')[1]} avatar`"
         class="bg-bloom-300 flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold shadow-sm"
       >
-        {{ getInitials(`${customer.first_name} ${customer.last_name}`) }}
+        {{ getInitials(customer.full_name) }}
       </span>
 
       <!-- Customer details on the right -->
       <div class="flex-1">
         <h2 class="text-core-700 mb-2 text-lg font-semibold">
-          {{ customer.first_name }} {{ customer.last_name }}
+          {{ customer.full_name }}
         </h2>
         <div class="flex flex-wrap items-center gap-3">
           <div class="flex items-center gap-1">
@@ -31,10 +31,10 @@
 
 <script setup lang="ts">
 import Icon from "@components/Icon.vue"
-import { TCustomer } from "../types"
+import { ICustomer } from "../types"
 import { getInitials } from "@/utils/format-strings"
 
 defineProps<{
-  customer: TCustomer
+  customer: ICustomer
 }>()
 </script>

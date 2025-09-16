@@ -41,8 +41,23 @@
 import AppHeader from "@/layouts/parts/AppHeader.vue"
 import BackButton from "@components/BackButton.vue"
 import { useRoute } from "vue-router"
+import { useGetRoles } from "@modules/shared/api"
+import { updateStoreRoleOptions } from "@modules/shared/constants"
+import { IRolesApiResponse } from "@modules/shared/types"
+import { watch } from "vue"
 
 const route = useRoute()
+const { data: rolesData } = useGetRoles()
+watch<IRolesApiResponse | undefined>(
+  () => rolesData.value,
+  (newData) => {
+    console.log(newData?.data)
+
+    if (newData?.data) {
+      updateStoreRoleOptions(newData?.data)
+    }
+  },
+)
 
 const LINKS = [
   { label: "Profile", path: "/settings/profile" },

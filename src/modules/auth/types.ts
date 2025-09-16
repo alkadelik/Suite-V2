@@ -90,3 +90,10 @@ export interface IStoreApiResponse {
     }[]
   }
 }
+
+export type TSignupWithInvitePayload = {
+  first_name: string
+  last_name: string
+  password: string
+  invite_code: string
+}

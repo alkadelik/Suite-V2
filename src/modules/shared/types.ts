@@ -65,3 +65,14 @@ export interface ISelectOption {
   label: string
   value: string
 }
+
+export interface IRole {
+  uid: string
+  name: string
+  description: string
+  type: string
+}
+
+export interface IRolesApiResponse {
+  data: IRole[]
+}

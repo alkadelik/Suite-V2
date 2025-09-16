@@ -33,6 +33,7 @@
         label="Suspend"
         variant="filled"
         class="!bg-warning-600 hover:!bg-warning-500 flex-1"
+        :loading="loading"
         @click="emit('suspend')"
       />
     </div>
@@ -44,7 +45,7 @@ import MessageModal from "@/components/MessageModal.vue"
 import AppButton from "@components/AppButton.vue"
 import Icon from "@components/Icon.vue"
 
-defineProps<{ modelValue: boolean }>()
+defineProps<{ modelValue: boolean; loading: boolean }>()
 const emit = defineEmits<{
   "update:modelValue": [value: boolean]
   refresh: []

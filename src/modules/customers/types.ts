@@ -28,7 +28,7 @@ export type TCustomer = {
   total_orders?: number
 }
 
-export interface ICustomerResponse {
+export interface ICustomer {
   uid: string
   full_name: string
   phone: string
@@ -42,6 +42,7 @@ export interface ICustomerResponse {
 export type TCustomerFormMode = "add" | "edit" | "view"
 
 export interface ICustomerFormPayload {
+  uid: string
   first_name: string
   last_name?: string
   email?: string
@@ -52,4 +53,12 @@ export interface ICustomerFormPayload {
   date_of_birth?: string
   instagram_handle?: string
   location: string
+}
+
+export interface IExportPayload {
+  export_fields: string[]
+  period: string
+  activity: string
+  start_date?: string
+  end_date?: string
 }

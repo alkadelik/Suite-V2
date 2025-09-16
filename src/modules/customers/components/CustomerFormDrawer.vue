@@ -99,7 +99,7 @@ import Drawer from "@components/Drawer.vue"
 import AppButton from "@/components/AppButton.vue"
 import AppForm from "@/components/form/AppForm.vue"
 import FormField from "@/components/form/FormField.vue"
-import type { TCustomer, TCustomerFormMode, ICustomerFormPayload } from "../types"
+import type { ICustomer, TCustomerFormMode, ICustomerFormPayload } from "../types"
 import GooglePlacesAutocomplete from "@components/GooglePlacesAutocomplete.vue"
 import { useCreateCustomer, useUpdateCustomer } from "../api"
 import { displayError } from "@/utils/error-handler"
@@ -124,7 +124,7 @@ interface Props {
   /** Form mode - add new customer or edit existing */
   mode?: TCustomerFormMode
   /** Customer data for editing (required when mode is 'edit') */
-  customer?: TCustomer | null
+  customer?: ICustomer | null
   /** Loading state for async operations */
   loading?: boolean
 }
@@ -146,12 +146,14 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>()
 
+onMounted(() => {
+  console.log("CustomerFormDrawer mounted with props:", props)
+})
+
 const { user } = useAuthStore()
 
 const { mutate: createCustomer, isPending: isCreating } = useCreateCustomer()
-const { mutate: updateCustomer, isPending: isUpdating } = useUpdateCustomer(
-  props.customer?.uid || "",
-)
+const { mutate: updateCustomer, isPending: isUpdating } = useUpdateCustomer()
 
 // Reactive state
 const isMobile = ref(false)
@@ -201,15 +203,15 @@ const schema = computed(() => {
 const initialValues = computed<FormValues>(() => {
   if (props.mode === "edit" && props.customer) {
     return {
-      first_name: props.customer.first_name || "",
-      last_name: props.customer.last_name || "",
+      first_name: props.customer.full_name.split(" ")[0] || "",
+      last_name: props.customer.full_name.split(" ")[1] || "",
       email: props.customer.email || "",
       phone: props.customer.phone || "",
-      address: props.customer.address || "",
-      state: props.customer.state || "",
-      city: props.customer.city || "",
-      date_of_birth: props.customer.date_of_birth || "",
-      instagram_handle: props.customer.instagram_handle || "",
+      address: "",
+      state: "",
+      city: "",
+      date_of_birth: "",
+      instagram_handle: "",
     }
   }
 
@@ -229,6 +231,7 @@ const initialValues = computed<FormValues>(() => {
 // Handle form submission
 const onSubmit = (values: FormValues) => {
   const payload: ICustomerFormPayload = {
+    uid: props.customer?.uid || "",
     first_name: values.first_name.trim(),
     last_name: values.last_name.trim(),
     email: values.email.trim().toLowerCase(),
