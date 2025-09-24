@@ -97,6 +97,7 @@ interface Props {
   /** Form mode - add new product or edit existing */
   mode?: TProductFormMode
   /** Product data for editing (required when mode is 'edit') */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   product?: any
   /** Loading state for async operations */
   loading?: boolean
