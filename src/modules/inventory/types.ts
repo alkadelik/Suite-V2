@@ -183,12 +183,40 @@ export interface IProductVariant {
 
 // Product category types
 export interface IProductCategory {
-  id: number
+  uid: string
   name: string
-  description?: string
-  parent_id?: number
-  created: string
-  updated: string
+  description: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface ICategoriesApiResponse {
+  data: {
+    count: number
+    next: string | null
+    previous: string | null
+    results: IProductCategory[]
+  }
+}
+
+export interface IProductCategoryFormPayload {
+  name: string
+  description: string
+  is_active: boolean
+}
+
+export interface IProductDimension {
+  name: string
+  description_image_url: string
+  height: number
+  width: number
+  depth: number
+  max_weight: number
+  shortLabel: string
+  label: string
+  range: string
+  examples: string
 }
 
 // Product image types
@@ -211,6 +239,30 @@ export interface IProductResponse {
     per_page: number
     total_pages: number
   }
+}
+
+export interface IProductFormVariant {
+  name: string
+  sku: string
+  price: string
+  promo_price: string
+  promo_expiry: string
+  cost_price: string
+  weight: string
+  length: string
+  width: string
+  height: string
+  reorder_point: string
+  max_stock: string
+  opening_stock: string
+  is_active: boolean
+  is_default: boolean
+  batch_number: string
+  expiry_date: string
+  attributes: Array<{
+    attribute: string
+    value: string
+  }>
 }
 
 export interface IProductError {

@@ -64,6 +64,9 @@ import AppHeader from "./parts/AppHeader.vue"
 import AppSidebar from "./parts/AppSidebar.vue"
 import { useGetLocations } from "@modules/settings/api"
 import { useSettingsStore } from "@modules/settings/store"
+import { useGetCategories } from "@modules/inventory/api"
+import { updateProductCategoryOptions } from "@modules/inventory/constants"
+import { ICategoriesApiResponse } from "@modules/inventory/types"
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
@@ -81,6 +84,7 @@ const SALES_SUITES = [
 
 const { data: locations } = useGetLocations()
 const { setLocations, setActiveLocation } = useSettingsStore()
+const { data: categories } = useGetCategories()
 
 watch(
   locations,
@@ -92,5 +96,16 @@ watch(
     }
   },
   { immediate: true },
+)
+
+watch<ICategoriesApiResponse | undefined>(
+  () => categories.value,
+  (newData) => {
+    console.log(newData)
+
+    if (newData?.data?.results) {
+      updateProductCategoryOptions(newData.data.results)
+    }
+  },
 )
 </script>

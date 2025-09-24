@@ -213,13 +213,8 @@
     <ExportProductModal v-model="showExportProductModal" @close="showExportProductModal = false" /> -->
 
     <!-- drawers  -->
-    <!-- <ProductFormDrawer
-      v-model="showProductFormDrawer"
-      :mode="formMode"
-      :product="product"
-      @submit="handleProductSubmit"
-    />
-    <ViewProductDrawer
+    <ProductFormDrawer v-model="showProductFormDrawer" :mode="formMode" :product="product" />
+    <!-- <ViewProductDrawer
       v-model="showViewProductDrawer"
       :mode="formMode"
       :product="product"
@@ -241,7 +236,7 @@ import TextField from "@components/form/TextField.vue"
 import AppButton from "@components/AppButton.vue"
 import { toast } from "@/composables/useToast"
 // import DeleteConfirmationModal from "@components/DeleteConfirmationModal.vue"
-// import ProductFormDrawer from "../components/ProductFormDrawer.vue"
+import ProductFormDrawer from "../components/ProductFormDrawer.vue"
 // import ExportProductModal from "../components/ExportProductModal.vue"
 // import ViewProductDrawer from "../components/ViewProductDrawer.vue"
 import { formatCurrency } from "@/utils/format-currency"

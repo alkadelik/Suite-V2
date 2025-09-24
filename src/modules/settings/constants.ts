@@ -1,8 +1,6 @@
 import { TableColumn } from "@components/DataTable.vue"
 import { TLocation, TSubscription, TTeam } from "./types"
 
-type colorType = "primary" | "success" | "warning" | "error" | "alt" | "blue" | "purple" | undefined
-
 export const LOCATION_COLUMNS: TableColumn<TLocation>[] = [
   { header: "Name", accessor: "name" },
   { header: "Address", accessor: "address" },
@@ -47,7 +45,7 @@ export const LOCATIONS: TLocation[] = [
 ]
 
 export const TEAMS_COLUMN: TableColumn<TTeam>[] = [
-  { header: "Name", accessor: "firstName" },
+  { header: "Name", accessor: "first_name" },
   {
     header: "Locations",
     accessor: "locations",
@@ -60,36 +58,6 @@ export const TEAMS_COLUMN: TableColumn<TTeam>[] = [
   },
   { header: "Roles", accessor: "role" },
   { header: "", accessor: "action" },
-]
-
-export const TEAMS: TTeam[] = [
-  {
-    id: 1,
-    firstName: "John",
-    lastName: "Doe",
-    email: "john.doe@example.com",
-    role: "Admin",
-    status: "Active",
-    locations: [LOCATIONS[0], LOCATIONS[1]],
-  },
-  {
-    id: 2,
-    firstName: "Jane",
-    lastName: "Smith",
-    email: "jane.smith@example.com",
-    role: "Member",
-    status: "Invited",
-    locations: [LOCATIONS[1], LOCATIONS[2]],
-  },
-  {
-    id: 3,
-    firstName: "Alice",
-    lastName: "Johnson",
-    email: "alice.johnson@example.com",
-    role: "Member",
-    status: "Active",
-    locations: [LOCATIONS[1]],
-  },
 ]
 
 export const ROLE_OPTIONS = [
@@ -137,12 +105,3 @@ export const SUBSCRIPTIONS: TSubscription[] = [
     status: "Success",
   },
 ]
-
-export const getPlanColor = (planName: string): colorType => {
-  const planColors: Record<string, colorType> = {
-    Burst: "purple",
-    Bloom: "blue",
-    Bud: "success",
-  }
-  return planColors[planName] || "primary"
-}

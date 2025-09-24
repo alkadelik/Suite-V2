@@ -28,7 +28,7 @@ export type TCustomer = {
   total_orders?: number
 }
 
-export interface ICustomer {
+export interface ICustomer extends Record<string, unknown> {
   uid: string
   full_name: string
   phone: string
@@ -61,4 +61,16 @@ export interface IExportPayload {
   activity: string
   start_date?: string
   end_date?: string
+}
+
+export interface ICustomersApiResponse {
+  data: {
+    results: ICustomer[]
+    stats: {
+      total_customers: number
+      active_customers: number
+    }
+  }
+  message?: string
+  error?: boolean
 }

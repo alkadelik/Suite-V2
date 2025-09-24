@@ -1,4 +1,6 @@
-import type { TProduct } from "./types"
+import { ref } from "vue"
+import { ISelectOption } from "@modules/shared/types"
+import type { IProductCategory, IProductDimension, TProduct } from "./types"
 import { TableColumn } from "@components/DataTable.vue"
 
 export const PRODUCTS: TProduct[] = [
@@ -351,4 +353,111 @@ export const PRODUCT_COLUMNS: TableColumn<TProduct>[] = [
   { header: "Stock Available", accessor: "total_stock" },
   { header: "Status", accessor: "status" },
   { header: "", accessor: "action" },
+]
+
+export const PRODUCT_CATEGORY_OPTIONS = ref<ISelectOption[]>([])
+
+export const updateProductCategoryOptions: (options: IProductCategory[]) => void = (options) => {
+  PRODUCT_CATEGORY_OPTIONS.value.splice(
+    0,
+    PRODUCT_CATEGORY_OPTIONS.value.length,
+    ...options.map((option) => ({
+      label: option.name,
+      value: option.uid,
+    })),
+  )
+}
+
+export const PRODUCT_DIMENSIONS: IProductDimension[] = [
+  {
+    name: "Envelope",
+    description_image_url:
+      "https://res.cloudinary.com/delivry/image/upload/v1651839241/package_boxes/envelope-removebg-preview_ghzcii.png",
+    height: 2,
+    width: 35,
+    depth: 25,
+    max_weight: 0.5,
+    shortLabel: "Light",
+    label: "Light (< 0.5 kg)",
+    range: "< 0.5 kg",
+    examples: "e.g. phone case, jewelry",
+  },
+  {
+    name: "Flyer",
+    description_image_url:
+      "https://res.cloudinary.com/delivry/image/upload/v1682453788/package_boxes/flyer_i9fh7o.png",
+    height: 4,
+    width: 31,
+    depth: 41,
+    max_weight: 2,
+    shortLabel: "Moderate",
+    label: "Moderate (0.51 - 2 kg)",
+    range: "0.51 - 2 kg",
+    examples: "e.g. t-shirts, cosmetics",
+  },
+  {
+    name: "Small Box",
+    description_image_url:
+      "https://res.cloudinary.com/delivry/image/upload/v1682453786/package_boxes/small-box_c4vn5e.png",
+    height: 34,
+    width: 32,
+    depth: 10,
+    max_weight: 3,
+    shortLabel: "Medium",
+    label: "Medium (2.01 - 3 kg)",
+    range: "2.01 - 3 kg",
+    examples: "e.g. snakers, small tablet",
+  },
+  {
+    name: "Big Box",
+    description_image_url:
+      "https://res.cloudinary.com/delivry/image/upload/v1682453786/package_boxes/big-box_rujsqd.png",
+    height: 34,
+    width: 34,
+    depth: 32,
+    max_weight: 12,
+    shortLabel: "Heavy",
+    label: "Heavy (3.01 - 12 kg)",
+    range: "3.01 - 12 kg",
+    examples: "e.g. shoes, small appliances",
+  },
+  {
+    name: "Large Box 1",
+    description_image_url:
+      "https://res.cloudinary.com/delivry/image/upload/v1712625253/package_boxes/box_6_wlrmim.jpg",
+    height: 37,
+    width: 36,
+    depth: 42,
+    max_weight: 18,
+    shortLabel: "Bulky",
+    label: "Bulky (12.01 - 18 kg)",
+    range: "13 - 18 kg",
+    examples: "e.g. standing fan, bulk clothing",
+  },
+  {
+    name: "Large Box 2",
+    description_image_url:
+      "https://res.cloudinary.com/delivry/image/upload/v1712625408/package_boxes/Gemini_Generated_Image_iv8xi3iv8xi3iv8x_x8px9t.jpg",
+    height: 39,
+    width: 40,
+    depth: 48,
+    max_weight: 25,
+    shortLabel: "Very Bulky",
+    label: "Very Bulky (18.01 - 25 kg)",
+    range: "19 - 25 kg",
+    examples: "e.g. large appliances",
+  },
+  {
+    name: "Large Box 3",
+    description_image_url:
+      "https://res.cloudinary.com/delivry/image/upload/v1712625560/package_boxes/Gemini_Generated_Image_tb5yhrtb5yhrtb5y_ohaund.jpg",
+    height: 45,
+    width: 50,
+    depth: 56,
+    max_weight: 40,
+    shortLabel: "Massive",
+    label: "Massive (> 25kg)",
+    range: "> 25 kg",
+    examples: "e.g. very large machines",
+  },
 ]

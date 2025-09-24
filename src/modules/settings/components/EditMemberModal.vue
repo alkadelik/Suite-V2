@@ -46,7 +46,7 @@
           name="roles"
           label="Roles"
           type="tags"
-          :options="ROLE_OPTIONS"
+          :options="roles"
           placeholder="Select Role"
           required
           placement="top"
@@ -91,12 +91,8 @@ import IconHeader from "@components/IconHeader.vue"
 import { IUpdateMemberPayload } from "../types"
 import { useUpdateMember } from "../api"
 import { displayError } from "@/utils/error-handler"
-
-interface SelectOption {
-  label: string
-  value: string
-  class?: string
-}
+import { getRoleColor } from "@modules/shared/utils"
+import type { ISelectOption } from "@modules/shared/types"
 
 interface FormValues {
   roles: string[]
@@ -124,7 +120,16 @@ const schema = computed(() => {
 })
 
 // Mock data for development
-const locations = ref<SelectOption[]>(LOCATIONS.map((loc) => ({ label: loc.name, value: loc.uid })))
+const locations = ref<ISelectOption[]>(
+  LOCATIONS.map((loc) => ({ label: loc.name, value: loc.uid })),
+)
+const roles = computed<ISelectOption[]>(() =>
+  ROLE_OPTIONS.value.map((role) => ({
+    label: role.label,
+    value: role.value,
+    color: getRoleColor(role.value),
+  })),
+)
 
 // Compute initial values from member prop
 const initialValues = computed(() => {

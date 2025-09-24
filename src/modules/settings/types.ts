@@ -52,3 +52,31 @@ export interface IUpdateMemberPayload {
   roles: string[]
   locations: string[]
 }
+
+export interface IStoreMembersResponse {
+  data: {
+    results: TTeam[]
+    stats: {
+      total_customers: number
+      active_customers: number
+    }
+  }
+  message?: string
+  success?: boolean
+}
+
+export interface IPlan {
+  uid: string
+  name: string
+  price: string
+  frequency: "monthly" | "annually"
+  description: string
+}
+
+export interface IPlansResponse {
+  data: {
+    results: IPlan[]
+  }
+  message?: string
+  success?: boolean
+}

@@ -1,6 +1,13 @@
 import baseApi, { TPaginatedResponse, useApiQuery } from "@/composables/baseApi"
-import { IInvitePayload, TLocation, TLocationFormData, IUpdateMemberPayload } from "./types"
-import { useMutation } from "@tanstack/vue-query"
+import {
+  IInvitePayload,
+  TLocation,
+  TLocationFormData,
+  IUpdateMemberPayload,
+  IStoreMembersResponse,
+  IPlansResponse,
+} from "./types"
+import { useMutation, useQuery } from "@tanstack/vue-query"
 
 /** Create a new store location */
 export function useCreateLocation() {
@@ -38,7 +45,13 @@ export function useInviteUserToLocation() {
 
 /** Fetch all store members */
 export function useGetStoreMembers() {
-  return useApiQuery({ url: "/stores/members/" })
+  return useQuery({
+    queryKey: ["store-members"],
+    queryFn: async () => {
+      const { data } = await baseApi.get<IStoreMembersResponse>("/stores/members/")
+      return data
+    },
+  })
 }
 
 /** Update member roles and locations */
@@ -62,5 +75,27 @@ export function useUpdatePassword() {
   return useMutation({
     mutationFn: (body: { password: string; old_password: string }) =>
       baseApi.post(`/accounts/auth/change-password/`, body),
+  })
+}
+
+/** get all available plans */
+export function useGetPlans() {
+  return useQuery({
+    queryKey: ["plans"],
+    queryFn: async () => {
+      const { data } = await baseApi.get<IPlansResponse>("/billings/plans/")
+      return data
+    },
+  })
+}
+
+/** get subscription history */
+export function useGetSubscriptionHistory() {
+  return useQuery({
+    queryKey: ["subscription-history"],
+    queryFn: async () => {
+      const { data } = await baseApi.get("/billings/subscriptions/")
+      return data
+    },
   })
 }

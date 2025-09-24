@@ -6,8 +6,6 @@
         subtitle="Manage your plan, payments, and invoices in one place."
         class="mb-4"
       />
-
-      <Tabs variant="pills" :tabs="tabs" v-model="activeTab" />
     </div>
 
     <!-- plan details  -->
@@ -167,7 +165,6 @@
 
 <script setup lang="ts">
 import SectionHeader from "@/components/SectionHeader.vue"
-import Tabs from "@components/Tabs.vue"
 import { ref } from "vue"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
@@ -178,26 +175,13 @@ import DataTable from "@components/DataTable.vue"
 import type { TSubscription } from "../types"
 import { SUBSCRIPTION_COLUMN, SUBSCRIPTIONS } from "../constants"
 import PlansModal from "../components/PlansModal.vue"
-import { getPlanColor } from "../constants"
-
-type colorType = "primary" | "success" | "warning" | "error" | "alt" | "blue" | "purple" | undefined
+import { getPlanColor } from "../utils"
+import { TChipColor } from "@modules/shared/types"
 
 const showPlansModal = ref(false)
-const activeTab = ref("monthly")
 
-const tabs = ref([
-  {
-    title: "Monthly",
-    key: "monthly",
-  },
-  {
-    title: "Yearly",
-    key: "yearly",
-  },
-])
-
-const getStatusColor = (status: string): colorType => {
-  const statusColors: Record<string, colorType> = {
+const getStatusColor = (status: string): TChipColor => {
+  const statusColors: Record<string, TChipColor> = {
     Success: "success",
     Failed: "error",
     Pending: "warning",

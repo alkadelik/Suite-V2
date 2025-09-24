@@ -32,7 +32,7 @@ export function useResolveBankAccount() {
   return useMutation({
     mutationKey: ["resolveBankAccount"],
     mutationFn: (body: { account_number: string; bank_code: string }) =>
-      baseApi.post("/accounts/auth/password/request-token/", body),
+      baseApi.post("/billings/account-verification/verify/", body),
   })
 }
 
