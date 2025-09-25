@@ -85,18 +85,18 @@ import TextField from "@/components/form/TextField.vue"
 import SelectField from "@/components/form/SelectField.vue"
 import { PRODUCT_DIMENSIONS } from "../../constants"
 import { IProductDimension } from "@modules/inventory/types"
-import { IProductFormVariant } from "../../types"
+import { IProductVariant } from "../../types"
 
 interface Props {
   /** Variants array - for no variants case, should contain single variant */
-  modelValue: IProductFormVariant[]
+  modelValue: IProductVariant[]
   /** Product name to set as default variant name */
   productName?: string
 }
 
 interface Emits {
   /** Update variants array */
-  "update:modelValue": [value: IProductFormVariant[]]
+  "update:modelValue": [value: IProductVariant[]]
 }
 
 const props = defineProps<Props>()
@@ -145,7 +145,7 @@ const variantForm = computed({
     }
     return props.modelValue[0]
   },
-  set: (variant: IProductFormVariant) => {
+  set: (variant: IProductVariant) => {
     // Update the first (and only) variant in the array
     const updatedVariants = [...props.modelValue]
     updatedVariants[0] = variant
@@ -195,7 +195,7 @@ watch(
   (newVariants) => {
     if (!newVariants || newVariants.length === 0) {
       // Initialize with a default variant
-      const defaultVariant: IProductFormVariant = {
+      const defaultVariant: IProductVariant = {
         name: props.productName || "Default",
         sku: "",
         price: "",

@@ -33,12 +33,14 @@ export type TTeam = {
 }
 
 export type TSubscription = {
-  id: number
-  date: string
-  planName: string
-  amount: number
-  billingPeriod: "Yearly" | "Monthly"
-  status: "Success" | "Pending" | "Failed"
+  uid: string
+  amount: string
+  status: "pending" | "completed" | "failed" // Based on API response
+  date_paid: Date | null
+  is_payment_for: string
+  transaction_id: string | null
+  user_name: string
+  store_name: string
 }
 
 export interface IInvitePayload {

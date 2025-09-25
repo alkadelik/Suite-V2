@@ -109,9 +109,10 @@
                   ? 'Downgrade'
                   : 'Upgrade'
             "
-            :disabled="plan.active"
+            :disabled="plan.active || loadingPlanId === plan.uid"
+            :loading="loadingPlanId === plan.uid"
             class="w-full"
-            @click="!plan.active && (emit('update:modelValue', false), emit('refresh'))"
+            @click="handlePlanAction(plan)"
           />
         </div>
       </div>
@@ -129,8 +130,9 @@ import { getPlanColor } from "../utils"
 import { formatCurrency } from "@/utils/format-currency"
 import Icon from "@/components/Icon.vue"
 import AppButton from "@/components/AppButton.vue"
-import { useGetPlans } from "../api"
+import { useGetPlans, useInitializeSubscription } from "../api"
 import LoadingIcon from "@components/LoadingIcon.vue"
+import { displayError } from "@/utils/error-handler"
 
 defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{
@@ -140,6 +142,10 @@ const emit = defineEmits<{
 
 const activeTab = ref("monthly")
 const { data: plansData, isPending } = useGetPlans()
+const { mutate: initializeSubscription } = useInitializeSubscription()
+
+// Track which plan is currently loading
+const loadingPlanId = ref<string | null>(null)
 
 // Track expanded state for each plan
 const expandPlans = ref<boolean>(false)
@@ -187,8 +193,8 @@ const planFeatures = {
 interface PlanGroup {
   name: string
   description: string
-  monthly: number | null
-  yearly: number | null
+  monthly: { price: number; uid: string } | null
+  yearly: { price: number; uid: string } | null
 }
 
 interface ProcessedPlan {
@@ -205,11 +211,15 @@ interface ProcessedPlan {
   currentPrice: number
 }
 
+interface SubscriptionResponse {
+  data: { data: { payment_link: string } }
+}
+
 // Process the API data to create the plans structure
 const processedPlans = computed((): ProcessedPlan[] => {
   if (!plansData.value?.data?.results) return []
 
-  // Group plans by name to get monthly and yearly prices
+  // Group plans by name to get monthly and yearly prices with UIDs
   const planGroups = plansData.value.data.results.reduce(
     (acc: Record<string, PlanGroup>, plan) => {
       if (!acc[plan.name]) {
@@ -222,9 +232,15 @@ const processedPlans = computed((): ProcessedPlan[] => {
       }
 
       if (plan.frequency === "monthly") {
-        acc[plan.name].monthly = parseFloat(plan.price)
+        acc[plan.name].monthly = {
+          price: parseFloat(plan.price),
+          uid: plan.uid,
+        }
       } else if (plan.frequency === "annually") {
-        acc[plan.name].yearly = parseFloat(plan.price)
+        acc[plan.name].yearly = {
+          price: parseFloat(plan.price),
+          uid: plan.uid,
+        }
       }
 
       return acc
@@ -233,36 +249,66 @@ const processedPlans = computed((): ProcessedPlan[] => {
   )
 
   // Convert to array and add additional properties
-  const plans: ProcessedPlan[] = Object.values(planGroups).map(
-    (planGroup: PlanGroup, index: number) => {
-      const planOrder = planGroup.name === "Bud" ? 1 : planGroup.name === "Bloom" ? 2 : 3
+  const plans: ProcessedPlan[] = Object.values(planGroups).map((planGroup: PlanGroup) => {
+    const planOrder = planGroup.name === "Bud" ? 1 : planGroup.name === "Bloom" ? 2 : 3
 
-      return {
-        uid: `${planGroup.name}-${index}`,
-        name: planGroup.name,
-        description: planGroup.description,
-        priceMonthly: planGroup.monthly || 0,
-        priceYearly: planGroup.yearly || 0,
-        features: planFeatures[planGroup.name as keyof typeof planFeatures] || [],
-        active: planGroup.name === "Bud", // Assuming Bud is the current active plan
-        highlighted: planGroup.name === "Bloom",
-        chipText: planGroup.name === "Bloom" ? "Leyyow's Choice" : null,
-        planOrder,
-        currentPrice:
-          activeTab.value === "monthly" ? planGroup.monthly || 0 : planGroup.yearly || 0,
-      }
-    },
-  )
+    // Get the appropriate UID based on active tab
+    const currentPlanData = activeTab.value === "monthly" ? planGroup.monthly : planGroup.yearly
+
+    // Fallback to the other frequency if current one is not available
+    const fallbackPlanData = activeTab.value === "monthly" ? planGroup.yearly : planGroup.monthly
+
+    const activePlanData = currentPlanData || fallbackPlanData
+
+    return {
+      uid: activePlanData?.uid || `${planGroup.name}-fallback`,
+      name: planGroup.name,
+      description: planGroup.description,
+      priceMonthly: planGroup.monthly?.price || 0,
+      priceYearly: planGroup.yearly?.price || 0,
+      features: planFeatures[planGroup.name as keyof typeof planFeatures] || [],
+      active: planGroup.name === "Bud", // Assuming Bud is the current active plan
+      highlighted: planGroup.name === "Bloom",
+      chipText: planGroup.name === "Bloom" ? "Leyyow's Choice" : null,
+      planOrder,
+      currentPrice: activePlanData?.price || 0,
+    }
+  })
 
   // Sort by plan order
   return plans.sort((a, b) => a.planOrder - b.planOrder)
 })
 
+// Handle plan upgrade/downgrade action
+const handlePlanAction = (plan: ProcessedPlan): void => {
+  if (plan.active) return
+
+  // Set loading state for this specific plan
+  loadingPlanId.value = plan.uid
+
+  initializeSubscription(plan.uid, {
+    onSuccess: (response: SubscriptionResponse) => {
+      // Clear loading state
+      loadingPlanId.value = null
+
+      // Close the modal
+      emit("update:modelValue", false)
+
+      // Redirect to payment link
+      if (response.data.data.payment_link) {
+        window.location.href = response.data.data.payment_link
+      }
+    },
+    onError: displayError,
+  })
+}
+
 // Watch activeTab to update current prices
 watch(
   activeTab,
   () => {
-    // This will trigger reactivity to update currentPrice in processedPlans
+    // Clear loading state when switching tabs
+    loadingPlanId.value = null
   },
   { immediate: true },
 )

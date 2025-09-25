@@ -4,7 +4,7 @@
 
     <SelectField
       v-model="form.category"
-      :options="categoryOptions"
+      :options="PRODUCT_CATEGORY_OPTIONS"
       label="Category"
       placeholder="Select category"
       searchable
@@ -50,10 +50,11 @@ import TextAreaField from "@/components/form/TextAreaField.vue"
 import SelectField from "@/components/form/SelectField.vue"
 import Switch from "@components/form/Switch.vue"
 import MultiFileInput from "@components/form/MultiFileInput.vue"
+import { PRODUCT_CATEGORY_OPTIONS } from "@modules/inventory/constants"
 
 interface ProductForm {
   name: string
-  category: string | null
+  category: { label: string; value: string } | null
   description: string
   images: Array<File>
 }
@@ -74,25 +75,6 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
-
-// Sample category options
-const categoryOptions = [
-  { label: "Electronics", value: "electronics" },
-  { label: "Clothing & Fashion", value: "clothing" },
-  { label: "Home & Garden", value: "home-garden" },
-  { label: "Health & Beauty", value: "health-beauty" },
-  { label: "Sports & Outdoors", value: "sports" },
-  { label: "Books & Media", value: "books-media" },
-  { label: "Toys & Games", value: "toys-games" },
-  { label: "Food & Beverages", value: "food-beverages" },
-  { label: "Automotive", value: "automotive" },
-  { label: "Jewelry & Accessories", value: "jewelry" },
-  { label: "Art & Crafts", value: "art-crafts" },
-  { label: "Pet Supplies", value: "pet-supplies" },
-  { label: "Office Supplies", value: "office-supplies" },
-  { label: "Baby & Kids", value: "baby-kids" },
-  { label: "Travel & Luggage", value: "travel" },
-]
 
 // Main form computed with v-model pattern
 const form = computed({

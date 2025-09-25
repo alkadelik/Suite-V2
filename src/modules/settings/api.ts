@@ -94,8 +94,15 @@ export function useGetSubscriptionHistory() {
   return useQuery({
     queryKey: ["subscription-history"],
     queryFn: async () => {
-      const { data } = await baseApi.get("/billings/subscriptions/")
+      const { data } = await baseApi.get("/billings/payments/subscriptions/")
       return data
     },
+  })
+}
+
+/** initialize subscription */
+export function useInitializeSubscription() {
+  return useMutation({
+    mutationFn: (uid: string) => baseApi.post(`/billings/plan/${uid}/initialize/`),
   })
 }

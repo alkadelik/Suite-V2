@@ -72,36 +72,9 @@ export const SUBSCRIPTION_COLUMN: TableColumn<TSubscription>[] = [
     header: "Date",
     accessor: "date",
   },
-  { header: "Plan name", accessor: "planName" },
+  { header: "Plan name", accessor: "plan_name" },
   { header: "Amount", accessor: "amount" },
-  { header: "Billing Period", accessor: "billingPeriod" },
+  { header: "Billing Period", accessor: "date_paid" },
   { header: "Status", accessor: "status" },
   { header: "", accessor: "action" },
-]
-
-export const SUBSCRIPTIONS: TSubscription[] = [
-  {
-    id: 1,
-    date: "23-08-2025",
-    planName: "Bloom",
-    amount: 100000,
-    billingPeriod: "Monthly",
-    status: "Success",
-  },
-  {
-    id: 2,
-    date: "23-07-2025",
-    planName: "Bud",
-    amount: 500000,
-    billingPeriod: "Yearly",
-    status: "Failed",
-  },
-  {
-    id: 3,
-    date: "23-06-2025",
-    planName: "Burst",
-    amount: 1000000,
-    billingPeriod: "Yearly",
-    status: "Success",
-  },
 ]

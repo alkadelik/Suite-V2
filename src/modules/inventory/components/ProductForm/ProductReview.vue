@@ -93,40 +93,20 @@ import { computed } from "vue"
 import { formatCurrency } from "@/utils/format-currency"
 import { PRODUCT_DIMENSIONS } from "../../constants"
 import Chip from "@components/Chip.vue"
+import { IProductVariant } from "@modules/inventory/types"
 
 interface ProductData {
   name: string
-  category: string | null
+  category: { label: string; value: string } | null
   description: string
   images: Array<File>
-}
-
-interface ProductVariant {
-  name: string
-  sku: string
-  price: string
-  promo_price: string
-  promo_expiry: string
-  cost_price: string
-  weight: string
-  length: string
-  width: string
-  height: string
-  reorder_point: string
-  max_stock: string
-  opening_stock: string
-  is_active: boolean
-  is_default: boolean
-  batch_number: string
-  expiry_date: string
-  attributes: Array<{ name: string; value: string }>
 }
 
 interface Props {
   /** Product basic information */
   productData: ProductData
   /** Product variants array */
-  variants: ProductVariant[]
+  variants: IProductVariant[]
   /** Whether product has variants */
   hasVariants: boolean
 }
@@ -157,7 +137,7 @@ const categoryOptionsMap = {
   travel: "Travel & Luggage",
 }
 
-const getCategoryLabel = (categoryValue: string | null): string => {
+const getCategoryLabel = (categoryValue: { label: string; value: string } | null): string => {
   if (!categoryValue) return "Uncategorized"
   // If categoryValue is an object with label/value, return label
   if (typeof categoryValue === "object" && categoryValue !== null && "label" in categoryValue) {
