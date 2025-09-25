@@ -7,14 +7,14 @@
 
     <!-- Dynamic Variants Loop -->
     <div
-      v-for="(variant, index) in variants"
+      v-for="(variant, index) in variants || []"
       :key="`variant-${index}`"
       class="rounded-xl border border-gray-200 bg-white"
     >
       <div class="flex items-center justify-between border-b border-gray-200 p-4">
         <p class="text-xs font-semibold md:text-sm">Variant {{ index + 1 }}</p>
         <button
-          v-if="variants.length > 1"
+          v-if="variants && variants.length > 1"
           type="button"
           class="text-core-800 text-sm hover:text-red-700"
           @click="removeVariant(index)"
@@ -60,7 +60,7 @@
 
     <!-- Add Another Variant Button -->
     <AppButton
-      v-if="variants.length < 2"
+      v-if="variants && variants.length < 2"
       variant="text"
       label="Add Another Variant"
       class="text-primary-700 px-0"
@@ -77,20 +77,21 @@ import InputTagsField from "@components/form/InputTagsField.vue"
 import SelectField from "@components/form/SelectField.vue"
 import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
-import { ref, computed } from "vue"
+import { computed } from "vue"
 import { PRODUCT_ATTRIBUTES } from "@modules/inventory/constants"
 
-// Dynamic variants array - can grow infinitely
-const variants = ref([
-  {
-    name: null as Record<string, unknown> | string | null,
-    customName: "",
-    values: [],
-  },
-])
+// Use v-model to get variants data from parent
+const variants = defineModel<
+  Array<{
+    name: Record<string, unknown> | string | null
+    customName: string
+    values: string[]
+  }>
+>()
 
 // Helper function to get the value from variant name (handles both object and string)
 const getVariantValue = (index: number) => {
+  if (!variants.value) return ""
   const variant = variants.value[index]
   if (!variant || !variant.name) return ""
 
@@ -103,6 +104,7 @@ const getVariantValue = (index: number) => {
 
 // Helper function to get the label from variant name (handles both object and string)
 const getVariantLabel = (index: number) => {
+  if (!variants.value) return ""
   const variant = variants.value[index]
   if (!variant || !variant.name) return ""
 
@@ -117,6 +119,8 @@ const getVariantLabel = (index: number) => {
 
 // Get filtered attributes for any variant index
 const getFilteredAttributes = (currentIndex: number) => {
+  if (!variants.value) return PRODUCT_ATTRIBUTES.value
+
   const usedNames = variants.value
     .map((_variant, index) => (index !== currentIndex ? getVariantFinalName(index) : null))
     .filter((name) => name && name.trim() !== "")
@@ -129,6 +133,7 @@ const getFilteredAttributes = (currentIndex: number) => {
 
 // Get the display name for any variant
 const getVariantDisplayName = (index: number) => {
+  if (!variants.value) return ""
   const variant = variants.value[index]
   if (!variant) return ""
 
@@ -143,6 +148,7 @@ const getVariantDisplayName = (index: number) => {
 
 // Get the final name for comparison
 const getVariantFinalName = (index: number) => {
+  if (!variants.value) return ""
   const variant = variants.value[index]
   if (!variant) return ""
 
@@ -157,6 +163,7 @@ const getVariantFinalName = (index: number) => {
 
 // Get minimum values required for a variant
 const getMinimumValuesRequired = (index: number) => {
+  if (!variants.value) return 2
   // First variant or single variant needs at least 2
   if (variants.value.length === 1 || index === 0) {
     return 2
@@ -170,6 +177,7 @@ const onVariantNameChange = (
   index: number,
   value: string | number | Record<string, unknown> | null,
 ) => {
+  if (!variants.value) return
   // Store the entire object/value as-is
   variants.value[index].name = typeof value === "number" ? value.toString() : value
 
@@ -190,13 +198,14 @@ const onVariantNameChange = (
   }
 
   // Clear custom name when switching away from custom type
-  if (variantValue !== "custom_type") {
+  if (variantValue !== "custom_type" && variants.value) {
     variants.value[index].customName = ""
   }
 }
 
 // Add a new variant
 const addVariant = () => {
+  if (!variants.value) return
   variants.value.push({
     name: null,
     customName: "",
@@ -206,14 +215,15 @@ const addVariant = () => {
 
 // Remove a variant
 const removeVariant = (index: number) => {
-  if (variants.value.length > 1) {
-    variants.value.splice(index, 1)
-  }
+  if (!variants.value || variants.value.length <= 1) return
+  variants.value.splice(index, 1)
 }
 
 // Get error message for individual variant
 const getVariantErrorMessage = (index: number) => {
+  if (!variants.value) return ""
   const variant = variants.value[index]
+  if (!variant) return ""
   const displayName = getVariantDisplayName(index)
   const minimumRequired = getMinimumValuesRequired(index)
 
@@ -229,6 +239,8 @@ const getVariantErrorMessage = (index: number) => {
 
 // Global error messages (for cross-variant validation)
 const globalErrorMessage = computed(() => {
+  if (!variants.value) return ""
+
   // Check for duplicate names
   const names = variants.value
     .map((_, index) => getVariantFinalName(index))
@@ -258,6 +270,8 @@ const globalErrorMessage = computed(() => {
 
 // Computed property to disable add variant button
 const disableAddVariant = computed(() => {
+  if (!variants.value) return true
+
   // Check if any variant is incomplete
   for (let i = 0; i < variants.value.length; i++) {
     const variant = variants.value[i]
@@ -281,10 +295,5 @@ const disableAddVariant = computed(() => {
   }
 
   return false
-})
-
-// Expose variants data for parent component
-defineExpose({
-  variants: variants.value,
 })
 </script>

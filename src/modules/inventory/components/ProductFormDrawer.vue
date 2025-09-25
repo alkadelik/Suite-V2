@@ -19,9 +19,7 @@
         />
 
         <!-- Step 2: Variants Configuration (only if hasVariants is true) -->
-        <div v-else-if="step === 2 && hasVariants" class="text-center text-gray-500">
-          <ProductVariantsForm />
-        </div>
+        <ProductVariantsForm v-else-if="step === 2 && hasVariants" v-model="variantConfiguration" />
 
         <!-- Step 2/3: Inventory & Pricing -->
         <ProductManageCombinationsForm
@@ -142,6 +140,21 @@ const form = reactive({
 // Variants array for inventory management
 const variants = ref<IProductVariant[]>([])
 
+// Variant configuration for step 2 (variant types and values)
+interface VariantConfiguration {
+  name: Record<string, unknown> | string | null
+  customName: string
+  values: string[]
+}
+
+const variantConfiguration = ref<VariantConfiguration[]>([
+  {
+    name: null,
+    customName: "",
+    values: [],
+  },
+])
+
 // Computed properties
 const totalSteps = computed(() => {
   return hasVariants.value ? 4 : 3
@@ -151,9 +164,92 @@ const isLastStep = computed(() => {
   return step.value === totalSteps.value
 })
 
+// Helper function to get the value from variant name (handles both object and string)
+const getVariantValue = (variant: VariantConfiguration) => {
+  if (!variant || !variant.name) return ""
+
+  if (typeof variant.name === "object" && variant.name !== null) {
+    return variant.name.value as string
+  }
+
+  return variant.name
+}
+
+// Helper function to get the display name for a variant
+const getVariantDisplayName = (variant: VariantConfiguration) => {
+  if (!variant) return ""
+
+  const variantValue = getVariantValue(variant)
+
+  if (variantValue === "custom_type") {
+    return variant.customName?.trim() || ""
+  }
+
+  return variantValue
+}
+
+// Get the final name for comparison
+const getVariantFinalName = (variant: VariantConfiguration) => {
+  if (!variant) return ""
+
+  const variantValue = getVariantValue(variant)
+
+  if (variantValue === "custom_type") {
+    return variant.customName?.trim().toLowerCase() || ""
+  }
+
+  return variantValue.toLowerCase()
+}
+
+// Get minimum values required for a variant
+const getMinimumValuesRequired = (index: number) => {
+  // First variant or single variant needs at least 2
+  if (variantConfiguration.value.length === 1 || index === 0) {
+    return 2
+  }
+  // Other variants need at least 1
+  return 1
+}
+
+// Validate variant configuration
+const isVariantConfigurationValid = computed(() => {
+  // Check for duplicate names
+  const names = variantConfiguration.value
+    .map((variant) => getVariantFinalName(variant))
+    .filter((name) => name && typeof name === "string" && name.trim() !== "")
+
+  const duplicateNames = names.filter((name, index) => names.indexOf(name) !== index)
+
+  if (duplicateNames.length > 0) {
+    return false // Has duplicate names
+  }
+
+  // Check if all variants are complete
+  for (let i = 0; i < variantConfiguration.value.length; i++) {
+    const variant = variantConfiguration.value[i]
+    const displayName = getVariantDisplayName(variant)
+    const minimumRequired = getMinimumValuesRequired(i)
+
+    // If variant doesn't have a proper display name
+    if (!displayName) {
+      return false
+    }
+
+    // If variant has insufficient values
+    if (variant.values.length < minimumRequired) {
+      return false
+    }
+  }
+
+  return true
+})
+
 const canProceed = computed(() => {
   if (step.value === 1) {
     return form.name.trim() !== "" && form.category !== null
+  } else if (step.value === 2 && hasVariants.value) {
+    // Validate variants step - ensure valid variant configuration
+    return isVariantConfigurationValid.value
   } else if ((step.value === 2 && !hasVariants.value) || (step.value === 3 && hasVariants.value)) {
     // Validate inventory step - ensure we have at least basic pricing, stock info, and dimensions
     const variant = variants.value[0]
@@ -347,6 +443,17 @@ const handleSubmit = () => {
       onError: displayError,
     })
   } else {
+    // Log data when moving from variants step (step 2 with hasVariants)
+    if (step.value === 2 && hasVariants.value) {
+      console.log("Variant Configuration Data:", {
+        step: step.value,
+        hasVariants: hasVariants.value,
+        variantConfiguration: JSON.parse(JSON.stringify(variantConfiguration.value)),
+        isValid: isVariantConfigurationValid.value,
+        timestamp: new Date().toISOString(),
+      })
+    }
+
     // Move to next step
     step.value += 1
   }
