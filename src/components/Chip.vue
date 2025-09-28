@@ -16,6 +16,7 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import Icon from "./Icon.vue"
+import type { TChipColor } from "@modules/shared/types"
 
 export interface ChipProps {
   /**
@@ -55,7 +56,7 @@ export interface ChipProps {
    * - alt: Gray color scheme for neutral states
    * @default "primary"
    */
-  color?: "primary" | "success" | "warning" | "error" | "alt" | "blue" | "purple"
+  color?: TChipColor
 
   /**
    * Whether to show a colored dot instead of an icon
@@ -129,6 +130,7 @@ const chipClasses = computed(() => {
       alt: "bg-gray-600 text-white",
       blue: "bg-blue-600 text-white",
       purple: "bg-purple-600 text-white",
+      pink: "bg-pink-600 text-white",
     },
     outlined: {
       primary: "bg-primary-50 text-primary-700 border border-primary-200",
@@ -138,6 +140,7 @@ const chipClasses = computed(() => {
       alt: "bg-gray-50 text-gray-700 border border-gray-200",
       blue: "bg-blue-50 text-blue-700 border border-blue-200",
       purple: "bg-purple-50 text-purple-700 border border-purple-200",
+      pink: "bg-pink-50 text-pink-700 border border-pink-200",
     },
   }
 
@@ -183,6 +186,7 @@ const dotClasses = computed(() => {
     alt: "bg-gray-400",
     blue: "bg-blue-500",
     purple: "bg-purple-400",
+    pink: "bg-pink-400",
   }
 
   // Adjust dot color for outlined variant (make it darker)
@@ -196,6 +200,7 @@ const dotClasses = computed(() => {
       alt: "bg-gray-600",
       blue: "bg-blue-600",
       purple: "bg-purple-600",
+      pink: "bg-pink-600",
     },
   }
 

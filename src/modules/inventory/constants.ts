@@ -1,348 +1,12 @@
-import type { TProduct } from "./types"
+import { ref } from "vue"
+import { ISelectOption } from "@modules/shared/types"
+import type {
+  IProductAttributeDetails,
+  IProductCategory,
+  IProductDimension,
+  TProduct,
+} from "./types"
 import { TableColumn } from "@components/DataTable.vue"
-
-export const PRODUCTS: TProduct[] = [
-  {
-    id: 1409,
-    product_name: "car",
-    product_type: "",
-    description: "",
-    price: 1000000,
-    total_stock: 10,
-    has_variant: false,
-    display: true,
-    discount: "",
-    discount_type: "0",
-    has_discount: false,
-    slug: "drew",
-    store: "drew",
-    temp_id: "",
-    category: "vehicles",
-    rating: "0.0",
-    review_count: 0,
-    rate_tracking: "0,0,0,0,0",
-    strict_stock_count: true,
-    created: "2025-07-30T22:58:30.150676+01:00",
-    last_sale: "2025-08-07T09:30:55.440796+01:00",
-    owner: null,
-    options1: "",
-    options2: "",
-    options3: "",
-    variants: "",
-    combinations: null,
-    images: [],
-    sku: [
-      {
-        id: 2006,
-        sku: "353d5be3-a9dc-4416-8cbd-4d10fa0ca381",
-        option1: "",
-        option2: "",
-        option3: "",
-        has_discount: false,
-        sku_discount: "",
-        sku_discount_type: "0",
-        price: 1000000,
-        qty: 10,
-        event_data: {
-          "80": {
-            qty: 10,
-            price: 1000000,
-          },
-          "81": {
-            qty: 8,
-            price: 1000000,
-          },
-          "82": {
-            qty: 10,
-            price: 1000000,
-          },
-          "84": {
-            qty: 10,
-            price: 1000000,
-          },
-        },
-      },
-    ],
-    events: [
-      {
-        id: 82,
-        event_ref: "803d8050b4",
-        event_name: "trying",
-        start_date: "2025-08-05",
-        end_date: "2025-09-27",
-        created: "2025-08-05T02:35:24.907321+01:00",
-      },
-      {
-        id: 80,
-        event_ref: "7bda912801",
-        event_name: "test",
-        start_date: "2025-08-01",
-        end_date: "2025-08-01",
-        created: "2025-08-02T01:47:09.992788+01:00",
-      },
-      {
-        id: 84,
-        event_ref: "00c858c13d",
-        event_name: "gtco",
-        start_date: "2025-08-31",
-        end_date: "2025-08-31",
-        created: "2025-08-06T15:15:09.635266+01:00",
-      },
-      {
-        id: 81,
-        event_ref: "fb9f8ca000",
-        event_name: "tester",
-        start_date: "2025-08-02",
-        end_date: "2025-08-14",
-        created: "2025-08-02T01:50:51.165694+01:00",
-      },
-    ],
-    display_event_data: {
-      "80": {
-        display_product: true,
-      },
-      "81": {
-        display_product: true,
-      },
-      "82": {
-        display_product: true,
-      },
-      "84": {
-        display_product: true,
-      },
-    },
-    inventory_data: {
-      "80": 10,
-      "81": 10,
-      "82": 10,
-      "84": 10,
-    },
-    unit_weight: "0.500",
-    length: "0.00",
-    breadth: "0.00",
-    height: "0.00",
-  },
-  {
-    id: 1312,
-    product_name: "ties",
-    product_type: "",
-    description: "",
-    price: 1000,
-    total_stock: 158,
-    has_variant: true,
-    display: true,
-    discount: "",
-    discount_type: "0",
-    has_discount: false,
-    slug: "drew",
-    store: "drew",
-    temp_id: "",
-    category: "accessories",
-    rating: "0.0",
-    review_count: 0,
-    rate_tracking: "0,0,0,0,0",
-    strict_stock_count: true,
-    created: "2025-07-29T01:27:45.972289+01:00",
-    last_sale: "2025-08-12T09:37:06.867015+01:00",
-    owner: null,
-    options1: "black,white,green",
-    options2: "",
-    options3: "",
-    variants: "color",
-    combinations: null,
-    images: [],
-    sku: [
-      {
-        id: 1898,
-        sku: "8edf0ce4-3c74-4ce8-989a-08609216e6d1",
-        option1: "black",
-        option2: "",
-        option3: "",
-        has_discount: false,
-        sku_discount: "",
-        sku_discount_type: "0",
-        price: 1000,
-        qty: 98,
-        event_data: {
-          "80": {
-            qty: 99,
-            price: 1000,
-          },
-          "82": {
-            qty: 99,
-            price: 1000,
-          },
-        },
-      },
-      {
-        id: 1899,
-        sku: "c7d3070b-cb3d-4801-97c2-e3992ca508d6",
-        option1: "white",
-        option2: "",
-        option3: "",
-        has_discount: false,
-        sku_discount: "",
-        sku_discount_type: "0",
-        price: 1000,
-        qty: 20,
-        event_data: {
-          "80": {
-            qty: 20,
-            price: 1000,
-          },
-          "82": {
-            qty: 20,
-            price: 1000,
-          },
-        },
-      },
-      {
-        id: 1900,
-        sku: "1539cf27-cfa3-4f14-946b-06538c80ab0f",
-        option1: "green",
-        option2: "",
-        option3: "",
-        has_discount: false,
-        sku_discount: "",
-        sku_discount_type: "0",
-        price: 1000,
-        qty: 40,
-        event_data: {
-          "80": {
-            qty: 40,
-            price: 1000,
-          },
-          "82": {
-            qty: 40,
-            price: 1000,
-          },
-        },
-      },
-    ],
-    events: [
-      {
-        id: 82,
-        event_ref: "803d8050b4",
-        event_name: "trying",
-        start_date: "2025-08-05",
-        end_date: "2025-09-27",
-        created: "2025-08-05T02:35:24.907321+01:00",
-      },
-      {
-        id: 80,
-        event_ref: "7bda912801",
-        event_name: "test",
-        start_date: "2025-08-01",
-        end_date: "2025-08-01",
-        created: "2025-08-02T01:47:09.992788+01:00",
-      },
-    ],
-    display_event_data: {
-      "80": {
-        display_product: true,
-      },
-      "82": {
-        display_product: true,
-      },
-    },
-    inventory_data: {
-      "80": 159,
-      "82": 159,
-    },
-    unit_weight: "0.500",
-    length: "0.00",
-    breadth: "0.00",
-    height: "0.00",
-  },
-  {
-    id: 1308,
-    product_name: "shoes",
-    product_type: "",
-    description: "",
-    price: 1000,
-    total_stock: 49,
-    has_variant: false,
-    display: true,
-    discount: "",
-    discount_type: "0",
-    has_discount: false,
-    slug: "drew",
-    store: "drew",
-    temp_id: "",
-    category: "accessories",
-    rating: "0.0",
-    review_count: 0,
-    rate_tracking: "0,0,0,0,0",
-    strict_stock_count: true,
-    created: "2025-07-28T23:48:56.535352+01:00",
-    last_sale: "2025-08-14T09:21:03.145058+01:00",
-    owner: null,
-    options1: "",
-    options2: "",
-    options3: "",
-    variants: "",
-    combinations: null,
-    images: [],
-    sku: [
-      {
-        id: 1888,
-        sku: "9cfe6bea-b662-48b9-b419-3c83abc02336",
-        option1: "",
-        option2: "",
-        option3: "",
-        has_discount: false,
-        sku_discount: "",
-        sku_discount_type: "0",
-        price: 1000,
-        qty: 49,
-        event_data: {
-          "81": {
-            qty: 47,
-            price: 1000,
-          },
-          "82": {
-            qty: 49,
-            price: 1000,
-          },
-        },
-      },
-    ],
-    events: [
-      {
-        id: 82,
-        event_ref: "803d8050b4",
-        event_name: "trying",
-        start_date: "2025-08-05",
-        end_date: "2025-09-27",
-        created: "2025-08-05T02:35:24.907321+01:00",
-      },
-      {
-        id: 81,
-        event_ref: "fb9f8ca000",
-        event_name: "tester",
-        start_date: "2025-08-02",
-        end_date: "2025-08-14",
-        created: "2025-08-02T01:50:51.165694+01:00",
-      },
-    ],
-    display_event_data: {
-      "81": {
-        display_product: true,
-      },
-      "82": {
-        display_product: true,
-      },
-    },
-    inventory_data: {
-      "81": 49,
-      "82": 49,
-    },
-    unit_weight: "0.500",
-    length: "0.00",
-    breadth: "0.00",
-    height: "0.00",
-  },
-]
 
 export const PRODUCT_COLUMNS: TableColumn<TProduct>[] = [
   { header: "Name", accessor: "name" },
@@ -352,3 +16,126 @@ export const PRODUCT_COLUMNS: TableColumn<TProduct>[] = [
   { header: "Status", accessor: "status" },
   { header: "", accessor: "action" },
 ]
+
+export const PRODUCT_CATEGORY_OPTIONS = ref<ISelectOption[]>([])
+
+export const updateProductCategoryOptions: (options: IProductCategory[]) => void = (options) => {
+  PRODUCT_CATEGORY_OPTIONS.value.splice(
+    0,
+    PRODUCT_CATEGORY_OPTIONS.value.length,
+    ...options.map((option) => ({
+      label: option.name,
+      value: option.uid,
+    })),
+  )
+}
+
+export const PRODUCT_DIMENSIONS: IProductDimension[] = [
+  {
+    name: "Envelope",
+    description_image_url:
+      "https://res.cloudinary.com/delivry/image/upload/v1651839241/package_boxes/envelope-removebg-preview_ghzcii.png",
+    height: 2,
+    width: 35,
+    depth: 25,
+    max_weight: 0.5,
+    shortLabel: "Light",
+    label: "Light (< 0.5 kg)",
+    range: "< 0.5 kg",
+    examples: "e.g. phone case, jewelry",
+  },
+  {
+    name: "Flyer",
+    description_image_url:
+      "https://res.cloudinary.com/delivry/image/upload/v1682453788/package_boxes/flyer_i9fh7o.png",
+    height: 4,
+    width: 31,
+    depth: 41,
+    max_weight: 2,
+    shortLabel: "Moderate",
+    label: "Moderate (0.51 - 2 kg)",
+    range: "0.51 - 2 kg",
+    examples: "e.g. t-shirts, cosmetics",
+  },
+  {
+    name: "Small Box",
+    description_image_url:
+      "https://res.cloudinary.com/delivry/image/upload/v1682453786/package_boxes/small-box_c4vn5e.png",
+    height: 34,
+    width: 32,
+    depth: 10,
+    max_weight: 3,
+    shortLabel: "Medium",
+    label: "Medium (2.01 - 3 kg)",
+    range: "2.01 - 3 kg",
+    examples: "e.g. snakers, small tablet",
+  },
+  {
+    name: "Big Box",
+    description_image_url:
+      "https://res.cloudinary.com/delivry/image/upload/v1682453786/package_boxes/big-box_rujsqd.png",
+    height: 34,
+    width: 34,
+    depth: 32,
+    max_weight: 12,
+    shortLabel: "Heavy",
+    label: "Heavy (3.01 - 12 kg)",
+    range: "3.01 - 12 kg",
+    examples: "e.g. shoes, small appliances",
+  },
+  {
+    name: "Large Box 1",
+    description_image_url:
+      "https://res.cloudinary.com/delivry/image/upload/v1712625253/package_boxes/box_6_wlrmim.jpg",
+    height: 37,
+    width: 36,
+    depth: 42,
+    max_weight: 18,
+    shortLabel: "Bulky",
+    label: "Bulky (12.01 - 18 kg)",
+    range: "13 - 18 kg",
+    examples: "e.g. standing fan, bulk clothing",
+  },
+  {
+    name: "Large Box 2",
+    description_image_url:
+      "https://res.cloudinary.com/delivry/image/upload/v1712625408/package_boxes/Gemini_Generated_Image_iv8xi3iv8xi3iv8x_x8px9t.jpg",
+    height: 39,
+    width: 40,
+    depth: 48,
+    max_weight: 25,
+    shortLabel: "Very Bulky",
+    label: "Very Bulky (18.01 - 25 kg)",
+    range: "19 - 25 kg",
+    examples: "e.g. large appliances",
+  },
+  {
+    name: "Large Box 3",
+    description_image_url:
+      "https://res.cloudinary.com/delivry/image/upload/v1712625560/package_boxes/Gemini_Generated_Image_tb5yhrtb5yhrtb5y_ohaund.jpg",
+    height: 45,
+    width: 50,
+    depth: 56,
+    max_weight: 40,
+    shortLabel: "Massive",
+    label: "Massive (> 25kg)",
+    range: "> 25 kg",
+    examples: "e.g. very large machines",
+  },
+]
+
+export const PRODUCT_ATTRIBUTES = ref<ISelectOption[]>([])
+
+export const updateProductAttributeOptions: (options: IProductAttributeDetails[]) => void = (
+  options,
+) => {
+  PRODUCT_ATTRIBUTES.value.splice(
+    0,
+    PRODUCT_ATTRIBUTES.value.length,
+    ...options.map((option) => ({
+      label: option.name,
+      value: option.uid,
+    })),
+    { label: "Custom Type", value: "custom_type" },
+  )
+}

@@ -7,22 +7,32 @@
     variant="bottom-nav"
     :handle-padding="false"
   >
-    <AppForm :schema="bankAccountSchema" @submit="onSubmit" v-slot="{ meta }">
+    <AppForm :schema="bankAccountSchema" @submit="onSubmit" v-slot="{ meta, values }">
       <div class="space-y-4 px-4 py-4 md:space-y-8 md:px-6">
         <div class="flex size-10 items-center justify-center rounded-xl bg-neutral-50 p-2">
           <Icon name="shop-add" size="20" />
         </div>
 
         <p class="text-xs md:text-sm">
-          This is the bank account where you’ll receive payments from your orders on Leyyow.
+          This is the bank account where you'll receive payments from your orders on Leyyow.
         </p>
+
+        <FormField
+          name="account_number"
+          label="Enter Account Number"
+          placeholder="e.g. 0123456789"
+          required
+        />
 
         <div>
           <FormField
-            name="account_number"
-            label="Enter Account Number"
-            placeholder="e.g. 0123456789"
+            name="bank_code"
+            label="Select Your Bank"
+            type="select"
+            :options="supportedBanks"
+            placeholder="Choose your bank"
             required
+            searchable
           />
           <p
             v-if="errorMsg || resolvedAccountName || isResolving"
@@ -34,16 +44,6 @@
             {{ isResolving ? "Validating..." : errorMsg || resolvedAccountName }}
           </p>
         </div>
-
-        <FormField
-          name="bank_code"
-          label="Select Your Bank"
-          type="select"
-          :options="supportedBanks"
-          placeholder="Choose your bank"
-          required
-          searchable
-        />
 
         <WarningBox header="Payment Processing Fees">
           <ul class="list-disc space-y-1 pl-5">
@@ -63,15 +63,18 @@
           label="Save Bank Details"
           :loading="isPending"
           class="w-full"
-          :disabled="!meta.valid || !resolvedAccountName"
+          :disabled="!meta.valid || !resolvedAccountName || !!errorMsg"
         />
       </div>
+
+      <!-- Hidden component to watch form values -->
+      <FormValuesWatcher :values="values" @values-changed="handleFormValuesChange" />
     </AppForm>
   </Modal>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from "vue"
+import { ref, computed, defineComponent } from "vue"
 import * as yup from "yup"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
@@ -81,7 +84,7 @@ import AppForm from "@/components/form/AppForm.vue"
 import FormField from "@/components/form/FormField.vue"
 import Icon from "@components/Icon.vue"
 import WarningBox from "@components/WarningBox.vue"
-import { useCreateBankAccount, useGetSupportedBanks } from "../api.ts"
+import { useCreateBankAccount, useGetSupportedBanks, useResolveBankAccount } from "../api"
 import { TCreateAccountPayload } from "../types.ts"
 
 interface BankOption {
@@ -94,6 +97,24 @@ interface BankAccountPayload {
   account_number: string
 }
 
+// Helper component to watch form values
+const FormValuesWatcher = defineComponent({
+  props: ["values"],
+  emits: ["valuesChanged"],
+  watch: {
+    values: {
+      handler(newValues) {
+        this.$emit("valuesChanged", newValues)
+      },
+      deep: true,
+      immediate: true,
+    },
+  },
+  render() {
+    return null
+  },
+})
+
 defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{
   "update:modelValue": [value: boolean]
@@ -104,13 +125,10 @@ const emit = defineEmits<{
 const resolvedAccountName = ref("")
 const errorMsg = ref("")
 
-// API hooks (uncomment when ready to use)
+// API hooks
 const { data: banks } = useGetSupportedBanks()
-// const { mutate: resolveAccount, isPending: isResolving } = useResolveBankAccount()
+const { mutate: resolveAccount, isPending: isResolving } = useResolveBankAccount()
 const { mutate: createBankAccount, isPending } = useCreateBankAccount()
-
-// Mock data for development (remove when API is ready)
-const isResolving = ref(false)
 
 interface Bank {
   name: string
@@ -143,61 +161,43 @@ const bankAccountSchema = yup.object({
     .required("Account number is required"),
 })
 
-// Form values for watching
-const formValues = ref<BankAccountPayload>({
-  bank_code: { label: "", value: "" },
-  account_number: "",
-})
+// Handle form values changes
+const handleFormValuesChange = (values: BankAccountPayload) => {
+  const { account_number, bank_code } = values
 
-// Watch for account number and bank code changes to resolve account name
-watch(
-  () => [formValues.value.account_number, formValues.value.bank_code],
-  ([accountNumber, bankCode]) => {
-    if (bankCode && typeof accountNumber === "string" && accountNumber.length === 10) {
-      // resolveAccount(
-      //   { account_number: accountNumber, bank_code: bankCode.value },
-      //   {
-      //     onSuccess: (res) => {
-      //       if (res.data.account_name) {
-      //         resolvedAccountName.value = res.data.account_name
-      //         errorMsg.value = ""
-      //       } else {
-      //         errorMsg.value = "No account name found."
-      //         resolvedAccountName.value = ""
-      //       }
-      //     },
-      //     onError: (err) => {
-      //       console.log("error", err)
-      //       errorMsg.value = "Invalid account details. Please check."
-      //       resolvedAccountName.value = ""
-      //     },
-      //   }
-      // )
-    } else {
-      resolvedAccountName.value = ""
-    }
-  },
-  { deep: true },
-)
-
-watch(
-  () => bankAccountSchema.fields,
-  (newVal) => {
-    resolvedAccountName.value = ""
-    console.log("Form values changed:", newVal)
-  },
-  { deep: true },
-)
-
-// Watch for bank code changes to reset form
-watch(
-  () => bankAccountSchema.fields.bank_code,
-  () => {
+  // Reset states when form changes
+  if (!account_number || !bank_code?.value) {
     resolvedAccountName.value = ""
     errorMsg.value = ""
-  },
-  { deep: true },
-)
+    return
+  }
+
+  // Only resolve if we have both account number (10 digits) and bank code
+  if (account_number.length === 10 && bank_code.value) {
+    resolveAccount(
+      {
+        account_number: account_number,
+        bank_code: bank_code.value,
+      },
+      {
+        onSuccess: (res: { data: { data: { data: { account_name: string } } } }) => {
+          // Access the nested data structure: res.data.data.data.account_name
+          if (res.data?.data?.data?.account_name) {
+            resolvedAccountName.value = res.data.data.data.account_name
+            errorMsg.value = ""
+          } else {
+            errorMsg.value = "No account name found."
+            resolvedAccountName.value = ""
+          }
+        },
+        onError: displayError,
+      },
+    )
+  } else {
+    resolvedAccountName.value = ""
+    errorMsg.value = ""
+  }
+}
 
 const onSubmit = (values: BankAccountPayload) => {
   const payload: TCreateAccountPayload = {
@@ -214,11 +214,5 @@ const onSubmit = (values: BankAccountPayload) => {
     },
     onError: (error) => displayError(error),
   })
-
-  // Mock success for development
-  console.log("Submitting bank account:", payload)
-  toast.success("Bank account details saved!")
-  emit("update:modelValue", false)
-  emit("refresh")
 }
 </script>

@@ -116,7 +116,10 @@ const onSubmit = (values: TSignupPayload) => {
     onSuccess: (res) => {
       const { access, refresh, ...user } = res.data?.data || {}
       authStore.setTokens({ accessToken: access, refreshToken: refresh })
-      authStore.setAuthUser({ ...user, email: values.email })
+      authStore.setAuthUser({
+        ...user,
+        email: values.email,
+      })
       toast.success("Signup successful!")
       router.push("/dashboard")
     },

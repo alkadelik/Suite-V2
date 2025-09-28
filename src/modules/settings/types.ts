@@ -1,3 +1,5 @@
+import { IRole } from "@modules/shared/types"
+
 export type TLocation = {
   uid: string
   name: string
@@ -11,21 +13,72 @@ export type TLocationFormData = {
   address: string
 }
 
+export type TAssignedLocation = {
+  uid: string
+  name: string
+  is_hq: boolean
+  address: string | null
+  created_at: string
+}
+
 export type TTeam = {
-  id: number
-  firstName: string
-  lastName: string
+  uid: string
+  first_name: string
+  last_name: string
   email: string
-  role: "Admin" | "Member"
-  status: "Active" | "Invited" | "Inactive"
-  locations: TLocation[]
+  roles: IRole[]
+  assigned_locations: TAssignedLocation[]
+  is_suspended: boolean
+  suspended_at: string | null
 }
 
 export type TSubscription = {
-  id: number
-  date: string
-  planName: string
-  amount: number
-  billingPeriod: "Yearly" | "Monthly"
-  status: "Success" | "Pending" | "Failed"
+  uid: string
+  amount: string
+  status: "pending" | "completed" | "failed" // Based on API response
+  date_paid: Date | null
+  is_payment_for: string
+  transaction_id: string | null
+  user_name: string
+  store_name: string
+}
+
+export interface IInvitePayload {
+  email: string
+  roles: string[]
+  locations: string[]
+}
+
+export interface IUpdateMemberPayload {
+  uid: string
+  roles: string[]
+  locations: string[]
+}
+
+export interface IStoreMembersResponse {
+  data: {
+    results: TTeam[]
+    stats: {
+      total_customers: number
+      active_customers: number
+    }
+  }
+  message?: string
+  success?: boolean
+}
+
+export interface IPlan {
+  uid: string
+  name: string
+  price: string
+  frequency: "monthly" | "annually"
+  description: string
+}
+
+export interface IPlansResponse {
+  data: {
+    results: IPlan[]
+  }
+  message?: string
+  success?: boolean
 }

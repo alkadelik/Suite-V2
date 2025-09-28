@@ -26,7 +26,7 @@
           name="roles"
           label="Role"
           type="tags"
-          :options="roles"
+          :options="ROLE_OPTIONS"
           placeholder="Select Role"
           required
           placement="top"
@@ -65,21 +65,14 @@ import Modal from "@/components/Modal.vue"
 import AppForm from "@/components/form/AppForm.vue"
 import FormField from "@/components/form/FormField.vue"
 import IconHeader from "@/components/IconHeader.vue"
-import { LOCATIONS, ROLE_OPTIONS } from "../constants"
-
-interface SelectOption {
-  label: string
-  value: string
-  class?: string
-}
+import { LOCATIONS } from "../constants"
+import { ROLE_OPTIONS } from "@modules/shared/constants"
+import { ISelectOption } from "@modules/shared/types"
+import { IInvitePayload } from "../types"
+import { useInviteUserToLocation } from "../api"
+import { displayError } from "@/utils/error-handler"
 
 interface FormValues {
-  email: string
-  roles: string[]
-  locations: string[]
-}
-
-interface InvitePayload {
   email: string
   roles: string[]
   locations: string[]
@@ -91,6 +84,8 @@ const emit = defineEmits<{
   refresh: []
 }>()
 
+const { mutate: inviteUser, isPending } = useInviteUserToLocation()
+
 // Dynamic validation schema
 const schema = computed(() => {
   return yup.object({
@@ -101,15 +96,13 @@ const schema = computed(() => {
 })
 
 // Mock data for development
-const locationOptions = ref<SelectOption[]>(
+const locationOptions = ref<ISelectOption[]>(
   LOCATIONS.map((loc) => ({ label: loc.name, value: loc.uid })),
 )
-const roles = ref<SelectOption[]>(ROLE_OPTIONS)
-const isPending = ref(false)
 
 const onSubmit = (values: FormValues) => {
   // Transform the form data to the required payload format
-  const payload: InvitePayload = {
+  const payload: IInvitePayload = {
     email: values.email,
     roles: values.roles,
     locations: values.locations,
@@ -117,9 +110,12 @@ const onSubmit = (values: FormValues) => {
 
   console.log("Submitting invite member payload:", payload)
 
-  // Mock success for development
-  toast.success("Member invitation sent!")
-  emit("update:modelValue", false)
-  emit("refresh")
+  inviteUser(payload, {
+    onSuccess: () => {
+      toast.success("Member invitation sent!")
+      emit("update:modelValue", false)
+    },
+    onError: displayError,
+  })
 }
 </script>

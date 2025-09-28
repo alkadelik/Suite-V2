@@ -116,6 +116,7 @@
 <script setup lang="ts">
 import { capitalizeFirstChar } from "@/utils/format-strings"
 import Icon from "@components/Icon.vue"
+import { TChipColor } from "@modules/shared/types"
 import { ref, computed, onMounted, onUnmounted } from "vue"
 
 type OptionValue = string | number | Record<string, unknown>
@@ -124,6 +125,7 @@ interface OptionWithClass extends Record<string, unknown> {
   label: string | number
   value: OptionValue
   class?: string
+  color?: TChipColor
 }
 
 interface Props {
@@ -165,6 +167,10 @@ interface Props {
   leftIcon?: string
   /** Placement direction of the dropdown menu */
   placement?: "bottom" | "top" | "auto"
+  /** Default color for selected item chips */
+  chipColor?: TChipColor
+  /** Chip variant style */
+  chipVariant?: "filled" | "outlined"
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -178,6 +184,8 @@ const props = withDefaults(defineProps<Props>(), {
   size: "md",
   placement: "bottom",
   placeholder: "Select options...",
+  chipColor: "primary",
+  chipVariant: "outlined",
 })
 
 const emit = defineEmits<{
@@ -249,9 +257,54 @@ const getOptionKey = (opt: OptionWithClass, index: number): string | number => {
 }
 
 const getChipClasses = (item: OptionWithClass): string => {
-  const defaultClasses =
-    "inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-primary-50 text-primary-700 border border-primary-200"
-  return item.class || defaultClasses
+  // If the item has a custom class, use it
+  if (item.class) {
+    return item.class
+  }
+
+  // Use the item's color or fallback to the component's default chipColor
+  const color = item.color || props.chipColor
+  const variant = props.chipVariant
+
+  const baseClasses = [
+    "inline-flex",
+    "items-center",
+    "rounded-full",
+    "px-2",
+    "py-1",
+    "text-xs",
+    "font-medium",
+    "gap-1.5",
+    "transition-all",
+    "duration-200",
+    "ease-in-out",
+  ]
+
+  // Color and variant combinations (same as Chip component)
+  const variantColorClasses = {
+    filled: {
+      primary: "bg-primary-600 text-white",
+      success: "bg-green-600 text-white",
+      warning: "bg-yellow-600 text-white",
+      error: "bg-red-600 text-white",
+      alt: "bg-gray-600 text-white",
+      blue: "bg-blue-600 text-white",
+      purple: "bg-purple-600 text-white",
+      pink: "bg-pink-600 text-white",
+    },
+    outlined: {
+      primary: "bg-primary-50 text-primary-700 border border-primary-200",
+      success: "bg-green-50 text-green-700 border border-green-200",
+      warning: "bg-yellow-50 text-yellow-700 border border-yellow-200",
+      error: "bg-red-50 text-red-700 border border-red-200",
+      alt: "bg-gray-50 text-gray-700 border border-gray-200",
+      blue: "bg-blue-50 text-blue-700 border border-blue-200",
+      purple: "bg-purple-50 text-purple-700 border border-purple-200",
+      pink: "bg-pink-50 text-pink-700 border border-pink-200",
+    },
+  }
+
+  return [...baseClasses, variantColorClasses[variant][color]].join(" ")
 }
 
 // Filter available options (exclude already selected ones)

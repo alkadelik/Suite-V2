@@ -75,7 +75,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue"
+import { computed } from "vue"
 import * as yup from "yup"
 import { toast } from "@/composables/useToast"
 import AppButton from "@/components/AppButton.vue"
@@ -84,18 +84,13 @@ import AppForm from "@/components/form/AppForm.vue"
 import FormField from "@/components/form/FormField.vue"
 import Icon from "@components/Icon.vue"
 import { EXPORT_FIELD_OPTIONS, EXPORT_PERIOD_OPTIONS } from "../constants"
+import { IExportPayload } from "../types"
+import { useExportCustomers } from "../api"
+import { displayError } from "@/utils/error-handler"
 
 interface FormValues {
   export_fields: string[]
   period: { label: string; value: string }
-  activity: string
-  start_date?: string
-  end_date?: string
-}
-
-interface ExportPayload {
-  export_fields: string[]
-  period: string
   activity: string
   start_date?: string
   end_date?: string
@@ -106,6 +101,8 @@ const emit = defineEmits<{
   "update:modelValue": [value: boolean]
   refresh: []
 }>()
+
+const { mutate: exportCustomers, isPending } = useExportCustomers()
 
 // Dynamic validation schema
 const schema = computed(() => {
@@ -136,25 +133,22 @@ const schema = computed(() => {
   })
 })
 
-// Mock data for development
-const isPending = ref(false)
-
 const onSubmit = (values: FormValues) => {
-  // Transform the form data to the required payload format
-  // Set activity to "all" by default as requested
-  const payload: ExportPayload = {
+  const payload: IExportPayload = {
     export_fields: values.export_fields,
     period: values.period.value,
-    activity: "all", // Always set to "all" as requested
+    activity: "all", // Always set to "all"
     start_date: values.start_date,
     end_date: values.end_date,
   }
 
   console.log("Submitting export payload:", payload)
-
-  // Mock success for development
-  toast.success("Export request sent!")
-  emit("update:modelValue", false)
-  emit("refresh")
+  exportCustomers(payload, {
+    onSuccess: () => {
+      toast.success("Customers CSV sent to mail!")
+      emit("update:modelValue", false)
+    },
+    onError: displayError,
+  })
 }
 </script>

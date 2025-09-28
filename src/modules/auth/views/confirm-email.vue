@@ -17,6 +17,7 @@
       label="Verify & Continue"
       :loading="isPending"
       :disabled="otp.length !== 6"
+      loading-text="Verifying..."
       class="w-full"
       @click="onSubmit"
     />
