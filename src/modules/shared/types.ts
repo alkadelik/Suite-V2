@@ -61,7 +61,7 @@ export interface IIndustriesApiResponse {
   }
 }
 
-export interface ISelectOption {
+export interface ISelectOption extends Record<string, unknown> {
   label: string
   value: string
   color?: TChipColor

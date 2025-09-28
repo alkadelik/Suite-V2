@@ -268,7 +268,7 @@ export const ORDERS: TOrder[] = [
     store: 225,
     customer: 5234,
     customer_info: {
-      id: 5234,
+      uid: 5234,
       store: 225,
       first_name: "Daniel",
       last_name: "Obode",
@@ -281,7 +281,6 @@ export const ORDERS: TOrder[] = [
       city: "",
       state: "",
       date_of_birth: null,
-      instagram: "",
       lifetime_orders: 1,
       is_customer: false,
       paystack_code: "",
@@ -422,7 +421,7 @@ export const ORDERS: TOrder[] = [
     store: 225,
     customer: 5232,
     customer_info: {
-      id: 5232,
+      uid: 5232,
       store: 225,
       first_name: "Daniel",
       last_name: "Obode",
@@ -435,7 +434,6 @@ export const ORDERS: TOrder[] = [
       city: "",
       state: "",
       date_of_birth: null,
-      instagram: "",
       lifetime_orders: 3,
       is_customer: false,
       paystack_code: "",
@@ -572,7 +570,7 @@ export const ORDERS: TOrder[] = [
     store: 225,
     customer: 5232,
     customer_info: {
-      id: 5232,
+      uid: 5232,
       store: 225,
       first_name: "Daniel",
       last_name: "Obode",
@@ -585,7 +583,6 @@ export const ORDERS: TOrder[] = [
       city: "",
       state: "",
       date_of_birth: null,
-      instagram: "",
       lifetime_orders: 3,
       is_customer: false,
       paystack_code: "",
@@ -722,7 +719,7 @@ export const ORDERS: TOrder[] = [
     store: 225,
     customer: 5232,
     customer_info: {
-      id: 5232,
+      uid: 5232,
       store: 225,
       first_name: "Daniel",
       last_name: "Obode",
@@ -735,7 +732,6 @@ export const ORDERS: TOrder[] = [
       city: "",
       state: "",
       date_of_birth: null,
-      instagram: "",
       lifetime_orders: 3,
       is_customer: false,
       paystack_code: "",
@@ -920,11 +916,11 @@ export const ORDER_PAYMENT_STATUS: TOrderPaymentStatus[] = [
 ]
 
 export const anonymousCustomer: TCustomer = {
-  id: 0.1,
+  uid: 0.1,
   first_name: "Unknown",
   last_name: "Anonymous",
   email: "",
   phone: "",
-  totalOrders: 0,
-  lastOrderDate: "",
+  total_orders: 0,
+  last_order_date: "",
 }
