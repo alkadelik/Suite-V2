@@ -19,7 +19,10 @@ baseApi.interceptors.request.use((config) => {
   if (user && user.store_uid !== "") {
     config.headers["X-Store-Id"] = user.store_uid
   }
-  config.headers["X-Location-Id"] = "b7c211bd-7c03-4754-8828-18081abd076e"
+  // drew@leyyow.com
+  // config.headers["X-Location-Id"] = "b7c211bd-7c03-4754-8828-18081abd076e"
+  // drew+2@leyyow.com
+  config.headers["X-Location-Id"] = "4867aa64-8716-41b2-b469-a3742d0cd953"
   return config
 })
 

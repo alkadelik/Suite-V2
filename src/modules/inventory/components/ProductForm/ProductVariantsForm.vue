@@ -85,7 +85,7 @@ const variants = defineModel<
   Array<{
     name: Record<string, unknown> | string | null
     customName: string
-    values: string[]
+    values: { label: string; value: string }[]
   }>
 >()
 

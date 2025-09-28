@@ -20,9 +20,9 @@
       icon="box"
       title="No products found"
       description="Start adding products to manage your inventory."
-      button-label="Add Product"
-      class="my-8"
-      @click="openAddProductDrawer"
+      action-label="Add Product"
+      action-icon="add"
+      @action="showProductFormDrawer = true"
     />
     <div v-else class="mt-4 space-y-4 rounded-xl border-gray-200 bg-white pt-3 md:mt-8 md:border">
       <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">

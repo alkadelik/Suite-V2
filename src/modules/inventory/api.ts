@@ -62,7 +62,7 @@ export function useGetAttributes() {
 }
 
 /** create attributes api request */
-export function useCreateAttributes() {
+export function useCreateAttribute() {
   return useMutation({
     mutationFn: (body: IProductAttributeFormPayload) => baseApi.post("inventory/attributes/", body),
   })
@@ -86,6 +86,6 @@ export function useCreateAttributeValues() {
       attributeUid,
       ...payload
     }: IProductAttributeValuePayload & { attributeUid: string }) =>
-      baseApi.post(`inventory/attributes/${attributeUid}/values/`, payload),
+      baseApi.post(`inventory/attributes/${attributeUid}/add-value/`, payload),
   })
 }

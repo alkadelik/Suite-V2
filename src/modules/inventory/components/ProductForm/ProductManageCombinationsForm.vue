@@ -1,27 +1,98 @@
 <template>
   <div class="space-y-6">
-    <!-- Price Section -->
-    <TextField
-      v-model="variantForm.price"
-      label="Price"
-      placeholder="0.00"
-      type="number"
-      step="0.01"
-      min="0"
-      required
-    />
+    <!-- Single Variant View (when only one variant) -->
+    <div v-if="isSingleVariant" class="space-y-6">
+      <!-- Price Section -->
+      <TextField
+        :model-value="singleVariantForm.price"
+        @update:model-value="singleVariantForm.price = removeLeadingZeros($event)"
+        label="Price"
+        placeholder=""
+        type="number"
+        step="0.01"
+        min="0"
+        required
+      />
 
-    <!-- Stock Section -->
-    <TextField
-      v-model="variantForm.opening_stock"
-      label="Available Stock"
-      placeholder="0"
-      type="number"
-      min="0"
-      required
-    />
+      <!-- Stock Section -->
+      <TextField
+        :model-value="singleVariantForm.opening_stock"
+        @update:model-value="singleVariantForm.opening_stock = removeLeadingZeros($event)"
+        label="Available Stock"
+        placeholder=""
+        type="number"
+        min="0"
+        required
+      />
+    </div>
 
-    <!-- Weight Section -->
+    <!-- Multiple Variants View (when more than one variant) -->
+    <div v-else class="space-y-4 rounded-lg border border-gray-200">
+      <!-- Header -->
+      <div class="flex items-center justify-between bg-gray-50 p-4">
+        <div class="flex-1">
+          <h3 class="text-sm font-medium text-gray-900">Variant</h3>
+        </div>
+        <div class="w-32 text-center">
+          <h3 class="text-sm font-medium text-gray-900">Quantity</h3>
+        </div>
+        <div class="w-32 text-center">
+          <h3 class="text-sm font-medium text-gray-900">Price</h3>
+        </div>
+      </div>
+
+      <!-- Variant Rows -->
+      <div class="bg-white">
+        <div
+          v-for="(variant, index) in variants"
+          :key="`variant-${index}`"
+          class="flex items-center gap-4 border-b border-gray-200 p-4"
+        >
+          <!-- Variant Name with Chips -->
+          <div class="flex-1">
+            <div class="flex flex-wrap gap-2">
+              <Chip
+                v-for="(attributeValue, attrIndex) in getVariantDisplayValues(variant)"
+                :key="`attr-${attrIndex}`"
+                :label="attributeValue"
+                size="sm"
+              />
+            </div>
+          </div>
+
+          <!-- Quantity Input -->
+          <div class="w-32">
+            <TextField
+              :model-value="variant.opening_stock"
+              placeholder=""
+              type="number"
+              min="0"
+              size="sm"
+              @update:model-value="
+                updateVariantField(index, 'opening_stock', removeLeadingZeros($event))
+              "
+              @blur="handleStockBlur(index, $event)"
+            />
+          </div>
+
+          <!-- Price Input -->
+          <div class="w-32">
+            <TextField
+              :model-value="variant.price"
+              placeholder=""
+              type="number"
+              step="0.01"
+              min="0"
+              size="sm"
+              @update:model-value="updateVariantField(index, 'price', removeLeadingZeros($event))"
+              @blur="handlePriceBlur(index, $event)"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Weight Section (always shown) -->
     <div class="space-y-4">
       <SelectField
         v-model="selectedDimension"
@@ -39,7 +110,8 @@
         </template>
       </SelectField>
 
-      <div v-if="variantForm.weight" class="rounded-lg border border-gray-200 bg-gray-50 p-4">
+      <!-- Product Dimensions (only show when weight is selected) -->
+      <div v-if="selectedDimension" class="rounded-lg border border-gray-200 bg-gray-50 p-4">
         <h4 class="mb-1 text-sm font-medium">Product Dimensions</h4>
         <p class="mb-3 text-sm text-gray-600">
           These are estimated dimensions based on the weight you selected. You can update them if
@@ -47,31 +119,34 @@
         </p>
         <div class="grid grid-cols-3 gap-3">
           <TextField
-            v-model="variantForm.height"
+            :model-value="globalDimensions.height"
             type="number"
             label="Height (cm)"
             placeholder="40.0"
             step="0.1"
             min="0"
             required
+            @update:model-value="updateGlobalDimension('height', $event)"
           />
           <TextField
-            v-model="variantForm.length"
+            :model-value="globalDimensions.length"
             type="number"
             label="Length (cm)"
             placeholder="40.0"
             step="0.1"
             min="0"
             required
+            @update:model-value="updateGlobalDimension('length', $event)"
           />
           <TextField
-            v-model="variantForm.width"
+            :model-value="globalDimensions.width"
             type="number"
             label="Width (cm)"
             placeholder="40.0"
             step="0.1"
             min="0"
             required
+            @update:model-value="updateGlobalDimension('width', $event)"
           />
         </div>
       </div>
@@ -80,9 +155,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from "vue"
+import { computed, ref, watch } from "vue"
 import TextField from "@/components/form/TextField.vue"
 import SelectField from "@/components/form/SelectField.vue"
+import Chip from "@/components/Chip.vue"
 import { PRODUCT_DIMENSIONS } from "../../constants"
 import { IProductDimension } from "@modules/inventory/types"
 import { IProductVariant } from "../../types"
@@ -102,6 +178,49 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
+// Global dimensions state (applies to all variants)
+const globalDimensions = ref({
+  height: "",
+  length: "",
+  width: "",
+  weight: "",
+})
+
+// Initialize global dimensions from existing variants
+const initializeGlobalDimensions = () => {
+  if (props.modelValue && props.modelValue.length > 0) {
+    const firstVariant = props.modelValue[0]
+    globalDimensions.value = {
+      height: firstVariant.height || "",
+      length: firstVariant.length || "",
+      width: firstVariant.width || "",
+      weight: firstVariant.weight || "",
+    }
+  }
+}
+
+// Initialize on mount and when variants change
+watch(
+  () => props.modelValue,
+  (newVariants) => {
+    if (newVariants && newVariants.length > 0) {
+      // Only initialize if globalDimensions are empty (to avoid overwriting user selections)
+      if (!globalDimensions.value.weight && !globalDimensions.value.height) {
+        initializeGlobalDimensions()
+      }
+    }
+  },
+  { immediate: true },
+)
+
+// Check if we have a single variant
+const isSingleVariant = computed(() => {
+  return !props.modelValue || props.modelValue.length <= 1
+})
+
+// Get variants array
+const variants = computed(() => props.modelValue || [])
+
 // Transform PRODUCT_DIMENSIONS for SelectField
 const dimensionOptions = computed(() =>
   PRODUCT_DIMENSIONS.map((dim) => ({
@@ -117,10 +236,9 @@ const dimensionOptions = computed(() =>
   })),
 )
 
-// Get the single variant (first item in array for no-variants case)
-const variantForm = computed({
+// Single variant form (for when there's only one variant)
+const singleVariantForm = computed({
   get: () => {
-    // If no variants exist, create a default one
     if (!props.modelValue || props.modelValue.length === 0) {
       return {
         name: props.productName || "Default",
@@ -146,7 +264,6 @@ const variantForm = computed({
     return props.modelValue[0]
   },
   set: (variant: IProductVariant) => {
-    // Update the first (and only) variant in the array
     const updatedVariants = [...props.modelValue]
     updatedVariants[0] = variant
     emit("update:modelValue", updatedVariants)
@@ -156,68 +273,149 @@ const variantForm = computed({
 // Selected dimension for weight dropdown
 const selectedDimension = computed({
   get: () => {
-    if (!variantForm.value.weight) return null
+    if (!globalDimensions.value.weight) return null
     return dimensionOptions.value.find(
-      (opt) => opt.max_weight.toString() === variantForm.value.weight,
+      (opt) => opt.max_weight.toString() === globalDimensions.value.weight,
     )
   },
   set: (dimension: IProductDimension) => {
     if (dimension) {
-      // Update variant form with selected dimension data
-      variantForm.value = {
-        ...variantForm.value,
+      // Update global dimensions
+      globalDimensions.value = {
         weight: dimension.max_weight.toString(),
         height: dimension.height.toString(),
         length: dimension.depth.toString(),
         width: dimension.width.toString(),
       }
+
+      // Update all variants with new dimensions
+      updateAllVariantDimensions(globalDimensions.value)
     }
   },
 })
 
-// Watch for product name changes to update variant name
-watch(
-  () => props.productName,
-  (newName) => {
-    if (newName && variantForm.value.name === "Default") {
-      variantForm.value = {
-        ...variantForm.value,
-        name: newName,
-      }
-    }
-  },
-  { immediate: true },
-)
+// Extract display values from variant attributes for chips
+const getVariantDisplayValues = (variant: IProductVariant): string[] => {
+  if (!variant.attributes || variant.attributes.length === 0) {
+    return [variant.name]
+  }
 
-// Initialize variant if modelValue is empty
-watch(
-  () => props.modelValue,
-  (newVariants) => {
-    if (!newVariants || newVariants.length === 0) {
-      // Initialize with a default variant
-      const defaultVariant: IProductVariant = {
-        name: props.productName || "Default",
-        sku: "",
-        price: "",
-        promo_price: "",
-        promo_expiry: "",
-        cost_price: "",
-        weight: "",
-        length: "",
-        width: "",
-        height: "",
-        reorder_point: "",
-        max_stock: "",
-        opening_stock: "",
-        is_active: true,
-        is_default: true,
-        batch_number: "",
-        expiry_date: "",
-        attributes: [],
-      }
-      emit("update:modelValue", [defaultVariant])
+  // The variant name format is "{Product Name} - {Value1} {Value2}"
+  const nameParts = variant.name.split(" - ")
+  if (nameParts.length > 1) {
+    return nameParts[1].split(" ")
+  }
+
+  return [variant.name]
+}
+
+// Update a specific field for a specific variant
+const updateVariantField = (index: number, field: keyof IProductVariant, value: string) => {
+  const updatedVariants = [...props.modelValue]
+  if (updatedVariants[index]) {
+    updatedVariants[index] = {
+      ...updatedVariants[index],
+      [field]: value,
     }
-  },
-  { immediate: true },
-)
+    emit("update:modelValue", updatedVariants)
+  }
+}
+
+// Update global dimensions and apply to all variants
+const updateGlobalDimension = (field: string, value: string) => {
+  globalDimensions.value = {
+    ...globalDimensions.value,
+    [field]: value,
+  }
+
+  // Update all variants with the new dimension
+  updateAllVariantDimensions(globalDimensions.value)
+}
+
+// Update dimensions for all variants
+const updateAllVariantDimensions = (dimensions: {
+  height: string
+  length: string
+  width: string
+  weight: string
+}) => {
+  const updatedVariants = props.modelValue.map((variant) => ({
+    ...variant,
+    height: dimensions.height,
+    length: dimensions.length,
+    width: dimensions.width,
+    weight: dimensions.weight,
+  }))
+
+  emit("update:modelValue", updatedVariants)
+}
+
+// Handle stock blur - auto-fill other variants if they're empty
+const handleStockBlur = (currentIndex: number, event: Event) => {
+  const target = event.target as HTMLInputElement
+  const value = target.value.trim()
+
+  if (!value || value === "0") return
+
+  // Check if other variants have empty or zero stock values
+  const updatedVariants = [...props.modelValue]
+  let hasChanges = false
+
+  updatedVariants.forEach((variant, index) => {
+    if (
+      index !== currentIndex &&
+      (!variant.opening_stock ||
+        variant.opening_stock === "0" ||
+        variant.opening_stock.trim() === "")
+    ) {
+      variant.opening_stock = value
+      hasChanges = true
+    }
+  })
+
+  if (hasChanges) {
+    emit("update:modelValue", updatedVariants)
+  }
+}
+
+// Handle price blur - auto-fill other variants if they're empty
+const handlePriceBlur = (currentIndex: number, event: Event) => {
+  const target = event.target as HTMLInputElement
+  const value = target.value.trim()
+
+  if (!value || value === "0") return
+
+  // Check if other variants have empty or zero price values
+  const updatedVariants = [...props.modelValue]
+  let hasChanges = false
+
+  updatedVariants.forEach((variant, index) => {
+    if (
+      index !== currentIndex &&
+      (!variant.price || variant.price === "0" || variant.price.trim() === "")
+    ) {
+      variant.price = value
+      hasChanges = true
+    }
+  })
+
+  if (hasChanges) {
+    emit("update:modelValue", updatedVariants)
+  }
+}
+
+// Remove leading zeros from input values
+const removeLeadingZeros = (value: string): string => {
+  if (!value || value.trim() === "") return value
+
+  // For decimal numbers, handle separately
+  if (value.includes(".")) {
+    const parts = value.split(".")
+    const integerPart = parts[0].replace(/^0+/, "") || "0"
+    return `${integerPart}.${parts[1]}`
+  }
+
+  // For integers, remove leading zeros but keep at least one digit
+  return value.replace(/^0+/, "") || "0"
+}
 </script>
