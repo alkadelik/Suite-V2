@@ -8,7 +8,7 @@
   >
     <IconHeader icon-name="shop-add" :subtext="getHeaderText" />
 
-    <form id="product-form" @submit.prevent="handleSubmit" class="h-full flex-1 overflow-y-auto">
+    <form id="product-form" @submit.prevent="handleSubmit" class="min-h-full">
       <div>
         <!-- Step 1: Product Details -->
         <ProductDetailsForm

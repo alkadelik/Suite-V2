@@ -100,15 +100,7 @@
         label="Product Weight"
         placeholder="Select weight category"
         required
-      >
-        <template #option="{ option }">
-          <div>
-            <span class="font-semibold">{{ option.shortLabel }}</span>
-            <span class="font-normal"> ({{ option.range }}) </span> —
-            <span class="font-light text-gray-500">{{ option.examples }}</span>
-          </div>
-        </template>
-      </SelectField>
+      />
 
       <!-- Product Dimensions (only show when weight is selected) -->
       <div v-if="selectedDimension" class="rounded-lg border border-gray-200 bg-gray-50 p-4">
@@ -226,13 +218,6 @@ const dimensionOptions = computed(() =>
   PRODUCT_DIMENSIONS.map((dim) => ({
     label: `${dim.shortLabel} (${dim.range}) — ${dim.examples}`,
     value: dim,
-    max_weight: dim.max_weight,
-    height: dim.height,
-    depth: dim.depth,
-    width: dim.width,
-    shortLabel: dim.shortLabel,
-    range: dim.range,
-    examples: dim.examples,
   })),
 )
 
@@ -275,17 +260,17 @@ const selectedDimension = computed({
   get: () => {
     if (!globalDimensions.value.weight) return null
     return dimensionOptions.value.find(
-      (opt) => opt.max_weight.toString() === globalDimensions.value.weight,
+      (opt) => opt.value.max_weight.toString() === globalDimensions.value.weight,
     )
   },
-  set: (dimension: IProductDimension) => {
+  set: (dimension: { label: string; value: IProductDimension }) => {
     if (dimension) {
       // Update global dimensions
       globalDimensions.value = {
-        weight: dimension.max_weight.toString(),
-        height: dimension.height.toString(),
-        length: dimension.depth.toString(),
-        width: dimension.width.toString(),
+        weight: dimension.value.max_weight.toString(),
+        height: dimension.value.height.toString(),
+        length: dimension.value.depth.toString(),
+        width: dimension.value.width.toString(),
       }
 
       // Update all variants with new dimensions
