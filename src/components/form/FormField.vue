@@ -16,7 +16,6 @@
       :searchable="searchable"
       :variant="variant"
       :size="size"
-      :searchable="searchable"
       :clearable="clearable"
       :placement="placement"
       @update:model-value="field.value = $event"
@@ -358,29 +357,6 @@ const {
   digitsOnly,
   separator,
 } = props
-
-// OptionWithClass type should match the expected type in SelectTagsField
-type OptionWithClass = {
-  value: string | number | Record<string, unknown>
-  label: string
-  class?: string
-}
-
-// Normalize options for SelectTagsField to OptionWithClass[]
-const normalizedTagOptions = computed<OptionWithClass[]>(() => {
-  if (!options) return []
-  return options.map((opt) => {
-    if (typeof opt === "string" || typeof opt === "number") {
-      return { value: opt, label: String(opt) }
-    }
-    // If already an object, assume it matches OptionWithClass or convert as needed
-    if ("value" in opt && "label" in opt) {
-      return opt as OptionWithClass
-    }
-    // eslint-disable-next-line @typescript-eslint/no-base-to-string
-    return { value: opt, label: String(opt) }
-  })
-})
 
 // Computed properties for options and hint text because of dynamic props
 const optionsData = computed(() => props.options ?? [])
