@@ -62,8 +62,9 @@ import { useMediaQuery } from "@vueuse/core"
 import LogoutModal from "@components/core/LogoutModal.vue"
 import AppHeader from "./parts/AppHeader.vue"
 import AppSidebar from "./parts/AppSidebar.vue"
-import { useGetLocations } from "@modules/settings/api"
+import { useGetLocations, useGetProfile } from "@modules/settings/api"
 import { useSettingsStore } from "@modules/settings/store"
+import { useAuthStore } from "@modules/auth/store"
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
@@ -86,10 +87,21 @@ watch(
   locations,
   (newLocations) => {
     if (newLocations) {
-      const locs = newLocations.data.results ?? []
+      const locs = newLocations.results ?? []
       setLocations(locs)
       setActiveLocation(locs[0] ?? null)
     }
+  },
+  { immediate: true },
+)
+
+const { data: profile } = useGetProfile()
+const { updateAuthUser } = useAuthStore()
+
+watch(
+  profile,
+  (val) => {
+    if (val) updateAuthUser(val)
   },
   { immediate: true },
 )

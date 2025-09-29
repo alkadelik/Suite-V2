@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import Chip from "@/components/Chip.vue"
-import Modal from "@/components/Modal.vue"
 // import { useSalesStore } from "~/stores/sales"
 import { getSmartDateLabel } from "@/utils/formatDate"
 import { formatCurrency } from "@/utils/format-currency"
@@ -458,22 +457,5 @@ const outstandingBalance = computed(() => {
     >
       New
     </span> -->
-
-    <!--  -->
-    <Modal
-      :open="showNoteModal"
-      :title="`Note (${customerName} - ${activeNote.itemName})`"
-      size="md"
-      centered
-      @update:open="() => (showNoteModal = false)"
-    >
-      <template #title>
-        <h2 class="py-1 text-lg"><b>Note</b> ({{ customerName }} - {{ activeNote.itemName }})</h2>
-      </template>
-      <div v-if="activeNote.note" class="p-2">
-        {{ activeNote.note }}
-      </div>
-      <div v-else class="text-primary-300 p-2 text-center text-sm">No note for this item</div>
-    </Modal>
   </div>
 </template>

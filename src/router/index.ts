@@ -75,32 +75,6 @@ const router = createRouter({
   },
 })
 
-// /**
-//  * ======= Navigation guards =======
-//  *  */
-// router.beforeEach((to, _from, next) => {
-//   const { isAuthenticated, user } = useAuthStore()
-//   // route requiresAuth but user is not authenticated ==> login page
-//   if (to.meta.requiresAuth && !isAuthenticated) {
-//     return next({ path: "/login", query: { redirect: to.fullPath } })
-//   }
-
-//   // user authenticated but email not verified ==> confirm-email page
-//   if (to.meta.requiresAuth && isAuthenticated && !user?.is_email_verified) {
-//     return next({ path: "/confirm-email" })
-//   }
-
-//   // route is public but user is authenticated ==> dashboard
-//   // (only if it’s a valid matched route, not a 404)
-//   const is404 = to.matched.some((v) => v.name === "NotFound")
-//   if (!to.meta.requiresAuth && isAuthenticated && !is404) {
-//     toast.info("You already have an active session.")
-//     return next({ path: "/dashboard" })
-//   }
-
-//   next()
-// })
-
 /**
  * ======= Navigation guards =======
  *  */
@@ -154,5 +128,3 @@ router.beforeEach((to, from, next) => {
 })
 
 export default router
-
-// export default router

@@ -24,17 +24,14 @@ import AppButton from "@components/AppButton.vue"
 import Icon from "@components/Icon.vue"
 import Modal from "@components/Modal.vue"
 import { useAuthStore } from "@modules/auth/store"
-import { useRouter } from "vue-router"
 
 defineProps({ open: Boolean })
 const emit = defineEmits(["close"])
 const store = useAuthStore()
-const router = useRouter()
 
 const onLogout = () => {
   console.log("Logging out...")
-  store.clearAuth()
-  router.push("/login")
+  store.logout()
   emit("close")
 }
 </script>

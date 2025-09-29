@@ -6,15 +6,17 @@
       v-bind="{ ...field, ...$attrs }"
       :model-value="field.value"
       :label="hideLabel ? '' : label || startCase(name)"
-      :options="options || []"
+      :options="optionsData || []"
       :placeholder="placeholder"
       :required="required"
       :disabled="disabled"
       :readonly="readonly"
       :error="fieldErrors[0]"
-      :hint="hint"
+      :hint="hintText"
+      :searchable="searchable"
       :variant="variant"
       :size="size"
+      :placement="placement"
       @update:model-value="field.value = $event"
     />
 
@@ -30,7 +32,7 @@
       :disabled="disabled"
       :readonly="readonly"
       :error="fieldErrors[0]"
-      :hint="hint"
+      :hint="hintText"
       :variant="variant"
       :size="size"
       :searchable="searchable"
@@ -48,7 +50,7 @@
       :disabled="disabled"
       :readonly="readonly"
       :error="fieldErrors[0]"
-      :hint="hint"
+      :hint="hintText"
       :variant="variant"
       :size="size"
       :rows="rows"
@@ -59,6 +61,24 @@
       :auto-resize="autoResize"
     />
 
+    <!-- File Field -->
+    <FileUploadField
+      v-else-if="type === 'file'"
+      v-bind="{ ...field, ...$attrs }"
+      :model-value="field.value"
+      :label="hideLabel ? '' : label || startCase(name)"
+      :required="required"
+      :disabled="disabled"
+      :error="fieldErrors[0]"
+      :hint="hintText"
+      :variant="variant"
+      :size="size"
+      :accept="accept"
+      :max-size="maxSize"
+      :placeholder="placeholder"
+      @update:model-value="field.value = $event"
+    />
+
     <!-- OTP Field -->
     <OtpField
       v-else-if="type === 'otp'"
@@ -67,7 +87,7 @@
       :required="required"
       :disabled="disabled"
       :error="fieldErrors[0]"
-      :hint="hint"
+      :hint="hintText"
       :variant="variant"
       :size="size"
       :length="otpLength"
@@ -86,7 +106,7 @@
       :disabled="disabled"
       :readonly="readonly"
       :error="fieldErrors[0]"
-      :hint="hint"
+      :hint="hintText"
       :variant="variant"
       :size="size"
       :maxlength="maxlength"
@@ -109,6 +129,7 @@ import TextAreaField from "./TextAreaField.vue"
 import OtpField from "./OtpField.vue"
 import { startCase } from "@/utils/format-strings"
 import { computed } from "vue"
+import FileUploadField from "./FileUploadField.vue"
 
 /**
  * Form field types supported by the dynamic FormField component
@@ -130,6 +151,7 @@ export type FormFieldType =
   | "tags"
   | "textarea"
   | "otp"
+  | "file"
 
 /**
  * Option value type for select fields (matches SelectField component)
@@ -186,6 +208,8 @@ interface FormFieldProps {
   searchable?: boolean
   /** Show clear button for tags field */
   clearable?: boolean
+  /** Placement of the dropdown menu (for select fields) */
+  placement?: "top" | "bottom" | "auto"
 
   // Textarea specific props
   /** Number of rows for textarea */
@@ -204,6 +228,12 @@ interface FormFieldProps {
   digitsOnly?: boolean
   /** Separator character for OTP field */
   separator?: string
+
+  // File specific props
+  /** Accepted file types */
+  accept?: string
+  /** Maximum file size in MB */
+  maxSize?: number
 }
 
 const props = withDefaults(defineProps<FormFieldProps>(), {
@@ -227,7 +257,6 @@ const {
   required,
   disabled,
   readonly,
-  hint,
   variant,
   size,
   maxlength,
@@ -270,4 +299,8 @@ const normalizedTagOptions = computed<OptionWithClass[]>(() => {
     return { value: opt, label: String(opt) }
   })
 })
+
+// Computed properties for options and hint text because of dynamic props
+const optionsData = computed(() => props.options ?? [])
+const hintText = computed(() => props.hint ?? "")
 </script>

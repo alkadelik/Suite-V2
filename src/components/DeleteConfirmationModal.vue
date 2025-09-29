@@ -9,17 +9,24 @@
     <!-- Dynamic header -->
     <h6 class="text sm mt-2 font-bold">{{ header }}</h6>
     <!-- Dynamic paragraph -->
-    <p class="mt-2 text-xs md:text-sm">{{ paragraph }}</p>
+    <slot name="paragraph">
+      <p class="mt-2 text-xs md:text-sm">{{ paragraph }}</p>
+    </slot>
 
     <div
-      class="border-error-300 bg-error-25 text-error-700 my-3 flex items-center gap-3 rounded-lg border p-3"
+      class="border-error-300 bg-error-25 text-error-700 my-3 flex flex-col items-center gap-3 rounded-lg border p-3 sm:flex-row sm:items-start"
+      :class="{ 'items-center sm:!items-center': !$slots.warning }"
     >
-      <div class="border-error-100 rounded-full border-2 p-0.5">
+      <div class="border-error-100 flex-shrink-0 rounded-full border-2 p-0.5">
         <div class="border-error-300 rounded-full border-2 p-0.5">
           <Icon name="info-circle-filled" size="20" class="text-error-600" />
         </div>
       </div>
-      <p class="text-xs font-semibold md:text-sm">This action cannot be reversed.</p>
+      <div class="flex-1 text-sm">
+        <slot name="warning">
+          <p class="font-semibold md:text-sm">This action cannot be reversed.</p>
+        </slot>
+      </div>
     </div>
 
     <div class="mt-5 flex gap-2">
@@ -30,7 +37,7 @@
         class="flex-1 !border-gray-200 bg-white !text-gray-700 hover:!bg-gray-100"
       />
       <AppButton
-        label="Delete"
+        :label="actionLabel || 'Delete'"
         variant="filled"
         class="!bg-error-600 hover:!bg-error-500 flex-1"
         :loading="loading"
@@ -48,8 +55,9 @@ import Icon from "@components/Icon.vue"
 defineProps<{
   modelValue: boolean
   header: string
-  paragraph: string
+  paragraph?: string
   loading: boolean
+  actionLabel?: string
 }>()
 
 const emit = defineEmits<{

@@ -3,30 +3,35 @@ import { useAuthStore } from "@modules/auth/store"
 import { useQuery } from "@tanstack/vue-query"
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from "axios"
 import { toast } from "./useToast"
+import { useSettingsStore } from "@modules/settings/store"
+import { toValue, MaybeRefOrGetter } from "vue"
 
-const baseURL = (import.meta.env.VITE_API_BASE_URL as string) || ""
+const baseURL = import.meta.env.VITE_API_BASE_URL as string
 
 const baseApi = axios.create({
-  baseURL,
+  baseURL: baseURL + "/api/v2",
   headers: { "Content-Type": "application/json" },
 })
 
 baseApi.interceptors.request.use((config) => {
   const { accessToken, user } = useAuthStore()
+  const { activeLocation } = useSettingsStore()
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`
   }
   if (user && user.store_uid !== "") {
     config.headers["X-Store-Id"] = user.store_uid
   }
-  config.headers["X-Location-Id"] = "b7c211bd-7c03-4754-8828-18081abd076e"
+  if (user?.store_uid && activeLocation && activeLocation.uid !== "") {
+    config.headers["X-Location-Id"] = activeLocation?.uid || ""
+  }
   return config
 })
 
 const refreshToken = async (): Promise<string> => {
   const { refreshToken, setTokens } = useAuthStore()
-  const response = await baseApi.post("/token/refresh/", { refresh: refreshToken })
-  const { access, refresh } = response.data as { access: string; refresh: string }
+  const { data } = await baseApi.post("/token/refresh/", { refresh: refreshToken }, { baseURL })
+  const { access, refresh } = data?.data as { access: string; refresh: string }
   setTokens({ accessToken: access, refreshToken: refresh })
   return access
 }
@@ -62,7 +67,7 @@ baseApi.interceptors.response.use(
       } catch (refreshError) {
         // If refresh fails, perform a logout or redirect
         toast.error("Session expired. Please log in again.")
-        useAuthStore().clearAuth()
+        useAuthStore().logout()
         // redirect to login page with the current path as redirect query
         const redirectPath = window.location.pathname + window.location.search
         window.location.href = `/login?redirect=${encodeURIComponent(redirectPath)}`
@@ -77,19 +82,31 @@ baseApi.interceptors.response.use(
 
 export type TQueryArg = {
   url: string
-  params?: Record<string, string | number | boolean>
+  params?: MaybeRefOrGetter<Record<string, string | number | boolean> | undefined>
   enabled?: boolean
+  key: string
+  selectData?: boolean
 }
-export const useApiQuery = <T>({ url, params, enabled }: TQueryArg) => {
+export const useApiQuery = <T>({ url, params, enabled, key, selectData }: TQueryArg) => {
   return useQuery<T>({
-    queryKey: ["apiData", params],
+    queryKey: [key, params],
     queryFn: async () => {
-      const { data } = await baseApi.get<T>(url, { params })
+      // Use toValue to handle both reactive and non-reactive values
+      const paramValue = toValue(params)
+      const { data } = await baseApi.get<T>(url, paramValue ? { params: paramValue } : {})
       return data
     },
     retry: false,
     refetchOnWindowFocus: false,
     enabled,
+    select: selectData
+      ? (response: T) => {
+          if (response && typeof response === "object" && "data" in response) {
+            return (response as Record<string, unknown>).data as T
+          }
+          return response
+        }
+      : undefined,
   })
 }
 

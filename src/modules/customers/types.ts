@@ -1,5 +1,6 @@
 export type TCustomer = {
   uid: number
+  id: number
   store?: number
   first_name: string
   last_name: string

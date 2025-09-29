@@ -62,36 +62,6 @@ export const TEAMS_COLUMN: TableColumn<TTeam>[] = [
   { header: "", accessor: "action" },
 ]
 
-export const TEAMS: TTeam[] = [
-  {
-    id: 1,
-    firstName: "John",
-    lastName: "Doe",
-    email: "john.doe@example.com",
-    role: "Admin",
-    status: "Active",
-    locations: [LOCATIONS[0], LOCATIONS[1]],
-  },
-  {
-    id: 2,
-    firstName: "Jane",
-    lastName: "Smith",
-    email: "jane.smith@example.com",
-    role: "Member",
-    status: "Invited",
-    locations: [LOCATIONS[1], LOCATIONS[2]],
-  },
-  {
-    id: 3,
-    firstName: "Alice",
-    lastName: "Johnson",
-    email: "alice.johnson@example.com",
-    role: "Member",
-    status: "Active",
-    locations: [LOCATIONS[1]],
-  },
-]
-
 export const ROLE_OPTIONS = [
   { label: "Admin", value: "admin" },
   { label: "Assistant", value: "assistant" },

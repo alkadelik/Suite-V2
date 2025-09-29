@@ -8,7 +8,7 @@
   >
     <!-- Brand -->
     <div class="flex items-center gap-3 px-4 py-4">
-      <img src="/images/logos/leyyow-logo-4.svg?url" alt="Leyyow" class="h-8 w-auto" />
+      <img src="/LYW.svg?url" alt="Leyyow" class="h-8 w-auto" />
     </div>
 
     <!-- User Info -->
@@ -18,7 +18,7 @@
           :name="getFullName(user as TNameObj)"
           :extraText="user?.email"
           clickable
-          class="truncate"
+          class="flex-1 truncate"
         />
         <Icon
           name="signout"
@@ -29,12 +29,7 @@
       <!-- Select Location -->
       <DropdownMenu
         trigger-class="w-full"
-        :items="
-          ['Lekki', 'Surulere', 'Abuja'].map((el, i) => ({
-            label: `Smile Socks (${el})`,
-            id: i + 1,
-          }))
-        "
+        :items="storedLocations?.map((item) => ({ id: item.uid, label: item.name }))"
         menuClass="!w-[248px]"
         @select="({ id }) => $router.push('/settings/locations?id=' + id)"
       >
@@ -47,7 +42,7 @@
             ]"
           >
             <Avatar name="S" size="sm" />
-            Smile Socks (HQ)
+            {{ currentLocation?.name }}
             <Icon
               name="arrow-down-double"
               size="20"
@@ -127,6 +122,7 @@ import Icon from "@components/Icon.vue"
 import Chip from "@components/Chip.vue"
 import AppButton from "@components/AppButton.vue"
 import SidebarLink from "./SidebarLink.vue"
+import { useSettingsStore } from "@modules/settings/store"
 
 defineProps<{
   mobileSidebarOpen: boolean
@@ -134,6 +130,11 @@ defineProps<{
 }>()
 
 defineEmits<{ logout: [value: boolean] }>()
+
+const { locations, activeLocation } = useSettingsStore()
+
+const storedLocations = computed(() => locations?.map((loc) => ({ ...loc })))
+const currentLocation = computed(() => activeLocation)
 
 const { user } = useAuthStore()
 const isMobile = useMediaQuery("(max-width: 1024px)")

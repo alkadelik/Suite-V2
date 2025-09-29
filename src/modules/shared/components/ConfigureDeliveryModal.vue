@@ -74,7 +74,7 @@
               </p>
               <Chip showDot label="Provided by" color="warning">
                 <template #append>
-                  <img src="/images/logos/leyyow-logo-2.svg" class="h-3" alt="leyyow logo" />
+                  <img src="/LYW.svg" class="h-3" alt="leyyow logo" />
                 </template>
               </Chip>
             </div>

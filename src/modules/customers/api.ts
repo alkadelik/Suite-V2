@@ -26,7 +26,7 @@ export function useDeleteCustomer() {
 
 /** Get customers api request */
 export function useGetCustomers() {
-  return useApiQuery({ url: "/customers/" })
+  return useApiQuery({ url: "/customers/", key: "customers" })
 }
 
 /** Export customers api request */
