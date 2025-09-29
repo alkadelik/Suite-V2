@@ -16,10 +16,16 @@
       <Tabs variant="pills" :tabs="tabs" v-model="activeTab" class="w-full md:w-1/2" />
     </div>
 
-    <div class="text-core-700 mb-4 flex flex-col gap-3 md:flex-row">
+    <!-- Loading State -->
+    <div v-if="isPending" class="flex items-center justify-center py-20">
+      <LoadingIcon size="lg" />
+    </div>
+
+    <!-- Plans Display -->
+    <div v-else class="text-core-700 mb-4 flex flex-col gap-3 md:flex-row">
       <div
-        v-for="plan in plans"
-        :key="plan.id"
+        v-for="plan in processedPlans"
+        :key="plan.uid"
         class="flex flex-1 flex-col rounded-xl border border-gray-200"
         :class="{
           'bg-primary-50 border-primary-600': plan.highlighted,
@@ -56,13 +62,10 @@
           }"
         >
           <h4 class="text-2xl font-bold">
-            {{
-              activeTab === "monthly"
-                ? formatCurrency(plan.priceMonthly)
-                : formatCurrency(plan.priceYearly)
-            }}<span class="text-xs font-normal md:text-sm"
-              >/{{ activeTab === "monthly" ? "month" : "year" }}</span
-            >
+            {{ formatCurrency(plan.currentPrice) }}
+            <span class="text-xs font-normal md:text-sm">
+              /{{ activeTab === "monthly" ? "month" : "year" }}
+            </span>
           </h4>
         </div>
 
@@ -102,13 +105,14 @@
             :label="
               plan.active
                 ? 'Current Plan'
-                : plan.id < (plans.find((p) => p.active)?.id ?? 0)
+                : plan.planOrder < (processedPlans.find((p) => p.active)?.planOrder ?? 0)
                   ? 'Downgrade'
                   : 'Upgrade'
             "
-            :disabled="plan.active"
+            :disabled="plan.active || loadingPlanId === plan.uid"
+            :loading="loadingPlanId === plan.uid"
             class="w-full"
-            @click="!plan.active && (emit('update:modelValue', false), emit('refresh'))"
+            @click="handlePlanAction(plan)"
           />
         </div>
       </div>
@@ -121,11 +125,14 @@ import Modal from "@/components/Modal.vue"
 import Chip from "@components/Chip.vue"
 import IconHeader from "@components/IconHeader.vue"
 import Tabs from "@components/Tabs.vue"
-import { ref } from "vue"
-import { getPlanColor } from "../constants"
+import { ref, computed, watch } from "vue"
+import { getPlanColor } from "../utils"
 import { formatCurrency } from "@/utils/format-currency"
 import Icon from "@/components/Icon.vue"
 import AppButton from "@/components/AppButton.vue"
+import { useGetPlans, useInitializeSubscription } from "../api"
+import LoadingIcon from "@components/LoadingIcon.vue"
+import { displayError } from "@/utils/error-handler"
 
 defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{
@@ -134,6 +141,11 @@ const emit = defineEmits<{
 }>()
 
 const activeTab = ref("monthly")
+const { data: plansData, isPending } = useGetPlans()
+const { mutate: initializeSubscription } = useInitializeSubscription()
+
+// Track which plan is currently loading
+const loadingPlanId = ref<string | null>(null)
 
 // Track expanded state for each plan
 const expandPlans = ref<boolean>(false)
@@ -149,54 +161,155 @@ const tabs = ref([
   },
 ])
 
-const plans = ref([
-  {
-    id: 1,
-    name: "Bud",
-    description: "Essential tools to manage your store. Free forever.",
-    priceMonthly: 0,
-    active: true,
-    priceYearly: 0,
-    features: [
-      "Up to 100 products",
-      "Basic analytics",
-      "Email support",
-      "Single staff account",
-      "Basic inventory tracking",
-      "Standard templates",
-    ],
+// Static features for each plan type
+const planFeatures = {
+  Bud: [
+    "Up to 100 products",
+    "Basic analytics",
+    "Email support",
+    "Single staff account",
+    "Basic inventory tracking",
+    "Standard templates",
+  ],
+  Bloom: [
+    "Up to 1,000 products",
+    "Advanced analytics",
+    "Priority email support",
+    "Up to 5 staff accounts",
+    "Discounts and promotions",
+    "Advanced inventory management",
+  ],
+  Burst: [
+    "Unlimited products",
+    "Comprehensive analytics",
+    "24/7 phone & email support",
+    "Unlimited staff accounts",
+    "Advanced marketing tools",
+    "Custom reporting",
+  ],
+}
+
+// Define interfaces for type safety
+interface PlanGroup {
+  name: string
+  description: string
+  monthly: { price: number; uid: string } | null
+  yearly: { price: number; uid: string } | null
+}
+
+interface ProcessedPlan {
+  uid: string
+  name: string
+  description: string
+  priceMonthly: number
+  priceYearly: number
+  features: string[]
+  active: boolean
+  highlighted: boolean
+  chipText: string | null
+  planOrder: number
+  currentPrice: number
+}
+
+interface SubscriptionResponse {
+  data: { data: { payment_link: string } }
+}
+
+// Process the API data to create the plans structure
+const processedPlans = computed((): ProcessedPlan[] => {
+  if (!plansData.value?.data?.results) return []
+
+  // Group plans by name to get monthly and yearly prices with UIDs
+  const planGroups = plansData.value.data.results.reduce(
+    (acc: Record<string, PlanGroup>, plan) => {
+      if (!acc[plan.name]) {
+        acc[plan.name] = {
+          name: plan.name,
+          description: plan.description,
+          monthly: null,
+          yearly: null,
+        }
+      }
+
+      if (plan.frequency === "monthly") {
+        acc[plan.name].monthly = {
+          price: parseFloat(plan.price),
+          uid: plan.uid,
+        }
+      } else if (plan.frequency === "annually") {
+        acc[plan.name].yearly = {
+          price: parseFloat(plan.price),
+          uid: plan.uid,
+        }
+      }
+
+      return acc
+    },
+    {} as Record<string, PlanGroup>,
+  )
+
+  // Convert to array and add additional properties
+  const plans: ProcessedPlan[] = Object.values(planGroups).map((planGroup: PlanGroup) => {
+    const planOrder = planGroup.name === "Bud" ? 1 : planGroup.name === "Bloom" ? 2 : 3
+
+    // Get the appropriate UID based on active tab
+    const currentPlanData = activeTab.value === "monthly" ? planGroup.monthly : planGroup.yearly
+
+    // Fallback to the other frequency if current one is not available
+    const fallbackPlanData = activeTab.value === "monthly" ? planGroup.yearly : planGroup.monthly
+
+    const activePlanData = currentPlanData || fallbackPlanData
+
+    return {
+      uid: activePlanData?.uid || `${planGroup.name}-fallback`,
+      name: planGroup.name,
+      description: planGroup.description,
+      priceMonthly: planGroup.monthly?.price || 0,
+      priceYearly: planGroup.yearly?.price || 0,
+      features: planFeatures[planGroup.name as keyof typeof planFeatures] || [],
+      active: planGroup.name === "Bud", // Assuming Bud is the current active plan
+      highlighted: planGroup.name === "Bloom",
+      chipText: planGroup.name === "Bloom" ? "Leyyow's Choice" : null,
+      planOrder,
+      currentPrice: activePlanData?.price || 0,
+    }
+  })
+
+  // Sort by plan order
+  return plans.sort((a, b) => a.planOrder - b.planOrder)
+})
+
+// Handle plan upgrade/downgrade action
+const handlePlanAction = (plan: ProcessedPlan): void => {
+  if (plan.active) return
+
+  // Set loading state for this specific plan
+  loadingPlanId.value = plan.uid
+
+  initializeSubscription(plan.uid, {
+    onSuccess: (response: SubscriptionResponse) => {
+      // Clear loading state
+      loadingPlanId.value = null
+
+      // Close the modal
+      emit("update:modelValue", false)
+
+      // Redirect to payment link
+      if (response.data.data.payment_link) {
+        window.location.href = response.data.data.payment_link
+      }
+    },
+    onError: displayError,
+  })
+}
+
+// Watch activeTab to update current prices
+watch(
+  activeTab,
+  () => {
+    // Clear loading state when switching tabs
+    loadingPlanId.value = null
   },
-  {
-    id: 2,
-    name: "Bloom",
-    description: "Advanced features for growing businesses.",
-    priceMonthly: 10000,
-    priceYearly: 96000,
-    chipText: "Leyyow's Choice",
-    highlighted: true,
-    features: [
-      "Up to 1,000 products",
-      "Advanced analytics",
-      "Priority email support",
-      "Up to 5 staff accounts",
-      "Discounts and promotions",
-      "Advanced inventory management",
-    ],
-  },
-  {
-    id: 3,
-    name: "Burst",
-    description: "All-in-one solution for established businesses.",
-    priceMonthly: 45000,
-    priceYearly: 432000,
-    features: [
-      "Unlimited products",
-      "Comprehensive analytics",
-      "24/7 phone & email support",
-      "Unlimited staff accounts",
-      "Advanced marketing tools",
-      "Custom reporting",
-    ],
-  },
-])
+  { immediate: true },
+)
 </script>

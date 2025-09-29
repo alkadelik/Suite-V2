@@ -6,8 +6,6 @@
         subtitle="Manage your plan, payments, and invoices in one place."
         class="mb-4"
       />
-
-      <Tabs variant="pills" :tabs="tabs" v-model="activeTab" />
     </div>
 
     <!-- plan details  -->
@@ -68,14 +66,14 @@
     <div class="mt-6 space-y-4 rounded-xl border-gray-200 bg-white pt-3 md:border">
       <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
         <h3 class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
-          Subscription History <Chip :label="String(SUBSCRIPTIONS.length)" />
+          Subscription History <Chip :label="String(subscriptions.length)" />
         </h3>
       </div>
 
       <DataTable
-        :data="SUBSCRIPTIONS"
+        :data="subscriptions"
         :columns="SUBSCRIPTION_COLUMN"
-        :loading="false"
+        :loading="isGettingSubscriptions"
         :show-pagination="false"
       >
         <!-- Desktop cell templates -->
@@ -102,20 +100,9 @@
             />
             <Icon
               name="import"
-              @click="handleAction('view', item)"
+              @click="handleAction('download', item)"
               class="text-core-600 hover:text-core-700 hidden cursor-pointer md:inline-block"
             />
-            <!-- <DropdownMenu
-              :items="getActionItems(item)"
-              placement="bottom-end"
-              :show-chevron="false"
-              size="sm"
-              trigger-class="!p-1 !min-h-6 !w-6 hover:bg-gray-100 !border-0"
-            >
-              <template #trigger>
-                <Icon name="dots-vertical" />
-              </template>
-            </DropdownMenu> -->
           </div>
         </template>
 
@@ -124,11 +111,11 @@
           <div class="space-y-2">
             <div class="flex justify-between">
               <div class="space-y-2">
-                <p class="text-core-800 text-sm font-medium">{{ item.planName }}</p>
+                <p class="text-core-800 text-sm font-medium">{{ item.user_name }}</p>
                 <div class="flex items-center gap-2">
-                  <p class="text-core-600 text-xs">{{ item.billingPeriod }}</p>
+                  <p class="text-core-600 text-xs">{{ item.user_name }}</p>
                   <div class="bg-core-600 h-1 w-1 rounded-full"></div>
-                  <p class="text-core-600 text-xs">{{ item.date }}</p>
+                  <p class="text-core-600 text-xs">{{ item.date_paid || "Pending" }}</p>
                 </div>
                 <Chip
                   :label="String(item.status)"
@@ -137,26 +124,10 @@
                   size="sm"
                 />
               </div>
-              <p class="font-medium">{{ formatCurrency(item.amount) }}</p>
+              <p class="font-medium">{{ formatCurrency(Number(item.amount)) }}</p>
             </div>
           </div>
         </template>
-
-        <!-- <template #mobile-actions="{ item }">
-          <div class="flex items-center gap-2">
-            <DropdownMenu
-              :items="getActionItems(item)"
-              placement="bottom-end"
-              :show-chevron="false"
-              size="sm"
-              trigger-class="!p-1 !min-h-6 !w-6 hover:bg-gray-100 !border-0"
-            >
-              <template #trigger>
-                <Icon name="dots-vertical" />
-              </template>
-            </DropdownMenu>
-          </div>
-        </template> -->
       </DataTable>
     </div>
 
@@ -167,67 +138,69 @@
 
 <script setup lang="ts">
 import SectionHeader from "@/components/SectionHeader.vue"
-import Tabs from "@components/Tabs.vue"
-import { ref } from "vue"
+import { ref, computed } from "vue"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
 import { formatCurrency } from "@/utils/format-currency"
 import DataTable from "@components/DataTable.vue"
-// import DropdownMenu from "@components/DropdownMenu.vue"
 import type { TSubscription } from "../types"
-import { SUBSCRIPTION_COLUMN, SUBSCRIPTIONS } from "../constants"
+import { SUBSCRIPTION_COLUMN } from "../constants"
 import PlansModal from "../components/PlansModal.vue"
-import { getPlanColor } from "../constants"
-
-type colorType = "primary" | "success" | "warning" | "error" | "alt" | "blue" | "purple" | undefined
+import { getPlanColor } from "../utils"
+import { TChipColor } from "@modules/shared/types"
+import { useGetSubscriptionHistory } from "../api"
 
 const showPlansModal = ref(false)
-const activeTab = ref("monthly")
 
-const tabs = ref([
-  {
-    title: "Monthly",
-    key: "monthly",
-  },
-  {
-    title: "Yearly",
-    key: "yearly",
-  },
-])
+const { data: subscriptionData, isPending: isGettingSubscriptions } = useGetSubscriptionHistory()
 
-const getStatusColor = (status: string): colorType => {
-  const statusColors: Record<string, colorType> = {
+// Transform API data to match table structure
+const subscriptions = computed(() => {
+  if (!subscriptionData.value?.data?.results) return []
+
+  return subscriptionData.value.data.results.map((item: TSubscription) => ({
+    uid: item.uid,
+    date: item.date_paid
+      ? new Date(item.date_paid).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        })
+      : "N/A",
+    planName: item.is_payment_for === "subscription" ? "Premium" : item.is_payment_for,
+    amount: Number(item.amount),
+    billingPeriod: "Monthly", // Since this info isn't in API, you might want to add it or derive it
+    status:
+      item.status === "completed"
+        ? "Success"
+        : item.status === "failed"
+          ? "Failed"
+          : item.status === "pending"
+            ? "Pending"
+            : item.status,
+  }))
+})
+
+const getStatusColor = (status: string): TChipColor => {
+  const statusColors: Record<string, TChipColor> = {
     Success: "success",
     Failed: "error",
     Pending: "warning",
+    completed: "success",
+    failed: "error",
+    pending: "warning",
   }
   return statusColors[status] || "primary"
 }
 
 const handleAction = (action: string, item: TSubscription) => {
   console.log(`${action} action for subscription:`, item)
+  // Add your action handling logic here
+  if (action === "view") {
+    // Handle view action
+  } else if (action === "download") {
+    // Handle download action
+  }
 }
-
-// const getActionItems = (item: TSubscription) => [
-//   {
-//     label: "View Details",
-//     icon: "eye-outline",
-//     action: () => handleAction("view", item),
-//   },
-//   {
-//     label: "Download Invoice",
-//     icon: "import",
-//     action: () => handleAction("download", item),
-//   },
-//   ...(item.status === "Failed"
-//     ? [
-//         {
-//           label: "Retry Payment",
-//           icon: "refresh-cw",
-//           action: () => handleAction("retry", item),
-//         },
-//       ]
-//     : []),
-// ]
 </script>

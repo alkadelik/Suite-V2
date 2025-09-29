@@ -320,11 +320,7 @@ const backToLeyyow = () => {
 }
 
 const filteredOptions = computed(() => {
-  const options = (shippingOptions.value ?? []) as Array<{
-    id: string
-    name: string
-    pin_image: string
-  }>
+  const options = Array.isArray(shippingOptions.value) ? shippingOptions.value : []
 
   // Filter out null/undefined values and ensure required properties exist
   const validOptions = options.filter(

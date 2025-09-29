@@ -8,7 +8,16 @@
 
     <MetricsGrid :items="customerMetrics" />
 
-    <div class="mt-4 space-y-4 rounded-xl border-gray-200 bg-white pt-3 md:border">
+    <EmptyState
+      v-if="!isLoading && customers.length === 0"
+      title="No customers found"
+      description="Add your first customer to start managing them."
+      action-label="Add Customer"
+      action-icon="add"
+      @action="openAddCustomerDrawer"
+      class="mt-6"
+    />
+    <div v-else class="mt-4 space-y-4 rounded-xl border-gray-200 bg-white pt-3 md:border">
       <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
         <h3 class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
           Customers List <Chip :label="String(customers.length)" />
@@ -66,7 +75,7 @@
       >
         <template #cell:name="{ item }">
           <div>
-            <Avatar :name="item.full_name" />
+            <Avatar :name="item?.full_name" />
           </div>
         </template>
 
@@ -192,12 +201,13 @@
     </div>
 
     <!-- modals -->
-    <DeleteConfirmationModal
+    <ConfirmationModal
       v-model="showDeleteConfirmationModal"
       @close="showDeleteConfirmationModal = false"
       header="Delete Customer"
       paragraph="Are you sure you want to delete this customer?"
-      @delete="handleDeleteCustomer"
+      variant="error"
+      @confirm="handleDeleteCustomer"
       :loading="isDeleting"
     />
     <ExportCustomerModal
@@ -235,7 +245,7 @@ import TextField from "@components/form/TextField.vue"
 import AppButton from "@components/AppButton.vue"
 import { formatDate, formatDateLong } from "../utils/dateFormatter"
 import { toast } from "@/composables/useToast"
-import DeleteConfirmationModal from "@components/DeleteConfirmationModal.vue"
+import ConfirmationModal from "@components/ConfirmationModal.vue"
 import CustomerFormDrawer from "../components/CustomerFormDrawer.vue"
 import ExportCustomerModal from "../components/ExportCustomerModal.vue"
 import ViewCustomerDrawer from "../components/ViewCustomerDrawer.vue"
@@ -243,6 +253,7 @@ import MetricsGrid from "@components/MetricsGrid.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import { useGetCustomers, useDeleteCustomer } from "../api"
 import { displayError } from "@/utils/error-handler"
+import EmptyState from "@components/EmptyState.vue"
 
 // API calls
 const { data: customersData, isLoading, refetch } = useGetCustomers()
@@ -264,7 +275,7 @@ const customers = computed(() => {
   return customersData.value.data.results
 })
 
-const filteredCustomers = computed(() => {
+const filteredCustomers = computed<ICustomer[]>(() => {
   if (!searchQuery.value) return customers.value
 
   const query = searchQuery.value.toLowerCase()
@@ -276,7 +287,7 @@ const filteredCustomers = computed(() => {
 })
 
 const customerMetrics = computed(() => {
-  const stats = customersData.value?.data?.data?.stats
+  const stats = customersData.value?.data?.stats
   if (!stats) {
     return [
       {
@@ -284,7 +295,7 @@ const customerMetrics = computed(() => {
         value: "0",
         prev_value: "0",
         icon: "user-octagon",
-        chartData: [0, 0, 0, 0, 0, 0, 0],
+        chartData: [10, 12, 8, 14, 15, 9, 0],
         chartColor: "#D0F8AA",
         iconClass: "md:text-green-700",
       },
@@ -293,7 +304,7 @@ const customerMetrics = computed(() => {
         value: "0",
         prev_value: "0",
         icon: "user-circle-add",
-        chartData: [0, 0, 0, 0, 0, 0, 0],
+        chartData: [10, 12, 8, 14, 15, 9, 0],
         chartColor: "#FECCD6",
         iconClass: "md:text-bloom-700",
       },

@@ -89,10 +89,12 @@ import AppForm from "@components/form/AppForm.vue"
 import FormField from "@components/form/FormField.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import AppButton from "@components/AppButton.vue"
+import { useAuthStore } from "../store"
 
 const { mutate: signupFn, isPending } = useSignupWithInvite()
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 
 interface FormValues {
   first_name: string
@@ -126,9 +128,16 @@ const onSubmit = (values: FormValues) => {
   console.log("Payload:", payload)
 
   signupFn(payload, {
-    onSuccess: () => {
-      toast.success("Signup successful!")
-      router.push("/login")
+    onSuccess: (res) => {
+      const { access, refresh, ...user } = res.data?.data || {}
+      authStore.setTokens({ accessToken: access, refreshToken: refresh })
+      authStore.setAuthUser({
+        ...user,
+      })
+      toast.success("Team joined successfully!")
+      // check for redirect query param
+      const redirectPath = router.currentRoute.value.query.redirect as string
+      router.push(redirectPath || "/dashboard")
     },
     onError: displayError,
   })

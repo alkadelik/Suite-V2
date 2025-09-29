@@ -6,6 +6,7 @@ export interface IUserRole {
 }
 
 export interface IUser {
+  uid: string
   avatar?: string | null
   first_name: string
   last_name: string
@@ -33,14 +34,15 @@ export type TLoginPayload = { email: string; password: string }
 
 export interface ILoginResponse {
   data: {
+    uid: string
     access: string
     refresh: string
     avatar_url?: string | null
     first_name: string
     last_name: string
     is_email_verified: boolean
-    assigned_locations: { id: number }[]
-    roles: string[]
+    assigned_locations: { uid: string; name: string }[]
+    roles: IUserRole[]
     subscription: string | null
     store_uid: string
   }

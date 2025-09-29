@@ -1,6 +1,6 @@
-import baseApi, { useApiQuery } from "@/composables/baseApi"
-import { useMutation } from "@tanstack/vue-query"
-import type { ICustomerFormPayload, IExportPayload } from "./types"
+import baseApi from "@/composables/baseApi"
+import { useMutation, useQuery } from "@tanstack/vue-query"
+import type { ICustomerFormPayload, ICustomersApiResponse, IExportPayload } from "./types"
 
 /** Create customer api request */
 export function useCreateCustomer() {
@@ -26,7 +26,13 @@ export function useDeleteCustomer() {
 
 /** Get customers api request */
 export function useGetCustomers() {
-  return useApiQuery({ url: "/customers/", key: "customers" })
+  return useQuery<ICustomersApiResponse>({
+    queryKey: ["customers"],
+    queryFn: async () => {
+      const { data } = await baseApi.get<ICustomersApiResponse>("/customers/")
+      return data
+    },
+  })
 }
 
 /** Export customers api request */

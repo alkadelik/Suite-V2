@@ -61,9 +61,10 @@ export interface IIndustriesApiResponse {
   }
 }
 
-export interface ISelectOption {
+export interface ISelectOption extends Record<string, unknown> {
   label: string
   value: string
+  color?: TChipColor
 }
 
 export interface IRole {
@@ -76,3 +77,14 @@ export interface IRole {
 export interface IRolesApiResponse {
   data: IRole[]
 }
+
+export type TChipColor =
+  | "primary"
+  | "success"
+  | "warning"
+  | "error"
+  | "alt"
+  | "blue"
+  | "purple"
+  | "pink"
+  | undefined

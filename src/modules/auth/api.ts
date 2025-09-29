@@ -87,7 +87,7 @@ export function useCreateStoreApi() {
 /** sign up with invite code  */
 export function useSignupWithInvite() {
   return useMutation({
-    mutationFn: (body: TSignupWithInvitePayload) =>
+    mutationFn: (body: TSignupWithInvitePayload): TApiPromise<ILoginResponse> =>
       baseApi.post("/accounts/signup/with-invite/", body),
   })
 }

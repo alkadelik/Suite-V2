@@ -6,7 +6,16 @@
       subtitle="Manage your team members and their account permissions here."
     />
 
-    <div class="mt-4 space-y-4 rounded-xl border-gray-200 bg-white pt-3 md:border">
+    <EmptyState
+      v-if="!isPending && teamMembers.length === 0"
+      title="No team members found"
+      description="Add your first ream member to start managing them."
+      action-label="Add Member"
+      action-icon="add"
+      @action="showInvitationModal = true"
+      class="mt-6"
+    />
+    <div v-else class="mt-4 space-y-4 rounded-xl border-gray-200 bg-white pt-3 md:border">
       <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
         <h3 class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
           Team Members <Chip :label="String(teamMembers.length)" />
@@ -55,6 +64,7 @@
           <div class="flex items-center gap-1">
             <Chip
               :label="item.roles && item.roles.length > 0 ? item.roles[0].name : 'No Role'"
+              :color="getRoleColor(item.roles && item.roles.length > 0 ? item.roles[0].uid : '')"
               variant="outlined"
             />
             <Chip
@@ -70,11 +80,11 @@
         <template #cell:firstName="{ item }">
           <!-- Mobile: Avatar without extra text -->
           <div class="md:hidden">
-            <Avatar class="items-start" :name="`${item.first_name} ${item.last_name}`" />
+            <Avatar class="items-start" :name="getFullName(item)" />
           </div>
           <!-- Desktop/Tablet: Avatar with extra text -->
           <div class="hidden md:block">
-            <Avatar :name="`${item.first_name} ${item.last_name}`" :extra-text="item.email" />
+            <Avatar :name="getFullName(item)" :extra-text="item.email" />
           </div>
         </template>
 
@@ -104,7 +114,7 @@
         </template>
 
         <template #cell:action="{ item }">
-          <div class="flex items-center gap-2">
+          <div v-if="canPerformActions(item)" class="flex items-center gap-2">
             <Icon name="edit" @click="handleAction('edit', item)" class="hidden md:inline-block" />
             <DropdownMenu
               :items="getActionItems(item)"
@@ -119,25 +129,25 @@
               </template>
             </DropdownMenu>
           </div>
+          <div v-else class="text-sm text-gray-400">
+            <!-- Empty space or placeholder when no actions are available -->
+          </div>
         </template>
 
         <!-- mobile view cell templates -->
         <template #mobile-content="{ item }">
           <div class="space-y-2">
             <div class="flex items-start gap-2">
-              <Avatar :name="`${item.first_name} ${item.last_name}`" class="items-start" />
-              <!-- <Chip
-                :label="item.is_suspended ? 'Suspended' : 'Active'"
-                :variant="item.is_suspended ? 'solid' : 'outlined'"
-                :color="item.is_suspended ? 'red' : 'green'"
-                size="sm"
-              /> -->
+              <Avatar :name="getFullName(item)" class="items-start" />
             </div>
             <div class="ms-12 -mt-4 space-y-1">
               <div class="flex flex-col items-start justify-center gap-2">
                 <div class="flex items-center gap-1">
                   <Chip
                     :label="item.roles && item.roles.length > 0 ? item.roles[0].name : 'No Role'"
+                    :color="
+                      getRoleColor(item.roles && item.roles.length > 0 ? item.roles[0].uid : '')
+                    "
                     variant="outlined"
                     size="sm"
                   />
@@ -171,7 +181,7 @@
         </template>
 
         <template #mobile-actions="{ item }">
-          <div class="flex items-center gap-2">
+          <div v-if="canPerformActions(item)" class="flex items-center gap-2">
             <DropdownMenu
               :items="getActionItems(item)"
               placement="bottom-end"
@@ -197,18 +207,22 @@
       :member="member"
       @refresh="refetch"
     />
-    <DeleteConfirmationModal
+    <ConfirmationModal
       v-model="showDeleteConfirmationModal"
       @close="showDeleteConfirmationModal = false"
       header="Delete Member"
       paragraph="Are you sure you want to delete this member?"
-      :member="member"
+      variant="error"
+      :loading="isPending"
       @delete="handleDeleteMember"
     />
-    <SuspendMemberModal
+    <ConfirmationModal
       v-model="showSuspendMemberModal"
       @close="showSuspendMemberModal = false"
-      :member="member"
+      header="Suspend Member"
+      paragraph="Are you sure you want to suspend this member?"
+      info-message="You can reverse this action by reactivating the member."
+      variant="warning"
       :loading="isSuspending"
       @suspend="handleSuspendMember"
     />
@@ -229,11 +243,13 @@ import Avatar from "@components/Avatar.vue"
 import TextField from "@components/form/TextField.vue"
 import InviteToLocationmodal from "../components/InviteToLocationmodal.vue"
 import EditMemberModal from "../components/EditMemberModal.vue"
-import SuspendMemberModal from "../components/SuspendMemberModal.vue"
-import DeleteConfirmationModal from "@components/DeleteConfirmationModal.vue"
+import ConfirmationModal from "@components/ConfirmationModal.vue"
 import { useGetStoreMembers, useSuspendMember } from "../api"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
+import { getRoleColor } from "@modules/shared/utils"
+import { useAuthStore } from "@modules/auth/store"
+import EmptyState from "@components/EmptyState.vue"
 
 // API calls
 const { data: storeMembersData, isPending, refetch } = useGetStoreMembers()
@@ -246,6 +262,23 @@ const showDeleteConfirmationModal = ref(false)
 const showSuspendMemberModal = ref(false)
 const member = ref<TTeam | null>(null)
 const searchQuery = ref("")
+const { user } = useAuthStore()
+
+// Helper function to get full name
+const getFullName = (item: TTeam) => {
+  return `${item.first_name || ""} ${item.last_name || ""}`.trim() || "Unknown User"
+}
+
+// Helper function to check if user can perform actions
+const canPerformActions = (item: TTeam) => {
+  // Don't show actions if user is not an owner
+  if (!isLoggedInUserOwner.value) return false
+
+  // Don't show actions if the item is the current user
+  if (user?.uid === item.uid) return false
+
+  return true
+}
 
 // Computed properties
 const teamMembers = computed(() => {
@@ -264,6 +297,10 @@ const filteredTeamMembers = computed(() => {
   )
 })
 
+const isLoggedInUserOwner = computed(() => {
+  return user?.roles?.some((role) => role.type === "owner") ?? false
+})
+
 // Action items for dropdown
 const getActionItems = (item: TTeam) => [
   {
@@ -275,7 +312,7 @@ const getActionItems = (item: TTeam) => [
   {
     id: "suspend",
     label: item.is_suspended ? "Unsuspend Member" : "Suspend Member",
-    icon: item.is_suspended ? "play" : "pause",
+    icon: "pause",
     action: () => handleAction("suspend", item),
   },
   {

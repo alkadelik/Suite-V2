@@ -7,8 +7,10 @@ import {
   IUpdateStoreDetailsPayload,
   TIndustriesResponse,
   IStoreDetails,
+  IPlansResponse,
+  IStoreMembersResponse,
 } from "./types"
-import { useMutation } from "@tanstack/vue-query"
+import { useMutation, useQuery } from "@tanstack/vue-query"
 import { IUser } from "@modules/auth/types"
 
 /** get user profile */
@@ -70,7 +72,13 @@ export function useInviteUserToLocation() {
 
 /** Fetch all store members */
 export function useGetStoreMembers() {
-  return useApiQuery({ url: "/stores/members/", key: "store-members" })
+  return useQuery({
+    queryKey: ["store-members"],
+    queryFn: async () => {
+      const { data } = await baseApi.get<IStoreMembersResponse>("/stores/members/")
+      return data
+    },
+  })
 }
 
 /** Update member roles and locations */
@@ -119,5 +127,34 @@ export function useGetStoreIndustries() {
     url: "/stores/industries/",
     key: "get-store-industries",
     selectData: true,
+  })
+}
+
+/** get all available plans */
+export function useGetPlans() {
+  return useQuery({
+    queryKey: ["plans"],
+    queryFn: async () => {
+      const { data } = await baseApi.get<IPlansResponse>("/billings/plans/")
+      return data
+    },
+  })
+}
+
+/** get subscription history */
+export function useGetSubscriptionHistory() {
+  return useQuery({
+    queryKey: ["subscription-history"],
+    queryFn: async () => {
+      const { data } = await baseApi.get("/billings/payments/subscriptions/")
+      return data
+    },
+  })
+}
+
+/** initialize subscription */
+export function useInitializeSubscription() {
+  return useMutation({
+    mutationFn: (uid: string) => baseApi.post(`/billings/plan/${uid}/initialize/`),
   })
 }

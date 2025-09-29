@@ -1,8 +1,6 @@
 import { TableColumn } from "@components/DataTable.vue"
 import { TLocation, TSubscription, TTeam } from "./types"
 
-type colorType = "primary" | "success" | "warning" | "error" | "alt" | "blue" | "purple" | undefined
-
 export const LOCATION_COLUMNS: TableColumn<TLocation>[] = [
   { header: "Name", accessor: "name" },
   { header: "Address", accessor: "address" },
@@ -47,7 +45,7 @@ export const LOCATIONS: TLocation[] = [
 ]
 
 export const TEAMS_COLUMN: TableColumn<TTeam>[] = [
-  { header: "Name", accessor: "firstName" },
+  { header: "Name", accessor: "first_name" },
   {
     header: "Locations",
     accessor: "locations",
@@ -74,45 +72,9 @@ export const SUBSCRIPTION_COLUMN: TableColumn<TSubscription>[] = [
     header: "Date",
     accessor: "date",
   },
-  { header: "Plan name", accessor: "planName" },
+  { header: "Plan name", accessor: "plan_name" },
   { header: "Amount", accessor: "amount" },
-  { header: "Billing Period", accessor: "billingPeriod" },
+  { header: "Billing Period", accessor: "date_paid" },
   { header: "Status", accessor: "status" },
   { header: "", accessor: "action" },
 ]
-
-export const SUBSCRIPTIONS: TSubscription[] = [
-  {
-    id: 1,
-    date: "23-08-2025",
-    planName: "Bloom",
-    amount: 100000,
-    billingPeriod: "Monthly",
-    status: "Success",
-  },
-  {
-    id: 2,
-    date: "23-07-2025",
-    planName: "Bud",
-    amount: 500000,
-    billingPeriod: "Yearly",
-    status: "Failed",
-  },
-  {
-    id: 3,
-    date: "23-06-2025",
-    planName: "Burst",
-    amount: 1000000,
-    billingPeriod: "Yearly",
-    status: "Success",
-  },
-]
-
-export const getPlanColor = (planName: string): colorType => {
-  const planColors: Record<string, colorType> = {
-    Burst: "purple",
-    Bloom: "blue",
-    Bud: "success",
-  }
-  return planColors[planName] || "primary"
-}

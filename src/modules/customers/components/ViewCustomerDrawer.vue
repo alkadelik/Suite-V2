@@ -81,6 +81,25 @@
             </div>
           </div>
         </div>
+
+        <div v-else-if="activeStatus === 'addresses'">
+          <div
+            v-for="value in addresses"
+            :key="value.id"
+            class="border-core-300 bg-core-25 mb-4 rounded-lg border p-4"
+          >
+            <div class="mb-2 flex items-start justify-between">
+              <div>
+                <h5 class="font-outfit text-sm font-bold md:text-lg">{{ customer?.full_name }}</h5>
+                <p class="text-core-600 text-xs md:text-sm">{{ value.address }}</p>
+                <p class="text-core-600 text-xs md:text-sm">{{ value.city_state }}</p>
+                <p class="text-core-600 text-xs md:text-sm">{{ value.country }}</p>
+                <p class="text-core-600 text-xs md:text-sm">{{ value.phone }}</p>
+              </div>
+              <Chip v-if="value.is_default" label="Default" showDot />
+            </div>
+          </div>
+        </div>
       </div>
     </template>
   </Drawer>
@@ -98,6 +117,7 @@ import SummaryCard from "@/components/SummaryCards.vue"
 import { ORDERS } from "@modules/orders/constants"
 import OrderCard from "@modules/orders/components/OrderCard.vue"
 import { TOrder } from "@modules/orders/types"
+import Chip from "@components/Chip.vue"
 
 interface Props {
   /** Whether the drawer is open/visible */
@@ -157,6 +177,7 @@ const selectedOrder = ref<TOrder | null>(null)
 const tabOptions = [
   { title: "Recent Orders", key: "recent_orders" },
   { title: "More Info", key: "more_info" },
+  { title: "Addresses", key: "addresses" },
 ]
 
 const summaryStats = ref([
@@ -179,6 +200,27 @@ const summaryStats = ref([
     label: "Total Returns",
     value: props.customer?.total_returns || 0,
     icon: "refresh-2",
+  },
+])
+
+const addresses = ref([
+  {
+    id: 1,
+    label: "Home",
+    address: "123 Main St, Springfield, IL 62701",
+    city_state: "Springfield, IL",
+    country: "USA",
+    phone: "(555) 123-4567",
+    is_default: true,
+  },
+  {
+    id: 2,
+    label: "Work",
+    address: "456 Corporate Blvd, Springfield, IL 62703",
+    city_state: "Springfield, IL",
+    country: "USA",
+    phone: "(555) 987-6543",
+    is_default: false,
   },
 ])
 </script>
