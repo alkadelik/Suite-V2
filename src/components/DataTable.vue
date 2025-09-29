@@ -92,6 +92,10 @@ interface Emits {
 interface DataTableSlots<T> {
   /** Custom mobile card rendering */
   mobile?: (props: { item: T }) => VNode[]
+  /** Custom mobile actions rendering
+   * @deprecated Use `cell:<column-accessor>` slots instead
+   */
+  "mobile-actions"?: (props: { item: T }) => VNode[]
   /** Dynamic cell slots for custom cell rendering */
   [name: `cell:${string}`]: (props: {
     value: string | number | boolean | null | undefined | Record<string, unknown>
