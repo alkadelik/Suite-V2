@@ -21,7 +21,7 @@
         />
 
         <!-- Main content area with sidebar and scrollable content -->
-        <div class="flex min-h-0 flex-1 gap-2">
+        <div class="flex min-h-0 flex-1 gap-12">
           <!-- Fixed Sidebar -->
           <aside class="hidden w-40 flex-shrink-0 py-3 md:block">
             <nav>
@@ -57,23 +57,10 @@
 import AppHeader from "@/layouts/parts/AppHeader.vue"
 import BackButton from "@components/BackButton.vue"
 import { useRoute } from "vue-router"
-import { useGetRoles } from "@modules/shared/api"
-import { updateStoreRoleOptions } from "@modules/shared/constants"
-import { IRolesApiResponse } from "@modules/shared/types"
-import { watch } from "vue"
+// import { useGetRoles } from "@modules/shared/api"
 
 const route = useRoute()
-const { data: rolesData } = useGetRoles()
-watch<IRolesApiResponse | undefined>(
-  () => rolesData.value,
-  (newData) => {
-    console.log(newData?.data)
-
-    if (newData?.data) {
-      updateStoreRoleOptions(newData?.data)
-    }
-  },
-)
+// const { data: rolesData } = useGetRoles()
 
 const LINKS = [
   { label: "Profile", path: "/settings/profile" },

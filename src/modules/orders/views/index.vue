@@ -1,95 +1,276 @@
-<template>
-  <div class="orders-page">
-    <div class="page-header">
-      <h1>Orders</h1>
-      <p class="page-description">Manage and track all customer orders</p>
-    </div>
-
-    <div class="page-content">
-      <div class="content-placeholder">
-        <div class="placeholder-icon">📦</div>
-        <h2>Order Management</h2>
-        <p>This is the orders module. Features coming soon:</p>
-        <ul>
-          <li>Order creation and editing</li>
-          <li>Order status tracking</li>
-          <li>Order history and search</li>
-          <li>Invoice generation</li>
-          <li>Shipping and delivery management</li>
-        </ul>
-      </div>
-    </div>
-
-    <ToastExample />
-  </div>
-</template>
-
 <script setup lang="ts">
-import ToastExample from "@components/examples/ToastExample.vue"
+import AppButton from "@components/AppButton.vue"
+import DataTable from "@components/DataTable.vue"
+import EmptyState from "@components/EmptyState.vue"
+import TextField from "@components/form/TextField.vue"
+import MetricsGrid from "@components/MetricsGrid.vue"
+import SectionHeader from "@components/SectionHeader.vue"
+import { useMediaQuery } from "@vueuse/core"
+import { computed, ref } from "vue"
+import Avatar from "@components/Avatar.vue"
+import { getFullName, TNameObj } from "@/utils/format-strings"
+import Icon from "@components/Icon.vue"
+import DropdownMenu from "@components/DropdownMenu.vue"
+import Chip from "@components/Chip.vue"
+import { TOrder } from "../types"
+import CreateOrderDrawer from "../components/CreateOrderDrawer.vue"
+import VoidDeleteOrder from "../components/VoidDeleteOrder.vue"
+import { useDeleteOrder, useGetOrders, useVoidOrder } from "../api"
+import { displayError } from "@/utils/error-handler"
+import { toast } from "@/composables/useToast"
+import { ORDER_COLUMNS } from "../constants"
 
-// Component logic will go here
+const openCreate = ref(false)
+const openVoid = ref(false)
+const openDelete = ref(false)
+const selectedOrder = ref<TOrder | null>(null)
+
+const orderMetrics = computed(() => {
+  return [
+    {
+      label: "Total Orders",
+      value: "0",
+      prev_value: "0",
+      icon: "user-octagon",
+      chartData: [0, 0, 0, 0, 0, 0, 0],
+      chartColor: "#D0F8AA",
+      iconClass: "md:text-green-700",
+    },
+    {
+      label: "Total Unpaid",
+      value: "0",
+      prev_value: "0",
+      icon: "user-octagon",
+      chartData: [0, 0, 0, 0, 0, 0, 0],
+      chartColor: "#D0F8AA",
+      iconClass: "md:text-bloom-700",
+    },
+    {
+      label: "Total Ongoing",
+      value: "0",
+      prev_value: "0",
+      icon: "user-circle-add",
+      chartData: [0, 0, 0, 0, 0, 0, 0],
+      chartColor: "#FECCD6",
+      iconClass: "md:text-bloom-700",
+    },
+    {
+      label: "Total Fulfilled",
+      value: "0",
+      prev_value: "0",
+      icon: "user-circle-add",
+      chartData: [0, 0, 0, 0, 0, 0, 0],
+      chartColor: "#FECCD6",
+      iconClass: "md:text-bloom-700",
+    },
+  ]
+})
+
+const searchQuery = ref("")
+const showFilter = ref(false)
+const isMobile = useMediaQuery("(max-width: 768px)")
+
+const { data: orders, refetch } = useGetOrders()
+
+const handleRowClick = (row: Record<string, unknown>) => {
+  // Handle row click event
+  console.log("Row clicked:", row)
+}
+
+type Action = "view" | "edit" | "share" | "update-payment" | "void" | "delete"
+const handleAction = (action: Action, item: Record<string, unknown>) => {
+  // Handle action based on type
+  console.log(`Action: ${action}`, item)
+  selectedOrder.value = item as TOrder
+  if (action === "void") openVoid.value = true
+  if (action === "delete") openDelete.value = true
+}
+
+const getActionItems = (item: Record<string, unknown>) => [
+  {
+    label: "View memos",
+    icon: "eye",
+    action: () => handleAction("view", item),
+  },
+  {
+    label: "Share invoice",
+    icon: "share",
+    action: () => handleAction("share", item),
+  },
+  {
+    label: "Update Payment",
+    icon: "money-add",
+    action: () => handleAction("update-payment", item),
+  },
+  { divider: true },
+  {
+    label: "Void Order",
+    icon: "trash",
+    class: "text-red-600 hover:bg-red-50",
+    iconClass: "text-red-600",
+    action: () => handleAction("void", item),
+  },
+  {
+    label: "Delete Order",
+    icon: "trash",
+    class: "text-red-600 hover:bg-red-50",
+    iconClass: "text-red-600",
+    action: () => handleAction("delete", item),
+  },
+]
+
+const onCloseVoidDel = () => {
+  openVoid.value = false
+  openDelete.value = false
+}
+
+const { mutate: voidOrder, isPending: isVoiding } = useVoidOrder()
+const { mutate: deleteOrder, isPending: isDeleting } = useDeleteOrder()
+
+const handleVoidDelete = ({ action, reason }: { action: string; reason: string }) => {
+  console.log("Action:", action, "Reason:", reason, "Selected Order:", selectedOrder.value)
+  if (action === "void") {
+    voidOrder(
+      { id: selectedOrder.value?.id as number, void_reason: reason },
+      {
+        onSuccess: () => {
+          toast.success("Order voided successfully")
+          onCloseVoidDel()
+          refetch()
+        },
+        onError: displayError,
+      },
+    )
+  } else if (action === "delete") {
+    deleteOrder(selectedOrder.value?.id as number, {
+      onSuccess: () => {
+        toast.success("Order deleted successfully")
+        onCloseVoidDel()
+        refetch()
+      },
+      onError: displayError,
+    })
+  }
+}
 </script>
 
-<style scoped>
-.orders-page {
-  padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
-}
+<template>
+  <div class="flex flex-col gap-6 p-6">
+    <SectionHeader title="Orders" subtitle="Track, manage, and fulfil every order in one place." />
 
-.page-header {
-  margin-bottom: 2rem;
-  border-bottom: 1px solid #e5e5e5;
-  padding-bottom: 1rem;
-}
+    <EmptyState
+      v-if="!orders?.results?.length"
+      title="No Orders Yet"
+      description="You haven't received any orders. Once you start receiving orders, they will appear here."
+      action-label="Add an order"
+      action-icon="add"
+      :loading="false"
+      @action="openCreate = true"
+    />
 
-.page-header h1 {
-  font-size: 2.5rem;
-  margin-bottom: 0.5rem;
-  color: #333;
-}
+    <section v-else>
+      <MetricsGrid :items="orderMetrics" />
 
-.page-description {
-  color: #666;
-  font-size: 1.1rem;
-}
+      <div
+        class="mt-4 space-y-4 overflow-hidden rounded-xl border-gray-200 bg-white pt-3 md:border"
+      >
+        <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
+          <h3 class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
+            All Orders <Chip :label="String(20)" />
+          </h3>
+          <div class="flex items-center gap-2">
+            <TextField
+              left-icon="search-lg"
+              size="md"
+              class="min-w-64"
+              placeholder="Search by customer or order ref"
+              v-model="searchQuery"
+            />
 
-.page-content {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 400px;
-}
+            <AppButton
+              icon="filter-lines"
+              variant="outlined"
+              size="sm"
+              color="alt"
+              :label="isMobile ? '' : 'Filter'"
+              @click="showFilter = true"
+            />
 
-.content-placeholder {
-  text-align: center;
-  max-width: 500px;
-}
+            <AppButton
+              icon="add"
+              size="sm"
+              :label="isMobile ? '' : 'Add Order'"
+              @click="openCreate = true"
+            />
+          </div>
+        </div>
 
-.placeholder-icon {
-  font-size: 4rem;
-  margin-bottom: 1rem;
-}
+        <DataTable
+          :data="orders?.results ?? []"
+          :columns="ORDER_COLUMNS"
+          :loading="false"
+          :show-pagination="true"
+          :enable-row-selection="true"
+          @row-click="handleRowClick"
+        >
+          <template #cell:items_count="{ item }">
+            <div class="flex items-center gap-2 text-xs">
+              <div class="h-1.5 w-full rounded-full bg-gray-200">
+                <div class="bg-primary-600 h-1.5 rounded-full" style="width: 50%"></div>
+              </div>
+              {{ item.items_count + "/2" }}
+            </div>
+          </template>
+          <!--  -->
+          <template #cell:status="{ item }">
+            <Chip
+              :icon="
+                item.payment_status === 1 ? 'money' : item.payment_status === 2 ? 'money' : 'money'
+              "
+              :label="
+                item.payment_status === 1
+                  ? 'Paid (Transfer)'
+                  : item.payment_status === 2
+                    ? 'Partially paid'
+                    : 'Unpaid'
+              "
+              :color="
+                item.payment_status === 1
+                  ? 'success'
+                  : item.payment_status === 2
+                    ? 'warning'
+                    : 'error'
+              "
+            />
+          </template>
+          <!--  -->
+          <template #cell:customer_info="{ item }">
+            <Avatar :extra-text="true" :name="getFullName(item.customer_info as TNameObj)" />
+          </template>
+          <template #cell:actions="{ item }">
+            <div class="inline-flex items-center gap-1">
+              <Icon name="edit" @click.stop="handleAction('edit', item)" />
+              <DropdownMenu :items="getActionItems(item)" size="sm" @toggle="selectedOrder = item">
+                <template #trigger>
+                  <Icon name="dots-vertical" />
+                </template>
+              </DropdownMenu>
+            </div>
+          </template>
+        </DataTable>
+      </div>
+    </section>
 
-.content-placeholder h2 {
-  font-size: 1.8rem;
-  margin-bottom: 1rem;
-  color: #333;
-}
+    <!--  -->
 
-.content-placeholder p {
-  color: #666;
-  margin-bottom: 1.5rem;
-  line-height: 1.6;
-}
+    <VoidDeleteOrder
+      :open="openVoid || openDelete"
+      :action="openVoid ? 'void' : 'delete'"
+      :loading="isVoiding || isDeleting"
+      @close="onCloseVoidDel"
+      @action="handleVoidDelete"
+    />
 
-.content-placeholder ul {
-  text-align: left;
-  color: #555;
-  line-height: 1.8;
-}
-
-.content-placeholder li {
-  margin-bottom: 0.5rem;
-}
-</style>
+    <CreateOrderDrawer :open="openCreate" @close="openCreate = false" />
+  </div>
+</template>

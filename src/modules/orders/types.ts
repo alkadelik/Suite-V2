@@ -58,7 +58,7 @@ export type TOrderProductInfo = {
 }
 
 export type TOrderItem = {
-  id: number
+  id: string | number
   has_feedback: boolean
   index: number
   lead_time: number | null
@@ -140,4 +140,35 @@ export type TOrderPaymentStatus = {
   value: number
   icon: string
   color: "primary" | "success" | "warning" | "error" | "alt" | "blue" | "purple" | undefined
+}
+
+export interface OrderPayload {
+  source: string
+  customer: string
+  total_amount: string | number
+  delivery_fee: string | number
+  fulfilment_method: "pickup" | "delivery"
+  delivery_address: string
+  delivery_method: "manual" | "automatic"
+  courier: string
+  coupon_code: string | null
+  payment_status: "unpaid" | "paid" | "partial"
+  payment_amount: string | number
+  items: OrderItemPayload[]
+}
+
+export interface OrderItemPayload {
+  variant: string
+  quantity: number
+  unit_price: string | number
+  fulfilment_status: "unfulfilled" | "fulfilled"
+  qty_fulfilled: number
+  notes?: string
+}
+
+export type TOrderResponse = {
+  results: TOrder[]
+  count: number
+  next: string | null
+  previous: string | null
 }

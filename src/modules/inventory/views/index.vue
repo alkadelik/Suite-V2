@@ -122,7 +122,7 @@
         </template>
 
         <!-- mobile view cell templates -->
-        <template #mobile-content="{ item }">
+        <template #mobile="{ item }">
           <div class="space-y-2">
             <div class="flex items-start gap-2">
               <div class="relative">

@@ -1,22 +1,112 @@
 <script setup lang="ts">
+import { toast } from "@/composables/useToast"
+import { displayError } from "@/utils/error-handler"
+import { onInvalidSubmit, slugify } from "@/utils/validations"
 import AppButton from "@components/AppButton.vue"
 import Avatar from "@components/Avatar.vue"
-import AppForm from "@components/form/AppForm.vue"
-import FileUploadField from "@components/form/FileUploadField.vue"
 import FormField from "@components/form/FormField.vue"
 import Icon from "@components/Icon.vue"
 import SectionHeader from "@components/SectionHeader.vue"
-import { CURRENCY_OPTIONS, INDUSTRY_OPTIONS } from "@modules/shared/constants"
+import { useAuthStore } from "@modules/auth/store"
+import { CURRENCY_OPTIONS } from "@modules/shared/constants"
+import { useForm } from "vee-validate"
+import { ref } from "vue"
+import { computed, watch } from "vue"
 import * as yup from "yup"
+import { useGetStoreDetails, useGetStoreIndustries, useUpdateStoreDetails } from "../api"
+import { IStoreDetailsForm, IUpdateStoreDetailsPayload } from "../types"
+import AccountNumberSection from "../components/store-details/AccountNumberSection.vue"
 
 const validSchema = yup.object({
-  first_name: yup.string().required("First name is required"),
-  last_name: yup.string().required("Last name is required"),
-  email: yup.string().email("Invalid email").required("Email is required"),
+  store_name: yup.string().required("Store name is required"),
+  currency: yup.object().required("Currency is required"),
+  store_email: yup.string().email("Invalid email").required("Store email is required"),
+  store_phone: yup.string().required("Store phone is required"),
+  support_email: yup.string().email("Invalid email").required("Support email is required"),
+  support_phone: yup.string().required("Support phone is required"),
+  industry: yup.object().required("Industry is required"),
+  instagram_handle: yup.string(),
+  logo: yup.mixed(),
 })
 
-const onUpdateProfile = (formData: Record<string, unknown>) => {
+const { user } = useAuthStore()
+
+const { data: industries } = useGetStoreIndustries()
+const { data: storeDetails, refetch } = useGetStoreDetails(user?.store_uid || "")
+const { mutate: updateStoreDetails } = useUpdateStoreDetails()
+
+const { handleSubmit: handleStoreSubmit, setValues: setStoreValues } = useForm<IStoreDetailsForm>({
+  validationSchema: validSchema,
+})
+
+const onSubmitStoreDetails = handleStoreSubmit((formData) => {
   console.log("Form submitted with data:", formData)
+  const payload = new FormData()
+
+  Object.entries(formData).forEach(([key, value]) => {
+    if (key === "currency" || key === "industry") {
+      // Handle select objects
+      const selectValue = value as { label: string; value: string }
+      payload.append(key, selectValue.value)
+    } else if (key === "logo" && value instanceof File) {
+      payload.append(key, value)
+    } else if (key === "store_name") {
+      // Map store_name to name for the API
+      payload.append("name", value as string)
+    } else if (value !== null && value !== undefined) {
+      payload.append(key, value as string)
+    }
+  })
+
+  if (!user?.store_uid) {
+    return toast.error("Store ID not found")
+  }
+
+  updateStoreDetails(
+    { id: user.store_uid, body: payload as unknown as IUpdateStoreDetailsPayload },
+    {
+      onSuccess: () => {
+        toast.success("Store details updated successfully")
+        refetch()
+      },
+      onError: displayError,
+    },
+  )
+}, onInvalidSubmit)
+
+watch(storeDetails, (newDetails) => {
+  if (newDetails) {
+    setStoreValues({
+      store_name: newDetails.name,
+      industry: { label: newDetails.industry_name, value: newDetails.industry },
+      currency: { label: "Nigerian Naira", value: "NGN" },
+      store_email: "",
+      store_phone: "",
+      support_email: "",
+      support_phone: "",
+      instagram_handle: "",
+    })
+
+    if (newDetails.slug) currentSlug.value = newDetails.slug
+  }
+})
+
+const INDUSTRIES = computed(() => {
+  if (!industries.value?.results) return []
+  return industries.value?.results.map((industry) => ({
+    label: industry.name,
+    value: industry.uid,
+  }))
+})
+
+const currentSlug = ref("")
+
+// Watch for store name changes to auto-generate slug
+const watchStoreNameForSlug = (storeName: string) => {
+  if (storeName) {
+    const slug = slugify(storeName)
+    currentSlug.value = slug
+  }
 }
 </script>
 
@@ -50,9 +140,8 @@ const onUpdateProfile = (formData: Record<string, unknown>) => {
         size="sm"
       />
 
-      <AppForm
-        @submit="onUpdateProfile"
-        :schema="validSchema"
+      <form
+        @submit.prevent="onSubmitStoreDetails"
         class="border-core-100 mt-6 rounded-2xl border bg-white"
       >
         <div class="grid grid-cols-2 gap-6 p-6">
@@ -62,11 +151,14 @@ const onUpdateProfile = (formData: Record<string, unknown>) => {
               label="Store Name"
               placeholder="e.g. John's Store"
               required
+              @update:modelValue="watchStoreNameForSlug"
             />
             <p class="text-core-400 mt-1.5 inline-flex items-center text-xs font-medium">
               <Icon name="global" size="12" class="mr-1 text-gray-400" />
-              https://shop.leyyow.com/
-              <span class="text-core-600 font-semibold"> [SLUG] </span>
+              {{ "https://shop.leyyow.com/" }}
+              <span class="text-core-600 font-semibold">
+                {{ currentSlug || "[SLUG]" }}
+              </span>
             </p>
           </div>
 
@@ -113,7 +205,7 @@ const onUpdateProfile = (formData: Record<string, unknown>) => {
             name="industry"
             label="Industry"
             type="select"
-            :options="INDUSTRY_OPTIONS"
+            :options="INDUSTRIES"
             placeholder="Select"
             required
           />
@@ -125,13 +217,18 @@ const onUpdateProfile = (formData: Record<string, unknown>) => {
           />
 
           <div class="col-span-2 flex gap-6">
-            <div>
-              <Avatar name="John Doe" size="lg" />
-              <span>Store Logo</span>
+            <div class="flex flex-col items-center gap-2">
+              <Avatar
+                :name="storeDetails?.name || 'Store Logo'"
+                :src="storeDetails?.logo"
+                size="lg"
+              />
+              <span class="text-sm text-gray-600">Current Logo</span>
             </div>
 
             <div class="flex-1">
-              <FileUploadField
+              <FormField
+                type="file"
                 name="logo"
                 label="Click to upload logo"
                 accept="image/*"
@@ -146,53 +243,9 @@ const onUpdateProfile = (formData: Record<string, unknown>) => {
         <div class="border-core-100 flex justify-end gap-6 border-t px-6 py-4">
           <AppButton type="submit" label="Save Changes" />
         </div>
-      </AppForm>
+      </form>
     </section>
 
-    <section class="mt-10">
-      <SectionHeader
-        title="Bank Account Details"
-        subtitle="This is the bank account where you’ll receive payments from your orders on Leyyow."
-        size="sm"
-      />
-
-      <AppForm
-        @submit="onUpdateProfile"
-        :schema="validSchema"
-        class="border-core-100 mt-6 rounded-2xl border bg-white"
-      >
-        <div class="flex flex-col gap-6 p-6">
-          <FormField
-            name="account_number"
-            label="Account Number"
-            placeholder="e.g. 1234567890"
-            required
-          />
-
-          <FormField
-            name="bank_name"
-            type="select"
-            label="Bank Name"
-            placeholder="Select your bank"
-            required
-            searchable
-            :options="[]"
-          />
-          <!-- :hint="
-              isLoading
-                ? 'Loading...'
-                : isResolving
-                  ? 'Validating...'
-                  : accountName
-                    ? accountName
-                    : ''
-            " -->
-        </div>
-
-        <div class="border-core-100 flex justify-end gap-6 border-t px-6 py-4">
-          <AppButton type="submit" label="Save Changes" />
-        </div>
-      </AppForm>
-    </section>
+    <AccountNumberSection />
   </div>
 </template>

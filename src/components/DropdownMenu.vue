@@ -11,7 +11,7 @@
         type="button"
         :class="$slots.trigger ? triggerClass : triggerClasses"
         :disabled="disabled"
-        @click="handleToggle(toggle, shown)"
+        @click="toggle"
       >
         <slot name="trigger" :open="shown" :disabled="disabled">
           <div v-if="leftIcon" class="text-core-400 flex items-center">
@@ -267,18 +267,17 @@ const getItemIconClasses = (item: DropdownItem): string => {
 }
 
 // Actions - updated for Floating Vue
-const handleToggle = (toggle: () => void, shown: boolean) => {
-  if (props.disabled) return
+// const handleToggle = (shown: boolean) => {
+//   if (props.disabled) return
 
-  toggle()
-  emit("toggle", !shown)
+//   emit("toggle", !shown)
 
-  if (!shown) {
-    emit("open")
-  } else {
-    emit("close")
-  }
-}
+//   if (!shown) {
+//     emit("open")
+//   } else {
+//     emit("close")
+//   }
+// }
 
 const handleClose = (hide: () => void) => {
   hide()
