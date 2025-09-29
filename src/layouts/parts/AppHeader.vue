@@ -1,12 +1,7 @@
 <template>
   <header class="fixed top-0 right-0 left-0 z-20 border-b border-gray-200 bg-white">
     <div class="flex h-16 items-center gap-1.5 px-4">
-      <img
-        v-if="showLogo"
-        src="/images/logos/leyyow-logo-4.svg?url"
-        alt="Leyyow"
-        class="h-8 w-auto"
-      />
+      <img v-if="showLogo" src="/LYW.svg?url" alt="Leyyow" class="h-8 w-auto" />
       <div class="flex-1" />
       <!-- Storefront status -->
       <Chip color="alt" size="md" label="Storefront" class="!pr-1">

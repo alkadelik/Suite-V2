@@ -11,6 +11,7 @@ export const useAuthStore = defineStore(
     const accessToken = ref<string | null>(null)
     const refreshToken = ref<string | null>(null)
     const isLoading = ref<boolean>(false)
+    const router = useRouter()
 
     // Getters
     const isAuthenticated = computed(() => Boolean(accessToken.value) && Boolean(user.value))
@@ -40,7 +41,7 @@ export const useAuthStore = defineStore(
     const logout = () => {
       clearAuth()
       // redirect to login page
-      const router = useRouter()
+      localStorage.clear()
       router.push("/login")
     }
 
@@ -67,10 +68,5 @@ export const useAuthStore = defineStore(
       logout,
     }
   },
-  {
-    persist: {
-      storage: localStorage, // or sessionStorage if you prefer
-      paths: ["user", "accessToken", "refreshToken"], // only persist these
-    },
-  },
+  { persist: true },
 )

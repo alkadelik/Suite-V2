@@ -233,7 +233,7 @@
             <img src="/images/shipbubble-arrow.png" alt="red arrow" />
             <div class="h-14 w-14 rounded-3xl border-4 border-solid border-[#FEAA0033]">
               <img
-                :src="leyyowIcon"
+                src="/LYW-icon.svg?url"
                 class="h-full w-full rounded-[1.25rem] object-cover"
                 alt="leyyow icon"
               />
@@ -254,7 +254,6 @@ import Checkbox from "@components/form/Checkbox.vue"
 import Icon from "@components/Icon.vue"
 import LoadingIcon from "@components/LoadingIcon.vue"
 import GooglePlacesAutoComplete from "@/components/GooglePlacesAutocomplete.vue"
-import leyyowIcon from "/images/logos/leyyow-icon.svg"
 import { useGetCouriers } from "../api"
 
 interface AuthForm {

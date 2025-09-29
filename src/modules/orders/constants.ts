@@ -6,6 +6,9 @@ import type {
   TOrderPaymentStatus,
   TOrderShippingCompany,
 } from "./types"
+import { TableColumn } from "@components/DataTable.vue"
+import { getSmartDateLabel } from "@/utils/formatDate"
+import { formatCurrency } from "@/utils/format-currency"
 
 export const ORDERS: TOrder[] = [
   {
@@ -300,7 +303,7 @@ export const ORDERS: TOrder[] = [
     rate: null,
     shipping_paid: false,
     shipping_mode: false,
-    payment_status: 0,
+    payment_status: 2,
     payment_mode: 1,
     channel: 3,
     refund: false,
@@ -924,3 +927,21 @@ export const anonymousCustomer: TCustomer = {
   total_orders: 0,
   last_order_date: "",
 }
+
+export const ORDER_COLUMNS: TableColumn<TOrder>[] = [
+  { header: "Order ID", accessor: "order_ref" },
+  { header: "Customer", accessor: "customer_info" },
+  {
+    header: "Amount",
+    accessor: "total_amount",
+    cell: ({ value }) => formatCurrency(Number(value)),
+  },
+  { header: "Order", accessor: "items_count" },
+  { header: "Status", accessor: "status" },
+  {
+    header: "Order Date",
+    accessor: "order_date",
+    cell: ({ value }) => getSmartDateLabel(value as string),
+  },
+  { header: "Actions", accessor: "actions" },
+]

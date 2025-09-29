@@ -5,10 +5,7 @@
         <div
           class="text-primary-600 flex items-center justify-center text-8xl leading-none font-bold md:text-9xl"
         >
-          4<img
-            src="/images/logos/leyyow-icon.svg?url"
-            class="text-primary-600 !h-16 !w-16 md:!h-20 md:!w-20"
-          />4
+          4<img src="/LYW-icon.svg?url" class="text-primary-600 !h-16 !w-16 md:!h-20 md:!w-20" />4
         </div>
       </div>
 

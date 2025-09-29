@@ -36,11 +36,6 @@ export function useResolveBankAccount() {
   })
 }
 
-/** Fetch merchant store info */
-export function useGetUserStore() {
-  return useApiQuery({ url: "/stores/" })
-}
-
 /** Fetch merchant shipping info */
 export function useSetupShippingProfile() {
   return useMutation({
@@ -58,7 +53,7 @@ export function useUpdateShippingProfile() {
 
 /** Get merchant shipping couriers options */
 export function useGetCouriers() {
-  return useApiQuery({ url: "/shipping/couriers/" })
+  return useApiQuery({ url: "/shipping/couriers/", key: "couriers" })
 }
 
 /** Get merchant shipping profile */
