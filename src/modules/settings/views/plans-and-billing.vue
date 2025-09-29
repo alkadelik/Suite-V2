@@ -107,7 +107,7 @@
         </template>
 
         <!-- Mobile view cell templates -->
-        <template #mobile-content="{ item }">
+        <template #mobile="{ item }">
           <div class="space-y-2">
             <div class="flex justify-between">
               <div class="space-y-2">

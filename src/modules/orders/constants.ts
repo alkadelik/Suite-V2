@@ -271,6 +271,7 @@ export const ORDERS: TOrder[] = [
     store: 225,
     customer: 5234,
     customer_info: {
+      id: 5234,
       uid: 5234,
       store: 225,
       first_name: "Daniel",
@@ -424,6 +425,7 @@ export const ORDERS: TOrder[] = [
     store: 225,
     customer: 5232,
     customer_info: {
+      id: 5232,
       uid: 5232,
       store: 225,
       first_name: "Daniel",
@@ -573,6 +575,7 @@ export const ORDERS: TOrder[] = [
     store: 225,
     customer: 5232,
     customer_info: {
+      id: 5232,
       uid: 5232,
       store: 225,
       first_name: "Daniel",
@@ -723,6 +726,7 @@ export const ORDERS: TOrder[] = [
     customer: 5232,
     customer_info: {
       uid: 5232,
+      id: 5232,
       store: 225,
       first_name: "Daniel",
       last_name: "Obode",
@@ -920,6 +924,7 @@ export const ORDER_PAYMENT_STATUS: TOrderPaymentStatus[] = [
 
 export const anonymousCustomer: TCustomer = {
   uid: 0.1,
+  id: 0.1,
   first_name: "Unknown",
   last_name: "Anonymous",
   email: "",

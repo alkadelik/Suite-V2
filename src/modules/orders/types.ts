@@ -58,7 +58,7 @@ export type TOrderProductInfo = {
 }
 
 export type TOrderItem = {
-  id: string
+  id: string | number
   has_feedback: boolean
   index: number
   lead_time: number | null
