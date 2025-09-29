@@ -32,13 +32,8 @@ export function useResolveBankAccount() {
   return useMutation({
     mutationKey: ["resolveBankAccount"],
     mutationFn: (body: { account_number: string; bank_code: string }) =>
-      baseApi.post("/accounts/auth/password/request-token/", body),
+      baseApi.post("/billings/account-verification/verify/", body),
   })
-}
-
-/** Fetch merchant store info */
-export function useGetUserStore() {
-  return useApiQuery({ url: "/stores/" })
 }
 
 /** Fetch merchant shipping info */
@@ -58,7 +53,7 @@ export function useUpdateShippingProfile() {
 
 /** Get merchant shipping couriers options */
 export function useGetCouriers() {
-  return useApiQuery({ url: "/shipping/couriers/" })
+  return useApiQuery({ url: "/shipping/couriers/", key: "couriers" })
 }
 
 /** Get merchant shipping profile */
