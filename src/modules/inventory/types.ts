@@ -334,3 +334,11 @@ export interface IProductAttributeValuePayload {
   sort_order: number
   attributeUid: string
 }
+
+export interface IProductImageUploadPayload {
+  product: string
+  image: File
+  alt_text?: string
+  is_primary?: boolean
+  sort_order?: number
+}

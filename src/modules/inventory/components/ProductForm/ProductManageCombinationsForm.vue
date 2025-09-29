@@ -5,7 +5,7 @@
       <!-- Price Section -->
       <TextField
         :model-value="singleVariantForm.price"
-        @update:model-value="singleVariantForm.price = removeLeadingZeros($event)"
+        @update:model-value="updateSingleVariantField('price', removeLeadingZeros($event))"
         label="Price"
         placeholder=""
         type="number"
@@ -17,7 +17,7 @@
       <!-- Stock Section -->
       <TextField
         :model-value="singleVariantForm.opening_stock"
-        @update:model-value="singleVariantForm.opening_stock = removeLeadingZeros($event)"
+        @update:model-value="updateSingleVariantField('opening_stock', removeLeadingZeros($event))"
         label="Available Stock"
         placeholder=""
         type="number"
@@ -387,6 +387,15 @@ const handlePriceBlur = (currentIndex: number, event: Event) => {
   if (hasChanges) {
     emit("update:modelValue", updatedVariants)
   }
+}
+
+// Update single variant field properly using the computed setter
+const updateSingleVariantField = (field: keyof IProductVariant, value: string) => {
+  const updatedVariant = {
+    ...singleVariantForm.value,
+    [field]: value,
+  }
+  singleVariantForm.value = updatedVariant
 }
 
 // Remove leading zeros from input values

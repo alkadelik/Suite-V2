@@ -56,7 +56,7 @@ interface ProductForm {
   name: string
   category: { label: string; value: string } | null
   description: string
-  images: Array<File>
+  images: Array<File | null>
 }
 
 interface Props {

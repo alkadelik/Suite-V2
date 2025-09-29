@@ -33,16 +33,16 @@
       <div class="mb-4 flex gap-2 border-b border-gray-200 pb-6">
         <!-- Display product images -->
         <div
-          v-if="productData.images && productData.images.length > 0"
+          v-if="productData.images && productData.images.filter((img) => img).length > 0"
           class="flex flex-wrap gap-2"
         >
           <div
-            v-for="(image, index) in productData.images.slice(0, 5)"
+            v-for="(image, index) in productData.images.filter((img) => img).slice(0, 5)"
             :key="index"
             class="relative h-16 w-16 overflow-hidden rounded-lg bg-gray-200"
           >
             <img
-              :src="getImageUrl(image)"
+              :src="getImageUrl(image!)"
               :alt="`Product image ${index + 1}`"
               class="h-full w-full object-cover"
             />
@@ -164,7 +164,7 @@ interface ProductData {
   name: string
   category: { label: string; value: string } | null
   description: string
-  images: Array<File>
+  images: Array<File | null>
 }
 
 interface Props {
@@ -215,7 +215,14 @@ const getCategoryLabel = (categoryValue: { label: string; value: string } | null
 }
 
 const getImageUrl = (file: File): string => {
-  return URL.createObjectURL(file)
+  // Ensure the file is actually a File object before creating object URL
+  if (file instanceof File) {
+    return URL.createObjectURL(file)
+  }
+
+  // Fallback for invalid file objects
+  console.error("Invalid file object passed to getImageUrl:", file)
+  return "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2YzZjRmNiIvPjx0ZXh0IHg9IjUwIiB5PSI1MCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiM5Y2EzYWYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5JbWFnZTwvdGV4dD48L3N2Zz4="
 }
 
 const getWeightDisplay = (): string => {
