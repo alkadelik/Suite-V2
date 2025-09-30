@@ -6,6 +6,7 @@ import {
   IProductAttributeFormPayload,
   IProductAttributeValuePayload,
   IProductImageUploadPayload,
+  IGetProductResponse,
 } from "./types"
 
 /** Get categories api request */
@@ -118,6 +119,17 @@ export function useAddProductImage() {
           "Content-Type": "multipart/form-data",
         },
       })
+    },
+  })
+}
+
+/** get product by uid */
+export function useGetProduct(uid: string) {
+  return useQuery({
+    queryKey: ["products", uid],
+    queryFn: async () => {
+      const { data } = await baseApi.get<IGetProductResponse>(`/inventory/products/${uid}/`)
+      return data
     },
   })
 }

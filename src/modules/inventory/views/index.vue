@@ -239,6 +239,7 @@ import { useGetProducts, useDeleteProduct } from "../api"
 import ProductAvatar from "@components/ProductAvatar.vue"
 import EmptyState from "@components/EmptyState.vue"
 import { displayError } from "@/utils/error-handler"
+import router from "@/router"
 
 const { data: products, isPending: isGettingProducts, refetch: refetchProducts } = useGetProducts()
 const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct()
@@ -251,9 +252,7 @@ const showViewProductDrawer = ref(false)
 const product = ref<TProduct | null>(null)
 
 const handleRowClick = (clickedProduct: TProduct) => {
-  product.value = { ...clickedProduct }
-  formMode.value = "view"
-  showViewProductDrawer.value = true
+  router.push({ name: "Product-Details", params: { uid: clickedProduct.uid } })
 }
 
 // Calculate metrics from actual API data
