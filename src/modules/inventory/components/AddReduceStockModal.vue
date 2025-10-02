@@ -32,9 +32,10 @@
       <template v-if="type === 'add'">
         <FormField
           name="unit_cost"
-          label="Unit Cost (Optional)"
+          label="Unit Cost"
           type="number"
           placeholder="Enter unit cost"
+          required
         />
 
         <FormField
@@ -91,7 +92,7 @@ import Chip from "@components/Chip.vue"
 import { useAddStock, useReduceStock } from "../api"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
-import type { IAddStockPayload, IProductVariantAttribute } from "../types"
+import type { IAddStockPayload, IReduceStockPayload, IProductVariantAttribute } from "../types"
 
 interface Props {
   open: boolean
@@ -99,6 +100,7 @@ interface Props {
   variantUid: string
   productName: string
   variantAttributes?: IProductVariantAttribute[]
+  variantCostPrice?: string
 }
 
 interface Emits {
@@ -112,7 +114,7 @@ const emit = defineEmits<Emits>()
 const isMobile = useMediaQuery("(max-width: 768px)")
 
 const { mutate: addStock, isPending: isAdding } = useAddStock()
-const { isPending: isReducing } = useReduceStock()
+const { mutate: reduceStock, isPending: isReducing } = useReduceStock()
 
 const isPending = computed(() => isAdding.value || isReducing.value)
 
@@ -123,13 +125,20 @@ const lossTypeOptions = [
   { label: "Loss", value: "loss" },
 ]
 
-const { handleSubmit, meta } = useForm({
+interface FormValues {
+  quantity: number
+  unit_cost: string
+  note: string
+  loss_type: { label: string; value: string } | null
+}
+
+const { handleSubmit, meta } = useForm<FormValues>({
   validationSchema: computed(() =>
     yup.object({
       quantity: yup.number().required("Quantity is required").positive("Quantity must be positive"),
       ...(props.type === "add"
         ? {
-            unit_cost: yup.string().optional(),
+            unit_cost: yup.string().required("Unit cost is required"),
             note: yup.string().required("Reason is required"),
           }
         : {
@@ -144,6 +153,12 @@ const { handleSubmit, meta } = useForm({
           }),
     }),
   ),
+  initialValues: {
+    quantity: 0,
+    unit_cost: props.variantCostPrice || "",
+    note: "",
+    loss_type: null,
+  },
 })
 
 const onSubmit = handleSubmit((values) => {
@@ -151,7 +166,7 @@ const onSubmit = handleSubmit((values) => {
     const payload: IAddStockPayload & { uid: string } = {
       uid: props.variantUid,
       quantity: values.quantity,
-      ...(values.unit_cost && { unit_cost: values.unit_cost }),
+      unit_cost: values.unit_cost,
       note: values.note,
     }
 
@@ -163,17 +178,22 @@ const onSubmit = handleSubmit((values) => {
 
     addStock(payload, { onSuccess, onError: displayError })
   } else {
-    const reducePayload = {
+    if (!values.loss_type) return
+
+    const reducePayload: IReduceStockPayload & { uid: string } = {
       uid: props.variantUid,
       quantity: values.quantity,
-      loss_type: values.loss_type,
+      reason: values.loss_type.value,
       note: values.note,
     }
 
-    console.log("Reduce stock payload:", reducePayload)
-    toast.success("Stock reduced successfully")
-    emit("success")
-    emit("close")
+    const onSuccess = () => {
+      toast.success("Stock reduced successfully")
+      emit("success")
+      emit("close")
+    }
+
+    reduceStock(reducePayload, { onSuccess, onError: displayError })
   }
 })
 </script>

@@ -332,7 +332,15 @@ export interface IInventoryMovementPayload {
 // Add stock payload
 export interface IAddStockPayload {
   quantity: number
-  unit_cost?: string
+  unit_cost: string
+  reference?: string
+  note: string
+}
+
+// Reduce stock payload
+export interface IReduceStockPayload {
+  quantity: number
+  reason: string
   reference?: string
   note: string
 }

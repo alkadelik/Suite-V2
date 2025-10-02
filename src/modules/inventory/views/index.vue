@@ -24,7 +24,10 @@
       action-icon="add"
       @action="showProductFormDrawer = true"
     />
-    <div v-else class="mt-4 space-y-4 rounded-xl border-gray-200 bg-white pt-3 md:mt-8 md:border">
+    <div
+      v-else
+      class="mt-4 space-y-4 rounded-xl border-gray-200 pt-3 md:mt-8 md:border md:bg-white"
+    >
       <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
         <h3 class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
           All Products <Chip :label="String(products?.data?.count || 0)" />

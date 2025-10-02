@@ -8,6 +8,7 @@ import {
   IProductImageUploadPayload,
   IGetProductResponse,
   IAddStockPayload,
+  IReduceStockPayload,
 } from "./types"
 
 /** Get categories api request */
@@ -146,7 +147,7 @@ export function useAddStock() {
 /** reduce stock from variant */
 export function useReduceStock() {
   return useMutation({
-    mutationFn: ({ uid, ...payload }: IAddStockPayload & { uid: string }) =>
-      baseApi.post(`/inventory/variants/${uid}/reduce-stock/`, payload),
+    mutationFn: ({ uid, ...payload }: IReduceStockPayload & { uid: string }) =>
+      baseApi.post(`/inventory/variants/${uid}/record-loss/`, payload),
   })
 }

@@ -1,5 +1,5 @@
 <template>
-  <div class="text-core-800 p-4">
+  <div class="text-core-800 p-4 pb-8">
     <button
       @click="$router.back()"
       class="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900"
@@ -25,8 +25,10 @@
           <Icon name="box-filled" class="text-primary-600 !size-5 md:!size-8" />
         </div>
         <div class="flex flex-1 flex-col justify-between gap-2 md:gap-3 md:py-1">
-          <div class="flex flex-col justify-between gap-2 md:flex-row md:items-center">
-            <h5 class="text-core-700 text-lg font-bold md:text-xl">{{ product?.data.name }}</h5>
+          <div class="flex flex-col justify-between gap-3 md:flex-row md:items-center">
+            <h5 class="text-core-700 !font-outfit font-regular text-lg md:text-xl md:font-semibold">
+              {{ product?.data.name }}
+            </h5>
             <div class="flex items-center gap-2">
               <Icon name="moneys" class="text-core-600" size="24" />
               <h4 class="text-xl font-bold md:text-2xl">
@@ -34,7 +36,7 @@
               </h4>
             </div>
           </div>
-          <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="mt-2 flex flex-wrap items-center justify-between gap-2 md:mt-0">
             <div class="inline-flex flex-wrap gap-2">
               <Chip
                 color="blue"
@@ -70,7 +72,7 @@
         </div>
       </div>
 
-      <Tabs :tabs="tabs" v-model="activeTab" class="mt-4 md:mt-8" />
+      <Tabs :tabs="tabs" v-model="activeTab" class="mt-5 mb-4 md:mt-8 md:mb-0" />
 
       <ProductOverview
         v-if="activeTab === 'overview' && product"
@@ -129,6 +131,7 @@
       :variant-uid="selectedVariant.uid"
       :product-name="product?.data.name || ''"
       :variant-attributes="selectedVariant.attributes"
+      :variant-cost-price="selectedVariant.cost_price"
       @close="showAddReduceStockModal = false"
       @success="handleStockSuccess"
     />

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h3 class="text-core-700 mb-4 text-lg font-semibold md:text-xl">Your Product Stats</h3>
+    <!-- <h3 class="text-core-700 mb-4 text-lg font-semibold md:text-xl">Your Product Stats</h3> -->
 
     <PageSummaryCards
       :items="productMetrics"
