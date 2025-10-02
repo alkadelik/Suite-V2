@@ -328,6 +328,14 @@ export interface IInventoryMovementPayload {
   note?: string
 }
 
+// Add stock payload
+export interface IAddStockPayload {
+  quantity: number
+  unit_cost?: string
+  reference?: string
+  note: string
+}
+
 // ============================================================================
 // UTILITY TYPES (for filtering, sorting, validation)
 // ============================================================================

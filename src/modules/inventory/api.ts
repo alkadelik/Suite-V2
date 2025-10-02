@@ -7,6 +7,7 @@ import {
   IProductAttributeValuePayload,
   IProductImageUploadPayload,
   IGetProductResponse,
+  IAddStockPayload,
 } from "./types"
 
 /** Get categories api request */
@@ -131,5 +132,21 @@ export function useGetProduct(uid: string) {
       const { data } = await baseApi.get<IGetProductResponse>(`/inventory/products/${uid}/`)
       return data
     },
+  })
+}
+
+/** add stock to variant */
+export function useAddStock() {
+  return useMutation({
+    mutationFn: ({ uid, ...payload }: IAddStockPayload & { uid: string }) =>
+      baseApi.post(`/inventory/variants/${uid}/add-stock/`, payload),
+  })
+}
+
+/** reduce stock from variant */
+export function useReduceStock() {
+  return useMutation({
+    mutationFn: ({ uid, ...payload }: IAddStockPayload & { uid: string }) =>
+      baseApi.post(`/inventory/variants/${uid}/reduce-stock/`, payload),
   })
 }

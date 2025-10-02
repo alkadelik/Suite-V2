@@ -16,7 +16,7 @@
           <slot name="header">
             <span>{{ header }}</span>
           </slot>
-          <Icon :name="isOpen ? 'arrow-up' : 'arrow-down'" class="text-gray-600" size="24" />
+          <Icon :name="isOpen ? 'chevron-up' : 'chevron-down'" class="text-gray-600" size="24" />
         </div>
       </slot>
     </div>

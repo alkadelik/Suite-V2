@@ -121,6 +121,17 @@
       @confirm="handleDeleteProduct"
       :loading="isDeletingProduct"
     />
+
+    <AddReduceStockModal
+      v-if="selectedVariant"
+      :open="showAddReduceStockModal"
+      :type="stockModalType"
+      :variant-uid="selectedVariant.uid"
+      :product-name="product?.data.name || ''"
+      :variant-attributes="selectedVariant.attributes"
+      @close="showAddReduceStockModal = false"
+      @success="handleStockSuccess"
+    />
   </div>
 </template>
 
@@ -150,6 +161,7 @@ import type { IProductVariantDetails } from "../types"
 import ProductOverview from "../components/ProductOverview.vue"
 import ProductOrders from "../components/ProductOrders.vue"
 import ProductMovementLogs from "../components/ProductMovementLogs.vue"
+import AddReduceStockModal from "../components/AddReduceStockModal.vue"
 import type { TOrder } from "@modules/orders/types"
 
 const route = useRoute()
@@ -161,20 +173,41 @@ const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct
 
 const activeTab = ref("overview")
 const showDeleteConfirmationModal = ref(false)
+const showAddReduceStockModal = ref(false)
+const stockModalType = ref<"add" | "reduce">("add")
+const selectedVariant = ref<IProductVariantDetails | null>(null)
+
+const openStockModal = (
+  type: "add" | "reduce",
+  variant: IProductVariantDetails | typeof product.value,
+) => {
+  stockModalType.value = type
+  if (variant && "attributes" in variant) {
+    selectedVariant.value = variant
+  } else {
+    // If it's the product (single variant), get the first variant
+    selectedVariant.value = product.value?.data.variants[0] || null
+  }
+  showAddReduceStockModal.value = true
+}
+
+const handleStockSuccess = () => {
+  queryClient.refetchQueries({ queryKey: ["products", uid] })
+}
 
 const stockActionItems = [
   {
     label: "Add Stock",
     icon: "box-add",
     action: (item: IProductVariantDetails | typeof product.value) => {
-      console.log("Adding stock:", item)
+      openStockModal("add", item)
     },
   },
   {
     label: "Reduce Stock",
     icon: "box-add",
     action: (item: IProductVariantDetails | typeof product.value) => {
-      console.log("Reducing Stock:", item)
+      openStockModal("reduce", item)
     },
   },
   {

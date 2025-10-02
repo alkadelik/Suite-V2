@@ -9,7 +9,7 @@ import type {
   TProduct,
 } from "./types"
 import { TableColumn } from "@components/DataTable.vue"
-import type { TOrder } from "@modules/orders/types"
+import type { TOrder, TOrderProductInfo } from "@modules/orders/types"
 
 export const PRODUCT_COLUMNS: TableColumn<TProduct>[] = [
   { header: "Name", accessor: "name" },
@@ -110,7 +110,7 @@ export const MOCK_PRODUCT_ORDERS: TOrder[] = [
         product: 1,
         productid: 1,
         sku: null,
-        product_info: {} as any,
+        product_info: {} as TOrderProductInfo,
         var1name: "",
         var2name: "",
         selected_option1: "Blue",
@@ -194,7 +194,7 @@ export const MOCK_PRODUCT_ORDERS: TOrder[] = [
         product: 1,
         productid: 1,
         sku: null,
-        product_info: {} as any,
+        product_info: {} as TOrderProductInfo,
         var1name: "",
         var2name: "",
         selected_option1: "Red",
@@ -254,7 +254,7 @@ export const MOCK_PRODUCT_ORDERS: TOrder[] = [
         product: 1,
         productid: 1,
         sku: null,
-        product_info: {} as any,
+        product_info: {} as TOrderProductInfo,
         var1name: "",
         var2name: "",
         selected_option1: "Green",

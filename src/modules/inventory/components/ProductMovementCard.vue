@@ -1,5 +1,8 @@
 <template>
-  <div class="bg-core-25 border-core-300 cursor-pointer rounded-xl border p-3" @click="$emit('click')">
+  <div
+    class="bg-core-25 border-core-300 cursor-pointer rounded-xl border p-3"
+    @click="$emit('click')"
+  >
     <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-2">
         <Chip
