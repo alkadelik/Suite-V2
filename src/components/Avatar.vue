@@ -133,7 +133,7 @@ const statusContainerClasses = computed(() => [
 const textClasses = computed(() => ["flex-1 min-w-0"])
 
 const nameClasses = computed(() => [
-  "font-medium text-gray-800 truncate m-0",
+  "font-medium text-core-800 truncate m-0",
   {
     "text-xs": sizeClass.value === "sm",
     "text-sm": sizeClass.value === "md" || !sizeClass.value,

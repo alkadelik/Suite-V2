@@ -18,6 +18,7 @@ export type TProductSortField =
   | "created_at"
   | "variants_count"
 export type TSortDirection = "asc" | "desc"
+export type TInventoryMovementType = "in" | "out" | "adjustment" | "transfer"
 
 // ============================================================================
 // CORE PRODUCT TYPES
@@ -79,6 +80,7 @@ export interface IProductVariantDetails {
   sellable_stock: number
   needs_reorder: boolean
   is_overstocked: boolean
+  [key: string]: unknown
 }
 
 // Variant attribute (in detailed view)
@@ -164,6 +166,23 @@ export interface IProductAttribute {
   value: string
 }
 
+// Inventory movement (detailed view)
+export interface IInventoryMovement {
+  uid: string
+  variant: string
+  store: string
+  location: string
+  type: TInventoryMovementType
+  reason: string
+  quantity: number
+  unit_cost: string
+  reference: string
+  note: string
+  created_by: string
+  created_at: string
+  [key: string]: unknown
+}
+
 // ============================================================================
 // API RESPONSE TYPES
 // ============================================================================
@@ -218,6 +237,14 @@ export interface IProductAttributesApiResponse {
     previous: string | null
     results: IProductAttributeDetails[]
   }
+}
+
+// Inventory movements list response
+export interface IInventoryMovementsApiResponse {
+  count: number
+  next: string | null
+  previous: string | null
+  results: IInventoryMovement[]
 }
 
 // ============================================================================
@@ -286,6 +313,19 @@ export interface IProductExportData {
   filters?: IProductFilters
   include_variants?: boolean
   include_events?: boolean
+}
+
+// Inventory movement create
+export interface IInventoryMovementPayload {
+  variant: string
+  store: string
+  location: string
+  type: TInventoryMovementType
+  reason: string
+  quantity: number
+  unit_cost?: string
+  reference?: string
+  note?: string
 }
 
 // ============================================================================

@@ -24,20 +24,34 @@
         >
           <Icon name="box-filled" class="text-primary-600 !size-5 md:!size-8" />
         </div>
-        <div class="flex flex-1 flex-col justify-between gap-2 py-1 md:gap-3">
-          <div class="flex items-center justify-between">
+        <div class="flex flex-1 flex-col justify-between gap-2 md:gap-3 md:py-1">
+          <div class="flex flex-col justify-between gap-2 md:flex-row md:items-center">
             <h5 class="text-core-700 text-lg font-bold md:text-xl">{{ product?.data.name }}</h5>
             <div class="flex items-center gap-2">
               <Icon name="moneys" class="text-core-600" size="24" />
               <h4 class="text-xl font-bold md:text-2xl">
-                {{ formatCurrency(Number(product?.data.variants[0].price)) }}
+                {{ productPrice }}
               </h4>
             </div>
           </div>
-          <div class="flex gap-2">
-            <Chip color="purple" icon="tag" label="Footwear" />
-            <Chip color="success" label="In Stock" showDot />
-            <Chip color="error" icon="star-outline" label="Bestseller" />
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="inline-flex flex-wrap gap-2">
+              <Chip
+                color="blue"
+                icon="shapes"
+                :label="`${product?.data.variants.length} variants`"
+                class="md:hidden"
+              />
+              <Chip color="purple" icon="tag" label="Footwear" />
+              <Chip color="success" label="In Stock" showDot />
+              <Chip color="error" icon="star-outline" label="Bestseller" />
+            </div>
+            <Chip
+              color="blue"
+              icon="shapes"
+              :label="`${product?.data.variants.length} variants`"
+              class="!hidden md:!inline-flex"
+            />
           </div>
         </div>
         <div>
@@ -58,112 +72,43 @@
 
       <Tabs :tabs="tabs" v-model="activeTab" class="mt-4 md:mt-8" />
 
-      <!-- overview tab -->
-      <div v-if="activeTab === 'overview'">
-        <h3 class="text-core-700 mb-4 text-lg font-semibold md:text-xl">Your Product Stats</h3>
+      <ProductOverview
+        v-if="activeTab === 'overview' && product"
+        :product="product.data"
+        :product-metrics="productMetrics"
+        :variant-columns="VARIANT_COLUMNS"
+        :variant-action-items="getVariantActionItems"
+        :loading="isPending"
+        @variant-action="handleVariantAction"
+        @add-variant="handleAddVariant"
+      />
 
-        <PageSummaryCards
-          :items="productMetrics"
-          default-icon="bag"
-          default-icon-class="text-success-500"
-        />
+      <ProductOrders
+        v-else-if="activeTab === 'orders' && product"
+        :product="product.data"
+        :orders="MOCK_PRODUCT_ORDERS"
+        :order-columns="
+          product.data.variants.length > 1
+            ? PRODUCT_ORDER_COLUMNS
+            : PRODUCT_ORDER_COLUMNS.filter((col) => col.accessor !== 'items')
+        "
+        :loading="false"
+        @create-order="handleCreateOrder"
+        @order-action="handleOrderAction"
+        @row-click="handleOrderRowClick"
+      />
 
-        <Collapsible header="Product Details" class="mt-8">
-          <template #body>
-            <div class="mb-4 border-b border-gray-200 pb-4">
-              <p class="text-core-600 mb-1 text-xs font-semibold md:text-sm">Description</p>
-              <p class="text-core-800 text-xs font-semibold md:text-sm">
-                {{ product?.data.description || "No description available for this product." }}
-              </p>
-            </div>
-            <div
-              class="grid grid-cols-2 gap-4"
-              :class="product?.data.images.length ? 'mb-4 border-b border-gray-200 pb-4' : ''"
-            >
-              <div>
-                <p class="text-core-600 mb-1 text-xs font-semibold md:text-sm">Price</p>
-                <p class="text-core-800 text-xs font-semibold md:text-sm">
-                  {{ formatCurrency(Number(product?.data.variants[0].price)) }}
-                </p>
-              </div>
-              <div>
-                <p class="text-core-600 mb-1 text-xs font-semibold md:text-sm">Total Stock</p>
-                <p class="text-core-800 text-xs font-semibold md:text-sm">
-                  {{ product?.data.variants[0].sellable_stock }}
-                </p>
-              </div>
-              <div>
-                <p class="text-core-600 mb-1 text-xs font-semibold md:text-sm">Weight</p>
-                <p class="text-core-800 text-xs font-semibold md:text-sm">
-                  {{ product?.data.variants[0].weight }}kg
-                </p>
-              </div>
-              <div>
-                <p class="text-core-600 mb-1 text-xs font-semibold md:text-sm">Dimension</p>
-                <p class="text-core-800 text-xs font-semibold md:text-sm">
-                  L-{{ Number(product?.data.variants[0].length) }}cm W-
-                  {{ Number(product?.data.variants[0].width) }}cm H-{{
-                    Number(product?.data.variants[0].height)
-                  }}cm
-                </p>
-              </div>
-            </div>
-            <div v-if="product?.data.images.length" class="mt-4 flex gap-2">
-              <img
-                v-for="image in product?.data.images"
-                :key="image.uid"
-                :src="image.image"
-                class="w-1/6 rounded-lg object-cover md:h-24 md:w-24"
-                alt=""
-              />
-            </div>
-          </template>
-        </Collapsible>
-
-        <div class="mt-6">
-          <h3 class="text-core-700 mb-4 text-lg font-semibold md:text-xl">Product Promos</h3>
-          <div
-            class="border-primary-700 bg-primary-25 mt-4 flex gap-2 rounded-xl border p-4 md:gap-5"
-          >
-            <div class="flex flex-1 flex-col justify-between gap-2 md:gap-3">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center justify-between gap-2">
-                  <!-- original price -->
-                  <h5 class="text-core-400 text-lg font-semibold line-through md:text-xl">
-                    {{ formatCurrency(5000) }}
-                  </h5>
-                  <!-- promo price -->
-                  <h5 class="text-core-800 text-xl font-semibold md:text-2xl">
-                    {{ formatCurrency(4000) }}
-                  </h5>
-                </div>
-              </div>
-              <p class="text-core-700 inline-flex items-center gap-1 text-sm md:text-base">
-                <Icon name="calendar" class="text-core-700 inline" size="16" /> Ends Sept 30, 2025
-              </p>
-              <div class="flex gap-2">
-                <Chip color="success" label="Active" showDot />
-                <Chip color="blue" icon="tag" :label="`${formatCurrency(5000)} off`" />
-                <Chip color="purple" icon="box-outline" label="Product Only" />
-              </div>
-            </div>
-            <!-- <div>
-            <DropdownMenu
-              :items="actionItems"
-              placement="bottom-end"
-              :show-chevron="false"
-              size="sm"
-              trigger-class="!p-1 !min-h-6 !w-6 hover:bg-gray-100 !border-0"
-              @click.stop
-            >
-              <template #trigger>
-                <Icon name="dots-vertical" />
-              </template>
-            </DropdownMenu>
-          </div> -->
-          </div>
-        </div>
-      </div>
+      <ProductMovementLogs
+        v-else-if="activeTab === 'movement_logs' && product"
+        :product="product.data"
+        :movements="MOCK_INVENTORY_MOVEMENTS"
+        :movement-columns="
+          product.data.variants.length > 1
+            ? MOVEMENT_COLUMNS
+            : MOVEMENT_COLUMNS.filter((col) => col.accessor !== 'variant')
+        "
+        :loading="false"
+      />
     </div>
 
     <!-- modals -->
@@ -184,18 +129,28 @@ import Icon from "@components/Icon.vue"
 import { useGetProduct, useDeleteProduct } from "../api"
 import { useRoute, useRouter } from "vue-router"
 import DropdownMenu from "@components/DropdownMenu.vue"
-import { ref } from "vue"
+import { ref, computed } from "vue"
 import { formatCurrency } from "@/utils/format-currency"
 import Chip from "@components/Chip.vue"
 import Tabs from "@components/Tabs.vue"
-import PageSummaryCards from "@components/PageSummaryCards.vue"
-import Collapsible from "@components/Collapsible.vue"
 import LoadingIcon from "@components/LoadingIcon.vue"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 import { useQueryClient } from "@tanstack/vue-query"
 import EmptyState from "@components/EmptyState.vue"
+import {
+  VARIANT_COLUMNS,
+  PRODUCT_ORDER_COLUMNS,
+  MOCK_PRODUCT_ORDERS,
+  MOVEMENT_COLUMNS,
+  MOCK_INVENTORY_MOVEMENTS,
+} from "../constants"
+import type { IProductVariantDetails } from "../types"
+import ProductOverview from "../components/ProductOverview.vue"
+import ProductOrders from "../components/ProductOrders.vue"
+import ProductMovementLogs from "../components/ProductMovementLogs.vue"
+import type { TOrder } from "@modules/orders/types"
 
 const route = useRoute()
 const router = useRouter()
@@ -207,7 +162,38 @@ const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct
 const activeTab = ref("overview")
 const showDeleteConfirmationModal = ref(false)
 
-const actionItems = ref([
+const stockActionItems = [
+  {
+    label: "Add Stock",
+    icon: "box-add",
+    action: (item: IProductVariantDetails | typeof product.value) => {
+      console.log("Adding stock:", item)
+    },
+  },
+  {
+    label: "Reduce Stock",
+    icon: "box-add",
+    action: (item: IProductVariantDetails | typeof product.value) => {
+      console.log("Reducing Stock:", item)
+    },
+  },
+  {
+    label: "Transfer Stock",
+    icon: "box",
+    action: (item: IProductVariantDetails | typeof product.value) => {
+      console.log("Transferring stock:", item)
+    },
+  },
+  {
+    label: "Request Stock",
+    icon: "box-time",
+    action: (item: IProductVariantDetails | typeof product.value) => {
+      console.log("Requesting stock:", item)
+    },
+  },
+]
+
+const actionItems = computed(() => [
   {
     label: "Edit Product",
     icon: "edit",
@@ -215,34 +201,12 @@ const actionItems = ref([
       console.log("Editing product:", product.value)
     },
   },
-  {
-    label: "Add Stock",
-    icon: "box-add",
-    action: () => {
-      console.log("Adding stock:", product.value)
-    },
-  },
-  {
-    label: "Reduce Stock",
-    icon: "box-add",
-    action: () => {
-      console.log("Reducing Stock:", product.value)
-    },
-  },
-  {
-    label: "Transfer Stock",
-    icon: "box",
-    action: () => {
-      console.log("Transferring stock:", product.value)
-    },
-  },
-  {
-    label: "Request Stock",
-    icon: "box-time",
-    action: () => {
-      console.log("Requesting stock:", product.value)
-    },
-  },
+  ...(product?.value?.data.variants.length && !(product.value.data.variants.length > 1)
+    ? stockActionItems.map((item) => ({
+        ...item,
+        action: () => item.action(product.value),
+      }))
+    : []),
   {
     label: "View Stock Movement",
     icon: "arrow-2",
@@ -328,4 +292,52 @@ const handleDeleteProduct = () => {
     onError: displayError,
   })
 }
+
+const getVariantActionItems = (variant: IProductVariantDetails) => {
+  return stockActionItems.map((item) => ({
+    ...item,
+    action: () => item.action(variant),
+  }))
+}
+
+const handleVariantAction = (action: string, variant: IProductVariantDetails) => {
+  console.log(action, variant)
+}
+
+const handleAddVariant = () => {
+  console.log("Add variant clicked")
+}
+
+const handleCreateOrder = () => {
+  console.log("Create order clicked")
+}
+
+const handleOrderAction = (action: string, order: TOrder) => {
+  console.log("Order action:", action, order)
+}
+
+const handleOrderRowClick = (order: TOrder) => {
+  console.log("Order row clicked:", order)
+}
+
+const productPrice = computed(() => {
+  if (!product.value?.data.variants.length) return "-"
+
+  const variants = product.value.data.variants
+  if (variants.length === 1) {
+    return formatCurrency(Number(variants[0].price))
+  }
+
+  const prices = variants.map((v) => Number(v.price))
+  const uniquePrices = [...new Set(prices)]
+
+  if (uniquePrices.length === 1) {
+    return formatCurrency(uniquePrices[0])
+  }
+
+  const minPrice = Math.min(...prices)
+  const maxPrice = Math.max(...prices)
+
+  return `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`
+})
 </script>
