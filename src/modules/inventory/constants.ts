@@ -12,7 +12,7 @@ import { TableColumn } from "@components/DataTable.vue"
 import type { TOrder, TOrderProductInfo } from "@modules/orders/types"
 
 export const PRODUCT_COLUMNS: TableColumn<TProduct>[] = [
-  { header: "Name", accessor: "name" },
+  { header: "Name", accessor: "name", maxWidth: "300px" },
   { header: "Category", accessor: "category" },
   { header: "Price", accessor: "price" },
   { header: "Stock Available", accessor: "total_stock" },

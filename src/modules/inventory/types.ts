@@ -345,6 +345,19 @@ export interface IReduceStockPayload {
   note: string
 }
 
+// Stock transfer item
+export interface IStockTransferItem {
+  variant: string
+  quantity: number
+}
+
+// Stock transfer payload (for both direct transfer and request)
+export interface IStockTransferPayload {
+  to_location: string
+  transfers: IStockTransferItem[]
+  note: string
+}
+
 // ============================================================================
 // UTILITY TYPES (for filtering, sorting, validation)
 // ============================================================================

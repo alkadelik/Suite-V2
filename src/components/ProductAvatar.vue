@@ -23,7 +23,7 @@
       <p v-if="extraText" :class="extraTextClasses">{{ extraText }}</p>
     </div>
 
-    <Chip v-if="variants" radius="lg" icon="add" label="Variants" />
+    <Chip v-if="variantsCount" radius="lg" :label="`${variantsCount} Variants`" />
   </div>
 </template>
 
@@ -63,6 +63,8 @@ interface AvatarProps {
   class?: string
   /** Whether to show variant chips */
   variants?: boolean
+  /** Number of variants to display */
+  variantsCount?: number
 }
 
 const props = withDefaults(defineProps<AvatarProps>(), {

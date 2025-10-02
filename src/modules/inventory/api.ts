@@ -9,6 +9,8 @@ import {
   IGetProductResponse,
   IAddStockPayload,
   IReduceStockPayload,
+  IInventoryMovementsApiResponse,
+  IStockTransferPayload,
 } from "./types"
 
 /** Get categories api request */
@@ -149,5 +151,31 @@ export function useReduceStock() {
   return useMutation({
     mutationFn: ({ uid, ...payload }: IReduceStockPayload & { uid: string }) =>
       baseApi.post(`/inventory/variants/${uid}/record-loss/`, payload),
+  })
+}
+
+/** get inventory movements */
+export function useGetInventoryMovements() {
+  return useQuery({
+    queryKey: ["inventory-movements"],
+    queryFn: async () => {
+      const { data } = await baseApi.get<IInventoryMovementsApiResponse>("/inventory/movements/")
+      return data
+    },
+  })
+}
+
+/** direct stock transfer */
+export function useDirectStockTransfer() {
+  return useMutation({
+    mutationFn: (payload: IStockTransferPayload) =>
+      baseApi.post("/inventory/transfers/direct-transfer/", payload),
+  })
+}
+
+/** request stock transfer */
+export function useRequestStockTransfer() {
+  return useMutation({
+    mutationFn: (payload: IStockTransferPayload) => baseApi.post("/inventory/transfers/", payload),
   })
 }

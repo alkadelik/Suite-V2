@@ -73,7 +73,11 @@
         @row-click="handleRowClick"
       >
         <template #cell:name="{ item }">
-          <ProductAvatar :name="item.name" :url="undefined" :variants="item.variants_count > 1" />
+          <ProductAvatar
+            :name="item.name"
+            :url="undefined"
+            :variants-count="item.variants_count > 1 ? item.variants_count : undefined"
+          />
         </template>
 
         <template #cell:category="{ value }">

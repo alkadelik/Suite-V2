@@ -132,7 +132,7 @@
       :variant-uid="selectedVariant.uid"
       :product-name="product?.data.name || ''"
       :variant-attributes="selectedVariant.attributes"
-      :variant-cost-price="selectedVariant.cost_price"
+      :variant-price="selectedVariant.price"
       @close="showAddReduceStockModal = false"
       @success="handleStockSuccess"
     />

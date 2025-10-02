@@ -80,7 +80,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, watch } from "vue"
 import { useForm } from "vee-validate"
 import * as yup from "yup"
 import { useMediaQuery } from "@vueuse/core"
@@ -100,7 +100,7 @@ interface Props {
   variantUid: string
   productName: string
   variantAttributes?: IProductVariantAttribute[]
-  variantCostPrice?: string
+  variantPrice?: string
 }
 
 interface Emits {
@@ -131,7 +131,7 @@ interface FormValues {
   loss_type: { label: string; value: string } | null
 }
 
-const { handleSubmit, meta } = useForm<FormValues>({
+const { handleSubmit, meta, resetForm } = useForm<FormValues>({
   validationSchema: computed(() =>
     yup.object({
       quantity: yup.number().required("Quantity is required").positive("Quantity must be positive"),
@@ -154,11 +154,28 @@ const { handleSubmit, meta } = useForm<FormValues>({
   ),
   initialValues: {
     quantity: 0,
-    unit_cost: props.variantCostPrice || "",
+    unit_cost: props.variantPrice || "",
     note: "",
     loss_type: null,
   },
 })
+
+// Reset form when modal opens
+watch(
+  () => props.open,
+  (isOpen) => {
+    if (isOpen) {
+      resetForm({
+        values: {
+          quantity: 0,
+          unit_cost: props.variantPrice || "",
+          note: "",
+          loss_type: null,
+        },
+      })
+    }
+  },
+)
 
 const onSubmit = handleSubmit((values) => {
   if (props.type === "add") {
