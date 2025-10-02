@@ -32,7 +32,6 @@ export const VARIANT_COLUMNS: TableColumn<IProductVariantDetails>[] = [
 export const PRODUCT_ORDER_COLUMNS: TableColumn<TOrder>[] = [
   { header: "Order ID", accessor: "order_ref" },
   { header: "Order Date", accessor: "order_date" },
-  { header: "SKU", accessor: "items" },
   { header: "Customer", accessor: "customer_info" },
   { header: "Status", accessor: "payment_status" },
   { header: "", accessor: "action" },

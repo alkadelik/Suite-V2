@@ -119,10 +119,9 @@ const { mutate: reduceStock, isPending: isReducing } = useReduceStock()
 const isPending = computed(() => isAdding.value || isReducing.value)
 
 const lossTypeOptions = [
-  { label: "Damages", value: "damages" },
-  { label: "Spoilage", value: "spoilage" },
+  { label: "Damage", value: "damage" },
   { label: "Wastage", value: "wastage" },
-  { label: "Loss", value: "loss" },
+  { label: "Manual Adjustment Out", value: "manual_adjustment_out" },
 ]
 
 interface FormValues {

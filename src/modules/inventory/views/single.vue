@@ -44,9 +44,14 @@
                 :label="`${product?.data.variants.length} variants`"
                 class="md:hidden"
               />
-              <Chip color="purple" icon="tag" label="Footwear" />
-              <Chip color="success" label="In Stock" showDot />
-              <Chip color="error" icon="star-outline" label="Bestseller" />
+              <Chip
+                v-if="product?.data.category"
+                color="purple"
+                icon="tag"
+                :label="product.data.category"
+              />
+              <Chip :color="stockStatus.color" :label="stockStatus.label" showDot />
+              <Chip v-if="isBestseller" color="error" icon="star-outline" label="Bestseller" />
             </div>
             <Chip
               color="blue"
@@ -89,11 +94,7 @@
         v-else-if="activeTab === 'orders' && product"
         :product="product.data"
         :orders="MOCK_PRODUCT_ORDERS"
-        :order-columns="
-          product.data.variants.length > 1
-            ? PRODUCT_ORDER_COLUMNS
-            : PRODUCT_ORDER_COLUMNS.filter((col) => col.accessor !== 'items')
-        "
+        :order-columns="PRODUCT_ORDER_COLUMNS"
         :loading="false"
         @create-order="handleCreateOrder"
         @order-action="handleOrderAction"
@@ -270,50 +271,86 @@ const tabs = ref([
   { key: "movement_logs", title: "Movement Logs" },
 ])
 
-const productMetrics = ref([
-  {
-    label: "Actual Inventory",
-    value: 1245,
-    prev_value: 1200,
-    icon: "shop",
-  },
-  {
-    label: "Sellable Inventory",
-    value: formatCurrency(56789.45),
-    prev_value: formatCurrency(54321.0),
-    icon: "shopping-cart",
-  },
-  {
-    label: "Amount Sold(Revenue)",
-    value: 150,
-    prev_value: 120,
-    icon: "box-filled",
-  },
-  {
-    label: "Quantity Sold",
-    value: 320,
-    prev_value: 300,
-    icon: "box-time",
-  },
-  {
-    label: "Reserved Inventory",
-    value: 320,
-    prev_value: 300,
-    icon: "box-time",
-  },
-  {
-    label: "Memo Count",
-    value: 320,
-    prev_value: 300,
-    icon: "box-time",
-  },
-  {
-    label: "Return Count",
-    value: 320,
-    prev_value: 300,
-    icon: "box-time",
-  },
-])
+const stockStatus = computed(() => {
+  if (!product.value?.data) return { color: "primary" as const, label: "Unknown" }
+
+  const variants = product.value.data.variants
+  const totalStock = variants.reduce((sum, v) => sum + (v.sellable_stock || 0), 0)
+
+  if (totalStock === 0) {
+    return { color: "error" as const, label: "Out of Stock" }
+  }
+
+  // Check if any variant needs reorder
+  const needsReorder = variants.some((v) => v.needs_reorder)
+  if (needsReorder) {
+    return { color: "warning" as const, label: "Low Stock" }
+  }
+
+  return { color: "success" as const, label: "In Stock" }
+})
+
+const isBestseller = computed(() => {
+  // No bestseller data available from API, so defaulting to false
+  return false
+})
+
+const productMetrics = computed(() => {
+  if (!product.value?.data) return []
+
+  const variants = product.value.data.variants
+
+  // Calculate totals from variants
+  const totalSellableStock = variants.reduce((sum, v) => sum + (v.sellable_stock || 0), 0)
+  const totalReservedStock = variants.reduce((sum, v) => sum + (v.reserved_stock || 0), 0)
+  // const totalAvailableStock = variants.reduce((sum, v) => sum + (v.available_stock || 0), 0)
+  const totalOpeningStock = variants.reduce((sum, v) => sum + (v.opening_stock || 0), 0)
+
+  return [
+    {
+      label: "Actual Inventory",
+      value: totalOpeningStock,
+      prev_value: 0,
+      icon: "shop",
+    },
+    {
+      label: "Sellable Inventory",
+      value: totalSellableStock,
+      prev_value: 0,
+      icon: "shopping-cart",
+    },
+    {
+      label: "Amount Sold(Revenue)",
+      value: 0,
+      prev_value: 0,
+      icon: "box-filled",
+    },
+    {
+      label: "Quantity Sold",
+      value: 0,
+      prev_value: 0,
+      icon: "box-time",
+    },
+    {
+      label: "Reserved Inventory",
+      value: totalReservedStock,
+      prev_value: 0,
+      icon: "box-time",
+    },
+    {
+      label: "Memo Count",
+      value: 0,
+      prev_value: 0,
+      icon: "box-time",
+    },
+    {
+      label: "Return Count",
+      value: 0,
+      prev_value: 0,
+      icon: "box-time",
+    },
+  ]
+})
 
 const handleDeleteProduct = () => {
   if (!product.value) return

@@ -164,17 +164,15 @@
       </DataTable>
     </div>
 
-    <div class="mt-6">
+    <!-- <div class="mt-6">
       <h3 class="text-core-700 mb-4 text-lg font-semibold md:text-xl">Product Promos</h3>
       <div class="border-primary-700 bg-primary-25 mt-4 flex gap-2 rounded-xl border p-4 md:gap-5">
         <div class="flex flex-1 flex-col justify-between gap-2 md:gap-3">
           <div class="flex items-center justify-between">
             <div class="flex items-center justify-between gap-2">
-              <!-- original price -->
               <h5 class="text-core-400 text-lg font-semibold line-through md:text-xl">
                 {{ formatCurrency(5000) }}
               </h5>
-              <!-- promo price -->
               <h5 class="text-core-800 text-xl font-semibold md:text-2xl">
                 {{ formatCurrency(4000) }}
               </h5>
@@ -190,7 +188,7 @@
           </div>
         </div>
       </div>
-    </div>
+    </div> -->
   </div>
 </template>
 
