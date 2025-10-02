@@ -313,21 +313,20 @@ const getAttributeNames = (): string[] => {
 
 // Extract display values from variant attributes for chips
 const getVariantDisplayValues = (variantItem: IProductVariant): string[] => {
-  // Always extract from variant name since it contains the human-readable labels
-  const nameParts = variantItem.name.split(" - ")
-  if (nameParts.length > 1) {
-    // Split the value part by spaces to get individual attribute values
-    return nameParts[1].split(" ")
-  }
-
-  // Fallback: if name doesn't have the expected format, try to get from attributes
+  // Try to get from attributes first, using valueLabel if available
   if (variantItem.attributes && variantItem.attributes.length > 0) {
     return variantItem.attributes.map((attr) => {
-      if (typeof attr === "object" && attr !== null && "value" in attr) {
-        return attr.value
+      if (typeof attr === "object" && attr !== null) {
+        return attr.valueLabel || attr.value
       }
       return String(attr)
     })
+  }
+
+  // Fallback: extract from variant name
+  const nameParts = variantItem.name.split(" - ")
+  if (nameParts.length > 1) {
+    return [nameParts[1]]
   }
 
   // Last fallback: just return the variant name

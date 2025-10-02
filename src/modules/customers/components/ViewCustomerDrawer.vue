@@ -36,20 +36,24 @@
             <!-- Address -->
             <div class="flex">
               <span class="text-core-600 w-2/5 text-xs md:text-sm">Address</span>
-              <span class="flex-1 text-xs font-semibold md:text-sm">{{ customer?.address }}</span>
+              <span class="flex-1 text-xs font-semibold md:text-sm">{{
+                customer?.default_address
+              }}</span>
             </div>
 
             <!-- City/State -->
             <div class="flex">
               <span class="text-core-600 w-2/5 text-xs md:text-sm">City/State</span>
-              <span class="flex-1 text-xs font-semibold md:text-sm">{{ customer?.city }}</span>
+              <span class="flex-1 text-xs font-semibold md:text-sm">{{
+                customer?.default_city
+              }}</span>
             </div>
 
             <!-- Date of Birth -->
             <div class="flex">
               <span class="text-core-600 w-2/5 text-xs md:text-sm">Date of Birth</span>
               <span class="flex-1 text-xs font-semibold md:text-sm">{{
-                customer?.dateOfBirth
+                formatDate(customer?.date_of_birth)
               }}</span>
             </div>
 
@@ -57,7 +61,7 @@
             <div class="flex">
               <span class="text-core-600 w-2/5 text-xs md:text-sm">Instagram handle</span>
               <span class="flex-1 text-xs font-semibold md:text-sm">{{
-                customer?.instagramHandle
+                customer?.instagram_handle
               }}</span>
             </div>
 
@@ -68,7 +72,7 @@
             <div class="flex">
               <span class="text-core-600 w-2/5 text-xs md:text-sm">Date joined</span>
               <span class="flex-1 text-xs font-semibold md:text-sm">{{
-                customer?.created_at
+                formatDate(customer?.created_at)
               }}</span>
             </div>
 
@@ -76,7 +80,7 @@
             <div class="flex">
               <span class="text-core-600 w-2/5 text-xs md:text-sm">Last order date</span>
               <span class="flex-1 text-xs font-semibold md:text-sm">{{
-                customer?.lastOrderDate
+                customer?.last_order_date
               }}</span>
             </div>
           </div>
@@ -118,6 +122,7 @@ import { ORDERS } from "@modules/orders/constants"
 import OrderCard from "@modules/orders/components/OrderCard.vue"
 import { TOrder } from "@modules/orders/types"
 import Chip from "@components/Chip.vue"
+import { formatDate } from "../utils/dateFormatter"
 
 interface Props {
   /** Whether the drawer is open/visible */
@@ -125,7 +130,7 @@ interface Props {
   /** Form mode - add new customer or edit existing */
   mode?: TCustomerFormMode
   /** Customer data for editing (required when mode is 'edit') */
-  customer?: ICustomer | null
+  customer: ICustomer | null
   /** Loading state for async operations */
   loading?: boolean
 }

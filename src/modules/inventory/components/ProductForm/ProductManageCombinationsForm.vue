@@ -285,13 +285,8 @@ const getVariantDisplayValues = (variant: IProductVariant): string[] => {
     return [variant.name]
   }
 
-  // The variant name format is "{Product Name} - {Value1} {Value2}"
-  const nameParts = variant.name.split(" - ")
-  if (nameParts.length > 1) {
-    return nameParts[1].split(" ")
-  }
-
-  return [variant.name]
+  // Return the valueLabel if available, otherwise fall back to value
+  return variant.attributes.map((attr) => attr.valueLabel || attr.value)
 }
 
 // Update a specific field for a specific variant

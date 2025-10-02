@@ -164,6 +164,7 @@ export interface IProductVariant {
 export interface IProductAttribute {
   attribute: string
   value: string
+  valueLabel?: string
 }
 
 // Inventory movement (detailed view)

@@ -34,8 +34,12 @@ export interface ICustomer extends Record<string, unknown> {
   full_name: string
   phone: string
   email: string
+  date_of_birth?: string | null
+  instagram_handle?: string | null
+  location_name: string
   total_orders: number
-  last_active?: string | null
+  default_address?: string | null
+  default_city?: string | null
   is_active: boolean
   created_at: string
 }

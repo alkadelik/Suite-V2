@@ -891,6 +891,7 @@ const generateVariantAttributes = (
   return combination.map((item) => ({
     attribute: item.attributeUid,
     value: item.valueUid,
+    valueLabel: item.valueLabel,
   }))
 }
 
