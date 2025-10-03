@@ -407,7 +407,8 @@ onMounted(() => {
     <!--  -->
     <div
       v-if="data.length && showPagination"
-      class="text-core-800 flex items-center justify-between gap-4 border-t border-gray-200 px-5 py-6"
+      class="text-core-800 items-center justify-between gap-4 border-t border-gray-200 px-5 py-6"
+      :class="`hidden md:flex`"
     >
       <!-- Pagination buttons -->
 

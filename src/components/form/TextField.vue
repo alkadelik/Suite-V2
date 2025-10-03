@@ -179,6 +179,8 @@ interface Props {
   description?: string
   /** Show increment/decrement buttons for number inputs */
   showSteppers?: boolean
+  /** Additional classes for the input element */
+  inputClass?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -273,7 +275,7 @@ const inputClasses = computed(() => {
     lg: `${props.leftIcon || props.prefix ? "pl-0" : "p-3"} ${props.rightIcon || props.suffix || props.type === "password" ? "pr-0" : "p-3"} text-base`,
   }
 
-  return [baseClasses, paddingClasses[props.size]].filter(Boolean).join(" ")
+  return [baseClasses, paddingClasses[props.size], props.inputClass].filter(Boolean).join(" ")
 })
 
 const prefixClasses = computed(() => {
