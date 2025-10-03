@@ -1,11 +1,17 @@
-import baseApi from "@/composables/baseApi"
+import baseApi, { TApiPromise } from "@/composables/baseApi"
 import { useMutation, useQuery } from "@tanstack/vue-query"
-import type { ICustomerFormPayload, ICustomersApiResponse, IExportPayload } from "./types"
+import type {
+  ICustomerFormPayload,
+  ICustomersApiResponse,
+  IExportPayload,
+  TCustomer,
+} from "./types"
 
 /** Create customer api request */
 export function useCreateCustomer() {
   return useMutation({
-    mutationFn: (body: ICustomerFormPayload) => baseApi.post("/customers/", body),
+    mutationFn: (body: ICustomerFormPayload): TApiPromise<TCustomer> =>
+      baseApi.post("/customers/", body),
   })
 }
 

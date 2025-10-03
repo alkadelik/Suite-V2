@@ -75,7 +75,7 @@
       >
         <template #cell:name="{ item }">
           <div>
-            <Avatar :name="item?.full_name" />
+            <Avatar v-if="item.full_name" :name="item?.full_name" />
           </div>
         </template>
 
@@ -137,7 +137,7 @@
         <template #mobile="{ item }">
           <div class="space-y-2">
             <div class="flex items-start gap-2">
-              <Avatar :name="item.full_name" class="items-start" />
+              <Avatar :name="String(item.full_name)" class="items-start" />
               <Chip
                 :label="`${String(item.total_orders)} orders`"
                 variant="outlined"
@@ -178,23 +178,6 @@
                 <span class="text-xs">{{ formatDateLong(item.last_active) }}</span>
               </div>
             </div>
-          </div>
-        </template>
-
-        <template #mobile-actions="{ item }">
-          <div class="flex items-center gap-2">
-            <DropdownMenu
-              :items="getActionItems(item)"
-              placement="bottom-end"
-              :show-chevron="false"
-              size="sm"
-              trigger-class="!p-1 !min-h-6 !w-6 hover:bg-gray-100 !border-0"
-              @click.stop
-            >
-              <template #trigger>
-                <Icon name="dots-vertical" />
-              </template>
-            </DropdownMenu>
           </div>
         </template>
       </DataTable>

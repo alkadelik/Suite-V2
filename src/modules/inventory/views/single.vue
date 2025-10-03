@@ -95,7 +95,7 @@
       <ProductOrders
         v-else-if="activeTab === 'orders' && product"
         :product="product.data"
-        :orders="MOCK_PRODUCT_ORDERS"
+        :orders="[]"
         :order-columns="PRODUCT_ORDER_COLUMNS"
         :loading="false"
         @create-order="handleCreateOrder"
@@ -172,7 +172,6 @@ import EmptyState from "@components/EmptyState.vue"
 import {
   VARIANT_COLUMNS,
   PRODUCT_ORDER_COLUMNS,
-  MOCK_PRODUCT_ORDERS,
   MOVEMENT_COLUMNS,
   MOCK_INVENTORY_MOVEMENTS,
 } from "../constants"

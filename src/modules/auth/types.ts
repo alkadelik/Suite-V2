@@ -15,7 +15,7 @@ export interface IUser {
   assigned_locations: { uid: string; name: string }[]
   roles: IUserRole[]
   subscription: string | null
-  store_slug: string
+  store_slug?: string
   store_uid: string
   store?: {
     business_name: string

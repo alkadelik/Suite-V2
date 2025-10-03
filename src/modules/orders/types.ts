@@ -1,121 +1,49 @@
-import { TCustomer } from "@modules/customers/types"
-
-export type TOrderProductInfo = {
-  id: number
-  product_name: string
-  product_type: string
-  description: string
-  price: number | string
-  total_stock: number
-  has_variant: boolean
-  display: boolean
-  discount: string
-  discount_type: string
-  has_discount: boolean
-  slug: string
-  store: number | string
-  temp_id: string
-  category: string | null
-  rating: string
-  review_count: number
-  rate_tracking: string
-  strict_stock_count: boolean
-  created: string
-  last_sale: string
-  options1: string
-  options2: string
-  options3: string
-  variants: string
-  combinations: string | null
-  images: { id: number; image: string; alt: string }[]
-  sku: Array<{
-    id: number
-    sku: string
-    option1: string
-    option2: string
-    option3: string
-    has_discount: boolean
-    sku_discount: string
-    sku_discount_type: string
-    price: number | string
-    qty: number
-    event_data: Record<string, object | number | string | null>
-  }>
-  events: Array<{
-    id: number
-    event_ref: string
-    event_name: string
-    start_date: string
-    end_date: string
-    created: string
-  }>
-  display_event_data: Record<string, { display_product: boolean }>
-  inventory_data: Record<string, number>
-  unit_weight: string
-  length: string
-  breadth: string
-  height: string
-}
-
 export type TOrderItem = {
-  id: string | number
-  has_feedback: boolean
-  index: number
-  lead_time: number | null
-  note: string
-  product: number
-  productid: number
-  sku: number | string | null
-  product_info: TOrderProductInfo
-  var1name: string
-  var2name: string
-  selected_option1: string
-  selected_option2: string
-  qty: number
-  delivered_qty: number
-  price_sold: number
-  status: number
-  sub_total: string
-  created: string
-  modified: string
-  selected_position: number
-  is_returned: boolean
-  images: { id: number; image: string; alt: string }[]
+  uid: string
+  variant: string
+  variant_name: string
+  variant_sku: string
+  product_name: string
+  popup_inventory: string | null
+  quantity: number
+  unit_price: string
+  total_price: string
+  fulfilment_status: "unfulfilled" | "fulfilled"
+  qty_fulfilled: number
+  notes: string
 }
 
 export type TOrder = {
-  id: number
-  order_ref: string
-  items_count: number
-  total_amount: string
-  store: number
-  customer: number | null
-  customer_info: TCustomer | null
-  shipping_price: string
-  products_total: string
-  fulfilled: number
-  unique_items: number
-  paid_amount: string
-  shipping_company: string
-  rate: number | null
-  shipping_paid: boolean
-  shipping_mode: boolean
-  payment_status: number
-  payment_mode: number
-  channel: number
-  refund: boolean
-  refund_amount: string
-  issues_count: number
-  cancelled: boolean
-  address: string | null
-  order_date: string
+  uid: string
+  order_number: string
+  coupon: string | null
+  courier: string
+  created_at: string
+  customer: string
+  customer_email: string
+  customer_phone: string
+  customer_name?: string
+  delivery_address: string | null
+  delivery_fee: string
+  delivery_method: "manual" | "automatic"
+  discount_amount: string
+  fulfilment_method: "pickup" | "delivery"
+  fulfilment_status: "unfulfilled" | "fulfilled" | "partially_fulfilled"
   items: TOrderItem[]
-  event: number | null
+  location: string
+  location_name: string
+  outstanding_balance: number
+  payment_status: "unpaid" | "paid" | "partially_paid"
+  rate: string
+  source: "internal" | "external"
+  store: string
+  subtotal: string
+  total_amount: number
+  total_paid: number
+  tracking_number: string
+  user: string
+  user_name: string
   is_voided: boolean
-  void_reason: string | null
-  status: number
-  shipping_provider: string
-  has_shipping: boolean
 }
 
 export type TOrderChannel = {
@@ -137,7 +65,7 @@ export type TOrderPaymentMethod = {
 
 export type TOrderPaymentStatus = {
   label: string
-  value: number
+  value: "unpaid" | "paid" | "partially_paid"
   icon: string
   color: "primary" | "success" | "warning" | "error" | "alt" | "blue" | "purple" | undefined
 }
@@ -152,7 +80,7 @@ export interface OrderPayload {
   delivery_method: "manual" | "automatic"
   courier: string
   coupon_code: string | null
-  payment_status: "unpaid" | "paid" | "partial"
+  payment_status: "unpaid" | "paid" | "partially_paid"
   payment_amount: string | number
   items: OrderItemPayload[]
 }
@@ -171,4 +99,60 @@ export type TOrderResponse = {
   count: number
   next: string | null
   previous: string | null
+}
+
+export type TOrderMemo = {
+  uid: string
+  title?: string
+  status: "merchant-action" | "customer-action"
+  severity: "low" | "medium" | "high"
+  content: string
+  author: string
+  author_name: string
+  author_email: string
+  created_at: string
+  updated_at: string
+}
+
+export type TOrderPayment = {
+  uid: string
+  amount: string
+  payment_method: string
+  reference: string | null
+  created_at: string
+  order: string
+}
+
+export interface ISinglePayment {
+  uid: string
+  amount: number
+  status: string
+  source: string
+  transaction_id: string | null
+  date_paid: string | null
+  created_at: string
+  payer_name: string
+  notes: string | null
+}
+
+export interface IPaymentHistory {
+  order_id: string
+  order_number: string
+  total_amount: number
+  total_paid: number
+  outstanding_balance: number
+  payments: ISinglePayment[]
+}
+
+export interface IPaymentPayload {
+  amount_paid: string
+  date: string
+  method: string
+}
+
+export interface IMemoPayload {
+  title: string
+  status: string
+  severity: "low" | "medium" | "high"
+  content: string
 }

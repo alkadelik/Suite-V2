@@ -443,3 +443,56 @@ export interface IProductStats {
     revenue: number
   }
 }
+
+interface ProductVariantAttribute {
+  uid: string
+  attribute: string
+  value: string
+  attribute_name: string
+  attribute_value: string
+}
+
+interface ProductVariant {
+  uid: string
+  sku: string
+  name: string
+  attributes: ProductVariantAttribute[]
+  available_stock: number
+  batch_number: string
+  cost_price: number | null
+  created_at: string
+  expiry_date: string
+  height: string
+  is_active: boolean
+  is_default: boolean
+  is_overstocked: boolean
+  length: string
+  max_stock: number
+  needs_reorder: boolean
+  opening_stock: number
+  price: string
+  promo_expiry: string
+  promo_price: number | null
+  reorder_point: number
+  reserved_stock: number
+  sellable_stock: number
+  updated_at: string
+  weight: string
+  width: string
+}
+
+export interface IProductCatalogue {
+  uid: string // UUID
+  name: string
+  description: string
+  story: string
+  category: string
+  category_name: string
+  brand: string
+  is_active: boolean
+  is_variable: boolean
+  variants: ProductVariant[]
+  images: string[]
+  total_stock: number
+  created_at: string
+}
