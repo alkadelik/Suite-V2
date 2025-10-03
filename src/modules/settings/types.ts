@@ -78,6 +78,7 @@ export interface IUpdateStoreDetailsPayload {
   support_phone?: string
   instagram_handle?: string
   delivery_enabled?: boolean
+  pickup_location: string
 }
 
 export type TIndustry = {

@@ -353,18 +353,18 @@ const isBestseller = computed(() => {
 const productMetrics = computed(() => {
   if (!product.value?.data) return []
 
-  const variants = product.value.data.variants
+  const productData = product.value.data
+  const variants = productData.variants
 
   // Calculate totals from variants
   const totalSellableStock = variants.reduce((sum, v) => sum + (v.sellable_stock || 0), 0)
   const totalReservedStock = variants.reduce((sum, v) => sum + (v.reserved_stock || 0), 0)
-  // const totalAvailableStock = variants.reduce((sum, v) => sum + (v.available_stock || 0), 0)
-  const totalOpeningStock = variants.reduce((sum, v) => sum + (v.opening_stock || 0), 0)
+  const totalAvailableStock = variants.reduce((sum, v) => sum + (v.available_stock || 0), 0)
 
   return [
     {
       label: "Actual Inventory",
-      value: totalOpeningStock,
+      value: totalAvailableStock,
       prev_value: 0,
       icon: "shop",
     },
@@ -376,13 +376,13 @@ const productMetrics = computed(() => {
     },
     {
       label: "Amount Sold(Revenue)",
-      value: 0,
+      value: productData.amount_sold || 0,
       prev_value: 0,
       icon: "box-filled",
     },
     {
       label: "Quantity Sold",
-      value: 0,
+      value: productData.quantity_sold || 0,
       prev_value: 0,
       icon: "box-time",
     },
@@ -394,13 +394,13 @@ const productMetrics = computed(() => {
     },
     {
       label: "Memo Count",
-      value: 0,
+      value: productData.memo_count || 0,
       prev_value: 0,
       icon: "box-time",
     },
     {
       label: "Return Count",
-      value: 0,
+      value: productData.return_count || 0,
       prev_value: 0,
       icon: "box-time",
     },

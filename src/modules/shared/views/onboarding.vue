@@ -72,10 +72,10 @@
     </div>
 
     <!-- modals -->
-    <BankAccountModal v-model="showBankAccountModal" />
-    <SetPickupModal v-model="showPickupModal" />
-    <VerifyIdentityModal v-model="showVerifyIdentityModal" />
-    <ConfigureDeliveryModal v-model="showConfigureDeliveryModal" />
+    <BankAccountModal v-model="showBankAccountModal" @refresh="refetchLiveStatus" />
+    <SetPickupModal v-model="showPickupModal" @refresh="refetchLiveStatus" />
+    <VerifyIdentityModal v-model="showVerifyIdentityModal" @refresh="refetchLiveStatus" />
+    <ConfigureDeliveryModal v-model="showConfigureDeliveryModal" @refresh="refetchLiveStatus" />
   </div>
 </template>
 
@@ -96,7 +96,11 @@ import { useAuthStore } from "@modules/auth/store"
 const authStore = useAuthStore()
 const storeSlug = authStore.user?.store_slug || ""
 
-const { data: liveStatusData, isPending: isLoading } = useGetLiveStatus(storeSlug)
+const {
+  data: liveStatusData,
+  isPending: isLoading,
+  refetch: refetchLiveStatus,
+} = useGetLiveStatus(storeSlug)
 
 const isLive = computed(() => liveStatusData.value?.data?.is_live || false)
 const completionPercentage = computed(() => liveStatusData.value?.data?.completion_percentage || 0)

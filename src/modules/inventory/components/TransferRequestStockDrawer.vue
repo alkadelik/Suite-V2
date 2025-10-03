@@ -137,13 +137,15 @@ const { mutate: requestTransfer, isPending: isRequesting } = useRequestStockTran
 
 const isPending = computed(() => isTransferring.value || isRequesting.value)
 
-// Map locations from settings store to radio options
+// Map locations from settings store to radio options, excluding current location
 const locationOptions = computed(() => {
   if (!settingsStore.locations) return []
-  return settingsStore.locations.map((location) => ({
-    label: location.name,
-    value: location.uid,
-  }))
+  return settingsStore.locations
+    .filter((location) => location.uid !== settingsStore.activeLocation?.uid)
+    .map((location) => ({
+      label: location.name,
+      value: location.uid,
+    }))
 })
 
 // Get first product image

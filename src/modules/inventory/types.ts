@@ -43,12 +43,21 @@ export interface IProductDetails {
   description: string
   story: string
   category: string
+  category_name: string
   brand: string
   is_active: boolean
   is_variable: boolean
   requires_approval: boolean
   variants: IProductVariantDetails[]
-  images: IProductImage[]
+  images: Array<IProductImage & { sort_order: number; created_at: string; updated_at: string }>
+  min_price: number
+  max_price: number
+  total_stock: number
+  needs_reorder: boolean
+  amount_sold: number
+  quantity_sold: number
+  memo_count: number
+  return_count: number
   created_at: string
 }
 
