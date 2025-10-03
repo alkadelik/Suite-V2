@@ -4,6 +4,47 @@ export type TCreateAccountPayload = {
   bank_name: string
 }
 
+// Live Status Types
+export interface ILiveStatusCriteria {
+  bank_account: {
+    status: boolean
+    description: string
+  }
+  kyc_verification: {
+    status: boolean
+    description: string
+  }
+  delivery_options: {
+    status: boolean
+    description: string
+    details: {
+      delivery_enabled: boolean
+      shipping_account: boolean
+      pickup_location: boolean
+    }
+  }
+  products: {
+    status: boolean
+    description: string
+  }
+}
+
+export interface ILiveStatusData {
+  store_slug: string
+  store_name: string
+  is_live: boolean
+  show_live_status_banner: boolean
+  completion_percentage: number
+  criteria: ILiveStatusCriteria
+  missing_requirements: string[]
+}
+
+export interface ILiveStatusResponse {
+  error: string | null
+  message: string
+  data: ILiveStatusData
+}
+
 export interface IAccount {
   id: number
   name: string

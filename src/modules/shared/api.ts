@@ -7,6 +7,7 @@ import {
   TGetSupportedAccountsResponse,
   TSetupShippingPayload,
   TUpdateShippingPayload,
+  ILiveStatusResponse,
 } from "./types"
 import { IIndustriesApiResponse } from "./types"
 
@@ -90,6 +91,17 @@ export function useGetRoles() {
     queryKey: ["roles"],
     queryFn: async () => {
       const res = await baseApi.get<IRolesApiResponse>("/accounts/auth/roles/")
+      return res.data
+    },
+  })
+}
+
+/** Get live status for store */
+export function useGetLiveStatus(slug: string) {
+  return useQuery<ILiveStatusResponse>({
+    queryKey: ["liveStatus", slug],
+    queryFn: async () => {
+      const res = await baseApi.get<ILiveStatusResponse>(`/stores/public/live-status/${slug}/`)
       return res.data
     },
   })

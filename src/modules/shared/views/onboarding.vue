@@ -1,6 +1,7 @@
 <template>
   <div class="h-full w-full py-5 md:flex md:justify-center">
-    <div class="text-center md:w-3xl">
+    <LoadingIcon v-if="isLoading" class="mx-auto my-20" />
+    <div v-else class="text-center md:w-3xl">
       <div class="mb-4 flex flex-col gap-2 p-3">
         <h1 class="text-2xl font-bold md:text-3xl">Welcome to Leyyow 🎉</h1>
         <p class="text-xs md:text-sm">
@@ -14,12 +15,18 @@
         >
           <h2 class="flex items-center text-lg font-semibold md:text-xl">
             <span>Tasks</span>
-            <span class="text-core-600 ms-1 text-xs font-normal md:text-sm">(0% completed)</span>
+            <span class="text-core-600 ms-1 text-xs font-normal md:text-sm"
+              >({{ completionPercentage }}% completed)</span
+            >
           </h2>
 
           <Chip color="alt" size="md" label="Storefront" class="!pr-1">
             <template #append>
-              <Chip showDot label="Not live" color="error" />
+              <Chip
+                showDot
+                :label="isLive ? 'Live' : 'Not live'"
+                :color="isLive ? 'success' : 'error'"
+              />
             </template>
           </Chip>
         </header>
@@ -56,7 +63,7 @@
                 @click="task.action"
                 class="text-primary-500 inline-flex cursor-pointer md:hidden"
               />
-              <Switch v-else v-model="task.modelValue" />
+              <Switch v-else @click="task.action" />
             </div>
             <Icon v-else name="tick-circle" class="!size-7 text-green-500 md:!size-10" />
           </div>
@@ -77,115 +84,130 @@ import Chip from "@/components/Chip.vue"
 import AppButton from "@components/AppButton.vue"
 import Switch from "@components/form/Switch.vue"
 import Icon from "@components/Icon.vue"
-import { ref } from "vue"
+import LoadingIcon from "@components/LoadingIcon.vue"
+import { ref, computed } from "vue"
 import BankAccountModal from "../components/BankAccountModal.vue"
 import SetPickupModal from "../components/ConfigurePickupModal.vue"
 import VerifyIdentityModal from "../components/VerifyIdentityModal.vue"
 import ConfigureDeliveryModal from "../components/ConfigureDeliveryModal.vue"
+import { useGetLiveStatus } from "../api"
+import { useAuthStore } from "@modules/auth/store"
+
+const authStore = useAuthStore()
+const storeSlug = authStore.user?.store_slug || ""
+
+const { data: liveStatusData, isPending: isLoading } = useGetLiveStatus(storeSlug)
+
+const isLive = computed(() => liveStatusData.value?.data?.is_live || false)
+const completionPercentage = computed(() => liveStatusData.value?.data?.completion_percentage || 0)
 
 const showBankAccountModal = ref(false)
 const showPickupModal = ref(false)
 const showVerifyIdentityModal = ref(false)
 const showConfigureDeliveryModal = ref(false)
 
-const tasks = ref([
-  {
-    id: 1,
-    title: "Add Bank Details",
-    completed: false,
-    subtext: "Add your account to receive payments from your sales.",
-    isButton: true,
-    buttonLabel: "Add Bank",
-    action: () => {
-      showBankAccountModal.value = true
+const tasks = computed(() => {
+  const criteria = liveStatusData.value?.data?.criteria
+
+  return [
+    {
+      id: 1,
+      title: "Add Bank Details",
+      completed: criteria?.bank_account?.status || false,
+      subtext: "Add your account to receive payments from your sales.",
+      isButton: true,
+      buttonLabel: "Add Bank",
+      action: () => {
+        showBankAccountModal.value = true
+      },
+      icon: "bank",
     },
-    icon: "bank",
-  },
-  {
-    id: 2,
-    title: "Verify Your Identity",
-    completed: false,
-    subtext: "Secure your account by confirming your identity.",
-    isButton: true,
-    buttonLabel: "Verify Identity",
-    action: () => {
-      showVerifyIdentityModal.value = true
+    {
+      id: 2,
+      title: "Verify Your Identity",
+      completed: criteria?.kyc_verification?.status || false,
+      subtext: "Secure your account by confirming your identity.",
+      isButton: true,
+      buttonLabel: "Verify Identity",
+      action: () => {
+        showVerifyIdentityModal.value = true
+      },
+      icon: "personalcard",
     },
-    icon: "personalcard",
-  },
-  {
-    id: 3,
-    title: "Allow Pickup?",
-    completed: false,
-    subtext: "Let customers pick up their orders directly from you.",
-    isButton: false,
-    buttonLabel: "",
-    modelValue: showPickupModal,
-    action: () => {
-      // Handle button click
+    {
+      id: 3,
+      title: "Allow Pickup?",
+      completed: criteria?.delivery_options?.details?.pickup_location || false,
+      subtext: "Let customers pick up their orders directly from you.",
+      isButton: false,
+      buttonLabel: "",
+      modelValue: showPickupModal,
+      action: () => {
+        showPickupModal.value = true
+      },
+      icon: "shop",
     },
-    icon: "shop",
-  },
-  {
-    id: 4,
-    title: "Allow Delivery?",
-    completed: false,
-    subtext: "Offer delivery to your customers.",
-    isButton: false,
-    buttonLabel: "",
-    modelValue: showConfigureDeliveryModal,
-    action: () => {
-      // Handle button click
+    {
+      id: 4,
+      title: "Allow Delivery?",
+      completed: criteria?.delivery_options?.details?.delivery_enabled || false,
+      subtext: "Offer delivery to your customers.",
+      isButton: false,
+      buttonLabel: "",
+      modelValue: showConfigureDeliveryModal,
+      action: () => {
+        showConfigureDeliveryModal.value = true
+      },
+      icon: "truck-fast",
     },
-    icon: "truck-fast",
-  },
-  {
-    id: 5,
-    title: "Add a product",
-    completed: false,
-    subtext: "Upload a product and get ready for your first sale.",
-    isButton: true,
-    buttonLabel: "Add Product",
-    action: () => {
-      // Handle button click
+    {
+      id: 5,
+      title: "Add a product",
+      completed: criteria?.products?.status || false,
+      subtext: "Upload a product and get ready for your first sale.",
+      isButton: true,
+      buttonLabel: "Add Product",
+      action: () => {
+        // Handle button click
+      },
+      icon: "box",
     },
-    icon: "box",
-  },
-  {
-    id: 6,
-    title: "Add a customer",
-    completed: false,
-    subtext: "Save your first customer to start building your list.",
-    isButton: true,
-    buttonLabel: "Add Customer",
-    action: () => {
-      // Handle button click
+    {
+      id: 6,
+      title: "Add a customer",
+      completed: false,
+      subtext: "Save your first customer to start building your list.",
+      isButton: true,
+      buttonLabel: "Add Customer",
+      action: () => {
+        // Handle button click
+      },
+      icon: "box",
     },
-    icon: "box",
-  },
-  {
-    id: 7,
-    title: "Record your first order",
-    completed: false,
-    subtext: "Track your first order and manage your sales easily.",
-    isButton: true,
-    buttonLabel: "Record Order",
-    action: () => {
-      // Handle button click
+    {
+      id: 7,
+      title: "Record your first order",
+      completed: false,
+      subtext: "Track your first order and manage your sales easily.",
+      isButton: true,
+      buttonLabel: "Record Order",
+      action: () => {
+        // Handle button click
+      },
+      icon: "box",
     },
-    icon: "box",
-  },
-  {
-    id: 8,
-    title: "Take a tour",
-    completed: false,
-    subtext: "See how Leyyow helps you run every part of your business.",
-    isButton: true,
-    buttonLabel: "Start Tour",
-    action: () => {
-      // Handle button click
+    {
+      id: 8,
+      title: "Take a tour",
+      completed: false,
+      subtext: "See how Leyyow helps you run every part of your business.",
+      isButton: true,
+      buttonLabel: "Start Tour",
+      action: () => {
+        // Handle button click
+      },
+      icon: "routing",
     },
-    icon: "routing",
-  },
-])
+  ]
+})
 </script>

@@ -177,11 +177,11 @@ import {
   MOCK_INVENTORY_MOVEMENTS,
 } from "../constants"
 import type { IProductVariantDetails } from "../types"
-import ProductOverview from "@components/ProductOverview.vue"
-import ProductOrders from "@components/ProductOrders.vue"
-import ProductMovementLogs from "@components/ProductMovementLogs.vue"
-import AddReduceStockModal from "@components/AddReduceStockModal.vue"
-import TransferRequestStockDrawer from "@components/TransferRequestStockDrawer.vue"
+import ProductOverview from "../components/ProductOverview.vue"
+import ProductOrders from "../components/ProductOrders.vue"
+import ProductMovementLogs from "../components/ProductMovementLogs.vue"
+import AddReduceStockModal from "../components/AddReduceStockModal.vue"
+import TransferRequestStockDrawer from "../components/TransferRequestStockDrawer.vue"
 import type { TOrder } from "@modules/orders/types"
 import { useSettingsStore } from "@modules/settings/store"
 
