@@ -46,10 +46,10 @@
                 class="md:hidden"
               />
               <Chip
-                v-if="product?.data.category"
+                v-if="product?.data.category_name"
                 color="purple"
                 icon="tag"
-                :label="product.data.category"
+                :label="product.data.category_name"
               />
               <Chip :color="stockStatus.color" :label="stockStatus.label" showDot />
               <Chip v-if="isBestseller" color="error" icon="star-outline" label="Bestseller" />
@@ -95,9 +95,9 @@
       <ProductOrders
         v-else-if="activeTab === 'orders' && product"
         :product="product.data"
-        :orders="MOCK_PRODUCT_ORDERS"
+        :orders="ordersData?.results || []"
         :order-columns="PRODUCT_ORDER_COLUMNS"
-        :loading="false"
+        :loading="isLoadingOrders"
         @create-order="handleCreateOrder"
         @order-action="handleOrderAction"
         @row-click="handleOrderRowClick"
@@ -106,13 +106,13 @@
       <ProductMovementLogs
         v-else-if="activeTab === 'movement_logs' && product"
         :product="product.data"
-        :movements="MOCK_INVENTORY_MOVEMENTS"
+        :movements="movementsData?.results || []"
         :movement-columns="
           product.data.variants.length > 1
             ? MOVEMENT_COLUMNS
             : MOVEMENT_COLUMNS.filter((col) => col.accessor !== 'variant')
         "
-        :loading="false"
+        :loading="isLoadingMovements"
       />
     </div>
 
@@ -169,13 +169,7 @@ import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 import { useQueryClient } from "@tanstack/vue-query"
 import EmptyState from "@components/EmptyState.vue"
-import {
-  VARIANT_COLUMNS,
-  PRODUCT_ORDER_COLUMNS,
-  MOCK_PRODUCT_ORDERS,
-  MOVEMENT_COLUMNS,
-  MOCK_INVENTORY_MOVEMENTS,
-} from "../constants"
+import { VARIANT_COLUMNS, PRODUCT_ORDER_COLUMNS, MOVEMENT_COLUMNS } from "../constants"
 import type { IProductVariantDetails } from "../types"
 import ProductOverview from "../components/ProductOverview.vue"
 import ProductOrders from "../components/ProductOrders.vue"
@@ -184,6 +178,8 @@ import AddReduceStockModal from "../components/AddReduceStockModal.vue"
 import TransferRequestStockDrawer from "../components/TransferRequestStockDrawer.vue"
 import type { TOrder } from "@modules/orders/types"
 import { useSettingsStore } from "@modules/settings/store"
+import { useGetOrders } from "@modules/orders/api"
+import { useGetInventoryMovements } from "../api"
 
 const route = useRoute()
 const router = useRouter()
@@ -192,6 +188,13 @@ const settingsStore = useSettingsStore()
 const uid = Array.isArray(route.params.uid) ? route.params.uid[0] : route.params.uid
 const { data: product, isPending } = useGetProduct(uid)
 const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct()
+
+const orderParams = computed(() => ({
+  product: uid,
+}))
+const { data: ordersData, isPending: isLoadingOrders } = useGetOrders(orderParams)
+
+const { data: movementsData, isPending: isLoadingMovements } = useGetInventoryMovements()
 
 const activeTab = ref("overview")
 const showDeleteConfirmationModal = ref(false)

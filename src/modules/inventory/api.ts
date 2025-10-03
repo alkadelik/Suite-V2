@@ -155,11 +155,13 @@ export function useReduceStock() {
 }
 
 /** get inventory movements */
-export function useGetInventoryMovements() {
+export function useGetInventoryMovements(params?: Record<string, string | number>) {
   return useQuery({
-    queryKey: ["inventory-movements"],
+    queryKey: ["inventory-movements", params],
     queryFn: async () => {
-      const { data } = await baseApi.get<IInventoryMovementsApiResponse>("/inventory/movements/")
+      const { data } = await baseApi.get<IInventoryMovementsApiResponse>("/inventory/movements/", {
+        params,
+      })
       return data
     },
   })
