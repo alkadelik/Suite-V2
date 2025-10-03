@@ -39,6 +39,7 @@
           <div class="mt-2 flex flex-wrap items-center justify-between gap-2 md:mt-0">
             <div class="inline-flex flex-wrap gap-2">
               <Chip
+                v-if="product?.data?.variants && product.data.variants.length > 1"
                 color="blue"
                 icon="shapes"
                 :label="`${product?.data.variants.length} variants`"
@@ -54,6 +55,7 @@
               <Chip v-if="isBestseller" color="error" icon="star-outline" label="Bestseller" />
             </div>
             <Chip
+              v-if="product?.data?.variants && product.data.variants.length > 1"
               color="blue"
               icon="shapes"
               :label="`${product?.data.variants.length} variants`"
@@ -136,6 +138,19 @@
       @close="showAddReduceStockModal = false"
       @success="handleStockSuccess"
     />
+
+    <TransferRequestStockDrawer
+      v-if="selectedVariant"
+      :open="showTransferRequestDrawer"
+      :type="transferRequestType"
+      :variant-uid="selectedVariant.uid"
+      :product-name="product?.data.name || ''"
+      :variant-attributes="selectedVariant.attributes"
+      :variant="selectedVariant"
+      :product="product?.data"
+      @close="showTransferRequestDrawer = false"
+      @success="handleStockSuccess"
+    />
   </div>
 </template>
 
@@ -162,15 +177,18 @@ import {
   MOCK_INVENTORY_MOVEMENTS,
 } from "../constants"
 import type { IProductVariantDetails } from "../types"
-import ProductOverview from "../components/ProductOverview.vue"
-import ProductOrders from "../components/ProductOrders.vue"
-import ProductMovementLogs from "../components/ProductMovementLogs.vue"
-import AddReduceStockModal from "../components/AddReduceStockModal.vue"
+import ProductOverview from "@components/ProductOverview.vue"
+import ProductOrders from "@components/ProductOrders.vue"
+import ProductMovementLogs from "@components/ProductMovementLogs.vue"
+import AddReduceStockModal from "@components/AddReduceStockModal.vue"
+import TransferRequestStockDrawer from "@components/TransferRequestStockDrawer.vue"
 import type { TOrder } from "@modules/orders/types"
+import { useSettingsStore } from "@modules/settings/store"
 
 const route = useRoute()
 const router = useRouter()
 const queryClient = useQueryClient()
+const settingsStore = useSettingsStore()
 const uid = Array.isArray(route.params.uid) ? route.params.uid[0] : route.params.uid
 const { data: product, isPending } = useGetProduct(uid)
 const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct()
@@ -179,6 +197,8 @@ const activeTab = ref("overview")
 const showDeleteConfirmationModal = ref(false)
 const showAddReduceStockModal = ref(false)
 const stockModalType = ref<"add" | "reduce">("add")
+const showTransferRequestDrawer = ref(false)
+const transferRequestType = ref<"transfer" | "request">("transfer")
 const selectedVariant = ref<IProductVariantDetails | null>(null)
 
 const openStockModal = (
@@ -199,36 +219,71 @@ const handleStockSuccess = () => {
   queryClient.refetchQueries({ queryKey: ["products", uid] })
 }
 
-const stockActionItems = [
-  {
-    label: "Add Stock",
-    icon: "box-add",
-    action: (item: IProductVariantDetails | typeof product.value) => {
-      openStockModal("add", item)
+const openTransferRequestDrawer = (
+  type: "transfer" | "request",
+  variant: IProductVariantDetails | typeof product.value,
+) => {
+  transferRequestType.value = type
+  if (variant && "attributes" in variant) {
+    selectedVariant.value = variant
+  } else {
+    // If it's the product (single variant), get the first variant
+    selectedVariant.value = product.value?.data.variants[0] || null
+  }
+  showTransferRequestDrawer.value = true
+}
+
+const getStockActionItems = (item: IProductVariantDetails | typeof product.value) => {
+  // Get available stock
+  let availableStock = 0
+  if (item && "available_stock" in item) {
+    availableStock = item.available_stock || 0
+  } else if (product.value?.data.variants.length === 1) {
+    availableStock = product.value.data.variants[0].available_stock || 0
+  }
+
+  const items = [
+    {
+      label: "Add Stock",
+      icon: "box-add",
+      action: (actionItem: IProductVariantDetails | typeof product.value) => {
+        openStockModal("add", actionItem)
+      },
     },
-  },
-  {
-    label: "Reduce Stock",
-    icon: "box-add",
-    action: (item: IProductVariantDetails | typeof product.value) => {
-      openStockModal("reduce", item)
-    },
-  },
-  {
-    label: "Transfer Stock",
-    icon: "box",
-    action: (item: IProductVariantDetails | typeof product.value) => {
-      console.log("Transferring stock:", item)
-    },
-  },
-  {
+  ]
+
+  // Only show these items if stock is available
+  if (availableStock > 0) {
+    items.push({
+      label: "Reduce Stock",
+      icon: "box-add",
+      action: (actionItem: IProductVariantDetails | typeof product.value) => {
+        openStockModal("reduce", actionItem)
+      },
+    })
+
+    // Only show Transfer Stock if active location is HQ
+    if (settingsStore.activeLocation?.is_hq) {
+      items.push({
+        label: "Transfer Stock",
+        icon: "box",
+        action: (actionItem: IProductVariantDetails | typeof product.value) => {
+          openTransferRequestDrawer("transfer", actionItem)
+        },
+      })
+    }
+  }
+
+  items.push({
     label: "Request Stock",
     icon: "box-time",
-    action: (item: IProductVariantDetails | typeof product.value) => {
-      console.log("Requesting stock:", item)
+    action: (actionItem: IProductVariantDetails | typeof product.value) => {
+      openTransferRequestDrawer("request", actionItem)
     },
-  },
-]
+  })
+
+  return items
+}
 
 const actionItems = computed(() => [
   {
@@ -239,7 +294,7 @@ const actionItems = computed(() => [
     },
   },
   ...(product?.value?.data.variants.length && !(product.value.data.variants.length > 1)
-    ? stockActionItems.map((item) => ({
+    ? getStockActionItems(product.value).map((item) => ({
         ...item,
         action: () => item.action(product.value),
       }))
@@ -367,7 +422,7 @@ const handleDeleteProduct = () => {
 }
 
 const getVariantActionItems = (variant: IProductVariantDetails) => {
-  return stockActionItems.map((item) => ({
+  return getStockActionItems(variant).map((item) => ({
     ...item,
     action: () => item.action(variant),
   }))
