@@ -134,7 +134,11 @@ interface FormValues {
 const { handleSubmit, meta, resetForm } = useForm<FormValues>({
   validationSchema: computed(() =>
     yup.object({
-      quantity: yup.number().required("Quantity is required").positive("Quantity must be positive"),
+      quantity: yup
+        .number()
+        .typeError("Please enter a valid number")
+        .required("Quantity is required")
+        .positive("Quantity must be positive"),
       ...(props.type === "add"
         ? {
             unit_cost: yup.string().required("Unit cost is required"),

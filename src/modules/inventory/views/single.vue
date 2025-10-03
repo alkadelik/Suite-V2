@@ -106,7 +106,7 @@
       <ProductMovementLogs
         v-else-if="activeTab === 'movement_logs' && product"
         :product="product.data"
-        :movements="movementsData?.results || []"
+        :movements="movementsData?.data.results || []"
         :movement-columns="
           product.data.variants.length > 1
             ? MOVEMENT_COLUMNS

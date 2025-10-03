@@ -25,12 +25,12 @@
               class="h-full w-full object-cover"
             />
             <div v-else class="flex h-full w-full items-center justify-center">
-              <Icon name="shop-add" class="text-gray-400" />
+              <Icon name="shop-add" class="text-core-800" />
             </div>
           </div>
 
-          <div class="flex h-full flex-1 flex-col justify-between gap-2">
-            <div class="truncate font-medium">{{ productName }}</div>
+          <div class="flex h-full min-w-0 flex-1 flex-col justify-between gap-2">
+            <p class="truncate font-medium">{{ productName }}</p>
             <div class="flex items-center gap-2">
               <Icon name="tag-2" class="text-core-600 h-4 w-4" />
               <p class="text-core-700">{{ displayPrice }}</p>
@@ -191,7 +191,11 @@ interface FormValues {
 const { handleSubmit, meta, resetForm } = useForm<FormValues>({
   validationSchema: yup.object({
     to_location: yup.string().required("Location is required"),
-    quantity: yup.number().required("Quantity is required").positive("Quantity must be positive"),
+    quantity: yup
+      .number()
+      .typeError("Please enter a valid number")
+      .required("Quantity is required")
+      .positive("Quantity must be positive"),
     note: yup.string().required("Notes are required"),
   }),
   initialValues: {

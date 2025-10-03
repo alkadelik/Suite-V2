@@ -251,10 +251,12 @@ export interface IProductAttributesApiResponse {
 
 // Inventory movements list response
 export interface IInventoryMovementsApiResponse {
-  count: number
-  next: string | null
-  previous: string | null
-  results: IInventoryMovement[]
+  data: {
+    count: number
+    next: string | null
+    previous: string | null
+    results: IInventoryMovement[]
+  }
 }
 
 // ============================================================================
