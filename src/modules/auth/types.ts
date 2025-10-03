@@ -46,6 +46,7 @@ export interface ILoginResponse {
     roles: IUserRole[]
     subscription: string | null
     store_uid: string
+    store_slug: string
   }
 }
 

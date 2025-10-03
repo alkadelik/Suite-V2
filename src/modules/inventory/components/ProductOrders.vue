@@ -5,9 +5,6 @@
       icon="shopping-cart"
       title="No orders yet"
       description="Orders for this product will appear here once customers start purchasing."
-      action-label="Create Order"
-      action-icon="add"
-      @action="$emit('create-order')"
     />
 
     <div v-else class="space-y-4 rounded-xl border-gray-200 pt-3 md:border md:bg-white">

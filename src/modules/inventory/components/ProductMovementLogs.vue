@@ -30,7 +30,7 @@
         :data="movements"
         :columns="movementColumns"
         :loading="loading"
-        :show-pagination="false"
+        :show-pagination="true"
         :enable-row-selection="false"
         @row-click="handleRowClick"
       >
@@ -74,7 +74,7 @@
         </template>
 
         <template #cell:reason="{ value }">
-          <span class="text-sm">{{ value }}</span>
+          <span class="text-sm">{{ formatReason(value as string) }}</span>
         </template>
 
         <template #cell:created_by="{ value }">
@@ -133,6 +133,14 @@ const selectedMovement = ref<IInventoryMovement | null>(null)
 
 const formatMovementDate = (date: string) => {
   return getSmartDateLabel(date)
+}
+
+const formatReason = (reason: string) => {
+  // Convert snake_case to Title Case
+  return reason
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ")
 }
 
 const handleRowClick = (movement: IInventoryMovement) => {
