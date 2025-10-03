@@ -175,7 +175,7 @@
                   </template>
                 </DropdownMenu>
 
-                <span class="text-xs">{{ formatDateLong(item.last_active) }}</span>
+                <span class="text-xs">{{ formatDateLong(item.last_active as string) }}</span>
               </div>
             </div>
           </div>
