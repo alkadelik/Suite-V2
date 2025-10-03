@@ -5,7 +5,7 @@
       <!-- Price Section -->
       <TextField
         :model-value="singleVariantForm.price"
-        @update:model-value="singleVariantForm.price = removeLeadingZeros($event)"
+        @update:model-value="updateSingleVariantField('price', removeLeadingZeros($event))"
         label="Price"
         placeholder=""
         type="number"
@@ -17,7 +17,7 @@
       <!-- Stock Section -->
       <TextField
         :model-value="singleVariantForm.opening_stock"
-        @update:model-value="singleVariantForm.opening_stock = removeLeadingZeros($event)"
+        @update:model-value="updateSingleVariantField('opening_stock', removeLeadingZeros($event))"
         label="Available Stock"
         placeholder=""
         type="number"
@@ -285,13 +285,8 @@ const getVariantDisplayValues = (variant: IProductVariant): string[] => {
     return [variant.name]
   }
 
-  // The variant name format is "{Product Name} - {Value1} {Value2}"
-  const nameParts = variant.name.split(" - ")
-  if (nameParts.length > 1) {
-    return nameParts[1].split(" ")
-  }
-
-  return [variant.name]
+  // Return the valueLabel if available, otherwise fall back to value
+  return variant.attributes.map((attr) => attr.valueLabel || attr.value)
 }
 
 // Update a specific field for a specific variant
@@ -387,6 +382,15 @@ const handlePriceBlur = (currentIndex: number, event: Event) => {
   if (hasChanges) {
     emit("update:modelValue", updatedVariants)
   }
+}
+
+// Update single variant field properly using the computed setter
+const updateSingleVariantField = (field: keyof IProductVariant, value: string) => {
+  const updatedVariant = {
+    ...singleVariantForm.value,
+    [field]: value,
+  }
+  singleVariantForm.value = updatedVariant
 }
 
 // Remove leading zeros from input values

@@ -1,184 +1,116 @@
-// Updated product types to match API response
-export type TProductEvent = {
-  id: number
-  event_ref: string
-  event_name: string
-  start_date: string
-  end_date: string
-  created: string
-}
+// ============================================================================
+// BASE TYPES & ENUMS
+// ============================================================================
 
-export type TProductSkuEventData = {
-  qty: number
-  price: number
-}
-
-export type TProductSku = {
-  id: number
-  sku: string
-  option1: string
-  option2: string
-  option3: string
-  has_discount: boolean
-  sku_discount: string
-  sku_discount_type: string
-  price: number
-  qty: number
-  event_data: Record<string, TProductSkuEventData>
-}
-
-export type TProductDisplayEventData = {
-  display_product: boolean
-}
-
-// Updated main product type to match API response
-export type TProduct = {
-  uid: string // Changed from id to uid
-  name: string // Changed from product_name to name
-  total_stock: number
-  needs_reorder: boolean
-  variants_count: number
-  is_active: boolean
-  category: string | null
-  created_at: string // Changed from created to created_at
-}
-
-// Extended product type for detailed view (keeping original fields for compatibility)
-export type TProductDetailed = {
-  id: number
-  product_name: string
-  product_type: string
-  description: string
-  price: number
-  total_stock: number
-  has_variant: boolean
-  display: boolean
-  discount: string
-  discount_type: string
-  has_discount: boolean
-  slug: string
-  store: string
-  temp_id: string
-  category: string | null
-  rating: string
-  review_count: number
-  rate_tracking: string
-  strict_stock_count: boolean
-  created: string
-  last_sale: string
-  owner: string | null
-  options1: string
-  options2: string
-  options3: string
-  variants: string
-  combinations: string | null
-  images: { image: string; id: number }[]
-  sku: TProductSku[]
-  events: TProductEvent[]
-  display_event_data: Record<string, TProductDisplayEventData>
-  inventory_data: Record<string, number>
-  unit_weight: string
-  length: string
-  breadth: string
-  height: string
-}
-
-// API Response type
-export interface IProductsApiResponse {
-  error: null | string
-  message: string
-  data: {
-    count: number
-    next: string | null
-    previous: string | null
-    results: TProduct[]
-  }
-}
-
-// Product form mode and other existing types remain the same
 export type TProductFormMode = "add" | "edit" | "view"
-
 export type TProductStatus = "in_stock" | "out_of_stock" | "low_stock"
-
-export interface IProductFormPayload {
-  name: string
-  description: string
-  story: string
-  category: string
-  brand: string
-  is_active: boolean
-  is_variable: boolean
-  requires_approval: boolean
-  variants: IProductVariant[]
-}
-
-export interface IProductFilters {
-  search?: string
-  category?: string
-  status?: TProductStatus
-  price_range?: {
-    min: number
-    max: number
-  }
-  stock_range?: {
-    min: number
-    max: number
-  }
-  has_variant?: boolean
-}
-
-export interface IProductMetrics {
-  total_products: number
-  in_stock_products: number
-  out_of_stock_products: number
-  low_stock_products: number
-  total_value: number
-  categories_count: number
-}
-
-export interface IProductExportData {
-  format: "csv" | "xlsx" | "json"
-  fields: string[]
-  filters?: IProductFilters
-  include_variants?: boolean
-  include_events?: boolean
-}
-
-// Product action types
 export type TProductAction = "view" | "edit" | "duplicate" | "delete" | "archive" | "restore"
-
-// Product bulk action types
 export type TProductBulkAction =
   | "delete"
   | "archive"
   | "update_category"
   | "update_status"
   | "export"
-
-export interface IProductBulkActionPayload {
-  action: TProductBulkAction
-  product_ids: string[] // Changed from number[] to string[] to match uid
-  data?: {
-    category?: string
-    status?: boolean
-  }
-}
-
-// Product search and sort types
 export type TProductSortField =
-  | "name" // Changed from product_name to name
+  | "name"
   | "total_stock"
   | "category"
-  | "created_at" // Changed from created to created_at
-  | "variants_count" // Added new field
+  | "created_at"
+  | "variants_count"
 export type TSortDirection = "asc" | "desc"
+export type TInventoryMovementType = "in" | "out" | "adjustment" | "transfer"
 
-export interface IProductSort {
-  field: TProductSortField
-  direction: TSortDirection
+// ============================================================================
+// CORE PRODUCT TYPES
+// ============================================================================
+
+// List view product type (used in tables, cards, etc.)
+export type TProduct = {
+  uid: string
+  name: string
+  total_stock: number
+  needs_reorder: boolean
+  variants_count: number
+  is_active: boolean
+  category: string | null
+  created_at: string
 }
 
-// Product category types
+// Detailed product type (used in single product view/edit)
+export interface IProductDetails {
+  uid: string
+  name: string
+  description: string
+  story: string
+  category: string
+  category_name: string
+  brand: string
+  is_active: boolean
+  is_variable: boolean
+  requires_approval: boolean
+  variants: IProductVariantDetails[]
+  images: Array<IProductImage & { sort_order: number; created_at: string; updated_at: string }>
+  min_price: number
+  max_price: number
+  total_stock: number
+  needs_reorder: boolean
+  amount_sold: number
+  quantity_sold: number
+  memo_count: number
+  return_count: number
+  created_at: string
+}
+
+// Product variant (detailed view)
+export interface IProductVariantDetails {
+  uid: string
+  name: string
+  sku: string
+  price: string
+  promo_price: string
+  promo_expiry: string
+  cost_price: string
+  weight: string
+  length: string
+  width: string
+  height: string
+  reorder_point: number
+  max_stock: number
+  opening_stock: number
+  is_active: boolean
+  is_default: boolean
+  batch_number: string
+  expiry_date: string
+  created_at: string
+  updated_at: string
+  attributes: IProductVariantAttribute[]
+  available_stock: number
+  reserved_stock: number
+  sellable_stock: number
+  needs_reorder: boolean
+  is_overstocked: boolean
+  [key: string]: unknown
+}
+
+// Variant attribute (in detailed view)
+export interface IProductVariantAttribute {
+  uid: string
+  attribute: string
+  value: string
+  attribute_name: string
+  attribute_value: string
+}
+
+// Product image
+export interface IProductImage {
+  uid: string
+  image: string
+  alt_text?: string
+  is_primary: boolean
+  order: number
+}
+
+// Product category
 export interface IProductCategory {
   uid: string
   name: string
@@ -188,21 +120,20 @@ export interface IProductCategory {
   updated_at: string
 }
 
-export interface ICategoriesApiResponse {
-  data: {
-    count: number
-    next: string | null
-    previous: string | null
-    results: IProductCategory[]
-  }
-}
-
-export interface IProductCategoryFormPayload {
+// Product attribute definition
+export interface IProductAttributeDetails {
+  uid: string
   name: string
-  description: string
+  data_type: string
+  is_required: boolean
+  sort_order: number
   is_active: boolean
+  is_default: boolean
+  created_at: string
+  updated_at?: string
 }
 
+// Product dimension
 export interface IProductDimension {
   name: string
   description_image_url: string
@@ -216,28 +147,7 @@ export interface IProductDimension {
   examples: string
 }
 
-// Product image types
-export interface IProductImage {
-  id: number
-  image: string
-  alt_text?: string
-  is_primary: boolean
-  order: number
-}
-
-// API response types
-export interface IProductResponse {
-  success: boolean
-  data: TProduct | TProduct[]
-  message?: string
-  meta?: {
-    total: number
-    page: number
-    per_page: number
-    total_pages: number
-  }
-}
-
+// Product variant (for create/update)
 export interface IProductVariant {
   name: string
   sku: string
@@ -259,20 +169,235 @@ export interface IProductVariant {
   attributes: IProductAttribute[]
 }
 
+// Variant attribute
 export interface IProductAttribute {
   attribute: string
   value: string
+  valueLabel?: string
 }
 
-export interface IProductError {
-  field: string
+// Inventory movement (detailed view)
+export interface IInventoryMovement {
+  uid: string
+  variant: string
+  store: string
+  location: string
+  type: TInventoryMovementType
+  reason: string
+  quantity: number
+  unit_cost: string
+  reference: string
+  note: string
+  created_by: string
+  created_at: string
+  [key: string]: unknown
+}
+
+// ============================================================================
+// API RESPONSE TYPES
+// ============================================================================
+
+// Paginated products list response
+export interface IProductsApiResponse {
+  error: null | string
   message: string
-  code: string
+  data: {
+    count: number
+    next: string | null
+    previous: string | null
+    results: TProduct[]
+  }
 }
 
-// Form validation types
+// Single product details response
+export interface IGetProductResponse {
+  success: boolean
+  data: IProductDetails
+  message?: string
+}
+
+// Generic product response (for create, update, delete)
+export interface IProductResponse {
+  success: boolean
+  data: TProduct | TProduct[]
+  message?: string
+  meta?: {
+    total: number
+    page: number
+    per_page: number
+    total_pages: number
+  }
+}
+
+// Categories list response
+export interface ICategoriesApiResponse {
+  data: {
+    count: number
+    next: string | null
+    previous: string | null
+    results: IProductCategory[]
+  }
+}
+
+// Attributes list response
+export interface IProductAttributesApiResponse {
+  data: {
+    count: number
+    next: string | null
+    previous: string | null
+    results: IProductAttributeDetails[]
+  }
+}
+
+// Inventory movements list response
+export interface IInventoryMovementsApiResponse {
+  data: {
+    count: number
+    next: string | null
+    previous: string | null
+    results: IInventoryMovement[]
+  }
+}
+
+// ============================================================================
+// PAYLOAD TYPES (for API requests)
+// ============================================================================
+
+// Create/Update product
+export interface IProductFormPayload {
+  name: string
+  description: string
+  story: string
+  category: string
+  brand: string
+  is_active: boolean
+  is_variable: boolean
+  requires_approval: boolean
+  variants: IProductVariant[]
+}
+
+// Bulk actions payload
+export interface IProductBulkActionPayload {
+  action: TProductBulkAction
+  product_ids: string[]
+  data?: {
+    category?: string
+    status?: boolean
+  }
+}
+
+// Category create/update
+export interface IProductCategoryFormPayload {
+  name: string
+  description: string
+  is_active: boolean
+}
+
+// Attribute create/update
+export interface IProductAttributeFormPayload {
+  name: string
+  data_type: string
+  is_required: boolean
+  sort_order: number
+  is_active: boolean
+}
+
+// Attribute value
+export interface IProductAttributeValuePayload {
+  value: string
+  sort_order: number
+  attributeUid: string
+}
+
+// Image upload
+export interface IProductImageUploadPayload {
+  product: string
+  image: File
+  alt_text?: string
+  is_primary?: boolean
+  sort_order?: number
+}
+
+// Export data
+export interface IProductExportData {
+  format: "csv" | "xlsx" | "json"
+  fields: string[]
+  filters?: IProductFilters
+  include_variants?: boolean
+  include_events?: boolean
+}
+
+// Inventory movement create
+export interface IInventoryMovementPayload {
+  variant: string
+  store: string
+  location: string
+  type: TInventoryMovementType
+  reason: string
+  quantity: number
+  unit_cost?: string
+  reference?: string
+  note?: string
+}
+
+// Add stock payload
+export interface IAddStockPayload {
+  quantity: number
+  unit_cost: string
+  reference?: string
+  note: string
+}
+
+// Reduce stock payload
+export interface IReduceStockPayload {
+  quantity: number
+  reason: string
+  reference?: string
+  note: string
+}
+
+// Stock transfer item
+export interface IStockTransferItem {
+  variant: string
+  quantity: number
+}
+
+// Stock transfer payload (for both direct transfer and request)
+export interface IStockTransferPayload {
+  to_location: string
+  transfers: IStockTransferItem[]
+  note: string
+}
+
+// ============================================================================
+// UTILITY TYPES (for filtering, sorting, validation)
+// ============================================================================
+
+// Filters
+export interface IProductFilters {
+  search?: string
+  category?: string
+  status?: TProductStatus
+  price_range?: {
+    min: number
+    max: number
+  }
+  stock_range?: {
+    min: number
+    max: number
+  }
+  has_variant?: boolean
+}
+
+// Sorting
+export interface IProductSort {
+  field: TProductSortField
+  direction: TSortDirection
+}
+
+// Validation errors
 export interface IProductValidationErrors {
-  name?: string[] // Changed from product_name to name
+  name?: string[]
   category?: string[]
   description?: string[]
   images?: string[]
@@ -281,7 +406,28 @@ export interface IProductValidationErrors {
   general?: string[]
 }
 
-// Product stats for dashboard
+// Error details
+export interface IProductError {
+  field: string
+  message: string
+  code: string
+}
+
+// ============================================================================
+// METRICS & STATISTICS
+// ============================================================================
+
+// Product metrics
+export interface IProductMetrics {
+  total_products: number
+  in_stock_products: number
+  out_of_stock_products: number
+  low_stock_products: number
+  total_value: number
+  categories_count: number
+}
+
+// Dashboard stats
 export interface IProductStats {
   today: {
     products_added: number
@@ -300,37 +446,55 @@ export interface IProductStats {
   }
 }
 
-export interface IProductAttributeFormPayload {
-  name: string
-  data_type: string
-  is_required: boolean
-  sort_order: number
-  is_active: boolean
-}
-
-export interface IProductAttributesApiResponse {
-  data: {
-    count: number
-    next: string | null
-    previous: string | null
-    results: IProductAttributeDetails[]
-  }
-}
-
-export interface IProductAttributeDetails {
+interface ProductVariantAttribute {
   uid: string
+  attribute: string
+  value: string
+  attribute_name: string
+  attribute_value: string
+}
+
+interface ProductVariant {
+  uid: string
+  sku: string
   name: string
-  data_type: string
-  is_required: boolean
-  sort_order: number
+  attributes: ProductVariantAttribute[]
+  available_stock: number
+  batch_number: string
+  cost_price: number | null
+  created_at: string
+  expiry_date: string
+  height: string
   is_active: boolean
   is_default: boolean
-  created_at: string
-  updated_at?: string
+  is_overstocked: boolean
+  length: string
+  max_stock: number
+  needs_reorder: boolean
+  opening_stock: number
+  price: string
+  promo_expiry: string
+  promo_price: number | null
+  reorder_point: number
+  reserved_stock: number
+  sellable_stock: number
+  updated_at: string
+  weight: string
+  width: string
 }
 
-export interface IProductAttributeValuePayload {
-  value: string
-  sort_order: number
-  attributeUid: string
+export interface IProductCatalogue {
+  uid: string // UUID
+  name: string
+  description: string
+  story: string
+  category: string
+  category_name: string
+  brand: string
+  is_active: boolean
+  is_variable: boolean
+  variants: ProductVariant[]
+  images: string[]
+  total_stock: number
+  created_at: string
 }

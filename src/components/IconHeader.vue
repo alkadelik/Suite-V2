@@ -1,7 +1,10 @@
 <template>
   <div class="mb-3 space-y-4">
-    <div class="flex size-10 items-center justify-center rounded-xl bg-neutral-50 p-2">
-      <Icon :name="iconName" :size="iconSize" />
+    <div class="flex items-center gap-3">
+      <div class="flex size-10 items-center justify-center rounded-xl bg-neutral-50 p-2">
+        <Icon :name="iconName" :size="iconSize" />
+      </div>
+      <slot name="header-content" />
     </div>
 
     <div class="space-y-2">

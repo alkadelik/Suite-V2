@@ -23,7 +23,7 @@ export interface ChipProps {
    * The text label to display in the chip
    * @example "Active"
    */
-  label?: string
+  label?: string | number
 
   /**
    * The icon name to display (based on Icon component)

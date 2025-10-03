@@ -20,7 +20,9 @@
 
     <div :class="textClasses" :style="maxWidth ? { maxWidth } : {}">
       <h4 :class="nameClasses">{{ name }}</h4>
-      <p v-if="extraText" :class="extraTextClasses">{{ extraText }}</p>
+      <p v-if="extraText && typeof extraText === 'string'" :class="extraTextClasses">
+        {{ extraText }}
+      </p>
     </div>
   </div>
 </template>
@@ -133,7 +135,7 @@ const statusContainerClasses = computed(() => [
 const textClasses = computed(() => ["flex-1 min-w-0"])
 
 const nameClasses = computed(() => [
-  "font-medium text-gray-800 truncate m-0",
+  "font-medium text-core-800 truncate m-0",
   {
     "text-xs": sizeClass.value === "sm",
     "text-sm": sizeClass.value === "md" || !sizeClass.value,

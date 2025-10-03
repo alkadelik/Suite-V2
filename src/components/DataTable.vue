@@ -22,6 +22,7 @@ export interface TableColumn<T = Record<string, unknown>> {
     item: T
   }) => VNode | string | number | boolean | null | undefined
   class?: string
+  maxWidth?: string
 }
 
 interface PaginationChangeParams {
@@ -162,7 +163,7 @@ const columns = [
     // @ts-expect-error - TanStack table has complex accessor typing that conflicts with our generic approach
     columnHelper.accessor(col.accessor, {
       header: col.header,
-      meta: { class: col.class },
+      meta: { class: col.class, maxWidth: col.maxWidth },
       cell: (info) => {
         const cellSlotName = `cell:${String(col.accessor)}`
         const [value, item] = [info.getValue(), info.row.original]
@@ -333,8 +334,15 @@ onMounted(() => {
               v-for="cell in row.getVisibleCells()"
               :key="cell.id"
               :class="['p-4 text-sm', (cell.column.columnDef.meta as { class?: string })?.class]"
+              :style="
+                (cell.column.columnDef.meta as { maxWidth?: string })?.maxWidth
+                  ? { maxWidth: (cell.column.columnDef.meta as { maxWidth?: string }).maxWidth }
+                  : {}
+              "
             >
-              <FlexRender :render="cell.column.columnDef.cell" :props="cell.getContext()" />
+              <div class="truncate">
+                <FlexRender :render="cell.column.columnDef.cell" :props="cell.getContext()" />
+              </div>
             </td>
           </tr>
         </tbody>
@@ -399,7 +407,8 @@ onMounted(() => {
     <!--  -->
     <div
       v-if="data.length && showPagination"
-      class="text-core-800 flex items-center justify-between gap-4 border-t border-gray-200 px-5 py-6"
+      class="text-core-800 items-center justify-between gap-4 border-t border-gray-200 px-5 py-6"
+      :class="`hidden md:flex`"
     >
       <!-- Pagination buttons -->
 

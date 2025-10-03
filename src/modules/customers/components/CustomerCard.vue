@@ -3,10 +3,10 @@
     <div class="flex items-start gap-3">
       <!-- Custom Avatar on the left -->
       <span
-        :aria-label="`${customer.full_name.split(' ')[0]} ${customer.full_name.split(' ')[1]} avatar`"
+        :aria-label="`${customer.full_name?.split(' ')[0]} ${customer.full_name?.split(' ')[1]} avatar`"
         class="bg-bloom-300 flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold shadow-sm"
       >
-        {{ getInitials(customer.full_name) }}
+        {{ getInitials(customer?.full_name || "") }}
       </span>
 
       <!-- Customer details on the right -->

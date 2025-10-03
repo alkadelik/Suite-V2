@@ -7,6 +7,7 @@ import {
   TGetSupportedAccountsResponse,
   TSetupShippingPayload,
   TUpdateShippingPayload,
+  ILiveStatusResponse,
 } from "./types"
 import { IIndustriesApiResponse } from "./types"
 
@@ -84,6 +85,17 @@ export function useGetStoreIndustries() {
   })
 }
 
+/** Get stores */
+export function useGetStores() {
+  return useQuery({
+    queryKey: ["stores"],
+    queryFn: async () => {
+      const res = await baseApi.get("/stores/")
+      return res.data
+    },
+  })
+}
+
 /** Get user roles */
 export function useGetRoles() {
   return useQuery<IRolesApiResponse>({
@@ -92,5 +104,26 @@ export function useGetRoles() {
       const res = await baseApi.get<IRolesApiResponse>("/accounts/auth/roles/")
       return res.data
     },
+  })
+}
+
+/** Get live status for store */
+export function useGetLiveStatus(slug: string) {
+  return useQuery<ILiveStatusResponse>({
+    queryKey: ["liveStatus", slug],
+    queryFn: async () => {
+      const res = await baseApi.get<ILiveStatusResponse>(`/stores/public/live-status/${slug}/`)
+      return res.data
+    },
+  })
+}
+
+/** Submit KYC verification */
+export function useSubmitKYC() {
+  return useMutation({
+    mutationFn: (body: FormData) =>
+      baseApi.post("/accounts/kyc/", body, {
+        headers: { "Content-Type": "multipart/form-data" },
+      }),
   })
 }

@@ -97,7 +97,7 @@ watch(
     if (newLocations) {
       const locs = newLocations.results ?? []
       setLocations(locs)
-      setActiveLocation(locs[0] ?? null)
+      setActiveLocation(locs[2] ?? null)
     }
   },
   { immediate: true },

@@ -29,7 +29,7 @@
             required
           />
 
-          <FileUploadField name="id_document" label="Click to upload ID" required />
+          <FormField name="id_document" label="Click to upload ID" type="file" required />
 
           <FormField
             name="id_number"
@@ -68,19 +68,21 @@
 import { ref } from "vue"
 import * as yup from "yup"
 import { toast } from "@/composables/useToast"
-// import { displayError } from "@/utils/error-handler"
+import { displayError } from "@/utils/error-handler"
 import AppButton from "@/components/AppButton.vue"
 import Modal from "@/components/Modal.vue"
 import AppForm from "@/components/form/AppForm.vue"
 import FormField from "@/components/form/FormField.vue"
 import Icon from "@components/Icon.vue"
-import FileUploadField from "@components/form/FileUploadField.vue"
+import { useSubmitKYC } from "../api"
 
 defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{
   "update:modelValue": [value: boolean]
   refresh: []
 }>()
+
+const { mutate: submitKYC, isPending } = useSubmitKYC()
 
 // Validation schema
 const identityVerificationSchema = yup.object({
@@ -98,44 +100,46 @@ const identityVerificationSchema = yup.object({
     .required("Please enter your BVN"),
 })
 
-// Mock data for development (remove when API is ready)
 const supportedIDs = ref([
   {
-    label: "National Identity Card (NIN)",
-    value: "nin",
+    label: "International Passport",
+    value: "international_passport",
+  },
+  {
+    label: "National ID (NIN)",
+    value: "national_id",
   },
   {
     label: "Driver's License",
     value: "drivers_license",
   },
   {
-    label: "International Passport",
-    value: "international_passport",
-  },
-  {
-    label: "Personal Voter's Card (PVC)",
-    value: "pvc",
+    label: "Voter's Card",
+    value: "voters_card",
   },
 ])
-const isPending = ref(false)
 
 const onSubmit = (values: {
   id_type: { value: string }
-  id_document: { value: File | null }
-  id_number: { value: string }
-  bvn: { value: string }
+  id_document: File | null
+  id_number: string
+  bvn: string
 }) => {
-  const payload = {
-    id_type: values.id_type.value,
-    id_document: values.id_document,
-    id_number: values.id_number,
-    bvn: values.bvn,
+  const formData = new FormData()
+  formData.append("doc_type", values.id_type.value)
+  formData.append("bvn", values.bvn)
+  formData.append("doc_number", values.id_number)
+  if (values.id_document) {
+    formData.append("file", values.id_document)
   }
 
-  // Mock success for development
-  console.log("Submitting identity verification:", payload)
-  toast.success("Identity verification saved!")
-  emit("update:modelValue", false)
-  emit("refresh")
+  submitKYC(formData, {
+    onSuccess: () => {
+      toast.success("Identity verification submitted successfully!")
+      emit("update:modelValue", false)
+      emit("refresh")
+    },
+    onError: displayError,
+  })
 }
 </script>

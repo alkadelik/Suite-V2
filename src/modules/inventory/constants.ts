@@ -4,17 +4,121 @@ import type {
   IProductAttributeDetails,
   IProductCategory,
   IProductDimension,
+  IProductVariantDetails,
+  IInventoryMovement,
   TProduct,
 } from "./types"
 import { TableColumn } from "@components/DataTable.vue"
+import type { TOrder } from "@modules/orders/types"
 
 export const PRODUCT_COLUMNS: TableColumn<TProduct>[] = [
-  { header: "Name", accessor: "name" },
+  { header: "Name", accessor: "name", maxWidth: "300px" },
   { header: "Category", accessor: "category" },
   { header: "Price", accessor: "price" },
   { header: "Stock Available", accessor: "total_stock" },
   { header: "Status", accessor: "status" },
   { header: "", accessor: "action" },
+]
+
+export const VARIANT_COLUMNS: TableColumn<IProductVariantDetails>[] = [
+  { header: "SKU", accessor: "sku" },
+  { header: "Price", accessor: "price" },
+  { header: "Actual Stock", accessor: "sellable_stock" },
+  { header: "Reserved Stock", accessor: "reserved_stock" },
+  { header: "Available Stock", accessor: "available_stock" },
+  { header: "", accessor: "action" },
+]
+
+export const PRODUCT_ORDER_COLUMNS: TableColumn<TOrder>[] = [
+  { header: "Order ID", accessor: "order_ref" },
+  { header: "Order Date", accessor: "order_date" },
+  { header: "Customer", accessor: "customer_info" },
+  { header: "Status", accessor: "payment_status" },
+  { header: "", accessor: "action" },
+]
+
+export const MOVEMENT_COLUMNS: TableColumn<IInventoryMovement>[] = [
+  { header: "Date", accessor: "created_at" },
+  { header: "SKU", accessor: "variant" },
+  { header: "Type", accessor: "type" },
+  { header: "Quantity", accessor: "quantity" },
+  { header: "Unit Cost", accessor: "unit_cost" },
+  { header: "Reason", accessor: "reason" },
+  { header: "Created By", accessor: "created_by" },
+  { header: "Reference", accessor: "reference" },
+]
+
+export const MOCK_INVENTORY_MOVEMENTS: IInventoryMovement[] = [
+  {
+    uid: "mov-001",
+    variant: "var-blue-large",
+    store: "store-001",
+    location: "warehouse-a",
+    type: "in",
+    reason: "Stock replenishment",
+    quantity: 50,
+    unit_cost: "5000.00",
+    reference: "PO-2025-001",
+    note: "Initial stock delivery",
+    created_by: "John Doe",
+    created_at: new Date().toISOString(),
+  },
+  {
+    uid: "mov-002",
+    variant: "var-red-medium",
+    store: "store-001",
+    location: "warehouse-a",
+    type: "out",
+    reason: "Sales order fulfillment",
+    quantity: 5,
+    unit_cost: "5000.00",
+    reference: "ORD-2025-002",
+    note: "",
+    created_by: "Jane Smith",
+    created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    uid: "mov-003",
+    variant: "var-green-small",
+    store: "store-001",
+    location: "warehouse-a",
+    type: "in",
+    reason: "Stock return from customer",
+    quantity: 2,
+    unit_cost: "5000.00",
+    reference: "RET-2025-001",
+    note: "Customer returned items - defective",
+    created_by: "Admin User",
+    created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    uid: "mov-004",
+    variant: "var-blue-large",
+    store: "store-001",
+    location: "warehouse-a",
+    type: "out",
+    reason: "Stock transfer to retail location",
+    quantity: 10,
+    unit_cost: "5000.00",
+    reference: "TRF-2025-001",
+    note: "Transfer to Store Front",
+    created_by: "John Doe",
+    created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    uid: "mov-005",
+    variant: "var-red-medium",
+    store: "store-001",
+    location: "warehouse-a",
+    type: "in",
+    reason: "Stock adjustment",
+    quantity: 3,
+    unit_cost: "5000.00",
+    reference: "ADJ-2025-001",
+    note: "Physical count correction",
+    created_by: "Jane Smith",
+    created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+  },
 ]
 
 export const PRODUCT_CATEGORY_OPTIONS = ref<ISelectOption[]>([])

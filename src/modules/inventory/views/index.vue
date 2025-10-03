@@ -24,7 +24,10 @@
       action-icon="add"
       @action="showProductFormDrawer = true"
     />
-    <div v-else class="mt-4 space-y-4 rounded-xl border-gray-200 bg-white pt-3 md:mt-8 md:border">
+    <div
+      v-else
+      class="mt-4 space-y-4 rounded-xl border-gray-200 pt-3 md:mt-8 md:border md:bg-white"
+    >
       <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
         <h3 class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
           All Products <Chip :label="String(products?.data?.count || 0)" />
@@ -70,7 +73,11 @@
         @row-click="handleRowClick"
       >
         <template #cell:name="{ item }">
-          <ProductAvatar :name="item.name" :url="undefined" :variants="item.variants_count > 1" />
+          <ProductAvatar
+            :name="item.name"
+            :url="undefined"
+            :variants-count="item.variants_count > 1 ? item.variants_count : undefined"
+          />
         </template>
 
         <template #cell:category="{ value }">
@@ -239,6 +246,7 @@ import { useGetProducts, useDeleteProduct } from "../api"
 import ProductAvatar from "@components/ProductAvatar.vue"
 import EmptyState from "@components/EmptyState.vue"
 import { displayError } from "@/utils/error-handler"
+import router from "@/router"
 
 const { data: products, isPending: isGettingProducts, refetch: refetchProducts } = useGetProducts()
 const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct()
@@ -251,9 +259,7 @@ const showViewProductDrawer = ref(false)
 const product = ref<TProduct | null>(null)
 
 const handleRowClick = (clickedProduct: TProduct) => {
-  product.value = { ...clickedProduct }
-  formMode.value = "view"
-  showViewProductDrawer.value = true
+  router.push({ name: "Product-Details", params: { uid: clickedProduct.uid } })
 }
 
 // Calculate metrics from actual API data

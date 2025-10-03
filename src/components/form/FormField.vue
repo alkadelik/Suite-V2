@@ -97,10 +97,27 @@
       :separator="separator"
     />
 
+    <!-- Radio Input Field -->
+    <RadioInputField
+      v-else-if="type === 'radio'"
+      v-bind="{ ...field, ...$attrs }"
+      :model-value="field.value"
+      :label="hideLabel ? '' : label || startCase(name)"
+      :options="radioOptions || []"
+      :required="required"
+      :disabled="disabled"
+      :readonly="readonly"
+      :error="fieldErrors[0]"
+      :hint="hintText"
+      :size="size"
+      @update:model-value="field.value = $event"
+    />
+
     <!-- Text Field (default for all other types) -->
     <TextField
       v-else
       v-bind="{ ...field, ...$attrs }"
+      :model-value="field.value"
       :type="type"
       :label="hideLabel ? '' : label || startCase(name)"
       :placeholder="placeholder"
@@ -118,6 +135,8 @@
       :step="step"
       :autocomplete="autocomplete"
       :description="description"
+      :show-steppers="showSteppers"
+      @update:model-value="field.value = $event"
     />
   </Field>
 </template>
@@ -129,6 +148,7 @@ import SelectField from "./SelectField.vue"
 import SelectTagsField from "./SelectTagsField.vue"
 import TextAreaField from "./TextAreaField.vue"
 import OtpField from "./OtpField.vue"
+import RadioInputField from "./RadioInputField.vue"
 import { startCase } from "@/utils/format-strings"
 import { computed } from "vue"
 import FileUploadField from "./FileUploadField.vue"
@@ -163,6 +183,7 @@ export type FormFieldType =
   | "textarea"
   | "otp"
   | "file"
+  | "radio"
 
 /**
  * Updated option value type that includes ISelectOption
@@ -245,6 +266,14 @@ interface FormFieldProps {
   accept?: string
   /** Maximum file size in MB */
   maxSize?: number
+
+  // Radio specific props
+  /** Options for radio fields */
+  radioOptions?: { label: string; value: string; description?: string }[]
+
+  // Number input specific props
+  /** Show increment/decrement buttons for number inputs */
+  showSteppers?: boolean
 }
 
 const props = withDefaults(defineProps<FormFieldProps>(), {

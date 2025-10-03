@@ -1,10 +1,17 @@
-import baseApi from "@/composables/baseApi"
+import baseApi, { TPaginatedResponse, useApiQuery } from "@/composables/baseApi"
 import { useMutation, useQuery } from "@tanstack/vue-query"
 import {
   IProductCategoryFormPayload,
   IProductFormPayload,
   IProductAttributeFormPayload,
   IProductAttributeValuePayload,
+  IProductImageUploadPayload,
+  IGetProductResponse,
+  IAddStockPayload,
+  IReduceStockPayload,
+  IInventoryMovementsApiResponse,
+  IStockTransferPayload,
+  IProductCatalogue,
 } from "./types"
 
 /** Get categories api request */
@@ -87,5 +94,99 @@ export function useCreateAttributeValues() {
       ...payload
     }: IProductAttributeValuePayload & { attributeUid: string }) =>
       baseApi.post(`inventory/attributes/${attributeUid}/add-value/`, payload),
+  })
+}
+
+/** add product image api request */
+export function useAddProductImage() {
+  return useMutation({
+    mutationFn: (payload: IProductImageUploadPayload) => {
+      // Create FormData for file upload
+      const formData = new FormData()
+      formData.append("product", payload.product)
+      formData.append("image", payload.image)
+
+      if (payload.alt_text) {
+        formData.append("alt_text", payload.alt_text)
+      }
+
+      if (payload.is_primary !== undefined) {
+        formData.append("is_primary", payload.is_primary.toString())
+      }
+
+      if (payload.sort_order !== undefined) {
+        formData.append("sort_order", payload.sort_order.toString())
+      }
+
+      // Override content type for file upload
+      return baseApi.post("inventory/images/", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      })
+    },
+  })
+}
+
+/** get product by uid */
+export function useGetProduct(uid: string) {
+  return useQuery({
+    queryKey: ["products", uid],
+    queryFn: async () => {
+      const { data } = await baseApi.get<IGetProductResponse>(`/inventory/products/${uid}/`)
+      return data
+    },
+  })
+}
+
+/** add stock to variant */
+export function useAddStock() {
+  return useMutation({
+    mutationFn: ({ uid, ...payload }: IAddStockPayload & { uid: string }) =>
+      baseApi.post(`/inventory/variants/${uid}/add-stock/`, payload),
+  })
+}
+
+/** reduce stock from variant */
+export function useReduceStock() {
+  return useMutation({
+    mutationFn: ({ uid, ...payload }: IReduceStockPayload & { uid: string }) =>
+      baseApi.post(`/inventory/variants/${uid}/record-loss/`, payload),
+  })
+}
+
+/** get inventory movements */
+export function useGetInventoryMovements(params?: Record<string, string | number>) {
+  return useQuery({
+    queryKey: ["inventory-movements", params],
+    queryFn: async () => {
+      const { data } = await baseApi.get<IInventoryMovementsApiResponse>("/inventory/movements/", {
+        params,
+      })
+      return data
+    },
+  })
+}
+
+/** direct stock transfer */
+export function useDirectStockTransfer() {
+  return useMutation({
+    mutationFn: (payload: IStockTransferPayload) =>
+      baseApi.post("/inventory/transfers/direct-transfer/", payload),
+  })
+}
+
+/** request stock transfer */
+export function useRequestStockTransfer() {
+  return useMutation({
+    mutationFn: (payload: IStockTransferPayload) => baseApi.post("/inventory/transfers/", payload),
+  })
+}
+
+export function useGetProductCatalogs() {
+  return useApiQuery<TPaginatedResponse<IProductCatalogue>["data"]>({
+    url: `/inventory/catalog/`,
+    key: "productCatalogs",
+    selectData: true,
   })
 }

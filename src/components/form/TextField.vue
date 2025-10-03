@@ -4,7 +4,66 @@
       {{ label }}
       <span v-if="required" class="text-red-500">*</span>
     </label>
-    <div :class="containerClasses">
+    <div v-if="showSteppers && type === 'number'" class="flex items-center gap-2">
+      <!-- Decrement Button -->
+      <AppButton
+        icon="placeholder"
+        size="sm"
+        type="button"
+        @click.prevent="decrementValue"
+        :disabled="disabled"
+      />
+
+      <div :class="containerClasses" class="flex-1">
+        <!-- Prefix -->
+        <div v-if="prefix" :class="prefixClasses">
+          {{ prefix }}
+        </div>
+
+        <!-- Left Icon -->
+        <div v-if="leftIcon" :class="[prefixClasses, 'flex items-center border-r-0 !pr-0']">
+          <Icon :name="leftIcon" class="h-4 w-4" />
+        </div>
+
+        <!-- Input -->
+        <input
+          :id="htmlFor"
+          :name="name"
+          :type="actualType"
+          :placeholder="placeholder"
+          :required="required"
+          :disabled="disabled"
+          :readonly="readonly"
+          :class="inputClasses"
+          :value="modelValue"
+          @input="handleInput"
+          @blur="$emit('blur', $event)"
+          @focus="$emit('focus', $event)"
+          v-bind="$attrs"
+        />
+
+        <!-- Right Icon -->
+        <div v-if="rightIcon" class="text-core-400 flex items-center pr-3">
+          <Icon :name="rightIcon" class="h-4 w-4" />
+        </div>
+
+        <!-- Suffix -->
+        <div v-if="suffix" :class="suffixClasses">
+          {{ suffix }}
+        </div>
+      </div>
+
+      <!-- Increment Button -->
+      <AppButton
+        icon="placeholder"
+        size="sm"
+        type="button"
+        @click.prevent="incrementValue"
+        :disabled="disabled"
+      />
+    </div>
+
+    <div v-else :class="containerClasses">
       <!-- Prefix -->
       <div v-if="prefix" :class="prefixClasses">
         {{ prefix }}
@@ -72,6 +131,7 @@
 <script setup lang="ts">
 import { capitalizeFirstChar } from "@/utils/format-strings"
 import Icon from "@components/Icon.vue"
+import AppButton from "@components/AppButton.vue"
 import { computed, ref } from "vue"
 
 interface Props {
@@ -117,12 +177,17 @@ interface Props {
   rightIcon?: string
   /** Additional description text below the input */
   description?: string
+  /** Show increment/decrement buttons for number inputs */
+  showSteppers?: boolean
+  /** Additional classes for the input element */
+  inputClass?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   type: "text",
   variant: "default",
   size: "md",
+  showSteppers: false,
 })
 
 const emit = defineEmits<{
@@ -140,6 +205,36 @@ const handleInput = (event: Event) => {
 
 const togglePasswordVisibility = () => {
   showPassword.value = !showPassword.value
+}
+
+const incrementValue = () => {
+  console.log("Current modelValue:", props.modelValue, "Type:", typeof props.modelValue)
+
+  let currentValue = 0
+  if (typeof props.modelValue === "number") {
+    currentValue = props.modelValue
+  } else if (typeof props.modelValue === "string" && props.modelValue !== "") {
+    currentValue = parseFloat(props.modelValue)
+  }
+
+  const newValue = currentValue + 1
+  console.log("New value:", newValue)
+  emit("update:modelValue", String(newValue))
+}
+
+const decrementValue = () => {
+  console.log("Current modelValue:", props.modelValue, "Type:", typeof props.modelValue)
+
+  let currentValue = 0
+  if (typeof props.modelValue === "number") {
+    currentValue = props.modelValue
+  } else if (typeof props.modelValue === "string" && props.modelValue !== "") {
+    currentValue = parseFloat(props.modelValue)
+  }
+
+  const newValue = Math.max(0, currentValue - 1) // Prevent negative values
+  console.log("New value:", newValue)
+  emit("update:modelValue", String(newValue))
 }
 
 const htmlFor = computed(() => props.id || props.name || props.label)
@@ -180,7 +275,7 @@ const inputClasses = computed(() => {
     lg: `${props.leftIcon || props.prefix ? "pl-0" : "p-3"} ${props.rightIcon || props.suffix || props.type === "password" ? "pr-0" : "p-3"} text-base`,
   }
 
-  return [baseClasses, paddingClasses[props.size]].filter(Boolean).join(" ")
+  return [baseClasses, paddingClasses[props.size], props.inputClass].filter(Boolean).join(" ")
 })
 
 const prefixClasses = computed(() => {

@@ -94,7 +94,12 @@ import ProductManageCombinationsForm from "./ProductForm/ProductManageCombinatio
 import { IProductVariant, IProductAttribute } from "../types"
 import ProductReview from "./ProductForm/ProductReview.vue"
 import ProductVariantsForm from "./ProductForm/ProductVariantsForm.vue"
-import { useCreateProduct, useCreateAttribute, useCreateAttributeValues } from "../api"
+import {
+  useCreateProduct,
+  useCreateAttribute,
+  useCreateAttributeValues,
+  useAddProductImage,
+} from "../api"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
 
@@ -129,6 +134,7 @@ const { mutate: createProduct, isPending: isCreating } = useCreateProduct()
 const { mutate: createAttribute, isPending: isCreatingAttribute } = useCreateAttribute()
 const { mutate: createAttributeValues, isPending: isCreatingAttributeValues } =
   useCreateAttributeValues()
+const { mutate: addProductImages, isPending: isAddingProductImages } = useAddProductImage()
 
 // Reactive state
 const isMobile = ref(false)
@@ -139,7 +145,7 @@ const form = reactive({
   name: "",
   description: "",
   category: null as { label: string; value: string } | null,
-  images: [] as Array<File>,
+  images: [] as Array<File | null>,
   story: "",
   brand: "",
   requires_approval: false,
@@ -365,7 +371,8 @@ const isPending = computed(() => {
     props.loading ||
     isCreating.value ||
     isCreatingAttribute.value ||
-    isCreatingAttributeValues.value
+    isCreatingAttributeValues.value ||
+    isAddingProductImages.value
   )
 })
 
@@ -553,32 +560,14 @@ const drawerPosition = computed(() => {
 
 // Helper function to safely extract UID from response
 const extractUid = (response: unknown): string => {
-  // Try different common response structures, prioritizing the correct one based on logs
-  const paths = [
-    "data.data.uid", // This is the correct path based on the API response
-    "data.data.data.uid",
-    "data.uid",
-    "uid",
-  ]
-
-  for (const path of paths) {
-    try {
-      const value = path.split(".").reduce((obj: unknown, key: string) => {
-        return obj && typeof obj === "object" && key in obj
-          ? (obj as Record<string, unknown>)[key]
-          : undefined
-      }, response)
-
-      if (typeof value === "string" && value.length > 0) {
-        return value
-      }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
-      continue
-    }
+  // Use the known correct path directly
+  try {
+    const value = (response as { data: { data: { uid: string } } })?.data?.data?.uid
+    return typeof value === "string" && value.length > 0 ? value : ""
+  } catch (error) {
+    console.error("Could not extract UID from response:", response, error)
+    return ""
   }
-
-  return ""
 }
 
 // Function to process all variants and create attribute values
@@ -902,6 +891,7 @@ const generateVariantAttributes = (
   return combination.map((item) => ({
     attribute: item.attributeUid,
     value: item.valueUid,
+    valueLabel: item.valueLabel,
   }))
 }
 
@@ -952,10 +942,63 @@ const handleSubmit = async () => {
       })),
     }
 
-    console.log("Submitting product:", JSON.stringify(payload, null, 2))
     createProduct(payload, {
-      onSuccess: () => {
+      onSuccess: (response: unknown) => {
         toast.success("Product created successfully")
+
+        // Extract product UID from response and upload images
+        const productUid = extractUid(response)
+        if (productUid && form.images.length > 0) {
+          // Handle image upload asynchronously without blocking the success callback
+          ;(async () => {
+            try {
+              console.log(`Uploading ${form.images.length} images for product: ${productUid}`)
+
+              // Filter out invalid images (only keep actual File objects, exclude null and empty objects)
+              const validImages = form.images.filter((image) => image && image instanceof File)
+              console.log(
+                `Found ${validImages.length} valid images out of ${form.images.length} total images`,
+              )
+
+              if (validImages.length === 0) {
+                console.log("No valid images to upload")
+                return
+              }
+
+              // Upload all valid images
+              for (let i = 0; i < validImages.length; i++) {
+                const image = validImages[i]
+
+                await new Promise<void>((resolve, reject) => {
+                  addProductImages(
+                    {
+                      product: productUid,
+                      image: image as File,
+                      is_primary: i === 0, // First image is primary
+                      sort_order: i + 1,
+                    },
+                    {
+                      onSuccess: () => {
+                        console.log(`Image ${i + 1} uploaded successfully`)
+                        resolve()
+                      },
+                      onError: (error: unknown) => {
+                        console.error(`Failed to upload image ${i + 1}:`, error)
+                        reject(new Error(String(error)))
+                      },
+                    },
+                  )
+                })
+              }
+
+              toast.success("All images uploaded successfully")
+            } catch (error) {
+              console.error("Failed to upload some images:", error)
+              toast.error("Product created but some images failed to upload")
+            }
+          })()
+        }
+
         resetFormState()
         emit("update:modelValue", false)
         emit("refresh")

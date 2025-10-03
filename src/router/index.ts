@@ -52,6 +52,8 @@ const routes: RouteRecordRaw[] = [
     children: [...settingsRoutes],
   },
 
+  { path: "/pay/:id", component: () => import("@modules/landing/views/payment-link.vue") },
+
   // 404 - Catch all route (must be last)
   {
     path: "/",

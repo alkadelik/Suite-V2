@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Icon from "@components/Icon.vue"
 
-defineProps<{
+const props = defineProps<{
   items: {
     label: string
     value: string | number
@@ -17,6 +17,40 @@ defineProps<{
   defaultIcon: string
   defaultIconClass?: string
 }>()
+
+// Calculate remainder items that don't fill a complete row
+const getRemainder = (total: number, max: number) => {
+  return total % max
+}
+
+// Get span class for an item based on its position
+const getItemSpanClass = (index: number) => {
+  const count = props.items.length
+  const position = index + 1
+
+  // Mobile (max 2)
+  const mobileRemainder = getRemainder(count, 2)
+  const isMobileLastRow = position > Math.floor(count / 2) * 2
+  const mobileSpan = mobileRemainder === 1 && isMobileLastRow ? "col-span-2" : ""
+
+  // Tablet (max 3)
+  const tabletRemainder = getRemainder(count, 3)
+  const isTabletLastRow = position > Math.floor(count / 3) * 3
+  const tabletSpan =
+    tabletRemainder > 0 && isTabletLastRow
+      ? `md:col-span-${tabletRemainder === 1 ? "3" : "1"}`
+      : "md:col-span-1"
+
+  // Desktop (max 4)
+  const desktopRemainder = getRemainder(count, 4)
+  const isDesktopLastRow = position > Math.floor(count / 4) * 4
+  const desktopSpan =
+    desktopRemainder > 0 && isDesktopLastRow
+      ? `lg:col-span-${desktopRemainder === 1 ? "4" : desktopRemainder === 2 ? "2" : desktopRemainder === 3 ? "1" : "1"}`
+      : "lg:col-span-1"
+
+  return `${mobileSpan} ${tabletSpan} ${desktopSpan}`
+}
 </script>
 
 <template>
@@ -25,13 +59,16 @@ defineProps<{
       <p>loading...</p>
     </div>
 
-    <!-- Grid: 2 on mobile, 2 on tablet, 4 on desktop -->
-    <div class="grid grid-cols-2 gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <!-- Grid: max 2 on mobile, max 3 on tablet, max 4 on desktop -->
+    <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
       <div
         v-for="(item, i) in items"
         :key="i"
         class="flex flex-col gap-1 rounded-lg px-3.5 py-3 shadow-sm md:gap-3"
-        :class="['bg-primary-25 border-primary-200 border md:border-0 md:bg-white']"
+        :class="[
+          'bg-primary-25 border-primary-200 border md:border-0 md:bg-white',
+          getItemSpanClass(i),
+        ]"
       >
         <!-- Top section -->
         <div class="flex flex-col gap-5 md:flex-row md:items-center md:gap-2">

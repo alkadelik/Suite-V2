@@ -25,6 +25,7 @@
           type="select"
           placeholder="Enter a keyword to get suggestions"
           v-model="pickup_location"
+          direction="up"
           required
         />
         <div class="flex justify-end">
@@ -45,11 +46,13 @@
 <script setup lang="ts">
 import { ref } from "vue"
 import { toast } from "@/composables/useToast"
-// import { displayError } from "@/utils/error-handler"
+import { displayError } from "@/utils/error-handler"
 import AppButton from "@/components/AppButton.vue"
 import Modal from "@/components/Modal.vue"
 import Icon from "@components/Icon.vue"
 import GooglePlacesAutocomplete from "@components/GooglePlacesAutocomplete.vue"
+import { useUpdateStoreDetails } from "@modules/settings/api"
+import { useAuthStore } from "@modules/auth/store"
 
 defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{
@@ -57,8 +60,10 @@ const emit = defineEmits<{
   refresh: []
 }>()
 
-// Mock data for development (remove when API is ready)
-const isPending = ref(false)
+const authStore = useAuthStore()
+const storeUid = authStore.user?.store_uid || ""
+
+const { mutate: updateStore, isPending } = useUpdateStoreDetails()
 const pickup_location = ref("")
 
 const onSubmit = () => {
@@ -66,10 +71,16 @@ const onSubmit = () => {
     pickup_location: pickup_location.value,
   }
 
-  // Mock success for development
-  console.log("Submitting pickup location:", payload)
-  toast.success("Pickup location details saved!")
-  emit("update:modelValue", false)
-  emit("refresh")
+  updateStore(
+    { id: storeUid, body: payload },
+    {
+      onSuccess: () => {
+        toast.success("Pickup location details saved!")
+        emit("update:modelValue", false)
+        emit("refresh")
+      },
+      onError: displayError,
+    },
+  )
 }
 </script>

@@ -203,8 +203,8 @@ const schema = computed(() => {
 const initialValues = computed<FormValues>(() => {
   if (props.mode === "edit" && props.customer) {
     return {
-      first_name: props.customer.full_name.split(" ")[0] || "",
-      last_name: props.customer.full_name.split(" ")[1] || "",
+      first_name: props.customer.full_name?.split(" ")[0] || "",
+      last_name: props.customer.full_name?.split(" ")[1] || "",
       email: props.customer.email || "",
       phone: props.customer.phone || "",
       address: "",
