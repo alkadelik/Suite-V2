@@ -18,6 +18,7 @@
           v-if="step === 1"
           v-model="form"
           :has-variants="hasVariants"
+          :disable-variants-toggle="mode === 'edit'"
           @update:has-variants="hasVariants = $event"
         />
 
@@ -540,15 +541,67 @@ watch(
           length: variant.length || "",
           width: variant.width || "",
           height: variant.height || "",
-          reorder_point: variant.reorder_point?.toString() || "",
-          max_stock: variant.max_stock?.toString() || "",
-          opening_stock: variant.opening_stock?.toString() || "",
+          reorder_point:
+            variant.reorder_point !== null && variant.reorder_point !== undefined
+              ? variant.reorder_point.toString()
+              : "",
+          max_stock:
+            variant.max_stock !== null && variant.max_stock !== undefined
+              ? variant.max_stock.toString()
+              : "",
+          opening_stock:
+            variant.available_stock !== null && variant.available_stock !== undefined
+              ? variant.available_stock.toString()
+              : "",
           is_active: variant.is_active ?? true,
           is_default: variant.is_default ?? false,
           batch_number: variant.batch_number || "",
           expiry_date: variant.expiry_date || "",
           attributes: variant.attributes || [],
         }))
+
+        // Reconstruct variantConfiguration from variant attributes (for multi-variant products)
+        if (product.is_variable && product.variants.length > 1) {
+          // Create a map to group attributes and their values
+          const attributeMap = new Map<
+            string,
+            {
+              attributeUid: string
+              attributeName: string
+              values: Map<string, string> // valueUid -> valueName
+            }
+          >()
+
+          // Collect all attributes and values from all variants
+          product.variants.forEach((variant) => {
+            variant.attributes.forEach((attr) => {
+              if (!attributeMap.has(attr.attribute)) {
+                attributeMap.set(attr.attribute, {
+                  attributeUid: attr.attribute,
+                  attributeName: attr.attribute_name,
+                  values: new Map(),
+                })
+              }
+
+              const attrData = attributeMap.get(attr.attribute)!
+              // Add value to map (Map will handle duplicates by key)
+              attrData.values.set(attr.value, attr.attribute_value)
+            })
+          })
+
+          // Convert map to variantConfiguration array
+          variantConfiguration.value = Array.from(attributeMap.values()).map((attrData) => ({
+            name: {
+              label: attrData.attributeName,
+              value: attrData.attributeUid,
+            },
+            customName: "",
+            values: Array.from(attrData.values.entries()).map(([valueUid, valueName]) => ({
+              label: valueName,
+              value: valueUid,
+            })),
+          }))
+        }
       }
     }
   },
@@ -802,6 +855,9 @@ const generateVariantCombinations = (): void => {
   // Get all possible combinations
   const combinations = generateCombinations(processedVariants)
 
+  // Store existing variants for matching
+  const existingVariants = [...variants.value]
+
   // Clear existing variants array
   variants.value = []
 
@@ -810,24 +866,43 @@ const generateVariantCombinations = (): void => {
     const variantName = generateVariantName(combination)
     const attributes = generateVariantAttributes(combination)
 
+    // Try to find an existing variant that matches these attributes
+    const matchingVariant = existingVariants.find((existing) => {
+      if (!existing.attributes || existing.attributes.length !== attributes.length) {
+        return false
+      }
+
+      // Check if all attributes match
+      return attributes.every((attr) =>
+        existing.attributes.some(
+          (existingAttr) =>
+            existingAttr.attribute === attr.attribute && existingAttr.value === attr.value,
+        ),
+      )
+    })
+
     const newVariant: IProductVariant = {
-      name: variantName,
-      sku: `SKU-${Date.now()}-${index + 1}`,
-      price: "0",
-      promo_price: "0",
-      promo_expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      cost_price: "0",
-      weight: "0",
-      length: "0",
-      width: "0",
-      height: "0",
-      reorder_point: "0",
-      max_stock: "0",
-      opening_stock: "0",
-      is_active: true,
-      is_default: index === 0, // First variant is default
-      batch_number: "",
-      expiry_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      name: matchingVariant?.name || variantName,
+      sku: matchingVariant?.sku || `SKU-${Date.now()}-${index + 1}`,
+      price: matchingVariant?.price || "0",
+      promo_price: matchingVariant?.promo_price || "0",
+      promo_expiry:
+        matchingVariant?.promo_expiry ||
+        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      cost_price: matchingVariant?.cost_price || "0",
+      weight: matchingVariant?.weight || "0",
+      length: matchingVariant?.length || "0",
+      width: matchingVariant?.width || "0",
+      height: matchingVariant?.height || "0",
+      reorder_point: matchingVariant?.reorder_point || "0",
+      max_stock: matchingVariant?.max_stock || "0",
+      opening_stock: matchingVariant?.opening_stock || "0",
+      is_active: matchingVariant?.is_active ?? true,
+      is_default: matchingVariant?.is_default ?? index === 0, // First variant is default
+      batch_number: matchingVariant?.batch_number || "",
+      expiry_date:
+        matchingVariant?.expiry_date ||
+        new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
       attributes: attributes,
     }
 

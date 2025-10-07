@@ -38,7 +38,7 @@
           Eg. Different colours, sizes, fragrances etc.
         </p>
       </div>
-      <Switch v-model="hasProductVariants" />
+      <Switch v-model="hasProductVariants" :disabled="props.disableVariantsToggle" />
     </div>
   </div>
 </template>
@@ -64,6 +64,8 @@ interface Props {
   modelValue: ProductForm
   /** Whether product has variants */
   hasVariants: boolean
+  /** Whether to disable the variants toggle (e.g., when editing) */
+  disableVariantsToggle?: boolean
 }
 
 interface Emits {

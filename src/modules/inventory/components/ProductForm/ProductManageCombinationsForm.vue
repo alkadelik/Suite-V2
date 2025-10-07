@@ -194,10 +194,17 @@ const initializeGlobalDimensions = () => {
 // Initialize on mount and when variants change
 watch(
   () => props.modelValue,
-  (newVariants) => {
+  (newVariants, oldVariants) => {
     if (newVariants && newVariants.length > 0) {
-      // Only initialize if globalDimensions are empty (to avoid overwriting user selections)
-      if (!globalDimensions.value.weight && !globalDimensions.value.height) {
+      // Initialize if:
+      // 1. globalDimensions are empty, OR
+      // 2. variants array changed (e.g., when loading from API in edit mode)
+      const shouldInitialize =
+        (!globalDimensions.value.weight && !globalDimensions.value.height) ||
+        (oldVariants && oldVariants.length !== newVariants.length) ||
+        (!oldVariants && newVariants.length > 0)
+
+      if (shouldInitialize) {
         initializeGlobalDimensions()
       }
     }
