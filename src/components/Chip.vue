@@ -134,7 +134,7 @@ const chipClasses = computed(() => {
     },
     outlined: {
       primary: "bg-primary-50 text-primary-700 border border-primary-200",
-      success: "bg-green-50 text-green-700 border border-green-200",
+      success: "bg-green-100 text-green-800 border border-green-200",
       warning: "bg-yellow-50 text-yellow-700 border border-yellow-200",
       error: "bg-red-50 text-red-700 border border-red-200",
       alt: "bg-gray-50 text-gray-700 border border-gray-200",

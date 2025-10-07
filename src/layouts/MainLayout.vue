@@ -90,6 +90,8 @@ const { data: locations } = useGetLocations()
 const { setLocations, setActiveLocation } = useSettingsStore()
 const { data: categories } = useGetCategories()
 const { data: attributes } = useGetAttributes()
+const { data: profile } = useGetProfile()
+const { updateAuthUser } = useAuthStore()
 
 watch(
   locations,
@@ -97,14 +99,11 @@ watch(
     if (newLocations) {
       const locs = newLocations.results ?? []
       setLocations(locs)
-      setActiveLocation(locs[2] ?? null)
+      setActiveLocation(locs[0] ?? null)
     }
   },
   { immediate: true },
 )
-
-const { data: profile } = useGetProfile()
-const { updateAuthUser } = useAuthStore()
 
 watch(
   profile,
@@ -117,8 +116,6 @@ watch(
 watch<ICategoriesApiResponse | undefined>(
   () => categories.value,
   (newData) => {
-    console.log(newData)
-
     if (newData?.data?.results) {
       updateProductCategoryOptions(newData.data.results)
     }
@@ -128,8 +125,6 @@ watch<ICategoriesApiResponse | undefined>(
 watch<IProductAttributesApiResponse | undefined>(
   () => attributes.value,
   (newData) => {
-    console.log(newData)
-
     if (newData?.data?.results) {
       updateProductAttributeOptions(newData.data.results)
     }
