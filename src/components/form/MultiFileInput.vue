@@ -73,9 +73,9 @@ export interface MultiImageUploadProps {
   numberOfImages: number
 
   /**
-   * The array of image files bound via v-model
+   * The array of image files or URLs bound via v-model
    */
-  modelValue: (File | null)[]
+  modelValue: (File | string | null)[]
 
   /**
    * Additional CSS classes to apply to the container
@@ -101,11 +101,11 @@ const props = withDefaults(defineProps<MultiImageUploadProps>(), {
 })
 
 const emit = defineEmits<{
-  "update:modelValue": [value: (File | null)[]]
+  "update:modelValue": [value: (File | string | null)[]]
 }>()
 
 // Reactive state
-const images = reactive<(File | null)[]>(
+const images = reactive<(File | string | null)[]>(
   Array.from({ length: props.numberOfImages }, (_, i) => props.modelValue[i] || null),
 )
 
@@ -198,21 +198,27 @@ const handleFileSelect = (event: Event, startIndex: number) => {
 
 const removeImage = (index: number) => {
   const currentImage = images[index]
-  if (currentImage) {
-    // Revoke the object URL to free memory
+  if (currentImage && currentImage instanceof File) {
+    // Only revoke object URLs for File objects
     URL.revokeObjectURL(getImageUrl(currentImage))
   }
   images[index] = null
 }
 
-const getImageUrl = (file: File): string => {
+const getImageUrl = (file: File | string): string => {
+  // If it's a string (URL), return it directly
+  if (typeof file === "string") {
+    return file
+  }
+  // If it's a File object, create an object URL
   return URL.createObjectURL(file)
 }
 
 // Cleanup object URLs when component is unmounted
 const cleanup = () => {
   images.forEach((image) => {
-    if (image) {
+    if (image && image instanceof File) {
+      // Only revoke object URLs for File objects
       URL.revokeObjectURL(getImageUrl(image))
     }
   })

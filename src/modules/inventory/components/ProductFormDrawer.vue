@@ -8,7 +8,10 @@
   >
     <IconHeader icon-name="shop-add" :subtext="getHeaderText" />
 
-    <form id="product-form" @submit.prevent="handleSubmit" class="min-h-full">
+    <!-- Loading state for fetching product -->
+    <LoadingIcon v-if="isLoadingProduct" class="min-h-[400px]" />
+
+    <form v-else id="product-form" @submit.prevent="handleSubmit" class="min-h-full">
       <div>
         <!-- Step 1: Product Details -->
         <ProductDetailsForm
@@ -70,8 +73,8 @@
             @click="handleBack"
           />
           <AppButton
-            :label="isLastStep ? 'Save Product' : 'Next'"
-            :loading="isPending || isCreating"
+            :label="isLastStep ? (mode === 'edit' ? 'Update Product' : 'Save Product') : 'Next'"
+            :loading="isPending"
             :disabled="isPending || !canProceed"
             class="flex-1"
             form="product-form"
@@ -96,12 +99,15 @@ import ProductReview from "./ProductForm/ProductReview.vue"
 import ProductVariantsForm from "./ProductForm/ProductVariantsForm.vue"
 import {
   useCreateProduct,
+  useUpdateProduct,
   useCreateAttribute,
   useCreateAttributeValues,
   useAddProductImage,
+  useGetProduct,
 } from "../api"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
+import LoadingIcon from "@components/LoadingIcon.vue"
 
 interface Props {
   /** Whether the drawer is open/visible */
@@ -131,6 +137,7 @@ const emit = defineEmits<Emits>()
 
 // API Calls
 const { mutate: createProduct, isPending: isCreating } = useCreateProduct()
+const { mutate: updateProduct, isPending: isUpdating } = useUpdateProduct()
 const { mutate: createAttribute, isPending: isCreatingAttribute } = useCreateAttribute()
 const { mutate: createAttributeValues, isPending: isCreatingAttributeValues } =
   useCreateAttributeValues()
@@ -141,11 +148,18 @@ const isMobile = ref(false)
 // const formKey = ref(0) // Force form re-render when switching modes
 const step = ref(1) // Current step in multi-step form
 const hasVariants = ref(false)
+const productUidToFetch = ref<string>("")
+
+// Get product data when editing
+const { data: productData, isLoading: isLoadingProduct } = useGetProduct(
+  computed(() => productUidToFetch.value),
+  { enabled: computed(() => !!productUidToFetch.value && props.mode === "edit") },
+)
 const form = reactive({
   name: "",
   description: "",
   category: null as { label: string; value: string } | null,
-  images: [] as Array<File | null>,
+  images: [] as Array<File | string | null>,
   story: "",
   brand: "",
   requires_approval: false,
@@ -370,9 +384,11 @@ const isPending = computed(() => {
   return (
     props.loading ||
     isCreating.value ||
+    isUpdating.value ||
     isCreatingAttribute.value ||
     isCreatingAttributeValues.value ||
-    isAddingProductImages.value
+    isAddingProductImages.value ||
+    isLoadingProduct.value
   )
 })
 
@@ -462,82 +478,82 @@ const getHeaderText = computed(() => {
   return ""
 })
 
-// Watch for changes in product or mode to force form re-render
-// watch([() => props.product, () => props.mode, () => props.modelValue], () => {
-//   if (props.modelValue) {
-//     // Reset form when opening
-//     step.value = 1
-//     hasVariants.value = false
+// Watch for drawer opening to set productUidToFetch
+watch(
+  () => [props.modelValue, props.mode, props.product] as const,
+  ([isOpen, mode, product]) => {
+    if (isOpen && mode === "edit" && product?.uid) {
+      productUidToFetch.value = product.uid
+    } else if (isOpen && mode === "add") {
+      productUidToFetch.value = ""
+      resetFormState()
+    }
+  },
+  { immediate: true },
+)
 
-//     if (props.mode === "edit" && props.product) {
-//       // Populate form with existing product data
-//       form.name = props.product.name || ""
-//       form.description = props.product.description || ""
-//       form.category?.value = props.product.category || null
-//       hasVariants.value = props.product.hasVariants || false
+// Watch for product data to populate form
+watch(
+  () => productData.value,
+  (data) => {
+    if (data?.data && props.mode === "edit") {
+      const product = data.data
+      form.name = product.name || ""
+      form.description = product.description || ""
+      form.story = product.story || ""
+      form.brand = product.brand || ""
+      form.requires_approval = product.requires_approval || false
 
-//       // Initialize variants array with existing data
-//       if (props.product.variants && props.product.variants.length > 0) {
-//         variants.value = [...props.product.variants]
-//       } else {
-//         // Initialize with default variant for no-variants product
-//         variants.value = [
-//           {
-//             name: props.product.name || "Default",
-//             sku: props.product.sku || "",
-//             price: props.product.price || "",
-//             promo_price: props.product.promo_price || "",
-//             promo_expiry: props.product.promo_expiry || "",
-//             cost_price: props.product.cost_price || "",
-//             weight: props.product.weight || "",
-//             length: props.product.length || "",
-//             width: props.product.width || "",
-//             height: props.product.height || "",
-//             reorder_point: props.product.reorder_point || "",
-//             max_stock: props.product.max_stock || "",
-//             opening_stock: props.product.opening_stock || "",
-//             is_active: props.product.is_active ?? true,
-//             is_default: true,
-//             batch_number: props.product.batch_number || "",
-//             expiry_date: props.product.expiry_date || "",
-//             attributes: props.product.attributes || [],
-//           },
-//         ]
-//       }
-//     } else {
-//       // Reset form for new product
-//       form.name = ""
-//       form.description = ""
-//       form.category = null
-//       hasVariants.value = false
+      // Set category if it exists
+      if (product.category) {
+        form.category = {
+          label: product.category_name || "",
+          value: product.category || "",
+        }
+      }
 
-//       // Initialize with empty variant for new product
-//       variants.value = [
-//         {
-//           name: "Default",
-//           sku: "",
-//           price: "",
-//           promo_price: "",
-//           promo_expiry: "",
-//           cost_price: "",
-//           weight: "",
-//           length: "",
-//           width: "",
-//           height: "",
-//           reorder_point: "",
-//           max_stock: "",
-//           opening_stock: "",
-//           is_active: true,
-//           is_default: true,
-//           batch_number: "",
-//           expiry_date: "",
-//           attributes: [],
-//         },
-//       ]
-//     }
-//   }
-//   formKey.value += 1
-// })
+      // Populate images array with URLs from product data
+      if (product.images && product.images.length > 0) {
+        // Sort images by sort_order and map to URLs
+        const sortedImages = [...product.images].sort((a, b) => a.sort_order - b.sort_order)
+        form.images = sortedImages.slice(0, 5).map((img) => img.image)
+
+        // Fill remaining slots with null if needed
+        while (form.images.length < 5) {
+          form.images.push(null)
+        }
+      }
+
+      // Set hasVariants based on product data
+      hasVariants.value = product.is_variable || false
+
+      // Populate variants if they exist
+      if (product.variants && product.variants.length > 0) {
+        variants.value = product.variants.map((variant) => ({
+          name: variant.name || "",
+          sku: variant.sku || "",
+          price: variant.price || "",
+          promo_price: variant.promo_price || "",
+          promo_expiry: variant.promo_expiry || "",
+          cost_price: variant.cost_price || "",
+          weight: variant.weight || "",
+          length: variant.length || "",
+          width: variant.width || "",
+          height: variant.height || "",
+          reorder_point: variant.reorder_point?.toString() || "",
+          max_stock: variant.max_stock?.toString() || "",
+          opening_stock: variant.opening_stock?.toString() || "",
+          is_active: variant.is_active ?? true,
+          is_default: variant.is_default ?? false,
+          batch_number: variant.batch_number || "",
+          expiry_date: variant.expiry_date || "",
+          attributes: variant.attributes || [],
+        }))
+      }
+    }
+  },
+  { immediate: true },
+)
 
 // Check if mobile on mount and window resize
 const checkMobile = () => {
@@ -942,69 +958,91 @@ const handleSubmit = async () => {
       })),
     }
 
-    createProduct(payload, {
-      onSuccess: (response: unknown) => {
-        toast.success("Product created successfully")
+    // Check if we're in edit mode or create mode
+    const isEditMode = props.mode === "edit" && productUidToFetch.value
 
-        // Extract product UID from response and upload images
-        const productUid = extractUid(response)
-        if (productUid && form.images.length > 0) {
-          // Handle image upload asynchronously without blocking the success callback
-          ;(async () => {
-            try {
-              console.log(`Uploading ${form.images.length} images for product: ${productUid}`)
+    const handleProductSuccess = (response: unknown) => {
+      const successMessage = isEditMode
+        ? "Product updated successfully"
+        : "Product created successfully"
+      toast.success(successMessage)
 
-              // Filter out invalid images (only keep actual File objects, exclude null and empty objects)
-              const validImages = form.images.filter((image) => image && image instanceof File)
-              console.log(
-                `Found ${validImages.length} valid images out of ${form.images.length} total images`,
-              )
+      // Extract product UID from response (for create) or use existing UID (for edit)
+      const productUid = isEditMode ? productUidToFetch.value : extractUid(response)
 
-              if (validImages.length === 0) {
-                console.log("No valid images to upload")
-                return
-              }
+      if (productUid && form.images.length > 0) {
+        // Handle image upload asynchronously without blocking the success callback
+        ;(async () => {
+          try {
+            console.log(`Uploading ${form.images.length} images for product: ${productUid}`)
 
-              // Upload all valid images
-              for (let i = 0; i < validImages.length; i++) {
-                const image = validImages[i]
+            // Filter out invalid images (only keep actual File objects, exclude null and URL strings)
+            const validImages = form.images.filter((image) => image && image instanceof File)
+            console.log(
+              `Found ${validImages.length} valid images out of ${form.images.length} total images`,
+            )
 
-                await new Promise<void>((resolve, reject) => {
-                  addProductImages(
-                    {
-                      product: productUid,
-                      image: image as File,
-                      is_primary: i === 0, // First image is primary
-                      sort_order: i + 1,
-                    },
-                    {
-                      onSuccess: () => {
-                        console.log(`Image ${i + 1} uploaded successfully`)
-                        resolve()
-                      },
-                      onError: (error: unknown) => {
-                        console.error(`Failed to upload image ${i + 1}:`, error)
-                        reject(new Error(String(error)))
-                      },
-                    },
-                  )
-                })
-              }
-
-              toast.success("All images uploaded successfully")
-            } catch (error) {
-              console.error("Failed to upload some images:", error)
-              toast.error("Product created but some images failed to upload")
+            if (validImages.length === 0) {
+              console.log("No valid images to upload")
+              return
             }
-          })()
-        }
 
-        resetFormState()
-        emit("update:modelValue", false)
-        emit("refresh")
-      },
-      onError: displayError,
-    })
+            // Upload all valid images
+            for (let i = 0; i < validImages.length; i++) {
+              const image = validImages[i]
+
+              await new Promise<void>((resolve, reject) => {
+                addProductImages(
+                  {
+                    product: productUid,
+                    image: image as File,
+                    is_primary: i === 0, // First image is primary
+                    sort_order: i + 1,
+                  },
+                  {
+                    onSuccess: () => {
+                      console.log(`Image ${i + 1} uploaded successfully`)
+                      resolve()
+                    },
+                    onError: (error: unknown) => {
+                      console.error(`Failed to upload image ${i + 1}:`, error)
+                      reject(new Error(String(error)))
+                    },
+                  },
+                )
+              })
+            }
+
+            toast.success("All images uploaded successfully")
+          } catch (error) {
+            console.error("Failed to upload some images:", error)
+            const errorMessage = isEditMode
+              ? "Product updated but some images failed to upload"
+              : "Product created but some images failed to upload"
+            toast.error(errorMessage)
+          }
+        })()
+      }
+
+      resetFormState()
+      emit("update:modelValue", false)
+      emit("refresh")
+    }
+
+    if (isEditMode) {
+      updateProduct(
+        { uid: productUidToFetch.value, ...payload },
+        {
+          onSuccess: handleProductSuccess,
+          onError: displayError,
+        },
+      )
+    } else {
+      createProduct(payload, {
+        onSuccess: handleProductSuccess,
+        onError: displayError,
+      })
+    }
   } else {
     // Handle step progression with variant processing
     if (step.value === 2 && hasVariants.value) {

@@ -1,5 +1,6 @@
 import baseApi, { TPaginatedResponse, useApiQuery } from "@/composables/baseApi"
 import { useMutation, useQuery } from "@tanstack/vue-query"
+import { toValue, type MaybeRefOrGetter } from "vue"
 import {
   IProductCategoryFormPayload,
   IProductFormPayload,
@@ -36,6 +37,14 @@ export function useCreateCategory() {
 export function useCreateProduct() {
   return useMutation({
     mutationFn: (body: IProductFormPayload) => baseApi.post("inventory/products/", body),
+  })
+}
+
+/** Update product api request */
+export function useUpdateProduct() {
+  return useMutation({
+    mutationFn: ({ uid, ...body }: IProductFormPayload & { uid: string }) =>
+      baseApi.patch(`inventory/products/${uid}/`, body),
   })
 }
 
@@ -129,13 +138,18 @@ export function useAddProductImage() {
 }
 
 /** get product by uid */
-export function useGetProduct(uid: string) {
+export function useGetProduct(
+  uid: MaybeRefOrGetter<string>,
+  options?: { enabled?: MaybeRefOrGetter<boolean> },
+) {
   return useQuery({
     queryKey: ["products", uid],
     queryFn: async () => {
-      const { data } = await baseApi.get<IGetProductResponse>(`/inventory/products/${uid}/`)
+      const uidValue = toValue(uid)
+      const { data } = await baseApi.get<IGetProductResponse>(`/inventory/products/${uidValue}/`)
       return data
     },
+    enabled: options?.enabled ?? true,
   })
 }
 

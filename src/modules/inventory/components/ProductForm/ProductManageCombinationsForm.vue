@@ -259,9 +259,25 @@ const singleVariantForm = computed({
 const selectedDimension = computed({
   get: () => {
     if (!globalDimensions.value.weight) return null
-    return dimensionOptions.value.find(
+
+    // First try exact match (for weights that were set by the dropdown)
+    const exactMatch = dimensionOptions.value.find(
       (opt) => opt.value.max_weight.toString() === globalDimensions.value.weight,
     )
+    if (exactMatch) return exactMatch
+
+    // If no exact match, find the appropriate dimension based on weight range
+    const weight = parseFloat(globalDimensions.value.weight)
+    if (isNaN(weight)) return null
+
+    // Sort dimension options by max_weight to find the right range
+    const sortedOptions = [...dimensionOptions.value].sort(
+      (a, b) => a.value.max_weight - b.value.max_weight,
+    )
+
+    // Find the first dimension where weight <= max_weight
+    const rangeMatch = sortedOptions.find((opt) => weight <= opt.value.max_weight)
+    return rangeMatch || null
   },
   set: (dimension: { label: string; value: IProductDimension }) => {
     if (dimension) {
