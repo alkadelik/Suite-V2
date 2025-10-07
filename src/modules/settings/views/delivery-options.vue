@@ -4,9 +4,36 @@ import AppButton from "@components/AppButton.vue"
 import Switch from "@components/form/Switch.vue"
 import Icon from "@components/Icon.vue"
 import SectionHeader from "@components/SectionHeader.vue"
+import { useAuthStore } from "@modules/auth/store"
+import { useGetLiveStatus } from "@modules/shared/api"
+import ConfigureDeliveryModal from "@modules/shared/components/ConfigureDeliveryModal.vue"
+import ConfigurePickupModal from "@modules/shared/components/ConfigurePickupModal.vue"
 
-import { ref } from "vue"
-const form = ref({ allow_pickup: false, allow_delivery: true })
+import { computed, ref, watch } from "vue"
+const form = ref({ allow_pickup: false, allow_delivery: false })
+
+const openPickup = ref(false)
+const openDelivery = ref(false)
+const storeSlug = computed(() => useAuthStore().user?.store_slug || "")
+
+const { data: liveStatus } = useGetLiveStatus(storeSlug.value)
+const computedLiveStatusDelivery = computed(
+  () => liveStatus.value?.data?.criteria?.delivery_options?.details || null,
+)
+
+watch(
+  liveStatus,
+  (newVal) => {
+    console.log({ newVal })
+    if (newVal) {
+      form.value.allow_pickup =
+        newVal.data?.criteria?.delivery_options?.details?.pickup_location || false
+      form.value.allow_delivery =
+        newVal.data?.criteria?.delivery_options?.details?.delivery_enabled || false
+    }
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -29,7 +56,11 @@ const form = ref({ allow_pickup: false, allow_delivery: true })
             <div class="flex-1">
               <h3 class="mb-1 flex items-end gap-2 text-base font-semibold">
                 Allow Pickup?
-                <button type="button" class="text-primary-600 text-sm underline">
+                <button
+                  v-if="computedLiveStatusDelivery?.pickup_location"
+                  type="button"
+                  class="text-primary-600 text-sm underline"
+                >
                   Manage address
                 </button>
               </h3>
@@ -37,7 +68,15 @@ const form = ref({ allow_pickup: false, allow_delivery: true })
                 Let customers pick up their orders directly from you.
               </p>
             </div>
-            <Switch v-model="form.allow_pickup" />
+            <Switch
+              :model-value="form.allow_pickup"
+              @update:model-value="
+                ($event) => {
+                  form.allow_pickup = $event
+                  if ($event) openPickup = true
+                }
+              "
+            />
           </div>
 
           <!-- delivery -->
@@ -49,13 +88,25 @@ const form = ref({ allow_pickup: false, allow_delivery: true })
             <div class="flex-1">
               <h3 class="mb-1 flex items-end gap-2 text-base font-semibold">
                 Allow Delivery?
-                <button type="button" class="text-primary-600 text-sm underline">
+                <button
+                  v-if="computedLiveStatusDelivery?.delivery_enabled"
+                  type="button"
+                  class="text-primary-600 text-sm underline"
+                >
                   Manage preferred couriers
                 </button>
               </h3>
               <p class="text-core-600 text-sm">Offer deliver to your customers.</p>
             </div>
-            <Switch v-model="form.allow_delivery" />
+            <Switch
+              :model-value="form.allow_delivery"
+              @update:model-value="
+                ($event) => {
+                  form.allow_delivery = $event
+                  if ($event) openDelivery = true
+                }
+              "
+            />
           </div>
         </div>
 
@@ -64,5 +115,8 @@ const form = ref({ allow_pickup: false, allow_delivery: true })
         </div>
       </div>
     </section>
+
+    <ConfigurePickupModal v-model="openPickup" />
+    <ConfigureDeliveryModal v-model="openDelivery" />
   </div>
 </template>

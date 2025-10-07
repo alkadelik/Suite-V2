@@ -6,16 +6,17 @@
     </label>
     <p v-if="hint" class="text-core-600 text-xs">{{ hint }}</p>
 
-    <div class="space-y-2">
+    <div class="flex flex-row items-start gap-2 space-y-2">
       <div
         v-for="option in options"
-        :key="option.value"
+        :key="String(option.value)"
         :class="[
           'flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 transition-all',
           modelValue === option.value
             ? 'border-primary-700 bg-primary-25'
             : 'border-gray-400 bg-gray-50 hover:border-gray-500',
           disabled ? 'cursor-not-allowed opacity-50' : '',
+          'flex-1',
         ]"
         @click="!disabled && handleChange(option.value)"
       >
@@ -50,14 +51,16 @@
 <script setup lang="ts">
 import { computed } from "vue"
 
+type RadioOptionValue = string | boolean | object
+
 interface RadioOption {
   label: string
-  value: string
+  value: RadioOptionValue
   description?: string
 }
 
 interface RadioInputFieldProps {
-  modelValue?: string
+  modelValue?: RadioOptionValue
   label?: string
   options: RadioOption[]
   required?: boolean
@@ -76,7 +79,7 @@ const props = withDefaults(defineProps<RadioInputFieldProps>(), {
 })
 
 const emit = defineEmits<{
-  "update:modelValue": [value: string]
+  "update:modelValue": [value: RadioOptionValue]
 }>()
 
 const labelClasses = computed(() => [
@@ -88,7 +91,7 @@ const labelClasses = computed(() => [
   },
 ])
 
-const handleChange = (value: string) => {
+const handleChange = (value: RadioOptionValue) => {
   if (props.readonly || props.disabled) return
   emit("update:modelValue", value)
 }

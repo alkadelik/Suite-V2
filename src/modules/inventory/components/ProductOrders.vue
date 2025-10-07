@@ -41,37 +41,19 @@
         </template>
 
         <template #cell:items="{ item }">
-          <div class="flex flex-wrap gap-1">
-            <template v-for="orderItem in item.items" :key="orderItem.id">
-              <Chip
-                v-if="orderItem.selected_option1"
-                :label="orderItem.selected_option1"
-                color="primary"
-                size="sm"
-              />
-              <Chip
-                v-if="orderItem.selected_option2"
-                :label="orderItem.selected_option2"
-                color="primary"
-                size="sm"
-              />
-            </template>
+          <div class="max-w-[100px] truncate">
+            {{ item.items.map((v) => v.product_name).join(", ") }}
           </div>
         </template>
 
         <template #cell:customer_info="{ item }">
-          <Avatar
-            v-if="item.customer_info"
-            :name="`${item.customer_info.first_name} ${item.customer_info.last_name}`"
-            :url="item.customer_info.photo ?? undefined"
-            size="sm"
-          />
+          <Avatar v-if="item.customer" :name="`${item.customer_name}`" size="sm" />
           <Avatar v-else name="Guest Customer" size="sm" />
         </template>
 
-        <template #cell:payment_status="{ value, item }">
+        <template #cell:payment_status="{ value }">
           <Chip
-            :label="getPaymentStatusLabel(value as number, item)"
+            :label="getPaymentStatusLabel(String(value))"
             :icon="getPaymentStatusIcon(value as number)"
             :color="getPaymentStatusColor(value as number)"
             size="sm"
@@ -102,7 +84,7 @@
 
         <!-- Mobile card view -->
         <template #mobile="{ item }">
-          <ProductOrderCard :order="item" :order-action-items="getOrderActionItems(item)" />
+          <OrderCard :order="item" :order-action-items="getOrderActionItems(item)" />
         </template>
       </DataTable>
     </div>
@@ -118,11 +100,10 @@ import Avatar from "@components/Avatar.vue"
 import Icon from "@components/Icon.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import { getSmartDateLabel } from "@/utils/formatDate"
-import { ORDER_PAYMENT_METHODS } from "@modules/orders/constants"
-import ProductOrderCard from "./ProductOrderCard.vue"
 import type { IProductDetails } from "../types"
 import type { TOrder } from "@modules/orders/types"
 import type { TableColumn } from "@components/DataTable.vue"
+import OrderCard from "@modules/orders/components/OrderCard.vue"
 
 interface Props {
   product: IProductDetails
@@ -144,12 +125,12 @@ const formatOrderDate = (date: string) => {
   return getSmartDateLabel(date)
 }
 
-const getPaymentStatusLabel = (status: number, order: TOrder) => {
-  const paymentMethod = ORDER_PAYMENT_METHODS.find((m) => m.value === order.payment_mode)
-  const methodLabel = paymentMethod?.label || "Unknown"
+const getPaymentStatusLabel = (status: string) => {
+  // const paymentMethod = ORDER_PAYMENT_METHODS.find((m) => m.value === order.payment_mode)
+  // const methodLabel = paymentMethod?.label || "Unknown"
 
-  if (status === 1) return `Paid (${methodLabel})`
-  if (status === 2) return "Partially Paid"
+  if (status === "paid") return `Paid`
+  if (status === "partially_paid") return "Partially Paid"
   return "Unpaid"
 }
 

@@ -9,26 +9,17 @@
       <!-- Trigger Button -->
       <button
         type="button"
-        :class="$slots.trigger ? triggerClass : triggerClasses"
+        :class="$slots.trigger ? triggerClass : ''"
         :disabled="disabled"
-        @click="toggle"
+        @click.stop="
+          () => {
+            emit('toggle', !shown)
+            toggle
+          }
+        "
       >
         <slot name="trigger" :open="shown" :disabled="disabled">
-          <div v-if="leftIcon" class="text-core-400 flex items-center">
-            <Icon :name="leftIcon" :class="iconSizeClasses" />
-          </div>
-
-          <div :class="contentClasses">
-            <span v-if="label" class="flex-1 truncate text-left">{{ label }}</span>
-            <span v-else class="text-core-400 flex-1 truncate text-left">{{ placeholder }}</span>
-          </div>
-
-          <div v-if="rightIcon || showChevron" class="text-core-400 ml-3 flex items-center">
-            <Icon
-              :name="rightIcon || 'arrow-down-double'"
-              :class="[iconSizeClasses, shown ? 'rotate-180 transform' : '']"
-            />
-          </div>
+          <Icon name="dots-vertical" size="20" />
         </slot>
       </button>
     </template>
@@ -188,29 +179,29 @@ const emit = defineEmits<{
 }>()
 
 // Styling computed properties
-const triggerClasses = computed(() => {
-  const baseClasses =
-    "inline-flex items-center justify-between w-full rounded-xl border transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2" +
-    " bg-core-25 border-core-50 text-core-800 hover:bg-core-50 focus:border-primary-300 focus:ring-primary-300"
+// const triggerClasses = computed(() => {
+//   const baseClasses =
+//     "inline-flex items-center justify-between w-full rounded-xl border transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2" +
+//     " bg-core-25 border-core-50 text-core-800 hover:bg-core-50 focus:border-primary-300 focus:ring-primary-300"
 
-  const sizeClasses = {
-    sm: "min-h-[36px] px-3 py-1.5 text-sm",
-    md: "min-h-[44px] px-3 py-2 text-sm",
-    lg: "min-h-[48px] px-4 py-2.5 text-base",
-  }
+//   const sizeClasses = {
+//     sm: "min-h-[36px] px-3 py-1.5 text-sm",
+//     md: "min-h-[44px] px-3 py-2 text-sm",
+//     lg: "min-h-[48px] px-4 py-2.5 text-base",
+//   }
 
-  const disabledClasses = props.disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+//   const disabledClasses = props.disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
 
-  return [baseClasses, sizeClasses[props.size], disabledClasses, props.triggerClass || ""]
-    .filter(Boolean)
-    .join(" ")
-})
+//   return [baseClasses, sizeClasses[props.size], disabledClasses, props.triggerClass || ""]
+//     .filter(Boolean)
+//     .join(" ")
+// })
 
-const contentClasses = computed(() => {
-  const base = "flex flex-1 items-center gap-2 min-w-0"
-  const padding = props.leftIcon ? "pl-2" : ""
-  return [base, padding].filter(Boolean).join(" ")
-})
+// const contentClasses = computed(() => {
+//   const base = "flex flex-1 items-center gap-2 min-w-0"
+//   const padding = props.leftIcon ? "pl-2" : ""
+//   return [base, padding].filter(Boolean).join(" ")
+// })
 
 const iconSizeClasses = computed(() => {
   const sizeClasses = {

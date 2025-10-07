@@ -1,4 +1,4 @@
-import baseApi from "@/composables/baseApi"
+import baseApi, { TPaginatedResponse, useApiQuery } from "@/composables/baseApi"
 import { useMutation, useQuery } from "@tanstack/vue-query"
 import {
   IProductCategoryFormPayload,
@@ -11,6 +11,7 @@ import {
   IReduceStockPayload,
   IInventoryMovementsApiResponse,
   IStockTransferPayload,
+  IProductCatalogue,
 } from "./types"
 
 /** Get categories api request */
@@ -179,5 +180,13 @@ export function useDirectStockTransfer() {
 export function useRequestStockTransfer() {
   return useMutation({
     mutationFn: (payload: IStockTransferPayload) => baseApi.post("/inventory/transfers/", payload),
+  })
+}
+
+export function useGetProductCatalogs() {
+  return useApiQuery<TPaginatedResponse<IProductCatalogue>["data"]>({
+    url: `/inventory/catalog/`,
+    key: "productCatalogs",
+    selectData: true,
   })
 }

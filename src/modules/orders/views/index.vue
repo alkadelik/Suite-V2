@@ -8,8 +8,6 @@ import SectionHeader from "@components/SectionHeader.vue"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, ref } from "vue"
 import Avatar from "@components/Avatar.vue"
-import { getFullName, TNameObj } from "@/utils/format-strings"
-import Icon from "@components/Icon.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import Chip from "@components/Chip.vue"
 import { TOrder } from "../types"
@@ -19,10 +17,20 @@ import { useDeleteOrder, useGetOrders, useVoidOrder } from "../api"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
 import { ORDER_COLUMNS } from "../constants"
+import { startCase } from "@/utils/format-strings"
+import OrderCard from "../components/OrderCard.vue"
+import FulfilOrderModal from "../components/FulfilOrderModal.vue"
+import OrderMemoDrawer from "../components/OrderMemoDrawer.vue"
+import ShareInvoiceReceipt from "../components/ShareInvoiceReceipt.vue"
+import OrderPaymentDrawer from "../components/OrderPaymentDrawer.vue"
 
 const openCreate = ref(false)
 const openVoid = ref(false)
 const openDelete = ref(false)
+const openMemo = ref(false)
+const openFulfil = ref(false)
+const openShare = ref(false)
+const openPayment = ref(false)
 const selectedOrder = ref<TOrder | null>(null)
 
 const orderMetrics = computed(() => {
@@ -70,37 +78,40 @@ const searchQuery = ref("")
 const showFilter = ref(false)
 const isMobile = useMediaQuery("(max-width: 768px)")
 
-const { data: orders, refetch } = useGetOrders()
+const { data: orders, isFetching, refetch } = useGetOrders()
 
-const handleRowClick = (row: Record<string, unknown>) => {
-  // Handle row click event
-  console.log("Row clicked:", row)
-}
-
-type Action = "view" | "edit" | "share" | "update-payment" | "void" | "delete"
-const handleAction = (action: Action, item: Record<string, unknown>) => {
-  // Handle action based on type
-  console.log(`Action: ${action}`, item)
-  selectedOrder.value = item as TOrder
-  if (action === "void") openVoid.value = true
-  if (action === "delete") openDelete.value = true
-}
-
-const getActionItems = (item: Record<string, unknown>) => [
+const getActionItems = (item: TOrder) => [
   {
     label: "View memos",
     icon: "eye",
-    action: () => handleAction("view", item),
+    action: () => {
+      selectedOrder.value = item
+      openMemo.value = true
+    },
   },
   {
     label: "Share invoice",
     icon: "share",
-    action: () => handleAction("share", item),
+    action: () => {
+      selectedOrder.value = item
+      openShare.value = true
+    },
   },
   {
     label: "Update Payment",
     icon: "money-add",
-    action: () => handleAction("update-payment", item),
+    action: () => {
+      selectedOrder.value = item
+      openPayment.value = true
+    },
+  },
+  {
+    label: "Fulfill Order",
+    icon: "money-add",
+    action: () => {
+      selectedOrder.value = item
+      openFulfil.value = true
+    },
   },
   { divider: true },
   {
@@ -108,14 +119,20 @@ const getActionItems = (item: Record<string, unknown>) => [
     icon: "trash",
     class: "text-red-600 hover:bg-red-50",
     iconClass: "text-red-600",
-    action: () => handleAction("void", item),
+    action: () => {
+      selectedOrder.value = item
+      openVoid.value = true
+    },
   },
   {
     label: "Delete Order",
     icon: "trash",
     class: "text-red-600 hover:bg-red-50",
     iconClass: "text-red-600",
-    action: () => handleAction("delete", item),
+    action: () => {
+      selectedOrder.value = item
+      openDelete.value = true
+    },
   },
 ]
 
@@ -128,10 +145,9 @@ const { mutate: voidOrder, isPending: isVoiding } = useVoidOrder()
 const { mutate: deleteOrder, isPending: isDeleting } = useDeleteOrder()
 
 const handleVoidDelete = ({ action, reason }: { action: string; reason: string }) => {
-  console.log("Action:", action, "Reason:", reason, "Selected Order:", selectedOrder.value)
   if (action === "void") {
     voidOrder(
-      { id: selectedOrder.value?.id as number, void_reason: reason },
+      { id: selectedOrder.value?.uid || "", void_reason: reason },
       {
         onSuccess: () => {
           toast.success("Order voided successfully")
@@ -142,7 +158,7 @@ const handleVoidDelete = ({ action, reason }: { action: string; reason: string }
       },
     )
   } else if (action === "delete") {
-    deleteOrder(selectedOrder.value?.id as number, {
+    deleteOrder(selectedOrder.value?.uid || "", {
       onSuccess: () => {
         toast.success("Order deleted successfully")
         onCloseVoidDel()
@@ -164,7 +180,7 @@ const handleVoidDelete = ({ action, reason }: { action: string; reason: string }
       description="You haven't received any orders. Once you start receiving orders, they will appear here."
       action-label="Add an order"
       action-icon="add"
-      :loading="false"
+      :loading="isFetching"
       @action="openCreate = true"
     />
 
@@ -172,17 +188,17 @@ const handleVoidDelete = ({ action, reason }: { action: string; reason: string }
       <MetricsGrid :items="orderMetrics" />
 
       <div
-        class="mt-4 space-y-4 overflow-hidden rounded-xl border-gray-200 bg-white pt-3 md:border"
+        class="mt-4 space-y-4 overflow-hidden rounded-xl border-gray-200 pt-3 md:border md:bg-white"
       >
         <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
           <h3 class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
-            All Orders <Chip :label="String(20)" />
+            All Orders <Chip :label="orders?.count || 0" />
           </h3>
           <div class="flex items-center gap-2">
             <TextField
               left-icon="search-lg"
               size="md"
-              class="min-w-64"
+              class="w-full md:min-w-64"
               placeholder="Search by customer or order ref"
               v-model="searchQuery"
             />
@@ -192,6 +208,7 @@ const handleVoidDelete = ({ action, reason }: { action: string; reason: string }
               variant="outlined"
               size="sm"
               color="alt"
+              class="flex-shrink-0"
               :label="isMobile ? '' : 'Filter'"
               @click="showFilter = true"
             />
@@ -199,6 +216,7 @@ const handleVoidDelete = ({ action, reason }: { action: string; reason: string }
             <AppButton
               icon="add"
               size="sm"
+              class="flex-shrink-0"
               :label="isMobile ? '' : 'Add Order'"
               @click="openCreate = true"
             />
@@ -211,33 +229,21 @@ const handleVoidDelete = ({ action, reason }: { action: string; reason: string }
           :loading="false"
           :show-pagination="true"
           :enable-row-selection="true"
-          @row-click="handleRowClick"
         >
-          <template #cell:items_count="{ item }">
-            <div class="flex items-center gap-2 text-xs">
-              <div class="h-1.5 w-full rounded-full bg-gray-200">
-                <div class="bg-primary-600 h-1.5 rounded-full" style="width: 50%"></div>
-              </div>
-              {{ item.items_count + "/2" }}
+          <template #cell:items="{ item }">
+            <div class="max-w-[100px] truncate">
+              {{ item.items.map((v) => v.product_name).join(", ") }}
             </div>
           </template>
           <!--  -->
-          <template #cell:status="{ item }">
+          <template #cell:payment_status="{ item }">
             <Chip
-              :icon="
-                item.payment_status === 1 ? 'money' : item.payment_status === 2 ? 'money' : 'money'
-              "
-              :label="
-                item.payment_status === 1
-                  ? 'Paid (Transfer)'
-                  : item.payment_status === 2
-                    ? 'Partially paid'
-                    : 'Unpaid'
-              "
+              :icon="item.payment_status === 'paid' ? 'card-tick' : 'card-pos'"
+              :label="startCase(item.payment_status)"
               :color="
-                item.payment_status === 1
+                item.payment_status === 'paid'
                   ? 'success'
-                  : item.payment_status === 2
+                  : item.payment_status === 'partially_paid'
                     ? 'warning'
                     : 'error'
               "
@@ -245,24 +251,25 @@ const handleVoidDelete = ({ action, reason }: { action: string; reason: string }
           </template>
           <!--  -->
           <template #cell:customer_info="{ item }">
-            <Avatar :extra-text="true" :name="getFullName(item.customer_info as TNameObj)" />
+            <Avatar :extra-text="true" :name="`Customer ${item.customer}`" />
           </template>
           <template #cell:actions="{ item }">
             <div class="inline-flex items-center gap-1">
-              <Icon name="edit" @click.stop="handleAction('edit', item)" />
-              <DropdownMenu :items="getActionItems(item)" size="sm" @toggle="selectedOrder = item">
-                <template #trigger>
-                  <Icon name="dots-vertical" />
-                </template>
-              </DropdownMenu>
+              <DropdownMenu
+                :items="getActionItems(item)"
+                size="sm"
+                @toggle="selectedOrder = item"
+              />
             </div>
+          </template>
+          <template #mobile="{ item }">
+            <OrderCard :order="item" />
           </template>
         </DataTable>
       </div>
     </section>
 
     <!--  -->
-
     <VoidDeleteOrder
       :open="openVoid || openDelete"
       :action="openVoid ? 'void' : 'delete'"
@@ -271,6 +278,34 @@ const handleVoidDelete = ({ action, reason }: { action: string; reason: string }
       @action="handleVoidDelete"
     />
 
-    <CreateOrderDrawer :open="openCreate" @close="openCreate = false" />
+    <CreateOrderDrawer :open="openCreate" @close="openCreate = false" @refresh="refetch" />
+    <FulfilOrderModal
+      v-if="selectedOrder"
+      :open="openFulfil"
+      @close="openFulfil = false"
+      :order-id="selectedOrder?.uid"
+      :items="selectedOrder?.items || []"
+    />
+
+    <OrderMemoDrawer
+      v-if="selectedOrder"
+      :order="selectedOrder"
+      :open="openMemo"
+      @close="openMemo = false"
+    />
+
+    <ShareInvoiceReceipt
+      v-if="selectedOrder"
+      :open="openShare"
+      @close="openShare = false"
+      :order="selectedOrder"
+    />
+
+    <OrderPaymentDrawer
+      v-if="selectedOrder"
+      :open="openPayment"
+      @close="openPayment = false"
+      :order="selectedOrder"
+    />
   </div>
 </template>

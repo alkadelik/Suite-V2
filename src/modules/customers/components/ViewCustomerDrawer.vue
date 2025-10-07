@@ -17,10 +17,10 @@
         <Tabs v-model="activeStatus" :tabs="tabOptions" />
 
         <div v-if="activeStatus === 'recent_orders'">
-          <template v-for="order in ORDERS" :key="order.id">
+          <template v-for="order in ORDERS" :key="order.uid">
             <OrderCard
-              v-if="!(order.order_ref.startsWith('2') && !order.payment_status)"
-              :key="'order-' + order.id"
+              v-if="!(order.order_number.startsWith('2') && !order.payment_status)"
+              :key="'order-' + order.uid"
               :order="order"
               @open:dropdown="selectedOrder = order"
             />

@@ -1,9 +1,10 @@
 export type TCustomer = {
-  uid: number
+  uid: string
   id: number
   store?: number
   first_name: string
   last_name: string
+  full_name?: string
   photo?: string | null
   house_no?: string
   email: string
@@ -31,23 +32,26 @@ export type TCustomer = {
 
 export interface ICustomer extends Record<string, unknown> {
   uid: string
-  full_name: string
-  phone: string
-  email: string
+  full_name?: string
+  first_name?: string
+  last_name?: string
+  phone?: string
+  email?: string
   date_of_birth?: string | null
   instagram_handle?: string | null
-  location_name: string
-  total_orders: number
+  location_name?: string
+  total_orders?: number
   default_address?: string | null
   default_city?: string | null
-  is_active: boolean
-  created_at: string
+  is_active?: boolean
+  created_at?: string
+  last_active?: string
 }
 
 export type TCustomerFormMode = "add" | "edit" | "view"
 
 export interface ICustomerFormPayload {
-  uid: string
+  uid?: string
   first_name: string
   last_name?: string
   email?: string
