@@ -13,6 +13,7 @@ import {
   IInventoryMovementsApiResponse,
   IStockTransferPayload,
   IProductCatalogue,
+  IProductVariant,
 } from "./types"
 
 /** Get categories api request */
@@ -45,6 +46,14 @@ export function useUpdateProduct() {
   return useMutation({
     mutationFn: ({ uid, ...body }: IProductFormPayload & { uid: string }) =>
       baseApi.patch(`inventory/products/${uid}/`, body),
+  })
+}
+
+/** Update variant api request */
+export function useUpdateVariant() {
+  return useMutation({
+    mutationFn: ({ uid, ...body }: Partial<IProductVariant> & { uid: string }) =>
+      baseApi.patch(`inventory/variants/${uid}/`, body),
   })
 }
 

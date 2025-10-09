@@ -276,6 +276,18 @@ export interface IProductFormPayload {
   variants: IProductVariant[]
 }
 
+// Update product details only (without variants)
+export interface IProductDetailsUpdatePayload {
+  name: string
+  description: string
+  story: string
+  category: string
+  brand: string
+  is_active: boolean
+  is_variable: boolean
+  requires_approval: boolean
+}
+
 // Bulk actions payload
 export interface IProductBulkActionPayload {
   action: TProductBulkAction

@@ -31,6 +31,7 @@
             size="sm"
             class="!h-9 !w-9 bg-white !p-0"
             icon="edit"
+            @click="emit('edit-details')"
           />
         </div>
 
@@ -48,13 +49,14 @@
         </div>
       </div>
       <div class="w-5/12 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-        <div class="-mb-4 flex items-center justify-end">
+        <div v-if="product.variants.length === 1" class="-mb-4 flex items-center justify-end">
           <AppButton
             variant="text"
             color="alt"
             size="sm"
             class="!h-9 !w-9 bg-white !p-0"
             icon="edit"
+            @click="emit('edit-pricing', product.variants[0])"
           />
         </div>
 
@@ -120,7 +122,7 @@
 import { computed } from "vue"
 import PageSummaryCards from "@components/PageSummaryCards.vue"
 import { formatCurrency } from "@/utils/format-currency"
-import type { IProductDetails } from "../types"
+import type { IProductDetails, IProductVariantDetails } from "../types"
 import Icon from "@components/Icon.vue"
 import Chip from "@components/Chip.vue"
 import AppButton from "@components/AppButton.vue"
@@ -137,7 +139,15 @@ interface Props {
   loading?: boolean
 }
 
+interface Emits {
+  /** Emitted when edit product details button is clicked */
+  "edit-details": []
+  /** Emitted when edit price/dimensions button is clicked (passes first variant) */
+  "edit-pricing": [variant: IProductVariantDetails]
+}
+
 const props = defineProps<Props>()
+const emit = defineEmits<Emits>()
 
 const productPrice = computed(() => {
   if (!props.product.variants.length) return "-"

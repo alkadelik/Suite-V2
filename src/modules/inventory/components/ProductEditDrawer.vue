@@ -13,40 +13,85 @@
 
     <form v-else id="product-edit-form" @submit.prevent="handleSubmit" class="min-h-full">
       <div>
-        <!-- Step 1: Product Details -->
+        <!-- Product Details Only Mode -->
         <ProductDetailsForm
-          v-if="step === 1"
+          v-if="props.editMode === 'product-details'"
           v-model="form"
           :has-variants="hasVariants"
           :disable-variants-toggle="true"
           @update:has-variants="hasVariants = $event"
         />
 
-        <!-- Step 2: Variants Configuration (only if hasVariants is true) -->
-        <ProductVariantsForm v-else-if="step === 2 && hasVariants" v-model="variantConfiguration" />
-
-        <!-- Step 2/3: Inventory & Pricing -->
+        <!-- Variant Details Mode - Edit price and dimensions for one variant -->
         <ProductManageCombinationsForm
-          v-else-if="(step === 2 && !hasVariants) || (step === 3 && hasVariants)"
+          v-else-if="props.editMode === 'variant-details'"
           v-model="variants"
           :product-name="form.name"
+          :hide-stock="true"
         />
 
-        <!-- Step 3/4: Product Images -->
-        <ProductImagesForm
-          v-else-if="(step === 3 && !hasVariants) || (step === 4 && hasVariants)"
-          v-model="form.images"
-        />
+        <!-- Full Edit Mode (multi-step) -->
+        <template v-else>
+          <!-- Step 1: Product Details -->
+          <ProductDetailsForm
+            v-if="step === 1"
+            v-model="form"
+            :has-variants="hasVariants"
+            :disable-variants-toggle="true"
+            @update:has-variants="hasVariants = $event"
+          />
 
-        <!-- Fallback -->
-        <div v-else class="text-center text-gray-500">Step {{ step }} - Coming soon</div>
+          <!-- Step 2: Variants Configuration (only if hasVariants is true) -->
+          <ProductVariantsForm
+            v-else-if="step === 2 && hasVariants"
+            v-model="variantConfiguration"
+          />
+
+          <!-- Step 2/3: Inventory & Pricing -->
+          <ProductManageCombinationsForm
+            v-else-if="(step === 2 && !hasVariants) || (step === 3 && hasVariants)"
+            v-model="variants"
+            :product-name="form.name"
+          />
+
+          <!-- Step 3/4: Product Images -->
+          <ProductImagesForm
+            v-else-if="(step === 3 && !hasVariants) || (step === 4 && hasVariants)"
+            v-model="form.images"
+          />
+
+          <!-- Fallback -->
+          <div v-else class="text-center text-gray-500">Step {{ step }} - Coming soon</div>
+        </template>
       </div>
     </form>
 
     <template #footer>
       <div class="flex w-full items-center">
-        <!-- Navigation Buttons -->
-        <div class="flex w-full items-center gap-2">
+        <!-- Product Details Mode: Simple Save/Cancel -->
+        <div
+          v-if="props.editMode === 'product-details' || props.editMode === 'variant-details'"
+          class="flex w-full items-center gap-2"
+        >
+          <AppButton
+            variant="outlined"
+            label="Cancel"
+            class="flex-1"
+            :disabled="isPending"
+            @click="emit('update:modelValue', false)"
+          />
+          <AppButton
+            :label="props.editMode === 'variant-details' ? 'Update Variant' : 'Update Product'"
+            :loading="isPending"
+            :disabled="isPending || !canProceed"
+            class="flex-1"
+            form="product-edit-form"
+            type="submit"
+          />
+        </div>
+
+        <!-- Full Edit Mode: Multi-step Navigation -->
+        <div v-else class="flex w-full items-center gap-2">
           <AppButton
             variant="outlined"
             :label="step === 1 ? 'Cancel' : 'Back'"
@@ -72,7 +117,12 @@
 import { ref, computed, onMounted, reactive, onUnmounted, watch } from "vue"
 import Drawer from "@components/Drawer.vue"
 import AppButton from "@/components/AppButton.vue"
-import { IProductFormPayload, TProduct } from "../types"
+import {
+  IProductFormPayload,
+  IProductDetailsUpdatePayload,
+  TProduct,
+  IProductVariantDetails,
+} from "../types"
 import IconHeader from "@components/IconHeader.vue"
 import ProductDetailsForm from "./ProductForm/ProductDetailsForm.vue"
 import ProductManageCombinationsForm from "./ProductForm/ProductManageCombinationsForm.vue"
@@ -81,6 +131,7 @@ import ProductImagesForm from "./ProductForm/ProductImagesForm.vue"
 import ProductVariantsForm from "./ProductForm/ProductVariantsForm.vue"
 import {
   useUpdateProduct,
+  useUpdateVariant,
   useCreateAttribute,
   useCreateAttributeValues,
   useAddProductImage,
@@ -90,6 +141,8 @@ import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
 import LoadingIcon from "@components/LoadingIcon.vue"
 
+type TProductEditMode = "product-details" | "variant-details" | "variants" | "images"
+
 interface Props {
   /** Whether the drawer is open/visible */
   modelValue: boolean
@@ -97,6 +150,10 @@ interface Props {
   product: TProduct | null
   /** Loading state for async operations */
   loading?: boolean
+  /** Edit mode - determines which form sections are shown */
+  editMode?: TProductEditMode
+  /** Variant to edit (required for variant-details mode) */
+  variant?: IProductVariantDetails | null
 }
 
 interface Emits {
@@ -109,12 +166,15 @@ interface Emits {
 const props = withDefaults(defineProps<Props>(), {
   loading: false,
   product: null,
+  editMode: "product-details",
+  variant: null,
 })
 
 const emit = defineEmits<Emits>()
 
 // API Calls
 const { mutate: updateProduct, isPending: isUpdating } = useUpdateProduct()
+const { mutate: updateVariant, isPending: isUpdatingVariant } = useUpdateVariant()
 const { mutate: createAttribute, isPending: isCreatingAttribute } = useCreateAttribute()
 const { mutate: createAttributeValues, isPending: isCreatingAttributeValues } =
   useCreateAttributeValues()
@@ -369,6 +429,7 @@ const isPending = computed(() => {
   return (
     props.loading ||
     isUpdating.value ||
+    isUpdatingVariant.value ||
     isCreatingAttribute.value ||
     isCreatingAttributeValues.value ||
     isAddingProductImages.value ||
@@ -593,6 +654,48 @@ watch(
           }))
         }
       }
+    }
+  },
+  { immediate: true },
+)
+
+// Watch for variant prop to populate form in variant-details mode
+watch(
+  () => [props.editMode, props.variant, props.modelValue] as const,
+  ([editMode, variant, isOpen]) => {
+    if (isOpen && editMode === "variant-details" && variant) {
+      // Populate variants array with single variant for editing
+      variants.value = [
+        {
+          name: variant.name || "",
+          sku: variant.sku || "",
+          price: variant.price || "",
+          promo_price: variant.promo_price || "",
+          promo_expiry: variant.promo_expiry || "",
+          cost_price: variant.cost_price || "",
+          weight: variant.weight || "",
+          length: variant.length || "",
+          width: variant.width || "",
+          height: variant.height || "",
+          reorder_point:
+            variant.reorder_point !== null && variant.reorder_point !== undefined
+              ? variant.reorder_point.toString()
+              : "",
+          max_stock:
+            variant.max_stock !== null && variant.max_stock !== undefined
+              ? variant.max_stock.toString()
+              : "",
+          opening_stock:
+            variant.available_stock !== null && variant.available_stock !== undefined
+              ? variant.available_stock.toString()
+              : "",
+          is_active: variant.is_active ?? true,
+          is_default: variant.is_default ?? false,
+          batch_number: variant.batch_number || "",
+          expiry_date: variant.expiry_date || "",
+          attributes: variant.attributes || [],
+        },
+      ]
     }
   },
   { immediate: true },
@@ -991,6 +1094,90 @@ const generateVariantAttributes = (
 const handleSubmit = async () => {
   if (!canProceed.value) return
 
+  // Product Details Mode: Submit only product details without variants
+  if (props.editMode === "product-details") {
+    const payload: IProductDetailsUpdatePayload = {
+      name: form.name,
+      description: form.description,
+      story: form.story || "",
+      category: form.category?.value as string,
+      brand: form.brand || "",
+      is_active: true,
+      is_variable: hasVariants.value,
+      requires_approval: form.requires_approval || false,
+    }
+
+    updateProduct(
+      { uid: productUidToFetch.value, ...payload } as IProductFormPayload & { uid: string },
+      {
+        onSuccess: () => {
+          toast.success("Product details updated successfully")
+          resetFormState()
+          emit("update:modelValue", false)
+          emit("refresh")
+        },
+        onError: displayError,
+      },
+    )
+    return
+  }
+
+  // Variant Details Mode: Update single variant pricing and dimensions
+  if (props.editMode === "variant-details") {
+    if (!props.variant || variants.value.length === 0) {
+      toast.error("No variant data to update")
+      return
+    }
+
+    const variantData = variants.value[0]
+
+    // Create payload without opening_stock since we're not allowing stock edits
+    const payload: Omit<IProductVariant, "opening_stock"> = {
+      name: variantData.name,
+      sku: variantData.sku,
+      price: variantData.price,
+      promo_price: variantData.promo_price,
+      promo_expiry: variantData.promo_expiry
+        ? typeof variantData.promo_expiry === "object" &&
+          variantData.promo_expiry &&
+          (variantData.promo_expiry as object) instanceof Date
+          ? (variantData.promo_expiry as Date).toISOString()
+          : variantData.promo_expiry
+        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      cost_price: variantData.cost_price,
+      weight: variantData.weight,
+      length: variantData.length,
+      width: variantData.width,
+      height: variantData.height,
+      reorder_point: variantData.reorder_point || "0",
+      max_stock: variantData.max_stock || "0",
+      is_active: variantData.is_active ?? true,
+      is_default: variantData.is_default ?? false,
+      batch_number: variantData.batch_number,
+      expiry_date: variantData.expiry_date
+        ? Object.prototype.toString.call(variantData.expiry_date) === "[object Date]"
+          ? (variantData.expiry_date as unknown as Date).toISOString().split("T")[0]
+          : variantData.expiry_date
+        : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      attributes: variantData.attributes || [],
+    }
+
+    updateVariant(
+      { uid: props.variant.uid, ...payload },
+      {
+        onSuccess: () => {
+          toast.success("Variant updated successfully")
+          resetFormState()
+          emit("update:modelValue", false)
+          emit("refresh")
+        },
+        onError: displayError,
+      },
+    )
+    return
+  }
+
+  // Full Edit Mode: Multi-step submission
   if (isLastStep.value) {
     // Format product data according to API schema
     const payload: IProductFormPayload = {

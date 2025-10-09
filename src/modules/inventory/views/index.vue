@@ -213,6 +213,7 @@
     <ProductEditDrawer
       v-model="showProductEditDrawer"
       :product="product"
+      edit-mode="product-details"
       @refresh="refetchProducts"
     />
   </div>

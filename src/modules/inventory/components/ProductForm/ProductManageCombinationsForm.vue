@@ -16,6 +16,7 @@
 
       <!-- Stock Section -->
       <TextField
+        v-if="!props.hideStock"
         :model-value="singleVariantForm.opening_stock"
         @update:model-value="updateSingleVariantField('opening_stock', removeLeadingZeros($event))"
         label="Available Stock"
@@ -33,7 +34,7 @@
         <div class="flex-1">
           <h3 class="text-sm font-medium text-gray-900">Variant</h3>
         </div>
-        <div class="w-32 text-center">
+        <div v-if="!props.hideStock" class="w-32 text-center">
           <h3 class="text-sm font-medium text-gray-900">Quantity</h3>
         </div>
         <div class="w-32 text-center">
@@ -61,7 +62,7 @@
           </div>
 
           <!-- Quantity Input -->
-          <div class="w-32">
+          <div v-if="!props.hideStock" class="w-32">
             <TextField
               :model-value="variant.opening_stock"
               placeholder=""
@@ -160,6 +161,8 @@ interface Props {
   modelValue: IProductVariant[]
   /** Product name to set as default variant name */
   productName?: string
+  /** Hide the stock/quantity field (for variant-details edit mode) */
+  hideStock?: boolean
 }
 
 interface Emits {

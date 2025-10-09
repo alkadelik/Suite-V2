@@ -140,6 +140,8 @@
         :product="product.data"
         :product-metrics="productMetrics"
         :loading="isPending"
+        @edit-details="openProductEditDrawer"
+        @edit-pricing="openVariantPricingEdit"
       />
 
       <ProductVariants
@@ -211,6 +213,15 @@
       @close="showTransferRequestDrawer = false"
       @success="handleStockSuccess"
     />
+
+    <!-- Product Edit Drawer -->
+    <ProductEditDrawer
+      v-model="showProductEditDrawer"
+      :product="productForEdit"
+      :edit-mode="editMode"
+      :variant="variantForEdit"
+      @refresh="handleStockSuccess"
+    />
   </div>
 </template>
 
@@ -241,6 +252,8 @@ import { useSettingsStore } from "@modules/settings/store"
 import { useGetOrders } from "@modules/orders/api"
 import { useGetInventoryMovements } from "../api"
 import AppButton from "@components/AppButton.vue"
+import ProductEditDrawer from "../components/ProductEditDrawer.vue"
+import type { TProduct } from "../types"
 
 const route = useRoute()
 const router = useRouter()
@@ -264,6 +277,10 @@ const stockModalType = ref<"add" | "reduce">("add")
 const showTransferRequestDrawer = ref(false)
 const transferRequestType = ref<"transfer" | "request">("transfer")
 const selectedVariant = ref<IProductVariantDetails | null>(null)
+const showProductEditDrawer = ref(false)
+const productForEdit = ref<TProduct | null>(null)
+const editMode = ref<"product-details" | "variant-details">("product-details")
+const variantForEdit = ref<IProductVariantDetails | null>(null)
 
 const openStockModal = (
   type: "add" | "reduce",
@@ -349,13 +366,51 @@ const getStockActionItems = (item: IProductVariantDetails | typeof product.value
   return items
 }
 
+const openProductEditDrawer = () => {
+  if (!product.value) return
+
+  // Create a TProduct object from the detailed product data
+  productForEdit.value = {
+    uid: product.value.data.uid,
+    name: product.value.data.name,
+    total_stock: product.value.data.total_stock,
+    needs_reorder: product.value.data.needs_reorder,
+    variants_count: product.value.data.variants.length,
+    is_active: product.value.data.is_active,
+    category: product.value.data.category,
+    created_at: product.value.data.created_at,
+  }
+
+  editMode.value = "product-details"
+  variantForEdit.value = null
+  showProductEditDrawer.value = true
+}
+
+const openVariantPricingEdit = (variant: IProductVariantDetails) => {
+  if (!product.value) return
+
+  // Create a TProduct object from the detailed product data
+  productForEdit.value = {
+    uid: product.value.data.uid,
+    name: product.value.data.name,
+    total_stock: product.value.data.total_stock,
+    needs_reorder: product.value.data.needs_reorder,
+    variants_count: product.value.data.variants.length,
+    is_active: product.value.data.is_active,
+    category: product.value.data.category,
+    created_at: product.value.data.created_at,
+  }
+
+  editMode.value = "variant-details"
+  variantForEdit.value = variant
+  showProductEditDrawer.value = true
+}
+
 const actionItems = computed(() => [
   {
     label: "Edit Product",
     icon: "edit",
-    action: () => {
-      console.log("Editing product:", product.value)
-    },
+    action: openProductEditDrawer,
   },
   ...(product?.value?.data.variants.length && !(product.value.data.variants.length > 1)
     ? getStockActionItems(product.value).map((item) => ({
