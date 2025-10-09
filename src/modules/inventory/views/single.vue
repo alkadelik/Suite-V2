@@ -14,6 +14,7 @@
           variant="outlined"
           color="alt"
           class="!hidden bg-white md:!inline-flex"
+          @click="openImagesEditDrawer"
         />
         <DropdownMenu :items="actionItems" placement="bottom-end" :show-chevron="false">
           <template #trigger>
@@ -83,6 +84,7 @@
               color="alt"
               size="sm"
               class="!absolute top-2 left-2 !h-8 !w-8 bg-white !p-0"
+              @click="openImagesEditDrawer"
             />
             <div
               class="absolute top-2 right-2 flex items-center gap-1 rounded bg-gray-50 px-2 py-1 text-xs font-semibold text-gray-700"
@@ -279,7 +281,9 @@ const transferRequestType = ref<"transfer" | "request">("transfer")
 const selectedVariant = ref<IProductVariantDetails | null>(null)
 const showProductEditDrawer = ref(false)
 const productForEdit = ref<TProduct | null>(null)
-const editMode = ref<"product-details" | "variant-details">("product-details")
+const editMode = ref<"product-details" | "variant-details" | "variants" | "images">(
+  "product-details",
+)
 const variantForEdit = ref<IProductVariantDetails | null>(null)
 
 const openStockModal = (
@@ -410,6 +414,26 @@ const openVariantPricingEdit = (variant: IProductVariantDetails) => {
   showProductEditDrawer.value = true
 }
 
+const openImagesEditDrawer = () => {
+  if (!product.value) return
+
+  // Create a TProduct object from the detailed product data
+  productForEdit.value = {
+    uid: product.value.data.uid,
+    name: product.value.data.name,
+    total_stock: product.value.data.total_stock,
+    needs_reorder: product.value.data.needs_reorder,
+    variants_count: product.value.data.variants.length,
+    is_active: product.value.data.is_active,
+    category: product.value.data.category,
+    created_at: product.value.data.created_at,
+  }
+
+  editMode.value = "images"
+  variantForEdit.value = null
+  showProductEditDrawer.value = true
+}
+
 const actionItems = computed(() => [
   {
     label: "Edit Product",
@@ -537,11 +561,29 @@ const getVariantActionItems = (variant: IProductVariantDetails) => {
 }
 
 const handleVariantAction = (action: string, variant: IProductVariantDetails) => {
-  console.log(action, variant)
+  if (action === "edit") {
+    openVariantPricingEdit(variant)
+  }
 }
 
 const handleAddVariant = () => {
-  console.log("Add variant clicked")
+  if (!product.value) return
+
+  // Create a TProduct object from the detailed product data
+  productForEdit.value = {
+    uid: product.value.data.uid,
+    name: product.value.data.name,
+    total_stock: product.value.data.total_stock,
+    needs_reorder: product.value.data.needs_reorder,
+    variants_count: product.value.data.variants.length,
+    is_active: product.value.data.is_active,
+    category: product.value.data.category,
+    created_at: product.value.data.created_at,
+  }
+
+  editMode.value = "variants"
+  variantForEdit.value = null
+  showProductEditDrawer.value = true
 }
 
 const handleCreateOrder = () => {

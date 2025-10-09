@@ -30,6 +30,26 @@
           :hide-stock="true"
         />
 
+        <!-- Images Edit Mode - Edit product images only -->
+        <ProductImagesForm v-else-if="props.editMode === 'images'" v-model="form.images" />
+
+        <!-- Variants Edit Mode (skip product details, start from variants) -->
+        <template v-else-if="props.editMode === 'variants'">
+          <!-- Step 1 for variants mode: Variants Configuration -->
+          <ProductVariantsForm v-if="step === 1" v-model="variantConfiguration" />
+
+          <!-- Step 2 for variants mode: Inventory & Pricing -->
+          <ProductManageCombinationsForm
+            v-else-if="step === 2"
+            v-model="variants"
+            :product-name="form.name"
+            :hide-stock="true"
+          />
+
+          <!-- Step 3 for variants mode: Product Images -->
+          <ProductImagesForm v-else-if="step === 3" v-model="form.images" />
+        </template>
+
         <!-- Full Edit Mode (multi-step) -->
         <template v-else>
           <!-- Step 1: Product Details -->
@@ -68,9 +88,13 @@
 
     <template #footer>
       <div class="flex w-full items-center">
-        <!-- Product Details Mode or Variant Details Mode: Single-step Save -->
+        <!-- Product Details Mode, Variant Details Mode, or Images Mode: Single-step Save -->
         <div
-          v-if="props.editMode === 'product-details' || props.editMode === 'variant-details'"
+          v-if="
+            props.editMode === 'product-details' ||
+            props.editMode === 'variant-details' ||
+            props.editMode === 'images'
+          "
           class="flex w-full items-center gap-2"
         >
           <AppButton
@@ -83,7 +107,7 @@
           />
         </div>
 
-        <!-- Full Edit Mode: Multi-step Navigation -->
+        <!-- Multi-step Navigation (for variants edit mode and full edit mode) -->
         <div v-else class="flex w-full items-center gap-2">
           <AppButton
             v-if="step > 1"
@@ -248,6 +272,11 @@ const variantConfiguration = ref<VariantConfiguration[]>([
 
 // Computed properties
 const totalSteps = computed(() => {
+  // For variants edit mode, always 3 steps (variants config, pricing, images)
+  if (props.editMode === "variants") {
+    return 3
+  }
+  // For full edit mode
   return hasVariants.value ? 4 : 3
 })
 
@@ -336,6 +365,40 @@ const isVariantConfigurationValid = computed(() => {
 })
 
 const canProceed = computed(() => {
+  // For variants edit mode
+  if (props.editMode === "variants") {
+    if (step.value === 1) {
+      // Step 1: Validate variant configuration
+      return isVariantConfigurationValid.value
+    } else if (step.value === 2) {
+      // Step 2: Validate pricing and dimensions (same validation as inventory step)
+      if (!variants.value || variants.value.length === 0) {
+        return false
+      }
+
+      return variants.value.every((variant) => {
+        return (
+          variant &&
+          variant.price.trim() !== "" &&
+          parseFloat(variant.price) > 0 &&
+          variant.opening_stock.trim() !== "" &&
+          parseInt(variant.opening_stock) >= 0 &&
+          variant.height.trim() !== "" &&
+          parseFloat(variant.height) > 0 &&
+          variant.length.trim() !== "" &&
+          parseFloat(variant.length) > 0 &&
+          variant.width.trim() !== "" &&
+          parseFloat(variant.width) > 0 &&
+          variant.weight.trim() !== "" &&
+          parseFloat(variant.weight) > 0
+        )
+      })
+    }
+    // Step 3 (images) is optional, always valid
+    return true
+  }
+
+  // For full edit mode
   if (step.value === 1) {
     return form.name.trim() !== "" && form.category !== null
   } else if (step.value === 2 && hasVariants.value) {
@@ -659,6 +722,13 @@ watch(
   ([editMode, variant, isOpen]) => {
     if (isOpen && editMode === "variant-details" && variant) {
       // Populate variants array with single variant for editing
+      // Map attribute_value to valueLabel for display
+      const mappedAttributes = (variant.attributes || []).map((attr) => ({
+        attribute: attr.attribute,
+        value: attr.value,
+        valueLabel: attr.attribute_value || attr.value,
+      }))
+
       variants.value = [
         {
           name: variant.name || "",
@@ -687,7 +757,7 @@ watch(
           is_default: variant.is_default ?? false,
           batch_number: variant.batch_number || "",
           expiry_date: variant.expiry_date || "",
-          attributes: variant.attributes || [],
+          attributes: mappedAttributes,
         },
       ]
     }
@@ -736,7 +806,16 @@ const getSubmitButtonLabel = computed(() => {
     return "Save Changes"
   }
 
-  // For multi-step flows, show what's next
+  // For variants edit mode
+  if (props.editMode === "variants") {
+    if (step.value === 1) {
+      return "Next (Price)"
+    } else if (step.value === 2) {
+      return "Next (Images)"
+    }
+  }
+
+  // For full edit mode flows, show what's next
   if (step.value === 1) {
     return hasVariants.value ? "Next (Variants)" : "Next (Price)"
   } else if (step.value === 2 && hasVariants.value) {
@@ -1205,6 +1284,61 @@ const handleSubmit = async () => {
     return
   }
 
+  // Images Edit Mode: Upload images only
+  if (props.editMode === "images") {
+    const productUid = productUidToFetch.value
+
+    if (!productUid) {
+      toast.error("No product ID found")
+      return
+    }
+
+    // Filter out invalid images (only keep actual File objects, exclude null and URL strings)
+    const validImages = form.images.filter((image) => image && image instanceof File)
+
+    if (validImages.length === 0) {
+      toast.info("No new images to upload")
+      resetFormState()
+      emit("update:modelValue", false)
+      emit("refresh")
+      return
+    }
+
+    // Upload all valid images
+    try {
+      for (let i = 0; i < validImages.length; i++) {
+        const image = validImages[i]
+
+        await new Promise<void>((resolve, reject) => {
+          addProductImages(
+            {
+              product: productUid,
+              image: image as File,
+              is_primary: i === 0, // First image is primary
+              sort_order: i + 1,
+            },
+            {
+              onSuccess: () => {
+                resolve()
+              },
+              onError: (error: unknown) => {
+                reject(new Error(String(error)))
+              },
+            },
+          )
+        })
+      }
+
+      toast.success("Images uploaded successfully")
+      resetFormState()
+      emit("update:modelValue", false)
+      emit("refresh")
+    } catch (error) {
+      displayError(error)
+    }
+    return
+  }
+
   // Full Edit Mode: Multi-step submission
   if (isLastStep.value) {
     // Format product data according to API schema
@@ -1320,7 +1454,33 @@ const handleSubmit = async () => {
     )
   } else {
     // Handle step progression with variant processing
-    if (step.value === 2 && hasVariants.value) {
+    // For variants edit mode, step 1 is the variants configuration
+    if (props.editMode === "variants" && step.value === 1) {
+      try {
+        // Process all variants (custom and existing)
+        await processVariantConfiguration()
+
+        // Validate that all API calls were successful (all items have UIDs)
+        const hasAllUIDs = validateAllUIDs()
+        if (!hasAllUIDs) {
+          throw new Error(
+            "Some attributes or values failed to be created. Please check all fields and try again.",
+          )
+        }
+
+        // Generate all variant combinations and create variants array
+        generateVariantCombinations()
+
+        // Move to next step only after successful processing
+        step.value += 1
+      } catch (error) {
+        console.error("Failed to process variants:", error)
+        displayError(error)
+        // Don't increment step on error - user stays on current step
+        return
+      }
+    } else if (step.value === 2 && hasVariants.value && props.editMode !== "variants") {
+      // For full edit mode, step 2 is variants configuration
       try {
         // Process all variants (custom and existing)
         await processVariantConfiguration()
