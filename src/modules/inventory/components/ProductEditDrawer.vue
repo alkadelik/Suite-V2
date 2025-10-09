@@ -566,6 +566,11 @@ const resetFormState = () => {
 
 // Dynamic header title based on current step
 const getHeaderTitle = computed(() => {
+  // Images edit mode
+  if (props.editMode === "images") {
+    return "Product Image(s) (optional)"
+  }
+  // Multi-step modes (images step)
   if ((step.value === 3 && !hasVariants.value) || (step.value === 4 && hasVariants.value)) {
     return "Product Image(s) (optional)"
   }
@@ -574,6 +579,11 @@ const getHeaderTitle = computed(() => {
 
 // Dynamic header text based on current step and variant status
 const getHeaderText = computed(() => {
+  // Images edit mode
+  if (props.editMode === "images") {
+    return "Supports: PNG, JPEG, SVG, WEBP, HEIC, HEIF, AVIF | Max. size: 5MB"
+  }
+
   if (step.value === 1) {
     return "Edit basic details about your product, e.g. name, category, description."
   } else if (step.value === 2 && !hasVariants.value) {

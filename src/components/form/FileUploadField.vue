@@ -1,12 +1,29 @@
 <template>
-  <div>
+  <div class="h-full">
     <!-- <label class="text-core-800 mb-1 block text-sm font-medium">{{ props.label }}</label> -->
     <div
-      class="border-core-300 text-core-800 relative flex w-full cursor-pointer items-center justify-between rounded-lg border border-dashed bg-transparent px-4 py-4 text-sm"
+      class="border-core-300 text-core-800 relative flex w-full cursor-pointer items-center justify-between rounded-lg border border-dashed bg-transparent text-sm"
+      :class="props.fullscreenPreview ? 'h-full p-0' : 'px-4 py-4'"
       @dragover="preventDefaults"
       @drop="handleDrop"
     >
-      <div v-if="fileName" class="flex w-full items-center gap-2">
+      <!-- Fullscreen Preview Mode -->
+      <div
+        v-if="fileName && isImage && filePreview && props.fullscreenPreview"
+        class="relative h-full w-full"
+      >
+        <img :src="filePreview" :alt="fileName" class="h-full w-full rounded-lg object-cover" />
+        <button
+          type="button"
+          class="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full"
+          @click.stop="removeFile"
+        >
+          <Icon name="close-circle-filled" size="24" class="text-primary-800" />
+        </button>
+      </div>
+
+      <!-- Default Preview Mode -->
+      <div v-else-if="fileName" class="flex w-full items-center gap-2">
         <img
           v-if="isImage && filePreview"
           :src="filePreview"
@@ -21,8 +38,13 @@
           <Icon name="trash" size="20" class="text-red-500" />
         </button>
       </div>
+
+      <!-- Placeholder -->
       <slot v-else name="placeholder">
-        <div class="flex w-full flex-col items-center justify-center gap-2 text-center">
+        <div
+          class="flex w-full flex-col items-center justify-center gap-2 text-center"
+          :class="props.fullscreenPreview ? 'py-4' : ''"
+        >
           <div class="border-core-400 rounded-xl border p-2"><Icon name="document-upload" /></div>
           <span class="text-core-800 text-sm">{{ props.label }}</span>
           <span class="text-core-600 text-xs">Supports: JPG, PNG, PDF (Max - 3MB)</span>
@@ -30,7 +52,7 @@
       </slot>
 
       <input
-        v-if="!fileName"
+        v-if="!fileName || (fileName && (!isImage || !filePreview || !props.fullscreenPreview))"
         type="file"
         class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
         @change="handleFileChange"
@@ -44,7 +66,10 @@ import { ref, computed } from "vue"
 import Icon from "@components/Icon.vue"
 
 const emit = defineEmits(["update:modelValue"])
-const props = defineProps({ label: { type: String, default: "Upload File" } })
+const props = defineProps({
+  label: { type: String, default: "Upload File" },
+  fullscreenPreview: { type: Boolean, default: false },
+})
 
 const fileName = ref("")
 const filePreview = ref("")
