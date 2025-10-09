@@ -314,15 +314,15 @@ const getVariantDisplayValues = (variant: IProductVariant): string[] => {
   // Return the attribute_value (from API) if available, otherwise valueLabel, then fall back to value (UID)
   return variant.attributes.map((attr) => {
     // Check for attribute_value first (from API response)
-    if ('attribute_value' in attr && attr.attribute_value) {
+    if ("attribute_value" in attr && attr.attribute_value) {
       return attr.attribute_value as string
     }
     // Then check for valueLabel (used internally)
-    if ('valueLabel' in attr && attr.valueLabel) {
-      return attr.valueLabel as string
+    if ("valueLabel" in attr && attr.valueLabel) {
+      return attr.valueLabel
     }
     // Fallback to value (UID) - this shouldn't normally be displayed
-    return attr.value as string
+    return attr.value
   })
 }
 
