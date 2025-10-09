@@ -6,7 +6,7 @@
     max-width="xl"
     @close="emit('update:modelValue', false)"
   >
-    <IconHeader icon-name="shop-add" :subtext="getHeaderText" />
+    <IconHeader icon-name="shop-add" :title="getHeaderTitle" :subtext="getHeaderText" />
 
     <form id="product-form" @submit.prevent="handleSubmit" class="min-h-full">
       <div>
@@ -28,18 +28,11 @@
           :product-name="form.name"
         />
 
-        <!-- Step 3/4: Review -->
-        <div
+        <!-- Step 3/4: Product Images -->
+        <ProductImagesForm
           v-else-if="(step === 3 && !hasVariants) || (step === 4 && hasVariants)"
-          class="text-center text-gray-500"
-        >
-          <ProductReview
-            :product-data="form"
-            :variants="variants"
-            :has-variants="hasVariants"
-            :attribute-names="attributeNamesMap"
-          />
-        </div>
+          v-model="form.images"
+        />
 
         <!-- Fallback -->
         <div v-else class="text-center text-gray-500">Step {{ step }} - Coming soon</div>
@@ -92,7 +85,7 @@ import IconHeader from "@components/IconHeader.vue"
 import ProductDetailsForm from "./ProductForm/ProductDetailsForm.vue"
 import ProductManageCombinationsForm from "./ProductForm/ProductManageCombinationsForm.vue"
 import { IProductVariant, IProductAttribute } from "../types"
-import ProductReview from "./ProductForm/ProductReview.vue"
+import ProductImagesForm from "./ProductForm/ProductImagesForm.vue"
 import ProductVariantsForm from "./ProductForm/ProductVariantsForm.vue"
 import {
   useCreateProduct,
@@ -378,18 +371,20 @@ const isPending = computed(() => {
 })
 
 // Computed property to create attribute UID to name mapping
-const attributeNamesMap = computed(() => {
-  const map: Record<string, string> = {}
+// note: this is currently unused but was used for product review step
 
-  for (const variant of variantConfiguration.value) {
-    if (typeof variant.name === "object" && variant.name?.value && variant.name?.label) {
-      // Map UID to the actual label
-      map[variant.name.value as string] = variant.name.label as string
-    }
-  }
+// const attributeNamesMap = computed(() => {
+//   const map: Record<string, string> = {}
 
-  return map
-})
+//   for (const variant of variantConfiguration.value) {
+//     if (typeof variant.name === "object" && variant.name?.value && variant.name?.label) {
+//       // Map UID to the actual label
+//       map[variant.name.value as string] = variant.name.label as string
+//     }
+//   }
+
+//   return map
+// })
 
 // Function to validate that all variants and values have UIDs after processing
 const validateAllUIDs = (): boolean => {
@@ -445,20 +440,28 @@ const resetFormState = () => {
   ]
 }
 
+// Dynamic header title based on current step
+const getHeaderTitle = computed(() => {
+  if ((step.value === 3 && !hasVariants.value) || (step.value === 4 && hasVariants.value)) {
+    return "Product Image(s) (optional)"
+  }
+  return undefined
+})
+
 // Dynamic header text based on current step and variant status
 const getHeaderText = computed(() => {
   if (step.value === 1) {
-    return "Add images and details about your product, e.g. name, price."
+    return "Add basic details about your product, e.g. name, category, description."
   } else if (step.value === 2 && !hasVariants.value) {
     return "Enter available quantity and price for your product."
   } else if (step.value === 3 && !hasVariants.value) {
-    return "Review your product details before submission."
+    return "Supports: PNG, JPEG, SVG, WEBP, HEIC, HEIF, AVIF | Max. size: 5MB"
   } else if (step.value === 2 && hasVariants.value) {
     return "Add the different options your product comes in (like size or colour). For example: Size → Large, Color → Red."
   } else if (step.value === 3 && hasVariants.value) {
     return "Enter available quantity and price for each variant combination."
   } else if (step.value === 4 && hasVariants.value) {
-    return "Review your product details before submission."
+    return "Supports: PNG, JPEG, SVG, WEBP, HEIC, HEIF, AVIF | Max. size: 5MB"
   }
   return ""
 })

@@ -19,15 +19,8 @@
       hint="Your customers will see this description when they view this product."
     />
 
-    <div>
-      <p class="text-xs font-semibold text-gray-700 md:text-sm">Product Image(s) (optional)</p>
-      <p class="mb-2 text-xs text-gray-500 md:text-sm">
-        Supports: PNG, JPEG, SVG, WEBP, HEIC, HEIF, AVIF | Max. size: 5MB
-      </p>
-      <MultiFileInput v-model="form.images" :number-of-images="5" />
-    </div>
-
     <div
+      v-if="!props.disableVariantsToggle"
       class="flex items-center justify-between gap-3 rounded-2xl border border-gray-400 px-4 py-5"
     >
       <div class="flex flex-col gap-2">
@@ -38,7 +31,7 @@
           Eg. Different colours, sizes, fragrances etc.
         </p>
       </div>
-      <Switch v-model="hasProductVariants" :disabled="props.disableVariantsToggle" />
+      <Switch v-model="hasProductVariants" />
     </div>
   </div>
 </template>
@@ -49,14 +42,12 @@ import TextField from "@/components/form/TextField.vue"
 import TextAreaField from "@/components/form/TextAreaField.vue"
 import SelectField from "@/components/form/SelectField.vue"
 import Switch from "@components/form/Switch.vue"
-import MultiFileInput from "@components/form/MultiFileInput.vue"
 import { PRODUCT_CATEGORY_OPTIONS } from "@modules/inventory/constants"
 
 interface ProductForm {
   name: string
   category: { label: string; value: string } | null
   description: string
-  images: Array<File | string | null>
 }
 
 interface Props {
