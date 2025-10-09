@@ -1,11 +1,34 @@
 <template>
   <div class="text-core-800 p-4 pb-8">
-    <button
-      @click="$router.back()"
-      class="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900"
-    >
-      <Icon name="arrow-left" class="h-8 w-8 text-gray-600" />
-    </button>
+    <div class="mb-4 flex items-center justify-between">
+      <button
+        @click="$router.back()"
+        class="flex items-center justify-between gap-2 text-sm font-medium text-gray-600 hover:text-gray-900"
+      >
+        <Icon name="arrow-left" class="h-8 w-8 text-gray-600" />
+      </button>
+      <div class="flex items-center gap-1">
+        <AppButton
+          label="Edit Images"
+          icon="edit"
+          variant="outlined"
+          color="alt"
+          class="!hidden bg-white md:!inline-flex"
+        />
+        <DropdownMenu :items="actionItems" placement="bottom-end" :show-chevron="false">
+          <template #trigger>
+            <AppButton
+              :label="'Manage Product'"
+              icon="dots-vertical"
+              variant="outlined"
+              icon-placement="right"
+              class="!hidden md:!inline-flex"
+            />
+            <AppButton icon="dots-vertical" variant="outlined" class="md:!hidden" />
+          </template>
+        </DropdownMenu>
+      </div>
+    </div>
 
     <LoadingIcon v-if="isPending" class="mx-auto my-20" />
     <EmptyState
@@ -18,64 +41,95 @@
       @action="$router.push({ name: 'Inventory' })"
     />
     <div v-else>
-      <div class="border-primary-700 bg-primary-25 mt-4 flex gap-2 rounded-xl border p-4 md:gap-5">
-        <div
-          class="border-core-300 bg-core-200 flex size-10 items-center justify-center rounded-full border md:size-20"
-        >
-          <Icon name="box-filled" class="text-primary-600 !size-5 md:!size-8" />
+      <div class="flex flex-col justify-between gap-3">
+        <h5 class="text-core-700 !font-outfit font-regular text-lg md:text-xl md:font-semibold">
+          {{ product?.data.name }}
+        </h5>
+        <div class="inline-flex flex-wrap gap-2">
+          <Chip
+            v-if="product?.data.category_name"
+            color="purple"
+            icon="tag"
+            :label="product.data.category_name"
+          />
+          <Chip :color="stockStatus.color" :label="stockStatus.label" showDot />
+          <Chip v-if="isBestseller" color="error" icon="star-outline" label="Bestseller" />
+          <Chip
+            v-if="product?.data?.variants && product.data.variants.length > 1"
+            color="blue"
+            icon="shapes"
+            :label="`${product?.data.variants.length} variants`"
+          />
         </div>
-        <div class="flex flex-1 flex-col justify-between gap-2 md:gap-3 md:py-1">
-          <div class="flex flex-col justify-between gap-3 md:flex-row md:items-center">
-            <h5 class="text-core-700 !font-outfit font-regular text-lg md:text-xl md:font-semibold">
-              {{ product?.data.name }}
-            </h5>
-            <div class="flex items-center gap-2">
-              <Icon name="moneys" class="text-core-600" size="24" />
-              <h4 class="text-xl font-bold md:text-2xl">
-                {{ productPrice }}
-              </h4>
-            </div>
-          </div>
-          <div class="mt-2 flex flex-wrap items-center justify-between gap-2 md:mt-0">
-            <div class="inline-flex flex-wrap gap-2">
-              <Chip
-                v-if="product?.data?.variants && product.data.variants.length > 1"
-                color="blue"
-                icon="shapes"
-                :label="`${product?.data.variants.length} variants`"
-                class="md:hidden"
-              />
-              <Chip
-                v-if="product?.data.category_name"
-                color="purple"
-                icon="tag"
-                :label="product.data.category_name"
-              />
-              <Chip :color="stockStatus.color" :label="stockStatus.label" showDot />
-              <Chip v-if="isBestseller" color="error" icon="star-outline" label="Bestseller" />
-            </div>
-            <Chip
-              v-if="product?.data?.variants && product.data.variants.length > 1"
-              color="blue"
-              icon="shapes"
-              :label="`${product?.data.variants.length} variants`"
-              class="!hidden md:!inline-flex"
-            />
-          </div>
-        </div>
-        <div>
-          <DropdownMenu
-            :items="actionItems"
-            placement="bottom-end"
-            :show-chevron="false"
-            size="sm"
-            trigger-class="!p-1 !min-h-6 !w-6 hover:bg-gray-100 !border-0"
-            @click.stop
+      </div>
+
+      <!-- Product Images Gallery -->
+      <div v-if="sortedProductImages.length > 0" class="mt-6 mb-6">
+        <!-- Mobile Layout -->
+        <div class="md:hidden">
+          <!-- Primary Image - Full Width -->
+          <div
+            v-if="sortedProductImages[0]"
+            class="relative mb-3 h-30 w-full overflow-hidden rounded-lg border border-gray-200"
           >
-            <template #trigger>
-              <Icon name="dots-vertical" />
-            </template>
-          </DropdownMenu>
+            <img
+              :src="sortedProductImages[0].image"
+              :alt="sortedProductImages[0].alt_text || product?.data.name"
+              class="h-full w-full object-cover"
+            />
+            <AppButton
+              icon="edit"
+              variant="outlined"
+              color="alt"
+              size="sm"
+              class="!absolute top-2 left-2 !h-8 !w-8 bg-white !p-0"
+            />
+            <div
+              class="absolute top-2 right-2 flex items-center gap-1 rounded bg-gray-50 px-2 py-1 text-xs font-semibold text-gray-700"
+            >
+              <Icon name="heart-rounded" class="h-3 w-3" />
+              <span>Primary</span>
+            </div>
+          </div>
+          <!-- Other Images - Grid (max 4) -->
+          <div v-if="sortedProductImages.length > 1" class="grid grid-cols-4 gap-2">
+            <div
+              v-for="image in sortedProductImages.slice(1, 5)"
+              :key="image.uid"
+              class="aspect-square overflow-hidden rounded-lg border border-gray-200"
+            >
+              <img
+                :src="image.image"
+                :alt="image.alt_text || product?.data.name"
+                class="h-full w-full object-cover"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Desktop Layout -->
+        <div class="hidden gap-3 overflow-x-auto md:flex">
+          <div
+            v-for="(image, index) in sortedProductImages"
+            :key="image.uid"
+            :class="[
+              'relative h-35 flex-shrink-0 overflow-hidden rounded-lg border border-gray-200',
+              index === 0 ? 'w-64' : 'w-32',
+            ]"
+          >
+            <img
+              :src="image.image"
+              :alt="image.alt_text || product?.data.name"
+              class="h-full w-full object-cover"
+            />
+            <div
+              v-if="index === 0"
+              class="absolute top-2 right-2 flex items-center gap-1 rounded bg-gray-50 px-2 py-1 text-xs font-semibold text-gray-700"
+            >
+              <Icon name="heart-rounded" class="h-3 w-3" />
+              <span>Primary</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -85,6 +139,12 @@
         v-if="activeTab === 'overview' && product"
         :product="product.data"
         :product-metrics="productMetrics"
+        :loading="isPending"
+      />
+
+      <ProductVariants
+        v-else-if="activeTab === 'variants' && product"
+        :product="product.data"
         :variant-columns="VARIANT_COLUMNS"
         :variant-action-items="getVariantActionItems"
         :loading="isPending"
@@ -160,7 +220,6 @@ import { useGetProduct, useDeleteProduct } from "../api"
 import { useRoute, useRouter } from "vue-router"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import { ref, computed } from "vue"
-import { formatCurrency } from "@/utils/format-currency"
 import Chip from "@components/Chip.vue"
 import Tabs from "@components/Tabs.vue"
 import LoadingIcon from "@components/LoadingIcon.vue"
@@ -172,6 +231,7 @@ import EmptyState from "@components/EmptyState.vue"
 import { VARIANT_COLUMNS, PRODUCT_ORDER_COLUMNS, MOVEMENT_COLUMNS } from "../constants"
 import type { IProductVariantDetails } from "../types"
 import ProductOverview from "../components/ProductOverview.vue"
+import ProductVariants from "../components/ProductVariants.vue"
 import ProductOrders from "../components/ProductOrders.vue"
 import ProductMovementLogs from "../components/ProductMovementLogs.vue"
 import AddReduceStockModal from "../components/AddReduceStockModal.vue"
@@ -180,6 +240,7 @@ import type { TOrder } from "@modules/orders/types"
 import { useSettingsStore } from "@modules/settings/store"
 import { useGetOrders } from "@modules/orders/api"
 import { useGetInventoryMovements } from "../api"
+import AppButton from "@components/AppButton.vue"
 
 const route = useRoute()
 const router = useRouter()
@@ -303,13 +364,6 @@ const actionItems = computed(() => [
       }))
     : []),
   {
-    label: "View Stock Movement",
-    icon: "arrow-2",
-    action: () => {
-      console.log("Viewing stock movement:", product.value)
-    },
-  },
-  {
     divider: true,
   },
   {
@@ -323,11 +377,21 @@ const actionItems = computed(() => [
   },
 ])
 
-const tabs = ref([
-  { key: "overview", title: "Overview" },
-  { key: "orders", title: "Orders" },
-  { key: "movement_logs", title: "Movement Logs" },
-])
+const tabs = computed(() => {
+  const baseTabs = [{ key: "overview", title: "Overview" }]
+
+  // Add Variants tab if product has multiple variants
+  if (product.value?.data.variants && product.value.data.variants.length > 1) {
+    baseTabs.push({ key: "variants", title: "Variants" })
+  }
+
+  baseTabs.push(
+    { key: "orders", title: "Orders" },
+    { key: "movement_logs", title: "Movement Logs" },
+  )
+
+  return baseTabs
+})
 
 const stockStatus = computed(() => {
   if (!product.value?.data) return { color: "primary" as const, label: "Unknown" }
@@ -378,12 +442,6 @@ const productMetrics = computed(() => {
       icon: "shopping-cart",
     },
     {
-      label: "Amount Sold(Revenue)",
-      value: productData.amount_sold || 0,
-      prev_value: 0,
-      icon: "box-filled",
-    },
-    {
       label: "Quantity Sold",
       value: productData.quantity_sold || 0,
       prev_value: 0,
@@ -392,18 +450,6 @@ const productMetrics = computed(() => {
     {
       label: "Reserved Inventory",
       value: totalReservedStock,
-      prev_value: 0,
-      icon: "box-time",
-    },
-    {
-      label: "Memo Count",
-      value: productData.memo_count || 0,
-      prev_value: 0,
-      icon: "box-time",
-    },
-    {
-      label: "Return Count",
-      value: productData.return_count || 0,
       prev_value: 0,
       icon: "box-time",
     },
@@ -451,24 +497,14 @@ const handleOrderRowClick = (order: TOrder) => {
   console.log("Order row clicked:", order)
 }
 
-const productPrice = computed(() => {
-  if (!product.value?.data.variants.length) return "-"
+const sortedProductImages = computed(() => {
+  if (!product.value?.data.images) return []
 
-  const variants = product.value.data.variants
-  if (variants.length === 1) {
-    return formatCurrency(Number(variants[0].price))
-  }
-
-  const prices = variants.map((v) => Number(v.price))
-  const uniquePrices = [...new Set(prices)]
-
-  if (uniquePrices.length === 1) {
-    return formatCurrency(uniquePrices[0])
-  }
-
-  const minPrice = Math.min(...prices)
-  const maxPrice = Math.max(...prices)
-
-  return `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`
+  // Sort images: primary first, then by sort_order
+  return [...product.value.data.images].sort((a, b) => {
+    if (a.is_primary && !b.is_primary) return -1
+    if (!a.is_primary && b.is_primary) return 1
+    return a.sort_order - b.sort_order
+  })
 })
 </script>

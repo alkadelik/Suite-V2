@@ -323,14 +323,17 @@ const canProceed = computed(() => {
         const validationResult =
           variant &&
           variant.price.trim() !== "" &&
-          variant.price !== "0" &&
+          parseFloat(variant.price) > 0 &&
           variant.opening_stock.trim() !== "" &&
-          variant.opening_stock !== "0" &&
+          parseInt(variant.opening_stock) >= 0 &&
           variant.height.trim() !== "" &&
+          parseFloat(variant.height) > 0 &&
           variant.length.trim() !== "" &&
+          parseFloat(variant.length) > 0 &&
           variant.width.trim() !== "" &&
+          parseFloat(variant.width) > 0 &&
           variant.weight.trim() !== "" &&
-          variant.weight !== "0"
+          parseFloat(variant.weight) > 0
 
         // Debug logging
         if (!validationResult) {
@@ -353,12 +356,17 @@ const canProceed = computed(() => {
       const isValid =
         variant &&
         variant.price.trim() !== "" &&
+        parseFloat(variant.price) > 0 &&
         variant.opening_stock.trim() !== "" &&
+        parseInt(variant.opening_stock) >= 0 &&
         variant.height.trim() !== "" &&
+        parseFloat(variant.height) > 0 &&
         variant.length.trim() !== "" &&
+        parseFloat(variant.length) > 0 &&
         variant.width.trim() !== "" &&
+        parseFloat(variant.width) > 0 &&
         variant.weight.trim() !== "" &&
-        variant.weight !== "0"
+        parseFloat(variant.weight) > 0
 
       // Debug logging
       if (!isValid && variant) {
@@ -858,6 +866,17 @@ const generateVariantCombinations = (): void => {
   // Store existing variants for matching
   const existingVariants = [...variants.value]
 
+  // Get default dimensions from first existing variant (for new variants)
+  const defaultDimensions =
+    existingVariants.length > 0
+      ? {
+          weight: existingVariants[0].weight || "0",
+          length: existingVariants[0].length || "0",
+          width: existingVariants[0].width || "0",
+          height: existingVariants[0].height || "0",
+        }
+      : { weight: "0", length: "0", width: "0", height: "0" }
+
   // Clear existing variants array
   variants.value = []
 
@@ -884,19 +903,19 @@ const generateVariantCombinations = (): void => {
     const newVariant: IProductVariant = {
       name: matchingVariant?.name || variantName,
       sku: matchingVariant?.sku || `SKU-${Date.now()}-${index + 1}`,
-      price: matchingVariant?.price || "0",
-      promo_price: matchingVariant?.promo_price || "0",
+      price: matchingVariant?.price || "",
+      promo_price: matchingVariant?.promo_price || "",
       promo_expiry:
         matchingVariant?.promo_expiry ||
         new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      cost_price: matchingVariant?.cost_price || "0",
-      weight: matchingVariant?.weight || "0",
-      length: matchingVariant?.length || "0",
-      width: matchingVariant?.width || "0",
-      height: matchingVariant?.height || "0",
-      reorder_point: matchingVariant?.reorder_point || "0",
-      max_stock: matchingVariant?.max_stock || "0",
-      opening_stock: matchingVariant?.opening_stock || "0",
+      cost_price: matchingVariant?.cost_price || "",
+      weight: matchingVariant?.weight || defaultDimensions.weight,
+      length: matchingVariant?.length || defaultDimensions.length,
+      width: matchingVariant?.width || defaultDimensions.width,
+      height: matchingVariant?.height || defaultDimensions.height,
+      reorder_point: matchingVariant?.reorder_point || "",
+      max_stock: matchingVariant?.max_stock || "",
+      opening_stock: matchingVariant?.opening_stock || "",
       is_active: matchingVariant?.is_active ?? true,
       is_default: matchingVariant?.is_default ?? index === 0, // First variant is default
       batch_number: matchingVariant?.batch_number || "",
