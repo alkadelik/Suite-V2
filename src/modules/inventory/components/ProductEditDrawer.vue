@@ -1,20 +1,24 @@
 <template>
   <Drawer
     :open="modelValue"
-    title="Add Product"
+    title="Edit Product"
     :position="drawerPosition"
     max-width="xl"
     @close="emit('update:modelValue', false)"
   >
     <IconHeader icon-name="shop-add" :subtext="getHeaderText" />
 
-    <form id="product-form" @submit.prevent="handleSubmit" class="min-h-full">
+    <!-- Loading state for fetching product -->
+    <LoadingIcon v-if="isLoadingProduct" class="min-h-[400px]" />
+
+    <form v-else id="product-edit-form" @submit.prevent="handleSubmit" class="min-h-full">
       <div>
         <!-- Step 1: Product Details -->
         <ProductDetailsForm
           v-if="step === 1"
           v-model="form"
           :has-variants="hasVariants"
+          :disable-variants-toggle="true"
           @update:has-variants="hasVariants = $event"
         />
 
@@ -48,18 +52,6 @@
 
     <template #footer>
       <div class="flex w-full items-center">
-        <!-- Step Indicator -->
-        <!-- <div class="flex items-center space-x-2">
-          <span class="text-sm text-gray-500"> Step {{ step }} of {{ totalSteps }} </span>
-          <div class="flex space-x-1">
-            <div
-              v-for="i in totalSteps"
-              :key="i"
-              :class="['h-2 w-2 rounded-full', i <= step ? 'bg-primary-600' : 'bg-gray-300']"
-            />
-          </div>
-        </div> -->
-
         <!-- Navigation Buttons -->
         <div class="flex w-full items-center gap-2">
           <AppButton
@@ -70,11 +62,11 @@
             @click="handleBack"
           />
           <AppButton
-            :label="isLastStep ? 'Save Product' : 'Next'"
+            :label="isLastStep ? 'Update Product' : 'Next'"
             :loading="isPending"
             :disabled="isPending || !canProceed"
             class="flex-1"
-            form="product-form"
+            form="product-edit-form"
             type="submit"
           />
         </div>
@@ -87,7 +79,7 @@
 import { ref, computed, onMounted, reactive, onUnmounted, watch } from "vue"
 import Drawer from "@components/Drawer.vue"
 import AppButton from "@/components/AppButton.vue"
-import { IProductFormPayload } from "../types"
+import { IProductFormPayload, TProduct } from "../types"
 import IconHeader from "@components/IconHeader.vue"
 import ProductDetailsForm from "./ProductForm/ProductDetailsForm.vue"
 import ProductManageCombinationsForm from "./ProductForm/ProductManageCombinationsForm.vue"
@@ -95,17 +87,21 @@ import { IProductVariant, IProductAttribute } from "../types"
 import ProductReview from "./ProductForm/ProductReview.vue"
 import ProductVariantsForm from "./ProductForm/ProductVariantsForm.vue"
 import {
-  useCreateProduct,
+  useUpdateProduct,
   useCreateAttribute,
   useCreateAttributeValues,
   useAddProductImage,
+  useGetProduct,
 } from "../api"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
+import LoadingIcon from "@components/LoadingIcon.vue"
 
 interface Props {
   /** Whether the drawer is open/visible */
   modelValue: boolean
+  /** Product data for editing (required) */
+  product: TProduct | null
   /** Loading state for async operations */
   loading?: boolean
 }
@@ -119,12 +115,13 @@ interface Emits {
 
 const props = withDefaults(defineProps<Props>(), {
   loading: false,
+  product: null,
 })
 
 const emit = defineEmits<Emits>()
 
 // API Calls
-const { mutate: createProduct, isPending: isCreating } = useCreateProduct()
+const { mutate: updateProduct, isPending: isUpdating } = useUpdateProduct()
 const { mutate: createAttribute, isPending: isCreatingAttribute } = useCreateAttribute()
 const { mutate: createAttributeValues, isPending: isCreatingAttributeValues } =
   useCreateAttributeValues()
@@ -134,6 +131,14 @@ const { mutate: addProductImages, isPending: isAddingProductImages } = useAddPro
 const isMobile = ref(false)
 const step = ref(1) // Current step in multi-step form
 const hasVariants = ref(false)
+const productUidToFetch = ref<string>("")
+
+// Get product data when editing
+const { data: productData, isLoading: isLoadingProduct } = useGetProduct(
+  computed(() => productUidToFetch.value),
+  { enabled: computed(() => !!productUidToFetch.value) },
+)
+
 const form = reactive({
   name: "",
   description: "",
@@ -370,10 +375,11 @@ const canProceed = computed(() => {
 const isPending = computed(() => {
   return (
     props.loading ||
-    isCreating.value ||
+    isUpdating.value ||
     isCreatingAttribute.value ||
     isCreatingAttributeValues.value ||
-    isAddingProductImages.value
+    isAddingProductImages.value ||
+    isLoadingProduct.value
   )
 })
 
@@ -448,27 +454,142 @@ const resetFormState = () => {
 // Dynamic header text based on current step and variant status
 const getHeaderText = computed(() => {
   if (step.value === 1) {
-    return "Add images and details about your product, e.g. name, price."
+    return "Edit images and details about your product, e.g. name, price."
   } else if (step.value === 2 && !hasVariants.value) {
-    return "Enter available quantity and price for your product."
+    return "Update available quantity and price for your product."
   } else if (step.value === 3 && !hasVariants.value) {
-    return "Review your product details before submission."
+    return "Review your product details before updating."
   } else if (step.value === 2 && hasVariants.value) {
-    return "Add the different options your product comes in (like size or colour). For example: Size → Large, Color → Red."
+    return "Edit the different options your product comes in (like size or colour). For example: Size → Large, Color → Red."
   } else if (step.value === 3 && hasVariants.value) {
-    return "Enter available quantity and price for each variant combination."
+    return "Update available quantity and price for each variant combination."
   } else if (step.value === 4 && hasVariants.value) {
-    return "Review your product details before submission."
+    return "Review your product details before updating."
   }
   return ""
 })
 
-// Watch for drawer opening to reset form
+// Watch for drawer opening to set productUidToFetch
 watch(
-  () => props.modelValue,
-  (isOpen) => {
-    if (isOpen) {
-      resetFormState()
+  () => [props.modelValue, props.product] as const,
+  ([isOpen, product]) => {
+    if (isOpen && product?.uid) {
+      productUidToFetch.value = product.uid
+    }
+  },
+  { immediate: true },
+)
+
+// Watch for product data to populate form
+watch(
+  () => productData.value,
+  (data) => {
+    if (data?.data) {
+      const product = data.data
+      form.name = product.name || ""
+      form.description = product.description || ""
+      form.story = product.story || ""
+      form.brand = product.brand || ""
+      form.requires_approval = product.requires_approval || false
+
+      // Set category if it exists
+      if (product.category) {
+        form.category = {
+          label: product.category_name || "",
+          value: product.category || "",
+        }
+      }
+
+      // Populate images array with URLs from product data
+      if (product.images && product.images.length > 0) {
+        // Sort images by sort_order and map to URLs
+        const sortedImages = [...product.images].sort((a, b) => a.sort_order - b.sort_order)
+        form.images = sortedImages.slice(0, 5).map((img) => img.image)
+
+        // Fill remaining slots with null if needed
+        while (form.images.length < 5) {
+          form.images.push(null)
+        }
+      }
+
+      // Set hasVariants based on product data
+      hasVariants.value = product.is_variable || false
+
+      // Populate variants if they exist
+      if (product.variants && product.variants.length > 0) {
+        variants.value = product.variants.map((variant) => ({
+          name: variant.name || "",
+          sku: variant.sku || "",
+          price: variant.price || "",
+          promo_price: variant.promo_price || "",
+          promo_expiry: variant.promo_expiry || "",
+          cost_price: variant.cost_price || "",
+          weight: variant.weight || "",
+          length: variant.length || "",
+          width: variant.width || "",
+          height: variant.height || "",
+          reorder_point:
+            variant.reorder_point !== null && variant.reorder_point !== undefined
+              ? variant.reorder_point.toString()
+              : "",
+          max_stock:
+            variant.max_stock !== null && variant.max_stock !== undefined
+              ? variant.max_stock.toString()
+              : "",
+          opening_stock:
+            variant.available_stock !== null && variant.available_stock !== undefined
+              ? variant.available_stock.toString()
+              : "",
+          is_active: variant.is_active ?? true,
+          is_default: variant.is_default ?? false,
+          batch_number: variant.batch_number || "",
+          expiry_date: variant.expiry_date || "",
+          attributes: variant.attributes || [],
+        }))
+
+        // Reconstruct variantConfiguration from variant attributes (for multi-variant products)
+        if (product.is_variable && product.variants.length > 1) {
+          // Create a map to group attributes and their values
+          const attributeMap = new Map<
+            string,
+            {
+              attributeUid: string
+              attributeName: string
+              values: Map<string, string> // valueUid -> valueName
+            }
+          >()
+
+          // Collect all attributes and values from all variants
+          product.variants.forEach((variant) => {
+            variant.attributes.forEach((attr) => {
+              if (!attributeMap.has(attr.attribute)) {
+                attributeMap.set(attr.attribute, {
+                  attributeUid: attr.attribute,
+                  attributeName: attr.attribute_name,
+                  values: new Map(),
+                })
+              }
+
+              const attrData = attributeMap.get(attr.attribute)!
+              // Add value to map (Map will handle duplicates by key)
+              attrData.values.set(attr.value, attr.attribute_value)
+            })
+          })
+
+          // Convert map to variantConfiguration array
+          variantConfiguration.value = Array.from(attributeMap.values()).map((attrData) => ({
+            name: {
+              label: attrData.attributeName,
+              value: attrData.attributeUid,
+            },
+            customName: "",
+            values: Array.from(attrData.values.entries()).map(([valueUid, valueName]) => ({
+              label: valueName,
+              value: valueUid,
+            })),
+          }))
+        }
+      }
     }
   },
   { immediate: true },
@@ -872,15 +993,15 @@ const handleSubmit = async () => {
     const payload: IProductFormPayload = {
       name: form.name,
       description: form.description,
-      story: form.story || "", // Add story field to your form if needed
-      category: form.category?.value as string, // Assuming this is already a UUID
-      brand: form.brand || "", // Add brand field to your form if needed
+      story: form.story || "",
+      category: form.category?.value as string,
+      brand: form.brand || "",
       is_active: true,
       is_variable: hasVariants.value,
-      requires_approval: form.requires_approval || false, // Add this field to your form if needed
+      requires_approval: form.requires_approval || false,
       variants: variants.value.map((variant) => ({
         name: variant.name,
-        sku: variant.sku || `SKU-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Generate fallback SKU
+        sku: variant.sku || `SKU-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         price: variant.price,
         promo_price: variant.promo_price,
         promo_expiry: variant.promo_expiry
@@ -889,32 +1010,32 @@ const handleSubmit = async () => {
             (variant.promo_expiry as object) instanceof Date
             ? (variant.promo_expiry as Date).toISOString()
             : variant.promo_expiry
-          : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // Default to 30 days from now
+          : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         cost_price: variant.cost_price,
         weight: variant.weight,
         length: variant.length,
         width: variant.width,
         height: variant.height,
-        reorder_point: variant.reorder_point ? variant.reorder_point.toString() : "0", // Ensure integer, default to 0
-        max_stock: variant.max_stock ? variant.max_stock.toString() : "0", // Ensure integer, default to 0
-        opening_stock: variant.opening_stock ? variant.opening_stock.toString() : "0", // Ensure integer, default to 0
+        reorder_point: variant.reorder_point ? variant.reorder_point.toString() : "0",
+        max_stock: variant.max_stock ? variant.max_stock.toString() : "0",
+        opening_stock: variant.opening_stock ? variant.opening_stock.toString() : "0",
         is_active: variant.is_active ?? true,
         is_default: variant.is_default ?? false,
         batch_number: variant.batch_number,
         expiry_date: variant.expiry_date
           ? Object.prototype.toString.call(variant.expiry_date) === "[object Date]"
-            ? (variant.expiry_date as unknown as Date).toISOString().split("T")[0] // Format as YYYY-MM-DD
+            ? (variant.expiry_date as unknown as Date).toISOString().split("T")[0]
             : variant.expiry_date
-          : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // Default to 1 year from now
+          : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
         attributes: variant.attributes || [],
       })),
     }
 
-    const handleProductSuccess = (response: unknown) => {
-      toast.success("Product created successfully")
+    const handleProductSuccess = () => {
+      toast.success("Product updated successfully")
 
-      // Extract product UID from response
-      const productUid = extractUid(response)
+      // Use existing product UID
+      const productUid = productUidToFetch.value
 
       if (productUid && form.images.length > 0) {
         // Handle image upload asynchronously without blocking the success callback
@@ -962,7 +1083,7 @@ const handleSubmit = async () => {
             toast.success("All images uploaded successfully")
           } catch (error) {
             console.error("Failed to upload some images:", error)
-            toast.error("Product created but some images failed to upload")
+            toast.error("Product updated but some images failed to upload")
           }
         })()
       }
@@ -972,10 +1093,13 @@ const handleSubmit = async () => {
       emit("refresh")
     }
 
-    createProduct(payload, {
-      onSuccess: handleProductSuccess,
-      onError: displayError,
-    })
+    updateProduct(
+      { uid: productUidToFetch.value, ...payload },
+      {
+        onSuccess: handleProductSuccess,
+        onError: displayError,
+      },
+    )
   } else {
     // Handle step progression with variant processing
     if (step.value === 2 && hasVariants.value) {
@@ -1028,6 +1152,6 @@ const handleBack = () => {
 
 // Debug logging
 onMounted(() => {
-  console.log("ProductFormDrawer mounted with props:", props)
+  console.log("ProductEditDrawer mounted with props:", props)
 })
 </script>

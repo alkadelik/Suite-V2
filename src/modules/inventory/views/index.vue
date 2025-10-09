@@ -209,24 +209,18 @@
     <!-- <ExportProductModal v-model="showExportProductModal" @close="showExportProductModal = false" /> -->
 
     <!-- drawers  -->
-    <ProductFormDrawer
-      v-model="showProductFormDrawer"
-      :mode="formMode"
+    <ProductFormDrawer v-model="showProductFormDrawer" @refresh="refetchProducts" />
+    <ProductEditDrawer
+      v-model="showProductEditDrawer"
       :product="product"
       @refresh="refetchProducts"
     />
-    <!-- <ViewProductDrawer
-      v-model="showViewProductDrawer"
-      :mode="formMode"
-      :product="product"
-      @close="showViewProductDrawer = false"
-    /> -->
   </div>
 </template>
 
 <script setup lang="ts">
 import DataTable from "@components/DataTable.vue"
-import { TProduct, TProductFormMode } from "../types"
+import { TProduct } from "../types"
 import { PRODUCT_COLUMNS } from "../constants"
 import { ref, computed } from "vue"
 import Icon from "@components/Icon.vue"
@@ -237,8 +231,7 @@ import AppButton from "@components/AppButton.vue"
 import { toast } from "@/composables/useToast"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
 import ProductFormDrawer from "../components/ProductFormDrawer.vue"
-// import ExportProductModal from "../components/ExportProductModal.vue"
-// import ViewProductDrawer from "../components/ViewProductDrawer.vue"
+import ProductEditDrawer from "../components/ProductEditDrawer.vue"
 import { formatCurrency } from "@/utils/format-currency"
 import SectionHeader from "@components/SectionHeader.vue"
 import PageSummaryCards from "@components/PageSummaryCards.vue"
@@ -251,11 +244,9 @@ import router from "@/router"
 const { data: products, isPending: isGettingProducts, refetch: refetchProducts } = useGetProducts()
 const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct()
 
-const formMode = ref<TProductFormMode>("add")
 const showDeleteConfirmationModal = ref(false)
 const showProductFormDrawer = ref(false)
-const showViewProductDrawer = ref(false)
-// const showExportProductModal = ref(false)
+const showProductEditDrawer = ref(false)
 const product = ref<TProduct | null>(null)
 
 const handleRowClick = (clickedProduct: TProduct) => {
@@ -349,30 +340,17 @@ const handleAction = (
   if (action === "edit") {
     // Set product data BEFORE opening the drawer
     product.value = { ...item } // Create a copy to avoid reference issues
-    formMode.value = "edit"
-    // Use nextTick to ensure reactive updates are processed
+    // Use setTimeout to ensure reactive updates are processed
     setTimeout(() => {
-      showProductFormDrawer.value = true
+      showProductEditDrawer.value = true
     }, 0)
   } else if (action === "delete") {
     product.value = item
     showDeleteConfirmationModal.value = true
   } else if (action === "view") {
-    product.value = item
-    showViewProductDrawer.value = true
+    router.push({ name: "Product-Details", params: { uid: item.uid } })
   } else if (action === "duplicate") {
-    // Create a copy of the product for duplication
-    const duplicatedProduct = {
-      ...item,
-      uid: `${Date.now()}`, // Generate new uid
-      name: `${item.name} (Copy)`,
-    }
-    product.value = duplicatedProduct
-    formMode.value = "add"
-    setTimeout(() => {
-      showProductFormDrawer.value = true
-    }, 0)
-    toast.success("Product duplicated successfully")
+    toast.info("Duplicate functionality coming soon")
   }
 }
 
@@ -393,8 +371,6 @@ const handleDeleteProduct = () => {
 
 // Function to handle opening add product drawer
 const openAddProductDrawer = () => {
-  product.value = null // Clear any existing product data
-  formMode.value = "add"
   showProductFormDrawer.value = true
 }
 </script>

@@ -24,8 +24,7 @@
 
     <div class="mt-8 flex flex-col gap-3 md:flex-row">
       <div class="w-7/12 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-        <div class="mb-4 flex items-center justify-between">
-          <p class="text-core-700 text-sm font-semibold md:text-base">Product Information</p>
+        <div class="-mb-4 flex items-center justify-end">
           <AppButton
             variant="text"
             color="alt"
@@ -49,8 +48,7 @@
         </div>
       </div>
       <div class="w-5/12 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-        <div class="mb-4 flex items-center justify-between">
-          <p class="text-core-700 text-sm font-semibold md:text-base">Details</p>
+        <div class="-mb-4 flex items-center justify-end">
           <AppButton
             variant="text"
             color="alt"
