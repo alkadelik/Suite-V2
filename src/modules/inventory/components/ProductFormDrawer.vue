@@ -56,8 +56,9 @@
         <!-- Navigation Buttons -->
         <div class="flex w-full items-center gap-2">
           <AppButton
+            v-if="step > 1"
             variant="outlined"
-            :label="step === 1 ? 'Cancel' : 'Back'"
+            label="Back"
             class="flex-1"
             :disabled="isPending"
             @click="handleBack"
@@ -66,7 +67,7 @@
             :label="isLastStep ? 'Save Product' : 'Next'"
             :loading="isPending"
             :disabled="isPending || !canProceed"
-            class="flex-1"
+            :class="step === 1 ? 'w-full' : 'flex-1'"
             form="product-form"
             type="submit"
           />
@@ -1024,8 +1025,6 @@ const handleSubmit = async () => {
 const handleBack = () => {
   if (step.value > 1) {
     step.value -= 1
-  } else {
-    emit("update:modelValue", false)
   }
 }
 

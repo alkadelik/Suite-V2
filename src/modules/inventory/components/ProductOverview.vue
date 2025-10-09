@@ -23,7 +23,7 @@
     />
 
     <div class="mt-8 flex flex-col gap-3 md:flex-row">
-      <div class="w-7/12 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div class="w-full rounded-xl border border-gray-200 bg-white p-4 shadow-sm md:w-7/12">
         <div class="-mb-4 flex items-center justify-end">
           <AppButton
             variant="text"
@@ -48,7 +48,7 @@
           </p>
         </div>
       </div>
-      <div class="w-5/12 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div class="w-full rounded-xl border border-gray-200 bg-white p-4 shadow-sm md:w-5/12">
         <div v-if="product.variants.length === 1" class="-mb-4 flex items-center justify-end">
           <AppButton
             variant="text"

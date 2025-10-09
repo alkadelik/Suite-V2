@@ -323,38 +323,42 @@ const getStockActionItems = (item: IProductVariantDetails | typeof product.value
     availableStock = product.value.data.variants[0].available_stock || 0
   }
 
-  const items = [
-    {
+  const items = []
+
+  // Only HQ can add and reduce stock
+  if (settingsStore.activeLocation?.is_hq) {
+    items.push({
       label: "Add Stock",
       icon: "box-add",
       action: (actionItem: IProductVariantDetails | typeof product.value) => {
         openStockModal("add", actionItem)
       },
-    },
-  ]
-
-  // Only show these items if stock is available
-  if (availableStock > 0) {
-    items.push({
-      label: "Reduce Stock",
-      icon: "box-add",
-      action: (actionItem: IProductVariantDetails | typeof product.value) => {
-        openStockModal("reduce", actionItem)
-      },
     })
 
-    // Only show Transfer Stock if active location is HQ
-    if (settingsStore.activeLocation?.is_hq) {
+    // Only show Reduce Stock if stock is available
+    if (availableStock > 0) {
       items.push({
-        label: "Transfer Stock",
-        icon: "box",
+        label: "Reduce Stock",
+        icon: "box-add",
         action: (actionItem: IProductVariantDetails | typeof product.value) => {
-          openTransferRequestDrawer("transfer", actionItem)
+          openStockModal("reduce", actionItem)
         },
       })
     }
   }
 
+  // Any location can transfer stock (if stock is available)
+  if (availableStock > 0) {
+    items.push({
+      label: "Transfer Stock",
+      icon: "box",
+      action: (actionItem: IProductVariantDetails | typeof product.value) => {
+        openTransferRequestDrawer("transfer", actionItem)
+      },
+    })
+  }
+
+  // Any location can request stock
   items.push({
     label: "Request Stock",
     icon: "box-time",

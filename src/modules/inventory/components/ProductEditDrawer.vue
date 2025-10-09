@@ -1,7 +1,7 @@
 <template>
   <Drawer
     :open="modelValue"
-    title="Edit Product"
+    :title="drawerTitle"
     :position="drawerPosition"
     max-width="xl"
     @close="emit('update:modelValue', false)"
@@ -68,23 +68,16 @@
 
     <template #footer>
       <div class="flex w-full items-center">
-        <!-- Product Details Mode: Simple Save/Cancel -->
+        <!-- Product Details Mode or Variant Details Mode: Single-step Save -->
         <div
           v-if="props.editMode === 'product-details' || props.editMode === 'variant-details'"
           class="flex w-full items-center gap-2"
         >
           <AppButton
-            variant="outlined"
-            label="Cancel"
-            class="flex-1"
-            :disabled="isPending"
-            @click="emit('update:modelValue', false)"
-          />
-          <AppButton
-            :label="props.editMode === 'variant-details' ? 'Update Variant' : 'Update Product'"
+            label="Save Changes"
             :loading="isPending"
             :disabled="isPending || !canProceed"
-            class="flex-1"
+            class="w-full"
             form="product-edit-form"
             type="submit"
           />
@@ -93,17 +86,18 @@
         <!-- Full Edit Mode: Multi-step Navigation -->
         <div v-else class="flex w-full items-center gap-2">
           <AppButton
+            v-if="step > 1"
             variant="outlined"
-            :label="step === 1 ? 'Cancel' : 'Back'"
+            label="Back"
             class="flex-1"
             :disabled="isPending"
             @click="handleBack"
           />
           <AppButton
-            :label="isLastStep ? 'Update Product' : 'Next'"
+            :label="getSubmitButtonLabel"
             :loading="isPending"
             :disabled="isPending || !canProceed"
-            class="flex-1"
+            :class="step === 1 ? 'w-full' : 'flex-1'"
             form="product-edit-form"
             type="submit"
           />
@@ -718,6 +712,40 @@ onUnmounted(() => {
 // Computed drawer position based on screen size
 const drawerPosition = computed(() => {
   return isMobile.value ? "bottom" : "right"
+})
+
+// Computed drawer title based on edit mode
+const drawerTitle = computed(() => {
+  switch (props.editMode) {
+    case "product-details":
+      return "Edit Product Details"
+    case "variant-details":
+      return "Edit SKU Details"
+    case "variants":
+      return "Edit Variants"
+    case "images":
+      return "Edit Product Images"
+    default:
+      return "Edit Product"
+  }
+})
+
+// Computed submit button label for multi-step edit mode
+const getSubmitButtonLabel = computed(() => {
+  if (isLastStep.value) {
+    return "Save Changes"
+  }
+
+  // For multi-step flows, show what's next
+  if (step.value === 1) {
+    return hasVariants.value ? "Next (Variants)" : "Next (Price)"
+  } else if (step.value === 2 && hasVariants.value) {
+    return "Next (Price)"
+  } else if (step.value === 3 && hasVariants.value) {
+    return "Next (Images)"
+  }
+
+  return "Next"
 })
 
 // Helper function to safely extract UID from response
@@ -1335,8 +1363,6 @@ const handleSubmit = async () => {
 const handleBack = () => {
   if (step.value > 1) {
     step.value -= 1
-  } else {
-    emit("update:modelValue", false)
   }
 }
 
