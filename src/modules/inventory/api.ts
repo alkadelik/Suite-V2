@@ -14,6 +14,8 @@ import {
   IStockTransferPayload,
   IProductCatalogue,
   IProductVariant,
+  IInventoryTransferRequestsApiResponse,
+  IApproveRejectRequestPayload,
 } from "./types"
 
 /** Get categories api request */
@@ -211,5 +213,30 @@ export function useGetProductCatalogs() {
     url: `/inventory/catalog/`,
     key: "productCatalogs",
     selectData: true,
+  })
+}
+
+/** get inventory transfer requests (for HQ to view pending requests) */
+export function useGetTransferRequests(params?: MaybeRefOrGetter<Record<string, string | number>>) {
+  return useQuery({
+    queryKey: ["transfer-requests", params],
+    queryFn: async () => {
+      const paramsValue = toValue(params)
+      const { data } = await baseApi.get<IInventoryTransferRequestsApiResponse>(
+        "/inventory/transfers/",
+        {
+          params: paramsValue,
+        },
+      )
+      return data
+    },
+  })
+}
+
+/** approve or reject transfer requests */
+export function useApproveRejectRequest() {
+  return useMutation({
+    mutationFn: (payload: IApproveRejectRequestPayload) =>
+      baseApi.post("/inventory/transfers/approve/", payload),
   })
 }

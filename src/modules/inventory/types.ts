@@ -19,6 +19,8 @@ export type TProductSortField =
   | "variants_count"
 export type TSortDirection = "asc" | "desc"
 export type TInventoryMovementType = "in" | "out" | "adjustment" | "transfer"
+export type TTransferRequestStatus = "pending" | "approved" | "rejected" | "fulfilled"
+export type TTransferRequestType = "transfer" | "request"
 
 // ============================================================================
 // CORE PRODUCT TYPES
@@ -193,6 +195,35 @@ export interface IInventoryMovement {
   [key: string]: unknown
 }
 
+// Inventory transfer/request
+export interface IInventoryTransferRequest {
+  uid: string
+  store: string
+  store_name: string
+  from_location: string
+  from_location_name: string
+  to_location: string
+  to_location_name: string
+  variant: string
+  variant_name: string
+  variant_sku: string
+  quantity: number
+  status: TTransferRequestStatus
+  type: TTransferRequestType
+  note: string
+  created_by: string
+  created_by_name: string
+  approved_by: string | null
+  approved_by_name: string | null
+  approved_at: string | null
+  rejected_by: string | null
+  rejected_by_name: string | null
+  rejected_at: string | null
+  created_at: string
+  updated_at: string
+  [key: string]: unknown
+}
+
 // ============================================================================
 // API RESPONSE TYPES
 // ============================================================================
@@ -256,6 +287,16 @@ export interface IInventoryMovementsApiResponse {
     next: string | null
     previous: string | null
     results: IInventoryMovement[]
+  }
+}
+
+// Inventory transfer/requests list response
+export interface IInventoryTransferRequestsApiResponse {
+  data: {
+    count: number
+    next: string | null
+    previous: string | null
+    results: IInventoryTransferRequest[]
   }
 }
 
@@ -379,6 +420,13 @@ export interface IStockTransferPayload {
   to_location: string
   transfers: IStockTransferItem[]
   note: string
+}
+
+// Approve/Reject transfer request payload
+export interface IApproveRejectRequestPayload {
+  request_ids: string[]
+  action: "approve" | "reject"
+  note?: string
 }
 
 // ============================================================================
