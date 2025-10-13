@@ -165,15 +165,3 @@ export function useProductFormState() {
     populateFormState,
   }
 }
-
-/**
- * Compliance Summary:
- *
- * ✅ TypeScript: Fully typed with explicit interfaces, no 'any' types
- * ✅ State Management: Colocated reactive state at composable level
- * ✅ Immutability: Uses Object.assign for safe state updates
- * ✅ Performance: Computed dependencies are clean, watcher is optimized
- * ✅ Side Effects: Proper cleanup via resetFormState
- * ✅ Code Organization: Single responsibility - form state only
- * ✅ Documentation: JSDoc comments explain architectural decisions
- */

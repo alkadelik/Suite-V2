@@ -251,15 +251,3 @@ export function useVariantValidation(options: IVariantValidationOptions) {
     getMinimumValuesRequired,
   }
 }
-
-/**
- * Compliance Summary:
- *
- * ✅ TypeScript: Fully typed with explicit interfaces, no 'any' types
- * ✅ Performance: Computed properties with clean dependencies
- * ✅ State Management: Pure validation logic, no mutations
- * ✅ Error Handling: Comprehensive validation with explicit rules
- * ✅ Code Organization: Single responsibility - validation only
- * ✅ Maintainability: Clear validation rules, easy to extend
- * ✅ Documentation: JSDoc comments explain validation logic
- */

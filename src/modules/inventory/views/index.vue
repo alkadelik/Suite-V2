@@ -209,13 +209,23 @@
     <!-- <ExportProductModal v-model="showExportProductModal" @close="showExportProductModal = false" /> -->
 
     <!-- drawers  -->
-    <ProductFormDrawer v-model="showProductFormDrawer" @refresh="refetchProducts" />
+    <ProductFormDrawer
+      ref="productFormDrawerRef"
+      v-model="showProductFormDrawer"
+      @refresh="refetchProducts"
+      @add-category="showAddCategoryModal = true"
+    />
     <ProductEditDrawer
+      ref="productEditDrawerRef"
       v-model="showProductEditDrawer"
       :product="product"
       edit-mode="product-details"
       @refresh="refetchProducts"
+      @add-category="showAddCategoryModal = true"
     />
+
+    <!-- Add Category Modal -->
+    <AddCategoryModal v-model="showAddCategoryModal" @success="handleCategoryCreated" />
   </div>
 </template>
 
@@ -233,6 +243,7 @@ import { toast } from "@/composables/useToast"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
 import ProductFormDrawer from "../components/ProductFormDrawer.vue"
 import ProductEditDrawer from "../components/ProductEditDrawer.vue"
+import AddCategoryModal from "../components/AddCategoryModal.vue"
 import { formatCurrency } from "@/utils/format-currency"
 import SectionHeader from "@components/SectionHeader.vue"
 import PageSummaryCards from "@components/PageSummaryCards.vue"
@@ -249,6 +260,13 @@ const showDeleteConfirmationModal = ref(false)
 const showProductFormDrawer = ref(false)
 const showProductEditDrawer = ref(false)
 const product = ref<TProduct | null>(null)
+const showAddCategoryModal = ref(false)
+const productFormDrawerRef = ref<{
+  setCategoryFromModal: (category: { label: string; value: string }) => void
+} | null>(null)
+const productEditDrawerRef = ref<{
+  setCategoryFromModal: (category: { label: string; value: string }) => void
+} | null>(null)
 
 const handleRowClick = (clickedProduct: TProduct) => {
   router.push({ name: "Product-Details", params: { uid: clickedProduct.uid } })
@@ -373,5 +391,16 @@ const handleDeleteProduct = () => {
 // Function to handle opening add product drawer
 const openAddProductDrawer = () => {
   showProductFormDrawer.value = true
+}
+
+const handleCategoryCreated = (category: { label: string; value: string }) => {
+  showAddCategoryModal.value = false
+
+  // Determine which drawer is currently open and set its category
+  if (showProductFormDrawer.value && productFormDrawerRef.value) {
+    productFormDrawerRef.value.setCategoryFromModal(category)
+  } else if (showProductEditDrawer.value && productEditDrawerRef.value) {
+    productEditDrawerRef.value.setCategoryFromModal(category)
+  }
 }
 </script>

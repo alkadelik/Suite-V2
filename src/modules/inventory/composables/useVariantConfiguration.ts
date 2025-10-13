@@ -262,15 +262,3 @@ export function useVariantConfiguration(
     generateVariantCombinations,
   }
 }
-
-/**
- * Compliance Summary:
- *
- * ✅ TypeScript: Fully typed with explicit interfaces, no 'any' types
- * ✅ Performance: Pure functions with no unnecessary recomputation
- * ✅ Algorithm: Efficient Cartesian product with O(n*m) complexity
- * ✅ State Management: Immutable transformations, preserves existing data
- * ✅ Error Handling: Defensive checks for null/undefined values
- * ✅ Code Organization: Single responsibility - variant generation only
- * ✅ Maintainability: Well-documented with clear function names
- */

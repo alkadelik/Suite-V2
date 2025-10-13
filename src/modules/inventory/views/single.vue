@@ -218,12 +218,17 @@
 
     <!-- Product Edit Drawer -->
     <ProductEditDrawer
+      ref="productEditDrawerRef"
       v-model="showProductEditDrawer"
       :product="productForEdit"
       :edit-mode="editMode"
       :variant="variantForEdit"
       @refresh="handleStockSuccess"
+      @add-category="showAddCategoryModal = true"
     />
+
+    <!-- Add Category Modal -->
+    <AddCategoryModal v-model="showAddCategoryModal" @success="handleCategoryCreated" />
   </div>
 </template>
 
@@ -255,6 +260,7 @@ import { useGetOrders } from "@modules/orders/api"
 import { useGetInventoryMovements } from "../api"
 import AppButton from "@components/AppButton.vue"
 import ProductEditDrawer from "../components/ProductEditDrawer.vue"
+import AddCategoryModal from "../components/AddCategoryModal.vue"
 import type { TProduct } from "../types"
 
 const route = useRoute()
@@ -286,6 +292,10 @@ const editMode = ref<"product-details" | "variant-details" | "variants" | "image
   "product-details",
 )
 const variantForEdit = ref<IProductVariantDetails | null>(null)
+const showAddCategoryModal = ref(false)
+const productEditDrawerRef = ref<{
+  setCategoryFromModal: (category: { label: string; value: string }) => void
+} | null>(null)
 
 const openStockModal = (
   type: "add" | "reduce",
@@ -597,6 +607,13 @@ const handleOrderAction = (action: string, order: TOrder) => {
 
 const handleOrderRowClick = (order: TOrder) => {
   console.log("Order row clicked:", order)
+}
+
+const handleCategoryCreated = (category: { label: string; value: string }) => {
+  showAddCategoryModal.value = false
+  if (productEditDrawerRef.value) {
+    productEditDrawerRef.value.setCategoryFromModal(category)
+  }
 }
 
 const sortedProductImages = computed(() => {

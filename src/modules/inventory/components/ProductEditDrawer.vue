@@ -16,10 +16,12 @@
         <!-- Product Details Only Mode -->
         <ProductDetailsForm
           v-if="props.editMode === 'product-details'"
+          ref="productDetailsRef"
           v-model="form"
           :has-variants="hasVariants"
           :disable-variants-toggle="true"
           @update:has-variants="hasVariants = $event"
+          @add-category="emit('add-category')"
         />
 
         <!-- Variant Details Mode - Edit price and dimensions for one variant -->
@@ -55,10 +57,12 @@
           <!-- Step 1: Product Details -->
           <ProductDetailsForm
             v-if="step === 1"
+            ref="productDetailsRef"
             v-model="form"
             :has-variants="hasVariants"
             :disable-variants-toggle="true"
             @update:has-variants="hasVariants = $event"
+            @add-category="emit('add-category')"
           />
 
           <!-- Step 2: Variants Configuration (only if hasVariants is true) -->
@@ -186,6 +190,10 @@ interface Emits {
   "update:modelValue": [value: boolean]
   /** Emitted when drawer should refresh parent data */
   refresh: []
+  /** Emitted when Add New Category is clicked */
+  "add-category": []
+  /** Emitted when a new category is successfully created */
+  "category-created": [category: { label: string; value: string }]
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -196,6 +204,11 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<Emits>()
+
+// Ref to ProductDetailsForm component
+const productDetailsRef = ref<{
+  setCategory: (category: { label: string; value: string }) => void
+} | null>(null)
 
 // API mutations
 const { mutate: updateProduct, isPending: isUpdating } = useUpdateProduct()
@@ -718,4 +731,19 @@ const handleSubmit = async () => {
 const handleBack = () => {
   previousStep()
 }
+
+/**
+ * Set category after new category is created
+ * Called from parent page
+ */
+const setCategoryFromModal = (category: { label: string; value: string }) => {
+  if (productDetailsRef.value) {
+    productDetailsRef.value.setCategory(category)
+  }
+}
+
+// Expose method for parent components
+defineExpose({
+  setCategoryFromModal,
+})
 </script>

@@ -220,9 +220,9 @@ export function useVariantProcessing(
             value: valueUid,
           })
 
-          console.log(`✅ Value "${labelString}" processed successfully`)
+          console.log(`Value "${labelString}" processed successfully`)
         } catch (error) {
-          console.error(`❌ Failed to process value at index ${index}:`, error)
+          console.error(`[FAIL] Failed to process value at index ${index}:`, error)
           throw new Error(`Failed to create value "${labelString}": ${String(error)}`)
         }
       }
@@ -231,7 +231,7 @@ export function useVariantProcessing(
     // Update variant with processed values
     variant.values = processedValues.map((v) => ({ label: v.label, value: v.value }))
 
-    console.log(`✅ Finished processing values for attribute: ${attributeUid}`)
+    console.log(`Finished processing values for attribute: ${attributeUid}`)
   }
 
   /**
@@ -307,16 +307,3 @@ export function useVariantProcessing(
     processVariantConfiguration,
   }
 }
-
-/**
- * Compliance Summary:
- *
- * ✅ TypeScript: Fully typed with explicit interfaces, no 'any' types
- * ✅ Async/Await: Proper Promise handling with error propagation
- * ✅ Error Handling: Comprehensive error catching and user feedback
- * ✅ Side Effects: Async cleanup handled via Promise rejection
- * ✅ Performance: Sequential processing prevents race conditions
- * ✅ Code Organization: Single responsibility - API processing only
- * ✅ Maintainability: Clear separation of concerns, easy to extend
- * ✅ Idempotency: Checks for existing UIDs before processing
- */

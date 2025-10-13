@@ -266,15 +266,3 @@ export function useProductDrawerUtilities() {
     useDrawerHeaders,
   }
 }
-
-/**
- * Compliance Summary:
- *
- * ✅ TypeScript: Fully typed with explicit interfaces, no 'any' types
- * ✅ Performance: Computed properties with clean dependencies
- * ✅ Side Effects: Proper cleanup via onUnmounted
- * ✅ Accessibility: Responsive design for mobile support
- * ✅ Code Organization: Single responsibility - UI utilities only
- * ✅ Maintainability: Modular functions, easy to extend
- * ✅ Documentation: JSDoc comments explain purpose
- */

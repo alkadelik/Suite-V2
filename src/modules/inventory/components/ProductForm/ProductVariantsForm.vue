@@ -42,6 +42,7 @@
           label="Option Name"
           v-model="variant.customName"
           placeholder="Enter custom option name"
+          @input="(event: Event) => handleCustomNameInput(event, index)"
         />
 
         <InputTagsField
@@ -77,8 +78,12 @@ import InputTagsField from "@components/form/InputTagsField.vue"
 import SelectField from "@components/form/SelectField.vue"
 import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
-import { computed } from "vue"
+import { computed, ref } from "vue"
 import { PRODUCT_ATTRIBUTES } from "@modules/inventory/constants"
+import { useTextTransform } from "@/composables/useTextTransform"
+
+// Composables
+const { handleCapitalizedInput } = useTextTransform()
 
 // Use v-model to get variants data from parent
 const variants = defineModel<
@@ -88,6 +93,18 @@ const variants = defineModel<
     values: { label: string; value: string }[]
   }>
 >()
+
+/**
+ * Handle custom name input with auto-capitalization
+ */
+const handleCustomNameInput = (event: Event, index: number) => {
+  if (!variants.value) return
+
+  // Create a temporary ref for the composable
+  const tempRef = ref(variants.value[index].customName)
+  handleCapitalizedInput(event, tempRef)
+  variants.value[index].customName = tempRef.value
+}
 
 // Helper function to get the value from variant name (handles both object and string)
 const getVariantValue = (index: number) => {
