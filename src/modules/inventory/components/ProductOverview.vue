@@ -49,7 +49,7 @@
         </div>
       </div>
       <div class="w-full rounded-xl border border-gray-200 bg-white p-4 shadow-sm md:w-5/12">
-        <div v-if="product.variants.length === 1" class="-mb-4 flex items-center justify-end">
+        <div v-if="!hasVaryingWeights" class="-mb-4 flex items-center justify-end">
           <AppButton
             variant="text"
             color="alt"
@@ -67,7 +67,7 @@
               {{ productPrice }}
             </p>
           </div>
-          <div v-if="product.variants.length > 1">
+          <div v-if="hasVaryingWeights">
             <InfoBox variant="warning" message="Weight & Dimensions vary per variant." />
           </div>
           <div v-else class="grid grid-cols-2 gap-4">
@@ -168,5 +168,19 @@ const productPrice = computed(() => {
   const maxPrice = Math.max(...prices)
 
   return `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`
+})
+
+// Check if variants have varying weights
+const hasVaryingWeights = computed(() => {
+  if (!props.product.variants.length || props.product.variants.length === 1) return false
+
+  const weights = props.product.variants
+    .map((v) => v.weight)
+    .filter((weight) => weight && weight !== "0")
+
+  if (weights.length === 0) return false
+
+  const uniqueWeights = [...new Set(weights)]
+  return uniqueWeights.length > 1
 })
 </script>

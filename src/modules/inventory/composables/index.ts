@@ -15,3 +15,6 @@ export { useVariantValidation } from "./useVariantValidation"
 export { useVariantProcessing } from "./useVariantProcessing"
 
 export { useProductDrawerUtilities } from "./useProductDrawerUtilities"
+
+export { useWeightBasedDimensions, useReactiveWeightDimensions } from "./useWeightBasedDimensions"
+export type { IWeightDimensionMapping } from "./useWeightBasedDimensions"

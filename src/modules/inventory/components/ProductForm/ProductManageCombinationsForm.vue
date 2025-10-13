@@ -93,8 +93,8 @@
       </div>
     </div>
 
-    <!-- Weight Section (always shown) -->
-    <div class="space-y-4">
+    <!-- Weight Section (hidden when Weight attribute is in variants - auto-populated) -->
+    <div v-if="!hasWeightAttributeInVariants" class="space-y-4">
       <SelectField
         v-model="selectedDimension"
         :options="dimensionOptions"
@@ -152,9 +152,10 @@ import { computed, ref, watch } from "vue"
 import TextField from "@/components/form/TextField.vue"
 import SelectField from "@/components/form/SelectField.vue"
 import Chip from "@/components/Chip.vue"
-import { PRODUCT_DIMENSIONS } from "../../constants"
+import { PRODUCT_DIMENSIONS, WEIGHT_ATTRIBUTE_UID } from "../../constants"
 import { IProductDimension } from "@modules/inventory/types"
 import { IProductVariant } from "../../types"
+import { useWeightBasedDimensions } from "../../composables/useWeightBasedDimensions"
 
 interface Props {
   /** Variants array - for no variants case, should contain single variant */
@@ -173,6 +174,9 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
+// Initialize weight-based dimensions composable
+const { hasWeightAttribute } = useWeightBasedDimensions()
+
 // Global dimensions state (applies to all variants)
 const globalDimensions = ref({
   height: "",
@@ -182,14 +186,27 @@ const globalDimensions = ref({
 })
 
 // Initialize global dimensions from existing variants
+// Only initializes if variants have meaningful dimension data (for edit mode)
 const initializeGlobalDimensions = () => {
   if (props.modelValue && props.modelValue.length > 0) {
     const firstVariant = props.modelValue[0]
-    globalDimensions.value = {
-      height: firstVariant.height || "",
-      length: firstVariant.length || "",
-      width: firstVariant.width || "",
-      weight: firstVariant.weight || "",
+
+    // Only initialize if dimensions already exist (edit mode)
+    // For new products, keep dimensions empty so user must select weight
+    const hasMeaningfulDimensions =
+      firstVariant.height &&
+      firstVariant.length &&
+      firstVariant.width &&
+      firstVariant.weight &&
+      firstVariant.weight !== "0"
+
+    if (hasMeaningfulDimensions) {
+      globalDimensions.value = {
+        height: firstVariant.height,
+        length: firstVariant.length,
+        width: firstVariant.width,
+        weight: firstVariant.weight,
+      }
     }
   }
 }
@@ -222,6 +239,13 @@ const isSingleVariant = computed(() => {
 
 // Get variants array
 const variants = computed(() => props.modelValue || [])
+
+// Check if any variant has the Weight (Kg) attribute
+// If true, we should hide the weight dropdown as it's auto-populated
+const hasWeightAttributeInVariants = computed(() => {
+  if (!props.modelValue || props.modelValue.length === 0) return false
+  return hasWeightAttribute(props.modelValue, WEIGHT_ATTRIBUTE_UID)
+})
 
 // Transform PRODUCT_DIMENSIONS for SelectField
 const dimensionOptions = computed(() =>

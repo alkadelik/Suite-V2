@@ -20,9 +20,9 @@
           <template #trigger>
             <AppButton
               :label="'Manage Product'"
-              icon="dots-vertical"
+              icon="settings-02"
               variant="outlined"
-              icon-placement="right"
+              icon-placement="left"
               class="!hidden md:!inline-flex"
             />
             <AppButton icon="dots-vertical" variant="outlined" class="md:!hidden" />
@@ -420,8 +420,16 @@ const openVariantPricingEdit = (variant: IProductVariantDetails) => {
     created_at: product.value.data.created_at,
   }
 
-  editMode.value = "variant-details"
-  variantForEdit.value = variant
+  // For complex products (multiple variants), open in variants mode
+  // For simple products (single variant), open in variant-details mode
+  if (product.value.data.variants.length > 1) {
+    editMode.value = "variants"
+    variantForEdit.value = null
+  } else {
+    editMode.value = "variant-details"
+    variantForEdit.value = variant
+  }
+
   showProductEditDrawer.value = true
 }
 

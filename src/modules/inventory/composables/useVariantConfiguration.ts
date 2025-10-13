@@ -1,6 +1,8 @@
 import type { ComputedRef } from "vue"
 import type { IVariantConfiguration } from "./useProductFormState"
 import type { IProductVariant, IProductAttribute } from "../types"
+import { WEIGHT_ATTRIBUTE_UID } from "../constants"
+import { useWeightBasedDimensions } from "./useWeightBasedDimensions"
 
 /**
  * Variant Combination Type
@@ -31,6 +33,8 @@ export function useVariantConfiguration(
   variants: { value: IProductVariant[] },
   productName: ComputedRef<string> | { value: string },
 ) {
+  // Initialize weight-based dimensions composable
+  const { mapWeightToDimensions } = useWeightBasedDimensions()
   /**
    * Extract value from variant name (handles object and string types)
    */
@@ -217,6 +221,36 @@ export function useVariantConfiguration(
         )
       })
 
+      // Check if this combination contains the Weight (Kg) attribute
+      const weightAttribute = attributes.find((attr) => attr.attribute === WEIGHT_ATTRIBUTE_UID)
+
+      // Auto-populate dimensions from weight if weight attribute is present
+      let dimensionsFromWeight: {
+        weight: string
+        height: string
+        length: string
+        width: string
+      } = defaultDimensions
+
+      if (weightAttribute && weightAttribute.valueLabel) {
+        const weightValue = weightAttribute.valueLabel
+        const dimensionMapping = mapWeightToDimensions(weightValue)
+
+        if (dimensionMapping) {
+          dimensionsFromWeight = {
+            weight: dimensionMapping.weight,
+            height: dimensionMapping.height,
+            length: dimensionMapping.length,
+            width: dimensionMapping.width,
+          }
+
+          console.log(
+            `Auto-populated dimensions for weight ${weightValue}kg:`,
+            dimensionMapping.dimension.shortLabel,
+          )
+        }
+      }
+
       const newVariant: IProductVariant = {
         name: matchingVariant?.name || variantName,
         sku: matchingVariant?.sku || `SKU-${Date.now()}-${index + 1}`,
@@ -226,10 +260,11 @@ export function useVariantConfiguration(
           matchingVariant?.promo_expiry ||
           new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         cost_price: matchingVariant?.cost_price || "",
-        weight: matchingVariant?.weight || defaultDimensions.weight,
-        length: matchingVariant?.length || defaultDimensions.length,
-        width: matchingVariant?.width || defaultDimensions.width,
-        height: matchingVariant?.height || defaultDimensions.height,
+        // Use weight-based dimensions if weight attribute exists, otherwise use matching variant or defaults
+        weight: matchingVariant?.weight || dimensionsFromWeight.weight,
+        length: matchingVariant?.length || dimensionsFromWeight.length,
+        width: matchingVariant?.width || dimensionsFromWeight.width,
+        height: matchingVariant?.height || dimensionsFromWeight.height,
         reorder_point: matchingVariant?.reorder_point || "",
         max_stock: matchingVariant?.max_stock || "",
         opening_stock: matchingVariant?.opening_stock || "",

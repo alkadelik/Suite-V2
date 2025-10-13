@@ -133,6 +133,13 @@ export const updateProductCategoryOptions: (options: IProductCategory[]) => void
   )
 }
 
+/**
+ * Weight (Kg) attribute UID - Single source of truth
+ * This is the default weight attribute UID that backend sends
+ * Used to identify when weight-based auto-population should occur
+ */
+export const WEIGHT_ATTRIBUTE_UID = "7d961eac-4ed9-4a2d-856d-b05e9bcff8fb"
+
 export const PRODUCT_DIMENSIONS: IProductDimension[] = [
   {
     name: "Envelope",

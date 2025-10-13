@@ -118,7 +118,9 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<Emits>()
 
 // Ref to ProductDetailsForm component
-const productDetailsRef = ref<{ setCategory: (category: { label: string; value: string }) => void } | null>(null)
+const productDetailsRef = ref<{
+  setCategory: (category: { label: string; value: string }) => void
+} | null>(null)
 
 // API mutations
 const { mutate: createProduct, isPending: isCreating } = useCreateProduct()
