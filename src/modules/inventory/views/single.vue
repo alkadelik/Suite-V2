@@ -232,7 +232,7 @@ import Icon from "@components/Icon.vue"
 import { useGetProduct, useDeleteProduct } from "../api"
 import { useRoute, useRouter } from "vue-router"
 import DropdownMenu from "@components/DropdownMenu.vue"
-import { ref, computed } from "vue"
+import { ref, computed, watch, onMounted } from "vue"
 import Chip from "@components/Chip.vue"
 import Tabs from "@components/Tabs.vue"
 import LoadingIcon from "@components/LoadingIcon.vue"
@@ -272,7 +272,8 @@ const { data: ordersData, isPending: isLoadingOrders } = useGetOrders(orderParam
 
 const { data: movementsData, isPending: isLoadingMovements } = useGetInventoryMovements()
 
-const activeTab = ref("overview")
+// Initialize activeTab from query parameter or default to "overview"
+const activeTab = ref((route.query.tab as string) || "overview")
 const showDeleteConfirmationModal = ref(false)
 const showAddReduceStockModal = ref(false)
 const stockModalType = ref<"add" | "reduce">("add")
@@ -607,5 +608,43 @@ const sortedProductImages = computed(() => {
     if (!a.is_primary && b.is_primary) return 1
     return a.sort_order - b.sort_order
   })
+})
+
+// Watch activeTab and update query parameter
+watch(activeTab, (newTab) => {
+  // Update the URL query parameter without navigation
+  router.replace({
+    query: {
+      ...route.query,
+      tab: newTab,
+    },
+  })
+})
+
+// Watch route query parameter and sync with activeTab
+watch(
+  () => route.query.tab,
+  (newTab) => {
+    if (newTab && typeof newTab === "string" && newTab !== activeTab.value) {
+      activeTab.value = newTab
+    }
+  },
+)
+
+// Validate and sync tab on mount
+onMounted(() => {
+  const validTabs = tabs.value.map((t) => t.key)
+  const tabFromQuery = route.query.tab as string
+
+  // If query tab exists but is invalid, reset to overview
+  if (tabFromQuery && !validTabs.includes(tabFromQuery)) {
+    activeTab.value = "overview"
+    router.replace({
+      query: {
+        ...route.query,
+        tab: "overview",
+      },
+    })
+  }
 })
 </script>
