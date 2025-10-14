@@ -1,11 +1,12 @@
 <template>
   <div class="space-y-6">
     <!-- Primary Image (File Upload Field) -->
-    <div class="h-48">
+    <div class="mt-6 h-48">
       <FileUploadField
         v-model="primaryImage"
         label="Upload Primary Image"
         :fullscreen-preview="true"
+        :show-primary-label="true"
       />
     </div>
 

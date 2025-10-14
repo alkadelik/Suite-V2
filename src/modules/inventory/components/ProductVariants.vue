@@ -22,7 +22,7 @@
         <AppButton
           icon="add"
           size="sm"
-          label="Add/Edit Variant"
+          label="Manage Variants"
           class="!hidden md:!inline-flex"
           @click="$emit('add-variant')"
         />

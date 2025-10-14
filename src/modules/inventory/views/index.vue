@@ -16,7 +16,9 @@
     />
 
     <!-- Tabs for HQ users -->
-    <Tabs v-if="isHQ" :tabs="tabs" v-model="activeTab" class="mt-6 mb-4" />
+    <div class="mt-6 w-full md:w-1/2">
+      <Tabs v-if="isHQ" :tabs="tabs" v-model="activeTab" />
+    </div>
 
     <!-- Requests Tab Content -->
     <InventoryRequests
@@ -36,10 +38,7 @@
         action-icon="add"
         @action="showProductFormDrawer = true"
       />
-      <div
-        v-else
-        class="mt-4 space-y-4 rounded-xl border-gray-200 pt-3 md:mt-8 md:border md:bg-white"
-      >
+      <div v-else class="mt-4 space-y-4 rounded-xl border-gray-200 pt-3 md:border md:bg-white">
         <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
           <h3 class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
             All Products <Chip :label="String(products?.data?.count || 0)" />
@@ -142,73 +141,7 @@
 
           <!-- mobile view cell templates -->
           <template #mobile="{ item }">
-            <div class="space-y-2">
-              <div class="flex items-start gap-2">
-                <div class="relative">
-                  <div class="flex size-10 items-center justify-center rounded-xl bg-gray-100 p-2">
-                    <Icon name="shop-add" class="text-core-600" />
-                  </div>
-                </div>
-                <div class="flex flex-col gap-2">
-                  <p class="truncate text-sm font-semibold">{{ item.name }}</p>
-                  <div class="flex gap-3">
-                    <div class="flex">
-                      <Icon name="cube" class="text-core-600 me-1 size-4" />
-                      <span class="text-sm font-bold">{{ item.total_stock }}</span>
-                    </div>
-                    <div class="flex">
-                      <Icon name="shapes" class="text-core-600 me-1 size-4" />
-                      <span class="text-sm font-bold">{{ item.variants_count }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="mt-4 flex gap-1">
-                <Chip
-                  v-if="item.variants_count > 1"
-                  icon="shapes"
-                  :label="`${item.variants_count} Variants`"
-                  color="blue"
-                  size="sm"
-                />
-                <Chip
-                  icon="tag"
-                  :label="item.category || 'Uncategorized'"
-                  color="purple"
-                  size="sm"
-                />
-                <Chip
-                  showDot
-                  :label="getStockStatus(item).label"
-                  :color="getStockStatus(item).color"
-                  size="sm"
-                />
-                <Chip
-                  showDot
-                  :label="item.is_active ? 'Active' : 'Inactive'"
-                  :color="item.is_active ? 'success' : 'error'"
-                  size="sm"
-                />
-              </div>
-            </div>
-          </template>
-
-          <template #mobile-actions="{ item }">
-            <div class="flex items-center gap-2">
-              <DropdownMenu
-                :items="getActionItems(item)"
-                placement="bottom-end"
-                :show-chevron="false"
-                size="sm"
-                trigger-class="!p-1 !min-h-6 !w-6 hover:bg-gray-100 !border-0"
-                @click.stop
-              >
-                <template #trigger>
-                  <Icon name="dots-vertical" />
-                </template>
-              </DropdownMenu>
-            </div>
+            <ProductCard :product="item" :action-items="getActionItems(item)" />
           </template>
         </DataTable>
       </div>
@@ -273,6 +206,7 @@ import ProductEditDrawer from "../components/ProductEditDrawer.vue"
 import AddCategoryModal from "../components/AddCategoryModal.vue"
 import InventoryRequests from "../components/InventoryRequests.vue"
 import ReceiveRequestModal from "../components/ReceiveRequestModal.vue"
+import ProductCard from "../components/ProductCard.vue"
 import { formatCurrency } from "@/utils/format-currency"
 import SectionHeader from "@components/SectionHeader.vue"
 import PageSummaryCards from "@components/PageSummaryCards.vue"

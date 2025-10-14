@@ -74,6 +74,16 @@
           size="sm"
         />
       </template>
+
+      <template #mobile="{ item }">
+        <InventoryRequestCard
+          :request="item"
+          :format-date="formatDate"
+          :get-status-label="getStatusLabel"
+          :get-status-color="getStatusColor"
+          @click="handleRequestClick"
+        />
+      </template>
     </DataTable>
   </div>
 </template>
@@ -89,6 +99,7 @@ import { formatDate as projectFormatDate } from "@/utils/formatDate"
 import ProductAvatar from "@components/ProductAvatar.vue"
 import TextField from "@components/form/TextField.vue"
 import AppButton from "@components/AppButton.vue"
+import InventoryRequestCard from "./InventoryRequestCard.vue"
 
 interface Emits {
   /** Emitted when a request row is clicked */

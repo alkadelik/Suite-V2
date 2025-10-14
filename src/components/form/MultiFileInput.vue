@@ -30,13 +30,21 @@
             class="h-full w-full rounded-lg object-cover"
           />
 
+          <!-- Make Primary button -->
+          <button
+            type="button"
+            class="absolute -top-5 right-3 flex h-6 w-6 items-center justify-center rounded-full"
+            @click.stop="removeImage(index)"
+          >
+            <Icon name="heart-rounded" size="24" class="text-primary-800 fill-primary-100" />
+          </button>
           <!-- Remove button -->
           <button
             type="button"
-            class="absolute -top-5 -right-5 flex h-6 w-6 items-center justify-center rounded-full"
+            class="absolute -top-5 -right-3 flex h-6 w-6 items-center justify-center rounded-full"
             @click.stop="removeImage(index)"
           >
-            <Icon name="close-circle-filled" size="24" class="text-primary-800" />
+            <Icon name="close-circle-filled" size="24" class="text-primary-800 fill-white" />
           </button>
         </div>
 
