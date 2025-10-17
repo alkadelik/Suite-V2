@@ -18,7 +18,7 @@
       </span>
     </div>
 
-    <div :class="textClasses" :style="maxWidth ? { maxWidth } : {}">
+    <div v-if="extraText" :class="textClasses" :style="maxWidth ? { maxWidth } : {}">
       <h4 :class="nameClasses">{{ name }}</h4>
       <p v-if="extraText && typeof extraText === 'string'" :class="extraTextClasses">
         {{ extraText }}

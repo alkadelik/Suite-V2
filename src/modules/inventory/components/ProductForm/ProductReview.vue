@@ -42,7 +42,7 @@
             class="relative h-16 w-16 overflow-hidden rounded-lg bg-gray-200"
           >
             <img
-              :src="getImageUrl(image!)"
+              :src="typeof image === 'string' ? image : getImageUrl(image!)"
               :alt="`Product image ${index + 1}`"
               class="h-full w-full object-cover"
             />
@@ -164,7 +164,7 @@ interface ProductData {
   name: string
   category: { label: string; value: string } | null
   description: string
-  images: Array<File | null>
+  images: Array<File | string | null>
 }
 
 interface Props {

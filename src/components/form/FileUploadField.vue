@@ -1,8 +1,10 @@
 <template>
   <div>
-    <!-- <label class="text-core-800 mb-1 block text-sm font-medium">{{ props.label }}</label> -->
+    <label v-if="label" class="text-core-800 mb-1 block text-sm font-medium">
+      {{ props.label }}
+    </label>
     <div
-      class="border-core-300 text-core-800 relative flex w-full cursor-pointer items-center justify-between rounded-lg border border-dashed bg-transparent px-4 py-4 text-sm"
+      class="border-core-300 text-core-800 bg-core-25 relative flex w-full cursor-pointer items-center justify-between rounded-lg border border-dashed px-4 py-4 text-sm"
       @dragover="preventDefaults"
       @drop="handleDrop"
     >

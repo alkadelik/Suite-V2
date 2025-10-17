@@ -1,5 +1,9 @@
 <template>
-  <div class="border-primary-700 bg-primary-25 text-core-600 w-full rounded-xl border p-4">
+  <div
+    class="border-core-300 bg-core-25 text-core-600 w-full cursor-pointer rounded-xl border p-4"
+    :class="props.class"
+    @click="emit('click', customer)"
+  >
     <div class="flex items-start gap-3">
       <!-- Custom Avatar on the left -->
       <span
@@ -11,7 +15,7 @@
 
       <!-- Customer details on the right -->
       <div class="flex-1">
-        <h2 class="text-core-700 mb-2 text-lg font-semibold">
+        <h2 class="text-core-700 mb-2 text-base font-semibold">
           {{ customer.full_name }}
         </h2>
         <div class="flex flex-wrap items-center gap-3">
@@ -34,7 +38,12 @@ import Icon from "@components/Icon.vue"
 import { ICustomer } from "../types"
 import { getInitials } from "@/utils/format-strings"
 
-defineProps<{
+const props = defineProps<{
   customer: ICustomer
+  class?: string
+}>()
+
+const emit = defineEmits<{
+  (e: "click", customer: ICustomer): void
 }>()
 </script>

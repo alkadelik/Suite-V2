@@ -153,18 +153,37 @@ const buttonClasses = computed(() => {
     "duration-200",
     "ease-in-out",
     "focus:outline-none",
-    "focus:ring-2",
-    "focus:ring-offset-1",
+    ...(props.variant !== "text" ? ["focus:ring-2", "focus:ring-offset-1"] : []),
     "disabled:cursor-not-allowed",
     "disabled:opacity-50",
   ]
 
   // Size classes
   const sizeClasses = {
-    xs: props.icon && !props.label ? "w-8 h-8" : "h-8 px-3 gap-1.5 text-xs",
-    sm: props.icon && !props.label ? "w-10 h-10" : "h-10 px-4 gap-2 text-sm",
-    md: props.icon && !props.label ? "w-11 h-11" : "h-11 px-5 gap-2.5 text-sm",
-    lg: props.icon && !props.label ? "w-12 h-12" : "h-12 px-6 gap-3 text-base",
+    xs:
+      props.icon && !props.label
+        ? "w-8 h-8"
+        : props.variant === "text"
+          ? "h-8 px-1 gap-1.5 text-xs"
+          : "h-8 px-3 gap-1.5 text-xs",
+    sm:
+      props.icon && !props.label
+        ? "w-10 h-10"
+        : props.variant === "text"
+          ? "h-10 px-2 gap-2 text-sm"
+          : "h-10 px-4 gap-2 text-sm",
+    md:
+      props.icon && !props.label
+        ? "w-11 h-11"
+        : props.variant === "text"
+          ? "h-11 px-2.5 gap-2.5 text-sm"
+          : "h-11 px-5 gap-2.5 text-sm",
+    lg:
+      props.icon && !props.label
+        ? "w-12 h-12"
+        : props.variant === "text"
+          ? "h-12 px-3 gap-3 text-base"
+          : "h-12 px-6 gap-3 text-base",
   }
 
   // Color and variant combinations
@@ -184,10 +203,10 @@ const buttonClasses = computed(() => {
       alt: "border border-core-300 text-core-600 bg-core-50 hover:bg-core-100 focus:ring-core-500/50",
     },
     text: {
-      primary: "text-primary-600 bg-transparent hover:bg-primary-50 focus:ring-primary-500/50",
-      error: "text-red-600 bg-transparent hover:bg-red-50 focus:ring-red-500/50",
-      success: "text-green-600 bg-transparent hover:bg-green-50 focus:ring-green-500/50",
-      alt: "text-core-600 bg-transparent hover:bg-core-50 focus:ring-core-500/50",
+      primary: "text-primary-600 hover:text-primary-700 hover:underline",
+      error: "text-red-600 hover:text-red-700 hover:underline",
+      success: "text-green-600 hover:text-green-700 hover:underline",
+      alt: "text-core-600 hover:text-core-700 hover:underline",
     },
   }
 

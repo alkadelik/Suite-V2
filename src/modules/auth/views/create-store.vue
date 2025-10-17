@@ -157,10 +157,11 @@ const onSubmit = (values: IStoreFormData) => {
 
   createStore(payload, {
     onSuccess: (res) => {
-      console.log("RES", res)
       toast.success("Store created successfully")
       authStore.updateAuthUser({ store_uid: res.data?.data?.uuid, store: { ...res.data.data } })
-      router.push("/dashboard")
+      // check for redirect query param
+      const redirectPath = router.currentRoute.value.query.redirect as string
+      router.push(redirectPath || "/dashboard")
     },
     onError: displayError,
   })
