@@ -46,6 +46,37 @@ const settingsRoutes: RouteRecordRaw[] = [
         name: "PlansAndBilling",
         component: () => import("./views/plans-and-billing.vue"),
       },
+      {
+        path: "design",
+        component: () => import("./views/design.vue"),
+        children: [
+          {
+            path: "",
+            name: "Design",
+            redirect: "/settings/design/themes",
+          },
+          {
+            path: "themes",
+            name: "DesignThemes",
+            component: () => import("./views/design/themes.vue"),
+          },
+          {
+            path: "theme-settings",
+            name: "DesignThemeSettings",
+            component: () => import("./views/design/theme-settings.vue"),
+          },
+          {
+            path: "landing-page",
+            name: "DesignLandingPage",
+            component: () => import("./views/design/landing-page.vue"),
+          },
+          {
+            path: "popup",
+            name: "DesignPopup",
+            component: () => import("./views/design/popup.vue"),
+          },
+        ],
+      },
       // Catch-all route for settings 404
       {
         path: ":pathMatch(.*)*",

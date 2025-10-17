@@ -71,7 +71,7 @@ export function useGetEventfulPopupById(id: string) {
 
 export function useGetPopupInventory(popupId: string) {
   return useApiQuery<PopupInventory[]>({
-    url: `/popup-events/inventory/${popupId}`,
+    url: `/popup-events/inventory/event/${popupId}`,
     key: `popup-inventory-${popupId}`,
     selectData: true,
   })
@@ -93,7 +93,7 @@ export function useUpdatePopupProduct() {
 
 export function useGetPopupOrders(popupId: string) {
   return useApiQuery<TOrderResponse>({
-    url: `/orders/?source=popup_internal&popup_event=${popupId}`,
+    url: `/orders/?popup_event=${popupId}`,
     key: `popup-orders-${popupId}`,
     selectData: true,
   })
