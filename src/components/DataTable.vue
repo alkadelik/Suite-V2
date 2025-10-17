@@ -37,8 +37,6 @@ interface Props {
   data: T[]
   /** Column definitions for the table */
   columns: TableColumn<T>[]
-  /** Data to show when table is empty */
-  emptyTableData?: Record<string, unknown>
   /** Whether the table is in loading state */
   loading?: boolean
   /** Enable row selection functionality */
@@ -110,7 +108,6 @@ const emit = defineEmits<Emits>()
 
 const props = withDefaults(defineProps<Props>(), {
   data: () => [] as T[],
-  emptyTableData: () => ({}),
   loading: false,
   enableRowSelection: false,
   searchFilter: "",

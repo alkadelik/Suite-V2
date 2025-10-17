@@ -1,50 +1,50 @@
 <script setup lang="ts">
 import { formatCurrency } from "@/utils/format-currency"
-import AppButton from "@components/AppButton.vue"
-import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
-import { useMediaQuery } from "@vueuse/core"
+import { EventfulPopup } from "../types"
+import { formatDate } from "@/utils/formatDate"
 
-const isMobile = useMediaQuery("(max-width: 768px)")
-
-const props = defineProps<{ class?: string }>()
+const props = withDefaults(
+  defineProps<{
+    class?: string
+    showImage?: boolean
+    showPrice?: boolean
+    event: EventfulPopup
+  }>(),
+  { showImage: true, showPrice: true },
+)
 </script>
 
 <template>
   <div
-    class="bg-core-25 border-core-300 flex w-full gap-2 rounded-lg border pr-3 md:gap-4"
+    class="bg-core-25 border-core-300 flex w-full gap-2 rounded-lg border p-2 pr-3 md:gap-4"
     :class="props.class"
+    @click="$router.push(`/popups/eventful/${event.uid}`)"
   >
-    <div class="relative z-[1] w-1/3 flex-shrink-0 rounded-l-lg">
+    <div v-if="showImage" class="relative z-[1] w-1/3 flex-shrink-0 rounded-l-lg">
       <img
         src="@/assets/images/eventful-noise-grid.svg?url"
-        class="h-full w-full rounded-l-lg bg-amber-600 object-cover"
+        class="h-full w-full rounded-lg bg-amber-600 object-cover"
       />
 
-      <div
-        class="absolute top-0 bottom-0 flex w-full items-center justify-center text-4xl font-black text-white"
-      >
-        {{ "LBW" }}
+      <div class="absolute top-1 left-1 rounded bg-white px-2 py-1 text-sm font-semibold shadow">
+        {{ formatCurrency(10000) }}
       </div>
+
+      <img src="/images/logos/leyyow-icon.svg?url" class="absolute right-1 bottom-1 h-8 w-8" />
     </div>
     <div class="flex-1 space-y-1 p-2 md:space-y-2 md:p-3">
-      <h3 class="truncate text-sm font-semibold capitalize md:text-base">
-        Lagos Business Week 2025
+      <h3 class="mb-4 truncate text-sm font-semibold capitalize md:text-base">
+        {{ event.name }}
       </h3>
       <p class="flex items-center gap-2 text-xs md:text-sm">
-        <Icon name="calendar" :size="isMobile ? 16 : 20" class="text-primary-600" />
-        22-03-2025
+        <Icon name="calendar" class="text-primary-600 !h-4 !w-4 md:!h-5 md:!w-5" />
+        {{ formatDate(event.start_date) }} - {{ formatDate(event.end_date) }}
       </p>
       <p class="flex items-center gap-2 text-xs md:text-sm">
-        <Icon name="location" :size="isMobile ? 16 : 20" class="text-primary-600" />
-        Victoria Island, Lagos
+        <Icon name="location" class="text-primary-600 !h-4 !w-4 md:!h-5 md:!w-5" />
+        {{ event.location }}
       </p>
-      <p class="flex items-center gap-2 text-xs md:text-sm">
-        <Icon name="dollar-circle" :size="isMobile ? 16 : 20" class="text-primary-600" />
-        {{ formatCurrency(10000) }}
-      </p>
-      <Chip label="Ongoing" color="success" />
     </div>
-    <AppButton v-if="!isMobile" label="Register Now" class="my-3" />
   </div>
 </template>

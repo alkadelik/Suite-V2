@@ -51,6 +51,12 @@
 
     <!--  -->
     <LogoutModal :open="logout" @close="logout = false" />
+
+    <PlansModal
+      :model-value="showPlans"
+      :hide-bud="true"
+      @update:model-value="(val) => setPlanUpgradeModal(val)"
+    />
   </div>
 </template>
 
@@ -71,6 +77,7 @@ import {
   updateProductAttributeOptions,
 } from "@modules/inventory/constants"
 import { ICategoriesApiResponse, IProductAttributesApiResponse } from "@modules/inventory/types"
+import PlansModal from "@modules/settings/components/PlansModal.vue"
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
@@ -86,12 +93,15 @@ const SALES_SUITES = [
   { icon: "people", label: "Customers", to: "/customers" },
 ]
 
+const { setLocations, setActiveLocation, setPlanUpgradeModal } = useSettingsStore()
+const { updateAuthUser } = useAuthStore()
+
 const { data: locations } = useGetLocations()
-const { setLocations, setActiveLocation } = useSettingsStore()
 const { data: categories } = useGetCategories()
 const { data: attributes } = useGetAttributes()
 const { data: profile } = useGetProfile()
-const { updateAuthUser } = useAuthStore()
+
+const showPlans = computed(() => useSettingsStore().showPlanUpgradeModal)
 
 watch(
   locations,

@@ -9,18 +9,19 @@ import Icon from "@components/Icon.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import Tabs from "@components/Tabs.vue"
 import { useMediaQuery } from "@vueuse/core"
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import { POPUP_COLUMN } from "../constants"
 import { PopupEvent } from "../types"
 import PopupEventCard from "../components/PopupEventCard.vue"
 import CreatePopupEventModal from "../components/CreatePopupEventModal.vue"
-import { useGetPopupEvents } from "../api"
+import { useGetEventfulPopups, useGetPopupEvents } from "../api"
 import OrganizerPopupCard from "../components/OrganizerPopupCard.vue"
 import "vue3-carousel/carousel.css"
 import { Carousel, Slide } from "vue3-carousel"
 import DeletePopupEvent from "../components/DeletePopupEvent.vue"
 
 const TABS = [
+  { title: "All", key: "" },
   { title: "Ongoing", key: "ongoing" },
   { title: "Upcoming", key: "upcoming" },
   { title: "Past", key: "past" },
@@ -43,7 +44,15 @@ const handleAction = (action: string, item: PopupEvent) => {
   if (action === "delete") openDelete.value = true
 }
 
-const { data: popupEvents, isPending, refetch } = useGetPopupEvents()
+const computedFilters = computed(() => {
+  const filters: Record<string, string> = {}
+  if (status.value) filters.status = status.value
+  if (searchQuery.value) filters.search = searchQuery.value
+  return filters
+})
+const { data: popupEvents, isPending, refetch } = useGetPopupEvents(computedFilters)
+
+const { data: eventfulPopups } = useGetEventfulPopups()
 </script>
 
 <template>
@@ -59,15 +68,26 @@ const { data: popupEvents, isPending, refetch } = useGetPopupEvents()
           label="View All"
           icon="arrow-right"
           class="flex-row-reverse"
+          @click="() => $router.push('/popups/eventful')"
         />
       </div>
 
       <Carousel
         v-model="activeSlide"
-        v-bind="{ itemsToShow: 1, autoplay: 3000, wrapAround: true, gap: 16 }"
+        v-bind="{
+          itemsToShow: 1,
+          autoplay: 3000,
+          wrapAround: true,
+          gap: 16,
+          breakpoints: {
+            640: {
+              itemsToShow: 2,
+            },
+          },
+        }"
       >
-        <Slide v-for="n in 5" :key="n">
-          <OrganizerPopupCard />
+        <Slide v-for="(eventful, n) in eventfulPopups?.results" :key="n">
+          <OrganizerPopupCard :event="eventful" :class="isMobile ? 'w-full' : 'w-1/2'" />
         </Slide>
 
         <template #addons>
@@ -104,7 +124,7 @@ const { data: popupEvents, isPending, refetch } = useGetPopupEvents()
     </div>
 
     <EmptyState
-      v-if="!popupEvents?.count"
+      v-if="!popupEvents?.count && !status"
       title="You don't have any popup yet!"
       description="Create a popup event."
       action-label="Create a popup event"
@@ -126,7 +146,8 @@ const { data: popupEvents, isPending, refetch } = useGetPopupEvents()
       >
         <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
           <h3 class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
-            {{ startCase(status) + " Popups" }} <Chip :label="popupEvents?.count" />
+            {{ startCase(status) + " Popups" }}
+            <Chip v-if="popupEvents?.count" :label="popupEvents?.count" />
           </h3>
           <div class="flex items-center gap-2">
             <TextField

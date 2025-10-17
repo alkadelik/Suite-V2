@@ -26,7 +26,8 @@ export const validationSchema = yup.object({
     .number()
     .typeError("Must be a number")
     .min(0, "Participant fee cannot be negative")
-    .required("Participant fee is required"),
+    .nullable()
+    .optional(),
 
   description: yup.string().max(1000, "Description must not exceed 1000 characters"),
 

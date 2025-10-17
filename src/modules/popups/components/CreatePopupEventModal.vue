@@ -19,8 +19,8 @@ const { mutate: createEvent, isPending: isCreating } = useCreatePopup()
 const { mutate: updateEvent, isPending: isUpdating } = useUpdatePopup()
 
 const isLoading = computed(() => isCreating.value || isUpdating.value)
-const modalTitle = computed(() => (props.isEditMode ? "Edit Event" : "Create Event"))
-const buttonLabel = computed(() => (props.isEditMode ? "Update Event" : "Create Event"))
+const modalTitle = computed(() => (props.isEditMode ? "Edit Popup" : "Create Popup"))
+const buttonLabel = computed(() => (props.isEditMode ? "Update Popup" : "Create Popup"))
 
 // Store initial values for comparison
 const initialValues = ref<Partial<PopupPayload>>({})
@@ -55,7 +55,9 @@ const prepareFormData = (currentData: Partial<PopupPayload>): FormData => {
     formData.append("description", currentData.description || "")
     formData.append("start_date", currentData.start_date!)
     formData.append("end_date", currentData.end_date!)
-    formData.append("participant_fee", currentData.participant_fee!.toString())
+    if (currentData.participant_fee !== null && currentData.participant_fee !== undefined) {
+      formData.append("participant_fee", currentData.participant_fee.toString())
+    }
     if (currentData.banner_image) formData.append("banner_image", currentData.banner_image)
   } else {
     // For edit mode, only include changed fields
@@ -75,7 +77,11 @@ const prepareFormData = (currentData: Partial<PopupPayload>): FormData => {
       formData.append("end_date", currentData.end_date!)
     }
     if (currentData.participant_fee !== initialValues.value.participant_fee) {
-      formData.append("participant_fee", currentData.participant_fee!.toString())
+      if (currentData.participant_fee !== null && currentData.participant_fee !== undefined) {
+        formData.append("participant_fee", currentData.participant_fee.toString())
+      } else {
+        formData.append("participant_fee", "")
+      }
     }
     if (currentData.banner_image) {
       formData.append("banner_image", currentData.banner_image)
@@ -171,7 +177,7 @@ watch(
 
       <FormField name="event_address" required />
 
-      <FormField name="participant_fee" type="number" required />
+      <FormField name="participant_fee" type="number" />
 
       <FormField name="description" label="Description (optional)" type="textarea" :rows="4" />
 
