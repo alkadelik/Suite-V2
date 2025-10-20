@@ -34,6 +34,7 @@
         <ProductImagesForm
           v-else-if="(step === 3 && !hasVariants) || (step === 4 && hasVariants)"
           v-model="form.images"
+          :variants="variants"
         />
 
         <!-- Fallback -->
@@ -235,6 +236,8 @@ const handleSubmit = async () => {
 
     const handleProductSuccess = (response: unknown) => {
       toast.success("Product created successfully")
+      step.value = 1
+      hasVariants.value = false
 
       // Extract product UID from response
       const productUid = variantProcessor.extractUid(response)

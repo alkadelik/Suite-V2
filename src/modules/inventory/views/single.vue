@@ -65,75 +65,12 @@
       </div>
 
       <!-- Product Images Gallery -->
-      <div v-if="sortedProductImages.length > 0" class="mt-6 mb-6">
-        <!-- Mobile Layout -->
-        <div class="md:hidden">
-          <!-- Primary Image - Full Width -->
-          <div
-            v-if="sortedProductImages[0]"
-            class="relative mb-3 h-30 w-full overflow-hidden rounded-lg border border-gray-200"
-          >
-            <img
-              :src="sortedProductImages[0].image"
-              :alt="sortedProductImages[0].alt_text || product?.data.name"
-              class="h-full w-full object-cover"
-            />
-            <AppButton
-              icon="edit"
-              variant="outlined"
-              color="alt"
-              size="sm"
-              class="!absolute top-2 left-2 !h-8 !w-8 bg-white !p-0"
-              @click="openImagesEditDrawer"
-            />
-            <div
-              class="absolute top-2 right-2 flex items-center gap-1 rounded bg-gray-50 px-2 py-1 text-xs font-semibold text-gray-700"
-            >
-              <Icon name="heart-rounded" class="h-3 w-3" />
-              <span>Primary</span>
-            </div>
-          </div>
-          <!-- Other Images - Grid (max 4) -->
-          <div v-if="sortedProductImages.length > 1" class="grid grid-cols-4 gap-2">
-            <div
-              v-for="image in sortedProductImages.slice(1, 5)"
-              :key="image.uid"
-              class="aspect-square overflow-hidden rounded-lg border border-gray-200"
-            >
-              <img
-                :src="image.image"
-                :alt="image.alt_text || product?.data.name"
-                class="h-full w-full object-cover"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- Desktop Layout -->
-        <div class="hidden gap-3 overflow-x-auto md:flex">
-          <div
-            v-for="(image, index) in sortedProductImages"
-            :key="image.uid"
-            :class="[
-              'relative h-35 flex-shrink-0 overflow-hidden rounded-lg border border-gray-200',
-              index === 0 ? 'w-64' : 'w-32',
-            ]"
-          >
-            <img
-              :src="image.image"
-              :alt="image.alt_text || product?.data.name"
-              class="h-full w-full object-cover"
-            />
-            <div
-              v-if="index === 0"
-              class="absolute top-2 right-2 flex items-center gap-1 rounded bg-gray-50 px-2 py-1 text-xs font-semibold text-gray-700"
-            >
-              <Icon name="heart-rounded" class="h-3 w-3" />
-              <span>Primary</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ProductImageGallery
+        v-if="product?.data.images && product.data.images.length > 0"
+        :images="sortedProductImages"
+        :product-name="product?.data.name"
+        @open-images-edit="openImagesEditDrawer"
+      />
 
       <Tabs :tabs="tabs" v-model="activeTab" class="mt-5 mb-4 md:mt-8 md:mb-0" />
 
@@ -261,6 +198,7 @@ import { useGetInventoryMovements } from "../api"
 import AppButton from "@components/AppButton.vue"
 import ProductEditDrawer from "../components/ProductEditDrawer.vue"
 import AddCategoryModal from "../components/AddCategoryModal.vue"
+import ProductImageGallery from "../components/ProductImageGallery.vue"
 import type { TProduct } from "../types"
 
 const route = useRoute()

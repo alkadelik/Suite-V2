@@ -54,6 +54,15 @@ export function useVariantProcessing(
   const { createAttribute, createAttributeValues } = apiMutations
 
   /**
+   * Check if a string is a valid UUID
+   * UUIDs are 36 characters long with dashes (e.g., "550e8400-e29b-41d4-a716-446655440000")
+   */
+  const isValidUuid = (value: string): boolean => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    return uuidRegex.test(value)
+  }
+
+  /**
    * Extract UID from API response
    * Handles different response structures safely
    */
@@ -123,9 +132,11 @@ export function useVariantProcessing(
     attributeUid: string,
     sortOrder: number,
   ): Promise<string> => {
+    // For weight attributes, we want to send the label (e.g., "1 kg") instead of the value (e.g., "1")
+    // For other attributes, label and value are the same
     const valueString =
-      typeof value === "object" && value !== null && "value" in value
-        ? value.value
+      typeof value === "object" && value !== null && "label" in value
+        ? value.label
         : typeof value === "string"
           ? value
           : String(value)
@@ -177,7 +188,7 @@ export function useVariantProcessing(
     for (const value of values) {
       const isObject =
         typeof value === "object" && value !== null && "label" in value && "value" in value
-      const hasUID = isObject && value.label !== value.value && value.value !== "custom_type"
+      const hasUID = isObject && isValidUuid(value.value) && value.value !== "custom_type"
 
       if (hasUID) {
         // Already processed, keep as-is
@@ -200,7 +211,7 @@ export function useVariantProcessing(
       const value = values[index]
       const isObject =
         typeof value === "object" && value !== null && "label" in value && "value" in value
-      const hasUID = isObject && value.label !== value.value && value.value !== "custom_type"
+      const hasUID = isObject && isValidUuid(value.value) && value.value !== "custom_type"
 
       if (!hasUID) {
         console.log(`Processing value ${index + 1}/${values.length}:`, value)
@@ -298,6 +309,7 @@ export function useVariantProcessing(
     // Helper functions
     extractUid,
     getVariantValue,
+    isValidUuid,
 
     // Processing functions
     createAttributeAndGetUid,

@@ -94,8 +94,11 @@ export function useWeightBasedDimensions() {
 
     if (!dimension) return null
 
+    // Sanitize weight value to ensure we send numeric values to backend
+    const sanitizedWeight = sanitizeWeightValue(weightValue)
+
     return {
-      weight: typeof weightValue === "number" ? weightValue.toString() : weightValue || "0",
+      weight: isNaN(sanitizedWeight) ? "0" : sanitizedWeight.toString(),
       height: dimension.height.toString(),
       length: dimension.depth.toString(),
       width: dimension.width.toString(),

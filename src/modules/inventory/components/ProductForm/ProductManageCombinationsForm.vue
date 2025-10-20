@@ -93,6 +93,32 @@
       </div>
     </div>
 
+    <!-- Deleted Variants Warning (only in edit mode with multiple variants) -->
+    <div v-if="!isSingleVariant && hasDeletedVariants" class="space-y-3">
+      <InfoBox
+        variant="error"
+        title="Deleted Variants"
+        message="The following variants will be deleted from this product."
+      />
+
+      <!-- Deleted Variants Display -->
+      <div class="flex flex-col gap-3">
+        <div
+          v-for="(deletedVariant, index) in props.deletedVariants"
+          :key="`deleted-${index}`"
+          class="flex flex-wrap gap-2 rounded-lg bg-white p-4"
+        >
+          <Chip
+            v-for="(attributeValue, attrIndex) in getVariantDisplayValues(deletedVariant)"
+            :key="`deleted-attr-${attrIndex}`"
+            :label="attributeValue"
+            color="error"
+            size="sm"
+          />
+        </div>
+      </div>
+    </div>
+
     <!-- Weight Section (hidden when Weight attribute is in variants - auto-populated) -->
     <div v-if="!hasWeightAttributeInVariants" class="space-y-4">
       <SelectField
@@ -152,9 +178,10 @@ import { computed, ref, watch } from "vue"
 import TextField from "@/components/form/TextField.vue"
 import SelectField from "@/components/form/SelectField.vue"
 import Chip from "@/components/Chip.vue"
+import InfoBox from "@/components/InfoBox.vue"
 import { PRODUCT_DIMENSIONS, WEIGHT_ATTRIBUTE_UID } from "../../constants"
 import { IProductDimension } from "@modules/inventory/types"
-import { IProductVariant } from "../../types"
+import { IProductVariant, IProductVariantDetails } from "../../types"
 import { useWeightBasedDimensions } from "../../composables/useWeightBasedDimensions"
 
 interface Props {
@@ -164,6 +191,8 @@ interface Props {
   productName?: string
   /** Hide the stock/quantity field (for variant-details edit mode) */
   hideStock?: boolean
+  /** Deleted variants to display (only in edit mode) */
+  deletedVariants?: IProductVariantDetails[]
 }
 
 interface Emits {
@@ -235,6 +264,11 @@ watch(
 // Check if we have a single variant
 const isSingleVariant = computed(() => {
   return !props.modelValue || props.modelValue.length <= 1
+})
+
+// Check if we have deleted variants
+const hasDeletedVariants = computed(() => {
+  return props.deletedVariants && props.deletedVariants.length > 0
 })
 
 // Get variants array
@@ -330,7 +364,8 @@ const selectedDimension = computed({
 })
 
 // Extract display values from variant attributes for chips
-const getVariantDisplayValues = (variant: IProductVariant): string[] => {
+// Works with both IProductVariant and IProductVariantDetails
+const getVariantDisplayValues = (variant: IProductVariant | IProductVariantDetails): string[] => {
   if (!variant.attributes || variant.attributes.length === 0) {
     return [variant.name]
   }
@@ -339,7 +374,7 @@ const getVariantDisplayValues = (variant: IProductVariant): string[] => {
   return variant.attributes.map((attr) => {
     // Check for attribute_value first (from API response)
     if ("attribute_value" in attr && attr.attribute_value) {
-      return attr.attribute_value as string
+      return String(attr.attribute_value)
     }
     // Then check for valueLabel (used internally)
     if ("valueLabel" in attr && attr.valueLabel) {

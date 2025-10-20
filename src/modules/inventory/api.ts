@@ -7,6 +7,7 @@ import {
   IProductAttributeFormPayload,
   IProductAttributeValuePayload,
   IProductImageUploadPayload,
+  IProductImageUpdatePayload,
   IGetProductResponse,
   IAddStockPayload,
   IReduceStockPayload,
@@ -145,6 +146,21 @@ export function useAddProductImage() {
         },
       })
     },
+  })
+}
+
+/** update product image api request */
+export function useUpdateProductImage() {
+  return useMutation({
+    mutationFn: ({ uid, ...payload }: IProductImageUpdatePayload & { uid: string }) =>
+      baseApi.patch(`inventory/images/${uid}/`, payload),
+  })
+}
+
+/** delete product image api request */
+export function useDeleteProductImage() {
+  return useMutation({
+    mutationFn: (uid: string) => baseApi.delete(`inventory/images/${uid}/`),
   })
 }
 

@@ -81,9 +81,9 @@ export function useProductDrawerUtilities() {
      * Calculate total steps based on variant status and edit mode
      */
     const totalSteps = computed<number>(() => {
-      // Variants edit mode always has 3 steps
+      // Variants edit mode always has 2 steps: configuration, then combinations/pricing
       if (editMode === "variants") {
-        return 3
+        return 2
       }
       // Full create/edit mode
       return hasVariants.value ? 4 : 3
@@ -151,11 +151,7 @@ export function useProductDrawerUtilities() {
         return "Product Image(s) (optional)"
       }
 
-      // Variants edit mode - step 3
-      if (editMode === "variants" && step.value === 3) {
-        return "Product Image(s) (optional)"
-      }
-
+      // Variants edit mode doesn't have images step
       return undefined
     })
 
@@ -172,14 +168,12 @@ export function useProductDrawerUtilities() {
         return "Supports: PNG, JPEG, SVG, WEBP, HEIC, HEIF, AVIF | Max. size: 5MB"
       }
 
-      // Variants edit mode
+      // Variants edit mode (only 2 steps)
       if (editMode === "variants") {
         if (step.value === 1) {
           return `${actionVerb} the different options your product comes in (like size or colour). For example: Size → Large, Color → Red.`
         } else if (step.value === 2) {
           return `${updateVerb} available quantity and price for each variant combination.`
-        } else if (step.value === 3) {
-          return "Supports: PNG, JPEG, SVG, WEBP, HEIC, HEIF, AVIF | Max. size: 5MB"
         }
       }
 
@@ -206,18 +200,16 @@ export function useProductDrawerUtilities() {
      */
     const getSubmitButtonLabel = computed<string>(() => {
       const isEdit = mode === "edit"
-      const isLast = step.value === (editMode === "variants" ? 3 : hasVariants.value ? 4 : 3)
+      const isLast = step.value === (editMode === "variants" ? 2 : hasVariants.value ? 4 : 3)
 
       if (isLast) {
-        return isEdit ? "Save Changes" : "Save Product"
+        return isEdit ? "Save Changes" : "Publish Product"
       }
 
-      // Variants edit mode
+      // Variants edit mode (only 2 steps)
       if (editMode === "variants") {
         if (step.value === 1) {
           return "Next (Price)"
-        } else if (step.value === 2) {
-          return "Next (Images)"
         }
       }
 

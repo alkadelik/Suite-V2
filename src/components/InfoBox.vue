@@ -5,7 +5,10 @@
         <Icon name="info-circle-filled" size="20" :class="infoIconClasses" />
       </div>
     </div>
-    <p class="text-xs font-semibold md:text-sm">{{ message }}</p>
+    <div class="flex-1">
+      <p v-if="title" class="mb-1 text-xs font-bold md:text-sm">{{ title }}</p>
+      <p class="text-xs font-semibold md:text-sm">{{ message }}</p>
+    </div>
   </div>
 </template>
 
@@ -18,6 +21,11 @@ export interface InfoBoxProps {
    * The message to display in the info box
    */
   message: string
+
+  /**
+   * Optional title/header displayed above the message
+   */
+  title?: string
 
   /**
    * The info box variant affecting colors and styling

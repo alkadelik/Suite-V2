@@ -70,22 +70,10 @@ const getItemSpanClass = (index: number) => {
           getItemSpanClass(i),
         ]"
       >
-        <!-- Top section -->
-        <div class="flex flex-col gap-5 md:flex-row md:items-center md:gap-2">
-          <span class="flex h-10 w-10 items-center justify-center rounded-2xl md:bg-gray-50">
-            <!-- Mobile (default) -->
-            <span class="block md:hidden">
-              <Icon :name="item.icon" :class="['text-primary-600', item.iconClass]" :size="24" />
-            </span>
-
-            <!-- Tablet/Desktop -->
-            <span class="hidden md:block">
-              <Icon
-                :name="defaultIcon"
-                :class="['text-primary-600', defaultIconClass]"
-                :size="24"
-              />
-            </span>
+        <!-- Mobile: Icon and Label together at top -->
+        <div class="flex flex-col gap-5 md:hidden">
+          <span class="flex h-10 w-10 items-center justify-center rounded-2xl">
+            <Icon :name="item.icon" :class="['text-primary-600', item.iconClass]" :size="24" />
           </span>
 
           <h4 class="text-core-600 !font-outfit flex items-end gap-1.5 text-sm">
@@ -100,17 +88,36 @@ const getItemSpanClass = (index: number) => {
           </h4>
         </div>
 
-        <!-- Value -->
-        <p class="text-core-800 flex items-end gap-1.5 text-xl font-bold">
-          {{ item.value }}
+        <!-- Desktop: Label at top, Icon with Value below -->
+        <h4 class="text-core-600 !font-outfit hidden items-end gap-1.5 text-sm md:flex">
+          {{ item.label }}
           <span
-            v-if="item.valueTag"
+            v-if="item.labelTag"
             class="bg-primary-50 text-primary-400 inline-flex h-5 w-fit items-center justify-center rounded-xl !px-2.5 text-[12px] font-medium"
-            :class="item.valueTagClass"
+            :class="item.labelTagClass"
           >
-            {{ item.valueTag }}
+            {{ item.labelTag }}
           </span>
-        </p>
+        </h4>
+
+        <!-- Value section -->
+        <div class="flex items-center gap-2">
+          <!-- Desktop icon beside value -->
+          <span class="hidden h-10 w-10 items-center justify-center rounded-2xl bg-gray-50 md:flex">
+            <Icon :name="defaultIcon" :class="['text-primary-600', defaultIconClass]" :size="24" />
+          </span>
+
+          <p class="text-core-800 flex items-end gap-1.5 text-xl font-bold">
+            {{ item.value }}
+            <span
+              v-if="item.valueTag"
+              class="bg-primary-50 text-primary-400 inline-flex h-5 w-fit items-center justify-center rounded-xl !px-2.5 text-[12px] font-medium"
+              :class="item.valueTagClass"
+            >
+              {{ item.valueTag }}
+            </span>
+          </p>
+        </div>
 
         <!-- Previous value comparison -->
         <p class="text-core-600 text-xs">vs. {{ item.prev_value }} last wk</p>

@@ -33,7 +33,14 @@
         />
 
         <!-- Images Edit Mode - Edit product images only -->
-        <ProductImagesForm v-else-if="props.editMode === 'images'" v-model="form.images" />
+        <ProductImagesForm
+          v-else-if="props.editMode === 'images'"
+          v-model="form.images"
+          :variants="variants"
+          :edit-mode="true"
+          :existing-image-ids="existingImageIds"
+          @update:removed-image-ids="removedImageIds = $event"
+        />
 
         <!-- Variants Edit Mode (skip product details, start from variants) -->
         <template v-else-if="props.editMode === 'variants'">
@@ -46,6 +53,7 @@
             v-model="variants"
             :product-name="form.name"
             :hide-stock="true"
+            :deleted-variants="deletedVariants"
           />
 
           <!-- Step 3 for variants mode: Product Images -->
@@ -76,12 +84,14 @@
             v-else-if="(step === 2 && !hasVariants) || (step === 3 && hasVariants)"
             v-model="variants"
             :product-name="form.name"
+            :deleted-variants="deletedVariants"
           />
 
           <!-- Step 3/4: Product Images -->
           <ProductImagesForm
             v-else-if="(step === 3 && !hasVariants) || (step === 4 && hasVariants)"
             v-model="form.images"
+            :variants="variants"
           />
 
           <!-- Fallback -->
@@ -157,6 +167,8 @@ import {
   useCreateAttribute,
   useCreateAttributeValues,
   useAddProductImage,
+  useUpdateProductImage,
+  useDeleteProductImage,
   useGetProduct,
 } from "../api"
 import { displayError } from "@/utils/error-handler"
@@ -217,6 +229,8 @@ const { mutate: createAttribute, isPending: isCreatingAttribute } = useCreateAtt
 const { mutate: createAttributeValues, isPending: isCreatingAttributeValues } =
   useCreateAttributeValues()
 const { mutate: addProductImages, isPending: isAddingProductImages } = useAddProductImage()
+const { mutate: updateProductImage, isPending: isUpdatingImage } = useUpdateProductImage()
+const { mutate: deleteProductImage, isPending: isDeletingImage } = useDeleteProductImage()
 
 // Product fetching
 const productUidToFetch = ref<string>("")
@@ -230,6 +244,15 @@ const { form, hasVariants, variants, variantConfiguration, resetFormState, popul
   useProductFormState()
 
 const { drawerPosition } = useProductDrawerUtilities()
+
+// Track deleted variants
+const deletedVariants = ref<IProductVariantDetails[]>([])
+
+// Track existing image UIDs (parallel array to form.images)
+const existingImageIds = ref<Array<string | null>>([])
+
+// Track removed image UIDs
+const removedImageIds = ref<string[]>([])
 
 const { step, previousStep } = useProductDrawerUtilities().useStepManagement({
   hasVariants,
@@ -273,6 +296,8 @@ const isPending = computed(() => {
     isCreatingAttribute.value ||
     isCreatingAttributeValues.value ||
     isAddingProductImages.value ||
+    isUpdatingImage.value ||
+    isDeletingImage.value ||
     isLoadingProduct.value
   )
 })
@@ -293,15 +318,51 @@ const drawerTitle = computed(() => {
   }
 })
 
-// Watch for drawer opening to set productUidToFetch
+// Watch for drawer opening to set productUidToFetch and reset deletedVariants
 watch(
   () => [props.modelValue, props.product] as const,
   ([isOpen, product]) => {
     if (isOpen && product?.uid) {
       productUidToFetch.value = product.uid
+      // Reset deleted variants when drawer opens
+      deletedVariants.value = []
+      // Reset removed image IDs
+      removedImageIds.value = []
     }
   },
   { immediate: true },
+)
+
+// Watch for image swaps to also swap the corresponding UIDs
+watch(
+  () => form.images,
+  (newImages, oldImages) => {
+    if (!props.editMode || props.editMode !== "images" || !oldImages) return
+
+    // Detect if images were swapped (primarily for "Make Primary" functionality)
+    // Check if position 0 changed and it's an existing image
+    if (
+      newImages[0] !== oldImages[0] &&
+      newImages[0] &&
+      typeof newImages[0] === "string" &&
+      oldImages[0] &&
+      typeof oldImages[0] === "string"
+    ) {
+      // Find where the new primary image came from
+      const newPrimaryIndex = oldImages.findIndex((img) => img === newImages[0])
+
+      if (newPrimaryIndex > 0) {
+        // Swap the UIDs as well
+        const newExistingIds = [...existingImageIds.value]
+        const tempId = newExistingIds[0]
+        newExistingIds[0] = newExistingIds[newPrimaryIndex]
+        newExistingIds[newPrimaryIndex] = tempId
+        existingImageIds.value = newExistingIds
+        console.log("Swapped image UIDs for primary change")
+      }
+    }
+  },
+  { deep: true },
 )
 
 // Watch for product data to populate form
@@ -310,6 +371,21 @@ watch(
   (data) => {
     if (data?.data) {
       const product = data.data
+
+      // Populate existing image IDs
+      if (product.images && product.images.length > 0) {
+        const sortedImages = product.images
+          .slice()
+          .sort((a, b) => a.sort_order - b.sort_order)
+          .slice(0, 5)
+
+        existingImageIds.value = [
+          ...sortedImages.map((img) => img.uid),
+          ...Array(Math.max(0, 5 - product.images.length)).fill(null),
+        ]
+      } else {
+        existingImageIds.value = Array(5).fill(null)
+      }
 
       populateFormState({
         name: product.name || "",
@@ -551,27 +627,34 @@ const handleSubmit = async () => {
       return
     }
 
-    const validImages = form.images.filter((image) => image && image instanceof File)
-
-    if (validImages.length === 0) {
-      toast.info("No new images to upload")
-      resetFormState()
-      emit("update:modelValue", false)
-      emit("refresh")
-      return
-    }
-
     try {
-      for (let i = 0; i < validImages.length; i++) {
-        const image = validImages[i]
+      // Step 1: Delete removed images
+      if (removedImageIds.value.length > 0) {
+        for (const imageId of removedImageIds.value) {
+          await new Promise<void>((resolve, reject) => {
+            deleteProductImage(imageId, {
+              onSuccess: () => resolve(),
+              onError: (error: unknown) => reject(new Error(String(error))),
+            })
+          })
+        }
+        console.log(`Deleted ${removedImageIds.value.length} images`)
+      }
 
+      // Step 2: Handle primary image changes and sort order updates
+      // Check if position 0 (primary) has an existing image that needs to be marked as primary
+      const primaryImage = form.images[0]
+      const primaryImageId = existingImageIds.value[0]
+
+      if (primaryImage && typeof primaryImage === "string" && primaryImageId) {
+        // This is an existing image at primary position
+        // We need to ensure it's marked as primary (in case it was swapped)
         await new Promise<void>((resolve, reject) => {
-          addProductImages(
+          updateProductImage(
             {
-              product: productUid,
-              image: image as File,
-              is_primary: i === 0,
-              sort_order: i + 1,
+              uid: primaryImageId,
+              is_primary: true,
+              sort_order: 1,
             },
             {
               onSuccess: () => resolve(),
@@ -579,9 +662,69 @@ const handleSubmit = async () => {
             },
           )
         })
+        console.log("Updated primary image")
       }
 
-      toast.success("Images uploaded successfully")
+      // Step 3: Update sort order for all other existing images
+      for (let i = 1; i < form.images.length; i++) {
+        const image = form.images[i]
+        const imageId = existingImageIds.value[i]
+
+        // Only update if it's an existing image (string URL with ID)
+        if (image && typeof image === "string" && imageId) {
+          await new Promise<void>((resolve, reject) => {
+            updateProductImage(
+              {
+                uid: imageId,
+                is_primary: false,
+                sort_order: i + 1,
+              },
+              {
+                onSuccess: () => resolve(),
+                onError: (error: unknown) => reject(new Error(String(error))),
+              },
+            )
+          })
+        }
+      }
+
+      // Step 4: Upload new images (File objects)
+      const newImages = form.images
+        .map((image, index) => ({ image, index }))
+        .filter(({ image }) => image && image instanceof File)
+
+      if (newImages.length > 0) {
+        for (const { image, index } of newImages) {
+          await new Promise<void>((resolve, reject) => {
+            addProductImages(
+              {
+                product: productUid,
+                image: image as File,
+                is_primary: index === 0,
+                sort_order: index + 1,
+              },
+              {
+                onSuccess: () => resolve(),
+                onError: (error: unknown) => reject(new Error(String(error))),
+              },
+            )
+          })
+        }
+        console.log(`Uploaded ${newImages.length} new images`)
+      }
+
+      // Success!
+      const totalChanges =
+        removedImageIds.value.length +
+        newImages.length +
+        (primaryImage && typeof primaryImage === "string" ? 1 : 0)
+
+      if (totalChanges > 0) {
+        toast.success("Images updated successfully")
+      } else {
+        toast.info("No changes to images")
+      }
+
       resetFormState()
       emit("update:modelValue", false)
       emit("refresh")
@@ -593,7 +736,7 @@ const handleSubmit = async () => {
 
   // Full Edit Mode or Variants Mode - Multi-step submission
   const isVariantsMode = props.editMode === "variants"
-  const totalSteps = isVariantsMode ? 3 : hasVariants.value ? 4 : 3
+  const totalSteps = isVariantsMode ? 2 : hasVariants.value ? 4 : 3
   const isLast = step.value === totalSteps
 
   if (isLast) {
@@ -640,6 +783,8 @@ const handleSubmit = async () => {
 
     const handleProductSuccess = () => {
       toast.success("Product updated successfully")
+      step.value = 1
+      hasVariants.value = false
 
       const productUid = productUidToFetch.value
 
@@ -706,12 +851,18 @@ const handleSubmit = async () => {
           )
         }
 
-        variantConfigHelpers.generateVariantCombinations()
+        // Generate combinations and capture deleted variants
+        const deleted = variantConfigHelpers.generateVariantCombinations()
+        // Type narrowing: deleted variants from generateVariantCombinations are IProductVariant[]
+        // but we need them as IProductVariantDetails[] for display
+        // These are the existing variants that were already saved, so they have the full details
+        deletedVariants.value = deleted as unknown as IProductVariantDetails[]
 
         console.log("Generated Variants Array:", {
           step: step.value + 1,
           hasVariants: hasVariants.value,
           variants: JSON.parse(JSON.stringify(variants.value)),
+          deletedVariants: JSON.parse(JSON.stringify(deletedVariants.value)),
           timestamp: new Date().toISOString(),
         })
 
@@ -729,6 +880,16 @@ const handleSubmit = async () => {
 
 // Back button handler
 const handleBack = () => {
+  // When going back from combinations step, clear deleted variants
+  // so they recalculate when user proceeds forward again
+  const isVariantsMode = props.editMode === "variants"
+  const isCombinationsStep =
+    (isVariantsMode && step.value === 2) || (step.value === 3 && hasVariants.value)
+
+  if (isCombinationsStep) {
+    deletedVariants.value = []
+  }
+
   previousStep()
 }
 

@@ -4,7 +4,7 @@
     <div
       class="text-core-800 relative flex w-full cursor-pointer items-center justify-between rounded-xl border-2 border-dashed text-sm transition-colors duration-200"
       :class="[
-        props.fullscreenPreview ? 'h-full' : 'px-4 py-4',
+        props.productImageMode ? 'h-full' : 'px-4 py-4',
         fileName && isImage && filePreview
           ? 'border-primary-500 bg-primary-50'
           : 'border-gray-300 bg-transparent hover:bg-gray-50',
@@ -12,9 +12,9 @@
       @dragover="preventDefaults"
       @drop="handleDrop"
     >
-      <!-- Fullscreen Preview Mode -->
+      <!-- Product Image Preview Mode -->
       <div
-        v-if="fileName && isImage && filePreview && props.fullscreenPreview"
+        v-if="fileName && isImage && filePreview && props.productImageMode"
         class="relative h-full w-full p-2"
       >
         <img :src="filePreview" :alt="fileName" class="h-full w-full rounded-lg object-cover" />
@@ -28,16 +28,18 @@
           <span>Primary</span>
         </div>
 
-        <!-- Replace button -->
+        <!-- Replace button - shows in edit mode (started with existing image URL) -->
         <button
+          v-if="isEditMode"
           type="button"
-          class="absolute -top-4.5 right-38 flex h-6 w-6 items-center justify-center rounded-full"
-          @click.stop="removeFile"
+          class="absolute -top-4.5 right-12 flex h-6 w-6 items-center justify-center rounded-full"
+          @click.stop="replaceFile"
         >
           <Chip icon="refresh-cw-01" label="Replace" class="border-primary-700 bg-primary-100" />
         </button>
-        <!-- Remove button -->
+        <!-- Remove button - only shows in create mode (never started with existing image) -->
         <button
+          v-else
           type="button"
           class="absolute -top-4.5 right-12 flex h-6 w-6 items-center justify-center rounded-full"
           @click.stop="removeFile"
@@ -67,18 +69,24 @@
       <slot v-else name="placeholder">
         <div
           class="flex w-full flex-col items-center justify-center gap-2 text-center"
-          :class="props.fullscreenPreview ? 'py-4' : ''"
+          :class="props.productImageMode ? 'py-4' : ''"
         >
           <div class="border-core-400 rounded-xl border p-2"><Icon name="document-upload" /></div>
           <span class="text-core-800 text-sm">{{ props.label }}</span>
-          <span class="text-core-600 text-xs">Supports: JPG, PNG, PDF (Max - 3MB)</span>
+          <span class="text-core-600 text-xs"
+            >Supports: JPG, PNG, HEIC{{ props.productImageMode ? "" : ", PDF" }}</span
+          >
         </div>
       </slot>
 
+      <!-- Hidden file input - always rendered for programmatic access via ref -->
       <input
-        v-if="!fileName || (fileName && (!isImage || !filePreview || !props.fullscreenPreview))"
+        ref="fileInputRef"
         type="file"
-        class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+        :class="[
+          'absolute inset-0 h-full w-full cursor-pointer opacity-0',
+          fileName && isImage && filePreview && props.productImageMode ? 'pointer-events-none' : '',
+        ]"
         @change="handleFileChange"
       />
     </div>
@@ -89,10 +97,13 @@
 import { ref, computed, watch } from "vue"
 import Icon from "@components/Icon.vue"
 import Chip from "@components/Chip.vue"
+import { useImageConverter } from "@/composables/useImageConverter"
+import { toast } from "@/composables/useToast"
 
 interface Props {
   label?: string
-  fullscreenPreview?: boolean
+  /** Product image mode - enables fullscreen preview with product-specific UI (primary badge, replace button) */
+  productImageMode?: boolean
   modelValue?: File | string | null
   showPrimaryLabel?: boolean
 }
@@ -100,28 +111,55 @@ interface Props {
 const emit = defineEmits(["update:modelValue"])
 const props = withDefaults(defineProps<Props>(), {
   label: "Upload File",
-  fullscreenPreview: false,
+  productImageMode: false,
   modelValue: null,
   showPrimaryLabel: false,
 })
 
 const fileName = ref("")
 const filePreview = ref("")
+const fileInputRef = ref<HTMLInputElement | null>(null)
 
-// Watch for modelValue changes to handle existing images (URLs)
+/**
+ * Tracks whether we're in edit mode (started with an existing image URL).
+ * Once true, stays true even after replacing with a new File.
+ * This ensures Remove button never shows in edit context.
+ */
+const isEditMode = ref(false)
+
+// Image converter composable
+const { convertAndCompressImage } = useImageConverter()
+
+// Watch for modelValue changes to handle existing images (URLs) and File objects
 watch(
   () => props.modelValue,
   (newValue) => {
     if (typeof newValue === "string" && newValue) {
-      // It's a URL string from existing image
+      // It's a URL string from existing image - we're in edit mode
       fileName.value = newValue.split("/").pop() || "image"
       filePreview.value = newValue
+      isEditMode.value = true
     } else if (newValue === null) {
       // Reset when null
       fileName.value = ""
       filePreview.value = ""
+      // Reset edit mode when value is cleared
+      isEditMode.value = false
+    } else if (newValue instanceof File) {
+      // It's a File object passed programmatically (e.g., from image swap)
+      // Create preview manually since handleFileChange won't be triggered
+      fileName.value = newValue.name
+
+      if (newValue.type.startsWith("image/")) {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          filePreview.value = e.target?.result as string
+        }
+        reader.readAsDataURL(newValue)
+      } else {
+        filePreview.value = ""
+      }
     }
-    // If it's a File object, it will be handled by handleFileChange
   },
   { immediate: true },
 )
@@ -135,46 +173,81 @@ const isImage = computed(() => {
   return imageExtensions.some((ext) => fileName.value.toLowerCase().endsWith(ext))
 })
 
-const handleFileChange = (event: Event) => {
-  if (fileName.value) return
+const handleFileChange = async (event: Event) => {
   const target = event.target as HTMLInputElement
   const file = target.files && target.files[0]
   if (file) {
-    fileName.value = file.name
+    let processedFile = file
+
+    // Convert and compress in product image mode
+    if (props.productImageMode) {
+      try {
+        processedFile = await convertAndCompressImage(file)
+        fileName.value = processedFile.name
+      } catch (error) {
+        console.error("Failed to process image:", error)
+        // Show user-friendly error message
+        const errorMessage = error instanceof Error ? error.message : "Failed to process image"
+        toast.error(errorMessage)
+        // Reset file input
+        if (fileInputRef.value) {
+          fileInputRef.value.value = ""
+        }
+        return
+      }
+    } else {
+      fileName.value = file.name
+    }
 
     // Create preview for images
-    if (file.type.startsWith("image/")) {
+    if (processedFile.type.startsWith("image/")) {
       const reader = new FileReader()
       reader.onload = (e) => {
         filePreview.value = e.target?.result as string
       }
-      reader.readAsDataURL(file)
+      reader.readAsDataURL(processedFile)
     } else {
       filePreview.value = ""
     }
 
-    emit("update:modelValue", file)
+    emit("update:modelValue", processedFile)
   }
 }
 
-const handleDrop = (event: DragEvent) => {
+const handleDrop = async (event: DragEvent) => {
   event.preventDefault()
   const file = event.dataTransfer?.files[0]
   if (file) {
-    fileName.value = file.name
+    let processedFile = file
+
+    // Convert and compress in product image mode
+    if (props.productImageMode) {
+      try {
+        processedFile = await convertAndCompressImage(file)
+        fileName.value = processedFile.name
+      } catch (error) {
+        console.error("Failed to process image:", error)
+        // Show user-friendly error message
+        const errorMessage = error instanceof Error ? error.message : "Failed to process image"
+        toast.error(errorMessage)
+        return
+      }
+    } else {
+      fileName.value = file.name
+    }
 
     // Create preview for images
-    if (file.type.startsWith("image/")) {
+    if (processedFile.type.startsWith("image/")) {
       const reader = new FileReader()
       reader.onload = (e) => {
         filePreview.value = e.target?.result as string
       }
-      reader.readAsDataURL(file)
+      reader.readAsDataURL(processedFile)
     } else {
       filePreview.value = ""
     }
 
-    emit("update:modelValue", file)
+    emit("update:modelValue", processedFile)
   }
 }
 
@@ -182,17 +255,36 @@ const preventDefaults = (event: Event) => {
   event.preventDefault()
 }
 
+/**
+ * Replaces the existing image by triggering the file picker directly.
+ * Used in edit mode when viewing existing images (URL strings).
+ * Keeps current image visible until user selects a new file.
+ */
+const replaceFile = (event: MouseEvent) => {
+  event.stopPropagation()
+
+  if (fileInputRef.value) {
+    // Trigger file picker without clearing current image
+    // If user cancels, the existing image remains
+    // If user selects a file, handleFileChange will update it
+    fileInputRef.value.click()
+  }
+}
+
+/**
+ * Removes the newly uploaded file.
+ * Used in create mode when user has just uploaded a File object.
+ */
 const removeFile = (event: MouseEvent) => {
   event.stopPropagation()
   fileName.value = ""
   filePreview.value = ""
-  // Reset the input field value
-  const fileInput = (event.target as HTMLElement)
-    .closest("div")
-    ?.querySelector("input[type='file']") as HTMLInputElement | null
-  if (fileInput) {
-    fileInput.value = "" // Clear the file input
+
+  // Reset the input field value using ref
+  if (fileInputRef.value) {
+    fileInputRef.value.value = ""
   }
+
   emit("update:modelValue", null)
 }
 </script>

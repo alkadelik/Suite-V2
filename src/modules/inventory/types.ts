@@ -371,6 +371,13 @@ export interface IProductImageUploadPayload {
   sort_order?: number
 }
 
+// Image update
+export interface IProductImageUpdatePayload {
+  alt_text?: string
+  is_primary?: boolean
+  sort_order?: number
+}
+
 // Export data
 export interface IProductExportData {
   format: "csv" | "xlsx" | "json"

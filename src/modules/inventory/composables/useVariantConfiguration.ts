@@ -168,16 +168,59 @@ export function useVariantConfiguration(
   }
 
   /**
+   * Detect deleted variants by comparing existing variants with new combinations
+   * Returns variants that exist in the current state but won't exist after regeneration
+   */
+  const detectDeletedVariants = (
+    existingVariants: IProductVariant[],
+    newCombinations: IVariantCombination[][],
+  ): IProductVariant[] => {
+    const deletedVariants: IProductVariant[] = []
+
+    // For each existing variant, check if it matches any new combination
+    existingVariants.forEach((existing) => {
+      // Skip if no attributes (shouldn't happen in multi-variant scenario)
+      if (!existing.attributes || existing.attributes.length === 0) {
+        return
+      }
+
+      // Check if this variant exists in the new combinations
+      const existsInNewCombinations = newCombinations.some((combination) => {
+        // Variant matches if all attributes match
+        if (combination.length !== existing.attributes.length) {
+          return false
+        }
+
+        return combination.every((combAttr) =>
+          existing.attributes.some(
+            (existingAttr) =>
+              existingAttr.attribute === combAttr.attributeUid &&
+              existingAttr.value === combAttr.valueUid,
+          ),
+        )
+      })
+
+      // If it doesn't exist in new combinations, it's deleted
+      if (!existsInNewCombinations) {
+        deletedVariants.push(existing)
+      }
+    })
+
+    return deletedVariants
+  }
+
+  /**
    * Generate all variant combinations from configuration
    * Preserves existing variant data where attributes match
+   * Returns deleted variants (if any)
    */
-  const generateVariantCombinations = (): void => {
+  const generateVariantCombinations = (): IProductVariant[] => {
     const processedVariants = variantConfiguration.value.filter(
       (variant) => variant.values.length > 0,
     )
 
     if (processedVariants.length === 0) {
-      return
+      return []
     }
 
     console.log("Generating variant combinations...")
@@ -187,6 +230,9 @@ export function useVariantConfiguration(
 
     // Store existing variants for matching
     const existingVariants = [...variants.value]
+
+    // Detect deleted variants
+    const deletedVariants = detectDeletedVariants(existingVariants, combinations)
 
     // Get default dimensions from first existing variant
     const defaultDimensions =
@@ -281,6 +327,11 @@ export function useVariantConfiguration(
     })
 
     console.log(`Generated ${variants.value.length} variant combinations`)
+    if (deletedVariants.length > 0) {
+      console.log(`Detected ${deletedVariants.length} deleted variants`)
+    }
+
+    return deletedVariants
   }
 
   return {
@@ -295,5 +346,6 @@ export function useVariantConfiguration(
     generateVariantName,
     generateVariantAttributes,
     generateVariantCombinations,
+    detectDeletedVariants,
   }
 }
