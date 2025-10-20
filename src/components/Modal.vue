@@ -2,15 +2,10 @@
   <!-- Overlay -->
   <Transition name="modal-overlay">
     <div
-     
       v-if="open"
-     
       class="fixed inset-0 z-[1200] bg-black/40"
-     
       :class="[overlayClasses, props.overlayClass]"
-     
       @click="close"
-    
     >
       <!-- Modal Card -->
       <Transition name="modal-content">
