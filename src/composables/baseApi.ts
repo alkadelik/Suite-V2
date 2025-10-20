@@ -55,7 +55,6 @@ baseApi.interceptors.response.use(
       errorMsg.includes("token not valid") &&
       !originalRequest._retry
     ) {
-      console.log("Access token expired. Attempting to refresh...")
       // Mark this request as retried to prevent infinite loops
       originalRequest._retry = true
 
@@ -73,6 +72,14 @@ baseApi.interceptors.response.use(
         window.location.href = `/login?redirect=${encodeURIComponent(redirectPath)}`
         return Promise.reject(refreshError as Error)
       }
+    }
+
+    // check if error is a Plan_Limit_Error
+    const errorData = error.response?.data as { error?: { error?: string } }
+    if (error.response?.status === 402 && errorData.error?.error === "PLAN_LIMIT_EXCEEDED") {
+      const { setPlanUpgradeModal } = useSettingsStore()
+      setPlanUpgradeModal(true)
+      return Promise.reject(error)
     }
 
     // For all other errors, just return the error

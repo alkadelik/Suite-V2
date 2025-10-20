@@ -1,68 +1,3 @@
-<template>
-  <div :class="props.class">
-    <!-- Tabs Header -->
-    <div
-      ref="tabContainer"
-      :class="[
-        'tabheader flex overflow-x-auto',
-        headerClasses,
-        variant === 'pills' && 'border border-gray-200',
-      ]"
-    >
-      <button
-        v-for="tab in processedTabs"
-        :key="tab.key"
-        :class="[
-          'text-sm font-medium transition-all duration-200',
-          getTabClasses(tab),
-          equal && 'flex-1',
-          variant !== 'pills' ? 'p-4' : 'px-5 py-2 md:px-10',
-        ]"
-        @click="changeTab(tab.key)"
-      >
-        {{ tab.title }}
-      </button>
-    </div>
-
-    <!-- Tabs Content with Transition -->
-    <Transition name="fade-slide" mode="out-in">
-      <div :key="activeTab" class="pb-2 md:py-4">
-        <slot :name="activeTab"></slot>
-      </div>
-    </Transition>
-  </div>
-</template>
-
-<style scoped>
-/* Fade & Slide Transition */
-.fade-slide-enter-active,
-.fade-slide-leave-active {
-  transition:
-    opacity 0.2s ease,
-    transform 0.2s ease;
-}
-
-.fade-slide-enter-from {
-  opacity: 0;
-  transform: translateY(8px);
-}
-
-.fade-slide-leave-to {
-  opacity: 0;
-  transform: translateY(-8px);
-}
-
-/* Hide scrollbar */
-.tabheader::-webkit-scrollbar {
-  display: none;
-}
-
-.tabheader {
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
-}
-</style>
-
 <script setup lang="ts">
 import { computed } from "vue"
 
@@ -150,3 +85,68 @@ const changeTab = (tabKey: string) => {
   activeTab.value = tabKey
 }
 </script>
+
+<template>
+  <div :class="props.class">
+    <!-- Tabs Header -->
+    <div
+      ref="tabContainer"
+      :class="[
+        'tabheader flex overflow-x-auto',
+        headerClasses,
+        variant === 'pills' && 'border border-gray-200',
+      ]"
+    >
+      <button
+        v-for="tab in processedTabs"
+        :key="tab.key"
+        :class="[
+          'text-sm font-medium transition-all duration-200',
+          getTabClasses(tab),
+          equal && 'flex-1',
+          variant !== 'pills' ? 'px-4 py-2' : 'px-5 py-2 md:px-10',
+        ]"
+        @click="changeTab(tab.key)"
+      >
+        {{ tab.title }}
+      </button>
+    </div>
+
+    <!-- Tabs Content with Transition -->
+    <Transition name="fade-slide" mode="out-in">
+      <div :key="activeTab" class="pb-2 md:py-4">
+        <slot :name="activeTab"></slot>
+      </div>
+    </Transition>
+  </div>
+</template>
+
+<style scoped>
+/* Fade & Slide Transition */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+/* Hide scrollbar */
+.tabheader::-webkit-scrollbar {
+  display: none;
+}
+
+.tabheader {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+</style>

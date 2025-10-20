@@ -7,8 +7,8 @@ export const useSettingsStore = defineStore(
   () => {
     // State
     const locations = ref<TLocation[] | null>(null)
-
     const activeLocation = ref<TLocation | null>(null)
+    const showPlanUpgradeModal = ref(false)
 
     // Actions
     const setLocations = (locs: TLocation[]) => {
@@ -19,11 +19,18 @@ export const useSettingsStore = defineStore(
       activeLocation.value = loc
     }
 
+    const setPlanUpgradeModal = (value: boolean) => {
+      console.log("Setting plan upgrade modal to:", value)
+      showPlanUpgradeModal.value = value
+    }
+
     return {
       locations,
       activeLocation,
       setLocations,
       setActiveLocation,
+      showPlanUpgradeModal,
+      setPlanUpgradeModal,
     }
   },
   { persist: true },

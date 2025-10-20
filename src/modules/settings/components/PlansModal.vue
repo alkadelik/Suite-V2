@@ -110,7 +110,7 @@
                   : 'Upgrade'
             "
             :disabled="plan.active || loadingPlanId === plan.uid"
-            :loading="loadingPlanId === plan.uid"
+            :loading="loadingPlanId === plan.uid && isInitializing"
             class="w-full"
             @click="handlePlanAction(plan)"
           />
@@ -134,7 +134,7 @@ import { useGetPlans, useInitializeSubscription } from "../api"
 import LoadingIcon from "@components/LoadingIcon.vue"
 import { displayError } from "@/utils/error-handler"
 
-defineProps<{ modelValue: boolean }>()
+const props = defineProps<{ modelValue: boolean; hideBud?: boolean }>()
 const emit = defineEmits<{
   "update:modelValue": [value: boolean]
   refresh: []
@@ -142,7 +142,7 @@ const emit = defineEmits<{
 
 const activeTab = ref("monthly")
 const { data: plansData, isPending } = useGetPlans()
-const { mutate: initializeSubscription } = useInitializeSubscription()
+const { mutate: initializeSubscription, isPending: isInitializing } = useInitializeSubscription()
 
 // Track which plan is currently loading
 const loadingPlanId = ref<string | null>(null)
@@ -162,15 +162,19 @@ const tabs = ref([
 ])
 
 // Static features for each plan type
-const planFeatures = {
-  Bud: [
-    "Up to 100 products",
-    "Basic analytics",
-    "Email support",
-    "Single staff account",
-    "Basic inventory tracking",
-    "Standard templates",
-  ],
+const planFeatures = computed(() => ({
+  ...(props.hideBud
+    ? {}
+    : {
+        Bud: [
+          "Up to 100 products",
+          "Basic analytics",
+          "Email support",
+          "Single staff account",
+          "Basic inventory tracking",
+          "Standard templates",
+        ],
+      }),
   Bloom: [
     "Up to 1,000 products",
     "Advanced analytics",
@@ -187,7 +191,7 @@ const planFeatures = {
     "Advanced marketing tools",
     "Custom reporting",
   ],
-}
+}))
 
 // Define interfaces for type safety
 interface PlanGroup {
@@ -249,7 +253,7 @@ const processedPlans = computed((): ProcessedPlan[] => {
   )
 
   // Convert to array and add additional properties
-  const plans: ProcessedPlan[] = Object.values(planGroups).map((planGroup: PlanGroup) => {
+  let plans: ProcessedPlan[] = Object.values(planGroups).map((planGroup: PlanGroup) => {
     const planOrder = planGroup.name === "Bud" ? 1 : planGroup.name === "Bloom" ? 2 : 3
 
     // Get the appropriate UID based on active tab
@@ -266,7 +270,7 @@ const processedPlans = computed((): ProcessedPlan[] => {
       description: planGroup.description,
       priceMonthly: planGroup.monthly?.price || 0,
       priceYearly: planGroup.yearly?.price || 0,
-      features: planFeatures[planGroup.name as keyof typeof planFeatures] || [],
+      features: planFeatures.value[planGroup.name as keyof typeof planFeatures.value] || [],
       active: planGroup.name === "Bud", // Assuming Bud is the current active plan
       highlighted: planGroup.name === "Bloom",
       chipText: planGroup.name === "Bloom" ? "Leyyow's Choice" : null,
@@ -274,6 +278,11 @@ const processedPlans = computed((): ProcessedPlan[] => {
       currentPrice: activePlanData?.price || 0,
     }
   })
+
+  // Filter out Bud plan if hideBud is true
+  if (props.hideBud) {
+    plans = plans.filter((plan) => plan.name !== "Bud")
+  }
 
   // Sort by plan order
   return plans.sort((a, b) => a.planOrder - b.planOrder)

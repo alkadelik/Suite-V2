@@ -1,6 +1,8 @@
 <template>
   <div class="h-full">
-    <!-- <label class="text-core-800 mb-1 block text-sm font-medium">{{ props.label }}</label> -->
+    <label v-if="label" class="text-core-800 mb-1 block text-sm font-medium">
+      {{ props.label }}
+    </label>
     <div
       class="text-core-800 relative flex w-full cursor-pointer items-center justify-between rounded-xl border-2 border-dashed text-sm transition-colors duration-200"
       :class="[

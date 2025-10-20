@@ -2,10 +2,15 @@
   <!-- Overlay -->
   <Transition name="modal-overlay">
     <div
+     
       v-if="open"
+     
       class="fixed inset-0 z-[1200] bg-black/40"
-      :class="overlayClasses"
+     
+      :class="[overlayClasses, props.overlayClass]"
+     
       @click="close"
+    
     >
       <!-- Modal Card -->
       <Transition name="modal-content">
@@ -74,6 +79,8 @@ interface Props {
   bodyClass?: string
   /** Whether to handle padding for the modal */
   handlePadding?: boolean
+  /** Additional classes for the overlay */
+  overlayClass?: string
 }
 
 /**

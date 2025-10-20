@@ -50,6 +50,13 @@
         </div>
       </div>
     </div>
+
+    <!--  -->
+    <PlansModal
+      :model-value="showPlans"
+      :hide-bud="true"
+      @update:model-value="(val) => setPlanUpgradeModal(val)"
+    />
   </div>
 </template>
 
@@ -57,6 +64,9 @@
 import AppHeader from "@/layouts/parts/AppHeader.vue"
 import BackButton from "@components/BackButton.vue"
 import { useRoute } from "vue-router"
+import { useSettingsStore } from "../store"
+import { computed } from "vue"
+import PlansModal from "../components/PlansModal.vue"
 // import { useGetRoles } from "@modules/shared/api"
 
 const route = useRoute()
@@ -72,4 +82,7 @@ const LINKS = [
   { label: "Design", path: "/settings/design" },
   { label: "Delivery Options", path: "/settings/delivery-options" },
 ]
+
+const { setPlanUpgradeModal } = useSettingsStore()
+const showPlans = computed(() => useSettingsStore().showPlanUpgradeModal)
 </script>

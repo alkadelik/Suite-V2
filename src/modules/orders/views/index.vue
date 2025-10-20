@@ -16,13 +16,14 @@ import VoidDeleteOrder from "../components/VoidDeleteOrder.vue"
 import { useDeleteOrder, useGetOrders, useVoidOrder } from "../api"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
-import { ORDER_COLUMNS } from "../constants"
+import { ORDER_COLUMNS, ORDER_STATUS_TAB } from "../constants"
 import { startCase } from "@/utils/format-strings"
 import OrderCard from "../components/OrderCard.vue"
 import FulfilOrderModal from "../components/FulfilOrderModal.vue"
 import OrderMemoDrawer from "../components/OrderMemoDrawer.vue"
 import ShareInvoiceReceipt from "../components/ShareInvoiceReceipt.vue"
 import OrderPaymentDrawer from "../components/OrderPaymentDrawer.vue"
+import Tabs from "@components/Tabs.vue"
 
 const openCreate = ref(false)
 const openVoid = ref(false)
@@ -32,6 +33,7 @@ const openFulfil = ref(false)
 const openShare = ref(false)
 const openPayment = ref(false)
 const selectedOrder = ref<TOrder | null>(null)
+const status = ref(ORDER_STATUS_TAB[0].key)
 
 const orderMetrics = computed(() => {
   return [
@@ -78,7 +80,20 @@ const searchQuery = ref("")
 const showFilter = ref(false)
 const isMobile = useMediaQuery("(max-width: 768px)")
 
-const { data: orders, isFetching, refetch } = useGetOrders()
+const computedParams = computed(() => {
+  const params: Record<string, string> = {}
+  if (searchQuery.value) params.search = searchQuery.value
+  if (status.value && status.value !== "all") {
+    if (status.value.includes("paid")) {
+      params.payment_status = status.value
+    } else {
+      params.fulfilment_status = status.value
+    }
+  }
+  return params
+})
+
+const { data: orders, isFetching, refetch } = useGetOrders(computedParams)
 
 const getActionItems = (item: TOrder) => [
   {
@@ -175,7 +190,7 @@ const handleVoidDelete = ({ action, reason }: { action: string; reason: string }
     <SectionHeader title="Orders" subtitle="Track, manage, and fulfil every order in one place." />
 
     <EmptyState
-      v-if="!orders?.results?.length"
+      v-if="!orders?.results?.length && status === 'all'"
       title="No Orders Yet"
       description="You haven't received any orders. Once you start receiving orders, they will appear here."
       action-label="Add an order"
@@ -187,12 +202,15 @@ const handleVoidDelete = ({ action, reason }: { action: string; reason: string }
     <section v-else>
       <MetricsGrid :items="orderMetrics" />
 
-      <div
-        class="mt-4 space-y-4 overflow-hidden rounded-xl border-gray-200 pt-3 md:border md:bg-white"
-      >
+      <div class="mt-8">
+        <Tabs v-model="status" :tabs="ORDER_STATUS_TAB" />
+      </div>
+
+      <div class="space-y-4 overflow-hidden rounded-xl border-gray-200 pt-3 md:border md:bg-white">
         <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
           <h3 class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
-            All Orders <Chip :label="orders?.count || 0" />
+            {{ ORDER_STATUS_TAB.find((tab) => tab.key === status)?.title }} Orders
+            <Chip v-if="orders?.count" :label="orders?.count" />
           </h3>
           <div class="flex items-center gap-2">
             <TextField
@@ -226,9 +244,16 @@ const handleVoidDelete = ({ action, reason }: { action: string; reason: string }
         <DataTable
           :data="orders?.results ?? []"
           :columns="ORDER_COLUMNS"
-          :loading="false"
+          :loading="isFetching"
           :show-pagination="true"
-          :enable-row-selection="true"
+          :enable-row-selection="false"
+          :empty-state="{
+            title: 'No Order Found',
+            description:
+              searchQuery || status !== 'all'
+                ? 'Try adjusting your filters or search query'
+                : `You haven't received any orders. Once you start receiving orders, they will appear here.`,
+          }"
         >
           <template #cell:items="{ item }">
             <div class="max-w-[100px] truncate">
