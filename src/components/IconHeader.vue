@@ -8,7 +8,7 @@
     </div>
 
     <div class="space-y-2">
-      <h4 v-if="title" class="text-xl font-semibold md:text-2xl">{{ title }}</h4>
+      <h4 v-if="title" class="text-md font-semibold md:text-lg">{{ title }}</h4>
       <p v-if="subtext" class="text-xs md:text-sm">
         {{ subtext }}
       </p>

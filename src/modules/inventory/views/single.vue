@@ -1,11 +1,35 @@
 <template>
   <div class="text-core-800 p-4 pb-8">
-    <button
-      @click="$router.back()"
-      class="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900"
-    >
-      <Icon name="arrow-left" class="h-8 w-8 text-gray-600" />
-    </button>
+    <div class="mb-4 flex items-center justify-between">
+      <button
+        @click="$router.back()"
+        class="flex items-center justify-between gap-2 text-sm font-medium text-gray-600 hover:text-gray-900"
+      >
+        <Icon name="arrow-left" class="h-8 w-8 text-gray-600" />
+      </button>
+      <div class="flex items-center gap-1">
+        <AppButton
+          label="Edit Images"
+          icon="edit"
+          variant="outlined"
+          color="alt"
+          class="!hidden bg-white md:!inline-flex"
+          @click="openImagesEditDrawer"
+        />
+        <DropdownMenu :items="actionItems" placement="bottom-end" :show-chevron="false">
+          <template #trigger>
+            <AppButton
+              :label="'Manage Product'"
+              icon="settings-02"
+              variant="outlined"
+              icon-placement="left"
+              class="!hidden md:!inline-flex"
+            />
+            <AppButton icon="dots-vertical" variant="outlined" class="md:!hidden" />
+          </template>
+        </DropdownMenu>
+      </div>
+    </div>
 
     <LoadingIcon v-if="isPending" class="mx-auto my-20" />
     <EmptyState
@@ -18,66 +42,35 @@
       @action="$router.push({ name: 'Inventory' })"
     />
     <div v-else>
-      <div class="border-primary-700 bg-primary-25 mt-4 flex gap-2 rounded-xl border p-4 md:gap-5">
-        <div
-          class="border-core-300 bg-core-200 flex size-10 items-center justify-center rounded-full border md:size-20"
-        >
-          <Icon name="box-filled" class="text-primary-600 !size-5 md:!size-8" />
-        </div>
-        <div class="flex flex-1 flex-col justify-between gap-2 md:gap-3 md:py-1">
-          <div class="flex flex-col justify-between gap-3 md:flex-row md:items-center">
-            <h5 class="text-core-700 !font-outfit font-regular text-lg md:text-xl md:font-semibold">
-              {{ product?.data.name }}
-            </h5>
-            <div class="flex items-center gap-2">
-              <Icon name="moneys" class="text-core-600" size="24" />
-              <h4 class="text-xl font-bold md:text-2xl">
-                {{ productPrice }}
-              </h4>
-            </div>
-          </div>
-          <div class="mt-2 flex flex-wrap items-center justify-between gap-2 md:mt-0">
-            <div class="inline-flex flex-wrap gap-2">
-              <Chip
-                v-if="product?.data?.variants && product.data.variants.length > 1"
-                color="blue"
-                icon="shapes"
-                :label="`${product?.data.variants.length} variants`"
-                class="md:hidden"
-              />
-              <Chip
-                v-if="product?.data.category_name"
-                color="purple"
-                icon="tag"
-                :label="product.data.category_name"
-              />
-              <Chip :color="stockStatus.color" :label="stockStatus.label" showDot />
-              <Chip v-if="isBestseller" color="error" icon="star-outline" label="Bestseller" />
-            </div>
-            <Chip
-              v-if="product?.data?.variants && product.data.variants.length > 1"
-              color="blue"
-              icon="shapes"
-              :label="`${product?.data.variants.length} variants`"
-              class="!hidden md:!inline-flex"
-            />
-          </div>
-        </div>
-        <div>
-          <DropdownMenu
-            :items="actionItems"
-            placement="bottom-end"
-            :show-chevron="false"
-            size="sm"
-            trigger-class="!p-1 !min-h-6 !w-6 hover:bg-gray-100 !border-0"
-            @click.stop
-          >
-            <template #trigger>
-              <Icon name="dots-vertical" />
-            </template>
-          </DropdownMenu>
+      <div class="flex flex-col justify-between gap-3">
+        <h5 class="text-core-700 !font-outfit font-regular text-lg md:text-xl md:font-semibold">
+          {{ product?.data.name }}
+        </h5>
+        <div class="inline-flex flex-wrap gap-2">
+          <Chip
+            v-if="product?.data.category_name"
+            color="purple"
+            icon="tag"
+            :label="product.data.category_name"
+          />
+          <Chip :color="stockStatus.color" :label="stockStatus.label" showDot />
+          <Chip v-if="isBestseller" color="error" icon="star-outline" label="Bestseller" />
+          <Chip
+            v-if="product?.data?.variants && product.data.variants.length > 1"
+            color="blue"
+            icon="shapes"
+            :label="`${product?.data.variants.length} variants`"
+          />
         </div>
       </div>
+
+      <!-- Product Images Gallery -->
+      <ProductImageGallery
+        v-if="product?.data.images && product.data.images.length > 0"
+        :images="sortedProductImages"
+        :product-name="product?.data.name"
+        @open-images-edit="openImagesEditDrawer"
+      />
 
       <Tabs :tabs="tabs" v-model="activeTab" class="mt-5 mb-4 md:mt-8 md:mb-0" />
 
@@ -85,6 +78,14 @@
         v-if="activeTab === 'overview' && product"
         :product="product.data"
         :product-metrics="productMetrics"
+        :loading="isPending"
+        @edit-details="openProductEditDrawer"
+        @edit-pricing="openVariantPricingEdit"
+      />
+
+      <ProductVariants
+        v-else-if="activeTab === 'variants' && product"
+        :product="product.data"
         :variant-columns="VARIANT_COLUMNS"
         :variant-action-items="getVariantActionItems"
         :loading="isPending"
@@ -151,6 +152,20 @@
       @close="showTransferRequestDrawer = false"
       @success="handleStockSuccess"
     />
+
+    <!-- Product Edit Drawer -->
+    <ProductEditDrawer
+      ref="productEditDrawerRef"
+      v-model="showProductEditDrawer"
+      :product="productForEdit"
+      :edit-mode="editMode"
+      :variant="variantForEdit"
+      @refresh="handleStockSuccess"
+      @add-category="showAddCategoryModal = true"
+    />
+
+    <!-- Add Category Modal -->
+    <AddCategoryModal v-model="showAddCategoryModal" @success="handleCategoryCreated" />
   </div>
 </template>
 
@@ -159,8 +174,7 @@ import Icon from "@components/Icon.vue"
 import { useGetProduct, useDeleteProduct } from "../api"
 import { useRoute, useRouter } from "vue-router"
 import DropdownMenu from "@components/DropdownMenu.vue"
-import { ref, computed } from "vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { ref, computed, watch, onMounted } from "vue"
 import Chip from "@components/Chip.vue"
 import Tabs from "@components/Tabs.vue"
 import LoadingIcon from "@components/LoadingIcon.vue"
@@ -172,6 +186,7 @@ import EmptyState from "@components/EmptyState.vue"
 import { VARIANT_COLUMNS, PRODUCT_ORDER_COLUMNS, MOVEMENT_COLUMNS } from "../constants"
 import type { IProductVariantDetails } from "../types"
 import ProductOverview from "../components/ProductOverview.vue"
+import ProductVariants from "../components/ProductVariants.vue"
 import ProductOrders from "../components/ProductOrders.vue"
 import ProductMovementLogs from "../components/ProductMovementLogs.vue"
 import AddReduceStockModal from "../components/AddReduceStockModal.vue"
@@ -180,6 +195,11 @@ import type { TOrder } from "@modules/orders/types"
 import { useSettingsStore } from "@modules/settings/store"
 import { useGetOrders } from "@modules/orders/api"
 import { useGetInventoryMovements } from "../api"
+import AppButton from "@components/AppButton.vue"
+import ProductEditDrawer from "../components/ProductEditDrawer.vue"
+import AddCategoryModal from "../components/AddCategoryModal.vue"
+import ProductImageGallery from "../components/ProductImageGallery.vue"
+import type { TProduct } from "../types"
 
 const route = useRoute()
 const router = useRouter()
@@ -196,13 +216,24 @@ const { data: ordersData, isPending: isLoadingOrders } = useGetOrders(orderParam
 
 const { data: movementsData, isPending: isLoadingMovements } = useGetInventoryMovements()
 
-const activeTab = ref("overview")
+// Initialize activeTab from query parameter or default to "overview"
+const activeTab = ref((route.query.tab as string) || "overview")
 const showDeleteConfirmationModal = ref(false)
 const showAddReduceStockModal = ref(false)
 const stockModalType = ref<"add" | "reduce">("add")
 const showTransferRequestDrawer = ref(false)
 const transferRequestType = ref<"transfer" | "request">("transfer")
 const selectedVariant = ref<IProductVariantDetails | null>(null)
+const showProductEditDrawer = ref(false)
+const productForEdit = ref<TProduct | null>(null)
+const editMode = ref<"product-details" | "variant-details" | "variants" | "images">(
+  "product-details",
+)
+const variantForEdit = ref<IProductVariantDetails | null>(null)
+const showAddCategoryModal = ref(false)
+const productEditDrawerRef = ref<{
+  setCategoryFromModal: (category: { label: string; value: string }) => void
+} | null>(null)
 
 const openStockModal = (
   type: "add" | "reduce",
@@ -245,38 +276,42 @@ const getStockActionItems = (item: IProductVariantDetails | typeof product.value
     availableStock = product.value.data.variants[0].available_stock || 0
   }
 
-  const items = [
-    {
+  const items = []
+
+  // Only HQ can add and reduce stock
+  if (settingsStore.activeLocation?.is_hq) {
+    items.push({
       label: "Add Stock",
       icon: "box-add",
       action: (actionItem: IProductVariantDetails | typeof product.value) => {
         openStockModal("add", actionItem)
       },
-    },
-  ]
-
-  // Only show these items if stock is available
-  if (availableStock > 0) {
-    items.push({
-      label: "Reduce Stock",
-      icon: "box-add",
-      action: (actionItem: IProductVariantDetails | typeof product.value) => {
-        openStockModal("reduce", actionItem)
-      },
     })
 
-    // Only show Transfer Stock if active location is HQ
-    if (settingsStore.activeLocation?.is_hq) {
+    // Only show Reduce Stock if stock is available
+    if (availableStock > 0) {
       items.push({
-        label: "Transfer Stock",
-        icon: "box",
+        label: "Reduce Stock",
+        icon: "box-add",
         action: (actionItem: IProductVariantDetails | typeof product.value) => {
-          openTransferRequestDrawer("transfer", actionItem)
+          openStockModal("reduce", actionItem)
         },
       })
     }
   }
 
+  // Any location can transfer stock (if stock is available)
+  if (availableStock > 0) {
+    items.push({
+      label: "Transfer Stock",
+      icon: "box",
+      action: (actionItem: IProductVariantDetails | typeof product.value) => {
+        openTransferRequestDrawer("transfer", actionItem)
+      },
+    })
+  }
+
+  // Any location can request stock
   items.push({
     label: "Request Stock",
     icon: "box-time",
@@ -288,13 +323,79 @@ const getStockActionItems = (item: IProductVariantDetails | typeof product.value
   return items
 }
 
+const openProductEditDrawer = () => {
+  if (!product.value) return
+
+  // Create a TProduct object from the detailed product data
+  productForEdit.value = {
+    uid: product.value.data.uid,
+    name: product.value.data.name,
+    total_stock: product.value.data.total_stock,
+    needs_reorder: product.value.data.needs_reorder,
+    variants_count: product.value.data.variants.length,
+    is_active: product.value.data.is_active,
+    category: product.value.data.category,
+    created_at: product.value.data.created_at,
+  }
+
+  editMode.value = "product-details"
+  variantForEdit.value = null
+  showProductEditDrawer.value = true
+}
+
+const openVariantPricingEdit = (variant: IProductVariantDetails) => {
+  if (!product.value) return
+
+  // Create a TProduct object from the detailed product data
+  productForEdit.value = {
+    uid: product.value.data.uid,
+    name: product.value.data.name,
+    total_stock: product.value.data.total_stock,
+    needs_reorder: product.value.data.needs_reorder,
+    variants_count: product.value.data.variants.length,
+    is_active: product.value.data.is_active,
+    category: product.value.data.category,
+    created_at: product.value.data.created_at,
+  }
+
+  // For complex products (multiple variants), open in variants mode
+  // For simple products (single variant), open in variant-details mode
+  if (product.value.data.variants.length > 1) {
+    editMode.value = "variants"
+    variantForEdit.value = null
+  } else {
+    editMode.value = "variant-details"
+    variantForEdit.value = variant
+  }
+
+  showProductEditDrawer.value = true
+}
+
+const openImagesEditDrawer = () => {
+  if (!product.value) return
+
+  // Create a TProduct object from the detailed product data
+  productForEdit.value = {
+    uid: product.value.data.uid,
+    name: product.value.data.name,
+    total_stock: product.value.data.total_stock,
+    needs_reorder: product.value.data.needs_reorder,
+    variants_count: product.value.data.variants.length,
+    is_active: product.value.data.is_active,
+    category: product.value.data.category,
+    created_at: product.value.data.created_at,
+  }
+
+  editMode.value = "images"
+  variantForEdit.value = null
+  showProductEditDrawer.value = true
+}
+
 const actionItems = computed(() => [
   {
     label: "Edit Product",
     icon: "edit",
-    action: () => {
-      console.log("Editing product:", product.value)
-    },
+    action: openProductEditDrawer,
   },
   ...(product?.value?.data.variants.length && !(product.value.data.variants.length > 1)
     ? getStockActionItems(product.value).map((item) => ({
@@ -302,13 +403,6 @@ const actionItems = computed(() => [
         action: () => item.action(product.value),
       }))
     : []),
-  {
-    label: "View Stock Movement",
-    icon: "arrow-2",
-    action: () => {
-      console.log("Viewing stock movement:", product.value)
-    },
-  },
   {
     divider: true,
   },
@@ -323,11 +417,21 @@ const actionItems = computed(() => [
   },
 ])
 
-const tabs = ref([
-  { key: "overview", title: "Overview" },
-  { key: "orders", title: "Orders" },
-  { key: "movement_logs", title: "Movement Logs" },
-])
+const tabs = computed(() => {
+  const baseTabs = [{ key: "overview", title: "Overview" }]
+
+  // Add Variants tab if product has multiple variants
+  if (product.value?.data.variants && product.value.data.variants.length > 1) {
+    baseTabs.push({ key: "variants", title: "Variants" })
+  }
+
+  baseTabs.push(
+    { key: "orders", title: "Orders" },
+    { key: "movement_logs", title: "Movement Logs" },
+  )
+
+  return baseTabs
+})
 
 const stockStatus = computed(() => {
   if (!product.value?.data) return { color: "primary" as const, label: "Unknown" }
@@ -378,12 +482,6 @@ const productMetrics = computed(() => {
       icon: "shopping-cart",
     },
     {
-      label: "Amount Sold(Revenue)",
-      value: productData.amount_sold || 0,
-      prev_value: 0,
-      icon: "box-filled",
-    },
-    {
       label: "Quantity Sold",
       value: productData.quantity_sold || 0,
       prev_value: 0,
@@ -392,18 +490,6 @@ const productMetrics = computed(() => {
     {
       label: "Reserved Inventory",
       value: totalReservedStock,
-      prev_value: 0,
-      icon: "box-time",
-    },
-    {
-      label: "Memo Count",
-      value: productData.memo_count || 0,
-      prev_value: 0,
-      icon: "box-time",
-    },
-    {
-      label: "Return Count",
-      value: productData.return_count || 0,
       prev_value: 0,
       icon: "box-time",
     },
@@ -432,11 +518,29 @@ const getVariantActionItems = (variant: IProductVariantDetails) => {
 }
 
 const handleVariantAction = (action: string, variant: IProductVariantDetails) => {
-  console.log(action, variant)
+  if (action === "edit") {
+    openVariantPricingEdit(variant)
+  }
 }
 
 const handleAddVariant = () => {
-  console.log("Add variant clicked")
+  if (!product.value) return
+
+  // Create a TProduct object from the detailed product data
+  productForEdit.value = {
+    uid: product.value.data.uid,
+    name: product.value.data.name,
+    total_stock: product.value.data.total_stock,
+    needs_reorder: product.value.data.needs_reorder,
+    variants_count: product.value.data.variants.length,
+    is_active: product.value.data.is_active,
+    category: product.value.data.category,
+    created_at: product.value.data.created_at,
+  }
+
+  editMode.value = "variants"
+  variantForEdit.value = null
+  showProductEditDrawer.value = true
 }
 
 const handleCreateOrder = () => {
@@ -451,24 +555,59 @@ const handleOrderRowClick = (order: TOrder) => {
   console.log("Order row clicked:", order)
 }
 
-const productPrice = computed(() => {
-  if (!product.value?.data.variants.length) return "-"
-
-  const variants = product.value.data.variants
-  if (variants.length === 1) {
-    return formatCurrency(Number(variants[0].price))
+const handleCategoryCreated = (category: { label: string; value: string }) => {
+  showAddCategoryModal.value = false
+  if (productEditDrawerRef.value) {
+    productEditDrawerRef.value.setCategoryFromModal(category)
   }
+}
 
-  const prices = variants.map((v) => Number(v.price))
-  const uniquePrices = [...new Set(prices)]
+const sortedProductImages = computed(() => {
+  if (!product.value?.data.images) return []
 
-  if (uniquePrices.length === 1) {
-    return formatCurrency(uniquePrices[0])
+  // Sort images: primary first, then by sort_order
+  return [...product.value.data.images].sort((a, b) => {
+    if (a.is_primary && !b.is_primary) return -1
+    if (!a.is_primary && b.is_primary) return 1
+    return a.sort_order - b.sort_order
+  })
+})
+
+// Watch activeTab and update query parameter
+watch(activeTab, (newTab) => {
+  // Update the URL query parameter without navigation
+  router.replace({
+    query: {
+      ...route.query,
+      tab: newTab,
+    },
+  })
+})
+
+// Watch route query parameter and sync with activeTab
+watch(
+  () => route.query.tab,
+  (newTab) => {
+    if (newTab && typeof newTab === "string" && newTab !== activeTab.value) {
+      activeTab.value = newTab
+    }
+  },
+)
+
+// Validate and sync tab on mount
+onMounted(() => {
+  const validTabs = tabs.value.map((t) => t.key)
+  const tabFromQuery = route.query.tab as string
+
+  // If query tab exists but is invalid, reset to overview
+  if (tabFromQuery && !validTabs.includes(tabFromQuery)) {
+    activeTab.value = "overview"
+    router.replace({
+      query: {
+        ...route.query,
+        tab: "overview",
+      },
+    })
   }
-
-  const minPrice = Math.min(...prices)
-  const maxPrice = Math.max(...prices)
-
-  return `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`
 })
 </script>

@@ -42,6 +42,7 @@
           label="Option Name"
           v-model="variant.customName"
           placeholder="Enter custom option name"
+          @input="(event: Event) => handleCustomNameInput(event, index)"
         />
 
         <InputTagsField
@@ -49,6 +50,7 @@
           :label="`Enter at least ${getMinimumValuesRequired(index)} ${getVariantDisplayName(index).toLowerCase()}${getVariantDisplayName(index).toLowerCase().endsWith('s') ? '' : 's'}`"
           :placeholder="`Enter a ${getVariantDisplayName(index).toLowerCase()}`"
           v-model="variant.values"
+          :is-weight-attribute="isWeightAttribute(index)"
         />
 
         <!-- Individual variant error messages -->
@@ -77,8 +79,21 @@ import InputTagsField from "@components/form/InputTagsField.vue"
 import SelectField from "@components/form/SelectField.vue"
 import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
-import { computed } from "vue"
-import { PRODUCT_ATTRIBUTES } from "@modules/inventory/constants"
+import { computed, ref } from "vue"
+import { PRODUCT_ATTRIBUTES, WEIGHT_ATTRIBUTE_UID } from "@modules/inventory/constants"
+import { useTextTransform } from "@/composables/useTextTransform"
+
+// Composables
+const { handleCapitalizedInput } = useTextTransform()
+
+/**
+ * Check if the variant at the given index is the Weight attribute
+ */
+const isWeightAttribute = (index: number): boolean => {
+  if (!variants.value) return false
+  const variantValue = getVariantValue(index)
+  return variantValue === WEIGHT_ATTRIBUTE_UID
+}
 
 // Use v-model to get variants data from parent
 const variants = defineModel<
@@ -88,6 +103,18 @@ const variants = defineModel<
     values: { label: string; value: string }[]
   }>
 >()
+
+/**
+ * Handle custom name input with auto-capitalization
+ */
+const handleCustomNameInput = (event: Event, index: number) => {
+  if (!variants.value) return
+
+  // Create a temporary ref for the composable
+  const tempRef = ref(variants.value[index].customName)
+  handleCapitalizedInput(event, tempRef)
+  variants.value[index].customName = tempRef.value
+}
 
 // Helper function to get the value from variant name (handles both object and string)
 const getVariantValue = (index: number) => {

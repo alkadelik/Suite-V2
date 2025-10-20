@@ -78,20 +78,33 @@
 
           <!-- Options List -->
           <div class="max-h-48 overflow-auto">
-            <div
-              v-for="(opt, idx) in filteredOptions"
-              :key="getOptionKey(opt, idx)"
-              :class="[getOptionClasses(opt, idx)]"
-              @click="select(opt)"
-              @mouseenter="highlightedIndex = idx"
-            >
-              <slot name="option" :option="opt" :label="getLabel(opt)" :selected="isSelected(opt)">
-                <div class="flex items-center justify-between">
-                  <span>{{ getLabel(opt) }}</span>
-                  <Icon v-if="isSelected(opt)" name="check" class="text-primary-600 h-4 w-4" />
-                </div>
-              </slot>
-            </div>
+            <template v-for="(opt, idx) in filteredOptions" :key="getOptionKey(opt, idx)">
+              <div
+                :class="[getOptionClasses(opt, idx)]"
+                @click="select(opt)"
+                @mouseenter="highlightedIndex = idx"
+              >
+                <slot
+                  name="option"
+                  :option="opt"
+                  :label="getLabel(opt)"
+                  :selected="isSelected(opt)"
+                >
+                  <div class="flex items-center justify-between">
+                    <span>{{ getLabel(opt) }}</span>
+                    <div class="flex items-center gap-2">
+                      <Icon
+                        v-if="getOptionIcon(opt)"
+                        :name="getOptionIcon(opt)!"
+                        class="text-primary-600 h-4 w-4"
+                      />
+                      <Icon v-if="isSelected(opt)" name="check" class="text-primary-600 h-4 w-4" />
+                    </div>
+                  </div>
+                </slot>
+              </div>
+              <div v-if="hasOptionDivider(opt)" class="border-b border-gray-200" />
+            </template>
             <div
               v-if="filteredOptions.length === 0"
               class="text-core-400 px-4 py-3 text-center text-sm"
@@ -252,6 +265,20 @@ const getOptionKey = (opt: OptionValue, index: number): string | number => {
     return (opt.id as string | number) || index
   }
   return index
+}
+
+const getOptionIcon = (opt: OptionValue): string | undefined => {
+  if (typeof opt === "object" && opt !== null && "icon" in opt) {
+    return opt.icon as string
+  }
+  return undefined
+}
+
+const hasOptionDivider = (opt: OptionValue): boolean => {
+  if (typeof opt === "object" && opt !== null && "divider" in opt) {
+    return opt.divider === true
+  }
+  return false
 }
 
 const isSelected = (opt: OptionValue): boolean => {

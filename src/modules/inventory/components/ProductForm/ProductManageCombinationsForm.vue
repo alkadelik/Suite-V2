@@ -16,6 +16,7 @@
 
       <!-- Stock Section -->
       <TextField
+        v-if="!props.hideStock"
         :model-value="singleVariantForm.opening_stock"
         @update:model-value="updateSingleVariantField('opening_stock', removeLeadingZeros($event))"
         label="Available Stock"
@@ -33,7 +34,7 @@
         <div class="flex-1">
           <h3 class="text-sm font-medium text-gray-900">Variant</h3>
         </div>
-        <div class="w-32 text-center">
+        <div v-if="!props.hideStock" class="w-32 text-center">
           <h3 class="text-sm font-medium text-gray-900">Quantity</h3>
         </div>
         <div class="w-32 text-center">
@@ -61,7 +62,7 @@
           </div>
 
           <!-- Quantity Input -->
-          <div class="w-32">
+          <div v-if="!props.hideStock" class="w-32">
             <TextField
               :model-value="variant.opening_stock"
               placeholder=""
@@ -92,8 +93,34 @@
       </div>
     </div>
 
-    <!-- Weight Section (always shown) -->
-    <div class="space-y-4">
+    <!-- Deleted Variants Warning (only in edit mode with multiple variants) -->
+    <div v-if="!isSingleVariant && hasDeletedVariants" class="space-y-3">
+      <InfoBox
+        variant="error"
+        title="Deleted Variants"
+        message="The following variants will be deleted from this product."
+      />
+
+      <!-- Deleted Variants Display -->
+      <div class="flex flex-col gap-3">
+        <div
+          v-for="(deletedVariant, index) in props.deletedVariants"
+          :key="`deleted-${index}`"
+          class="flex flex-wrap gap-2 rounded-lg bg-white p-4"
+        >
+          <Chip
+            v-for="(attributeValue, attrIndex) in getVariantDisplayValues(deletedVariant)"
+            :key="`deleted-attr-${attrIndex}`"
+            :label="attributeValue"
+            color="error"
+            size="sm"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Weight Section (hidden when Weight attribute is in variants - auto-populated) -->
+    <div v-if="!hasWeightAttributeInVariants" class="space-y-4">
       <SelectField
         v-model="selectedDimension"
         :options="dimensionOptions"
@@ -151,15 +178,21 @@ import { computed, ref, watch } from "vue"
 import TextField from "@/components/form/TextField.vue"
 import SelectField from "@/components/form/SelectField.vue"
 import Chip from "@/components/Chip.vue"
-import { PRODUCT_DIMENSIONS } from "../../constants"
+import InfoBox from "@/components/InfoBox.vue"
+import { PRODUCT_DIMENSIONS, WEIGHT_ATTRIBUTE_UID } from "../../constants"
 import { IProductDimension } from "@modules/inventory/types"
-import { IProductVariant } from "../../types"
+import { IProductVariant, IProductVariantDetails } from "../../types"
+import { useWeightBasedDimensions } from "../../composables/useWeightBasedDimensions"
 
 interface Props {
   /** Variants array - for no variants case, should contain single variant */
   modelValue: IProductVariant[]
   /** Product name to set as default variant name */
   productName?: string
+  /** Hide the stock/quantity field (for variant-details edit mode) */
+  hideStock?: boolean
+  /** Deleted variants to display (only in edit mode) */
+  deletedVariants?: IProductVariantDetails[]
 }
 
 interface Emits {
@@ -170,6 +203,9 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
+// Initialize weight-based dimensions composable
+const { hasWeightAttribute } = useWeightBasedDimensions()
+
 // Global dimensions state (applies to all variants)
 const globalDimensions = ref({
   height: "",
@@ -179,14 +215,27 @@ const globalDimensions = ref({
 })
 
 // Initialize global dimensions from existing variants
+// Only initializes if variants have meaningful dimension data (for edit mode)
 const initializeGlobalDimensions = () => {
   if (props.modelValue && props.modelValue.length > 0) {
     const firstVariant = props.modelValue[0]
-    globalDimensions.value = {
-      height: firstVariant.height || "",
-      length: firstVariant.length || "",
-      width: firstVariant.width || "",
-      weight: firstVariant.weight || "",
+
+    // Only initialize if dimensions already exist (edit mode)
+    // For new products, keep dimensions empty so user must select weight
+    const hasMeaningfulDimensions =
+      firstVariant.height &&
+      firstVariant.length &&
+      firstVariant.width &&
+      firstVariant.weight &&
+      firstVariant.weight !== "0"
+
+    if (hasMeaningfulDimensions) {
+      globalDimensions.value = {
+        height: firstVariant.height,
+        length: firstVariant.length,
+        width: firstVariant.width,
+        weight: firstVariant.weight,
+      }
     }
   }
 }
@@ -194,10 +243,17 @@ const initializeGlobalDimensions = () => {
 // Initialize on mount and when variants change
 watch(
   () => props.modelValue,
-  (newVariants) => {
+  (newVariants, oldVariants) => {
     if (newVariants && newVariants.length > 0) {
-      // Only initialize if globalDimensions are empty (to avoid overwriting user selections)
-      if (!globalDimensions.value.weight && !globalDimensions.value.height) {
+      // Initialize if:
+      // 1. globalDimensions are empty, OR
+      // 2. variants array changed (e.g., when loading from API in edit mode)
+      const shouldInitialize =
+        (!globalDimensions.value.weight && !globalDimensions.value.height) ||
+        (oldVariants && oldVariants.length !== newVariants.length) ||
+        (!oldVariants && newVariants.length > 0)
+
+      if (shouldInitialize) {
         initializeGlobalDimensions()
       }
     }
@@ -210,8 +266,20 @@ const isSingleVariant = computed(() => {
   return !props.modelValue || props.modelValue.length <= 1
 })
 
+// Check if we have deleted variants
+const hasDeletedVariants = computed(() => {
+  return props.deletedVariants && props.deletedVariants.length > 0
+})
+
 // Get variants array
 const variants = computed(() => props.modelValue || [])
+
+// Check if any variant has the Weight (Kg) attribute
+// If true, we should hide the weight dropdown as it's auto-populated
+const hasWeightAttributeInVariants = computed(() => {
+  if (!props.modelValue || props.modelValue.length === 0) return false
+  return hasWeightAttribute(props.modelValue, WEIGHT_ATTRIBUTE_UID)
+})
 
 // Transform PRODUCT_DIMENSIONS for SelectField
 const dimensionOptions = computed(() =>
@@ -296,13 +364,25 @@ const selectedDimension = computed({
 })
 
 // Extract display values from variant attributes for chips
-const getVariantDisplayValues = (variant: IProductVariant): string[] => {
+// Works with both IProductVariant and IProductVariantDetails
+const getVariantDisplayValues = (variant: IProductVariant | IProductVariantDetails): string[] => {
   if (!variant.attributes || variant.attributes.length === 0) {
     return [variant.name]
   }
 
-  // Return the valueLabel if available, otherwise fall back to value
-  return variant.attributes.map((attr) => attr.valueLabel || attr.value)
+  // Return the attribute_value (from API) if available, otherwise valueLabel, then fall back to value (UID)
+  return variant.attributes.map((attr) => {
+    // Check for attribute_value first (from API response)
+    if ("attribute_value" in attr && attr.attribute_value) {
+      return String(attr.attribute_value)
+    }
+    // Then check for valueLabel (used internally)
+    if ("valueLabel" in attr && attr.valueLabel) {
+      return attr.valueLabel
+    }
+    // Fallback to value (UID) - this shouldn't normally be displayed
+    return attr.value
+  })
 }
 
 // Update a specific field for a specific variant

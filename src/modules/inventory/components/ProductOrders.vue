@@ -32,54 +32,26 @@
         :enable-row-selection="true"
         @row-click="handleRowClick"
       >
-        <template #cell:order_ref="{ value }">
+        <template #cell:order_number="{ value }">
           <span class="text-sm">{{ value }}</span>
         </template>
 
-        <template #cell:order_date="{ value }">
+        <template #cell:created_at="{ value }">
           <span class="text-sm">{{ formatOrderDate(value as string) }}</span>
         </template>
 
-        <template #cell:items="{ item }">
-          <div class="max-w-[100px] truncate">
-            {{ item.items.map((v) => v.product_name).join(", ") }}
-          </div>
-        </template>
-
         <template #cell:customer_info="{ item }">
-          <Avatar v-if="item.customer" :name="`${item.customer_name}`" size="sm" />
+          <Avatar v-if="item.customer" :name="`${item.user_name || 'Customer'}`" size="sm" />
           <Avatar v-else name="Guest Customer" size="sm" />
         </template>
 
         <template #cell:payment_status="{ value }">
           <Chip
             :label="getPaymentStatusLabel(String(value))"
-            :icon="getPaymentStatusIcon(value as number)"
-            :color="getPaymentStatusColor(value as number)"
+            :icon="getPaymentStatusIcon(value as string)"
+            :color="getPaymentStatusColor(value as string)"
             size="sm"
           />
-        </template>
-
-        <template #cell:action="{ item }">
-          <div class="flex items-center gap-2">
-            <Icon
-              name="edit"
-              @click.stop="handleOrderAction('edit', item)"
-              class="hidden cursor-pointer hover:text-gray-600 md:inline-block"
-            />
-            <DropdownMenu
-              :items="getOrderActionItems(item)"
-              placement="bottom-end"
-              :show-chevron="false"
-              size="sm"
-              trigger-class="!p-1 !min-h-6 !w-6 hover:bg-gray-100 !border-0"
-              @click.stop
-            >
-              <template #trigger>
-                <Icon name="dots-vertical" />
-              </template>
-            </DropdownMenu>
-          </div>
         </template>
 
         <!-- Mobile card view -->
@@ -97,8 +69,6 @@ import DataTable from "@components/DataTable.vue"
 import AppButton from "@components/AppButton.vue"
 import Chip from "@components/Chip.vue"
 import Avatar from "@components/Avatar.vue"
-import Icon from "@components/Icon.vue"
-import DropdownMenu from "@components/DropdownMenu.vue"
 import { getSmartDateLabel } from "@/utils/formatDate"
 import type { IProductDetails } from "../types"
 import type { TOrder } from "@modules/orders/types"
@@ -126,23 +96,20 @@ const formatOrderDate = (date: string) => {
 }
 
 const getPaymentStatusLabel = (status: string) => {
-  // const paymentMethod = ORDER_PAYMENT_METHODS.find((m) => m.value === order.payment_mode)
-  // const methodLabel = paymentMethod?.label || "Unknown"
-
   if (status === "paid") return `Paid`
   if (status === "partially_paid") return "Partially Paid"
   return "Unpaid"
 }
 
-const getPaymentStatusIcon = (status: number) => {
-  if (status === 1) return "card-tick"
-  if (status === 2) return "card-pos"
+const getPaymentStatusIcon = (status: string) => {
+  if (status === "paid") return "card-tick"
+  if (status === "partially_paid") return "card-pos"
   return "card-remove"
 }
 
-const getPaymentStatusColor = (status: number) => {
-  if (status === 1) return "success" as const
-  if (status === 2) return "primary" as const
+const getPaymentStatusColor = (status: string) => {
+  if (status === "paid") return "success" as const
+  if (status === "partially_paid") return "primary" as const
   return "error" as const
 }
 
