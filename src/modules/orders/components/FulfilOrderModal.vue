@@ -126,7 +126,7 @@ const handleModalChange = (isOpen: boolean) => {
     <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
       <Icon name="box" size="28" />
     </div>
-    <p class="mb-4 text-sm text-gray-600">
+    <p class="text-core-700 mb-4 text-sm">
       Select the quantity of items you want to fulfill for this order
     </p>
 

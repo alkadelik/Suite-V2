@@ -101,7 +101,7 @@
 
       <div class="mt-3 w-full rounded-lg bg-gray-50 px-4 py-5 text-center">
         <h3 class="mb-1 text-sm font-semibold text-gray-900">Unlock More with Premium!</h3>
-        <p class="mb-4 text-sm text-gray-600">
+        <p class="text-core-700 mb-4 text-sm">
           Get advanced tools to manage every aspect of your business.
         </p>
         <AppButton label="Go Premium" class="w-full flex-row-reverse" icon="star" />

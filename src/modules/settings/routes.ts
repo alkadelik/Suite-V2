@@ -46,6 +46,11 @@ const settingsRoutes: RouteRecordRaw[] = [
         name: "PlansAndBilling",
         component: () => import("./views/plans-and-billing.vue"),
       },
+      {
+        path: "design",
+        name: "Design",
+        component: () => import("./views/design.vue"),
+      },
       // Catch-all route for settings 404
       {
         path: ":pathMatch(.*)*",

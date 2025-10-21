@@ -8,6 +8,7 @@
     <div class="flex-1">
       <p v-if="title" class="mb-1 text-xs font-bold md:text-sm">{{ title }}</p>
       <p class="text-xs font-semibold md:text-sm">{{ message }}</p>
+      <slot></slot>
     </div>
   </div>
 </template>

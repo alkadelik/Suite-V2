@@ -64,13 +64,27 @@
     </div>
 
     <div v-else :class="containerClasses">
+      <!-- Country Code Prefix for Tel Input -->
+      <div
+        v-if="type === 'tel'"
+        class="flex items-center gap-2 border-r border-gray-200 bg-transparent pr-3 pl-3"
+      >
+        <div
+          class="flex h-4 w-4 items-center justify-center overflow-hidden rounded-full bg-gray-200"
+        >
+          <img src="/images/nigeria.png" alt="Nigerian Flag" class="h-full w-full object-cover" />
+        </div>
+        <span class="text-sm font-medium text-gray-700">+234</span>
+        <Icon name="CaretDown" size="16" class="text-gray-500" />
+      </div>
+
       <!-- Prefix -->
-      <div v-if="prefix" :class="prefixClasses">
+      <div v-else-if="prefix" :class="prefixClasses">
         {{ prefix }}
       </div>
 
       <!-- Left Icon -->
-      <div v-if="leftIcon" :class="[prefixClasses, 'flex items-center border-r-0 !pr-0']">
+      <div v-else-if="leftIcon" :class="[prefixClasses, 'flex items-center border-r-0 !pr-0']">
         <Icon :name="leftIcon" class="h-4 w-4" />
       </div>
 
@@ -200,7 +214,21 @@ const showPassword = ref(false)
 
 const handleInput = (event: Event) => {
   const target = event.target as HTMLInputElement
-  emit("update:modelValue", target.value)
+  let value = target.value
+
+  // For tel inputs, prefix with +234
+  if (props.type === "tel" && value) {
+    // Remove any existing +234 prefix to avoid duplication
+    value = value.replace(/^\+234\s*/, "")
+    // Remove any non-digit characters except leading +
+    value = value.replace(/[^\d]/g, "")
+    // Add +234 prefix
+    if (value) {
+      value = `+234${value}`
+    }
+  }
+
+  emit("update:modelValue", value)
 }
 
 const togglePasswordVisibility = () => {

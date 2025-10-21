@@ -1,0 +1,82 @@
+<template>
+  <div class="rounded-lg bg-white md:block md:border md:border-gray-200">
+    <div class="hidden border-b border-gray-200 p-4 md:block">
+      <h4 class="text-lg font-semibold text-gray-900">Links</h4>
+    </div>
+    <div class="p-0 md:p-6">
+      <div class="space-y-6">
+        <FormField
+          type="url"
+          name="terms_conditions_link"
+          label="Terms & Conditions"
+          placeholder="https://example.com/terms"
+        />
+
+        <div>
+          <h5 class="text-core-700 mb-4 text-sm font-semibold">Social Links</h5>
+          <div class="space-y-4">
+            <div v-for="social in socialLinks" :key="social.id" class="flex flex-col gap-2">
+              <p class="text-core-800 text-sm">{{ social.label }}</p>
+              <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center">
+                  <img
+                    :src="social.icon"
+                    :alt="social.label"
+                    class="aspect-square h-full object-contain"
+                  />
+                </div>
+                <div class="flex-1">
+                  <FormField
+                    type="url"
+                    :name="social.id"
+                    :label="social.label"
+                    :placeholder="social.placeholder"
+                    :hide-label="true"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import FormField from "@components/form/FormField.vue"
+
+interface SocialLink {
+  id: string
+  label: string
+  icon: string
+  placeholder: string
+}
+
+const socialLinks: SocialLink[] = [
+  {
+    id: "instagram_link",
+    label: "Instagram",
+    icon: "/images/footer-instagram.png",
+    placeholder: "E.g instagram.com/mybusiness",
+  },
+  {
+    id: "facebook_link",
+    label: "Facebook",
+    icon: "/images/footer-facebook.png",
+    placeholder: "E.g facebook.com/mybusiness",
+  },
+  {
+    id: "twitter_link",
+    label: "Twitter",
+    icon: "/images/footer-instagram.png",
+    placeholder: "E.g twitter.com/mybusiness",
+  },
+  {
+    id: "tiktok_link",
+    label: "Tiktok",
+    icon: "/images/footer-instagram.png",
+    placeholder: "E.g tiktok.com/@mybusiness",
+  },
+]
+</script>
