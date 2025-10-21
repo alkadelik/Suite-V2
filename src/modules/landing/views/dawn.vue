@@ -214,7 +214,7 @@ const shopLinks = [
 
         <div class="col-span-1 grid grid-cols-2 gap-8 sm:grid-cols-3">
           <div class="border-l border-gray-300 pl-4">
-            <h3 class="mb-4 text-sm font-semibold text-gray-500">Shop</h3>
+            <h3 class="mb-4 text-sm font-semibold text-white">Shop</h3>
             <div class="flex flex-col gap-3">
               <a
                 v-for="link in shopLinks"
@@ -231,7 +231,7 @@ const shopLinks = [
           <div />
 
           <div class="border-l border-gray-300 pl-4">
-            <h3 class="mb-4 text-sm font-semibold text-gray-500">Follow Us</h3>
+            <h3 class="mb-4 text-sm font-semibold text-white">Follow Us</h3>
             <div class="flex gap-4">
               <a>
                 <Icon name="global" class="inline-block h-5 w-5" />
