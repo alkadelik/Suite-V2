@@ -171,11 +171,13 @@ const shopLinks = [
           <div class="mx-auto max-w-4xl rounded-xl bg-white p-6 md:p-10">
             <div class="flex flex-col items-center gap-6 md:flex-row md:gap-10">
               <img
-                class="h-[150px] w-[150px] rounded-t-full rounded-b-xl bg-pink-200 md:h-[224px] md:w-[224px]"
+                class="h-[250px] w-[2000px] rounded-t-full rounded-b-xl bg-pink-200 md:h-[224px] md:w-[224px]"
               />
               <div class="text-center md:text-left">
                 <h2 class="text-3xl font-bold md:text-4xl">Join the Dawn Circle</h2>
-                <p class="mt-4">Get 10% off your first order and updates on new launches.</p>
+                <p class="mt-4 text-gray-600">
+                  Get 10% off your first order and updates on new launches.
+                </p>
               </div>
             </div>
 
