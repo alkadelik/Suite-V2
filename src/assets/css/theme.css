@@ -3,6 +3,14 @@
   --font-sato: "Sato", sans-serif;
   --font-outfit: "Outfit", sans-serif;
   --font-manrope: "Manrope", sans-serif;
+  --font-poppins: "Poppins", sans-serif;
+  --font-oswald: "Oswald", sans-serif;
+  --font-merriweather: "Merriweather", serif;
+  --font-playfair: "Playfair Display", serif;
+  --font-raleway: "Raleway", sans-serif;
+  --font-quattrocento: "Quattrocento", serif;
+  --font-yeseva: "Yeseva One", serif;
+  --font-quicksand: "Quicksand", sans-serif;
   --font-sans: var(--font-outfit);
   --font-serif: var(--font-sato);
 
