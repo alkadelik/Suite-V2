@@ -157,8 +157,7 @@ const isOpen = ref(false)
 
 // Computed Properties
 const inputId = computed(
-  () =>
-    props.id || props.name || `color-picker-${Math.random().toString(36).substring(2, 11)}`,
+  () => props.id || props.name || `color-picker-${Math.random().toString(36).substring(2, 11)}`,
 )
 
 const normalizedColor = computed(() => safeParseColor(props.modelValue))
