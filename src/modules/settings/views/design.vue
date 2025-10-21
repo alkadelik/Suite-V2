@@ -1,58 +1,55 @@
-<script setup lang="ts">
-import AppButton from "@components/AppButton.vue"
-import SectionHeader from "@components/SectionHeader.vue"
-import Tabs from "@components/Tabs.vue"
-import { useMediaQuery } from "@vueuse/core"
-import { computed } from "vue"
-import { useRoute, useRouter } from "vue-router"
+<template>
+  <div class="flex h-full flex-col">
+    <Tabs :tabs="tabsConfig" v-model="activeTab" class="mb-6">
+      <template #themes>
+        <ThemesTab />
+      </template>
+      <template #theme_settings>
+        <ThemeSettingsTab />
+      </template>
+      <template #landing_page>
+        <LandingPageTab />
+      </template>
+      <template #pop_up>
+        <PopUpTab />
+      </template>
+    </Tabs>
+  </div>
+</template>
 
-const TAB_OPTIONS = [
-  {
-    title: "Themes",
-    key: "themes",
-    desc: " Pick a theme that reflects your brand. You can always change it later.",
-  },
-  { title: "Theme Settings", key: "theme-settings", desc: "Customize your theme settings" },
-  { title: "Landing Page", key: "landing-page", desc: "Configure your landing page" },
-  { title: "Pop Up", key: "popup", desc: "Set up your pop-up preferences" },
-]
+<script setup lang="ts">
+import { ref, watch } from "vue"
+import { useRoute, useRouter } from "vue-router"
+import Tabs from "@components/Tabs.vue"
+import ThemesTab from "../components/design/ThemesTab.vue"
+import ThemeSettingsTab from "../components/design/ThemeSettingsTab.vue"
+import LandingPageTab from "../components/design/LandingPageTab.vue"
+import PopUpTab from "../components/design/PopUpTab.vue"
+
+interface DesignTabConfig {
+  title: string
+  key: string
+  icon: string
+}
 
 const route = useRoute()
 const router = useRouter()
 
-const activeTab = computed({
-  get: () => {
-    // Get the last segment of the route path which represents the active child route
-    const pathSegments = route.path.split("/")
-    const lastSegment = pathSegments[pathSegments.length - 1]
-    // If we're at the base design path, default to themes
-    return lastSegment === "design" ? "themes" : lastSegment
-  },
-  set: (value: string) => {
-    router.push(`/settings/design/${value}`)
-  },
-})
+const tabsConfig: DesignTabConfig[] = [
+  { title: "Themes", key: "themes", icon: "shapes-02" },
+  { title: "Theme Settings", key: "theme_settings", icon: "shapes" },
+  { title: "Landing Page", key: "landing_page", icon: "message-text" },
+  { title: "Pop Up", key: "pop_up", icon: "information" },
+]
 
-const fullTab = computed(() => {
-  return TAB_OPTIONS.find((tab) => tab.key === activeTab.value) || { title: "", desc: "" }
-})
+const activeTab = ref<string>((route.query.tab as string) || "themes")
 
-const isMobile = useMediaQuery("(max-width: 768px)")
+watch(activeTab, (newTab) => {
+  router.replace({
+    query: {
+      ...route.query,
+      tab: newTab,
+    },
+  })
+})
 </script>
-
-<template>
-  <div>
-    <Tabs v-model="activeTab" :tabs="TAB_OPTIONS" :equal="!isMobile" />
-
-    <div class="mb-4 flex items-center gap-6 border-b border-gray-200 pb-4">
-      <SectionHeader class="flex-1" :title="fullTab.title" size="sm" :subtitle="fullTab?.desc" />
-      <AppButton icon="clock-rewind" color="alt" size="sm" />
-      <AppButton label="Publish" class="!hidden w-32 md:!inline-flex" />
-    </div>
-
-    <!-- child route views -->
-    <div class="py-4">
-      <router-view />
-    </div>
-  </div>
-</template>

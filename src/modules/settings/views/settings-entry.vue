@@ -1,5 +1,5 @@
-<script setup>
-import { onMounted } from "vue"
+<script setup lang="ts">
+import { onMounted, ref } from "vue"
 import { useRouter } from "vue-router"
 import Icon from "@components/Icon.vue"
 import BackButton from "@components/BackButton.vue"
@@ -9,29 +9,47 @@ const router = useRouter()
 onMounted(() => {
   const isMobile = window.innerWidth < 768
 
-  if (isMobile) {
-    // On mobile: stay here and show links
-    // do nothing
-  } else {
-    // On desktop: redirect to first settings page
+  if (!isMobile) {
     router.replace({ name: "Profile" })
   }
 })
 
-const settingsLinks = [
+interface SettingsLink {
+  label: string
+  path: string
+  icon: string
+  subLinks?: SettingsLink[]
+}
+
+const settingsLinks: SettingsLink[] = [
   { label: "Profile", path: "/settings/profile", icon: "profile-circle" },
   { label: "Store Details", path: "/settings/store-details", icon: "shop-outline" },
   { label: "Password", path: "/settings/password", icon: "key" },
   { label: "Teams", path: "/settings/teams", icon: "people" },
   { label: "Plans & Billing", path: "/settings/billing", icon: "star-fast" },
   { label: "Locations", path: "/settings/locations", icon: "map" },
-  { label: "Design", path: "/settings/design", icon: "designtools" },
+  {
+    label: "Design",
+    path: "/settings/design",
+    icon: "designtools",
+    subLinks: [
+      { label: "Themes", path: "/settings/design?tab=themes", icon: "shapes-02" },
+      { label: "Theme Settings", path: "/settings/design?tab=theme_settings", icon: "shapes-01" },
+      { label: "Landing Page", path: "/settings/design?tab=landing_page", icon: "message-text" },
+      { label: "Pop Up", path: "/settings/design?tab=pop_up", icon: "information" },
+    ],
+  },
   { label: "Delivery Options", path: "/settings/delivery-options", icon: "truck-fast-outline" },
 ]
+
+const expandedLink = ref<string | null>(null)
+
+const toggleExpand = (label: string): void => {
+  expandedLink.value = expandedLink.value === label ? null : label
+}
 </script>
 
 <template>
-  <!-- Only rendered on mobile -->
   <div>
     <header
       class="flex flex-col justify-center border-b border-gray-200 pb-4 text-center md:block md:text-left"
@@ -41,18 +59,50 @@ const settingsLinks = [
       <p>shop.leyyow.com</p>
     </header>
     <div class="flex flex-col">
-      <router-link
-        v-for="link in settingsLinks"
-        :key="link.path"
-        :to="link.path"
-        class="hover:bg-primary-100 flex items-center justify-between gap-2 border-b border-gray-200 py-5 text-sm font-medium"
-      >
-        <div class="flex items-center gap-2">
-          <Icon :name="link.icon" size="20" />
-          <p>{{ link.label }}</p>
+      <template v-for="link in settingsLinks" :key="link.path">
+        <div v-if="link.subLinks">
+          <button
+            type="button"
+            class="hover:bg-primary-100 flex w-full items-center justify-between gap-2 border-b border-gray-200 py-5 pe-3 text-sm font-medium"
+            @click="toggleExpand(link.label)"
+          >
+            <div class="flex items-center gap-2">
+              <Icon :name="link.icon" size="20" />
+              <p>{{ link.label }}</p>
+            </div>
+            <Icon
+              name="chevron-right"
+              size="18"
+              :class="{ 'rotate-90': expandedLink === link.label }"
+            />
+          </button>
+          <div v-if="expandedLink === link.label" class="bg-gray-50">
+            <router-link
+              v-for="subLink in link.subLinks"
+              :key="subLink.path"
+              :to="subLink.path"
+              class="hover:bg-primary-100 flex items-center justify-between gap-2 py-5 pe-3 pl-8 text-sm font-medium last:border-0"
+            >
+              <div class="flex items-center gap-2">
+                <Icon :name="subLink.icon" size="20" />
+                <p>{{ subLink.label }}</p>
+              </div>
+              <Icon name="chevron-right" size="18" />
+            </router-link>
+          </div>
         </div>
-        <Icon name="chevron-right" size="18" />
-      </router-link>
+        <router-link
+          v-else
+          :to="link.path"
+          class="hover:bg-primary-100 flex items-center justify-between gap-2 border-b border-gray-200 py-5 pe-3 text-sm font-medium"
+        >
+          <div class="flex items-center gap-2">
+            <Icon :name="link.icon" size="20" />
+            <p>{{ link.label }}</p>
+          </div>
+          <Icon name="chevron-right" size="18" />
+        </router-link>
+      </template>
     </div>
   </div>
 </template>

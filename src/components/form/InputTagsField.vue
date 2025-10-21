@@ -33,9 +33,12 @@
           <input
             ref="inputRef"
             v-model="inputValue"
+            :type="props.isWeightAttribute ? 'number' : 'text'"
             :placeholder="placeholder"
             :disabled="disabled"
             :class="inputClasses"
+            :step="props.isWeightAttribute ? '0.01' : undefined"
+            :min="props.isWeightAttribute ? '0' : undefined"
             @keydown.enter.prevent="addTag"
             @keydown="handleKeydown"
             @input="handleInput"
@@ -121,6 +124,8 @@ interface Props {
   allowDuplicates?: boolean
   /** Maximum number of tags allowed */
   maxTags?: number
+  /** Whether this is a weight attribute field (numeric only, auto-appends "kg") */
+  isWeightAttribute?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -131,6 +136,7 @@ const props = withDefaults(defineProps<Props>(), {
   chipColor: "primary",
   chipVariant: "outlined",
   allowDuplicates: false,
+  isWeightAttribute: false,
 })
 
 const emit = defineEmits<{
@@ -243,13 +249,33 @@ const inputClasses = computed(() => {
 
 // Actions
 const addTag = () => {
-  const trimmedValue = inputValue.value.trim()
+  // Convert to string and trim (handles both string and number types)
+  const trimmedValue = String(inputValue.value).trim()
   if (!trimmedValue) return
+
+  // For weight attribute, validate it's a number
+  if (props.isWeightAttribute) {
+    const numValue = parseFloat(trimmedValue)
+    if (isNaN(numValue) || numValue <= 0) {
+      inputValue.value = ""
+      return
+    }
+  }
+
+  // Prepare the value and label
+  let tagValue = trimmedValue
+  let tagLabel = trimmedValue
+
+  // For weight attribute, append " kg" to the label but keep numeric value
+  if (props.isWeightAttribute) {
+    tagLabel = `${trimmedValue} kg`
+    // Value stays as numeric string for dimension mapping
+  }
 
   // Check for duplicates if not allowed
   if (!props.allowDuplicates) {
     const exists = selectedItems.value.some(
-      (item) => item.value.toLowerCase() === trimmedValue.toLowerCase(),
+      (item) => item.value.toLowerCase() === tagValue.toLowerCase(),
     )
     if (exists) {
       inputValue.value = ""
@@ -264,8 +290,8 @@ const addTag = () => {
   }
 
   const newTag: TagItem = {
-    label: trimmedValue,
-    value: trimmedValue,
+    label: tagLabel,
+    value: tagValue,
   }
 
   const newTags = [...selectedItems.value, newTag]
@@ -299,6 +325,9 @@ const handleKeydown = (event: KeyboardEvent) => {
 const handleInput = (event: Event) => {
   const target = event.target as HTMLInputElement
   const value = target.value
+
+  // Skip comma handling for number inputs (weight attribute)
+  if (props.isWeightAttribute) return
 
   // Auto-add tag when comma is typed (in case keydown doesn't catch it)
   if (value.includes(",")) {

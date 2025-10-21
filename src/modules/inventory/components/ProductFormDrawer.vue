@@ -1,24 +1,23 @@
 <template>
   <Drawer
     :open="modelValue"
-    :title="mode === 'add' ? 'Add Product' : 'Edit Product'"
+    title="Add Product"
     :position="drawerPosition"
     max-width="xl"
     @close="emit('update:modelValue', false)"
   >
-    <IconHeader icon-name="shop-add" :subtext="getHeaderText" />
+    <IconHeader icon-name="shop-add" :title="getHeaderTitle" :subtext="getHeaderText" />
 
-    <!-- Loading state for fetching product -->
-    <LoadingIcon v-if="isLoadingProduct" class="min-h-[400px]" />
-
-    <form v-else id="product-form" @submit.prevent="handleSubmit" class="min-h-full">
+    <form id="product-form" @submit.prevent="handleSubmit" class="min-h-full">
       <div>
         <!-- Step 1: Product Details -->
         <ProductDetailsForm
           v-if="step === 1"
+          ref="productDetailsRef"
           v-model="form"
           :has-variants="hasVariants"
           @update:has-variants="hasVariants = $event"
+          @add-category="emit('add-category')"
         />
 
         <!-- Step 2: Variants Configuration (only if hasVariants is true) -->
@@ -31,18 +30,12 @@
           :product-name="form.name"
         />
 
-        <!-- Step 3/4: Review -->
-        <div
+        <!-- Step 3/4: Product Images -->
+        <ProductImagesForm
           v-else-if="(step === 3 && !hasVariants) || (step === 4 && hasVariants)"
-          class="text-center text-gray-500"
-        >
-          <ProductReview
-            :product-data="form"
-            :variants="variants"
-            :has-variants="hasVariants"
-            :attribute-names="attributeNamesMap"
-          />
-        </div>
+          v-model="form.images"
+          :variants="variants"
+        />
 
         <!-- Fallback -->
         <div v-else class="text-center text-gray-500">Step {{ step }} - Coming soon</div>
@@ -51,32 +44,21 @@
 
     <template #footer>
       <div class="flex w-full items-center">
-        <!-- Step Indicator -->
-        <!-- <div class="flex items-center space-x-2">
-          <span class="text-sm text-gray-500"> Step {{ step }} of {{ totalSteps }} </span>
-          <div class="flex space-x-1">
-            <div
-              v-for="i in totalSteps"
-              :key="i"
-              :class="['h-2 w-2 rounded-full', i <= step ? 'bg-primary-600' : 'bg-gray-300']"
-            />
-          </div>
-        </div> -->
-
         <!-- Navigation Buttons -->
         <div class="flex w-full items-center gap-2">
           <AppButton
+            v-if="step > 1"
             variant="outlined"
-            :label="step === 1 ? 'Cancel' : 'Back'"
+            label="Back"
             class="flex-1"
             :disabled="isPending"
             @click="handleBack"
           />
           <AppButton
-            :label="isLastStep ? (mode === 'edit' ? 'Update Product' : 'Save Product') : 'Next'"
+            :label="getSubmitButtonLabel"
             :loading="isPending"
             :disabled="isPending || !canProceed"
-            class="flex-1"
+            :class="step === 1 ? 'w-full' : 'flex-1'"
             form="product-form"
             type="submit"
           />
@@ -87,35 +69,34 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, reactive, onUnmounted, watch } from "vue"
+import { ref, computed, watch } from "vue"
 import Drawer from "@components/Drawer.vue"
 import AppButton from "@/components/AppButton.vue"
-import { IProductFormPayload, TProduct, TProductFormMode } from "../types"
+import type { IProductFormPayload } from "../types"
 import IconHeader from "@components/IconHeader.vue"
 import ProductDetailsForm from "./ProductForm/ProductDetailsForm.vue"
 import ProductManageCombinationsForm from "./ProductForm/ProductManageCombinationsForm.vue"
-import { IProductVariant, IProductAttribute } from "../types"
-import ProductReview from "./ProductForm/ProductReview.vue"
+import ProductImagesForm from "./ProductForm/ProductImagesForm.vue"
 import ProductVariantsForm from "./ProductForm/ProductVariantsForm.vue"
 import {
   useCreateProduct,
-  useUpdateProduct,
   useCreateAttribute,
   useCreateAttributeValues,
   useAddProductImage,
-  useGetProduct,
 } from "../api"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
-import LoadingIcon from "@components/LoadingIcon.vue"
+
+// Import composables
+import { useProductFormState } from "../composables/useProductFormState"
+import { useVariantConfiguration } from "../composables/useVariantConfiguration"
+import { useVariantValidation } from "../composables/useVariantValidation"
+import { useVariantProcessing } from "../composables/useVariantProcessing"
+import { useProductDrawerUtilities } from "../composables/useProductDrawerUtilities"
 
 interface Props {
   /** Whether the drawer is open/visible */
   modelValue: boolean
-  /** Form mode - add new product or edit existing */
-  mode?: TProductFormMode
-  /** Product data for editing (required when mode is 'edit') */
-  product?: TProduct | null
   /** Loading state for async operations */
   loading?: boolean
 }
@@ -125,791 +106,86 @@ interface Emits {
   "update:modelValue": [value: boolean]
   /** Emitted when drawer should refresh parent data */
   refresh: []
+  /** Emitted when Add New Category is clicked */
+  "add-category": []
+  /** Emitted when a new category is successfully created */
+  "category-created": [category: { label: string; value: string }]
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  mode: "add",
-  product: null,
   loading: false,
 })
 
 const emit = defineEmits<Emits>()
 
-// API Calls
+// Ref to ProductDetailsForm component
+const productDetailsRef = ref<{
+  setCategory: (category: { label: string; value: string }) => void
+} | null>(null)
+
+// API mutations
 const { mutate: createProduct, isPending: isCreating } = useCreateProduct()
-const { mutate: updateProduct, isPending: isUpdating } = useUpdateProduct()
 const { mutate: createAttribute, isPending: isCreatingAttribute } = useCreateAttribute()
 const { mutate: createAttributeValues, isPending: isCreatingAttributeValues } =
   useCreateAttributeValues()
 const { mutate: addProductImages, isPending: isAddingProductImages } = useAddProductImage()
 
-// Reactive state
-const isMobile = ref(false)
-// const formKey = ref(0) // Force form re-render when switching modes
-const step = ref(1) // Current step in multi-step form
-const hasVariants = ref(false)
-const productUidToFetch = ref<string>("")
+// Composables
+const { form, hasVariants, variants, variantConfiguration, resetFormState } = useProductFormState()
 
-// Get product data when editing
-const { data: productData, isLoading: isLoadingProduct } = useGetProduct(
-  computed(() => productUidToFetch.value),
-  { enabled: computed(() => !!productUidToFetch.value && props.mode === "edit") },
+const { drawerPosition } = useProductDrawerUtilities()
+
+const { step, isLastStep, previousStep } = useProductDrawerUtilities().useStepManagement({
+  hasVariants,
+})
+
+const { getHeaderTitle, getHeaderText, getSubmitButtonLabel } =
+  useProductDrawerUtilities().useDrawerHeaders({
+    step,
+    hasVariants,
+    mode: "create",
+  })
+
+const variantConfigHelpers = useVariantConfiguration(
+  computed(() => variantConfiguration.value),
+  variants,
+  computed(() => form.name),
 )
-const form = reactive({
-  name: "",
-  description: "",
-  category: null as { label: string; value: string } | null,
-  images: [] as Array<File | string | null>,
-  story: "",
-  brand: "",
-  requires_approval: false,
+
+const { canProceed, validateAllUIDs } = useVariantValidation({
+  form,
+  hasVariants,
+  variantConfiguration,
+  variants,
+  step,
 })
 
-// Variants array for inventory management
-const variants = ref<IProductVariant[]>([])
-
-// Watch hasVariants to initialize single variant when no variants are needed
-watch(hasVariants, (newValue) => {
-  if (!newValue && variants.value.length === 0) {
-    // Initialize single variant for no-variants case
-    variants.value = [
-      {
-        name: form.name || "Default",
-        sku: "",
-        price: "",
-        promo_price: "",
-        promo_expiry: "",
-        cost_price: "",
-        weight: "",
-        length: "",
-        width: "",
-        height: "",
-        reorder_point: "",
-        max_stock: "",
-        opening_stock: "",
-        is_active: true,
-        is_default: true,
-        batch_number: "",
-        expiry_date: "",
-        attributes: [],
-      },
-    ]
-  } else if (newValue && variants.value.length === 1 && variants.value[0].attributes.length === 0) {
-    // Clear variants when switching back to variants mode
-    variants.value = []
-  }
+const variantProcessor = useVariantProcessing(variantConfiguration, {
+  createAttribute,
+  createAttributeValues,
 })
 
-// Variant configuration for step 2 (variant types and values)
-interface VariantConfiguration {
-  name: Record<string, unknown> | string | null
-  customName: string
-  values: { label: string; value: string }[]
-}
-
-const variantConfiguration = ref<VariantConfiguration[]>([
-  {
-    name: null,
-    customName: "",
-    values: [],
-  },
-])
-
-// Computed properties
-const totalSteps = computed(() => {
-  return hasVariants.value ? 4 : 3
-})
-
-const isLastStep = computed(() => {
-  return step.value === totalSteps.value
-})
-
-// Helper function to get the value from variant name (handles both object and string)
-const getVariantValue = (variant: VariantConfiguration) => {
-  if (!variant || !variant.name) return ""
-
-  if (typeof variant.name === "object" && variant.name !== null) {
-    return variant.name.value as string
-  }
-
-  return variant.name
-}
-
-// Helper function to get the display name for a variant
-const getVariantDisplayName = (variant: VariantConfiguration) => {
-  if (!variant) return ""
-
-  const variantValue = getVariantValue(variant)
-
-  if (variantValue === "custom_type") {
-    return variant.customName?.trim() || ""
-  }
-
-  return variantValue
-}
-
-// Get the final name for comparison
-const getVariantFinalName = (variant: VariantConfiguration) => {
-  if (!variant) return ""
-
-  const variantValue = getVariantValue(variant)
-
-  if (variantValue === "custom_type") {
-    return variant.customName?.trim().toLowerCase() || ""
-  }
-
-  return variantValue.toLowerCase()
-}
-
-// Get minimum values required for a variant
-const getMinimumValuesRequired = (index: number) => {
-  // First variant or single variant needs at least 2
-  if (variantConfiguration.value.length === 1 || index === 0) {
-    return 2
-  }
-  // Other variants need at least 1
-  return 1
-}
-
-// Validate variant configuration
-const isVariantConfigurationValid = computed(() => {
-  // Check for duplicate names
-  const names = variantConfiguration.value
-    .map((variant) => getVariantFinalName(variant))
-    .filter((name) => name && typeof name === "string" && name.trim() !== "")
-
-  const duplicateNames = names.filter((name, index) => names.indexOf(name) !== index)
-
-  if (duplicateNames.length > 0) {
-    return false // Has duplicate names
-  }
-
-  // Check if all variants are complete
-  for (let i = 0; i < variantConfiguration.value.length; i++) {
-    const variant = variantConfiguration.value[i]
-    const displayName = getVariantDisplayName(variant)
-    const minimumRequired = getMinimumValuesRequired(i)
-
-    // If variant doesn't have a proper display name
-    if (!displayName) {
-      return false
-    }
-
-    // If variant has insufficient values
-    if (variant.values.length < minimumRequired) {
-      return false
-    }
-  }
-
-  return true
-})
-
-const canProceed = computed(() => {
-  if (step.value === 1) {
-    return form.name.trim() !== "" && form.category !== null
-  } else if (step.value === 2 && hasVariants.value) {
-    // Validate variants step - ensure valid variant configuration
-    return isVariantConfigurationValid.value
-  } else if ((step.value === 2 && !hasVariants.value) || (step.value === 3 && hasVariants.value)) {
-    // Validate inventory step - ensure we have at least basic pricing, stock info, and dimensions
-    if (!variants.value || variants.value.length === 0) {
-      return false
-    }
-
-    // For multiple variants, check that all have required fields filled
-    if (variants.value.length > 1) {
-      const isValid = variants.value.every((variant) => {
-        const validationResult =
-          variant &&
-          variant.price.trim() !== "" &&
-          variant.price !== "0" &&
-          variant.opening_stock.trim() !== "" &&
-          variant.opening_stock !== "0" &&
-          variant.height.trim() !== "" &&
-          variant.length.trim() !== "" &&
-          variant.width.trim() !== "" &&
-          variant.weight.trim() !== "" &&
-          variant.weight !== "0"
-
-        // Debug logging
-        if (!validationResult) {
-          console.log("Validation failed for variant:", {
-            name: variant?.name,
-            price: variant?.price,
-            stock: variant?.opening_stock,
-            height: variant?.height,
-            length: variant?.length,
-            width: variant?.width,
-            weight: variant?.weight,
-          })
-        }
-        return validationResult
-      })
-      return isValid
-    } else {
-      // For single variant, check basic requirements including weight
-      const variant = variants.value[0]
-      const isValid =
-        variant &&
-        variant.price.trim() !== "" &&
-        variant.opening_stock.trim() !== "" &&
-        variant.height.trim() !== "" &&
-        variant.length.trim() !== "" &&
-        variant.width.trim() !== "" &&
-        variant.weight.trim() !== "" &&
-        variant.weight !== "0"
-
-      // Debug logging
-      if (!isValid && variant) {
-        console.log("Single variant validation failed:", {
-          name: variant.name,
-          price: variant.price,
-          stock: variant.opening_stock,
-          height: variant.height,
-          length: variant.length,
-          width: variant.width,
-          weight: variant.weight,
-        })
-      }
-
-      return isValid
-    }
-  }
-  // Add validation for other steps as needed
-  return true
-})
-
-// Computed loading state based on mode
+// Computed loading state
 const isPending = computed(() => {
   return (
     props.loading ||
     isCreating.value ||
-    isUpdating.value ||
     isCreatingAttribute.value ||
     isCreatingAttributeValues.value ||
-    isAddingProductImages.value ||
-    isLoadingProduct.value
+    isAddingProductImages.value
   )
 })
 
-// Computed property to create attribute UID to name mapping
-const attributeNamesMap = computed(() => {
-  const map: Record<string, string> = {}
-
-  for (const variant of variantConfiguration.value) {
-    if (typeof variant.name === "object" && variant.name?.value && variant.name?.label) {
-      // Map UID to the actual label
-      map[variant.name.value as string] = variant.name.label as string
-    }
-  }
-
-  return map
-})
-
-// Function to validate that all variants and values have UIDs after processing
-const validateAllUIDs = (): boolean => {
-  for (const variant of variantConfiguration.value) {
-    // Check if variant has required values
-    if (variant.values.length === 0) {
-      continue // Skip empty variants
-    }
-
-    // Skip UID validation for custom variants - they always get processed fresh
-
-    // Check all values have UIDs
-    for (const value of variant.values) {
-      const isObject =
-        typeof value === "object" && value !== null && "label" in value && "value" in value
-      const hasUID = isObject && value.label !== value.value && value.value !== "custom_type"
-
-      if (!hasUID) {
-        console.error("Value missing UID:", value)
-        return false
-      }
-    }
-  }
-
-  return true
-}
-
-// Function to reset all form state
-const resetFormState = () => {
-  // Reset form data
-  Object.assign(form, {
-    name: "",
-    description: "",
-    category: null,
-    images: [],
-    story: "",
-    brand: "",
-    requires_approval: false,
-  })
-
-  // Reset step and variants
-  step.value = 1
-  hasVariants.value = true
-  variants.value = []
-
-  // Reset variant configuration
-  variantConfiguration.value = [
-    {
-      name: null,
-      customName: "",
-      values: [],
-    },
-  ]
-}
-
-// Dynamic header text based on current step and variant status
-const getHeaderText = computed(() => {
-  if (step.value === 1) {
-    return "Add images and details about your product, e.g. name, price."
-  } else if (step.value === 2 && !hasVariants.value) {
-    return "Enter available quantity and price for your product."
-  } else if (step.value === 3 && !hasVariants.value) {
-    return "Review your product details before submission."
-  } else if (step.value === 2 && hasVariants.value) {
-    return "Add the different options your product comes in (like size or colour). For example: Size → Large, Color → Red."
-  } else if (step.value === 3 && hasVariants.value) {
-    return "Enter available quantity and price for each variant combination."
-  } else if (step.value === 4 && hasVariants.value) {
-    return "Review your product details before submission."
-  }
-  return ""
-})
-
-// Watch for drawer opening to set productUidToFetch
+// Watch for drawer opening to reset form
 watch(
-  () => [props.modelValue, props.mode, props.product] as const,
-  ([isOpen, mode, product]) => {
-    if (isOpen && mode === "edit" && product?.uid) {
-      productUidToFetch.value = product.uid
-    } else if (isOpen && mode === "add") {
-      productUidToFetch.value = ""
+  () => props.modelValue,
+  (isOpen) => {
+    if (isOpen) {
       resetFormState()
     }
   },
   { immediate: true },
 )
-
-// Watch for product data to populate form
-watch(
-  () => productData.value,
-  (data) => {
-    if (data?.data && props.mode === "edit") {
-      const product = data.data
-      form.name = product.name || ""
-      form.description = product.description || ""
-      form.story = product.story || ""
-      form.brand = product.brand || ""
-      form.requires_approval = product.requires_approval || false
-
-      // Set category if it exists
-      if (product.category) {
-        form.category = {
-          label: product.category_name || "",
-          value: product.category || "",
-        }
-      }
-
-      // Populate images array with URLs from product data
-      if (product.images && product.images.length > 0) {
-        // Sort images by sort_order and map to URLs
-        const sortedImages = [...product.images].sort((a, b) => a.sort_order - b.sort_order)
-        form.images = sortedImages.slice(0, 5).map((img) => img.image)
-
-        // Fill remaining slots with null if needed
-        while (form.images.length < 5) {
-          form.images.push(null)
-        }
-      }
-
-      // Set hasVariants based on product data
-      hasVariants.value = product.is_variable || false
-
-      // Populate variants if they exist
-      if (product.variants && product.variants.length > 0) {
-        variants.value = product.variants.map((variant) => ({
-          name: variant.name || "",
-          sku: variant.sku || "",
-          price: variant.price || "",
-          promo_price: variant.promo_price || "",
-          promo_expiry: variant.promo_expiry || "",
-          cost_price: variant.cost_price || "",
-          weight: variant.weight || "",
-          length: variant.length || "",
-          width: variant.width || "",
-          height: variant.height || "",
-          reorder_point: variant.reorder_point?.toString() || "",
-          max_stock: variant.max_stock?.toString() || "",
-          opening_stock: variant.opening_stock?.toString() || "",
-          is_active: variant.is_active ?? true,
-          is_default: variant.is_default ?? false,
-          batch_number: variant.batch_number || "",
-          expiry_date: variant.expiry_date || "",
-          attributes: variant.attributes || [],
-        }))
-      }
-    }
-  },
-  { immediate: true },
-)
-
-// Check if mobile on mount and window resize
-const checkMobile = () => {
-  isMobile.value = window.innerWidth < 768 // md breakpoint
-}
-
-onMounted(() => {
-  checkMobile()
-  window.addEventListener("resize", checkMobile)
-})
-
-onUnmounted(() => {
-  window.removeEventListener("resize", checkMobile)
-})
-
-// Computed drawer position based on screen size
-const drawerPosition = computed(() => {
-  return isMobile.value ? "bottom" : "right"
-})
-
-// Helper function to safely extract UID from response
-const extractUid = (response: unknown): string => {
-  // Use the known correct path directly
-  try {
-    const value = (response as { data: { data: { uid: string } } })?.data?.data?.uid
-    return typeof value === "string" && value.length > 0 ? value : ""
-  } catch (error) {
-    console.error("Could not extract UID from response:", response, error)
-    return ""
-  }
-}
-
-// Function to process all variants and create attribute values
-const processVariantConfiguration = async (): Promise<void> => {
-  const variantsToProcess = variantConfiguration.value.filter(
-    (variant) => variant.values.length > 0,
-  )
-
-  if (variantsToProcess.length === 0) {
-    return
-  }
-
-  console.log(`Processing ${variantsToProcess.length} variants...`)
-
-  // Process each variant sequentially
-  for (const variant of variantsToProcess) {
-    await processVariant(variant)
-  }
-
-  console.log("All variants processed successfully")
-}
-
-// Process a single variant
-const processVariant = async (variant: VariantConfiguration): Promise<void> => {
-  const isCustomVariant = getVariantValue(variant) === "custom_type"
-  let attributeUid: string
-
-  if (isCustomVariant) {
-    const customName = variant.customName?.trim()
-    if (!customName) {
-      console.warn("Custom variant has no name, skipping")
-      return
-    }
-
-    // Always create new attribute for custom types
-    console.log(`Creating custom attribute: "${customName}"`)
-    attributeUid = await createAttributeAndGetUid(customName)
-
-    // Update variant name with new attribute UID
-    variant.name = {
-      label: customName,
-      value: attributeUid,
-    }
-  } else {
-    attributeUid = typeof variant.name === "object" ? (variant.name?.value as string) : ""
-    if (!attributeUid) {
-      console.warn("Existing variant has no attribute UID, skipping")
-      return
-    }
-    console.log(`Processing existing attribute: ${attributeUid}`)
-  }
-
-  // Process all values for this variant
-  await processVariantValues(variant, attributeUid)
-}
-
-// Create custom attribute and return its UID
-const createAttributeAndGetUid = async (customName: string): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    createAttribute(
-      {
-        name: customName,
-        data_type: "text",
-        is_required: false,
-        sort_order: 1,
-        is_active: true,
-      },
-      {
-        onSuccess: (response: unknown) => {
-          const uid = extractUid(response)
-          if (!uid) {
-            reject(new Error(`No UID returned for custom attribute: ${customName}`))
-            return
-          }
-          console.log(`Custom attribute "${customName}" created with UID: ${uid}`)
-          resolve(uid)
-        },
-        onError: (error: unknown) => {
-          console.error(`Failed to create custom attribute "${customName}":`, error)
-          displayError(error)
-          reject(new Error(String(error)))
-        },
-      },
-    )
-  })
-}
-
-// Process all values for a variant
-const processVariantValues = async (
-  variant: VariantConfiguration,
-  attributeUid: string,
-): Promise<void> => {
-  const values = variant.values || []
-
-  if (values.length === 0) {
-    return
-  }
-
-  const processedValues: Array<{ label: string; value: string }> = []
-  let valuesToProcess = 0
-
-  // First, identify which values need processing and which are already processed
-  for (const value of values) {
-    const isObject =
-      typeof value === "object" && value !== null && "label" in value && "value" in value
-    const hasUID = isObject && value.label !== value.value && value.value !== "custom_type"
-
-    if (hasUID) {
-      // Already processed, keep as-is
-      processedValues.push({
-        label: value.label,
-        value: value.value,
-      })
-      console.log(`Using existing UID for value "${value.label}": ${value.value}`)
-    } else {
-      valuesToProcess++
-    }
-  }
-
-  if (valuesToProcess > 0) {
-    console.log(`Creating ${valuesToProcess} new values for attribute: ${attributeUid}`)
-  }
-
-  // Process values that need API calls
-  for (let index = 0; index < values.length; index++) {
-    const value = values[index]
-    const isObject =
-      typeof value === "object" && value !== null && "label" in value && "value" in value
-    const hasUID = isObject && value.label !== value.value && value.value !== "custom_type"
-
-    if (!hasUID) {
-      // This value needs processing
-      console.log(`Processing value ${index + 1}/${values.length}:`, value)
-
-      const labelString =
-        typeof value === "object" && value !== null && "label" in value
-          ? value.label
-          : typeof value === "string"
-            ? value
-            : String(value)
-
-      try {
-        const valueUid = await createValueAndGetUid(value, attributeUid, index + 1)
-
-        processedValues.push({
-          label: labelString,
-          value: valueUid,
-        })
-
-        console.log(`✅ Value "${labelString}" processed successfully`)
-      } catch (error) {
-        console.error(`❌ Failed to process value at index ${index}:`, error)
-        // Throw error to stop processing - don't continue with failed API calls
-        throw new Error(`Failed to create value "${labelString}": ${String(error)}`)
-      }
-    }
-  }
-
-  // Update variant with processed values
-  variant.values = processedValues.map((v) => ({ label: v.label, value: v.value }))
-
-  console.log(`✅ Finished processing values for attribute: ${attributeUid}`)
-}
-
-// Create a single value and return its UID
-const createValueAndGetUid = async (
-  value: string | { label: string; value: string },
-  attributeUid: string,
-  sortOrder: number,
-): Promise<string> => {
-  const valueString =
-    typeof value === "object" && value !== null && "value" in value
-      ? value.value
-      : typeof value === "string"
-        ? value
-        : String(value)
-
-  console.log(`Calling createAttributeValues for "${valueString}"`)
-
-  return new Promise((resolve, reject) => {
-    createAttributeValues(
-      {
-        value: valueString,
-        sort_order: sortOrder,
-        attributeUid: attributeUid,
-      },
-      {
-        onSuccess: (response: unknown) => {
-          const uid = extractUid(response)
-          if (!uid) {
-            reject(new Error(`No UID returned for value: ${valueString}`))
-            return
-          }
-          resolve(uid)
-        },
-        onError: (error: unknown) => {
-          reject(new Error(String(error)))
-        },
-      },
-    )
-  })
-}
-
-// Generate all possible variant combinations from variant configuration
-const generateVariantCombinations = (): void => {
-  const processedVariants = variantConfiguration.value.filter(
-    (variant) => variant.values.length > 0,
-  )
-
-  if (processedVariants.length === 0) {
-    return
-  }
-
-  console.log("Generating variant combinations...")
-
-  // Get all possible combinations
-  const combinations = generateCombinations(processedVariants)
-
-  // Clear existing variants array
-  variants.value = []
-
-  // Create a variant for each combination
-  combinations.forEach((combination, index) => {
-    const variantName = generateVariantName(combination)
-    const attributes = generateVariantAttributes(combination)
-
-    const newVariant: IProductVariant = {
-      name: variantName,
-      sku: `SKU-${Date.now()}-${index + 1}`,
-      price: "0",
-      promo_price: "0",
-      promo_expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      cost_price: "0",
-      weight: "0",
-      length: "0",
-      width: "0",
-      height: "0",
-      reorder_point: "0",
-      max_stock: "0",
-      opening_stock: "0",
-      is_active: true,
-      is_default: index === 0, // First variant is default
-      batch_number: "",
-      expiry_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-      attributes: attributes,
-    }
-
-    variants.value.push(newVariant)
-  })
-
-  console.log(`Generated ${variants.value.length} variant combinations`)
-}
-
-// Generate all possible combinations from processed variant configurations
-const generateCombinations = (
-  processedVariants: VariantConfiguration[],
-): Array<Array<{ attributeUid: string; valueUid: string; valueLabel: string }>> => {
-  if (processedVariants.length === 0) {
-    return []
-  }
-
-  if (processedVariants.length === 1) {
-    // Single variant - return each value as a separate combination
-    const variant = processedVariants[0]
-    const attributeUid = typeof variant.name === "object" ? (variant.name?.value as string) : ""
-
-    return variant.values.map((value) => [
-      {
-        attributeUid: attributeUid,
-        valueUid:
-          typeof value === "object" && value !== null && "value" in value ? value.value : "",
-        valueLabel:
-          typeof value === "object" && value !== null && "label" in value
-            ? value.label
-            : String(value),
-      },
-    ])
-  }
-
-  // Multiple variants - generate cartesian product
-  const firstVariant = processedVariants[0]
-  const remainingVariants = processedVariants.slice(1)
-
-  const firstAttributeUid =
-    typeof firstVariant.name === "object" ? (firstVariant.name?.value as string) : ""
-  const firstVariantCombinations = firstVariant.values.map((value) => ({
-    attributeUid: firstAttributeUid,
-    valueUid: typeof value === "object" && value !== null && "value" in value ? value.value : "",
-    valueLabel:
-      typeof value === "object" && value !== null && "label" in value ? value.label : String(value),
-  }))
-
-  const remainingCombinations = generateCombinations(remainingVariants)
-
-  const allCombinations: Array<
-    Array<{ attributeUid: string; valueUid: string; valueLabel: string }>
-  > = []
-
-  firstVariantCombinations.forEach((firstCombination) => {
-    remainingCombinations.forEach((remainingCombination) => {
-      allCombinations.push([firstCombination, ...remainingCombination])
-    })
-  })
-
-  return allCombinations
-}
-
-// Generate variant name based on combination
-const generateVariantName = (
-  combination: Array<{ attributeUid: string; valueUid: string; valueLabel: string }>,
-): string => {
-  const productName = form.name || "Product"
-  const valueLabels = combination.map((c) => c.valueLabel).join(" ")
-  return `${productName} - ${valueLabels}`
-}
-
-// Generate variant attributes array
-const generateVariantAttributes = (
-  combination: Array<{ attributeUid: string; valueUid: string; valueLabel: string }>,
-): IProductAttribute[] => {
-  return combination.map((item) => ({
-    attribute: item.attributeUid,
-    value: item.valueUid,
-    valueLabel: item.valueLabel,
-  }))
-}
 
 // Form submission handler
 const handleSubmit = async () => {
@@ -920,15 +196,15 @@ const handleSubmit = async () => {
     const payload: IProductFormPayload = {
       name: form.name,
       description: form.description,
-      story: form.story || "", // Add story field to your form if needed
-      category: form.category?.value as string, // Assuming this is already a UUID
-      brand: form.brand || "", // Add brand field to your form if needed
+      story: form.story || "",
+      category: form.category?.value as string,
+      brand: form.brand || "",
       is_active: true,
       is_variable: hasVariants.value,
-      requires_approval: form.requires_approval || false, // Add this field to your form if needed
+      requires_approval: form.requires_approval || false,
       variants: variants.value.map((variant) => ({
         name: variant.name,
-        sku: variant.sku || `SKU-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Generate fallback SKU
+        sku: variant.sku || `SKU-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
         price: variant.price,
         promo_price: variant.promo_price,
         promo_expiry: variant.promo_expiry
@@ -937,46 +213,42 @@ const handleSubmit = async () => {
             (variant.promo_expiry as object) instanceof Date
             ? (variant.promo_expiry as Date).toISOString()
             : variant.promo_expiry
-          : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // Default to 30 days from now
+          : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         cost_price: variant.cost_price,
         weight: variant.weight,
         length: variant.length,
         width: variant.width,
         height: variant.height,
-        reorder_point: variant.reorder_point ? variant.reorder_point.toString() : "0", // Ensure integer, default to 0
-        max_stock: variant.max_stock ? variant.max_stock.toString() : "0", // Ensure integer, default to 0
-        opening_stock: variant.opening_stock ? variant.opening_stock.toString() : "0", // Ensure integer, default to 0
+        reorder_point: variant.reorder_point ? variant.reorder_point.toString() : "0",
+        max_stock: variant.max_stock ? variant.max_stock.toString() : "0",
+        opening_stock: variant.opening_stock ? variant.opening_stock.toString() : "0",
         is_active: variant.is_active ?? true,
         is_default: variant.is_default ?? false,
         batch_number: variant.batch_number,
         expiry_date: variant.expiry_date
           ? Object.prototype.toString.call(variant.expiry_date) === "[object Date]"
-            ? (variant.expiry_date as unknown as Date).toISOString().split("T")[0] // Format as YYYY-MM-DD
+            ? (variant.expiry_date as unknown as Date).toISOString().split("T")[0]
             : variant.expiry_date
-          : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // Default to 1 year from now
+          : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
         attributes: variant.attributes || [],
       })),
     }
 
-    // Check if we're in edit mode or create mode
-    const isEditMode = props.mode === "edit" && productUidToFetch.value
-
     const handleProductSuccess = (response: unknown) => {
-      const successMessage = isEditMode
-        ? "Product updated successfully"
-        : "Product created successfully"
-      toast.success(successMessage)
+      toast.success("Product created successfully")
+      step.value = 1
+      hasVariants.value = false
 
-      // Extract product UID from response (for create) or use existing UID (for edit)
-      const productUid = isEditMode ? productUidToFetch.value : extractUid(response)
+      // Extract product UID from response
+      const productUid = variantProcessor.extractUid(response)
 
       if (productUid && form.images.length > 0) {
-        // Handle image upload asynchronously without blocking the success callback
+        // Handle image upload asynchronously
         ;(async () => {
           try {
             console.log(`Uploading ${form.images.length} images for product: ${productUid}`)
 
-            // Filter out invalid images (only keep actual File objects, exclude null and URL strings)
+            // Filter valid images (only File objects)
             const validImages = form.images.filter((image) => image && image instanceof File)
             console.log(
               `Found ${validImages.length} valid images out of ${form.images.length} total images`,
@@ -996,7 +268,7 @@ const handleSubmit = async () => {
                   {
                     product: productUid,
                     image: image as File,
-                    is_primary: i === 0, // First image is primary
+                    is_primary: i === 0,
                     sort_order: i + 1,
                   },
                   {
@@ -1016,10 +288,7 @@ const handleSubmit = async () => {
             toast.success("All images uploaded successfully")
           } catch (error) {
             console.error("Failed to upload some images:", error)
-            const errorMessage = isEditMode
-              ? "Product updated but some images failed to upload"
-              : "Product created but some images failed to upload"
-            toast.error(errorMessage)
+            toast.error("Product created but some images failed to upload")
           }
         })()
       }
@@ -1029,28 +298,18 @@ const handleSubmit = async () => {
       emit("refresh")
     }
 
-    if (isEditMode) {
-      updateProduct(
-        { uid: productUidToFetch.value, ...payload },
-        {
-          onSuccess: handleProductSuccess,
-          onError: displayError,
-        },
-      )
-    } else {
-      createProduct(payload, {
-        onSuccess: handleProductSuccess,
-        onError: displayError,
-      })
-    }
+    createProduct(payload, {
+      onSuccess: handleProductSuccess,
+      onError: displayError,
+    })
   } else {
     // Handle step progression with variant processing
     if (step.value === 2 && hasVariants.value) {
       try {
         // Process all variants (custom and existing)
-        await processVariantConfiguration()
+        await variantProcessor.processVariantConfiguration()
 
-        // Validate that all API calls were successful (all items have UIDs)
+        // Validate that all API calls were successful
         const hasAllUIDs = validateAllUIDs()
         if (!hasAllUIDs) {
           throw new Error(
@@ -1058,27 +317,25 @@ const handleSubmit = async () => {
           )
         }
 
-        // Generate all variant combinations and create variants array
-        generateVariantCombinations()
+        // Generate all variant combinations
+        variantConfigHelpers.generateVariantCombinations()
 
-        // Log the variants array instead of variant configuration
         console.log("Generated Variants Array:", {
-          step: step.value + 1, // Show what the next step will be
+          step: step.value + 1,
           hasVariants: hasVariants.value,
           variants: JSON.parse(JSON.stringify(variants.value)),
           timestamp: new Date().toISOString(),
         })
 
-        // Move to next step only after successful processing
+        // Move to next step
         step.value += 1
       } catch (error) {
         console.error("Failed to process variants:", error)
         displayError(error)
-        // Don't increment step on error - user stays on current step
         return
       }
     } else {
-      // Regular step progression for other steps
+      // Regular step progression
       step.value += 1
     }
   }
@@ -1086,15 +343,21 @@ const handleSubmit = async () => {
 
 // Back button handler
 const handleBack = () => {
-  if (step.value > 1) {
-    step.value -= 1
-  } else {
-    emit("update:modelValue", false)
+  previousStep()
+}
+
+/**
+ * Set category after new category is created
+ * Called from parent page
+ */
+const setCategoryFromModal = (category: { label: string; value: string }) => {
+  if (productDetailsRef.value) {
+    productDetailsRef.value.setCategory(category)
   }
 }
 
-// Debug logging
-onMounted(() => {
-  console.log("ProductFormDrawer mounted with props:", props)
+// Expose method for parent components
+defineExpose({
+  setCategoryFromModal,
 })
 </script>

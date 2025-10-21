@@ -7,12 +7,16 @@ import {
   IProductAttributeFormPayload,
   IProductAttributeValuePayload,
   IProductImageUploadPayload,
+  IProductImageUpdatePayload,
   IGetProductResponse,
   IAddStockPayload,
   IReduceStockPayload,
   IInventoryMovementsApiResponse,
   IStockTransferPayload,
   IProductCatalogue,
+  IProductVariant,
+  IInventoryTransferRequestsApiResponse,
+  IApproveRejectRequestPayload,
 } from "./types"
 
 /** Get categories api request */
@@ -45,6 +49,14 @@ export function useUpdateProduct() {
   return useMutation({
     mutationFn: ({ uid, ...body }: IProductFormPayload & { uid: string }) =>
       baseApi.patch(`inventory/products/${uid}/`, body),
+  })
+}
+
+/** Update variant api request */
+export function useUpdateVariant() {
+  return useMutation({
+    mutationFn: ({ uid, ...body }: Partial<IProductVariant> & { uid: string }) =>
+      baseApi.patch(`inventory/variants/${uid}/`, body),
   })
 }
 
@@ -137,6 +149,21 @@ export function useAddProductImage() {
   })
 }
 
+/** update product image api request */
+export function useUpdateProductImage() {
+  return useMutation({
+    mutationFn: ({ uid, ...payload }: IProductImageUpdatePayload & { uid: string }) =>
+      baseApi.patch(`inventory/images/${uid}/`, payload),
+  })
+}
+
+/** delete product image api request */
+export function useDeleteProductImage() {
+  return useMutation({
+    mutationFn: (uid: string) => baseApi.delete(`inventory/images/${uid}/`),
+  })
+}
+
 /** get product by uid */
 export function useGetProduct(
   uid: MaybeRefOrGetter<string>,
@@ -202,5 +229,30 @@ export function useGetProductCatalogs() {
     url: `/inventory/catalog/`,
     key: "productCatalogs",
     selectData: true,
+  })
+}
+
+/** get inventory transfer requests (for HQ to view pending requests) */
+export function useGetTransferRequests(params?: MaybeRefOrGetter<Record<string, string | number>>) {
+  return useQuery({
+    queryKey: ["transfer-requests", params],
+    queryFn: async () => {
+      const paramsValue = toValue(params)
+      const { data } = await baseApi.get<IInventoryTransferRequestsApiResponse>(
+        "/inventory/transfers/",
+        {
+          params: paramsValue,
+        },
+      )
+      return data
+    },
+  })
+}
+
+/** approve or reject transfer requests */
+export function useApproveRejectRequest() {
+  return useMutation({
+    mutationFn: (payload: IApproveRejectRequestPayload) =>
+      baseApi.post("/inventory/transfers/approve/", payload),
   })
 }
