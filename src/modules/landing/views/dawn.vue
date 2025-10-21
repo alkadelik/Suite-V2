@@ -17,21 +17,25 @@ const shopLinks = [
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen text-gray-950">
     <!-- Navigation -->
     <header
-      class="sticky top-0 z-50 flex h-16 items-center border-b border-gray-200 bg-white md:h-20"
+      class="sticky top-0 z-50 flex items-center border-b border-gray-200 bg-white py-4 md:h-20"
     >
       <AppSection class="flex items-center justify-between gap-3 !py-0">
         <router-link to="/">
-          <img src="/company-logo.svg?url" class="h-6 md:h-8" alt="leyyow logo" />
+          <img src="/company-logo.svg?url" class="h-8" alt="store logo" />
         </router-link>
 
         <div class="flex gap-4">
-          <div class="flex items-center gap-2 text-gray-600">
-            Powered by <img src="/LYW.svg?url" alt="Leyyow Logo" class="h-5" />
+          <div
+            class="flex flex-col text-sm text-gray-600 sm:flex-row sm:items-center sm:gap-2 sm:text-base"
+          >
+            <span> Powered by </span>
+            <img src="/LYW.svg?url" alt="Leyyow Logo" class="h-5" />
           </div>
-          <AppButton label="View Cart" icon="shop" class="!bg-gray-600" />
+          <AppButton label="View Cart" icon="shop" class="!hidden !bg-[#1a2a3a] sm:!inline-flex" />
+          <AppButton icon="shop" class="!bg-[#1a2a3a] sm:!hidden" size="sm" />
         </div>
       </AppSection>
     </header>
@@ -40,26 +44,30 @@ const shopLinks = [
     <main>
       <div>
         <!-- Find your Beauty -->
-        <AppSection background="bg-white" class="py-16">
-          <div class="flex items-center gap-16">
-            <div class="w-1/2">
-              <h2 class="text-4xl font-bold">Find your Beauty</h2>
-              <p class="mt-4">
+        <AppSection background="bg-white" class="py-8 md:py-16">
+          <div class="flex flex-col items-center gap-16 md:flex-row md:gap-16">
+            <div class="md:w-1/2 md:text-left">
+              <h2 class="text-3xl font-bold md:text-4xl">Find your Beauty</h2>
+              <p class="mt-4 text-gray-600">
                 Colorful, calming essentials for skin, space, and self. Colorful, calming essentials
                 for skin, space, and self.Colorful, calming essentials for skin, space, and
                 self.Colorful,
               </p>
-              <AppButton label="Shop Now" class="mt-6 !bg-gray-600" />
+              <AppButton label="Shop Now" class="md:-w-[200px] mt-6 w-full !bg-[#1a2a3a]" />
             </div>
-            <img class="h-[618px] w-1/2 rounded-t-full rounded-b-xl bg-pink-200" />
+            <img
+              class="h-[450px] w-full rounded-t-full rounded-b-xl bg-pink-200 md:h-[618px] md:w-1/2"
+            />
           </div>
         </AppSection>
 
         <!-- Featured Products -->
-        <AppSection background="bg-gray-200" class="py-16">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">Featured Products</h2>
+        <AppSection background="bg-[#FAFAFA]" class="py-8 md:py-16">
+          <h2 className="mb-8 text-center text-2xl font-bold text-gray-900 md:mb-12 md:text-3xl">
+            Featured Products
+          </h2>
 
-          <div class="grid grid-cols-4 gap-10">
+          <div class="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-10">
             <!-- Product Card -->
             <div v-for="v in 8" :key="v" class="flex flex-col gap-4">
               <div class="relative h-[180px] rounded-xl sm:h-[255px]">
@@ -72,7 +80,7 @@ const shopLinks = [
               </div>
               <div>
                 <Chip color="purple" icon="tag" label="Home fragrance" />
-                <h4 class="mb-2 font-semibold">Amber Wood Diffuser</h4>
+                <h4 class="mb-2 text-sm font-semibold md:text-base">Amber Wood Diffuser</h4>
                 <p>{{ formatCurrency(11400) }}</p>
               </div>
             </div>
@@ -80,12 +88,14 @@ const shopLinks = [
         </AppSection>
 
         <!-- Made with Kindess -->
-        <AppSection background="bg-[#F7F3EE]" class="py-16">
-          <div class="flex items-center gap-10">
-            <img class="h-[618px] w-[568px] rounded-t-xl rounded-b-full bg-pink-200" />
-            <div>
-              <h2 class="text-4xl font-bold">Made with Kindess</h2>
-              <p class="mt-4">
+        <AppSection background="bg-[#F7F3EE]" class="py-8 md:py-16">
+          <div class="flex flex-col-reverse items-center gap-8 md:flex-row md:gap-10">
+            <img
+              class="h-[450px] w-full rounded-t-xl rounded-b-full bg-pink-200 md:h-[618px] md:w-[568px]"
+            />
+            <div class="md:text-left">
+              <h2 class="text-3xl font-bold md:text-4xl">Made with Kindess</h2>
+              <p class="mt-4 text-gray-600">
                 At Bloom & Co., we believe self-care should feel joyful — not routine. Every product
                 is made from gentle ingredients and designed to brighten your day inside and out.
               </p>
@@ -94,33 +104,37 @@ const shopLinks = [
         </AppSection>
 
         <!-- Give the Gift of Calm -->
-        <AppSection background="bg-white" class="py-16">
-          <div class="flex w-full items-center gap-10">
-            <div class="w-3/5">
-              <h2 class="text-4xl font-bold">Give the Gift of Calm</h2>
-              <p class="mt-4">Get 10% off your first order and updates on new launches.</p>
-              <AppButton label="Shop Gift Sets" class="mt-6 !bg-gray-600" />
+        <AppSection background="bg-white" class="py-8 md:py-16">
+          <div class="flex w-full flex-col items-center gap-6 md:flex-row md:gap-10">
+            <div class="md:w-3/5 md:text-left">
+              <h2 class="text-3xl font-bold md:text-4xl">Give the Gift of Calm</h2>
+              <p class="mt-4 text-gray-600">
+                Curated self-care sets, perfect for loved ones — or yourself.
+              </p>
+              <AppButton label="Shop Gift Sets" class="mt-6 !bg-[#1a2a3a]" />
             </div>
-            <img class="h-[618px] w-2/5 rounded-t-full rounded-b-xl bg-pink-200" />
+            <img
+              class="h-[450px] w-full rounded-t-full rounded-b-xl bg-pink-200 md:h-[618px] md:w-2/5"
+            />
           </div>
         </AppSection>
 
         <!-- What our Customers are Saying -->
-        <AppSection background="bg-gray-200" class="py-16">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
+        <AppSection background="bg-[#FAFAFA]" class="py-8 md:py-16">
+          <h2 className="mb-8 text-center text-2xl font-bold text-gray-900 md:mb-12 md:text-3xl">
             What Our Customers Say
           </h2>
-          <div className="max-w-3xl mx-auto">
-            <div className="bg-white rounded-lg shadow-sm p-8 relative">
-              <div className="text-6xl text-gray-900 mb-4 text-center">"</div>
-              <p className="text-center text-gray-700 text-lg mb-6">
+          <div className="mx-auto max-w-3xl">
+            <div className="relative rounded-lg bg-white p-6 shadow-sm md:p-8">
+              <div className="mb-4 text-center text-4xl text-gray-900 md:text-6xl">"</div>
+              <p className="mb-6 text-center text-base text-gray-700 md:text-lg">
                 The scents are divine — my mornings feel brand new!
               </p>
               <div className="flex items-center justify-center space-x-3">
                 <div
-                  className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center"
+                  className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-300"
                 >
-                  <span className="text-gray-600 font-semibold">AE</span>
+                  <span className="font-semibold text-gray-600">AE</span>
                 </div>
                 <div>
                   <p className="font-semibold text-gray-900">Ada E.</p>
@@ -128,47 +142,57 @@ const shopLinks = [
                 </div>
               </div>
               <button
-                className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white border-2 border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50"
+                className="absolute left-2 top-1/2 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-gray-200 bg-white hover:bg-gray-50 md:left-4 md:flex"
               >
-                <Icon name="arrow-left" className="w-5 h-5 text-gray-600" />
+                <Icon name="arrow-left" className="h-5 w-5 text-gray-600" />
               </button>
               <button
-                className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white border-2 border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50"
+                className="absolute right-2 top-1/2 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-gray-200 bg-white hover:bg-gray-50 md:right-4 md:flex"
               >
-                <Icon name="arrow-right" className="w-5 h-5 text-gray-600" />
+                <Icon name="arrow-right" className="h-5 w-5 text-gray-600" />
               </button>
             </div>
           </div>
         </AppSection>
 
-        <AppSection background="bg-gray-600" class="flex items-center gap-6 py-8 text-white">
-          <p>Free Shipping on Orders Over ₦30,000:</p>
-          <p>Enjoy fast delivery and free returns within 7 days.</p>
+        <AppSection
+          background="bg-gray-600"
+          class="flex flex-col items-center gap-4 py-8 text-white md:flex-row md:gap-6"
+        >
+          <p class="text-center md:text-left">Free Shipping on Orders Over ₦30,000:</p>
+          <p class="text-center md:text-left">
+            Enjoy fast delivery and free returns within 7 days.
+          </p>
           <AppButton label="Shop Now" icon="arrow-right" variant="text" class="!text-white" />
         </AppSection>
 
         <!-- Join the Dawn Circle -->
-        <AppSection background="bg-[#F7F3EE]" class="py-16">
-          <div class="mx-auto max-w-4xl rounded-xl bg-white p-10">
-            <div class="flex items-center gap-10">
-              <img class="h-[224px] w-[224px] rounded-t-full rounded-b-xl bg-pink-200" />
-              <div>
-                <h2 class="text-4xl font-bold">Join the Dawn Circle</h2>
+        <AppSection background="bg-[#F7F3EE]" class="py-8 md:py-16">
+          <div class="mx-auto max-w-4xl rounded-xl bg-white p-6 md:p-10">
+            <div class="flex flex-col items-center gap-6 md:flex-row md:gap-10">
+              <img
+                class="h-[150px] w-[150px] rounded-t-full rounded-b-xl bg-pink-200 md:h-[224px] md:w-[224px]"
+              />
+              <div class="text-center md:text-left">
+                <h2 class="text-3xl font-bold md:text-4xl">Join the Dawn Circle</h2>
                 <p class="mt-4">Get 10% off your first order and updates on new launches.</p>
               </div>
             </div>
 
-            <div class="mt-6 flex items-center gap-4">
+            <div class="mt-6 flex flex-col gap-4 md:flex-row md:items-center md:gap-4">
               <TextField type="email" placeholder="e.g. adebola99@gmail.com" class="w-full" />
-              <AppButton label="Subscribe Now" class="w-max flex-shrink-0 !bg-gray-600" />
+              <AppButton
+                label="Subscribe Now"
+                class="w-full flex-shrink-0 !bg-[#1a2a3a] md:w-max"
+              />
             </div>
           </div>
         </AppSection>
       </div>
     </main>
 
-    <footer class="bg-gray-700 py-16 text-white">
-      <AppSection class="grid grid-cols-1 gap-12 lg:grid-cols-2">
+    <footer class="bg-gray-700 py-8 text-white md:py-16">
+      <AppSection class="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-12">
         <div class="flex flex-col gap-3">
           <router-link to="/">
             <img src="/company-logo.svg?url" class="h-6 md:h-8" alt="leyyow logo" />

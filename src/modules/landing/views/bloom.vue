@@ -17,7 +17,7 @@ const shopLinks = [
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-gray-50 text-gray-950">
     <!-- Navigation -->
     <header
       class="sticky top-0 z-50 flex items-center border-b border-gray-200 bg-white py-4 md:h-20"
@@ -44,11 +44,11 @@ const shopLinks = [
     <main>
       <div>
         <!-- Find your Beauty -->
-        <AppSection background="bg-white" class="py-8 md:py-16">
-          <div class="flex flex-col items-center gap-8 md:flex-row md:justify-between md:gap-16">
-            <div class="w-full text-center md:w-1/2 md:text-left">
-              <h2 class="text-2xl font-bold md:text-4xl">Find your Beauty</h2>
-              <p class="mt-4 text-base md:text-lg">
+        <AppSection background="bg-[#FFF9FB]" class="py-16 md:py-16">
+          <div class="flex flex-col items-center gap-16 md:flex-row md:justify-between md:gap-16">
+            <div class="w-full md:w-1/2 md:text-left">
+              <h2 class="text-4xl font-bold md:text-5xl">Find your Beauty</h2>
+              <p class="mt-4 text-base text-gray-600 md:text-lg">
                 Colorful, calming essentials for skin, space, and self. Colorful, calming essentials
                 for skin, space, and self.Colorful, calming essentials for skin, space, and
                 self.Colorful,
@@ -57,7 +57,7 @@ const shopLinks = [
             </div>
             <div class="flex w-full justify-center md:w-1/2">
               <img
-                class="h-[300px] w-[200px] rounded-[200px] bg-pink-200 md:h-[618px] md:w-[418px] md:rounded-[400px]"
+                class="h-[600px] w-full rounded-[200px] bg-pink-200 md:h-[618px] md:w-[418px] md:rounded-[400px]"
               />
             </div>
           </div>
@@ -66,7 +66,7 @@ const shopLinks = [
         <!-- Featured Products -->
         <AppSection background="bg-white border-t border-gray-200" class="py-8 md:py-16">
           <div class="mb-8 flex flex-col gap-4 md:mb-12 md:flex-row md:justify-between">
-            <h2 className="text-2xl font-bold text-center text-gray-900 md:text-3xl md:text-left">
+            <h2 className="text-3xl font-bold text-center text-gray-900 md:text-4xl md:text-left">
               Featured Products
             </h2>
 
@@ -74,11 +74,11 @@ const shopLinks = [
               label="View All Products"
               color="alt"
               icon="arrow-right"
-              class="!flex-row-reverse"
+              class="mx-auto w-max !flex-row-reverse md:mx-0"
             />
           </div>
 
-          <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4 lg:gap-10">
+          <div class="grid grid-cols-2 gap-6 md:grid-cols-2 lg:grid-cols-4 lg:gap-10">
             <!-- Product Card -->
             <div
               v-for="v in 6"
@@ -88,7 +88,7 @@ const shopLinks = [
             >
               <div
                 class="relative rounded-xl"
-                :class="v < 3 ? 'h-[300px] md:h-[400px]' : 'h-[200px] md:h-[255px]'"
+                :class="v < 3 ? 'h-[180px] md:h-[400px]' : 'h-[180px] md:h-[255px]'"
               >
                 <img class="relative mb-4 h-full w-full rounded-xl bg-gray-400" />
                 <button
@@ -99,8 +99,8 @@ const shopLinks = [
               </div>
               <div>
                 <Chip color="purple" icon="tag" label="Home fragrance" />
-                <h4 class="mb-2 font-semibold">Amber Wood Diffuser</h4>
-                <p>{{ formatCurrency(11400) }}</p>
+                <h4 class="mt-2 mb-2 text-sm font-semibold md:text-base">Amber Wood Diffuser</h4>
+                <p class="text-sm md:text-base">{{ formatCurrency(11400) }}</p>
               </div>
             </div>
           </div>
@@ -108,15 +108,13 @@ const shopLinks = [
 
         <!-- Made with Kindess -->
         <AppSection background="bg-[#E8FFF3]" class="py-8 md:py-16">
-          <div class="flex flex-col items-center gap-8 md:flex-row md:gap-10">
+          <div class="flex flex-col-reverse items-center gap-8 md:flex-row md:gap-10">
             <div class="w-full md:w-1/2">
-              <img
-                class="h-[300px] w-full rounded-t-full rounded-b-xl bg-pink-200 md:h-[618px] md:w-[568px]"
-              />
+              <img class="h-[560px] w-full rounded-full bg-pink-200 md:h-[618px] md:w-[568px]" />
             </div>
-            <div class="w-full text-center md:w-1/2 md:text-left">
-              <h2 class="text-2xl font-bold md:text-4xl">Made with Kindess</h2>
-              <p class="mt-4 text-sm md:text-base">
+            <div class="w-full md:w-1/2 md:text-left">
+              <h2 class="text-3xl font-bold md:text-4xl">Made with Kindess</h2>
+              <p class="mt-4 text-base text-gray-600 md:text-lg">
                 At Bloom & Co., we believe self-care should feel joyful — not routine. Every product
                 is made from gentle ingredients and designed to brighten your day inside and out.
               </p>
@@ -127,15 +125,15 @@ const shopLinks = [
         <!-- Give the Gift of Calm -->
         <AppSection background="bg-white" class="py-8 md:py-16">
           <div class="flex w-full flex-col items-center gap-8 md:flex-row md:gap-10">
-            <div class="w-full text-center md:w-3/5 md:text-left">
-              <h2 class="text-2xl font-bold md:text-4xl">Give the Gift of Calm</h2>
-              <p class="mt-4 text-sm md:text-base">
-                Get 10% off your first order and updates on new launches.
+            <div class="w-full md:w-3/5 md:text-left">
+              <h2 class="text-3xl font-bold md:text-4xl">Give the Gift of Calm</h2>
+              <p class="mt-4 text-base text-gray-600 md:text-lg">
+                Curated self-care sets, perfect for loved ones — or yourself.
               </p>
-              <AppButton label="Shop Gift Sets" class="mt-6 w-full !bg-pink-600 md:w-40" />
+              <AppButton label="Shop Collection" class="mt-6 w-full !bg-pink-600 md:w-40" />
             </div>
             <div class="w-full md:w-2/5">
-              <img class="h-[300px] w-full rounded-t-xl rounded-b-full bg-pink-200 md:h-[618px]" />
+              <img class="h-[500px] w-full rounded-t-xl rounded-b-full bg-pink-200 md:h-[618px]" />
             </div>
           </div>
         </AppSection>
@@ -211,7 +209,7 @@ const shopLinks = [
 
     <footer class="bg-gray-800 py-8 text-white md:py-16">
       <AppSection class="grid grid-cols-1 gap-8 md:gap-12 lg:grid-cols-2">
-        <div class="flex flex-col gap-3 text-center lg:text-left">
+        <div class="flex flex-col gap-3">
           <router-link to="/" class="flex justify-center lg:justify-start">
             <img src="/company-logo.svg?url" class="h-6 md:h-8" alt="leyyow logo" />
           </router-link>
@@ -220,22 +218,18 @@ const shopLinks = [
             Timeless essentials, designed for everyday life.
           </p>
 
-          <p
-            class="inline-flex items-center justify-center gap-2 text-sm md:text-base lg:justify-start"
-          >
+          <p class="inline-flex items-center gap-2 text-sm md:text-base lg:justify-start">
             <Icon name="sms" />
             <a href="mailto:hello@dawnboutique.com">hello@dawnboutique.com</a>
           </p>
-          <p
-            class="inline-flex items-center justify-center gap-2 text-sm md:text-base lg:justify-start"
-          >
+          <p class="inline-flex items-center gap-2 text-sm md:text-base lg:justify-start">
             <Icon name="call" />
             <a href="tel:+1234567890">+1 (234) 567-890</a>
           </p>
         </div>
 
         <div class="col-span-1 grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-3">
-          <div class="border-l border-gray-300 pl-4 text-center md:text-left">
+          <div class="border-l border-gray-300 pl-4 md:text-left">
             <h3 class="mb-4 text-sm font-semibold text-gray-500">Shop</h3>
             <div class="flex flex-col gap-3">
               <a
@@ -252,9 +246,9 @@ const shopLinks = [
 
           <div class="hidden md:block" />
 
-          <div class="border-l border-gray-300 pl-4 text-center md:text-left">
+          <div class="border-l border-gray-300 pl-4">
             <h3 class="mb-4 text-sm font-semibold text-gray-500">Follow Us</h3>
-            <div class="flex justify-center gap-4 md:justify-start">
+            <div class="flex gap-4 md:justify-start">
               <a>
                 <Icon name="global" class="inline-block h-5 w-5" />
               </a>

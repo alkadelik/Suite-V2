@@ -1,52 +1,45 @@
+<script setup lang="ts">
+import FormField from "@components/form/FormField.vue"
+import Switch from "@components/form/Switch.vue"
+import { ref } from "vue"
+
+const enablePopup = ref(false)
+</script>
+
 <template>
-  <div>
-    <h3 class="mb-4 text-lg font-semibold">Pop-up Configuration</h3>
-    <p class="mb-6 text-gray-600">Set up your pop-up preferences and behavior.</p>
-
-    <!-- Popup content -->
-    <div class="space-y-6">
-      <div>
-        <label class="mb-2 block text-sm font-medium text-gray-700">Enable Pop-up</label>
-        <div class="flex items-center">
-          <input
-            type="checkbox"
-            class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-          />
-          <span class="ml-2 text-sm text-gray-600">Show pop-up on page load</span>
+  <div class="border-core-200 rounded-lg border bg-white">
+    <div class="p-6">
+      <div
+        class="flex items-center justify-between rounded-2xl border border-gray-400 bg-gray-50 p-4"
+      >
+        <div class="flex-1 text-sm">
+          <h3 class="font-medium text-gray-700">Enable Pop Up</h3>
+          <p class="text-gray-500">Visitors will see this once per session</p>
         </div>
+        <Switch v-model="enablePopup" />
       </div>
+    </div>
 
-      <div>
-        <label class="mb-2 block text-sm font-medium text-gray-700">Pop-up Title</label>
-        <input
-          type="text"
-          class="w-full rounded-md border border-gray-300 px-3 py-2"
-          placeholder="Special Offer!"
+    <div v-if="enablePopup" class="border-core-200 border-t p-6">
+      <form class="grid gap-6">
+        <FormField name="headline" label="Headline" placeholder="Enter Popup headline here" />
+
+        <FormField
+          name="body_text"
+          type="textarea"
+          label="Body Text"
+          placeholder="Enter Popup body text here"
         />
-      </div>
 
-      <div>
-        <label class="mb-2 block text-sm font-medium text-gray-700">Pop-up Message</label>
-        <textarea
-          class="w-full rounded-md border border-gray-300 px-3 py-2"
-          rows="3"
-          placeholder="Get 10% off your first order..."
-        ></textarea>
-      </div>
-
-      <div>
-        <label class="mb-2 block text-sm font-medium text-gray-700">Display Delay (seconds)</label>
-        <input
-          type="number"
-          class="w-full rounded-md border border-gray-300 px-3 py-2"
-          placeholder="3"
-          min="0"
-        />
-      </div>
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <FormField name="cta_button_text" label="CTA Button Text" placeholder="e.g. Shop Now" />
+          <FormField
+            name="cta_button_link"
+            label="CTA Button Link"
+            placeholder="e.g. https://yourstore.com/shop"
+          />
+        </div>
+      </form>
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-// Popup logic would go here
-</script>
