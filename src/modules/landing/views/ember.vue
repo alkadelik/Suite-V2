@@ -43,8 +43,8 @@ const shopLinks = [
         <AppSection background="bg-black" class="py-8 md:py-16">
           <div class="flex flex-col gap-8 md:gap-16">
             <div class="max-w-2xl">
-              <h2 class="text-3xl font-bold md:text-5xl">Find your Beauty</h2>
-              <p class="mt-4 text-base text-gray-200 md:text-lg">
+              <h1 class="text-4xl font-bold md:text-5xl">Find your Beauty</h1>
+              <p class="mt-4 text-lg text-gray-200 md:text-lg">
                 Colorful, calming essentials for skin, space, and self. Colorful, calming essentials
                 for skin, space, and self.Colorful, calming essentials for skin, space, and self.
               </p>

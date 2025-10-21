@@ -48,7 +48,7 @@ const shopLinks = [
           <div class="flex flex-col items-center gap-16 md:flex-row md:gap-16">
             <div class="md:w-1/2 md:text-left">
               <h2 class="text-3xl font-bold md:text-4xl">Find your Beauty</h2>
-              <p class="mt-4 text-gray-600">
+              <p class="mt-4 text-lg text-gray-600">
                 Colorful, calming essentials for skin, space, and self. Colorful, calming essentials
                 for skin, space, and self.Colorful, calming essentials for skin, space, and
                 self.Colorful,

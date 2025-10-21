@@ -49,7 +49,7 @@ const shopLinks = [
     <main>
       <div>
         <!-- Find your Beauty -->
-        <AppSection background="bg-primary-50" class="py-8 md:py-16">
+        <AppSection background="bg-primary-50" class="py-12 md:py-16">
           <div class="flex flex-col items-center gap-8 text-center md:gap-16">
             <div class="max-w-2xl">
               <h2 class="text-3xl font-bold md:text-5xl">Find your Beauty</h2>

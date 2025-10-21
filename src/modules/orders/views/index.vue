@@ -24,6 +24,7 @@ import OrderMemoDrawer from "../components/OrderMemoDrawer.vue"
 import ShareInvoiceReceipt from "../components/ShareInvoiceReceipt.vue"
 import OrderPaymentDrawer from "../components/OrderPaymentDrawer.vue"
 import Tabs from "@components/Tabs.vue"
+import { formatCurrency } from "@/utils/format-currency"
 
 const openCreate = ref(false)
 const openVoid = ref(false)
@@ -38,7 +39,7 @@ const status = ref(ORDER_STATUS_TAB[0].key)
 const orderMetrics = computed(() => {
   return [
     {
-      label: "Total Orders",
+      label: "Orders",
       value: "0",
       prev_value: "0",
       icon: "user-octagon",
@@ -47,8 +48,8 @@ const orderMetrics = computed(() => {
       iconClass: "md:text-green-700",
     },
     {
-      label: "Total Unpaid",
-      value: "0",
+      label: "Receivables",
+      value: formatCurrency(0),
       prev_value: "0",
       icon: "user-octagon",
       chartData: [0, 0, 0, 0, 0, 0, 0],
@@ -56,8 +57,8 @@ const orderMetrics = computed(() => {
       iconClass: "md:text-bloom-700",
     },
     {
-      label: "Total Ongoing",
-      value: "0",
+      label: "Volume",
+      value: formatCurrency(0),
       prev_value: "0",
       icon: "user-circle-add",
       chartData: [0, 0, 0, 0, 0, 0, 0],
@@ -65,7 +66,7 @@ const orderMetrics = computed(() => {
       iconClass: "md:text-bloom-700",
     },
     {
-      label: "Total Fulfilled",
+      label: "Fulfilled",
       value: "0",
       prev_value: "0",
       icon: "user-circle-add",
