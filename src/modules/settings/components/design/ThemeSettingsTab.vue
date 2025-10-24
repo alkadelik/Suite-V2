@@ -18,30 +18,9 @@
     <div class="mt-6 flex flex-col gap-6 md:flex-row">
       <!-- Left Sidebar - Desktop -->
       <aside class="hidden w-2/5 flex-shrink-0 md:block">
-        <div class="w-full rounded-t-lg border border-b-0 border-gray-200 p-4">
-          <h3 class="text-sm font-semibold text-gray-900">DESIGN</h3>
-        </div>
-        <button
-          type="button"
-          :class="[
-            'flex w-full items-center justify-between gap-3 rounded-b-lg border p-4 text-sm font-medium transition-colors',
-            {
-              'border-primary-700': activeSection === 'logo-favicon',
-              'border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50':
-                activeSection !== 'logo-favicon',
-            },
-          ]"
-          @click="activeSection = 'logo-favicon'"
-        >
-          <div class="flex items-center gap-3">
-            <Icon name="palette" size="20" />
-            <span>Logo & Favicon</span>
-          </div>
-          <Icon name="arrow-right" size="18" />
-        </button>
         <div class="mt-2 space-y-2">
           <button
-            v-for="item in designItems.slice(1)"
+            v-for="item in designItems"
             :key="item.id"
             type="button"
             :class="[
