@@ -16,7 +16,9 @@
     "@tailwindcss/vite": "^4.1.11",
     "@tanstack/vue-query": "^5.85.3",
     "@tanstack/vue-table": "^8.21.3",
+    "@types/aos": "^3.0.7",
     "@vueuse/core": "^13.7.0",
+    "aos": "^2.3.4",
     "axios": "^1.11.0",
     "browser-image-compression": "^2.0.2",
     "chart.js": "^4.5.0",
@@ -30,6 +32,7 @@
     "vue-chartjs": "^5.3.2",
     "vue-router": "^4.5.1",
     "vue3-carousel": "^0.16.0",
+    "vuedraggable": "^4.1.0",
     "yup": "^1.7.0"
   },
   "devDependencies": {

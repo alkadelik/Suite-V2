@@ -6,7 +6,7 @@ import DropdownMenu from "@components/DropdownMenu.vue"
 import EmptyState from "@components/EmptyState.vue"
 import OrderCard from "@modules/orders/components/OrderCard.vue"
 import { TOrder } from "@modules/orders/types"
-import { useGetPopupOrders } from "@modules/popups/api"
+import { useGetPopupOrders, useMarkPopupOrderAsPaid } from "@modules/popups/api"
 import { POPUP_ORDER_COLUMNS } from "@modules/popups/constants"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, ref } from "vue"
@@ -15,11 +15,15 @@ import CreatePopupOrderDrawer from "../CreatePopupOrderDrawer.vue"
 import DataTable from "@components/DataTable.vue"
 import AppButton from "@components/AppButton.vue"
 import TextField from "@components/form/TextField.vue"
+import ConfirmationModal from "@components/ConfirmationModal.vue"
+import { displayError } from "@/utils/error-handler"
+import { toast } from "@/composables/useToast"
 
 const searchQuery = ref("")
 const openCreate = ref(false)
 const showFilter = ref(false)
 const selectedOrder = ref<TOrder | null>(null)
+const openMarkPaid = ref(false)
 
 const route = useRoute()
 const isMobile = useMediaQuery("(max-width: 768px)")
@@ -27,25 +31,21 @@ const isMobile = useMediaQuery("(max-width: 768px)")
 const { data: popupOrders, refetch, isPending } = useGetPopupOrders(route.params.id as string)
 
 const actionMenu = computed(() => [
-  // { label: "View memos", icon: "eye" },
-  {
-    label: "Mark As Paid",
-    icon: "money-add",
-  },
-  // { divider: true },
-  // {
-  //   label: "Void Order",
-  //   icon: "trash",
-  //   class: "text-red-600 hover:bg-red-50",
-  //   iconClass: "text-red-600",
-  // },
-  // {
-  //   label: "Delete Order",
-  //   icon: "trash",
-  //   class: "text-red-600 hover:bg-red-50",
-  //   iconClass: "text-red-600",
-  // },
+  { label: "Mark As Paid", icon: "money-add", action: () => (openMarkPaid.value = true) },
 ])
+
+const { mutate: markAsPaid, isPending: isMarking } = useMarkPopupOrderAsPaid()
+
+const handleMarkAsPaid = () => {
+  markAsPaid(selectedOrder.value?.uid || "", {
+    onSuccess: () => {
+      toast.success("Order marked as paid successfully.")
+      openMarkPaid.value = false
+      refetch()
+    },
+    onError: displayError,
+  })
+}
 </script>
 
 <template>
@@ -144,5 +144,17 @@ const actionMenu = computed(() => [
     @close="openCreate = false"
     :popup-id="String(route.params.id)"
     @refresh="refetch()"
+  />
+
+  <ConfirmationModal
+    v-model="openMarkPaid"
+    header="Mark this order as paid?"
+    paragraph="Are you sure you want to mark this order as paid?"
+    info-message="This is an irreversible action."
+    variant="warning"
+    action-label="Mark as Paid"
+    :loading="isMarking"
+    @confirm="handleMarkAsPaid"
+    @close="openMarkPaid = false"
   />
 </template>

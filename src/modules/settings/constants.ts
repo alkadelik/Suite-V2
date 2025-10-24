@@ -1,5 +1,5 @@
 import { TableColumn } from "@components/DataTable.vue"
-import { TLocation, TSubscription, TTeam } from "./types"
+import { IStoreTheme, TLocation, TSubscription, TTeam } from "./types"
 
 export const LOCATION_COLUMNS: TableColumn<TLocation>[] = [
   { header: "Name", accessor: "name" },
@@ -77,4 +77,69 @@ export const SUBSCRIPTION_COLUMN: TableColumn<TSubscription>[] = [
   { header: "Billing Period", accessor: "date_paid" },
   { header: "Status", accessor: "status" },
   { header: "", accessor: "action" },
+]
+
+export const THEME_OPTIONS = [
+  {
+    title: "Themes",
+    key: "themes",
+    desc: " Pick a theme that reflects your brand. You can always change it later.",
+  },
+  {
+    title: "Theme Settings",
+    key: "theme-settings",
+    desc: "Customize your theme settings",
+    action: "Publish Settings",
+  },
+  {
+    title: "Landing Page",
+    key: "landing-page",
+    desc: "Configure your landing page",
+    action: "Publish Page",
+  },
+  {
+    title: "Pop Up",
+    key: "popup",
+    desc: "Set up your pop-up preferences",
+    action: "Publish PopUp",
+  },
+]
+
+export const STORE_THEMES: IStoreTheme[] = [
+  {
+    uid: "1",
+    name: "Dawn",
+    description: "A clean, modern theme with plenty of white space and focus on your products.",
+    image: "/images/themes/dawn.png",
+    is_active: true,
+  },
+  {
+    uid: "2",
+    name: "Ember",
+    description: "A bold, high-contrast theme designed to make your brand unforgettable.",
+    image: "/images/themes/ember.png",
+    is_active: false,
+  },
+  {
+    uid: "3",
+    name: "Heritage",
+    description: "A timeless, structured theme with a familiar layout customers trust.",
+    image: "/images/themes/heritage.png",
+    is_active: false,
+  },
+  {
+    uid: "4",
+    name: "Grace",
+    description: "A refined, elegant theme with soft typography and subtle detailing.",
+    image: "/images/themes/grace.png",
+    is_active: false,
+  },
+  {
+    uid: "5",
+    name: "Bloom",
+    description:
+      "A vibrant, colorful theme with playful layouts that bring energy to your storefront.",
+    image: "/images/themes/bloom.png",
+    is_active: false,
+  },
 ]

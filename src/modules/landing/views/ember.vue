@@ -5,6 +5,11 @@ import AppSection from "@components/AppSection.vue"
 import Chip from "@components/Chip.vue"
 import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
+import "vue3-carousel/carousel.css"
+import { Carousel, Slide } from "vue3-carousel"
+import { computed, ref, onMounted } from "vue"
+import AOS from "aos"
+import "aos/dist/aos.css"
 
 const shopLinks = [
   { name: "Home", href: "/" },
@@ -14,24 +19,110 @@ const shopLinks = [
     href: "https://leyyow.notion.site/Refund-policy-162f3934f3148085a337fc0d3cbffb99?pvs=4",
   },
 ]
+
+const activeSlide = ref(0)
+const carouselRef = ref()
+
+const testimonials = computed(() => [
+  {
+    id: 1,
+    text: "The scents are divine — my mornings feel brand new!",
+    author: "Ada E.",
+    role: "Lifestyle Blogger",
+    initials: "AE",
+  },
+  {
+    id: 2,
+    text: "Amazing quality products that have transformed my self-care routine. Highly recommend!",
+    author: "Michael R.",
+    role: "Wellness Coach",
+    initials: "MR",
+  },
+  {
+    id: 3,
+    text: "Love the natural ingredients and the beautiful packaging. These products are a treat!",
+    author: "Sarah K.",
+    role: "Beauty Enthusiast",
+    initials: "SK",
+  },
+  {
+    id: 4,
+    text: "The customer service is exceptional and the products exceed expectations every time.",
+    author: "James D.",
+    role: "Repeat Customer",
+    initials: "JD",
+  },
+  {
+    id: 5,
+    text: "Gentle on my sensitive skin but still effective. Perfect for my daily routine.",
+    author: "Emily Chen",
+    role: "Skincare Lover",
+    initials: "EC",
+  },
+  {
+    id: 6,
+    text: "The fragrance collection is absolutely stunning. Each scent tells a story.",
+    author: "David M.",
+    role: "Fragrance Collector",
+    initials: "DM",
+  },
+  {
+    id: 7,
+    text: "Fast shipping and eco-friendly packaging. A brand that truly cares about the environment.",
+    author: "Lisa P.",
+    role: "Environmental Advocate",
+    initials: "LP",
+  },
+  {
+    id: 8,
+    text: "These products make perfect gifts. My friends always ask where I got them!",
+    author: "Rachel T.",
+    role: "Gift Giver",
+    initials: "RT",
+  },
+])
+
+const nextSlide = () => {
+  if (carouselRef.value) {
+    carouselRef.value.next()
+  }
+}
+
+const prevSlide = () => {
+  if (carouselRef.value) {
+    carouselRef.value.prev()
+  }
+}
+
+onMounted(() => {
+  AOS.init({
+    duration: 800,
+    once: true,
+    offset: 100,
+  })
+})
 </script>
 
 <template>
   <div class="min-h-screen bg-[#1a1a1a] text-white">
     <!-- Navigation -->
     <header
-      class="sticky top-0 z-50 flex h-16 items-center border-b border-gray-200 bg-white md:h-20"
+      class="sticky top-0 z-50 flex items-center border-b border-gray-200 bg-white py-4 md:h-20"
     >
       <AppSection class="flex items-center justify-between gap-3 !py-0">
         <router-link to="/">
-          <img src="/company-logo.svg?url" class="h-6 md:h-8" alt="leyyow logo" />
+          <img src="/company-logo.svg?url" class="h-8" alt="store logo" />
         </router-link>
 
-        <div class="flex flex-col gap-2 sm:flex-row sm:gap-4">
-          <div class="hidden items-center gap-2 text-gray-600 sm:flex">
-            Powered by <img src="/LYW.svg?url" alt="Leyyow Logo" class="h-5" />
+        <div class="flex gap-4">
+          <div
+            class="flex flex-col text-sm text-gray-600 sm:flex-row sm:items-center sm:gap-2 sm:text-base"
+          >
+            <span> Powered by </span>
+            <img src="/LYW.svg?url" alt="Leyyow Logo" class="h-5" />
           </div>
-          <AppButton label="View Cart" icon="shop" class="text-sm" />
+          <AppButton label="View Cart" icon="bag" class="!hidden sm:!inline-flex" />
+          <AppButton icon="bag" class="sm:!hidden" size="sm" />
         </div>
       </AppSection>
     </header>
@@ -42,7 +133,7 @@ const shopLinks = [
         <!-- Find your Beauty -->
         <AppSection background="bg-black" class="py-8 md:py-16">
           <div class="flex flex-col gap-8 md:gap-16">
-            <div class="max-w-2xl">
+            <div class="max-w-2xl" data-aos="fade-up">
               <h1 class="text-4xl font-bold md:text-5xl">Find your Beauty</h1>
               <p class="mt-4 text-lg text-gray-200 md:text-lg">
                 Colorful, calming essentials for skin, space, and self. Colorful, calming essentials
@@ -50,13 +141,36 @@ const shopLinks = [
               </p>
               <AppButton label="Shop Now" class="mt-6 w-32 md:w-40" />
             </div>
-            <img class="h-[250px] w-full rounded-xl bg-pink-200 md:h-[400px]" />
+            <!-- <img class="h-[250px] w-full rounded-xl bg-pink-200 md:h-[400px]" /> -->
+
+            <!-- <div class="clip-path-cutout h-[400px] overflow-hidden rounded-2xl"> -->
+            <img
+              src="/images/themes/ember/hero.png"
+              alt="Spa products"
+              class="h-full w-full object-cover"
+              data-aos="fade-up"
+              data-aos-delay="200"
+            />
+            <!-- </div> -->
           </div>
+
+          <!-- <div class="mt-20">
+            <div class="clip-path-cutout h-[400px] overflow-hidden rounded-2xl">
+              <img
+                src="/images/themes/shared/product-1.png"
+                alt="Spa products"
+                class="h-full w-full object-cover"
+              />
+            </div>
+          </div> -->
         </AppSection>
 
         <!-- Featured Products -->
         <AppSection background="" class="py-8 md:py-16">
-          <div class="mb-8 flex flex-col gap-4 md:mb-12 md:flex-row md:justify-between">
+          <div
+            class="mb-8 flex flex-col gap-4 md:mb-12 md:flex-row md:justify-between"
+            data-aos="fade-up"
+          >
             <h2 className="text-2xl font-bold md:text-3xl">Featured Products</h2>
             <AppButton
               label="View All Products"
@@ -73,6 +187,8 @@ const shopLinks = [
               :key="v"
               class="flex flex-col gap-4"
               :class="{ 'col-span-2 sm:row-span-2': v === 1, 'col-span-1': v > 1 }"
+              data-aos="fade-up"
+              :data-aos-delay="v * 100"
             >
               <div
                 class="rounded-xl] relative"
@@ -81,7 +197,10 @@ const shopLinks = [
                   'h-[180px] sm:h-[255px]': v > 1,
                 }"
               >
-                <img class="relative mb-4 h-full w-full rounded-xl bg-gray-400" />
+                <img
+                  :src="`/images/themes/shared/product-${v % 2 ? 1 : 2}.png`"
+                  class="relative mb-4 h-full w-full rounded-xl"
+                />
                 <button
                   class="absolute right-4 bottom-4 flex h-8 w-8 items-center justify-center rounded-lg bg-white text-gray-700 shadow-md md:h-10 md:w-10"
                 >
@@ -100,36 +219,36 @@ const shopLinks = [
               </div>
             </div>
           </div>
-
-          <div class="mt-8 flex justify-center md:mt-12">
-            <AppButton
-              label="View All Products"
-              color="alt"
-              icon="arrow-right"
-              class="!flex-row-reverse !rounded-none"
-            />
-          </div>
         </AppSection>
 
         <!-- Made with Kindess -->
         <AppSection background="bg-black" class="py-8 md:py-16">
           <div class="flex flex-col gap-8 md:gap-16">
-            <div class="max-w-2xl">
+            <div class="max-w-2xl" data-aos="fade-up">
               <h2 class="text-3xl font-bold md:text-5xl">Made with Kindess & Color</h2>
               <p class="mt-4 text-base text-gray-200 md:text-lg">
                 At Bloom & Co., we believe self-care should feel joyful — not routine. Every product
                 is made from gentle ingredients and designed to brighten your day inside and out.
               </p>
             </div>
-            <img class="h-[250px] w-full rounded-xl bg-pink-200 md:h-[400px]" />
+            <img
+              src="/images/themes/ember/kindness.png"
+              class="h-[250px] w-full rounded-xl object-cover md:h-[617px]"
+              data-aos="fade-up"
+              data-aos-delay="200"
+            />
           </div>
         </AppSection>
 
         <!-- Give the Gift of Calm -->
         <AppSection background="" class="py-8 md:py-16">
           <div class="flex w-full flex-col-reverse items-center gap-6 md:flex-row md:gap-10">
-            <img class="h-[250px] w-full rounded-2xl bg-pink-200 md:h-[448px] md:w-[448px]" />
-            <div class="w-full md:w-1/2">
+            <img
+              src="/images/themes/ember/gift.png"
+              class="h-[250px] w-full rounded-2xl md:h-[448px] md:w-[448px]"
+              data-aos="fade-right"
+            />
+            <div class="w-full md:w-1/2" data-aos="fade-left">
               <h2 class="text-3xl font-bold md:text-5xl">Give the Gift of Calm</h2>
               <p class="mt-4 text-base text-gray-300 md:text-lg">
                 Curated self-care sets, perfect for loved ones — or yourself.
@@ -142,71 +261,91 @@ const shopLinks = [
         <!-- What our Customers are Saying -->
         <AppSection
           background="bg-black"
-          class="flex flex-col items-center justify-between py-12 md:flex-row md:py-20"
+          class="flex flex-col items-center justify-between gap-6 py-12 md:flex-row md:py-20"
         >
-          <div class="w-full md:w-1/4">
+          <div class="w-full md:w-1/5" data-aos="fade-right">
             <h2 className="text-2xl font-bold text-white mb-8 md:text-3xl md:mb-12">
               What Our <br />Customers Say
             </h2>
 
             <div class="mt-8 flex gap-2 text-gray-700">
               <button
-                className="w-10 h-10 bg-white border-2 border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50"
+                @click="prevSlide"
+                className="w-10 h-10 bg-white border-2 border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors"
               >
                 <Icon name="arrow-left" className="w-5 h-5 text-gray-600" />
               </button>
               <button
-                className="w-10 h-10 bg-white border-2 border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50"
+                @click="nextSlide"
+                className="w-10 h-10 bg-white border-2 border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors"
               >
                 <Icon name="arrow-right" className="w-5 h-5 text-gray-600" />
               </button>
             </div>
           </div>
 
-          <div
-            className="w-full mt-8 md:w-3/4 md:mt-0 grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6"
-          >
-            <div v-for="n in 3" :key="n" className="bg-primary-600/80 text-white rounded-lg p-4">
-              <p className="text-base md:text-lg mb-4 md:mb-6">
-                The scents are divine — my mornings feel brand new!
-              </p>
-              <div className="flex items-center space-x-3">
-                <div
-                  className="w-10 h-10 md:w-12 md:h-12 bg-gray-300 rounded-full flex items-center justify-center"
-                >
-                  <span className="text-gray-600 font-semibold text-sm md:text-base">AE</span>
+          <div class="w-full md:w-3/5" data-aos="fade-left">
+            <Carousel
+              ref="carouselRef"
+              v-model="activeSlide"
+              v-bind="{
+                itemsToShow: 1,
+                autoplay: 3000,
+                wrapAround: true,
+                gap: 16,
+                breakpoints: {
+                  640: {
+                    itemsToShow: 3,
+                  },
+                },
+              }"
+            >
+              <Slide v-for="testimonial in testimonials" :key="testimonial.id">
+                <div className="bg-primary-600/80 text-white rounded-lg p-4">
+                  <p className="text-base md:text-lg mb-4 md:mb-6">
+                    {{ testimonial.text }}
+                  </p>
+                  <div className="flex items-center space-x-3">
+                    <div
+                      className="w-10 h-10 md:w-12 md:h-12 bg-gray-300 rounded-full flex items-center justify-center"
+                    >
+                      <span className="text-gray-600 font-semibold text-sm md:text-base">
+                        {{ testimonial.initials }}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm md:text-base">{{ testimonial.author }}</p>
+                      <p className="text-xs md:text-sm">{{ testimonial.role }}</p>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-semibold text-sm md:text-base">Ada E.</p>
-                  <p className="text-xs md:text-sm">Lifestyle Blogger</p>
-                </div>
-              </div>
-            </div>
+              </Slide>
+            </Carousel>
           </div>
-        </AppSection>
-
-        <AppSection
-          background="bg-primary-500 !rounded-none"
-          class="flex flex-col items-center gap-4 py-4 text-white md:flex-row md:gap-6"
-        >
-          <p class="text-sm md:text-base">Free Shipping on Orders Over ₦30,000:</p>
-          <p class="text-sm md:text-base">Enjoy fast delivery and free returns within 7 days.</p>
-          <AppButton label="Shop Now" icon="arrow-right" variant="text" class="!text-white" />
         </AppSection>
 
         <!-- Join the Ember Circle -->
         <AppSection background="bg-black" class="py-8 md:py-16">
-          <div class="mx-auto max-w-4xl rounded-xl bg-[#1a1a1a] p-6 md:p-10">
-            <img class="h-[150px] w-[150px] rounded-2xl bg-pink-200 md:h-[200px] md:w-[200px]" />
+          <div class="w-full rounded-xl bg-[#1a1a1a] p-6 md:p-10" data-aos="fade-up">
+            <img
+              src="/images/themes/ember/subscribe.png"
+              class="h-[150px] w-[150px] rounded-2xl md:h-[200px] md:w-[200px]"
+              data-aos="zoom-in"
+              data-aos-delay="200"
+            />
             <div class="mt-6 flex w-full flex-col items-start gap-6 md:flex-row md:gap-10">
-              <div class="w-full md:w-1/2">
+              <div class="w-full md:w-1/2" data-aos="fade-right" data-aos-delay="300">
                 <h2 class="text-2xl font-semibold md:text-3xl">Join the Ember Circle</h2>
                 <p class="mt-2 text-sm text-gray-300 md:text-base">
                   Get 10% off your first order and updates on new launches.
                 </p>
               </div>
 
-              <div class="flex w-full flex-col items-center gap-4 md:flex-row">
+              <div
+                class="flex w-full flex-col items-center gap-4 md:w-1/2 md:flex-row"
+                data-aos="fade-left"
+                data-aos-delay="400"
+              >
                 <TextField
                   type="email"
                   placeholder="e.g. adebola99@gmail.com"
@@ -222,8 +361,8 @@ const shopLinks = [
     </main>
 
     <footer class="border-t border-gray-900 bg-black py-8 text-white md:py-16">
-      <AppSection class="grid grid-cols-1 gap-8 md:gap-12 lg:grid-cols-2">
-        <div class="flex flex-col gap-3">
+      <AppSection class="grid grid-cols-1 gap-8 md:gap-12 lg:grid-cols-2" data-aos="fade-up">
+        <div class="flex flex-col gap-3" data-aos="fade-right">
           <router-link to="/">
             <img src="/company-logo.svg?url" class="h-6 md:h-8" alt="leyyow logo" />
           </router-link>
@@ -240,7 +379,7 @@ const shopLinks = [
           </p>
         </div>
 
-        <div class="col-span-1 grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-8">
+        <div class="col-span-1 grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-8" data-aos="fade-left">
           <div class="border-l border-gray-300 pl-4">
             <h3 class="mb-4 text-sm font-semibold text-gray-500">Shop</h3>
             <div class="flex flex-col gap-3">
@@ -277,3 +416,22 @@ const shopLinks = [
     </footer>
   </div>
 </template>
+
+<style>
+.clip-path-cutout {
+  clip-path: polygon(
+    0% 15%,
+    0 0,
+    15% 0%,
+    85% 0%,
+    85% 15%,
+    100% 15%,
+    100% 85%,
+    100% 100%,
+    85% 100%,
+    15% 100%,
+    15% 85%,
+    0% 85%
+  );
+}
+</style>

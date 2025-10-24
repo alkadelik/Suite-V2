@@ -37,6 +37,7 @@ export type TOrder = {
   rate: string
   source: "internal" | "external"
   store: string
+  store_name: string
   subtotal: string
   total_amount: number
   total_paid: number

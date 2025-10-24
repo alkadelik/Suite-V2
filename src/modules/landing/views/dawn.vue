@@ -1,10 +1,15 @@
 <script setup lang="ts">
+import { ref, computed, onMounted } from "vue"
 import { formatCurrency } from "@/utils/format-currency"
 import AppButton from "@components/AppButton.vue"
 import AppSection from "@components/AppSection.vue"
 import Chip from "@components/Chip.vue"
 import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
+import { Carousel, Slide } from "vue3-carousel"
+import "vue3-carousel/dist/carousel.css"
+import AOS from "aos"
+import "aos/dist/aos.css"
 
 const shopLinks = [
   { name: "Home", href: "/" },
@@ -14,6 +19,82 @@ const shopLinks = [
     href: "https://leyyow.notion.site/Refund-policy-162f3934f3148085a337fc0d3cbffb99?pvs=4",
   },
 ]
+
+// Testimonials data
+const staticTestimonials = [
+  {
+    id: 1,
+    text: "The scents are divine — my mornings feel brand new! Every product feels like a little luxury in my daily routine.",
+    author: "Ada E.",
+    role: "Lifestyle Blogger",
+    avatar: "AE",
+    rating: 5,
+  },
+  {
+    id: 2,
+    text: "Absolutely love the quality and packaging. Dawn has become my go-to for all my self-care needs.",
+    author: "Sarah M.",
+    role: "Wellness Coach",
+    avatar: "SM",
+    rating: 5,
+  },
+  {
+    id: 3,
+    text: "The kindness and care that goes into each product is evident. My skin has never felt better!",
+    author: "Jennifer L.",
+    role: "Beauty Enthusiast",
+    avatar: "JL",
+    rating: 5,
+  },
+  {
+    id: 4,
+    text: "Finally found products that align with my values. Sustainable, beautiful, and effective!",
+    author: "Maya K.",
+    role: "Environmental Advocate",
+    avatar: "MK",
+    rating: 5,
+  },
+  {
+    id: 5,
+    text: "The gift sets are perfect! I've given them to all my friends and they absolutely love them.",
+    author: "Rachel T.",
+    role: "Marketing Manager",
+    avatar: "RT",
+    rating: 5,
+  },
+  {
+    id: 6,
+    text: "Dawn has transformed my self-care routine. Each product feels like a spa experience at home.",
+    author: "Olivia H.",
+    role: "Yoga Instructor",
+    avatar: "OH",
+    rating: 5,
+  },
+]
+
+const testimonials = computed(() => staticTestimonials)
+
+const carouselSettings = ref({
+  itemsToShow: 1,
+  wrapAround: true,
+  autoplay: 3000,
+  transition: 500,
+  gap: 16,
+  breakpoints: {
+    768: {
+      itemsToShow: 2,
+      itemsToScroll: 1,
+    },
+    1024: {
+      itemsToShow: 3,
+      itemsToScroll: 1,
+    },
+  },
+})
+
+onMounted(() => {
+  AOS.init({ duration: 800, easing: "ease-in-out", once: true })
+})
 </script>
 
 <template>
@@ -21,6 +102,7 @@ const shopLinks = [
     <!-- Navigation -->
     <header
       class="sticky top-0 z-50 flex items-center border-b border-gray-200 bg-white py-4 md:h-20"
+      data-aos="fade-down"
     >
       <AppSection class="flex items-center justify-between gap-3 !py-0">
         <router-link to="/">
@@ -34,8 +116,8 @@ const shopLinks = [
             <span> Powered by </span>
             <img src="/LYW.svg?url" alt="Leyyow Logo" class="h-5" />
           </div>
-          <AppButton label="View Cart" icon="shop" class="!hidden !bg-[#1a2a3a] sm:!inline-flex" />
-          <AppButton icon="shop" class="!bg-[#1a2a3a] sm:!hidden" size="sm" />
+          <AppButton label="View Cart" icon="bag" class="!hidden !bg-[#1a2a3a] sm:!inline-flex" />
+          <AppButton icon="bag" class="!bg-[#1a2a3a] sm:!hidden" size="sm" />
         </div>
       </AppSection>
     </header>
@@ -44,9 +126,13 @@ const shopLinks = [
     <main>
       <div>
         <!-- Find your Beauty -->
-        <AppSection background="bg-white" class="py-8 md:py-16">
+        <AppSection
+          background="bg-[url('/images/themes/dawn/wave-line-1.svg')] bg-no-repeat bg-cover"
+          class="py-8 md:py-16"
+          data-aos="fade-up"
+        >
           <div class="flex flex-col items-center gap-16 md:flex-row md:gap-16">
-            <div class="md:w-1/2 md:text-left">
+            <div class="md:w-1/2 md:text-left" data-aos="fade-right" data-aos-delay="200">
               <h2 class="text-3xl font-bold md:text-4xl">Find your Beauty</h2>
               <p class="mt-4 text-lg text-gray-600">
                 Colorful, calming essentials for skin, space, and self. Colorful, calming essentials
@@ -56,24 +142,36 @@ const shopLinks = [
               <AppButton label="Shop Now" class="md:-w-[200px] mt-6 w-full !bg-[#1a2a3a]" />
             </div>
             <img
-              class="h-[450px] w-full rounded-t-full rounded-b-xl bg-pink-200 md:h-[618px] md:w-1/2"
+              src="/images/themes/grace/hero.png"
+              class="h-[450px] w-full rounded-t-full rounded-b-xl object-cover object-bottom-right md:h-[618px] md:w-1/2"
+              data-aos="fade-left"
+              data-aos-delay="400"
             />
           </div>
         </AppSection>
 
         <!-- Featured Products -->
-        <AppSection background="bg-[#FAFAFA]" class="py-8 md:py-16">
+        <AppSection background="bg-[#FAFAFA]" class="py-8 md:py-16" data-aos="fade-up">
           <h2 className="mb-8 text-center text-2xl font-bold text-gray-900 md:mb-12 md:text-3xl">
             Featured Products
           </h2>
 
           <div class="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-10">
             <!-- Product Card -->
-            <div v-for="v in 8" :key="v" class="flex flex-col gap-4">
+            <div
+              v-for="v in 8"
+              :key="v"
+              class="flex flex-col gap-4"
+              data-aos="fade-up"
+              :data-aos-delay="v * 50"
+            >
               <div class="relative h-[180px] rounded-xl sm:h-[255px]">
-                <img class="relative mb-4 h-full w-full rounded-xl bg-gray-400" />
+                <img
+                  :src="`/images/themes/shared/product-${v % 2 ? 1 : 2}.png`"
+                  class="relative mb-4 h-full w-full rounded-xl"
+                />
                 <button
-                  class="absolute right-4 bottom-4 flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-md"
+                  class="absolute right-4 bottom-4 flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-md transition-shadow duration-200 hover:shadow-lg"
                 >
                   <Icon name="shop" />
                 </button>
@@ -88,12 +186,19 @@ const shopLinks = [
         </AppSection>
 
         <!-- Made with Kindess -->
-        <AppSection background="bg-[#F7F3EE]" class="py-8 md:py-16">
+        <AppSection
+          background="bg-[#F7F3EE] bg-[url('/images/themes/dawn/wave-line-1.svg')] bg-cover bg-no-repeat"
+          class="py-8 md:py-16"
+          data-aos="fade-up"
+        >
           <div class="flex flex-col-reverse items-center gap-8 md:flex-row md:gap-10">
             <img
-              class="h-[450px] w-full rounded-t-xl rounded-b-full bg-pink-200 md:h-[618px] md:w-[568px]"
+              src="/images/themes/shared/kindness.png"
+              class="h-[450px] w-full rounded-t-xl rounded-b-full object-cover md:h-[618px] md:w-[568px]"
+              data-aos="fade-right"
+              data-aos-delay="200"
             />
-            <div class="md:text-left">
+            <div class="md:text-left" data-aos="fade-left" data-aos-delay="400">
               <h2 class="text-3xl font-bold md:text-4xl">Made with Kindess</h2>
               <p class="mt-4 text-gray-600">
                 At Bloom & Co., we believe self-care should feel joyful — not routine. Every product
@@ -104,9 +209,9 @@ const shopLinks = [
         </AppSection>
 
         <!-- Give the Gift of Calm -->
-        <AppSection background="bg-white" class="py-8 md:py-16">
+        <AppSection background="bg-white" class="py-8 md:py-16" data-aos="fade-up">
           <div class="flex w-full flex-col items-center gap-6 md:flex-row md:gap-10">
-            <div class="md:w-3/5 md:text-left">
+            <div class="md:w-3/5 md:text-left" data-aos="fade-right" data-aos-delay="200">
               <h2 class="text-3xl font-bold md:text-4xl">Give the Gift of Calm</h2>
               <p class="mt-4 text-gray-600">
                 Curated self-care sets, perfect for loved ones — or yourself.
@@ -114,66 +219,63 @@ const shopLinks = [
               <AppButton label="Shop Gift Sets" class="mt-6 !bg-[#1a2a3a]" />
             </div>
             <img
-              class="h-[450px] w-full rounded-t-full rounded-b-xl bg-pink-200 md:h-[618px] md:w-2/5"
+              src="/images/themes/shared/gift.png"
+              class="h-[450px] w-full rounded-t-full rounded-b-xl object-cover md:h-[618px] md:w-2/5"
+              data-aos="fade-left"
+              data-aos-delay="400"
             />
           </div>
         </AppSection>
 
         <!-- What our Customers are Saying -->
-        <AppSection background="bg-[#FAFAFA]" class="py-8 md:py-16">
+        <AppSection background="bg-[#FAFAFA]" class="py-8 md:py-16" data-aos="fade-up">
           <h2 className="mb-8 text-center text-2xl font-bold text-gray-900 md:mb-12 md:text-3xl">
             What Our Customers Say
           </h2>
-          <div className="mx-auto max-w-3xl">
-            <div className="relative rounded-lg bg-white p-6 shadow-sm md:p-8">
-              <div className="mb-4 text-center text-4xl text-gray-900 md:text-6xl">"</div>
-              <p className="mb-6 text-center text-base text-gray-700 md:text-lg">
-                The scents are divine — my mornings feel brand new!
-              </p>
-              <div className="flex items-center justify-center space-x-3">
-                <div
-                  className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-300"
-                >
-                  <span className="font-semibold text-gray-600">AE</span>
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900">Ada E.</p>
-                  <p className="text-sm text-gray-500">Lifestyle Blogger</p>
+
+          <Carousel ref="carouselRef" v-bind="carouselSettings">
+            <Slide v-for="testimonial in testimonials" :key="testimonial.id">
+              <div className="rounded-lg bg-white p-6 shadow-sm h-full">
+                <div className="mb-4 text-center text-2xl text-gray-900 md:text-4xl">"</div>
+                <p className="mb-6 text-center text-base text-gray-700 md:text-lg">
+                  {{ testimonial.text }}
+                </p>
+
+                <div className="flex items-center justify-center space-x-3">
+                  <div
+                    className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-300"
+                  >
+                    <span className="font-semibold text-gray-600">{{ testimonial.avatar }}</span>
+                  </div>
+                  <div className="text-center">
+                    <p className="font-semibold text-gray-900">{{ testimonial.author }}</p>
+                    <p className="text-sm text-gray-500">{{ testimonial.role }}</p>
+                  </div>
                 </div>
               </div>
-              <button
-                className="absolute left-2 top-1/2 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-gray-200 bg-white hover:bg-gray-50 md:left-4 md:flex"
-              >
-                <Icon name="arrow-left" className="h-5 w-5 text-gray-600" />
-              </button>
-              <button
-                className="absolute right-2 top-1/2 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-gray-200 bg-white hover:bg-gray-50 md:right-4 md:flex"
-              >
-                <Icon name="arrow-right" className="h-5 w-5 text-gray-600" />
-              </button>
-            </div>
-          </div>
-        </AppSection>
-
-        <AppSection
-          background="bg-gray-600"
-          class="flex flex-col items-center gap-4 py-8 text-white md:flex-row md:gap-6"
-        >
-          <p class="text-center md:text-left">Free Shipping on Orders Over ₦30,000:</p>
-          <p class="text-center md:text-left">
-            Enjoy fast delivery and free returns within 7 days.
-          </p>
-          <AppButton label="Shop Now" icon="arrow-right" variant="text" class="!text-white" />
+            </Slide>
+          </Carousel>
         </AppSection>
 
         <!-- Join the Dawn Circle -->
-        <AppSection background="bg-[#F7F3EE]" class="py-8 md:py-16">
-          <div class="mx-auto max-w-4xl rounded-xl bg-white p-6 md:p-10">
+        <AppSection
+          background="bg-[#F7F3EE] bg-[url('/images/themes/dawn/wave-line-2.svg')] bg-cover bg-no-repeat"
+          class="py-8 md:py-16"
+          data-aos="fade-up"
+        >
+          <div
+            class="mx-auto max-w-4xl rounded-xl bg-white p-6 md:p-10"
+            data-aos="zoom-in"
+            data-aos-delay="200"
+          >
             <div class="flex flex-col items-center gap-6 md:flex-row md:gap-10">
               <img
-                class="h-[250px] w-[2000px] rounded-t-full rounded-b-xl bg-pink-200 md:h-[224px] md:w-[224px]"
+                src="/images/themes/shared/subscribe.png"
+                class="h-[250px] w-[2000px] rounded-t-full rounded-b-xl md:h-[224px] md:w-[224px]"
+                data-aos="fade-right"
+                data-aos-delay="400"
               />
-              <div class="text-center md:text-left">
+              <div class="text-center md:text-left" data-aos="fade-left" data-aos-delay="600">
                 <h2 class="text-3xl font-bold md:text-4xl">Join the Dawn Circle</h2>
                 <p class="mt-4 text-gray-600">
                   Get 10% off your first order and updates on new launches.
@@ -193,7 +295,7 @@ const shopLinks = [
       </div>
     </main>
 
-    <footer class="bg-gray-700 py-8 text-white md:py-16">
+    <footer class="bg-gray-700 py-8 text-white md:py-16" data-aos="fade-up">
       <AppSection class="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-12">
         <div class="flex flex-col gap-3">
           <router-link to="/">

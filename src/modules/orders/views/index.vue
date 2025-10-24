@@ -277,7 +277,7 @@ const handleVoidDelete = ({ action, reason }: { action: string; reason: string }
           </template>
           <!--  -->
           <template #cell:customer_info="{ item }">
-            <Avatar :extra-text="true" :name="`Customer ${item.customer}`" />
+            <Avatar :extra-text="true" :name="`${item.customer_name}`" />
           </template>
           <template #cell:actions="{ item }">
             <div class="inline-flex items-center gap-1">

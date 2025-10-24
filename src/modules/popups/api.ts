@@ -104,3 +104,9 @@ export function useCreatePopupOrder() {
     mutationFn: (body: PopupOrderPayload) => baseApi.post(`/orders/popup/`, body),
   })
 }
+
+export function useMarkPopupOrderAsPaid() {
+  return useMutation({
+    mutationFn: (orderId: string) => baseApi.post(`/orders/${orderId}/mark-paid/`),
+  })
+}

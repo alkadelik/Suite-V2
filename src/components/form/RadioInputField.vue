@@ -6,17 +6,20 @@
     </label>
     <p v-if="hint" class="text-core-600 text-xs">{{ hint }}</p>
 
-    <div class="flex flex-row items-start gap-2 space-y-2">
+    <div
+      class="flex flex-row items-start gap-2 space-y-2"
+      :class="{ 'flex-wrap': options.some((x) => x.description) }"
+    >
       <div
         v-for="option in options"
         :key="String(option.value)"
         :class="[
-          'flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 transition-all',
+          'flex cursor-pointer gap-3 rounded-xl border px-4 py-3 transition-all',
           modelValue === option.value
             ? 'border-primary-700 bg-primary-25'
             : 'border-gray-400 bg-gray-50 hover:border-gray-500',
           disabled ? 'cursor-not-allowed opacity-50' : '',
-          'flex-1',
+          options.every((x) => !x.description) ? 'flex-1 items-center' : 'items-start md:flex-1',
         ]"
         @click="!disabled && handleChange(option.value)"
       >

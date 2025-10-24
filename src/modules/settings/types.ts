@@ -134,3 +134,19 @@ export interface IPlansResponse {
   message?: string
   success?: boolean
 }
+
+export interface IPopupSettings {
+  is_enabled: boolean
+  headline: string
+  body_text: string
+  cta_button_text: string
+  cta_button_link: string
+}
+
+export interface IStoreTheme {
+  uid: string
+  name: string
+  description: string
+  image: string
+  is_active: boolean
+}
