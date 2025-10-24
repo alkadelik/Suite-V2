@@ -1,133 +1,484 @@
-<script setup lang="ts">
-import { formatCurrency } from "@/utils/format-currency"
-import AppButton from "@components/AppButton.vue"
-import AppSection from "@components/AppSection.vue"
+<script setup>
+import "vue3-carousel/dist/carousel.css"
+import { Carousel, Slide } from "vue3-carousel"
+import { onMounted, ref } from "vue"
+import AOS from "aos"
+import "aos/dist/aos.css"
 import Chip from "@components/Chip.vue"
-import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
+import AppButton from "@components/AppButton.vue"
+
+const images = Array.from({ length: 5 }, (_, index) => ({
+  id: index + 1,
+  url: `/images/businesses/${index + 1}.png.jpeg`,
+}))
+
+const FAQS = [
+  {
+    question: "What is Leyyow?",
+    answer:
+      "Leyyow is an all-in-one business management platform designed to help small and medium-sized enterprises streamline their operations, manage sales, track expenses, and grow their customer base.",
+  },
+  {
+    question: "How much does Leyyow cost?",
+    answer:
+      "Leyyow offers a variety of pricing plans to suit different business needs. Please visit our Pricing page for detailed information on our plans and pricing.",
+  },
+  {
+    question: "Can I try Leyyow before committing to a plan?",
+    answer:
+      "Yes! We offer a free trial period for new users to explore our features and see how Leyyow can benefit their business.",
+  },
+  {
+    question: "Is my data secure with Leyyow?",
+    answer:
+      "Absolutely. We take data security seriously and implement industry-standard security measures to protect your information.",
+  },
+  {
+    question: "What kind of support does Leyyow offer?",
+    answer:
+      "We provide comprehensive support through various channels including email support, live chat, and a detailed knowledge base to help you get the most out of Leyyow.",
+  },
+]
+
+const PRICINGS = [
+  {
+    name: "Bud",
+    price: "2", // price in thousands
+    features: [
+      "Unlimited orders",
+      "20 products",
+      "Unlimited invoices & receipts",
+      "Automated delivery",
+      "Basic chat & email support",
+      "Basic storefront",
+      "Basic order management",
+    ],
+  },
+  {
+    name: "Bloom",
+    price: "15", // price in thousands
+    features: [
+      "All basic features",
+      "Unlimited products",
+      "Unlimited popups",
+      "Advanced reports",
+      "Priority chat & email support",
+      "Branded storefront",
+      "Advanced order management",
+    ],
+  },
+]
+
+// Reactive state for FAQ accordion
+const openFaq = ref(null)
+
+const toggleFaq = (index) => {
+  openFaq.value = openFaq.value === index ? null : index
+}
+
+const FEATURES = [
+  {
+    title: "Take more orders, faster",
+    subtitle: "Keep track of every order; paid, unpaid, or pending - without losing your mind.",
+    icon: "mynaui:chat-messages",
+  },
+  {
+    title: "Popups that work for you",
+    subtitle: "Create popups, add inventory, and track every sale—both in person and online.",
+    icon: "mingcute:flash-line",
+  },
+  {
+    title: "Know your customers",
+    subtitle: "See who's buying, what they like, and keep them coming back.",
+    icon: "hugeicons:chart-breakout-square",
+  },
+  {
+    title: "Automated delivery service",
+    subtitle:
+      "Ship faster and keep customers happy. Connect to reliable delivery partners in one click.",
+    icon: "streamline:chat-bubble-oval-smiley-1",
+  },
+  {
+    title: "Partial & unpaid orders",
+    subtitle: "Split payments? Pending payments? We handle it. Stay organized, always.",
+    icon: "lucide:command",
+  },
+  {
+    title: "Invoices & Receipts",
+    subtitle:
+      "Send professional invoices and receipts automatically and manually - your customers will thank you.",
+    icon: "lucide:message-circle-heart",
+  },
+]
+
+const openMail = () => {
+  window.open("mailto:hello@leyyow.com")
+}
+
+onMounted(() => {
+  AOS.init({ duration: 800, easing: "ease-in-out", once: true })
+})
 </script>
 
 <template>
-  <div>
-    <!-- Find your Beauty -->
-    <AppSection background="bg-white" class="py-16">
-      <div class="flex items-center gap-16">
-        <div class="w-1/2">
-          <h2 class="text-4xl font-bold">Find your Beauty</h2>
-          <p class="mt-4">
-            Colorful, calming essentials for skin, space, and self. Colorful, calming essentials for
-            skin, space, and self.Colorful, calming essentials for skin, space, and self.Colorful,
+  <div class="font-outfit">
+    <section class="py-8 md:py-16">
+      <div
+        class="relative mx-auto flex max-w-[1440px] flex-col items-center justify-between gap-8 bg-cover bg-center bg-repeat px-4 md:flex-row md:bg-bottom lg:gap-12"
+        :style="{ backgroundImage: 'url(/images/home/hero-pattern.svg)' }"
+      >
+        <div class="w-full max-w-screen-sm lg:w-3/5 lg:pr-20 xl:w-1/3 xl:pr-0">
+          <a href="http://eventful.leyyow.com" target="_blank" rel="noopener noreferrer">
+            <Chip size="md" class="!pl-1">
+              <Chip size="sm" label="✨ Now live!!" variant="filled" />
+              <span class="ml-2 hidden sm:inline lg:hidden xl:inline"
+                >Eventful by Leyyow, for organisers</span
+              >
+              <span class="sm:hidden lg:inline xl:hidden">Eventful by Leyyow</span>
+              <Icon icon="mdi:arrow-right" class="h-4 w-4" />
+            </Chip>
+          </a>
+          <h2
+            class="mt-6 mb-6 font-sans text-3xl leading-[1.25] font-bold sm:text-4xl md:mt-8 md:mb-8 md:text-5xl"
+            data-aos="fade-up"
+            data-aos-delay="200"
+          >
+            Tools that help you sell smarter, not harder
+          </h2>
+          <p
+            class="text-core-600 mb-8 text-lg md:mb-12 xl:leading-[1.65]"
+            data-aos="fade-up"
+            data-aos-delay="300"
+          >
+            Running your business online shouldn't feel overwhelming. With Leyyow, you get
+            everything you need in one place to take orders, get paid, and grow your business -
+            without the stress.
           </p>
-          <AppButton label="Shop Now" class="mt-6 !bg-gray-600" />
-        </div>
-        <img class="h-[618px] w-1/2 rounded-t-full rounded-b-xl bg-pink-200" />
-      </div>
-    </AppSection>
-
-    <!-- Featured Products -->
-    <AppSection background="bg-gray-200" class="py-16">
-      <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">Featured Products</h2>
-
-      <div class="grid grid-cols-4 gap-6">
-        <!-- Product Card -->
-        <div v-for="v in 8" :key="v" class="flex flex-col gap-4">
-          <div class="relative h-[180px] rounded-xl sm:h-[255px]">
-            <img class="relative mb-4 h-full w-full rounded-xl bg-gray-400" />
-            <button
-              class="absolute right-4 bottom-4 flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-md"
-            >
-              <Icon name="shop" />
-            </button>
-          </div>
-          <div>
-            <Chip color="purple" icon="tag" label="Home fragrance" />
-            <h4 class="mb-2 font-semibold">Amber Wood Diffuser</h4>
-            <p>{{ formatCurrency(11400) }}</p>
+          <div class="flex gap-4" data-aos="fade-up" data-aos-delay="400">
+            <AppButton
+              label="Demo"
+              variant="outlined"
+              class="w-full border-gray-300 !bg-white text-gray-700 sm:w-auto xl:w-1/2"
+              icon="pause"
+              icon-class="h-6 w-6 text-gray-700"
+            />
+            <AppButton
+              label="Get Started"
+              class="w-full sm:w-auto xl:w-1/2"
+              @click="$router.push(`/signup`)"
+            />
           </div>
         </div>
-      </div>
-    </AppSection>
 
-    <!-- Made with Kindess -->
-    <AppSection background="bg-[#F7F3EE]" class="py-16">
-      <div class="flex items-center gap-10">
-        <img class="h-[618px] w-[568px] rounded-t-xl rounded-b-full bg-pink-200" />
+        <div class="relative w-full lg:w-2/5">
+          <img
+            src="/images/home/hero-mockup-1.png"
+            alt="Hero Mockup"
+            class="hidden h-full w-auto lg:block"
+            data-aos="fade-left"
+            data-aos-delay="300"
+          />
+          <img
+            src="/images/home/hero-section-mobile.svg"
+            alt="Hero Mockup"
+            class="mx-auto max-h-[600px] w-full object-contain lg:hidden"
+            data-aos="fade-up"
+            data-aos-delay="300"
+          />
+
+          <img
+            src="/images/home/notification-queue-1.png"
+            class="absolute -bottom-4 -left-1/4 hidden h-auto max-w-72 object-contain lg:-bottom-8 lg:block"
+            alt="Notification Queue"
+            data-aos="fade-right"
+            data-aos-delay="600"
+          />
+        </div>
+      </div>
+      <div
+        class="mx-auto mt-8 flex max-w-screen-xl flex-col items-center overflow-hidden rounded-xl bg-gray-50 px-8 py-8 md:mt-24 md:px-12 md:py-16 lg:px-16"
+      >
+        <p class="text-core-600 mb-10 text-center text-lg md:mb-16 md:text-xl">
+          Trusted by businesses like yours
+        </p>
+
         <div>
-          <h2 class="text-4xl font-bold">Made with Kindess</h2>
-          <p class="mt-4">
-            At Bloom & Co., we believe self-care should feel joyful — not routine. Every product is
-            made from gentle ingredients and designed to brighten your day inside and out.
-          </p>
+          <Carousel
+            :items-to-show="2"
+            :autoplay="3000"
+            :wrap-around="true"
+            :gap="12"
+            :height="80"
+            :breakpoints="{
+              640: { itemsToShow: 3, gap: 32 },
+              768: { itemsToShow: 4, gap: 48 },
+              1024: { itemsToShow: 5, gap: 64 },
+            }"
+          >
+            <Slide v-for="n in images" :key="n.id" class="h-[80px] overflow-hidden rounded-xl">
+              <img :src="n.url" class="h-auto w-full rounded-xl" />
+            </Slide>
+          </Carousel>
         </div>
       </div>
-    </AppSection>
+    </section>
 
-    <!-- Give the Gift of Calm -->
-    <AppSection background="bg-white" class="py-16">
-      <div class="flex w-full items-center gap-10">
-        <div class="w-3/5">
-          <h2 class="text-4xl font-bold">Give the Gift of Calm</h2>
-          <p class="mt-4">Get 10% off your first order and updates on new launches.</p>
-          <AppButton label="Shop Gift Sets" class="mt-6 !bg-gray-600" />
-        </div>
-        <img class="h-[618px] w-2/5 rounded-t-full rounded-b-xl bg-pink-200" />
-      </div>
-    </AppSection>
-
-    <!-- What our Customers are Saying -->
-    <AppSection background="bg-gray-200" class="py-16">
-      <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">What Our Customers Say</h2>
-      <div className="max-w-3xl mx-auto">
-        <div className="bg-white rounded-lg shadow-sm p-8 relative">
-          <div className="text-6xl text-gray-900 mb-4 text-center">"</div>
-          <p className="text-center text-gray-700 text-lg mb-6">
-            The scents are divine — my mornings feel brand new!
+    <section id="features" class="bg-gray-50 py-12 md:py-16">
+      <div class="mx-auto max-w-[1440px] px-4">
+        <div class="mb-8 md:mb-12">
+          <span class="text-primary-500 font-semibold">Features</span>
+          <h3 class="text-core-900 mt-1 mb-4 font-sans text-2xl font-semibold md:text-3xl">
+            Why Leyyow?
+          </h3>
+          <p class="text-core-600 max-w-screen-md text-lg">
+            We built Leyyow for sellers like you - creators, hustlers, and business owners who want
+            simple tools that just work. No fluff, no headaches.
           </p>
-          <div className="flex items-center justify-center space-x-3">
-            <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
-              <span className="text-gray-600 font-semibold">AE</span>
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900">Ada E.</p>
-              <p className="text-sm text-gray-500">Lifestyle Blogger</p>
-            </div>
-          </div>
           <button
-            className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white border-2 border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50"
+            type="button"
+            class="text-primary-500 mt-4 flex items-center gap-2 font-semibold"
+            @click="$router.push(`/signup`)"
           >
-            <Icon name="arrow-left" className="w-5 h-5 text-gray-600" />
-          </button>
-          <button
-            className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white border-2 border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50"
-          >
-            <Icon name="arrow-right" className="w-5 h-5 text-gray-600" />
+            Get Started <Icon name="arrow-right" class="h-5 w-5" />
           </button>
         </div>
-      </div>
-    </AppSection>
 
-    <AppSection background="bg-gray-600" class="flex items-center gap-6 py-8 text-white">
-      <p>Free Shipping on Orders Over ₦30,000:</p>
-      <p>Enjoy fast delivery and free returns within 7 days.</p>
-      <AppButton label="Shop Now" icon="arrow-right" variant="text" class="!text-white" />
-    </AppSection>
-
-    <!-- Join the Dawn Circle -->
-    <AppSection background="bg-[#F7F3EE]" class="py-16">
-      <div class="mx-auto max-w-4xl rounded-xl bg-white p-10">
-        <div class="flex items-center gap-10">
-          <img class="h-[224px] w-[224px] rounded-t-full rounded-b-xl bg-pink-200" />
-          <div>
-            <h2 class="text-4xl font-bold">Join the Dawn Circle</h2>
-            <p class="mt-4">Get 10% off your first order and updates on new launches.</p>
+        <div class="grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-3">
+          <div
+            v-for="(feat, f) in FEATURES"
+            :key="f"
+            class="flex flex-col items-center text-center md:items-start md:text-left"
+            :class="{
+              'hidden md:flex': feat.title.includes('customers') || feat.title.includes('unpaid'),
+            }"
+            data-aos="fade-up"
+            :data-aos-delay="f * 100"
+          >
+            <span
+              class="bg-primary-500/10 border-primary-500/40 ring-primary-500/30 mb-3 flex h-12 w-12 items-center justify-center rounded-full border-4 ring-4"
+            >
+              <Icon :name="'box' || feat.icon" class="text-primary-500 h-6 w-6" />
+            </span>
+            <h4 class="mb-1 text-lg font-semibold">{{ feat.title }}</h4>
+            <p class="text-core-600 text-base">
+              {{ feat.subtitle }}
+            </p>
           </div>
         </div>
+      </div>
+    </section>
 
-        <div class="mt-6 flex items-center gap-4">
-          <TextField type="email" placeholder="e.g. adebola99@gmail.com" class="w-full" />
-          <AppButton label="Subscribe Now" class="w-max flex-shrink-0 !bg-gray-600" />
+    <section class="py-12 md:py-24">
+      <div class="mx-auto mb-8 max-w-screen-md px-4 text-center md:mb-16">
+        <Chip label="💰Know Your Numbers" data-aos="fade-up" />
+        <h2
+          class="mt-4 font-sans text-3xl font-semibold md:text-4xl"
+          data-aos="fade-up"
+          data-aos-delay="100"
+        >
+          Stop losing money on the table
+        </h2>
+        <p class="text-core-600 mt-5 text-lg" data-aos="fade-up" data-aos-delay="200">
+          Track your sales, see what's working, and spot hidden opportunities - all in real time.
+          Leyyow keeps you in control so you can focus on selling, not spreadsheets.
+        </p>
+      </div>
+
+      <div class="px-4 text-center">
+        <img
+          src="/images/home/dashboard-mockup-lg.png"
+          class="mx-auto mb-8 hidden h-full w-auto sm:block md:mb-12"
+          alt="Dashboard Mockup"
+          data-aos="fade-up"
+          data-aos-delay="200"
+        />
+        <img
+          src="/images/home/dashboard-mockup-smm.png"
+          class="mx-auto mb-8 h-full w-auto sm:hidden md:mb-12"
+          alt="Dashboard Mockup"
+          data-aos="fade-up"
+          data-aos-delay="200"
+        />
+        <AppButton
+          label="Let's Begin"
+          class="mt-8 w-full max-w-80"
+          data-aos="fade-up"
+          data-aos-delay="400"
+          @click="$router.push(`/signup`)"
+        />
+      </div>
+    </section>
+
+    <section id="pricing" class="relative bg-gray-50 py-12 md:py-16">
+      <div class="mx-auto flex max-w-[1440px] flex-col justify-between gap-8 px-4 lg:flex-row">
+        <div class="w-full space-y-3 lg:w-2/5">
+          <span class="text-primary-500 font-semibold">Pricing</span>
+          <h3 class="text-core-900 text-2xl font-semibold md:text-3xl">
+            Simple, honest pricing 💚
+          </h3>
+          <p class="text-core-600 text-lg">
+            No hidden fees. No surprises. Just straightforward plans designed to help you sell more
+            and stress less.
+          </p>
+          <Chip label="Billed monthly" />
+        </div>
+        <div
+          class="relative flex w-full flex-col-reverse gap-4 sm:flex-row md:gap-8 md:py-8 lg:w-3/5"
+        >
+          <div
+            v-for="(pricing, p) in PRICINGS"
+            :key="p"
+            class="flex-1 rounded-xl bg-white py-4 shadow-xl"
+            data-aos="fade-up"
+            :data-aos-delay="p * 150"
+          >
+            <div class="p-4 text-center md:p-6">
+              <h3 class="mb-3 text-3xl font-semibold md:text-4xl">
+                ₦{{ pricing.price }}<span class="text-base md:text-lg">k/mth</span>
+              </h3>
+              <p class="text-base font-semibold md:text-lg">{{ pricing.name }}</p>
+            </div>
+            <ul
+              class="border-core-300 space-y-3 border-t px-4 pt-6 pb-4 md:space-y-4 md:px-8 md:pt-8"
+            >
+              <li v-for="feat in pricing.features" :key="feat" class="flex items-start gap-2">
+                <Icon
+                  icon="lets-icons:check-ring-duotone"
+                  class="mt-0.5 h-6 w-6 flex-shrink-0 text-green-600 md:h-7 md:w-7"
+                />
+                <span class="text-core-600 text-sm md:text-base">{{ feat }}</span>
+              </li>
+            </ul>
+
+            <div class="px-4 py-4 md:px-8">
+              <AppButton
+                label="Get Started"
+                class="w-full"
+                @click="$router.push(`/signup?plan=${pricing.name}`)"
+              />
+            </div>
+          </div>
+
+          <img
+            src="/images/home/most-popular.svg"
+            class="absolute -top-1 right-1/3 hidden h-14 md:block"
+            alt=""
+          />
+          <img
+            src="/images/home/most-popular-sm.svg"
+            class="absolute -top-8 right-4 h-14 md:hidden"
+            alt=""
+          />
         </div>
       </div>
-    </AppSection>
+    </section>
+
+    <section id="faqs" class="px-4 py-12 md:py-16">
+      <div class="mb-6 px-4 text-center md:mb-8">
+        <h2 class="font-sans text-2xl font-semibold md:text-3xl lg:text-4xl" data-aos="fade-up">
+          FAQs
+        </h2>
+        <p class="text-core-600 text-lg" data-aos="fade-up" data-aos-delay="100">
+          Questions, We've got answers.
+        </p>
+      </div>
+      <div class="mx-auto max-w-screen-lg px-4">
+        <div class="mb-6 flex flex-col gap-4 md:mb-8 md:gap-6">
+          <div
+            v-for="(faq, index) in FAQS"
+            :key="faq.question"
+            class="border-core-200 border-b last:border-0"
+            data-aos="fade-up"
+            :data-aos-delay="index * 100"
+          >
+            <button
+              type="button"
+              class="flex w-full items-start justify-between gap-2 py-2 text-left md:gap-6"
+              @click="toggleFaq(index)"
+            >
+              <div class="flex-1">
+                <h3 class="text-core-700 text-lg font-medium">
+                  {{ faq.question }}
+                </h3>
+              </div>
+              <Icon
+                :icon="openFaq === index ? 'solar:minus-circle-linear' : 'solar:add-circle-linear'"
+                class="h-6 w-6 flex-shrink-0 text-gray-400 transition-transform duration-200"
+                :class="{ 'rotate-180': openFaq === index }"
+              />
+            </button>
+            <Transition
+              enter-active-class="transition-all duration-300 ease-out"
+              enter-from-class="opacity-0 max-h-0"
+              enter-to-class="opacity-100 max-h-96"
+              leave-active-class="transition-all duration-300 ease-in"
+              leave-from-class="opacity-100 max-h-96"
+              leave-to-class="opacity-0 max-h-0"
+            >
+              <div v-if="openFaq === index" class="overflow-hidden">
+                <p class="text-core-600 pr-8 pb-4 text-base md:pb-6">
+                  {{ faq.answer }}
+                </p>
+              </div>
+            </Transition>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="mx-auto flex max-w-screen-xl flex-col items-center rounded-xl border border-gray-200 bg-gray-50 px-4 py-6 md:border-0 md:py-8"
+        data-aos="fade-up"
+      >
+        <img
+          src="/images/home/avatar-group.png"
+          class="mb-4 h-12 w-auto md:mb-6 md:h-auto"
+          alt="Avatar Group"
+          data-aos="fade-up"
+          data-aos-delay="100"
+        />
+
+        <p class="text-core-900 text-xl font-semibold" data-aos="fade-up" data-aos-delay="200">
+          Still got questions?
+        </p>
+        <p class="text-core-600 my-2 text-center text-lg" data-aos="fade-up" data-aos-delay="300">
+          Our team is always ready to help.
+        </p>
+        <AppButton
+          label="Talk to us"
+          class="w-full max-w-sm sm:w-auto"
+          data-aos="fade-up"
+          data-aos-delay="400"
+          @click="openMail"
+        />
+      </div>
+    </section>
+
+    <section class="bg-gray-50 py-12 md:py-16">
+      <div class="mx-auto max-w-[1440px]">
+        <div
+          class="mx-auto flex max-w-screen-lg flex-col items-center justify-center gap-4 px-4 text-center"
+        >
+          <h4 class="text-xl leading-[34px] font-medium md:text-2xl md:leading-[40px]">
+            "Leyyow is an excellent tool. It saved me from an inventory nightmare, I can now track
+            sales and stock effortlessly. I mostly use it for my pop-up shops, and it gives me
+            real-time insights into which products are selling best and which aren’t. I also
+            appreciate how responsive and supportive the team is."
+          </h4>
+
+          <div class="mt-6 space-y-2">
+            <div
+              class="mx-auto flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-gray-200"
+            >
+              <img src="/images/businesses/1.png.jpeg" class="h-auto w-full" />
+            </div>
+            <p class="text-lg font-semibold">Lu Ekeruche</p>
+            <p class="text-core-600 text-base">
+              Founder, <span class="text-primary-500 font-medium">Dear Ketandu</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
   </div>
 </template>
