@@ -58,7 +58,18 @@ const handleCopyLink = () => {
 <template>
   <Modal title="Share Receipt" :open="open" @close="emit('close')">
     <div class="space-y-4">
-      <CustomerCard :customer="anonymousCustomer" />
+      <CustomerCard
+        :customer="
+          order.customer
+            ? {
+                uid: order.customer,
+                full_name: order.customer_name,
+                email: order.customer_email,
+                phone: order.customer_phone,
+              }
+            : anonymousCustomer
+        "
+      />
 
       <div class="border-core-300 mt-5 rounded-lg border bg-[#fbfbfb] p-3">
         <div class="text-sm">

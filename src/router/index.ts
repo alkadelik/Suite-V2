@@ -54,6 +54,12 @@ const routes: RouteRecordRaw[] = [
 
   { path: "/pay/:id", component: () => import("@modules/landing/views/payment-link.vue") },
 
+  { path: "/dawn", component: () => import("@modules/landing/views/dawn.vue") },
+  { path: "/heritage", component: () => import("@modules/landing/views/heritage.vue") },
+  { path: "/grace", component: () => import("@modules/landing/views/grace.vue") },
+  { path: "/bloom", component: () => import("@modules/landing/views/bloom.vue") },
+  { path: "/ember", component: () => import("@modules/landing/views/ember.vue") },
+
   // 404 - Catch all route (must be last)
   {
     path: "/",

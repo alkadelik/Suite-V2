@@ -4,6 +4,7 @@ import {
   IPaymentHistory,
   IPaymentPayload,
   OrderPayload,
+  TOrder,
   TOrderMemo,
   TOrderResponse,
 } from "./types"
@@ -35,9 +36,9 @@ export function useGetOrderById(id: string) {
 
 /** Fetch single order by ID - public */
 export function useGetPublicOrderById(id: string) {
-  return useApiQuery<TOrderResponse>({
-    url: `/orders/${id}/`,
-    key: `orders/${id}`,
+  return useApiQuery<TOrder>({
+    url: `/orders/public/${id}/`,
+    key: `orders-public/${id}`,
     selectData: true,
   })
 }
@@ -94,13 +95,13 @@ export function usePartiallyFulfill() {
 
 export function useShareOrderReceipt() {
   return useMutation({
-    mutationFn: (id: string) => baseApi.post(`/orders/${id}/share-receipt/`, {}),
+    mutationFn: (id: string) => baseApi.post(`/orders/${id}/send-receipt/`, {}),
   })
 }
 
 export function useShareOrderInvoice() {
   return useMutation({
-    mutationFn: (id: string) => baseApi.post(`/orders/${id}/share-invoice/`, {}),
+    mutationFn: (id: string) => baseApi.post(`/orders/${id}/send-invoice/`, {}),
   })
 }
 

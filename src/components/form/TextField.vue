@@ -195,6 +195,8 @@ interface Props {
   showSteppers?: boolean
   /** Additional classes for the input element */
   inputClass?: string
+  /** Additional classes for the container element */
+  containerClass?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -289,7 +291,9 @@ const containerClasses = computed(() => {
   // Use error variant if error prop is provided
   const currentVariant = props.error ? "error" : props.variant
 
-  return [baseClasses, variantClasses[currentVariant], disabledClasses].filter(Boolean).join(" ")
+  return [baseClasses, variantClasses[currentVariant], disabledClasses, props.containerClass]
+    .filter(Boolean)
+    .join(" ")
 })
 
 const inputClasses = computed(() => {

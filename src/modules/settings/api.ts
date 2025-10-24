@@ -9,6 +9,8 @@ import {
   IStoreDetails,
   IPlansResponse,
   IStoreMembersResponse,
+  IPopupSettings,
+  IStoreTheme,
 } from "./types"
 import { useMutation, useQuery } from "@tanstack/vue-query"
 import { IUser } from "@modules/auth/types"
@@ -156,5 +158,34 @@ export function useGetSubscriptionHistory() {
 export function useInitializeSubscription() {
   return useMutation({
     mutationFn: (uid: string) => baseApi.post(`/billings/plan/${uid}/initialize/`),
+  })
+}
+
+export function useUpdatePopupSettings() {
+  return useMutation({
+    mutationFn: (body: Partial<IPopupSettings>) => baseApi.put(`/stores/settings/popup`, body),
+  })
+}
+
+export function useGetPopupSettings() {
+  return useApiQuery<IPopupSettings>({
+    url: `/stores/settings/popup`,
+    key: `popup-settings`,
+    selectData: true,
+  })
+}
+
+export function useGetStoreThemes() {
+  return useApiQuery<IStoreTheme[]>({
+    url: `/stores/settings/themes`,
+    key: `store-themes`,
+    selectData: true,
+  })
+}
+
+export function useUpdateActiveTheme() {
+  return useMutation({
+    mutationFn: (id: string) =>
+      baseApi.patch(`/stores/settings/themes/${id}/`, { is_active: true }),
   })
 }
