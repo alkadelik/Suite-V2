@@ -47,30 +47,6 @@
       />
     </button>
 
-    <!-- Color Picker Dropdown -->
-    <Transition
-      enter-active-class="transition duration-200 ease-out"
-      enter-from-class="opacity-0 scale-95"
-      enter-to-class="opacity-100 scale-100"
-      leave-active-class="transition duration-150 ease-in"
-      leave-from-class="opacity-100 scale-100"
-      leave-to-class="opacity-0 scale-95"
-    >
-      <div
-        v-if="isOpen"
-        ref="dropdownRef"
-        role="dialog"
-        aria-modal="false"
-        :aria-label="`${label || 'Color'} picker`"
-        class="absolute z-50 mt-2 w-full min-w-[280px] origin-top rounded-lg border border-gray-200 bg-white p-4 shadow-xl"
-        @click.stop
-        @keydown.esc="handleClose"
-      >
-        <!-- Sketch Color Picker -->
-        <Sketch :model-value="normalizedColor" @update:model-value="handleColorChange" />
-      </div>
-    </Transition>
-
     <!-- Error Message -->
     <div
       v-if="error"
@@ -86,6 +62,88 @@
     <div v-if="hint && !error" class="mt-1 text-sm text-gray-500">
       {{ hint }}
     </div>
+
+    <!-- Color Picker Modal -->
+    <Teleport to="body">
+      <Transition
+        enter-active-class="transition duration-200 ease-out"
+        enter-from-class="opacity-0"
+        enter-to-class="opacity-100"
+        leave-active-class="transition duration-150 ease-in"
+        leave-from-class="opacity-100"
+        leave-to-class="opacity-0"
+      >
+        <div
+          v-if="isOpen"
+          class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          @click="handleBackdropClick"
+          @keydown.esc="handleClose"
+        >
+          <Transition
+            enter-active-class="transition duration-200 ease-out"
+            enter-from-class="opacity-0 scale-95 translate-y-4"
+            enter-to-class="opacity-100 scale-100 translate-y-0"
+            leave-active-class="transition duration-150 ease-in"
+            leave-from-class="opacity-100 scale-100 translate-y-0"
+            leave-to-class="opacity-0 scale-95 translate-y-4"
+          >
+            <div
+              v-if="isOpen"
+              ref="modalRef"
+              role="dialog"
+              aria-modal="true"
+              :aria-label="`${label || 'Color'} picker`"
+              class="relative w-full max-w-md rounded-lg bg-white p-6 shadow-2xl"
+              @click.stop
+            >
+              <!-- Modal Header -->
+              <div class="mb-4 flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-900">
+                  {{ label || "Choose Color" }}
+                </h3>
+                <button
+                  type="button"
+                  class="text-core-400 hover:text-core-600 rounded-lg p-1 transition-colors hover:bg-gray-100"
+                  aria-label="Close color picker"
+                  @click="handleClose"
+                >
+                  <Icon name="close" size="20" />
+                </button>
+              </div>
+
+              <!-- Color Picker -->
+              <div class="mb-4">
+                <Sketch :model-value="normalizedColor" @update:model-value="handleColorChange" />
+              </div>
+
+              <!-- Current Color Display -->
+              <div class="mb-4 flex items-center gap-3 rounded-lg border border-gray-200 p-3">
+                <div
+                  class="h-10 w-10 flex-shrink-0 rounded-lg border border-gray-300 shadow-sm"
+                  :style="{ backgroundColor: normalizedColor }"
+                  aria-hidden="true"
+                />
+                <div class="flex-1">
+                  <p class="text-xs text-gray-500">Current Color</p>
+                  <p class="font-mono text-sm font-medium text-gray-900">{{ normalizedColor }}</p>
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                  @click="handleClose"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </Transition>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -93,20 +151,20 @@
 import { ref, computed, nextTick, watch } from "vue"
 import Icon from "@components/Icon.vue"
 import { Sketch } from "@ckpack/vue-color"
-import { useClickOutside } from "@/composables/useClickOutside"
 import { safeParseColor, normalizeHexColor } from "@/utils/color-validation"
 
 /**
- * Production-ready color picker component with accessibility and UX best practices
+ * Production-ready color picker component with modal interface
  *
  * Features:
- * - Full keyboard navigation (Enter/Space to open, Esc to close, Tab to focus)
+ * - Modal-based UI (better UX than dropdown)
+ * - Full keyboard navigation (Enter/Space to open, Esc to close)
  * - ARIA attributes for screen readers
- * - Click-outside handling with proper cleanup
  * - Color validation and normalization
  * - Disabled and readonly states
  * - Error handling with accessible error messages
- * - Smooth transitions with reduced motion support
+ * - Mobile-responsive modal
+ * - Backdrop click to close
  * - TypeScript type safety
  */
 
@@ -152,13 +210,12 @@ const emit = defineEmits<Emits>()
 // Refs
 const containerRef = ref<HTMLElement | null>(null)
 const triggerRef = ref<HTMLButtonElement | null>(null)
-const dropdownRef = ref<HTMLElement | null>(null)
+const modalRef = ref<HTMLElement | null>(null)
 const isOpen = ref(false)
 
 // Computed Properties
 const inputId = computed(
-  () =>
-    props.id || props.name || `color-picker-${Math.random().toString(36).substring(2, 11)}`,
+  () => props.id || props.name || `color-picker-${Math.random().toString(36).substring(2, 11)}`,
 )
 
 const normalizedColor = computed(() => safeParseColor(props.modelValue))
@@ -191,10 +248,10 @@ const triggerClasses = computed(() => {
   return [base, stateClasses.default, stateClasses.active].join(" ")
 })
 
-// Color picker state management
+// Modal state management
 const handleTriggerClick = () => {
   if (props.disabled || props.readonly) return
-  togglePicker()
+  openPicker()
 }
 
 const handleTriggerKeydown = (event: KeyboardEvent) => {
@@ -207,35 +264,27 @@ const handleTriggerKeydown = (event: KeyboardEvent) => {
       openPicker()
     }
   }
-
-  // Close on Escape
-  if (event.key === "Escape" && isOpen.value) {
-    event.preventDefault()
-    closePicker()
-  }
-}
-
-const togglePicker = () => {
-  if (isOpen.value) {
-    closePicker()
-  } else {
-    openPicker()
-  }
 }
 
 const openPicker = async () => {
   isOpen.value = true
   emit("open")
 
-  // Focus management: Wait for dropdown to render, then focus first interactive element
+  // Prevent body scroll when modal is open
+  document.body.style.overflow = "hidden"
+
+  // Focus management: Wait for modal to render, then focus first interactive element
   await nextTick()
-  const firstInput = dropdownRef.value?.querySelector<HTMLInputElement>("input")
+  const firstInput = modalRef.value?.querySelector<HTMLInputElement>("input")
   firstInput?.focus()
 }
 
 const closePicker = () => {
   isOpen.value = false
   emit("close")
+
+  // Restore body scroll
+  document.body.style.overflow = ""
 
   // Return focus to trigger button for accessibility
   nextTick(() => {
@@ -247,27 +296,37 @@ const handleClose = () => {
   closePicker()
 }
 
-// Color change handler with validation
-interface ColorObject {
-  hex?: string
-  hex8?: string
-  rgba?: { r: string | number; g: string | number; b: string | number; a: string | number }
-  hsl?: { h: string | number; s: string | number; l: string | number; a: string | number }
+const handleBackdropClick = (event: MouseEvent) => {
+  // Only close if clicking the backdrop, not the modal content
+  if (event.target === event.currentTarget) {
+    closePicker()
+  }
 }
 
-const handleColorChange = (color: ColorObject) => {
+// Color change handler with validation
+interface SketchColorPayload {
+  hex?: string
+  hex8?: string
+  rgba?: {
+    r: string | number
+    g: string | number
+    b: string | number
+    a: string | number
+  }
+  hsl?: {
+    h: string | number
+    s: string | number
+    l: string | number
+    a?: string | number
+  }
+}
+
+const handleColorChange = (color: SketchColorPayload) => {
   if (!color?.hex) return
 
   const normalizedHex = normalizeHexColor(color.hex)
   emit("update:modelValue", normalizedHex)
 }
-
-// Click outside handling
-useClickOutside([containerRef], () => {
-  if (isOpen.value) {
-    closePicker()
-  }
-})
 
 // Watch for external changes to close the picker if disabled
 watch(
@@ -278,4 +337,11 @@ watch(
     }
   },
 )
+
+// Cleanup on unmount
+watch(isOpen, (newIsOpen) => {
+  if (!newIsOpen) {
+    document.body.style.overflow = ""
+  }
+})
 </script>
