@@ -84,7 +84,12 @@
             <AppButton
               type="submit"
               label="Continue"
-              @click="showShipbubbleScreens = true"
+              @click="
+                () => {
+                  showShipbubbleScreens = true
+                  emit('update:modelValue', false)
+                }
+              "
               class="w-full md:w-40"
             />
           </div>
