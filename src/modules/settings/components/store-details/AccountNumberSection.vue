@@ -49,8 +49,8 @@ const validateAccountNumber = (account_number: string, bank_code: string) => {
     { account_number, bank_code },
     {
       onSuccess: ({ data }) => {
-        console.log("Resolved account name:", data?.data?.account_name)
-        const acct_name = data?.data?.account_name
+        console.log("Resolved account name:", data?.data?.data)
+        const acct_name = data?.data?.data?.account_name
         if (acct_name) {
           accountName.value = acct_name
           setValues({ account_name: acct_name })

@@ -136,17 +136,18 @@ export interface IPlansResponse {
 }
 
 export interface IPopupSettings {
-  is_enabled: boolean
+  uid: string
+  is_published: boolean
   headline: string
-  body_text: string
-  cta_button_text: string
-  cta_button_link: string
+  body: string
+  cta_text: string
+  cta_link: string
 }
 
 export interface IStoreTheme {
   uid: string
   name: string
   description: string
-  image: string
-  is_active: boolean
+  preview_image: string
+  in_use: boolean
 }
