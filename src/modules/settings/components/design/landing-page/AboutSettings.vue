@@ -37,7 +37,7 @@
       </div>
 
       <div class="flex justify-end">
-        <AppButton type="submit" label="Save Section" />
+        <AppButton type="submit" label="Save Section" :loading="isPending" />
       </div>
     </AppForm>
   </div>
@@ -45,49 +45,92 @@
 
 <script setup lang="ts">
 import * as yup from "yup"
-import { reactive } from "vue"
+import { reactive, watch, computed } from "vue"
 import AppButton from "@components/AppButton.vue"
 import AppForm from "@components/form/AppForm.vue"
 import FormField from "@components/form/FormField.vue"
+import { useGetStorefrontSections, useUpdateStorefrontSection } from "@modules/settings/api"
+import { toast } from "@/composables/useToast"
+import { displayError } from "@/utils/error-handler"
 
 // Define form data interface
-interface HeroFormData {
-  title: string
+interface AboutFormData {
+  headline: string
   description?: string
   image?: File | null
 }
 
+// API composables
+const { data: landingPageData, refetch } = useGetStorefrontSections()
+const { mutate: updateSection, isPending } = useUpdateStorefrontSection()
+
+// Get about section from landing page data
+const aboutSection = computed(() => {
+  const sections = landingPageData.value || []
+  for (const section of sections) {
+    const aboutItem = section.items?.find((item) => item.id === "about")
+    if (aboutItem) return { sectionUid: section.uid, ...aboutItem }
+  }
+  return null
+})
+
 // Validation schema using Yup
 const validationSchema = yup.object({
-  title: yup
+  headline: yup
     .string()
-    .required("Title is required")
-    .min(3, "Title must be at least 3 characters")
-    .max(100, "Title must not exceed 100 characters"),
-  description: yup.string().max(500, "Subtitle must not exceed 500 characters").optional(),
+    .required("Headline is required")
+    .min(3, "Headline must be at least 3 characters")
+    .max(100, "Headline must not exceed 100 characters"),
+  description: yup.string().max(500, "Description must not exceed 500 characters").optional(),
   image: yup.mixed().optional(),
 })
 
 // Initial form values
-const initialValues = reactive<HeroFormData>({
-  title: "",
+const initialValues = reactive<AboutFormData>({
+  headline: "",
   description: "",
   image: null,
 })
 
+// Watch for API data and populate form
+watch(
+  () => aboutSection.value,
+  (section) => {
+    if (section) {
+      Object.assign(initialValues, {
+        headline: (section as Record<string, unknown>).headline || "",
+        description: (section as Record<string, unknown>).description || "",
+      })
+    }
+  },
+  { immediate: true },
+)
+
 // Form submit handler
-const handleFormSubmit = (values: HeroFormData) => {
-  console.log("Hero Settings Form Data:", values)
-
-  // Validate if form has any values
-  const hasData = Object.values(values).some((value) => {
-    if (typeof value === "string") return value.trim() !== ""
-    return value !== null && value !== undefined
-  })
-
-  if (!hasData) {
-    console.warn("Form submitted with no data")
+const handleFormSubmit = (values: AboutFormData) => {
+  if (!aboutSection.value?.sectionUid) {
+    toast.error("Section not found")
     return
   }
+
+  const formData = new FormData()
+  formData.append("id", "about")
+  formData.append("headline", values.headline)
+  if (values.description) formData.append("description", values.description)
+  if (values.image) formData.append("image", values.image)
+
+  updateSection(
+    {
+      id: aboutSection.value.sectionUid,
+      body: formData as unknown as Record<string, unknown>,
+    },
+    {
+      onSuccess: () => {
+        toast.success("About section updated successfully")
+        refetch()
+      },
+      onError: displayError,
+    },
+  )
 }
 </script>

@@ -3,11 +3,16 @@
     <div class="mb-4 flex items-center gap-6 border-b border-gray-200 pb-4">
       <SectionHeader title="Landing Page" size="sm" subtitle="Configure your landing page" />
       <AppButton icon="clock-rewind" color="alt" size="sm" class="ml-auto" />
-      <AppButton label="Publish Page" class="!hidden md:!inline-flex" />
+      <AppButton
+        :loading="isPending"
+        label="Publish Page"
+        class="!hidden md:!inline-flex"
+        @click="publishPage"
+      />
     </div>
     <!-- mobile -->
     <div class="fixed bottom-0 left-0 z-10 w-full border-t border-gray-200 bg-white p-4 md:hidden">
-      <AppButton label="Publish Page" class="w-full" />
+      <AppButton :loading="isPending" label="Publish Page" class="w-full" @click="publishPage" />
     </div>
 
     <div class="flex flex-col gap-6 md:flex-row">
@@ -135,25 +140,58 @@ import NewsletterSignup from "@modules/settings/components/design/landing-page/N
 import TestimonialsSettings from "@modules/settings/components/design/landing-page/TestimonialsSettings.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import AppButton from "@components/AppButton.vue"
+import { useGetStorefrontSections, useUpdateStorefrontSectionsOrder } from "@modules/settings/api"
+import { toast } from "@/composables/useToast"
+import { displayError } from "@/utils/error-handler"
+
+const { mutate: updateLandingPageItemsOrder, isPending } = useUpdateStorefrontSectionsOrder()
+const { data: landingPageData, refetch } = useGetStorefrontSections()
 
 const designItems = ref([
-  { id: "hero", label: "Hero", icon: "star" },
-  { id: "featured-products", label: "Featured Products", icon: "bag-2" },
-  { id: "about", label: "About", icon: "information" },
-  { id: "cta-block-1", label: "CTA Block 1", icon: "announcements" },
-  { id: "cta-block-2", label: "CTA Block 2", icon: "announcements" },
-  { id: "cta-block-3", label: "CTA Block 3", icon: "announcements" },
-  { id: "testimonials", label: "Testimonials", icon: "message-favorite" },
-  //   { id: "highlight-banner", label: "Highlight Banner", icon: "tag" },
-  { id: "newsletter-signup", label: "Newsletter Signup", icon: "sms" },
+  { id: "hero", label: "Hero", icon: "star", order: 0, is_visible: true },
+  {
+    id: "featured-products",
+    label: "Featured Products",
+    icon: "bag-2",
+    order: 1,
+    is_visible: true,
+  },
+  { id: "about", label: "About", icon: "information", order: 2, is_visible: true },
+  { id: "cta-block-1", label: "CTA Block 1", icon: "announcements", order: 3, is_visible: true },
+  { id: "cta-block-2", label: "CTA Block 2", icon: "announcements", order: 4, is_visible: true },
+  { id: "cta-block-3", label: "CTA Block 3", icon: "announcements", order: 5, is_visible: true },
+  {
+    id: "testimonials",
+    label: "Testimonials",
+    icon: "message-favorite",
+    order: 6,
+    is_visible: true,
+  },
+  //   { id: "highlight-banner", label: "Highlight Banner", icon: "tag", order: 7, is_visible: true },
+  {
+    id: "newsletter-signup",
+    label: "Newsletter Signup",
+    icon: "sms",
+    order: 7,
+    is_visible: true,
+  },
 ])
 
 const activeSection = ref<string>("logo-favicon")
 const expandedSection = ref<string | null>(null)
 
-const onDragEnd = (event: { oldIndex: number; newIndex: number }) => {
-  console.log("Drag ended:", event)
-}
+// Watch for API data and sync to local state
+watch(
+  () => landingPageData.value,
+  (newData) => {
+    if (newData && newData.length > 0 && newData[0]?.items) {
+      designItems.value = newData[0].items
+    }
+  },
+  { immediate: true },
+)
+
+const onDragEnd = () => {}
 
 const toggleSection = (id: string): void => {
   expandedSection.value = expandedSection.value === id ? null : id
@@ -179,9 +217,23 @@ const getSectionComponent = (id: string): Component => {
   return components[id] || HeroSettings
 }
 
-watch(designItems, (newOrder) => {
-  console.log("New design items order:", newOrder)
-})
+const publishPage = () => {
+  const items = designItems.value.map((item) => ({
+    uid: item.id,
+    order: item.order,
+  }))
+
+  updateLandingPageItemsOrder(
+    { items },
+    {
+      onSuccess: () => {
+        toast.success("Landing page published successfully")
+        refetch()
+      },
+      onError: displayError,
+    },
+  )
+}
 </script>
 
 <style scoped>

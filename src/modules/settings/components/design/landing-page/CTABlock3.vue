@@ -46,7 +46,7 @@
       </div>
 
       <div class="flex justify-end">
-        <AppButton type="submit" label="Save Section" />
+        <AppButton type="submit" label="Save Section" :loading="isPending" />
       </div>
     </AppForm>
   </div>
@@ -54,27 +54,44 @@
 
 <script setup lang="ts">
 import * as yup from "yup"
-import { reactive } from "vue"
+import { reactive, watch, computed } from "vue"
 import AppButton from "@components/AppButton.vue"
 import AppForm from "@components/form/AppForm.vue"
 import FormField from "@components/form/FormField.vue"
+import { useGetStorefrontSections, useUpdateStorefrontSection } from "@modules/settings/api"
+import { toast } from "@/composables/useToast"
+import { displayError } from "@/utils/error-handler"
 
 // Define form data interface
-interface HeroFormData {
-  title: string
+interface CTABlockFormData {
+  headline: string
   body_text?: string
   cta_button_text?: string
   cta_button_link?: string
   image?: File | null
 }
 
+// API composables
+const { data: landingPageData, refetch } = useGetStorefrontSections()
+const { mutate: updateSection, isPending } = useUpdateStorefrontSection()
+
+// Get CTA block 3 section from landing page data
+const ctaBlock3Section = computed(() => {
+  const sections = landingPageData.value || []
+  for (const section of sections) {
+    const item = section.items?.find((i) => i.id === "cta-block-3")
+    if (item) return { sectionUid: section.uid, ...item }
+  }
+  return null
+})
+
 // Validation schema using Yup
 const validationSchema = yup.object({
-  title: yup
+  headline: yup
     .string()
-    .required("Title is required")
-    .min(3, "Title must be at least 3 characters")
-    .max(100, "Title must not exceed 100 characters"),
+    .required("Headline is required")
+    .min(3, "Headline must be at least 3 characters")
+    .max(100, "Headline must not exceed 100 characters"),
   body_text: yup.string().max(500, "Body Text must not exceed 500 characters").optional(),
   cta_button_text: yup.string().max(50, "CTA button text must not exceed 50 characters").optional(),
   cta_button_link: yup.string().url("Please enter a valid URL").optional(),
@@ -82,27 +99,58 @@ const validationSchema = yup.object({
 })
 
 // Initial form values
-const initialValues = reactive<HeroFormData>({
-  title: "",
+const initialValues = reactive<CTABlockFormData>({
+  headline: "",
   body_text: "",
   cta_button_text: "",
   cta_button_link: "",
   image: null,
 })
 
+// Watch for API data and populate form
+watch(
+  () => ctaBlock3Section.value,
+  (section) => {
+    if (section) {
+      const sectionData = section as Record<string, unknown>
+      Object.assign(initialValues, {
+        headline: sectionData.headline || "",
+        body_text: sectionData.body_text || "",
+        cta_button_text: sectionData.cta_button_text || "",
+        cta_button_link: sectionData.cta_button_link || "",
+      })
+    }
+  },
+  { immediate: true },
+)
+
 // Form submit handler
-const handleFormSubmit = (values: HeroFormData) => {
-  console.log("Hero Settings Form Data:", values)
-
-  // Validate if form has any values
-  const hasData = Object.values(values).some((value) => {
-    if (typeof value === "string") return value.trim() !== ""
-    return value !== null && value !== undefined
-  })
-
-  if (!hasData) {
-    console.warn("Form submitted with no data")
+const handleFormSubmit = (values: CTABlockFormData) => {
+  if (!ctaBlock3Section.value?.sectionUid) {
+    toast.error("Section not found")
     return
   }
+
+  const formData = new FormData()
+  formData.append("id", "cta-block-3")
+  formData.append("headline", values.headline)
+  if (values.body_text) formData.append("body_text", values.body_text)
+  if (values.cta_button_text) formData.append("cta_button_text", values.cta_button_text)
+  if (values.cta_button_link) formData.append("cta_button_link", values.cta_button_link)
+  if (values.image) formData.append("image", values.image)
+
+  updateSection(
+    {
+      id: ctaBlock3Section.value.sectionUid,
+      body: formData as unknown as Record<string, unknown>,
+    },
+    {
+      onSuccess: () => {
+        toast.success("CTA Block 3 section updated successfully")
+        refetch()
+      },
+      onError: displayError,
+    },
+  )
 }
 </script>

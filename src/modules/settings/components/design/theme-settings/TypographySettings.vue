@@ -55,4 +55,15 @@ const fontPairings: FontPairing[] = [
 ]
 
 const selectedFont = ref<string>("modern")
+
+// Expose method to get values
+const getValues = () => {
+  return {
+    font: selectedFont.value,
+  }
+}
+
+defineExpose({
+  getValues,
+})
 </script>

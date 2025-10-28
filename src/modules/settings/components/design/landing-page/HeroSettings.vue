@@ -46,7 +46,7 @@
       </div>
 
       <div class="flex justify-end">
-        <AppButton type="submit" label="Save Section" />
+        <AppButton type="submit" label="Save Section" :loading="isPending" />
       </div>
     </AppForm>
   </div>
@@ -54,10 +54,13 @@
 
 <script setup lang="ts">
 import * as yup from "yup"
-import { reactive } from "vue"
+import { reactive, watch, computed } from "vue"
 import AppButton from "@components/AppButton.vue"
 import AppForm from "@components/form/AppForm.vue"
 import FormField from "@components/form/FormField.vue"
+import { useGetStorefrontSections, useUpdateStorefrontSection } from "@modules/settings/api"
+import { toast } from "@/composables/useToast"
+import { displayError } from "@/utils/error-handler"
 
 // Define form data interface
 interface HeroFormData {
@@ -67,6 +70,20 @@ interface HeroFormData {
   cta_button_link?: string
   hero_image?: File | null
 }
+
+// API composables
+const { data: landingPageData, refetch } = useGetStorefrontSections()
+const { mutate: updateSection, isPending } = useUpdateStorefrontSection()
+
+// Get hero section from landing page data
+const heroSection = computed(() => {
+  const sections = landingPageData.value || []
+  for (const section of sections) {
+    const heroItem = section.items?.find((item) => item.id === "hero")
+    if (heroItem) return { sectionUid: section.uid, ...heroItem }
+  }
+  return null
+})
 
 // Validation schema using Yup
 const validationSchema = yup.object({
@@ -90,30 +107,47 @@ const initialValues = reactive<HeroFormData>({
   hero_image: null,
 })
 
+// Watch for API data and populate form
+watch(
+  () => heroSection.value,
+  (section) => {
+    if (section) {
+      // Populate form with API data when available
+      // Assuming the section has these fields, adjust as needed
+      Object.assign(initialValues, {
+        title: (section as Record<string, unknown>).title || "",
+        subtitle: (section as Record<string, unknown>).subtitle || "",
+        cta_button_text: (section as Record<string, unknown>).cta_button_text || "",
+        cta_button_link: (section as Record<string, unknown>).cta_button_link || "",
+      })
+    }
+  },
+  { immediate: true },
+)
+
 // Form submit handler
 const handleFormSubmit = (values: HeroFormData) => {
-  console.log("Hero Settings Form Data:", values)
+  // Prepare form data for multipart/form-data
+  const formData = new FormData()
+  formData.append("id", "hero")
+  formData.append("title", values.title)
+  if (values.subtitle) formData.append("subtitle", values.subtitle)
+  if (values.cta_button_text) formData.append("cta_button_text", values.cta_button_text)
+  if (values.cta_button_link) formData.append("cta_button_link", values.cta_button_link)
+  if (values.hero_image) formData.append("hero_image", values.hero_image)
 
-  // Validate if form has any values
-  const hasData = Object.values(values).some((value) => {
-    if (typeof value === "string") return value.trim() !== ""
-    return value !== null && value !== undefined
-  })
-
-  if (!hasData) {
-    console.warn("Form submitted with no data")
-    return
-  }
-
-  // Log individual field values
-  console.log("Title:", values.title)
-  console.log("Subtitle:", values.subtitle)
-  console.log("CTA Button Text:", values.cta_button_text)
-  console.log("CTA Button Link:", values.cta_button_link)
-  console.log("Hero Image:", values.hero_image)
-
-  // Here you would typically make an API call to save the data
-  // Example:
-  // await saveHeroSettings(values)
+  updateSection(
+    {
+      id: heroSection.value?.sectionUid || "",
+      body: formData as unknown as Record<string, unknown>,
+    },
+    {
+      onSuccess: () => {
+        toast.success("Hero section updated successfully")
+        refetch()
+      },
+      onError: displayError,
+    },
+  )
 }
 </script>

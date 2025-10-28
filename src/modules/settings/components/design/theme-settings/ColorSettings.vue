@@ -82,4 +82,16 @@ const customColors = ref({
   secondary: "#D0D5DD",
   tertiary: "#EAECF0",
 })
+
+// Expose method to get values
+const getValues = () => {
+  return {
+    palette: selectedPalette.value,
+    customColors: selectedPalette.value === "custom" ? customColors.value : null,
+  }
+}
+
+defineExpose({
+  getValues,
+})
 </script>

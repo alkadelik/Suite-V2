@@ -75,4 +75,15 @@ const buttonStyles: ButtonStyle[] = [
 ]
 
 const selectedStyle = ref<string>("round")
+
+// Expose method to get values
+const getValues = () => {
+  return {
+    style: selectedStyle.value,
+  }
+}
+
+defineExpose({
+  getValues,
+})
 </script>

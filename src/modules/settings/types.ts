@@ -151,3 +151,37 @@ export interface IStoreTheme {
   preview_image: string
   in_use: boolean
 }
+
+export interface ILandingPageItem {
+  id: string
+  label: string
+  icon: string
+  order: number
+  is_visible: boolean
+}
+
+export interface ILandingPageItemsOrder {
+  uid: string
+  items: ILandingPageItem[]
+}
+
+export interface IThemeSettings {
+  uid: string
+  logo: string | null
+  favicon: string | null
+  color_palette: string
+  custom_colors: {
+    primary: string
+    secondary: string
+    tertiary: string
+  } | null
+  font_pairing: string
+  button_style: string
+  support_email: string
+  support_phone: string
+  terms_conditions_link: string
+  instagram_link: string
+  facebook_link: string
+  twitter_link: string
+  tiktok_link: string
+}

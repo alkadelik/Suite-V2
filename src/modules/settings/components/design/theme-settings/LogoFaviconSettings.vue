@@ -13,6 +13,7 @@
           </div>
           <div class="w-full md:w-64">
             <FormField
+              v-model="logo"
               type="file"
               name="logo"
               accept="image/*"
@@ -35,6 +36,7 @@
           </div>
           <div class="w-full md:w-64">
             <FormField
+              v-model="favicon"
               type="file"
               name="favicon"
               accept="image/*"
@@ -49,5 +51,21 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from "vue"
 import FormField from "@components/form/FormField.vue"
+
+const logo = ref<File | null>(null)
+const favicon = ref<File | null>(null)
+
+// Expose method to get values
+const getValues = () => {
+  return {
+    logo: logo.value,
+    favicon: favicon.value,
+  }
+}
+
+defineExpose({
+  getValues,
+})
 </script>

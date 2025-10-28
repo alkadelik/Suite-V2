@@ -130,7 +130,7 @@
           @click="addTestimonial"
         />
 
-        <AppButton type="submit" label="Save Section" />
+        <AppButton type="submit" label="Save Section" :loading="isPending" />
       </div>
     </AppForm>
   </div>
@@ -138,11 +138,14 @@
 
 <script setup lang="ts">
 import * as yup from "yup"
-import { reactive, ref } from "vue"
+import { reactive, ref, watch, computed } from "vue"
 import AppButton from "@components/AppButton.vue"
 import AppForm from "@components/form/AppForm.vue"
 import FormField from "@components/form/FormField.vue"
 import Collapsible from "@components/Collapsible.vue"
+import { useGetStorefrontSections, useUpdateStorefrontSection } from "@modules/settings/api"
+import { toast } from "@/composables/useToast"
+import { displayError } from "@/utils/error-handler"
 
 // Define testimonial interface
 interface Testimonial {
@@ -162,6 +165,20 @@ interface TestimonialsFormData {
   image?: File | null
   additional_testimonials: Testimonial[]
 }
+
+// API composables
+const { data: landingPageData, refetch } = useGetStorefrontSections()
+const { mutate: updateSection, isPending } = useUpdateStorefrontSection()
+
+// Get testimonials section from landing page data
+const testimonialsSection = computed(() => {
+  const sections = landingPageData.value || []
+  for (const section of sections) {
+    const item = section.items?.find((i) => i.id === "testimonials")
+    if (item) return { sectionUid: section.uid, ...item }
+  }
+  return null
+})
 
 // State for additional testimonials
 const additionalTestimonials = ref<Testimonial[]>([])
@@ -221,6 +238,27 @@ const initialValues = reactive<TestimonialsFormData>({
   additional_testimonials: [],
 })
 
+// Watch for API data and populate form
+watch(
+  () => testimonialsSection.value,
+  (section) => {
+    if (section) {
+      const sectionData = section as Record<string, unknown>
+      Object.assign(initialValues, {
+        section_title: sectionData.section_title || "",
+        quote: sectionData.quote || "",
+        name: sectionData.name || "",
+        descriptor: sectionData.descriptor || "",
+      })
+      if (Array.isArray(sectionData.additional_testimonials)) {
+        additionalTestimonials.value = sectionData.additional_testimonials as Testimonial[]
+        initialValues.additional_testimonials = [...additionalTestimonials.value]
+      }
+    }
+  },
+  { immediate: true },
+)
+
 // Generate unique ID for testimonials
 const generateId = (): string => {
   return `testimonial_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
@@ -248,32 +286,31 @@ const removeTestimonial = (index: number): void => {
 
 // Form submit handler
 const handleFormSubmit = (values: TestimonialsFormData) => {
-  console.log("Testimonials Settings Form Data:", values)
+  const formData = new FormData()
+  formData.append("id", "testimonials")
+  formData.append("section_title", values.section_title)
+  formData.append("quote", values.quote)
+  formData.append("name", values.name)
+  formData.append("descriptor", values.descriptor)
+  if (values.image) formData.append("image", values.image)
 
-  // Validate if form has any values
-  const hasData = Object.values(values).some((value) => {
-    if (typeof value === "string") return value.trim() !== ""
-    if (Array.isArray(value)) return value.length > 0
-    return value !== null && value !== undefined
-  })
-
-  if (!hasData) {
-    console.warn("Form submitted with no data")
-    return
+  // Add additional testimonials
+  if (values.additional_testimonials && values.additional_testimonials.length > 0) {
+    formData.append("additional_testimonials", JSON.stringify(values.additional_testimonials))
   }
 
-  // Log individual field values
-  console.log("Section Title:", values.section_title)
-  console.log("Primary Testimonial:", {
-    quote: values.quote,
-    name: values.name,
-    descriptor: values.descriptor,
-    image: values.image,
-  })
-  console.log("Additional Testimonials:", values.additional_testimonials)
-
-  // Here you would typically make an API call to save the data
-  // Example:
-  // await saveTestimonialsSettings(values)
+  updateSection(
+    {
+      id: testimonialsSection.value?.sectionUid || "",
+      body: formData as unknown as Record<string, unknown>,
+    },
+    {
+      onSuccess: () => {
+        toast.success("Testimonials section updated successfully")
+        refetch()
+      },
+      onError: displayError,
+    },
+  )
 }
 </script>
