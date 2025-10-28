@@ -37,15 +37,15 @@ defineProps<{
       <p>loading...</p>
     </div>
 
-    <div class="grid grid-cols-2 gap-4 md:grid-cols-2">
+    <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
       <div
         v-for="(item, i) in items"
         :key="i"
         class="bg-primary-25 border-primary-200 flex flex-col gap-1 rounded-lg border px-3.5 py-3 shadow-sm md:gap-3 md:border-0 md:bg-white"
       >
         <!-- Top section -->
-        <div class="md: inline-flex flex-col gap-5 md:flex-row md:items-center md:gap-2">
-          <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-gray-50">
+        <div class="md: inline-flex flex-row items-center gap-2 md:flex-row md:gap-2">
+          <span class="flex size-7 items-center justify-center rounded-2xl bg-gray-50 md:size-10">
             <Icon :name="item.icon" :class="['text-primary-600', item.iconClass]" :size="24" />
           </span>
           <h4 class="text-core-600 !font-outfit flex items-end gap-1.5 text-sm">

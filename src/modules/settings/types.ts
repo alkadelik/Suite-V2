@@ -134,3 +134,20 @@ export interface IPlansResponse {
   message?: string
   success?: boolean
 }
+
+export interface IPopupSettings {
+  uid: string
+  is_published: boolean
+  headline: string
+  body: string
+  cta_text: string
+  cta_link: string
+}
+
+export interface IStoreTheme {
+  uid: string
+  name: string
+  description: string
+  preview_image: string
+  in_use: boolean
+}
