@@ -20,31 +20,23 @@ const popupSchema = yup.object({
     .required("Headline is required")
     .min(5, "Headline must be at least 5 characters")
     .max(100, "Headline must not exceed 100 characters"),
-  body_text: yup
+  body: yup
     .string()
     .required("Body text is required")
     .min(10, "Body text must be at least 10 characters")
     .max(500, "Body text must not exceed 500 characters"),
-  cta_button_text: yup
+  cta_text: yup
     .string()
     .required("CTA button text is required")
     .min(2, "CTA button text must be at least 2 characters")
     .max(30, "CTA button text must not exceed 30 characters"),
-  cta_button_link: yup
+  cta_link: yup
     .string()
     .required("CTA button link is required")
     .url("Please enter a valid URL (e.g., https://example.com)"),
 })
 
-const { handleSubmit, setValues, meta } = useForm({
-  validationSchema: popupSchema,
-  initialValues: {
-    headline: "",
-    body_text: "",
-    cta_button_text: "",
-    cta_button_link: "",
-  },
-})
+const { handleSubmit, setValues, meta } = useForm({ validationSchema: popupSchema })
 
 const { mutate: updatePopupSettings, isPending } = useUpdatePopupSettings()
 const { data: popupSettings, refetch } = useGetPopupSettings()
@@ -52,28 +44,44 @@ const { data: popupSettings, refetch } = useGetPopupSettings()
 watch(
   () => popupSettings.value,
   (newSettings) => {
-    if (newSettings) {
-      enablePopup.value = newSettings.is_enabled
+    if (newSettings?.results[0]) {
+      const settings = newSettings.results[0]
+      enablePopup.value = settings.is_published
       setValues({
-        headline: newSettings.headline || "",
-        body_text: newSettings.body_text || "",
-        cta_button_text: newSettings.cta_button_text || "",
-        cta_button_link: newSettings.cta_button_link || "",
+        headline: settings.headline || "",
+        body: settings.body || "",
+        cta_text: settings.cta_text || "",
+        cta_link: settings.cta_link || "",
       })
     }
   },
   { immediate: true },
 )
 
-const onSubmit = handleSubmit((formData) => {
-  updatePopupSettings(formData, {
-    onSuccess: () => {
-      toast.success("Popup settings updated successfully")
-      refetch()
+const performUpdate = (body: Record<string, unknown>) => {
+  updatePopupSettings(
+    { id: popupSettings.value?.results[0].uid || "", body },
+    {
+      onSuccess: () => {
+        toast.success(
+          enablePopup.value ? "Popup enabled successfully" : "Popup disabled successfully",
+        )
+        refetch()
+      },
+      onError: displayError,
     },
-    onError: displayError,
-  })
-}, onInvalidSubmit)
+  )
+}
+
+const applyPopupSettings = () => {
+  if (!enablePopup.value) {
+    performUpdate({ is_published: false })
+  } else {
+    handleSubmit((formData) => {
+      performUpdate({ ...formData, is_published: true })
+    }, onInvalidSubmit)()
+  }
+}
 </script>
 
 <template>
@@ -85,8 +93,8 @@ const onSubmit = handleSubmit((formData) => {
         label="Publish PopUp"
         class="!hidden md:!inline-flex"
         :loading="isPending"
-        :inactive="!meta.valid"
-        @click="onSubmit"
+        :inactive="enablePopup && !meta.valid"
+        @click="applyPopupSettings"
       />
     </div>
     <!-- mobile -->
@@ -95,8 +103,8 @@ const onSubmit = handleSubmit((formData) => {
         label="Publish PopUp"
         class="w-full"
         :loading="isPending"
-        :inactive="!meta.valid"
-        @click="onSubmit"
+        :inactive="enablePopup && !meta.valid"
+        @click="applyPopupSettings"
       />
     </div>
 
@@ -123,7 +131,7 @@ const onSubmit = handleSubmit((formData) => {
           />
 
           <FormField
-            name="body_text"
+            name="body"
             type="textarea"
             label="Body Text"
             placeholder="Enter Popup body text here"
@@ -132,13 +140,13 @@ const onSubmit = handleSubmit((formData) => {
 
           <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <FormField
-              name="cta_button_text"
+              name="cta_text"
               label="CTA Button Text"
               placeholder="e.g. Shop Now"
               required
             />
             <FormField
-              name="cta_button_link"
+              name="cta_link"
               label="CTA Button Link"
               placeholder="e.g. https://yourstore.com/shop"
               type="url"

@@ -163,21 +163,22 @@ export function useInitializeSubscription() {
 
 export function useUpdatePopupSettings() {
   return useMutation({
-    mutationFn: (body: Partial<IPopupSettings>) => baseApi.put(`/stores/settings/popup`, body),
+    mutationFn: ({ id, body }: { id: string; body: Partial<IPopupSettings> }) =>
+      baseApi.patch(`/storefront/popup/${id}/`, body),
   })
 }
 
 export function useGetPopupSettings() {
-  return useApiQuery<IPopupSettings>({
-    url: `/stores/settings/popup`,
+  return useApiQuery<{ results: IPopupSettings[] }>({
+    url: `/storefront/popup/`,
     key: `popup-settings`,
     selectData: true,
   })
 }
 
 export function useGetStoreThemes() {
-  return useApiQuery<IStoreTheme[]>({
-    url: `/stores/settings/themes`,
+  return useApiQuery<{ results: IStoreTheme[] }>({
+    url: `/storefront/themes`,
     key: `store-themes`,
     selectData: true,
   })
@@ -185,7 +186,6 @@ export function useGetStoreThemes() {
 
 export function useUpdateActiveTheme() {
   return useMutation({
-    mutationFn: (id: string) =>
-      baseApi.patch(`/stores/settings/themes/${id}/`, { is_active: true }),
+    mutationFn: (id: string) => baseApi.post(`/storefront/themes/${id}/apply/`, {}),
   })
 }

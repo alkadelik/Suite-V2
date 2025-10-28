@@ -81,34 +81,34 @@ const FEATURES = [
   {
     title: "Take more orders, faster",
     subtitle: "Keep track of every order; paid, unpaid, or pending - without losing your mind.",
-    icon: "mynaui:chat-messages",
+    icon: "message-chat-circle",
   },
   {
     title: "Popups that work for you",
     subtitle: "Create popups, add inventory, and track every sale—both in person and online.",
-    icon: "mingcute:flash-line",
+    icon: "zap",
   },
   {
     title: "Know your customers",
     subtitle: "See who's buying, what they like, and keep them coming back.",
-    icon: "hugeicons:chart-breakout-square",
+    icon: "chart-breakout-square",
   },
   {
     title: "Automated delivery service",
     subtitle:
       "Ship faster and keep customers happy. Connect to reliable delivery partners in one click.",
-    icon: "streamline:chat-bubble-oval-smiley-1",
+    icon: "message-smile-circle",
   },
   {
     title: "Partial & unpaid orders",
     subtitle: "Split payments? Pending payments? We handle it. Stay organized, always.",
-    icon: "lucide:command",
+    icon: "command",
   },
   {
     title: "Invoices & Receipts",
     subtitle:
       "Send professional invoices and receipts automatically and manually - your customers will thank you.",
-    icon: "lucide:message-circle-heart",
+    icon: "message-heart-circle",
   },
 ]
 
@@ -160,7 +160,7 @@ onMounted(() => {
               label="Demo"
               variant="outlined"
               class="w-full border-gray-300 !bg-white text-gray-700 sm:w-auto xl:w-1/2"
-              icon="pause"
+              icon="play-circle"
               icon-class="h-6 w-6 text-gray-700"
             />
             <AppButton
@@ -258,7 +258,7 @@ onMounted(() => {
             <span
               class="bg-primary-500/10 border-primary-500/40 ring-primary-500/30 mb-3 flex h-12 w-12 items-center justify-center rounded-full border-4 ring-4"
             >
-              <Icon :name="'box' || feat.icon" class="text-primary-500 h-6 w-6" />
+              <Icon :name="feat.icon" class="text-primary-500 h-6 w-6" />
             </span>
             <h4 class="mb-1 text-lg font-semibold">{{ feat.title }}</h4>
             <p class="text-core-600 text-base">
