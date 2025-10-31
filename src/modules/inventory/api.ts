@@ -17,6 +17,7 @@ import {
   IProductVariant,
   IInventoryTransferRequestsApiResponse,
   IApproveRejectRequestPayload,
+  IBulkVariantPayload,
 } from "./types"
 
 /** Get categories api request */
@@ -57,6 +58,30 @@ export function useUpdateVariant() {
   return useMutation({
     mutationFn: ({ uid, ...body }: Partial<IProductVariant> & { uid: string }) =>
       baseApi.patch(`inventory/variants/${uid}/`, body),
+  })
+}
+
+/** Bulk variant operations (add and delete variants) */
+export function useBulkVariantOperations() {
+  return useMutation({
+    mutationFn: ({ productUid, ...payload }: IBulkVariantPayload & { productUid: string }) =>
+      baseApi.post(`inventory/products/${productUid}/bulk-variants/`, payload),
+  })
+}
+
+/** Update variant image */
+export function useUpdateVariantImage() {
+  return useMutation({
+    mutationFn: ({ variantUid, image }: { variantUid: string; image: File }) => {
+      const formData = new FormData()
+      formData.append("image", image)
+
+      return baseApi.post(`inventory/variants/${variantUid}/update-image/`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      })
+    },
   })
 }
 

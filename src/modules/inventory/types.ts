@@ -69,6 +69,7 @@ export interface IProductVariantDetails {
   name: string
   sku: string
   price: string
+  image: string | null
   promo_price: string
   promo_expiry: string
   cost_price: string
@@ -434,6 +435,12 @@ export interface IApproveRejectRequestPayload {
   request_ids: string[]
   action: "approve" | "reject"
   note?: string
+}
+
+// Bulk variant operations payload
+export interface IBulkVariantPayload {
+  to_delete?: string[]
+  to_add?: IProductVariant[]
 }
 
 // ============================================================================

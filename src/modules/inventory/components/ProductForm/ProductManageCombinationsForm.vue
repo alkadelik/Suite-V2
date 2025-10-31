@@ -191,8 +191,8 @@ interface Props {
   productName?: string
   /** Hide the stock/quantity field (for variant-details edit mode) */
   hideStock?: boolean
-  /** Deleted variants to display (only in edit mode) */
-  deletedVariants?: IProductVariantDetails[]
+  /** Deleted variants to display (only in edit mode) - no UIDs, just attributes */
+  deletedVariants?: IProductVariant[]
 }
 
 interface Emits {

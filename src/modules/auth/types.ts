@@ -5,18 +5,34 @@ export interface IUserRole {
   type: string
 }
 
+export interface ISubscription {
+  uid: string
+  plan_name: string
+  plan_price: string
+  plan_frequency: string
+  active_until: string
+  is_active: boolean
+  trial_mode: boolean
+  subscription_id: string
+}
+
 export interface IUser {
   uid: string
   avatar?: string | null
+  avatar_url?: string | null
   first_name: string
   last_name: string
   email?: string
   is_email_verified: boolean
   assigned_locations: { uid: string; name: string }[]
   roles: IUserRole[]
-  subscription: string | null
+  subscription: ISubscription | null
   store_slug?: string
   store_uid: string
+  gender?: string | null
+  address?: string | null
+  state?: string | null
+  country?: string | null
   store?: {
     business_name: string
     address: string
@@ -44,7 +60,7 @@ export interface ILoginResponse {
     is_email_verified: boolean
     assigned_locations: { uid: string; name: string }[]
     roles: IUserRole[]
-    subscription: string | null
+    subscription: ISubscription | null
     store_uid: string
     store_slug: string
   }
