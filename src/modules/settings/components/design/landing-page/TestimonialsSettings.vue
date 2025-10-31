@@ -4,12 +4,7 @@
       <h4 class="text-lg font-semibold text-gray-900">Testimonials</h4>
     </div>
 
-    <AppForm
-      :schema="validationSchema"
-      :initial-values="initialValues"
-      @submit="handleFormSubmit"
-      class="grid gap-6 md:p-6"
-    >
+    <form @submit="onSubmit" class="grid gap-6 md:p-6">
       <div class="border-b border-gray-200 pb-6">
         <FormField
           name="section_title"
@@ -130,21 +125,24 @@
           @click="addTestimonial"
         />
 
-        <AppButton type="submit" label="Save Section" />
+        <AppButton type="submit" label="Save Section" :loading="isPending" />
       </div>
-    </AppForm>
+    </form>
   </div>
 </template>
 
 <script setup lang="ts">
 import * as yup from "yup"
-import { reactive, ref } from "vue"
+import { ref, watch } from "vue"
+import { useForm } from "vee-validate"
 import AppButton from "@components/AppButton.vue"
-import AppForm from "@components/form/AppForm.vue"
 import FormField from "@components/form/FormField.vue"
 import Collapsible from "@components/Collapsible.vue"
+import { useUpdateStorefrontSection } from "@modules/settings/api"
+import type { ThemeSection } from "@modules/settings/types"
+import { toast } from "@/composables/useToast"
+import { displayError } from "@/utils/error-handler"
 
-// Define testimonial interface
 interface Testimonial {
   id: string
   quote: string
@@ -153,7 +151,6 @@ interface Testimonial {
   image?: File | null
 }
 
-// Define form data interface
 interface TestimonialsFormData {
   section_title: string
   quote: string
@@ -163,10 +160,13 @@ interface TestimonialsFormData {
   additional_testimonials: Testimonial[]
 }
 
-// State for additional testimonials
+const props = defineProps<{ testimonialsSection?: ThemeSection | null }>()
+const emit = defineEmits<{ refetch: [] }>()
+
+const { mutate: updateSection, isPending } = useUpdateStorefrontSection()
+
 const additionalTestimonials = ref<Testimonial[]>([])
 
-// Validation schema using Yup
 const validationSchema = yup.object({
   section_title: yup
     .string()
@@ -188,7 +188,7 @@ const validationSchema = yup.object({
     .required("Role/Descriptor is required")
     .min(2, "Role/Descriptor must be at least 2 characters")
     .max(150, "Role/Descriptor must not exceed 150 characters"),
-  image: yup.mixed().optional(),
+  image: yup.mixed().nullable().optional(),
   additional_testimonials: yup
     .array()
     .of(
@@ -205,28 +205,37 @@ const validationSchema = yup.object({
           .string()
           .min(2, "Role/Descriptor must be at least 2 characters")
           .max(150, "Role/Descriptor must not exceed 150 characters"),
-        image: yup.mixed().optional(),
+        image: yup.mixed().nullable().optional(),
       }),
     )
     .optional(),
 })
 
-// Initial form values
-const initialValues = reactive<TestimonialsFormData>({
-  section_title: "",
-  quote: "",
-  name: "",
-  descriptor: "",
-  image: null,
-  additional_testimonials: [],
+const { handleSubmit, setValues } = useForm<TestimonialsFormData>({
+  validationSchema,
 })
 
-// Generate unique ID for testimonials
+watch(
+  () => props.testimonialsSection,
+  (newSection) => {
+    if (newSection) {
+      setValues({
+        section_title: newSection.title || "",
+        quote: newSection.content || "",
+        name: "",
+        descriptor: "",
+        image: null,
+        additional_testimonials: [],
+      })
+    }
+  },
+  { immediate: true },
+)
+
 const generateId = (): string => {
   return `testimonial_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 }
 
-// Add new testimonial
 const addTestimonial = (): void => {
   const newTestimonial: Testimonial = {
     id: generateId(),
@@ -235,45 +244,32 @@ const addTestimonial = (): void => {
     descriptor: "",
     image: null,
   }
-
   additionalTestimonials.value.push(newTestimonial)
-  initialValues.additional_testimonials.push(newTestimonial)
 }
 
-// Remove testimonial
 const removeTestimonial = (index: number): void => {
   additionalTestimonials.value.splice(index, 1)
-  initialValues.additional_testimonials.splice(index, 1)
 }
 
-// Form submit handler
-const handleFormSubmit = (values: TestimonialsFormData) => {
-  console.log("Testimonials Settings Form Data:", values)
-
-  // Validate if form has any values
-  const hasData = Object.values(values).some((value) => {
-    if (typeof value === "string") return value.trim() !== ""
-    if (Array.isArray(value)) return value.length > 0
-    return value !== null && value !== undefined
-  })
-
-  if (!hasData) {
-    console.warn("Form submitted with no data")
-    return
+const onSubmit = handleSubmit((values) => {
+  if (!props.testimonialsSection?.uid) {
+    return toast.error("Testimonials section not found. Please refresh the page.")
   }
 
-  // Log individual field values
-  console.log("Section Title:", values.section_title)
-  console.log("Primary Testimonial:", {
-    quote: values.quote,
-    name: values.name,
-    descriptor: values.descriptor,
-    image: values.image,
-  })
-  console.log("Additional Testimonials:", values.additional_testimonials)
+  const formData = new FormData()
+  formData.append("title", values.section_title)
+  formData.append("content", values.quote)
+  if (values.image) formData.append("image", values.image)
 
-  // Here you would typically make an API call to save the data
-  // Example:
-  // await saveTestimonialsSettings(values)
-}
+  updateSection(
+    { id: props.testimonialsSection.uid, body: formData },
+    {
+      onSuccess: () => {
+        toast.success("Testimonials section updated successfully")
+        emit("refetch")
+      },
+      onError: displayError,
+    },
+  )
+})
 </script>

@@ -113,7 +113,7 @@ const changeTab = (tabKey: string) => {
     </div>
 
     <!-- Tabs Content with Transition -->
-    <Transition name="fade-slide" mode="out-in">
+    <Transition v-if="$slots[activeTab]" name="fade-slide" mode="out-in">
       <div :key="activeTab" class="pb-2 md:py-4">
         <slot :name="activeTab"></slot>
       </div>

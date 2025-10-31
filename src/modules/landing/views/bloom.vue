@@ -352,11 +352,13 @@ const goToTestimonial = (index: number) => {
 
         <!-- Join the Dawn Circle -->
         <AppSection class="bg-[url('/images/themes/bloom/bg-grid.svg')] py-8 md:py-16">
-          <div class="flex w-full flex-col items-center justify-center gap-8 md:flex-row md:gap-10">
+          <div
+            class="mx-auto flex w-full max-w-screen-lg flex-col items-center justify-center gap-8 md:flex-row md:gap-10"
+          >
             <div class="w-full md:w-auto" data-aos="fade-right">
               <img
                 src="/images/themes/shared/subscribe.png"
-                class="mx-auto h-[250px] w-[150px] rounded-t-full rounded-b-full object-cover md:h-[360px] md:w-[224px]"
+                class="mx-auto h-[250px] w-[150px] rounded-t-full rounded-b-full object-cover md:h-[360px] md:w-[324px]"
               />
             </div>
             <div class="w-full text-center md:text-left" data-aos="fade-left">

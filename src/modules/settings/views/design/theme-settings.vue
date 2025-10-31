@@ -3,40 +3,29 @@
     <div class="mb-4 flex items-center gap-6 border-b border-gray-200 pb-4">
       <SectionHeader title="Theme Settings" size="sm" subtitle="Customize your theme settings" />
       <AppButton icon="clock-rewind" color="alt" size="sm" class="ml-auto" />
-      <AppButton label="Publish Settings" class="!hidden md:!inline-flex" />
+      <AppButton
+        label="Publish Settings"
+        class="!hidden md:!inline-flex"
+        :loading="isPublishing"
+        @click="publishSettings"
+      />
     </div>
     <!-- mobile -->
     <div class="fixed bottom-0 left-0 z-10 w-full border-t border-gray-200 bg-white p-4 md:hidden">
-      <AppButton label="Publish Settings" class="w-full" />
+      <AppButton
+        label="Publish Settings"
+        class="w-full"
+        :loading="isPublishing"
+        @click="publishSettings"
+      />
     </div>
 
     <div class="mt-6 flex flex-col gap-6 md:flex-row">
       <!-- Left Sidebar - Desktop -->
       <aside class="hidden w-2/5 flex-shrink-0 md:block">
-        <div class="w-full rounded-t-lg border border-b-0 border-gray-200 p-4">
-          <h3 class="text-sm font-semibold text-gray-900">DESIGN</h3>
-        </div>
-        <button
-          type="button"
-          :class="[
-            'flex w-full items-center justify-between gap-3 rounded-b-lg border p-4 text-sm font-medium transition-colors',
-            {
-              'border-primary-700': activeSection === 'logo-favicon',
-              'border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50':
-                activeSection !== 'logo-favicon',
-            },
-          ]"
-          @click="activeSection = 'logo-favicon'"
-        >
-          <div class="flex items-center gap-3">
-            <Icon name="palette" size="20" />
-            <span>Logo & Favicon</span>
-          </div>
-          <Icon name="arrow-right" size="18" />
-        </button>
-        <div class="mt-2 space-y-2">
+        <div class="space-y-2">
           <button
-            v-for="item in designItems.slice(1)"
+            v-for="item in designItems"
             :key="item.id"
             type="button"
             :class="[
@@ -89,23 +78,93 @@
             v-if="expandedSection === item.id"
             class="rounded-b-lg border border-t-0 border-gray-200 p-4"
           >
-            <component :is="getSectionComponent(item.id)" @change-section="changeSection" />
+            <LogoFaviconSettings
+              v-if="item.id === 'logo-favicon'"
+              v-model:logo="formState.logo"
+              v-model:favicon="formState.favicon"
+              @change-section="changeSection"
+            />
+            <ColorSettings
+              v-else-if="item.id === 'color'"
+              v-model:palette="formState.selectedPalette"
+              v-model:custom-colors="formState.customColors"
+              @change-section="changeSection"
+            />
+            <TypographySettings
+              v-else-if="item.id === 'typography'"
+              v-model:font="formState.typography"
+              @change-section="changeSection"
+            />
+            <ButtonSettings
+              v-else-if="item.id === 'button'"
+              v-model:style="formState.button"
+              @change-section="changeSection"
+            />
+            <FooterSettings
+              v-else-if="item.id === 'footer'"
+              v-model:support-email="formState.footer_email"
+              v-model:support-phone="formState.footer_phone"
+              @change-section="changeSection"
+            />
+            <LinksSettings
+              v-else-if="item.id === 'links'"
+              v-model:terms-link="formState.terms_and_conditions_url"
+              v-model:instagram-link="formState.instagram_url"
+              v-model:facebook-link="formState.facebook_url"
+              v-model:twitter-link="formState.x_url"
+              v-model:tiktok-link="formState.tiktok_url"
+              @change-section="changeSection"
+            />
           </div>
         </div>
       </div>
 
       <!-- Right Content - Desktop -->
       <div class="hidden flex-1 md:block">
-        <component :is="getSectionComponent(activeSection)" @change-section="changeSection" />
+        <LogoFaviconSettings
+          v-if="activeSection === 'logo-favicon'"
+          v-model:logo="formState.logo"
+          v-model:favicon="formState.favicon"
+          @change-section="changeSection"
+        />
+        <ColorSettings
+          v-else-if="activeSection === 'color'"
+          v-model:palette="formState.selectedPalette"
+          v-model:custom-colors="formState.customColors"
+          @change-section="changeSection"
+        />
+        <TypographySettings
+          v-else-if="activeSection === 'typography'"
+          v-model:font="formState.typography"
+          @change-section="changeSection"
+        />
+        <ButtonSettings
+          v-else-if="activeSection === 'button'"
+          v-model:style="formState.button"
+          @change-section="changeSection"
+        />
+        <FooterSettings
+          v-else-if="activeSection === 'footer'"
+          v-model:support-email="formState.footer_email"
+          v-model:support-phone="formState.footer_phone"
+          @change-section="changeSection"
+        />
+        <LinksSettings
+          v-else-if="activeSection === 'links'"
+          v-model:terms-link="formState.terms_and_conditions_url"
+          v-model:instagram-link="formState.instagram_url"
+          v-model:facebook-link="formState.facebook_url"
+          v-model:twitter-link="formState.x_url"
+          v-model:tiktok-link="formState.tiktok_url"
+          @change-section="changeSection"
+        />
       </div>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref, type Component } from "vue"
-// import AppButton from "@components/AppButton.vue"
-// import SectionHeader from "@components/SectionHeader.vue"
+import { ref, watch } from "vue"
 import Icon from "@components/Icon.vue"
 import LogoFaviconSettings from "@modules/settings/components/design/theme-settings/LogoFaviconSettings.vue"
 import ColorSettings from "@modules/settings/components/design/theme-settings/ColorSettings.vue"
@@ -115,6 +174,10 @@ import FooterSettings from "@modules/settings/components/design/theme-settings/F
 import LinksSettings from "@modules/settings/components/design/theme-settings/LinksSettings.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import AppButton from "@components/AppButton.vue"
+import { toast } from "@/composables/useToast"
+import { useGetThemeSettings, useUpdateThemeSettings } from "@modules/settings/api"
+import type { IThemeSettings } from "@modules/settings/types"
+import { displayError } from "@/utils/error-handler"
 
 interface DesignItem {
   id: string
@@ -134,6 +197,68 @@ const designItems: DesignItem[] = [
 const activeSection = ref<string>("logo-favicon")
 const expandedSection = ref<string | null>(null)
 
+// Reactive form state
+const formState = ref({
+  logo: null as File | string | null,
+  favicon: null as File | string | null,
+  selectedPalette: "modern",
+  customColors: {
+    primary: "#98A2B3",
+    secondary: "#D0D5DD",
+    tertiary: "#EAECF0",
+  },
+  typography: "modern",
+  button: "rounded",
+  footer_email: "",
+  footer_phone: "",
+  terms_and_conditions_url: "",
+  instagram_url: "",
+  facebook_url: "",
+  x_url: "",
+  tiktok_url: "",
+})
+
+// Color palette configurations
+const colorPalettes = [
+  { id: "modern", colors: ["#1A2A3A", "#4A6072", "#F7F3EE"] },
+  { id: "minimal", colors: ["#D94600", "#B03A00", "#8C5A3A"] },
+  { id: "bold", colors: ["#3E2F24", "#85684E", "#FAF7F2"] },
+  { id: "nature", colors: ["#2F3A56", "#7B5F4C", "#FAF8F7"] },
+  { id: "rainbow", colors: ["#D7266A", "#D86A00", "#FFFFFF"] },
+]
+
+const getColorScheme = () => {
+  if (formState.value.selectedPalette === "custom") return formState.value.customColors
+  const palette = colorPalettes.find((p) => p.id === formState.value.selectedPalette)
+  const [primary, secondary, tertiary] = palette ? palette.colors : []
+  return { primary, secondary, tertiary }
+}
+
+// Helper: Set palette from color scheme
+const setPaletteFromColorScheme = (colorScheme: {
+  primary: string
+  secondary: string
+  tertiary: string
+}) => {
+  const matchingPalette = colorPalettes.find(
+    (p) =>
+      p.colors[0] === colorScheme.primary &&
+      p.colors[1] === colorScheme.secondary &&
+      p.colors[2] === colorScheme.tertiary,
+  )
+
+  if (matchingPalette) {
+    formState.value.selectedPalette = matchingPalette.id
+  } else {
+    formState.value.selectedPalette = "custom"
+    formState.value.customColors = colorScheme
+  }
+}
+
+// API hooks
+const { data: themeSettings, refetch } = useGetThemeSettings()
+const { mutate: updateThemeSettings, isPending: isPublishing } = useUpdateThemeSettings()
+
 const toggleSection = (id: string): void => {
   expandedSection.value = expandedSection.value === id ? null : id
 }
@@ -143,15 +268,62 @@ const changeSection = (section: string): void => {
   expandedSection.value = section
 }
 
-const getSectionComponent = (id: string): Component => {
-  const components: Record<string, Component> = {
-    "logo-favicon": LogoFaviconSettings,
-    color: ColorSettings,
-    typography: TypographySettings,
-    button: ButtonSettings,
-    footer: FooterSettings,
-    links: LinksSettings,
+watch(
+  () => themeSettings.value,
+  (settings) => {
+    if (settings && Array.isArray(settings) && settings.length > 0) {
+      const data = settings[0]
+
+      formState.value.logo = data.logo || null
+      formState.value.favicon = data.favicon || null
+      formState.value.typography = data.typography || "modern"
+      formState.value.button = data.button || "rounded"
+      formState.value.footer_email = data.footer_email || ""
+      formState.value.footer_phone = data.footer_phone || ""
+      formState.value.terms_and_conditions_url = data.terms_and_conditions_url || ""
+      formState.value.instagram_url = data.instagram_url || ""
+      formState.value.facebook_url = data.facebook_url || ""
+      formState.value.x_url = data.x_url || ""
+      formState.value.tiktok_url = data.tiktok_url || ""
+
+      if (data.color_scheme) setPaletteFromColorScheme(data.color_scheme)
+    }
+  },
+  { immediate: true },
+)
+
+const publishSettings = () => {
+  const settingsData = themeSettings.value?.[0]
+  const formData = new FormData()
+
+  formData.append("typography", formState.value.typography)
+  formData.append("button", formState.value.button)
+  formData.append("footer_email", formState.value.footer_email)
+  formData.append("footer_phone", formState.value.footer_phone)
+  formData.append("terms_and_conditions_url", formState.value.terms_and_conditions_url)
+  formData.append("instagram_url", formState.value.instagram_url)
+  formData.append("facebook_url", formState.value.facebook_url)
+  formData.append("x_url", formState.value.x_url)
+  formData.append("tiktok_url", formState.value.tiktok_url)
+  formData.append("color_scheme", JSON.stringify(getColorScheme()))
+  if (formState.value.logo instanceof File) {
+    formData.append("logo", formState.value.logo)
   }
-  return components[id] || LogoFaviconSettings
+  if (formState.value.favicon instanceof File) {
+    formData.append("favicon", formState.value.favicon)
+  }
+
+  formData.append("is_published", "true")
+
+  updateThemeSettings(
+    { id: settingsData?.uid || "", body: formData as unknown as Partial<IThemeSettings> },
+    {
+      onSuccess: () => {
+        toast.success("Theme settings published successfully")
+        refetch()
+      },
+      onError: displayError,
+    },
+  )
 }
 </script>

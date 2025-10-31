@@ -6,6 +6,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Leyyow V2</title>
     <link rel="stylesheet" href="/src/assets/css/main.css" />
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-SWBWGC6DMS"></script>
+    <script>
+      window.dataLayer = window.dataLayer || []
+      function gtag() {
+        dataLayer.push(arguments)
+      }
+
+      // Default = deny all storage until user consents
+      gtag("consent", "default", {
+        ad_storage: "denied",
+        analytics_storage: "denied",
+      })
+
+      gtag("js", new Date())
+      gtag("config", "G-SWBWGC6DMS")
+    </script>
   </head>
   <body>
     <div id="app"></div>

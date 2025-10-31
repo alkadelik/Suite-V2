@@ -3,11 +3,16 @@
     <div class="mb-4 flex items-center gap-6 border-b border-gray-200 pb-4">
       <SectionHeader title="Landing Page" size="sm" subtitle="Configure your landing page" />
       <AppButton icon="clock-rewind" color="alt" size="sm" class="ml-auto" />
-      <AppButton label="Publish Page" class="!hidden md:!inline-flex" />
+      <AppButton
+        :loading="isPending"
+        label="Publish Page"
+        class="!hidden md:!inline-flex"
+        @click="publishPage"
+      />
     </div>
     <!-- mobile -->
     <div class="fixed bottom-0 left-0 z-10 w-full border-t border-gray-200 bg-white p-4 md:hidden">
-      <AppButton label="Publish Page" class="w-full" />
+      <AppButton :loading="isPending" label="Publish Page" class="w-full" @click="publishPage" />
     </div>
 
     <div class="flex flex-col gap-6 md:flex-row">
@@ -105,7 +110,58 @@
                 v-if="expandedSection === item.id"
                 class="rounded-b-lg border border-t-0 border-gray-200 p-4"
               >
-                <component :is="getSectionComponent(item.id)" @change-section="changeSection" />
+                <HeroSettings
+                  v-if="item.id === 'hero'"
+                  :hero-section="heroSection"
+                  @change-section="changeSection"
+                  @refetch="refetch"
+                />
+                <FeaturedProducts
+                  v-else-if="item.id === 'featured_products'"
+                  :featured-products-section="featuredProductsSection"
+                  @change-section="changeSection"
+                  @refetch="refetch"
+                />
+                <AboutSettings
+                  v-else-if="item.id === 'about'"
+                  :about-section="aboutSection"
+                  @change-section="changeSection"
+                  @refetch="refetch"
+                />
+                <CTABlock1
+                  v-else-if="item.id === 'cta_block_1'"
+                  :cta-block1-section="ctaBlock1Section"
+                  @change-section="changeSection"
+                  @refetch="refetch"
+                />
+                <CTABlock2
+                  v-else-if="item.id === 'cta_block_2'"
+                  :cta-block2-section="ctaBlock2Section"
+                  @change-section="changeSection"
+                  @refetch="refetch"
+                />
+                <CTABlock3
+                  v-else-if="item.id === 'cta_block_3'"
+                  :cta-block3-section="ctaBlock3Section"
+                  @change-section="changeSection"
+                  @refetch="refetch"
+                />
+                <TestimonialsSettings
+                  v-else-if="item.id === 'testimonials'"
+                  :testimonials-section="testimonialsSection"
+                  @change-section="changeSection"
+                  @refetch="refetch"
+                />
+                <!-- <HighlightBanner
+                  v-else-if="item.id === 'highlight_banner'"
+                  @change-section="changeSection"
+                /> -->
+                <NewsletterSignup
+                  v-else-if="item.id === 'newsletter_signup'"
+                  :newsletter-signup-section="newsletterSignupSection"
+                  @change-section="changeSection"
+                  @refetch="refetch"
+                />
               </div>
             </div>
           </template>
@@ -114,14 +170,65 @@
 
       <!-- Right Content - Desktop -->
       <div class="hidden flex-1 md:block">
-        <component :is="getSectionComponent(activeSection)" @change-section="changeSection" />
+        <HeroSettings
+          v-if="activeSection === 'hero'"
+          :hero-section="heroSection"
+          @change-section="changeSection"
+          @refetch="refetch"
+        />
+        <FeaturedProducts
+          v-else-if="activeSection === 'featured_products'"
+          :featured-products-section="featuredProductsSection"
+          @change-section="changeSection"
+          @refetch="refetch"
+        />
+        <AboutSettings
+          v-else-if="activeSection === 'about'"
+          :about-section="aboutSection"
+          @change-section="changeSection"
+          @refetch="refetch"
+        />
+        <CTABlock1
+          v-else-if="activeSection === 'cta_block_1'"
+          :cta-block1-section="ctaBlock1Section"
+          @change-section="changeSection"
+          @refetch="refetch"
+        />
+        <CTABlock2
+          v-else-if="activeSection === 'cta_block_2'"
+          :cta-block2-section="ctaBlock2Section"
+          @change-section="changeSection"
+          @refetch="refetch"
+        />
+        <CTABlock3
+          v-else-if="activeSection === 'cta_block_3'"
+          :cta-block3-section="ctaBlock3Section"
+          @change-section="changeSection"
+          @refetch="refetch"
+        />
+        <TestimonialsSettings
+          v-else-if="activeSection === 'testimonials'"
+          :testimonials-section="testimonialsSection"
+          @change-section="changeSection"
+          @refetch="refetch"
+        />
+        <!-- <HighlightBanner
+          v-else-if="activeSection === 'highlight_banner'"
+          @change-section="changeSection"
+        /> -->
+        <NewsletterSignup
+          v-else-if="activeSection === 'newsletter_signup'"
+          :newsletter-signup-section="newsletterSignupSection"
+          @change-section="changeSection"
+          @refetch="refetch"
+        />
       </div>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, type Component } from "vue"
+import { ref, watch, computed } from "vue"
 import draggable from "vuedraggable"
 import Icon from "@components/Icon.vue"
 import HeroSettings from "@modules/settings/components/design/landing-page/HeroSettings.vue"
@@ -130,29 +237,117 @@ import AboutSettings from "@modules/settings/components/design/landing-page/Abou
 import CTABlock1 from "@modules/settings/components/design/landing-page/CTABlock1.vue"
 import CTABlock2 from "@modules/settings/components/design/landing-page/CTABlock2.vue"
 import CTABlock3 from "@modules/settings/components/design/landing-page/CTABlock3.vue"
-import HighlightBanner from "@modules/settings/components/design/landing-page/HighlightBanner.vue"
 import NewsletterSignup from "@modules/settings/components/design/landing-page/NewsletterSignup.vue"
 import TestimonialsSettings from "@modules/settings/components/design/landing-page/TestimonialsSettings.vue"
+// import HighlightBanner from "@modules/settings/components/design/landing-page/HighlightBanner.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import AppButton from "@components/AppButton.vue"
+import { useGetStorefrontSections, useUpdateStorefrontSectionsOrder } from "@modules/settings/api"
+import { toast } from "@/composables/useToast"
+import { displayError } from "@/utils/error-handler"
 
-const designItems = ref([
-  { id: "hero", label: "Hero", icon: "star" },
-  { id: "featured-products", label: "Featured Products", icon: "bag-2" },
-  { id: "about", label: "About", icon: "information" },
-  { id: "cta-block-1", label: "CTA Block 1", icon: "announcements" },
-  { id: "cta-block-2", label: "CTA Block 2", icon: "announcements" },
-  { id: "cta-block-3", label: "CTA Block 3", icon: "announcements" },
-  { id: "testimonials", label: "Testimonials", icon: "message-favorite" },
-  //   { id: "highlight-banner", label: "Highlight Banner", icon: "tag" },
-  { id: "newsletter-signup", label: "Newsletter Signup", icon: "sms" },
-])
+const { mutate: updateLandingPageItemsOrder, isPending } = useUpdateStorefrontSectionsOrder()
+const { data: landingPageData, refetch } = useGetStorefrontSections()
 
-const activeSection = ref<string>("logo-favicon")
+// Get all sections from landing page data
+const heroSection = computed(() => {
+  if (!landingPageData.value?.results) return null
+  return landingPageData.value.results.find((section) => section.section_type === "hero")
+})
+
+const aboutSection = computed(() => {
+  if (!landingPageData.value?.results) return null
+  return landingPageData.value.results.find((section) => section.section_type === "about")
+})
+
+const featuredProductsSection = computed(() => {
+  if (!landingPageData.value?.results) return null
+  return landingPageData.value.results.find(
+    (section) => section.section_type === "featured_products",
+  )
+})
+
+const ctaBlock1Section = computed(() => {
+  if (!landingPageData.value?.results) return null
+  return landingPageData.value.results.find((section) => section.section_type === "cta_block_1")
+})
+
+const ctaBlock2Section = computed(() => {
+  if (!landingPageData.value?.results) return null
+  return landingPageData.value.results.find((section) => section.section_type === "cta_block_2")
+})
+
+const ctaBlock3Section = computed(() => {
+  if (!landingPageData.value?.results) return null
+  return landingPageData.value.results.find((section) => section.section_type === "cta_block_3")
+})
+
+const testimonialsSection = computed(() => {
+  if (!landingPageData.value?.results) return null
+  return landingPageData.value.results.find((section) => section.section_type === "testimonials")
+})
+
+const newsletterSignupSection = computed(() => {
+  if (!landingPageData.value?.results) return null
+  return landingPageData.value.results.find(
+    (section) => section.section_type === "newsletter_signup",
+  )
+})
+
+// Icon mapping for different section types
+const sectionIconMap: Record<string, string> = {
+  hero: "star",
+  featured_products: "bag-2",
+  about: "information",
+  cta_block_1: "announcements",
+  cta_block_2: "announcements",
+  cta_block_3: "announcements",
+  testimonials: "message-favorite",
+  highlight_banner: "tag",
+  newsletter_signup: "sms",
+}
+
+interface DesignItem {
+  id: string
+  uid: string
+  label: string
+  icon: string
+  order: number
+  is_visible: boolean
+}
+
+const designItems = ref<DesignItem[]>([])
+
+const activeSection = ref<string>("hero")
 const expandedSection = ref<string | null>(null)
 
-const onDragEnd = (event: { oldIndex: number; newIndex: number }) => {
-  console.log("Drag ended:", event)
+// Watch for API data and sync to local state
+watch(
+  () => landingPageData.value,
+  (newData) => {
+    if (newData && newData.results.length > 0) {
+      // Map API data to the format needed for the UI
+      designItems.value = newData.results
+        .filter((x) => x.section_type !== "highlight_banner")
+        .map((section) => ({
+          id: section.section_type,
+          uid: section.uid,
+          label: section.section_type_display,
+          icon: sectionIconMap[section.section_type] || "information",
+          order: section.position,
+          is_visible: true,
+        }))
+        .sort((a, b) => a.order - b.order)
+    }
+  },
+  { immediate: true },
+)
+
+const onDragEnd = () => {
+  // Update order based on new positions
+  designItems.value.forEach((item, index) => {
+    item.order = index + 1
+  })
 }
 
 const toggleSection = (id: string): void => {
@@ -164,24 +359,21 @@ const changeSection = (section: string): void => {
   expandedSection.value = section
 }
 
-const getSectionComponent = (id: string): Component => {
-  const components: Record<string, Component> = {
-    hero: HeroSettings,
-    "featured-products": FeaturedProducts,
-    about: AboutSettings,
-    "cta-block-1": CTABlock1,
-    "cta-block-2": CTABlock2,
-    "cta-block-3": CTABlock3,
-    testimonials: TestimonialsSettings,
-    "highlight-banner": HighlightBanner,
-    "newsletter-signup": NewsletterSignup,
+const publishPage = () => {
+  const payload = {
+    updates: designItems.value.map((item, index) => ({
+      uid: item.uid,
+      position: index + 1,
+    })),
   }
-  return components[id] || HeroSettings
+  updateLandingPageItemsOrder(payload, {
+    onSuccess: () => {
+      toast.success("Landing page published successfully")
+      refetch()
+    },
+    onError: displayError,
+  })
 }
-
-watch(designItems, (newOrder) => {
-  console.log("New design items order:", newOrder)
-})
 </script>
 
 <style scoped>

@@ -151,3 +151,65 @@ export interface IStoreTheme {
   preview_image: string
   in_use: boolean
 }
+
+export interface ILandingPageItem {
+  id: string
+  label: string
+  icon: string
+  order: number
+  is_visible: boolean
+}
+
+export interface ILandingPageItemsOrder {
+  uid: string
+  items: ILandingPageItem[]
+}
+
+export interface IThemeSettings {
+  uid: string
+  logo: string | null
+  favicon: string | null
+  color_scheme: {
+    primary: string
+    secondary: string
+    tertiary: string
+  }
+  typography: string
+  button: string
+  footer_email: string
+  footer_phone: string
+  terms_and_conditions_url: string
+  instagram_url: string
+  facebook_url: string
+  x_url: string
+  tiktok_url: string
+}
+
+export type SectionType =
+  | "hero"
+  | "about"
+  | "featured_products"
+  | "cta_block_1"
+  | "cta_block_2"
+  | "cta_block_3"
+  | "highlight_banner"
+  | "testimonials"
+  | "newsletter_signup"
+
+export interface ThemeSection {
+  uid: string
+  storefront: string
+  section_type: SectionType
+  section_type_display: string
+  title: string
+  subtitle: string | null
+  content: string | null
+  featured_products: string[] // array of product UIDs for featured_products section
+  image: string | null
+  background_image: string | null
+  cta_text: string | null
+  cta_link: string | null
+  position: number
+  created_at: string
+  updated_at: string
+}
