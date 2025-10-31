@@ -1,6 +1,8 @@
 <template>
-  <router-link
-    :to="to"
+  <component
+    :is="props.to ? 'router-link' : 'button'"
+    @click="!props.to && emit('click')"
+    :to="props.to"
     :class="[
       'group flex items-center rounded-xl transition-colors duration-200',
       isActive
@@ -12,7 +14,7 @@
   >
     <Icon :name="props.icon" :size="isMobile ? 18 : 24" />
     <span class="truncate">{{ label }}</span>
-  </router-link>
+  </component>
 </template>
 
 <script setup lang="ts">
@@ -24,11 +26,12 @@ import { useRoute } from "vue-router"
 interface Props {
   icon: string
   label: string
-  to: string
+  to?: string
   class?: string
 }
 
 const props = defineProps<Props>()
+const emit = defineEmits<{ (e: "click"): void }>()
 const route = useRoute()
 const isMobile = useMediaQuery("(max-width: 1024px)")
 

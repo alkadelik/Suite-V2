@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen w-full bg-gray-50">
+  <div class="min-h-screen w-full bg-white md:bg-gray-50">
     <!-- Mobile overlay -->
     <div
       v-if="isMobile && mobileSidebarOpen"
@@ -43,7 +43,8 @@
               class="!ring-primary-200 !rounded-full !ring-4"
               icon="add-circle"
             />
-            <SidebarLink v-for="link in SALES_SUITES.slice(2)" :key="link.label" v-bind="link" />
+            <SidebarLink v-for="link in SALES_SUITES.slice(2, 3)" :key="link.label" v-bind="link" />
+            <SidebarLink label="More" icon="six-dots" @click="openMore = true" />
           </div>
         </nav>
       </div>
@@ -57,6 +58,10 @@
       :hide-bud="true"
       @update:model-value="(val) => setPlanUpgradeModal(val)"
     />
+
+    <TrialActivationModal :open="openTrial" @close="openTrial = false" />
+
+    <MobileMenuDrawer :open="openMore" @close="openMore = false" />
   </div>
 </template>
 
@@ -78,11 +83,15 @@ import {
 } from "@modules/inventory/constants"
 import { ICategoriesApiResponse, IProductAttributesApiResponse } from "@modules/inventory/types"
 import PlansModal from "@modules/settings/components/PlansModal.vue"
+import TrialActivationModal from "@modules/shared/components/TrialActivationModal.vue"
+import MobileMenuDrawer from "./parts/MobileMenuDrawer.vue"
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
 const mobileSidebarOpen = ref(false)
 const logout = ref(false)
+const openTrial = ref(false)
+const openMore = ref(false)
 
 const sidebarPadding = computed(() => (isMobile.value ? "lg:pl-72" : "pl-72"))
 
