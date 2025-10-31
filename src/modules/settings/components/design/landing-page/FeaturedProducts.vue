@@ -147,6 +147,7 @@ const onSubmit = handleSubmit((values) => {
   const body: Record<string, unknown> = {
     title: values.title || "",
     subtitle: values.description || "",
+    selection_mode: values.selection_mode,
   }
 
   if (values.selection_mode === "custom" && values.products) {
