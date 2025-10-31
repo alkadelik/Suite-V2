@@ -65,7 +65,7 @@ interface ButtonStyle {
 }
 
 const buttonStyles: ButtonStyle[] = [
-  { id: "round", name: "Round", label: "Button", buttonClass: "" },
+  { id: "rounded", name: "Rounded", label: "Button", buttonClass: "" },
   { id: "square", name: "Square", label: "Button", buttonClass: "!rounded-none" },
   { id: "pill", name: "Pill", label: "Button", buttonClass: "!rounded-full" },
 ]
