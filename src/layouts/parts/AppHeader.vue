@@ -3,15 +3,25 @@
     <div class="flex h-16 items-center gap-1.5 px-4">
       <img
         v-if="showLogo"
-        :src="`${logo === 'icon' ? '/LYW-icon.svg?url' : '/LYW.svg?url'}`"
+        :src="`${isMobile ? '/LYW-icon.svg' : '/LYW.svg'}`"
         alt="Leyyow"
         class="h-8 w-auto"
       />
       <div class="flex-1" />
       <!-- Storefront status -->
-      <Chip v-if="!isMobile" color="alt" size="md" label="Storefront" class="!pr-1">
+      <Chip
+        v-if="!isMobile && liveStatusData"
+        color="alt"
+        size="md"
+        label="Storefront"
+        class="!pr-1"
+      >
         <template #append>
-          <Chip showDot label="Not live" color="error" />
+          <Chip
+            showDot
+            :label="isLive ? 'Live' : 'Not live'"
+            :color="isLive ? 'success' : 'error'"
+          />
         </template>
       </Chip>
       <!-- Notifications -->
@@ -45,8 +55,15 @@ import AppButton from "@components/AppButton.vue"
 import Avatar from "@components/Avatar.vue"
 import Icon from "@components/Icon.vue"
 import Chip from "@components/Chip.vue"
+import { computed } from "vue"
+import { useGetLiveStatus } from "@modules/shared/api"
+import { useAuthStore } from "@modules/auth/store"
 
 defineProps<{ showLogo?: boolean; logo?: "full" | "icon" }>()
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
+
+const storeSlug = useAuthStore().user?.store_slug || ""
+const { data: liveStatusData } = useGetLiveStatus(storeSlug)
+const isLive = computed(() => liveStatusData.value?.data?.is_live || false)
 </script>

@@ -11,7 +11,7 @@
       <Transition name="modal-content">
         <div v-if="open" class="relative bg-white shadow-lg" :class="modalClasses" @click.stop>
           <!-- Header -->
-          <slot name="header">
+          <slot v-if="showHeader" name="header">
             <div class="flex items-center justify-between px-6 py-4">
               <h2 class="text-core-800 text-lg font-semibold">
                 {{ title }}
@@ -76,6 +76,8 @@ interface Props {
   handlePadding?: boolean
   /** Additional classes for the overlay */
   overlayClass?: string
+  /** Whether to show the header */
+  showHeader?: boolean
 }
 
 /**
@@ -91,6 +93,7 @@ const props = withDefaults(defineProps<Props>(), {
   variant: "centered",
   maxWidth: "lg",
   handlePadding: true,
+  showHeader: true,
 })
 
 // Define emits
@@ -158,7 +161,7 @@ const modalClasses = computed(() => {
       break
     case "centered":
     default:
-      baseClasses.push("rounded-2xl")
+      baseClasses.push("rounded-2xl m-2")
       break
   }
 
@@ -174,7 +177,7 @@ const bodyClasses = computed(() => {
   if (props.variant === "fullscreen") {
     classes.push("h-full overflow-y-auto")
   } else {
-    classes.push("max-h-[70vh] overflow-y-auto")
+    classes.push("max-h-[90vh] overflow-y-auto")
   }
 
   return classes.join(" ")

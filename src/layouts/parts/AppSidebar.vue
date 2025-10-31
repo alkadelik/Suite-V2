@@ -99,12 +99,19 @@
     <section class="mt-auto px-4 pb-4">
       <SidebarLink icon="life-buoy" label="Support" to="/support" />
 
-      <div class="mt-3 w-full rounded-lg bg-gray-50 px-4 py-5 text-center">
-        <h3 class="mb-1 text-sm font-semibold text-gray-900">Unlock More with Premium!</h3>
-        <p class="text-core-700 mb-4 text-sm">
-          Get advanced tools to manage every aspect of your business.
-        </p>
-        <AppButton label="Go Premium" class="w-full flex-row-reverse" icon="star" />
+      <div class="relative mt-20">
+        <div
+          :class="['relative isolate flex flex-col gap-2 rounded-3xl p-6 pt-20 text-white']"
+          style="
+            background: linear-gradient(136.41deg, #1a2a6c -3.7%, #b21f1f 53.98%, #fdbb2d 99.39%);
+          "
+        >
+          <h3 class="mb-1 text-sm font-bold">Your trial has ended!</h3>
+          <p class="mb-4 text-sm">Upgrade to regain full access.</p>
+          <AppButton color="alt" label="Upgrade" class="w-full flex-row-reverse" icon="star" />
+        </div>
+
+        <img src="@/assets/images/gift.png" class="absolute -top-16 left-4" />
       </div>
     </section>
   </aside>
