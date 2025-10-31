@@ -145,9 +145,9 @@ onMounted(() => {
 
             <!-- <div class="clip-path-cutout h-[400px] overflow-hidden rounded-2xl"> -->
             <img
-              src="/images/themes/ember/hero.png"
+              src="https://www.w3schools.com/css/img_5terre.jpg"
               alt="Spa products"
-              class="h-full w-full object-cover"
+              class="mask1 h-full w-full"
               data-aos="fade-up"
               data-aos-delay="200"
             />
@@ -232,8 +232,8 @@ onMounted(() => {
               </p>
             </div>
             <img
-              src="/images/themes/ember/kindness.png"
-              class="h-[250px] w-full rounded-xl object-cover md:h-[617px]"
+              src="https://www.w3schools.com/css/img_5terre.jpg"
+              class="mask1 h-[250px] w-full rounded-xl object-cover md:h-[617px]"
               data-aos="fade-up"
               data-aos-delay="200"
             />
@@ -433,5 +433,12 @@ onMounted(() => {
     15% 85%,
     0% 85%
   );
+}
+
+.mask1 {
+  -webkit-mask-image: url(/images/themes/ember/hero.png);
+  mask-image: url(/images/themes/ember/hero.png);
+  mask-repeat: no-repeat;
+  mask-size: 100% auto;
 }
 </style>

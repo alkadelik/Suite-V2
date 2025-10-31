@@ -35,7 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue"
+import { computed } from "vue"
 
 interface FontPairing {
   id: string
@@ -54,5 +54,16 @@ const fontPairings: FontPairing[] = [
   { id: "friendly", name: "Friendly", fontFamily: "Quicksand, sans-serif" },
 ]
 
-const selectedFont = ref<string>("modern")
+const props = defineProps<{
+  font: string
+}>()
+
+const emit = defineEmits<{
+  "update:font": [value: string]
+}>()
+
+const selectedFont = computed({
+  get: () => props.font,
+  set: (value) => emit("update:font", value),
+})
 </script>

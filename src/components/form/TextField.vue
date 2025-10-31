@@ -275,7 +275,7 @@ const actualType = computed(() =>
 
 const containerClasses = computed(() => {
   const baseClasses =
-    "flex items-center rounded-xl border overflow-hidden bg-core-25 disabled:bg-gray-50"
+    "flex items-center rounded-xl border overflow-hidden bg-core-25 disabled:bg-core-200"
 
   const variantClasses = {
     default:
@@ -286,7 +286,7 @@ const containerClasses = computed(() => {
       "border-green-300 focus-within:border-green-500 focus-within:ring-1 focus-within:ring-green-500",
   }
 
-  const disabledClasses = props.disabled ? "opacity-50 cursor-not-allowed" : ""
+  const disabledClasses = props.disabled ? "opacity-60 cursor-not-allowed !bg-core-200" : ""
 
   // Use error variant if error prop is provided
   const currentVariant = props.error ? "error" : props.variant

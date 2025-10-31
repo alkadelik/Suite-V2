@@ -52,14 +52,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue"
+import { computed } from "vue"
 import AppButton from "@components/AppButton.vue"
 import InfoBox from "@components/InfoBox.vue"
 import Icon from "@components/Icon.vue"
-
-defineEmits<{
-  changeSection: [section: string]
-}>()
 
 interface ButtonStyle {
   id: string
@@ -74,5 +70,17 @@ const buttonStyles: ButtonStyle[] = [
   { id: "pill", name: "Pill", label: "Button", buttonClass: "!rounded-full" },
 ]
 
-const selectedStyle = ref<string>("round")
+const props = defineProps<{
+  style: string
+}>()
+
+const emit = defineEmits<{
+  "update:style": [value: string]
+  changeSection: [section: string]
+}>()
+
+const selectedStyle = computed({
+  get: () => props.style,
+  set: (value) => emit("update:style", value),
+})
 </script>

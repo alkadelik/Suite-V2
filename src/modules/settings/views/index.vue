@@ -32,7 +32,9 @@
                     :class="[
                       'hover:text-primary-700 block px-3.5 py-2.5 font-medium',
                       {
-                        'text-primary-700 border-primary-700 border-l-2': $route.path === link.path,
+                        'text-primary-700 border-primary-700 border-l-2': $route.path.includes(
+                          link.path,
+                        ),
                       },
                     ]"
                   >

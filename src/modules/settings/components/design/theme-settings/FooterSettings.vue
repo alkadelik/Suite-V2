@@ -7,12 +7,14 @@
       <p class="text-core-700 mb-4 text-sm">Fill in your business information</p>
       <div class="space-y-4">
         <FormField
+          v-model="supportEmailModel"
           type="email"
           name="support_email"
           label="Support Email Address"
           placeholder="e.g Adebola99@gmail.com"
         />
         <FormField
+          v-model="supportPhoneModel"
           type="tel"
           name="support_phone"
           label="Support Phone Number"
@@ -24,5 +26,26 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue"
 import FormField from "@components/form/FormField.vue"
+
+const props = defineProps<{
+  supportEmail: string
+  supportPhone: string
+}>()
+
+const emit = defineEmits<{
+  "update:supportEmail": [value: string]
+  "update:supportPhone": [value: string]
+}>()
+
+const supportEmailModel = computed({
+  get: () => props.supportEmail,
+  set: (value) => emit("update:supportEmail", value),
+})
+
+const supportPhoneModel = computed({
+  get: () => props.supportPhone,
+  set: (value) => emit("update:supportPhone", value),
+})
 </script>

@@ -59,6 +59,7 @@ watch(
 )
 
 const performUpdate = (body: Record<string, unknown>) => {
+  if (!popupSettings.value?.results[0]) return toast.error("Popup settings not found.")
   updatePopupSettings(
     { id: popupSettings.value?.results[0].uid || "", body },
     {
@@ -87,7 +88,11 @@ const applyPopupSettings = () => {
 <template>
   <section>
     <div class="mb-4 flex items-center gap-6 border-b border-gray-200 pb-4">
-      <SectionHeader title="Pop Up" size="sm" subtitle="Set up your pop-up preferences" />
+      <SectionHeader
+        title="Popup Modal"
+        size="sm"
+        subtitle="Show a popup modal with ongoing offers to your visitors"
+      />
       <AppButton icon="clock-rewind" color="alt" size="sm" class="ml-auto" />
       <AppButton
         label="Publish PopUp"
@@ -114,8 +119,10 @@ const applyPopupSettings = () => {
           class="flex items-center justify-between gap-8 rounded-2xl border border-gray-400 bg-gray-50 p-4"
         >
           <div class="flex-1 text-sm">
-            <h3 class="font-medium text-gray-700">Enable Pop Up</h3>
-            <p class="text-gray-500">Visitors will see this once per session</p>
+            <h3 class="font-medium text-gray-700">Enable Popup Modal</h3>
+            <p class="text-gray-500">
+              Visitors will see this popup modal once per session when they visit your page.
+            </p>
           </div>
           <Switch v-model="enablePopup" />
         </div>
