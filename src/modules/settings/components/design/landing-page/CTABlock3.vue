@@ -3,12 +3,7 @@
     <div class="hidden border-b border-gray-200 p-4 md:block">
       <h4 class="text-lg font-semibold text-gray-900">CTA Block 3</h4>
     </div>
-    <AppForm
-      :schema="validationSchema"
-      :initial-values="initialValues"
-      @submit="handleFormSubmit"
-      class="grid gap-6 md:p-6"
-    >
+    <form @submit="onSubmit" class="grid gap-6 md:p-6">
       <FormField name="headline" label="Headline" placeholder="e.g. Welcome to my Store" />
 
       <FormField
@@ -28,10 +23,6 @@
       </div>
 
       <div class="flex gap-6">
-        <div v-if="false" class="flex flex-col items-center gap-2">
-          <img class="h-24 w-24 object-cover" />
-          <span class="text-sm text-gray-600">Image</span>
-        </div>
         <div class="flex-1">
           <FormField
             type="file"
@@ -48,44 +39,34 @@
       <div class="flex justify-end">
         <AppButton type="submit" label="Save Section" :loading="isPending" />
       </div>
-    </AppForm>
+    </form>
   </div>
 </template>
 
 <script setup lang="ts">
 import * as yup from "yup"
-import { reactive, watch, computed } from "vue"
+import { watch } from "vue"
+import { useForm } from "vee-validate"
 import AppButton from "@components/AppButton.vue"
-import AppForm from "@components/form/AppForm.vue"
 import FormField from "@components/form/FormField.vue"
-import { useGetStorefrontSections, useUpdateStorefrontSection } from "@modules/settings/api"
+import { useUpdateStorefrontSection } from "@modules/settings/api"
+import type { ThemeSection } from "@modules/settings/types"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 
-// Define form data interface
 interface CTABlockFormData {
   headline: string
   body_text?: string
   cta_button_text?: string
   cta_button_link?: string
-  image?: File | null
+  image?: File | string | null
 }
 
-// API composables
-const { data: landingPageData, refetch } = useGetStorefrontSections()
+const props = defineProps<{ ctaBlock3Section?: ThemeSection | null }>()
+const emit = defineEmits<{ refetch: [] }>()
+
 const { mutate: updateSection, isPending } = useUpdateStorefrontSection()
 
-// Get CTA block 3 section from landing page data
-const ctaBlock3Section = computed(() => {
-  const sections = landingPageData.value || []
-  for (const section of sections) {
-    const item = section.items?.find((i) => i.id === "cta-block-3")
-    if (item) return { sectionUid: section.uid, ...item }
-  }
-  return null
-})
-
-// Validation schema using Yup
 const validationSchema = yup.object({
   headline: yup
     .string()
@@ -94,63 +75,56 @@ const validationSchema = yup.object({
     .max(100, "Headline must not exceed 100 characters"),
   body_text: yup.string().max(500, "Body Text must not exceed 500 characters").optional(),
   cta_button_text: yup.string().max(50, "CTA button text must not exceed 50 characters").optional(),
-  cta_button_link: yup.string().url("Please enter a valid URL").optional(),
-  image: yup.mixed().optional(),
+  cta_button_link: yup
+    .string()
+    .url("Please enter a valid URL")
+    .optional()
+    .nullable()
+    .transform((value) => (value === "" ? null : value)),
+  image: yup.mixed().nullable().optional(),
 })
 
-// Initial form values
-const initialValues = reactive<CTABlockFormData>({
-  headline: "",
-  body_text: "",
-  cta_button_text: "",
-  cta_button_link: "",
-  image: null,
+const { handleSubmit, setValues } = useForm<CTABlockFormData>({
+  validationSchema,
 })
 
-// Watch for API data and populate form
 watch(
-  () => ctaBlock3Section.value,
-  (section) => {
-    if (section) {
-      const sectionData = section as Record<string, unknown>
-      Object.assign(initialValues, {
-        headline: sectionData.headline || "",
-        body_text: sectionData.body_text || "",
-        cta_button_text: sectionData.cta_button_text || "",
-        cta_button_link: sectionData.cta_button_link || "",
+  () => props.ctaBlock3Section,
+  (newSection) => {
+    if (newSection) {
+      setValues({
+        headline: newSection.title || "",
+        body_text: newSection.content || "",
+        cta_button_text: newSection.cta_text || "",
+        cta_button_link: newSection.cta_link || "",
+        image: newSection.image || null,
       })
     }
   },
   { immediate: true },
 )
 
-// Form submit handler
-const handleFormSubmit = (values: CTABlockFormData) => {
-  if (!ctaBlock3Section.value?.sectionUid) {
-    toast.error("Section not found")
-    return
+const onSubmit = handleSubmit((values) => {
+  if (!props.ctaBlock3Section?.uid) {
+    return toast.error("CTA Block 3 section not found. Please refresh the page.")
   }
 
   const formData = new FormData()
-  formData.append("id", "cta-block-3")
-  formData.append("headline", values.headline)
-  if (values.body_text) formData.append("body_text", values.body_text)
-  if (values.cta_button_text) formData.append("cta_button_text", values.cta_button_text)
-  if (values.cta_button_link) formData.append("cta_button_link", values.cta_button_link)
-  if (values.image) formData.append("image", values.image)
+  formData.append("title", values.headline)
+  if (values.body_text) formData.append("content", values.body_text)
+  if (values.cta_button_text) formData.append("cta_text", values.cta_button_text)
+  if (values.cta_button_link) formData.append("cta_link", values.cta_button_link)
+  if (values.image && typeof values.image !== "string") formData.append("image", values.image)
 
   updateSection(
-    {
-      id: ctaBlock3Section.value.sectionUid,
-      body: formData as unknown as Record<string, unknown>,
-    },
+    { id: props.ctaBlock3Section.uid, body: formData },
     {
       onSuccess: () => {
         toast.success("CTA Block 3 section updated successfully")
-        refetch()
+        emit("refetch")
       },
       onError: displayError,
     },
   )
-}
+})
 </script>

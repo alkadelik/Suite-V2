@@ -37,19 +37,28 @@
       <!-- Custom Color Fields -->
       <div v-if="selectedPalette === 'custom'" class="mt-6 space-y-4">
         <ColorPickerField
-          v-model="customColors.primary"
+          :model-value="customColorsModel.primary"
           label="Primary Color"
           name="primary_color"
+          @update:model-value="
+            (val) => emit('update:customColors', { ...customColorsModel, primary: val })
+          "
         />
         <ColorPickerField
-          v-model="customColors.secondary"
+          :model-value="customColorsModel.secondary"
           label="Secondary Color"
           name="secondary_color"
+          @update:model-value="
+            (val) => emit('update:customColors', { ...customColorsModel, secondary: val })
+          "
         />
         <ColorPickerField
-          v-model="customColors.tertiary"
+          :model-value="customColorsModel.tertiary"
           label="Tertiary Color"
           name="tertiary_color"
+          @update:model-value="
+            (val) => emit('update:customColors', { ...customColorsModel, tertiary: val })
+          "
         />
       </div>
     </div>
@@ -57,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue"
+import { computed } from "vue"
 import ColorPickerField from "@components/form/ColorPickerField.vue"
 
 interface ColorPalette {
@@ -75,23 +84,33 @@ const colorPalettes: ColorPalette[] = [
   { id: "custom", name: "Custom", colors: ["#98A2B3", "#D0D5DD", "#EAECF0"] },
 ]
 
-const selectedPalette = ref<string>("modern")
+const props = defineProps<{
+  palette: string
+  customColors: {
+    primary: string
+    secondary: string
+    tertiary: string
+  }
+}>()
 
-const customColors = ref({
-  primary: "#98A2B3",
-  secondary: "#D0D5DD",
-  tertiary: "#EAECF0",
+const emit = defineEmits<{
+  "update:palette": [value: string]
+  "update:customColors": [
+    value: {
+      primary: string
+      secondary: string
+      tertiary: string
+    },
+  ]
+}>()
+
+const selectedPalette = computed({
+  get: () => props.palette,
+  set: (value) => emit("update:palette", value),
 })
 
-// Expose method to get values
-const getValues = () => {
-  return {
-    palette: selectedPalette.value,
-    customColors: selectedPalette.value === "custom" ? customColors.value : null,
-  }
-}
-
-defineExpose({
-  getValues,
+const customColorsModel = computed({
+  get: () => props.customColors,
+  set: (value) => emit("update:customColors", value),
 })
 </script>

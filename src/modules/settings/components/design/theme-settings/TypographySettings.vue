@@ -35,7 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue"
+import { computed } from "vue"
 
 interface FontPairing {
   id: string
@@ -54,16 +54,16 @@ const fontPairings: FontPairing[] = [
   { id: "friendly", name: "Friendly", fontFamily: "Quicksand, sans-serif" },
 ]
 
-const selectedFont = ref<string>("modern")
+const props = defineProps<{
+  font: string
+}>()
 
-// Expose method to get values
-const getValues = () => {
-  return {
-    font: selectedFont.value,
-  }
-}
+const emit = defineEmits<{
+  "update:font": [value: string]
+}>()
 
-defineExpose({
-  getValues,
+const selectedFont = computed({
+  get: () => props.font,
+  set: (value) => emit("update:font", value),
 })
 </script>

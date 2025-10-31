@@ -98,10 +98,10 @@ export const THEME_OPTIONS = [
     action: "Publish Page",
   },
   {
-    title: "Pop Up",
+    title: "Popup Modal",
     key: "popup",
-    desc: "Set up your pop-up preferences",
-    action: "Publish PopUp",
+    desc: "Show a popup modal with ongoing offers to your visitors",
+    action: "Publish Popup",
   },
 ]
 

@@ -3,12 +3,7 @@
     <div class="hidden border-b border-gray-200 p-4 md:block">
       <h4 class="text-lg font-semibold text-gray-900">Newsletter Signup</h4>
     </div>
-    <AppForm
-      :schema="validationSchema"
-      :initial-values="initialValues"
-      @submit="handleFormSubmit"
-      class="grid gap-6 md:p-6"
-    >
+    <form @submit="onSubmit" class="grid gap-6 md:p-6">
       <FormField name="headline" label="Headline" placeholder="e.g. Welcome to my Store" />
 
       <FormField
@@ -29,21 +24,21 @@
       <div class="flex justify-end">
         <AppButton type="submit" label="Save Section" :loading="isPending" />
       </div>
-    </AppForm>
+    </form>
   </div>
 </template>
 
 <script setup lang="ts">
 import * as yup from "yup"
-import { reactive, watch, computed } from "vue"
+import { watch } from "vue"
+import { useForm } from "vee-validate"
 import AppButton from "@components/AppButton.vue"
-import AppForm from "@components/form/AppForm.vue"
 import FormField from "@components/form/FormField.vue"
-import { useGetStorefrontSections, useUpdateStorefrontSection } from "@modules/settings/api"
+import { useUpdateStorefrontSection } from "@modules/settings/api"
+import type { ThemeSection } from "@modules/settings/types"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 
-// Define form data interface
 interface NewsletterSignupFormData {
   headline: string
   body_text?: string
@@ -51,21 +46,11 @@ interface NewsletterSignupFormData {
   email_capture_field?: string
 }
 
-// API composables
-const { data: landingPageData, refetch } = useGetStorefrontSections()
+const props = defineProps<{ newsletterSignupSection?: ThemeSection | null }>()
+const emit = defineEmits<{ refetch: [] }>()
+
 const { mutate: updateSection, isPending } = useUpdateStorefrontSection()
 
-// Get newsletter signup section from landing page data
-const newsletterSignupSection = computed(() => {
-  const sections = landingPageData.value || []
-  for (const section of sections) {
-    const item = section.items?.find((i) => i.id === "newsletter-signup")
-    if (item) return { sectionUid: section.uid, ...item }
-  }
-  return null
-})
-
-// Validation schema using Yup
 const validationSchema = yup.object({
   headline: yup
     .string()
@@ -80,53 +65,46 @@ const validationSchema = yup.object({
     .optional(),
 })
 
-// Initial form values
-const initialValues = reactive<NewsletterSignupFormData>({
-  headline: "",
-  body_text: "",
-  cta_button_text: "",
-  email_capture_field: "",
+const { handleSubmit, setValues } = useForm<NewsletterSignupFormData>({
+  validationSchema,
 })
 
-// Watch for API data and populate form
 watch(
-  () => newsletterSignupSection.value,
-  (section) => {
-    if (section) {
-      const sectionData = section as Record<string, unknown>
-      Object.assign(initialValues, {
-        headline: sectionData.headline || "",
-        body_text: sectionData.body_text || "",
-        cta_button_text: sectionData.cta_button_text || "",
-        email_capture_field: sectionData.email_capture_field || "",
+  () => props.newsletterSignupSection,
+  (newSection) => {
+    if (newSection) {
+      setValues({
+        headline: newSection.title || "",
+        body_text: newSection.content || "",
+        cta_button_text: newSection.cta_text || "",
+        email_capture_field: newSection.subtitle || "",
       })
     }
   },
   { immediate: true },
 )
 
-// Form submit handler
-const handleFormSubmit = (values: NewsletterSignupFormData) => {
+const onSubmit = handleSubmit((values) => {
+  if (!props.newsletterSignupSection?.uid) {
+    return toast.error("Newsletter Signup section not found. Please refresh the page.")
+  }
+
   const body = {
-    id: "newsletter-signup",
-    headline: values.headline,
-    body_text: values.body_text || "",
-    cta_button_text: values.cta_button_text || "",
-    email_capture_field: values.email_capture_field || "",
+    title: values.headline,
+    content: values.body_text || "",
+    cta_text: values.cta_button_text || "",
+    subtitle: values.email_capture_field || "",
   }
 
   updateSection(
-    {
-      id: newsletterSignupSection.value?.sectionUid || "",
-      body,
-    },
+    { id: props.newsletterSignupSection.uid, body: body as unknown as FormData },
     {
       onSuccess: () => {
         toast.success("Newsletter Signup section updated successfully")
-        refetch()
+        emit("refetch")
       },
       onError: displayError,
     },
   )
-}
+})
 </script>

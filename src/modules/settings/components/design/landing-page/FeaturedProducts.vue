@@ -3,13 +3,7 @@
     <div class="hidden border-b border-gray-200 p-4 md:block">
       <h4 class="text-lg font-semibold text-gray-900">Featured Products</h4>
     </div>
-    <AppForm
-      :schema="validationSchema"
-      :initial-values="initialValues"
-      @submit="handleFormSubmit"
-      class="grid gap-6 md:p-6"
-      v-slot="{ values }"
-    >
+    <form @submit="onSubmit" class="grid gap-6 md:p-6">
       <FormField
         type="radio"
         name="selection_mode"
@@ -18,7 +12,7 @@
       />
 
       <FormField
-        v-if="values.selection_mode === 'custom'"
+        v-if="selectionMode === 'custom'"
         type="select"
         multiple
         name="products"
@@ -39,22 +33,22 @@
       <div class="flex justify-end">
         <AppButton type="submit" label="Save Section" :loading="isPending" />
       </div>
-    </AppForm>
+    </form>
   </div>
 </template>
 
 <script setup lang="ts">
 import * as yup from "yup"
-import { reactive, watch, computed } from "vue"
+import { watch, computed, ref } from "vue"
+import { useForm } from "vee-validate"
 import AppButton from "@components/AppButton.vue"
-import AppForm from "@components/form/AppForm.vue"
 import FormField from "@components/form/FormField.vue"
-import { useGetStorefrontSections, useUpdateStorefrontSection } from "@modules/settings/api"
+import { useUpdateStorefrontSection } from "@modules/settings/api"
+import type { ThemeSection } from "@modules/settings/types"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 import { useGetProductCatalogs } from "@modules/inventory/api"
 
-// Define form data interface
 interface FeaturedProductsFormData {
   selection_mode: string
   products?: (string | { label: string; value: string })[]
@@ -75,22 +69,14 @@ const SELECTION_OPTIONS = [
   },
 ]
 
-// API composables
-const { data: landingPageData, refetch } = useGetStorefrontSections()
+const props = defineProps<{ featuredProductsSection?: ThemeSection | null }>()
+const emit = defineEmits<{ refetch: [] }>()
+
 const { mutate: updateSection, isPending } = useUpdateStorefrontSection()
 const { data: productCatalogs } = useGetProductCatalogs()
 
-// Get featured products section from landing page data
-const featuredProductsSection = computed(() => {
-  const sections = landingPageData.value || []
-  for (const section of sections) {
-    const item = section.items?.find((i) => i.id === "featured-products")
-    if (item) return { sectionUid: section.uid, ...item }
-  }
-  return null
-})
+const selectionMode = ref("default")
 
-// Product options for select dropdown
 const productOptions = computed(() => {
   if (!productCatalogs.value?.results) return []
   return productCatalogs.value.results.map((product) => ({
@@ -99,7 +85,6 @@ const productOptions = computed(() => {
   }))
 })
 
-// Validation schema using Yup
 const validationSchema = yup.object({
   selection_mode: yup
     .string()
@@ -126,60 +111,59 @@ const validationSchema = yup.object({
   description: yup.string().max(500, "Description must not exceed 500 characters").optional(),
 })
 
-// Initial form values
-const initialValues = reactive<FeaturedProductsFormData>({
-  selection_mode: "default",
-  products: [],
-  title: "",
-  description: "",
+const { handleSubmit, setValues, values } = useForm<FeaturedProductsFormData>({
+  validationSchema,
 })
 
-// Watch for API data and populate form
 watch(
-  () => featuredProductsSection.value,
-  (section) => {
-    if (section) {
-      const sectionData = section as Record<string, unknown>
-      Object.assign(initialValues, {
-        selection_mode: sectionData.selection_mode || "default",
-        products: sectionData.products || [],
-        title: sectionData.title || "",
-        description: sectionData.description || "",
+  () => values.selection_mode,
+  (newMode) => {
+    if (newMode) {
+      selectionMode.value = newMode
+    }
+  },
+)
+
+watch(
+  () => props.featuredProductsSection,
+  (newSection) => {
+    if (newSection) {
+      setValues({
+        selection_mode: "default",
+        products: newSection.featured_products || [],
+        title: newSection.title || "",
+        description: newSection.subtitle || "",
       })
     }
   },
   { immediate: true },
 )
 
-// Form submit handler
-const handleFormSubmit = (values: FeaturedProductsFormData) => {
-  const body: Record<string, unknown> = {
-    id: "featured-products",
-    selection_mode: values.selection_mode,
-    title: values.title || "",
-    description: values.description || "",
+const onSubmit = handleSubmit((values) => {
+  if (!props.featuredProductsSection?.uid) {
+    return toast.error("Featured Products section not found. Please refresh the page.")
   }
 
-  // Only include products if custom mode is selected
+  const body: Record<string, unknown> = {
+    title: values.title || "",
+    subtitle: values.description || "",
+  }
+
   if (values.selection_mode === "custom" && values.products) {
-    // Extract UIDs from products (handle both string and object formats)
-    body.products = values.products.map((product) =>
+    body.featured_products = values.products.map((product) =>
       typeof product === "string" ? product : product.value,
     )
   }
 
   updateSection(
-    {
-      id: featuredProductsSection.value?.sectionUid || "",
-      body,
-    },
+    { id: props.featuredProductsSection.uid, body: body as unknown as FormData },
     {
       onSuccess: () => {
         toast.success("Featured Products section updated successfully")
-        refetch()
+        emit("refetch")
       },
       onError: displayError,
     },
   )
-}
+})
 </script>

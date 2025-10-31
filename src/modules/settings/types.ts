@@ -169,19 +169,47 @@ export interface IThemeSettings {
   uid: string
   logo: string | null
   favicon: string | null
-  color_palette: string
-  custom_colors: {
+  color_scheme: {
     primary: string
     secondary: string
     tertiary: string
-  } | null
-  font_pairing: string
-  button_style: string
-  support_email: string
-  support_phone: string
-  terms_conditions_link: string
-  instagram_link: string
-  facebook_link: string
-  twitter_link: string
-  tiktok_link: string
+  }
+  typography: string
+  button: string
+  footer_email: string
+  footer_phone: string
+  terms_and_conditions_url: string
+  instagram_url: string
+  facebook_url: string
+  x_url: string
+  tiktok_url: string
+}
+
+export type SectionType =
+  | "hero"
+  | "about"
+  | "featured_products"
+  | "cta_block_1"
+  | "cta_block_2"
+  | "cta_block_3"
+  | "highlight_banner"
+  | "testimonials"
+  | "newsletter_signup"
+
+export interface ThemeSection {
+  uid: string
+  storefront: string
+  section_type: SectionType
+  section_type_display: string
+  title: string
+  subtitle: string | null
+  content: string | null
+  featured_products: string[] // array of product UIDs for featured_products section
+  image: string | null
+  background_image: string | null
+  cta_text: string | null
+  cta_link: string | null
+  position: number
+  created_at: string
+  updated_at: string
 }

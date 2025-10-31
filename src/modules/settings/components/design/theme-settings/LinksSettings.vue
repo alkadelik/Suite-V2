@@ -6,7 +6,7 @@
     <div class="p-0 md:p-6">
       <div class="space-y-6">
         <FormField
-          v-model="termsLink"
+          v-model="termsLinkModel"
           type="url"
           name="terms_conditions_link"
           label="Terms & Conditions"
@@ -28,7 +28,7 @@
                 </div>
                 <div class="flex-1">
                   <FormField
-                    v-model="instagramLink"
+                    v-model="instagramLinkModel"
                     type="url"
                     name="instagram_link"
                     label="Instagram"
@@ -50,7 +50,7 @@
                 </div>
                 <div class="flex-1">
                   <FormField
-                    v-model="facebookLink"
+                    v-model="facebookLinkModel"
                     type="url"
                     name="facebook_link"
                     label="Facebook"
@@ -72,7 +72,7 @@
                 </div>
                 <div class="flex-1">
                   <FormField
-                    v-model="twitterLink"
+                    v-model="twitterLinkModel"
                     type="url"
                     name="twitter_link"
                     label="Twitter"
@@ -94,7 +94,7 @@
                 </div>
                 <div class="flex-1">
                   <FormField
-                    v-model="tiktokLink"
+                    v-model="tiktokLinkModel"
                     type="url"
                     name="tiktok_link"
                     label="Tiktok"
@@ -112,27 +112,47 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue"
+import { computed } from "vue"
 import FormField from "@components/form/FormField.vue"
 
-const termsLink = ref("")
-const instagramLink = ref("")
-const facebookLink = ref("")
-const twitterLink = ref("")
-const tiktokLink = ref("")
+const props = defineProps<{
+  termsLink: string
+  instagramLink: string
+  facebookLink: string
+  twitterLink: string
+  tiktokLink: string
+}>()
 
-// Expose method to get values
-const getValues = () => {
-  return {
-    termsLink: termsLink.value,
-    instagramLink: instagramLink.value,
-    facebookLink: facebookLink.value,
-    twitterLink: twitterLink.value,
-    tiktokLink: tiktokLink.value,
-  }
-}
+const emit = defineEmits<{
+  "update:termsLink": [value: string]
+  "update:instagramLink": [value: string]
+  "update:facebookLink": [value: string]
+  "update:twitterLink": [value: string]
+  "update:tiktokLink": [value: string]
+}>()
 
-defineExpose({
-  getValues,
+const termsLinkModel = computed({
+  get: () => props.termsLink,
+  set: (value) => emit("update:termsLink", value),
+})
+
+const instagramLinkModel = computed({
+  get: () => props.instagramLink,
+  set: (value) => emit("update:instagramLink", value),
+})
+
+const facebookLinkModel = computed({
+  get: () => props.facebookLink,
+  set: (value) => emit("update:facebookLink", value),
+})
+
+const twitterLinkModel = computed({
+  get: () => props.twitterLink,
+  set: (value) => emit("update:twitterLink", value),
+})
+
+const tiktokLinkModel = computed({
+  get: () => props.tiktokLink,
+  set: (value) => emit("update:tiktokLink", value),
 })
 </script>

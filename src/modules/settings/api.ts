@@ -11,8 +11,8 @@ import {
   IStoreMembersResponse,
   IPopupSettings,
   IStoreTheme,
-  ILandingPageItemsOrder,
   IThemeSettings,
+  ThemeSection,
 } from "./types"
 import { useMutation, useQuery } from "@tanstack/vue-query"
 import { IUser } from "@modules/auth/types"
@@ -193,7 +193,7 @@ export function useUpdateActiveTheme() {
 }
 
 export function useGetStorefrontSections() {
-  return useApiQuery<ILandingPageItemsOrder[]>({
+  return useApiQuery<{ results: ThemeSection[] }>({
     url: `/storefront/sections/`,
     key: `storefront-sections`,
     selectData: true,
@@ -202,14 +202,14 @@ export function useGetStorefrontSections() {
 
 export function useUpdateStorefrontSectionsOrder() {
   return useMutation({
-    mutationFn: (body: { items: { uid: string; order: number }[] }) =>
-      baseApi.patch(`/storefront/sections/reorder/`, body),
+    mutationFn: (body: { updates: { uid: string; position: number }[] }) =>
+      baseApi.patch(`/storefront/sections/update-section-positions/`, body),
   })
 }
 
 export function useUpdateStorefrontSection() {
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) =>
+    mutationFn: ({ id, body }: { id: string; body: FormData | Record<string, unknown> }) =>
       baseApi.patch(`/storefront/sections/${id}/`, body, {
         headers: { "Content-Type": "multipart/form-data" },
       }),
@@ -227,6 +227,8 @@ export function useGetThemeSettings() {
 export function useUpdateThemeSettings() {
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: Partial<IThemeSettings> }) =>
-      baseApi.patch(`/storefront/${id}/`, body),
+      baseApi.patch(`/storefront/${id}/`, body, {
+        headers: { "Content-Type": "multipart/form-data" },
+      }),
   })
 }

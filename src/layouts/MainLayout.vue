@@ -24,7 +24,7 @@
         ]"
       >
         <!-- Topbar -->
-        <AppHeader />
+        <AppHeader :show-logo="isMobile" />
 
         <!-- Content -->
         <main>
