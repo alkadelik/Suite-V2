@@ -101,17 +101,23 @@
 
       <div class="relative mt-20">
         <div
-          :class="['relative isolate flex flex-col gap-2 rounded-3xl p-6 pt-20 text-white']"
+          :class="['relative isolate flex flex-col gap-1 rounded-3xl p-3 pt-12 text-white']"
           style="
             background: linear-gradient(136.41deg, #1a2a6c -3.7%, #b21f1f 53.98%, #fdbb2d 99.39%);
           "
         >
-          <h3 class="mb-1 text-sm font-bold">Your trial has ended!</h3>
-          <p class="mb-4 text-sm">Upgrade to regain full access.</p>
-          <AppButton color="alt" label="Upgrade" class="w-full flex-row-reverse" icon="star" />
+          <h3 class="text-sm font-bold">Your trial has ended!</h3>
+          <p class="mb-1 text-sm">Upgrade to regain full access.</p>
+          <AppButton
+            color="alt"
+            label="Upgrade"
+            size="sm"
+            class="w-full flex-row-reverse"
+            icon="star"
+          />
         </div>
 
-        <img src="@/assets/images/gift.png" class="absolute -top-16 left-4" />
+        <img src="@/assets/images/gift.png" class="absolute -top-8 left-4 h-16" />
       </div>
     </section>
   </aside>
