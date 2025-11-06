@@ -17,7 +17,7 @@
         v-model="additionalImages"
         :number-of-images="4"
         :product-image-mode="true"
-        :enabled-slots="4"
+        :enabled-slots="enabledAdditionalSlots"
         :show-make-primary-button="true"
         @make-primary="handleMakePrimary"
       />
@@ -50,7 +50,7 @@
               :model-value="[variantImages[index] || null]"
               :number-of-images="1"
               :product-image-mode="true"
-              :enabled-slots="0"
+              :enabled-slots="enabledVariantSlots"
               :hide-image-label="true"
               @update:model-value="updateVariantImage(index, $event[0])"
             />
@@ -67,6 +67,7 @@ import MultiFileInput from "@components/form/MultiFileInput.vue"
 import FileUploadField from "@components/form/FileUploadField.vue"
 import Chip from "@components/Chip.vue"
 import type { IProductVariant } from "../../types"
+import { useAuthStore } from "@modules/auth/store"
 
 interface Props {
   /** Product images */
@@ -92,6 +93,28 @@ const props = withDefaults(defineProps<Props>(), {
   existingImageIds: () => [],
 })
 const emit = defineEmits<Emits>()
+
+// Get auth store to check subscription status
+const authStore = useAuthStore()
+
+// Check if user has an active subscription
+const hasSubscription = computed(() => {
+  return authStore.user?.subscription !== null
+})
+
+// Determine how many additional image slots should be enabled
+// If no subscription, disable all additional images (0 enabled)
+// If subscription exists, enable all 4 slots
+const enabledAdditionalSlots = computed(() => {
+  return hasSubscription.value ? 4 : 0
+})
+
+// Determine if variant images should be enabled
+// If no subscription, disable variant images (0 enabled)
+// If subscription exists, enable the slot (1 enabled)
+const enabledVariantSlots = computed(() => {
+  return hasSubscription.value ? 1 : 0
+})
 
 // Track removed image IDs in edit mode
 const removedImageIds = ref<string[]>([])

@@ -129,3 +129,73 @@ export type TChipColor =
   | "purple"
   | "pink"
   | undefined
+
+export interface INotification {
+  uid: string
+  title: string
+  message: string
+  type: string
+  extras?: Record<string, unknown> | null
+  is_read: boolean
+  created_at: string
+}
+
+export interface INotificationsData {
+  notifications: INotification[]
+  total_count: number
+  unread_count: number
+}
+
+export interface INotificationsResponse {
+  error: string | null
+  message: string
+  data: INotificationsData
+}
+
+export interface IPackageCategory {
+  id: number
+  category: string
+}
+
+export interface ICourier {
+  uid: string
+  service_code: string
+  name: string
+  pin_image: string
+  origin_country: string
+  international: boolean
+  domestic: boolean
+  express: boolean
+  status: string
+  package_categories: IPackageCategory[]
+  description: string
+  is_active: boolean
+  created_at: string
+}
+
+export interface ICouriersResponse {
+  error: string | null
+  message: string
+  data: {
+    count: number
+    next: string | null
+    previous: string | null
+    results: ICourier[]
+  }
+}
+
+export interface IShippingProfileData {
+  uid: string
+  store_name: string
+  store_address: string
+  preferred_couriers: ICourier[]
+  email: string
+  is_active: boolean
+  created_at: string
+}
+
+export interface IShippingProfileResponse {
+  error: string | null
+  message: string
+  data: IShippingProfileData
+}

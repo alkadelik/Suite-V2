@@ -155,6 +155,7 @@ import type {
   TProduct,
   IProductVariantDetails,
   IProductVariant,
+  IGetProductResponse,
 } from "../types"
 import IconHeader from "@components/IconHeader.vue"
 import ProductDetailsForm from "./ProductForm/ProductDetailsForm.vue"
@@ -170,7 +171,10 @@ import {
   useUpdateProductImage,
   useDeleteProductImage,
   useGetProduct,
+  useBulkVariantOperations,
+  useUpdateVariantImage,
 } from "../api"
+import baseApi from "@/composables/baseApi"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
 import LoadingIcon from "@components/LoadingIcon.vue"
@@ -231,6 +235,10 @@ const { mutate: createAttributeValues, isPending: isCreatingAttributeValues } =
 const { mutate: addProductImages, isPending: isAddingProductImages } = useAddProductImage()
 const { mutate: updateProductImage, isPending: isUpdatingImage } = useUpdateProductImage()
 const { mutate: deleteProductImage, isPending: isDeletingImage } = useDeleteProductImage()
+const { mutateAsync: bulkVariantOperations, isPending: isBulkOperating } =
+  useBulkVariantOperations()
+const { mutateAsync: updateVariantImage, isPending: isUpdatingVariantImage } =
+  useUpdateVariantImage()
 
 // Product fetching
 const productUidToFetch = ref<string>("")
@@ -245,8 +253,14 @@ const { form, hasVariants, variants, variantConfiguration, resetFormState, popul
 
 const { drawerPosition } = useProductDrawerUtilities()
 
-// Track deleted variants
-const deletedVariants = ref<IProductVariantDetails[]>([])
+// Track deleted variants (without UIDs - we look them up from originalVariantUids map)
+const deletedVariants = ref<IProductVariant[]>([])
+
+// Track original variant UIDs (key: attribute combo, value: variant uid)
+const originalVariantUids = ref<Map<string, string>>(new Map())
+
+// Track variant details with UIDs for image uploads
+const variantDetailsWithUids = ref<IProductVariantDetails[]>([])
 
 // Track existing image UIDs (parallel array to form.images)
 const existingImageIds = ref<Array<string | null>>([])
@@ -298,7 +312,9 @@ const isPending = computed(() => {
     isAddingProductImages.value ||
     isUpdatingImage.value ||
     isDeletingImage.value ||
-    isLoadingProduct.value
+    isLoadingProduct.value ||
+    isBulkOperating.value ||
+    isUpdatingVariantImage.value
   )
 })
 
@@ -326,6 +342,8 @@ watch(
       productUidToFetch.value = product.uid
       // Reset deleted variants when drawer opens
       deletedVariants.value = []
+      // Reset original variant UIDs
+      originalVariantUids.value.clear()
       // Reset removed image IDs
       removedImageIds.value = []
     }
@@ -365,6 +383,17 @@ watch(
   { deep: true },
 )
 
+/**
+ * Generate a unique key for a variant based on its attributes
+ * Used to match variants before and after regeneration
+ */
+const generateVariantKey = (attributes: { attribute: string; value: string }[]): string => {
+  return attributes
+    .map((attr) => `${attr.attribute}:${attr.value}`)
+    .sort()
+    .join("|")
+}
+
 // Watch for product data to populate form
 watch(
   () => productData.value,
@@ -387,6 +416,41 @@ watch(
         existingImageIds.value = Array(5).fill(null)
       }
 
+      // Populate original variant UIDs map and store full variant details
+      if (product.variants && product.variants.length > 0) {
+        originalVariantUids.value.clear()
+        variantDetailsWithUids.value = product.variants
+        product.variants.forEach((variant) => {
+          if (variant.attributes && variant.attributes.length > 0) {
+            const key = generateVariantKey(variant.attributes)
+            originalVariantUids.value.set(key, variant.uid)
+          }
+        })
+        console.log(
+          `Tracked ${originalVariantUids.value.size} original variant UIDs`,
+          originalVariantUids.value,
+        )
+      }
+
+      // Prepare product images (indices 0-4)
+      const productImages =
+        product.images && product.images.length > 0
+          ? [
+              ...product.images
+                .slice()
+                .sort((a, b) => a.sort_order - b.sort_order)
+                .slice(0, 5)
+                .map((img) => img.image),
+              ...Array(Math.max(0, 5 - product.images.length)).fill(null),
+            ]
+          : Array(5).fill(null)
+
+      // Prepare variant images (indices 5+)
+      const variantImages =
+        product.variants && product.variants.length > 0
+          ? product.variants.map((variant) => variant.image || null)
+          : []
+
       populateFormState({
         name: product.name || "",
         description: product.description || "",
@@ -396,17 +460,7 @@ watch(
         category: product.category
           ? { label: product.category_name || "", value: product.category || "" }
           : null,
-        images:
-          product.images && product.images.length > 0
-            ? [
-                ...product.images
-                  .slice()
-                  .sort((a, b) => a.sort_order - b.sort_order)
-                  .slice(0, 5)
-                  .map((img) => img.image),
-                ...Array(Math.max(0, 5 - product.images.length)).fill(null),
-              ]
-            : [],
+        images: [...productImages, ...variantImages],
         hasVariants: product.is_variable || false,
         variants:
           product.variants && product.variants.length > 0
@@ -688,8 +742,9 @@ const handleSubmit = async () => {
         }
       }
 
-      // Step 4: Upload new images (File objects)
+      // Step 4: Upload new product images (File objects - indices 0-4)
       const newImages = form.images
+        .slice(0, 5)
         .map((image, index) => ({ image, index }))
         .filter(({ image }) => image && image instanceof File)
 
@@ -710,17 +765,42 @@ const handleSubmit = async () => {
             )
           })
         }
-        console.log(`Uploaded ${newImages.length} new images`)
+        console.log(`Uploaded ${newImages.length} new product images`)
+      }
+
+      // Step 5: Upload variant images (File objects - indices 5+)
+      const variantImagesUploaded: number[] = []
+      if (variantDetailsWithUids.value.length > 0) {
+        for (let i = 0; i < variantDetailsWithUids.value.length; i++) {
+          const variantImageIndex = 5 + i
+          const variantImage = form.images[variantImageIndex]
+          const variant = variantDetailsWithUids.value[i]
+
+          // Only upload if it's a new File (not existing URL string)
+          if (variantImage && variantImage instanceof File && variant?.uid) {
+            await updateVariantImage({
+              variantUid: variant.uid,
+              image: variantImage,
+            })
+            variantImagesUploaded.push(i)
+          }
+        }
+        if (variantImagesUploaded.length > 0) {
+          console.log(`Uploaded ${variantImagesUploaded.length} variant images`)
+        }
       }
 
       // Success!
       const totalChanges =
         removedImageIds.value.length +
         newImages.length +
+        variantImagesUploaded.length +
         (primaryImage && typeof primaryImage === "string" ? 1 : 0)
 
       if (totalChanges > 0) {
-        toast.success("Images updated successfully")
+        toast.success(
+          `Images updated successfully (${newImages.length} product, ${variantImagesUploaded.length} variant)`,
+        )
       } else {
         toast.info("No changes to images")
       }
@@ -740,6 +820,180 @@ const handleSubmit = async () => {
   const isLast = step.value === totalSteps
 
   if (isLast) {
+    // Handle Variants Mode with bulk operations
+    if (isVariantsMode) {
+      const productUid = productUidToFetch.value
+      if (!productUid) {
+        toast.error("No product ID found")
+        return
+      }
+
+      try {
+        // Identify variants to delete by looking up their UIDs from originalVariantUids map
+        const toDelete: string[] = []
+        deletedVariants.value.forEach((variant) => {
+          if (variant.attributes && variant.attributes.length > 0) {
+            const key = generateVariantKey(variant.attributes)
+            const uid = originalVariantUids.value.get(key)
+            if (uid) {
+              toDelete.push(uid)
+            }
+          }
+        })
+
+        // Separate current variants into new (to add) and existing (to update)
+        const toAdd: IProductVariant[] = []
+        const toUpdate: Array<IProductVariant & { uid: string }> = []
+
+        variants.value.forEach((variant) => {
+          if (!variant.attributes || variant.attributes.length === 0) {
+            // Single variant case - check if it existed before
+            const existingUid = originalVariantUids.value.values().next().value
+            if (existingUid) {
+              toUpdate.push({ ...variant, uid: existingUid })
+            } else {
+              toAdd.push(variant)
+            }
+            return
+          }
+
+          const key = generateVariantKey(variant.attributes)
+          const existingUid = originalVariantUids.value.get(key)
+
+          if (existingUid) {
+            // Existing variant - add to update list
+            toUpdate.push({ ...variant, uid: existingUid })
+          } else {
+            // New variant (attribute combination didn't exist before) - add to create list
+            toAdd.push(variant)
+          }
+        })
+
+        // Map variants to the correct format for the API
+        const mappedToAdd = toAdd.map((variant) => ({
+          name: variant.name,
+          sku: variant.sku || `SKU-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+          price: variant.price,
+          promo_price: variant.promo_price,
+          promo_expiry: variant.promo_expiry
+            ? typeof variant.promo_expiry === "object" &&
+              variant.promo_expiry &&
+              (variant.promo_expiry as object) instanceof Date
+              ? (variant.promo_expiry as Date).toISOString()
+              : variant.promo_expiry
+            : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          cost_price: variant.cost_price,
+          weight: variant.weight,
+          length: variant.length,
+          width: variant.width,
+          height: variant.height,
+          reorder_point: variant.reorder_point ? variant.reorder_point.toString() : "0",
+          max_stock: variant.max_stock ? variant.max_stock.toString() : "0",
+          opening_stock: variant.opening_stock ? variant.opening_stock.toString() : "0",
+          is_active: variant.is_active ?? true,
+          is_default: variant.is_default ?? false,
+          batch_number: variant.batch_number,
+          expiry_date: variant.expiry_date
+            ? Object.prototype.toString.call(variant.expiry_date) === "[object Date]"
+              ? (variant.expiry_date as unknown as Date).toISOString().split("T")[0]
+              : variant.expiry_date
+            : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+          attributes: variant.attributes || [],
+        }))
+
+        console.log("Bulk variant operations:", {
+          to_delete: toDelete,
+          to_add: mappedToAdd,
+          to_update: toUpdate.length,
+        })
+
+        // Step 1: Call bulk operations for deletions AND additions in same payload
+        // This handles: delete-only, add-only, OR delete+add together
+        const hasBulkOperations = toDelete.length > 0 || mappedToAdd.length > 0
+        if (hasBulkOperations) {
+          await bulkVariantOperations({
+            productUid,
+            to_delete: toDelete.length > 0 ? toDelete : undefined,
+            to_add: mappedToAdd.length > 0 ? mappedToAdd : undefined,
+          })
+          console.log(
+            `Bulk operations completed: ${toDelete.length} deleted, ${mappedToAdd.length} added`,
+          )
+        }
+
+        // Step 2: Update existing variants individually (happens after bulk operations)
+        // This ensures variants are deleted/added first, then existing ones are updated
+        if (toUpdate.length > 0) {
+          console.log(`Updating ${toUpdate.length} existing variants...`)
+          for (const variant of toUpdate) {
+            const payload: Omit<IProductVariant, "opening_stock"> = {
+              name: variant.name,
+              sku: variant.sku,
+              price: variant.price,
+              promo_price: variant.promo_price,
+              promo_expiry: variant.promo_expiry
+                ? typeof variant.promo_expiry === "object" &&
+                  variant.promo_expiry &&
+                  (variant.promo_expiry as object) instanceof Date
+                  ? (variant.promo_expiry as Date).toISOString()
+                  : variant.promo_expiry
+                : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+              cost_price: variant.cost_price,
+              weight: variant.weight,
+              length: variant.length,
+              width: variant.width,
+              height: variant.height,
+              reorder_point: variant.reorder_point || "0",
+              max_stock: variant.max_stock || "0",
+              is_active: variant.is_active ?? true,
+              is_default: variant.is_default ?? false,
+              batch_number: variant.batch_number,
+              expiry_date: variant.expiry_date
+                ? Object.prototype.toString.call(variant.expiry_date) === "[object Date]"
+                  ? (variant.expiry_date as unknown as Date).toISOString().split("T")[0]
+                  : variant.expiry_date
+                : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+              attributes: variant.attributes || [],
+            }
+
+            await new Promise<void>((resolve, reject) => {
+              updateVariant(
+                { uid: variant.uid, ...payload },
+                {
+                  onSuccess: () => resolve(),
+                  onError: (error: unknown) => reject(new Error(String(error))),
+                },
+              )
+            })
+          }
+          console.log(`All ${toUpdate.length} variants updated successfully`)
+        }
+
+        // Show success message with comprehensive summary
+        const changesSummary = []
+        if (toDelete.length > 0) changesSummary.push(`${toDelete.length} deleted`)
+        if (mappedToAdd.length > 0) changesSummary.push(`${mappedToAdd.length} added`)
+        if (toUpdate.length > 0) changesSummary.push(`${toUpdate.length} updated`)
+
+        console.log("All variant operations completed:", changesSummary.join(", "))
+
+        if (changesSummary.length > 0) {
+          toast.success(`Variants updated successfully (${changesSummary.join(", ")})`)
+        } else {
+          toast.info("No variant changes to apply")
+        }
+
+        resetFormState()
+        emit("update:modelValue", false)
+        emit("refresh")
+      } catch (error) {
+        console.error("Failed to update variants:", error)
+        displayError(error)
+      }
+      return
+    }
+
+    // Handle Full Edit Mode (original logic)
     const payload: IProductFormPayload = {
       name: form.name,
       description: form.description,
@@ -791,19 +1045,21 @@ const handleSubmit = async () => {
       if (productUid && form.images.length > 0) {
         ;(async () => {
           try {
-            const validImages = form.images.filter((image) => image && image instanceof File)
+            // Step 1: Upload product images (indices 0-4)
+            const productImages = form.images
+              .slice(0, 5)
+              .map((image, index) => ({ image, index }))
+              .filter(({ image }) => image && image instanceof File)
 
-            if (validImages.length > 0) {
-              for (let i = 0; i < validImages.length; i++) {
-                const image = validImages[i]
-
+            if (productImages.length > 0) {
+              for (const { image, index } of productImages) {
                 await new Promise<void>((resolve, reject) => {
                   addProductImages(
                     {
                       product: productUid,
                       image: image as File,
-                      is_primary: i === 0,
-                      sort_order: i + 1,
+                      is_primary: index === 0,
+                      sort_order: index + 1,
                     },
                     {
                       onSuccess: () => resolve(),
@@ -812,7 +1068,46 @@ const handleSubmit = async () => {
                   )
                 })
               }
+              console.log(`Uploaded ${productImages.length} product images`)
+            }
 
+            // Step 2: Check if there are variant images to upload (indices 5+)
+            const hasVariantImages = form.images.slice(5).some((img) => img && img instanceof File)
+
+            if (hasVariantImages && hasVariants.value) {
+              // Fetch fresh product data to get variant UIDs
+              console.log("Fetching product data to get variant UIDs for image upload...")
+              const { data: freshProductData } = await baseApi.get<IGetProductResponse>(
+                `/inventory/products/${productUid}/`,
+              )
+
+              if (freshProductData?.data?.variants) {
+                const fetchedVariants = freshProductData.data.variants
+                let variantImagesUploaded = 0
+
+                // Upload variant images
+                for (let i = 0; i < fetchedVariants.length; i++) {
+                  const variantImageIndex = 5 + i
+                  const variantImage = form.images[variantImageIndex]
+                  const variant = fetchedVariants[i]
+
+                  if (variantImage && variantImage instanceof File && variant?.uid) {
+                    await updateVariantImage({
+                      variantUid: variant.uid,
+                      image: variantImage,
+                    })
+                    variantImagesUploaded++
+                  }
+                }
+
+                if (variantImagesUploaded > 0) {
+                  console.log(`Uploaded ${variantImagesUploaded} variant images`)
+                }
+              }
+            }
+
+            const totalUploaded = productImages.length
+            if (totalUploaded > 0 || hasVariantImages) {
               toast.success("All images uploaded successfully")
             }
           } catch (error) {
@@ -853,10 +1148,9 @@ const handleSubmit = async () => {
 
         // Generate combinations and capture deleted variants
         const deleted = variantConfigHelpers.generateVariantCombinations()
-        // Type narrowing: deleted variants from generateVariantCombinations are IProductVariant[]
-        // but we need them as IProductVariantDetails[] for display
-        // These are the existing variants that were already saved, so they have the full details
-        deletedVariants.value = deleted as unknown as IProductVariantDetails[]
+        // Deleted variants are IProductVariant[] without UIDs
+        // UIDs will be looked up from originalVariantUids map when needed
+        deletedVariants.value = deleted
 
         console.log("Generated Variants Array:", {
           step: step.value + 1,

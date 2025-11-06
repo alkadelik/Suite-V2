@@ -72,7 +72,7 @@
 import { ref, computed, watch } from "vue"
 import Drawer from "@components/Drawer.vue"
 import AppButton from "@/components/AppButton.vue"
-import type { IProductFormPayload } from "../types"
+import type { IProductFormPayload, IGetProductResponse } from "../types"
 import IconHeader from "@components/IconHeader.vue"
 import ProductDetailsForm from "./ProductForm/ProductDetailsForm.vue"
 import ProductManageCombinationsForm from "./ProductForm/ProductManageCombinationsForm.vue"
@@ -83,7 +83,9 @@ import {
   useCreateAttribute,
   useCreateAttributeValues,
   useAddProductImage,
+  useUpdateVariantImage,
 } from "../api"
+import baseApi from "@/composables/baseApi"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
 
@@ -129,6 +131,8 @@ const { mutate: createAttribute, isPending: isCreatingAttribute } = useCreateAtt
 const { mutate: createAttributeValues, isPending: isCreatingAttributeValues } =
   useCreateAttributeValues()
 const { mutate: addProductImages, isPending: isAddingProductImages } = useAddProductImage()
+const { mutateAsync: updateVariantImage, isPending: isUpdatingVariantImage } =
+  useUpdateVariantImage()
 
 // Composables
 const { form, hasVariants, variants, variantConfiguration, resetFormState } = useProductFormState()
@@ -172,7 +176,8 @@ const isPending = computed(() => {
     isCreating.value ||
     isCreatingAttribute.value ||
     isCreatingAttributeValues.value ||
-    isAddingProductImages.value
+    isAddingProductImages.value ||
+    isUpdatingVariantImage.value
   )
 })
 
@@ -248,41 +253,75 @@ const handleSubmit = async () => {
           try {
             console.log(`Uploading ${form.images.length} images for product: ${productUid}`)
 
-            // Filter valid images (only File objects)
-            const validImages = form.images.filter((image) => image && image instanceof File)
-            console.log(
-              `Found ${validImages.length} valid images out of ${form.images.length} total images`,
-            )
+            // Step 1: Upload product images (indices 0-4)
+            const productImages = form.images
+              .slice(0, 5)
+              .map((image, index) => ({ image, index }))
+              .filter(({ image }) => image && image instanceof File)
 
-            if (validImages.length === 0) {
-              console.log("No valid images to upload")
-              return
+            if (productImages.length > 0) {
+              for (const { image, index } of productImages) {
+                await new Promise<void>((resolve, reject) => {
+                  addProductImages(
+                    {
+                      product: productUid,
+                      image: image as File,
+                      is_primary: index === 0,
+                      sort_order: index + 1,
+                    },
+                    {
+                      onSuccess: () => {
+                        console.log(`Product image ${index + 1} uploaded successfully`)
+                        resolve()
+                      },
+                      onError: (error: unknown) => {
+                        console.error(`Failed to upload product image ${index + 1}:`, error)
+                        reject(new Error(String(error)))
+                      },
+                    },
+                  )
+                })
+              }
+              console.log(`Uploaded ${productImages.length} product images`)
             }
 
-            // Upload all valid images
-            for (let i = 0; i < validImages.length; i++) {
-              const image = validImages[i]
+            // Step 2: Check if there are variant images to upload (indices 5+)
+            const variantImageFiles = form.images.slice(5)
+            const hasVariantImages = variantImageFiles.some((img) => img && img instanceof File)
 
-              await new Promise<void>((resolve, reject) => {
-                addProductImages(
-                  {
-                    product: productUid,
-                    image: image as File,
-                    is_primary: i === 0,
-                    sort_order: i + 1,
-                  },
-                  {
-                    onSuccess: () => {
-                      console.log(`Image ${i + 1} uploaded successfully`)
-                      resolve()
-                    },
-                    onError: (error: unknown) => {
-                      console.error(`Failed to upload image ${i + 1}:`, error)
-                      reject(new Error(String(error)))
-                    },
-                  },
-                )
-              })
+            if (hasVariantImages && variants.value.length > 0) {
+              // Fetch fresh product data to get variant UIDs
+              console.log("Fetching product data to get variant UIDs for image upload...")
+              const { data: freshProductData } = await baseApi.get<IGetProductResponse>(
+                `/inventory/products/${productUid}/`,
+              )
+
+              if (freshProductData?.data?.variants) {
+                const fetchedVariants = freshProductData.data.variants
+                let variantImagesUploaded = 0
+
+                // Upload variant images
+                for (let i = 0; i < fetchedVariants.length; i++) {
+                  const variantImageIndex = 5 + i
+                  const variantImage = form.images[variantImageIndex]
+                  const variant = fetchedVariants[i]
+
+                  if (variantImage && variantImage instanceof File && variant?.uid) {
+                    await updateVariantImage({
+                      variantUid: variant.uid,
+                      image: variantImage,
+                    })
+                    variantImagesUploaded++
+                    console.log(
+                      `Variant image ${i + 1} uploaded successfully for variant: ${variant.name}`,
+                    )
+                  }
+                }
+
+                if (variantImagesUploaded > 0) {
+                  console.log(`Uploaded ${variantImagesUploaded} variant images`)
+                }
+              }
             }
 
             toast.success("All images uploaded successfully")
