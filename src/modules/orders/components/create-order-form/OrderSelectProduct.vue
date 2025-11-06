@@ -127,7 +127,7 @@ const handleNext = () => {
           />
         </div>
         <div class="space-y-1 p-1 py-2">
-          <h4 class="text-xs font-medium">{{ prod.name }}</h4>
+          <h4 class="line-clamp-1 text-xs font-medium">{{ prod.name }}</h4>
           <div class="flex justify-between gap-2 text-xs">
             <span class="text-primary-600 flex items-center gap-1">
               <Icon name="box" class="h-3 w-3" />

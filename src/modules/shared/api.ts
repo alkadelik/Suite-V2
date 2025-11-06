@@ -123,6 +123,7 @@ export function useGetLiveStatus(slug: string) {
       const res = await baseApi.get<ILiveStatusResponse>(`/stores/public/live-status/${slug}/`)
       return res.data
     },
+    enabled: !!slug,
   })
 }
 

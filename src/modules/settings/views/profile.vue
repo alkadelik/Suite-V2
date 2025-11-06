@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import AppButton from "@components/AppButton.vue"
-import Avatar from "@components/Avatar.vue"
 import AppForm from "@components/form/AppForm.vue"
 import FileUploadField from "@components/form/FileUploadField.vue"
 import FormField from "@components/form/FormField.vue"
@@ -48,9 +47,16 @@ const initialValues = computed(() => ({
   avatar: null,
 }))
 
+const KYC_DOCUMENT_TYPES = [
+  { label: "Passport", value: "international_passport" },
+  { label: `Driver's License`, value: "drivers_license" },
+  { label: "National ID", value: "national_id" },
+  { label: "Voter's Card", value: "voters_card" },
+]
+
 const kycInitialValues = computed(() => ({
-  doc_type: null,
-  file: null,
+  doc_type: KYC_DOCUMENT_TYPES.find((type) => type.value === kycData.value?.doc_type) || null,
+  file: kycData.value?.file || null,
   doc_number: kycData.value?.doc_number || "",
   bvn: kycData.value?.bvn || "",
 }))
@@ -129,29 +135,21 @@ watch(
             label="Email Address"
             placeholder="e.g. john.doe@example.com"
             required
-            class="col-span-2"
+            class="sm:col-span-2"
             disabled
           />
 
-          <div class="flex gap-6 sm:col-span-2">
-            <Avatar
-              :name="`${user?.first_name} ${user?.last_name}`"
-              size="lg"
-              :url="user?.avatar || ''"
+          <div class="sm:col-span-2">
+            <FormField
+              name="avatar"
+              type="file"
+              label="Profile Picture"
+              :required="true"
+              accept="image/*"
+              :max-size="2"
+              placeholder="Upload your profile picture"
+              hint="Max size: 2MB, Images only"
             />
-
-            <div class="flex-1">
-              <FormField
-                name="avatar"
-                type="file"
-                label="Profile Picture"
-                :required="true"
-                accept="image/*"
-                :max-size="2"
-                placeholder="Upload your profile picture"
-                hint="Max size: 2MB, Images only"
-              />
-            </div>
           </div>
         </div>
 
@@ -168,6 +166,8 @@ watch(
         subtitle="We require your BVN and ID to verify your identity as part of KYC regulations."
       />
 
+      <!-- {{ kycData }} -->
+
       <AppForm
         @submit="onUpdateKyc"
         :schema="kycSchema"
@@ -179,11 +179,7 @@ watch(
             type="select"
             name="doc_type"
             label="Select ID"
-            :options="[
-              { label: 'Passport', value: 'passport' },
-              { label: `Driver's License`, value: 'drivers_license' },
-              { label: 'National ID', value: 'national_id' },
-            ]"
+            :options="KYC_DOCUMENT_TYPES"
             placeholder="Select ID type"
             required
           />

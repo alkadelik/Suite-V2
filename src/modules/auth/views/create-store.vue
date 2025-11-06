@@ -104,8 +104,6 @@ const { data: industriesData } = useGetStoreIndustries()
 watch<IIndustriesApiResponse | undefined>(
   () => industriesData.value,
   (newData) => {
-    console.log(newData)
-
     if (newData?.data?.results) {
       updateStoreIndustryOptions(newData.data.results)
     }
@@ -158,10 +156,14 @@ const onSubmit = (values: IStoreFormData) => {
   createStore(payload, {
     onSuccess: (res) => {
       toast.success("Store created successfully")
-      authStore.updateAuthUser({ store_uid: res.data?.data?.uuid, store: { ...res.data.data } })
+      console.log("Store created:", res.data.data)
+      const { uid, slug } = res.data.data as { uid: string; slug: string }
+      authStore.updateAuthUser({ store_uid: uid, store_slug: slug })
+      // authStore.setAuthUser({ ...authStore.user, store_uid: uid, store_slug: slug })
       // check for redirect query param
       const redirectPath = router.currentRoute.value.query.redirect as string
-      window.location.href = redirectPath || "/dashboard"
+      // window.location.href = redirectPath || "/dashboard"
+      router.push(redirectPath || "/onboarding")
     },
     onError: displayError,
   })

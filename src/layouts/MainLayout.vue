@@ -12,6 +12,7 @@
       <AppSidebar
         :sales-suites="SALES_SUITES"
         :mobile-sidebar-open="mobileSidebarOpen"
+        :isLive="isLive"
         @logout="logout = true"
         @upgrade="setPlanUpgradeModal(true)"
       />
@@ -25,10 +26,32 @@
         ]"
       >
         <!-- Topbar -->
-        <AppHeader :show-logo="isMobile" />
+        <AppHeader :show-logo="isMobile" :isLive="isLive" />
 
         <!-- Content -->
         <main>
+          <div
+            v-if="!isLive"
+            class="bg-primary-25 text-warning-700 border-warning-300 flex flex-col items-start gap-3 border-b px-6 py-3 md:flex-row md:items-center"
+          >
+            <span
+              class="border-primary-200 ring-primary-100 hidden size-8 items-center justify-center rounded-full border-2 p-0.5 ring-2 ring-offset-2 md:flex"
+            >
+              <Icon name="info-circle" size="20" />
+            </span>
+            <div class="flex flex-1 flex-col gap-1 text-sm md:flex-row">
+              <span class="font-medium">Your storefront isn't live yet! </span> Complete your bank
+              details, delivery options, and KYC to start selling online.
+            </div>
+            <AppButton
+              variant="text"
+              label="Complete Setup"
+              icon="arrow-right"
+              size="sm"
+              class="flex-row-reverse underline underline-offset-4"
+              @click="$router.push('/onboarding')"
+            />
+          </div>
           <router-view />
         </main>
 
@@ -63,7 +86,7 @@
     <TrialActivationModal
       :open="openTrial"
       :subscription="profile?.subscription || null"
-      @close="openTrial = false"
+      @close="closeTrialModal"
     />
 
     <MobileMenuDrawer :open="openMore" @close="openMore = false" />
@@ -90,12 +113,13 @@ import { ICategoriesApiResponse, IProductAttributesApiResponse } from "@modules/
 import PlansModal from "@modules/settings/components/PlansModal.vue"
 import TrialActivationModal from "@modules/shared/components/TrialActivationModal.vue"
 import MobileMenuDrawer from "./parts/MobileMenuDrawer.vue"
+import Icon from "@components/Icon.vue"
+import { useGetLiveStatus } from "@modules/shared/api"
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
 const mobileSidebarOpen = ref(false)
 const logout = ref(false)
-const openTrial = ref(false)
 const openMore = ref(false)
 
 const sidebarPadding = computed(() => (isMobile.value ? "lg:pl-72" : "pl-72"))
@@ -116,6 +140,10 @@ const { data: attributes } = useGetAttributes()
 const { data: profile } = useGetProfile()
 
 const showPlans = computed(() => useSettingsStore().showPlanUpgradeModal)
+
+const storeSlug = useAuthStore().user?.store_slug || ""
+const { data: liveStatusData } = useGetLiveStatus(storeSlug)
+const isLive = computed(() => liveStatusData.value?.data?.is_live || false)
 
 watch(
   locations,
@@ -139,16 +167,31 @@ watch(
   },
 )
 
+const openTrial = ref(false)
+
 watch(
   profile,
   (val) => {
     if (val) {
       updateAuthUser(val)
-      if (val.subscription?.trial_mode) openTrial.value = true
+      // Show trial modal on first load if in trial mode and not yet dismissed
+      if (val.subscription?.trial_mode && !localStorage.getItem("trial_dismissed")) {
+        openTrial.value = true
+      }
+      // Clean up if no longer in trial mode
+      if (!val.subscription?.trial_mode) {
+        localStorage.removeItem("trial_dismissed")
+        openTrial.value = false
+      }
     }
   },
   { immediate: true },
 )
+
+const closeTrialModal = () => {
+  openTrial.value = false
+  localStorage.setItem("trial_dismissed", "true")
+}
 
 watch<ICategoriesApiResponse | undefined>(
   () => categories.value,

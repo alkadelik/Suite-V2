@@ -53,9 +53,11 @@ import Icon from "@components/Icon.vue"
 import EmptyState from "@components/EmptyState.vue"
 import { useMediaQuery } from "@vueuse/core"
 import { toast } from "@/composables/useToast"
+import { useRouter } from "vue-router"
 
 const { user } = useAuthStore()
 const openModal = ref(false)
+const router = useRouter()
 
 const isMobile = useMediaQuery("(max-width: 768px)")
 
@@ -71,21 +73,25 @@ const quickActions = [
     label: "Add a product",
     icon: "box",
     color: "bg-blue-50 text-blue-700",
+    action: () => router.push("/inventory?create=true"),
   },
   {
     label: "Record a sale",
     icon: "bag",
     color: "bg-green-50 text-green-700",
+    action: () => router.push("/orders?create=true"),
   },
   {
     label: "Create popup",
     icon: "calendar-tick",
     color: "bg-purple-50 text-purple-700",
+    action: () => router.push("/popups?create=true"),
   },
   {
     label: "Add a customer",
     icon: "profile-add",
     color: "bg-primary-50 text-primary-700",
+    action: () => router.push("/customers?create=true"),
   },
   {
     label: "Record expense",

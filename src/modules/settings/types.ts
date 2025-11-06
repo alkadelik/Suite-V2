@@ -59,12 +59,18 @@ export interface IStoreDetails {
   uid: string
   name: string
   slug: string
-  logo: string | null
+  logo: string | File | null
   industry: string
   industry_name: string
   delivery_enabled: boolean
   created_at: string
   locations: TLocation[]
+  store_email: string
+  store_phone: string
+  support_email: string
+  support_phone: string
+  instagram_handle: string
+  currency: string
 }
 
 export interface IUpdateStoreDetailsPayload {
@@ -205,6 +211,13 @@ export interface ThemeSection {
   subtitle: string | null
   content: string | null
   featured_products: string[] // array of product UIDs for featured_products section
+  testimonials: {
+    uid: string
+    name: string
+    role: string
+    comment: string
+    image: string | null
+  }[]
   image: string | null
   background_image: string | null
   cta_text: string | null

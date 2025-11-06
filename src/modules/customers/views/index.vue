@@ -220,7 +220,7 @@ import DataTable from "@components/DataTable.vue"
 import Avatar from "@components/Avatar.vue"
 import { ICustomer, TCustomerFormMode } from "../types"
 import { CUSTOMER_COLUMNS } from "../constants"
-import { ref, computed, watch } from "vue"
+import { ref, computed, watch, onMounted } from "vue"
 import Icon from "@components/Icon.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import Chip from "@components/Chip.vue"
@@ -237,6 +237,7 @@ import SectionHeader from "@components/SectionHeader.vue"
 import { useGetCustomers, useDeleteCustomer } from "../api"
 import { displayError } from "@/utils/error-handler"
 import EmptyState from "@components/EmptyState.vue"
+import { useRoute } from "vue-router"
 
 // API calls
 const { data: customersData, isLoading, refetch } = useGetCustomers()
@@ -438,4 +439,10 @@ watch(
   },
   { immediate: true },
 )
+
+const route = useRoute()
+
+onMounted(() => {
+  if (route.query.create === "true") openAddCustomerDrawer()
+})
 </script>

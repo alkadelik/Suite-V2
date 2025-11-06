@@ -13,7 +13,12 @@
           />
         </div>
 
-        <FormField name="phone" label="Phone Number" type="text" placeholder="Enter phone number" />
+        <FormField
+          name="phone"
+          label="Phone Number (Optional)"
+          type="text"
+          placeholder="Enter phone number"
+        />
 
         <FormField
           name="email"
@@ -47,6 +52,7 @@ import type { ICustomerFormPayload, TCustomer } from "../types"
 import { useCreateCustomer } from "../api"
 import { displayError } from "@/utils/error-handler"
 import Modal from "@components/Modal.vue"
+import { formatPhoneNumber } from "@/utils/others"
 
 interface FormValues {
   first_name: string
@@ -74,7 +80,7 @@ const onSubmit = (values: FormValues) => {
     first_name: values.first_name.trim(),
     last_name: values.last_name.trim(),
     email: values.email.trim().toLowerCase(),
-    phone: values.phone.trim(),
+    phone: formatPhoneNumber(values.phone.trim()),
   }
 
   createCustomer(payload as ICustomerFormPayload, {

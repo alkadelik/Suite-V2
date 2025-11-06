@@ -27,6 +27,15 @@
           <Collapsible :header="`Testimonial ${index + 1}`" :default-open="index === 0">
             <template #body>
               <div class="space-y-4">
+                <!-- Status indicator for existing testimonials -->
+                <!-- <div
+                  v-if="!testimonial.id.startsWith('testimonial_')"
+                  class="rounded bg-blue-50 px-3 py-2 text-sm text-blue-700"
+                >
+                  <Icon name="check-circle" class="mr-1.5 inline h-4 w-4" />
+                  Saved to backend
+                </div> -->
+
                 <FormField
                   :name="`testimonials.${index}.quote`"
                   type="textarea"
@@ -47,10 +56,6 @@
                 />
 
                 <div class="flex gap-6">
-                  <div v-if="false" class="flex flex-col items-center gap-2">
-                    <img class="h-24 w-24 object-cover" />
-                    <span class="text-sm text-gray-600">Current Image</span>
-                  </div>
                   <div class="flex-1">
                     <FormField
                       type="file"
@@ -71,12 +76,16 @@
                     icon="trash"
                     variant="text"
                     class="text-red-600 hover:text-red-700"
-                    @click="removeTestimonial(index)"
+                    @click="confirmDelete(index)"
                   />
 
                   <AppButton
                     type="button"
-                    label="Save Testimonial"
+                    :label="
+                      testimonial.id.startsWith('testimonial_')
+                        ? 'Save Testimonial'
+                        : 'Update Testimonial'
+                    "
                     :loading="savingTestimonialId === testimonial.id"
                     @click="saveTestimonial(index, testimonial.id)"
                   />
@@ -97,6 +106,15 @@
         />
       </div>
     </div>
+
+    <!-- Delete Confirmation Modal -->
+    <DeleteConfirmationModal
+      v-model="showDeleteModal"
+      header="Delete Testimonial"
+      paragraph="Are you sure you want to delete this testimonial? This action cannot be undone."
+      :loading="isDeletingTestimonial"
+      @delete="handleDeleteConfirm"
+    />
   </div>
 </template>
 
@@ -107,7 +125,13 @@ import { useForm } from "vee-validate"
 import AppButton from "@components/AppButton.vue"
 import FormField from "@components/form/FormField.vue"
 import Collapsible from "@components/Collapsible.vue"
-import { useCreateTestimonial, useUpdateStorefrontSection } from "@modules/settings/api"
+import DeleteConfirmationModal from "@components/DeleteConfirmationModal.vue"
+import {
+  useCreateTestimonial,
+  useDeleteTestimonial,
+  useUpdateStorefrontSection,
+  useUpdateTestimonial,
+} from "@modules/settings/api"
 import type { ThemeSection } from "@modules/settings/types"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
@@ -130,9 +154,14 @@ const emit = defineEmits<{ refetch: [] }>()
 
 const { mutate: updateSection, isPending: isSectionTitlePending } = useUpdateStorefrontSection()
 const { mutate: createTestimonial } = useCreateTestimonial()
+const { mutate: updateTestimonial } = useUpdateTestimonial()
+const { mutate: deleteTestimonial } = useDeleteTestimonial()
 
 const testimonials = ref<Testimonial[]>([])
 const savingTestimonialId = ref<string | null>(null)
+const showDeleteModal = ref(false)
+const deleteIndex = ref<number | null>(null)
+const isDeletingTestimonial = ref(false)
 
 const validationSchema = yup.object({
   section_title: yup
@@ -174,9 +203,20 @@ watch(
   () => props.testimonialsSection,
   (newSection) => {
     if (newSection) {
+      const mappedTestimonials =
+        newSection.testimonials?.map((t) => ({
+          id: t.uid,
+          quote: t.comment || "",
+          name: t.name || "",
+          descriptor: t.role || "",
+          image: null,
+        })) || []
+
+      testimonials.value = mappedTestimonials
+
       setValues({
         section_title: newSection.title || "",
-        testimonials: [],
+        testimonials: mappedTestimonials,
       })
     }
   },
@@ -196,10 +236,61 @@ const addTestimonial = (): void => {
     image: null,
   }
   testimonials.value.push(newTestimonial)
+
+  // Update form values to sync with the new testimonial
+  setValues({
+    ...formValues,
+    testimonials: [...testimonials.value],
+  })
 }
 
-const removeTestimonial = (index: number): void => {
-  testimonials.value.splice(index, 1)
+const confirmDelete = (index: number): void => {
+  deleteIndex.value = index
+  showDeleteModal.value = true
+}
+
+const handleDeleteConfirm = (): void => {
+  if (deleteIndex.value === null) return
+
+  const index = deleteIndex.value
+  const testimonial = testimonials.value[index]
+
+  // Check if this is an existing testimonial from backend (has uid format)
+  // Backend IDs are UUIDs, client-generated IDs start with 'testimonial_'
+  const isExistingTestimonial = !testimonial.id.startsWith("testimonial_")
+
+  if (isExistingTestimonial) {
+    // Delete from backend
+    isDeletingTestimonial.value = true
+    deleteTestimonial(testimonial.id, {
+      onSuccess: () => {
+        toast.success("Testimonial deleted successfully")
+        testimonials.value.splice(index, 1)
+        setValues({
+          ...formValues,
+          testimonials: [...testimonials.value],
+        })
+        emit("refetch")
+        window.location.reload()
+        showDeleteModal.value = false
+        deleteIndex.value = null
+        isDeletingTestimonial.value = false
+      },
+      onError: (error) => {
+        displayError(error)
+        isDeletingTestimonial.value = false
+      },
+    })
+  } else {
+    // Just remove from local state (not yet saved to backend)
+    testimonials.value.splice(index, 1)
+    setValues({
+      ...formValues,
+      testimonials: [...testimonials.value],
+    })
+    showDeleteModal.value = false
+    deleteIndex.value = null
+  }
 }
 
 const onSubmitSectionTitle = handleSubmit((values) => {
@@ -247,16 +338,39 @@ const saveTestimonial = (index: number, testimonialId: string) => {
   formData.append("comment", testimonial.quote)
   if (testimonial.image) formData.append("image", testimonial.image)
 
-  createTestimonial(formData, {
-    onSuccess: () => {
-      toast.success(`Testimonial ${index + 1} saved successfully`)
-      emit("refetch")
-      savingTestimonialId.value = null
-    },
-    onError: (error) => {
-      displayError(error)
-      savingTestimonialId.value = null
-    },
-  })
+  // Check if this is an existing testimonial from backend (has uid format)
+  // Backend IDs are UUIDs, client-generated IDs start with 'testimonial_'
+  const isExistingTestimonial = !testimonialId.startsWith("testimonial_")
+
+  if (isExistingTestimonial) {
+    // Update existing testimonial
+    updateTestimonial(
+      { id: testimonialId, body: formData },
+      {
+        onSuccess: () => {
+          toast.success(`Testimonial ${index + 1} updated successfully`)
+          emit("refetch")
+          savingTestimonialId.value = null
+        },
+        onError: (error) => {
+          displayError(error)
+          savingTestimonialId.value = null
+        },
+      },
+    )
+  } else {
+    // Create new testimonial
+    createTestimonial(formData, {
+      onSuccess: () => {
+        toast.success(`Testimonial ${index + 1} saved successfully`)
+        emit("refetch")
+        savingTestimonialId.value = null
+      },
+      onError: (error) => {
+        displayError(error)
+        savingTestimonialId.value = null
+      },
+    })
+  }
 }
 </script>
