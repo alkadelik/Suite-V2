@@ -10,7 +10,7 @@
         >
           <BackButton to="/dashboard" />
           <h2 class="mt-3 text-2xl font-bold">Settings</h2>
-          <p>shop.leyyow.com</p>
+          <p>buy.leyyow.com</p>
         </header>
 
         <BackButton

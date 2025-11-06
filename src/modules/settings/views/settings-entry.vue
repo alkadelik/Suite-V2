@@ -59,7 +59,7 @@ const openLogout = ref(false)
     >
       <BackButton to="/dashboard" :center-on-mobile="true" />
       <h2 class="mt-3 text-2xl font-bold">Settings</h2>
-      <p>shop.leyyow.com</p>
+      <p>buy.leyyow.com</p>
     </header>
     <div class="flex flex-col">
       <template v-for="link in settingsLinks" :key="link.path">

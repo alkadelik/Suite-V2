@@ -166,7 +166,7 @@ const watchStoreNameForSlug = (storeName: string) => {
             />
             <p class="text-core-400 mt-1.5 inline-flex items-center text-xs font-medium">
               <Icon name="global" size="12" class="mr-1 text-gray-400" />
-              {{ "https://shop.leyyow.com/" }}
+              {{ "https://buy.leyyow.com/" }}
               <span class="text-core-600 font-semibold">
                 {{ currentSlug || "[SLUG]" }}
               </span>

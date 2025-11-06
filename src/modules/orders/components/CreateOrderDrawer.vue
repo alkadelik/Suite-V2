@@ -45,6 +45,21 @@ interface OrderItem {
 
 const orderItems = ref<OrderItem[]>([])
 
+// Transform orderItems for ReviewForm
+const reviewOrderItems = computed(() => {
+  return orderItems.value.map((item) => ({
+    product: {
+      uid: item.product.uid,
+      product_name: item.product.name,
+      total_stock: item.product.total_stock,
+    },
+    variant: item.variant,
+    quantity: item.quantity,
+    unit_price: item.unit_price,
+    notes: item.notes,
+  }))
+})
+
 // Step 3: Customer info
 const selectedCustomer = ref<ICustomer | null>(null)
 
@@ -65,6 +80,7 @@ const shippingInfo = ref({
 const paymentInfo = ref({
   payment_status: "unpaid" as "unpaid" | "paid" | "partially_paid",
   payment_amount: 0,
+  payment_source: undefined as { label: string; value: string } | undefined,
   coupon_code: null as string | null,
   discount_amount: 0,
 })
@@ -103,6 +119,7 @@ const onCreateOrder = () => {
       paymentInfo.value.payment_status === "paid"
         ? totalAmount.value
         : paymentInfo.value.payment_amount,
+    payment_source: paymentInfo.value.payment_source?.value,
     items: orderItems.value.map(
       (item): OrderItemPayload => ({
         variant: item.variant?.uid || "",
@@ -146,6 +163,7 @@ const resetForm = () => {
   paymentInfo.value = {
     payment_status: "unpaid",
     payment_amount: 0,
+    payment_source: undefined,
     coupon_code: null,
     discount_amount: 0,
   }
@@ -203,11 +221,12 @@ const resetForm = () => {
         <!-- Step 5: Review & Confirm -->
         <OrderReviewForm
           v-if="step === 5"
-          :orderItems="orderItems"
+          :orderItems="reviewOrderItems"
           :customer="selectedCustomer"
           :shippingInfo="shippingInfo"
           :paymentInfo="paymentInfo"
           :productsTotal="productsTotal"
+          :deliveryFee="shippingInfo.delivery_fee"
           :totalAmount="totalAmount"
           :loading="isPending"
           @prev="onPrev"

@@ -19,7 +19,7 @@ const user = computed(() => useAuthStore().user)
 const { data: storeDetails } = useGetStoreDetails(user.value?.store_uid || "")
 
 const storefrontUrl = computed(() => {
-  return `shop.leyyow.com/${storeDetails.value?.slug || "your-store"}`
+  return `buy.leyyow.com/${storeDetails.value?.slug || "your-store"}`
 })
 </script>
 

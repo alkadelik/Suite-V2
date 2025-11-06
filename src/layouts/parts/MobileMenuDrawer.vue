@@ -16,7 +16,7 @@ const emit = defineEmits<{
 }>()
 
 const storefrontUrl = computed(() => {
-  return `shop.leyyow.com/smiles-socks-headquarters`
+  return `buy.leyyow.com/smiles-socks-headquarters`
 })
 
 const quickActions = [
