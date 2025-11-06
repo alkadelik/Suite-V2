@@ -6,8 +6,8 @@ import Icon from "@components/Icon.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import { useAuthStore } from "@modules/auth/store"
 import { useGetLiveStatus } from "@modules/shared/api"
-import ConfigureDeliveryModal from "@modules/shared/components/ConfigureDeliveryModal.vue"
 import ConfigurePickupModal from "@modules/shared/components/ConfigurePickupModal.vue"
+import ManageShipBubbleModal from "@modules/shared/components/ManageShipBubbleModal.vue"
 
 import { computed, ref, watch } from "vue"
 const form = ref({ allow_pickup: false, allow_delivery: false })
@@ -89,11 +89,12 @@ watch(
               <h3 class="mb-1 flex items-end gap-2 text-base font-semibold">
                 Allow Delivery?
                 <button
-                  v-if="computedLiveStatusDelivery?.delivery_enabled"
+                  v-if="!computedLiveStatusDelivery?.delivery_enabled"
                   type="button"
                   class="text-primary-600 text-sm underline"
+                  @click="openDelivery = true"
                 >
-                  Manage preferred couriers
+                  Manage shipping
                 </button>
               </h3>
               <p class="text-core-600 text-sm">Offer deliver to your customers.</p>
@@ -117,6 +118,6 @@ watch(
     </section>
 
     <ConfigurePickupModal v-model="openPickup" />
-    <ConfigureDeliveryModal v-model="openDelivery" />
+    <ManageShipBubbleModal v-model="openDelivery" />
   </div>
 </template>

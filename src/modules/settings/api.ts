@@ -216,6 +216,30 @@ export function useUpdateStorefrontSection() {
   })
 }
 
+export function useCreateTestimonial() {
+  return useMutation({
+    mutationFn: (body: FormData) =>
+      baseApi.post(`/storefront/sections/testimonials/`, body, {
+        headers: { "Content-Type": "multipart/form-data" },
+      }),
+  })
+}
+
+export function useUpdateTestimonial() {
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: FormData }) =>
+      baseApi.patch(`/storefront/sections/testimonials/${id}/`, body, {
+        headers: { "Content-Type": "multipart/form-data" },
+      }),
+  })
+}
+
+export function useDeleteTestimonial() {
+  return useMutation({
+    mutationFn: (id: string) => baseApi.delete(`/storefront/sections/testimonials/${id}/`),
+  })
+}
+
 export function useGetThemeSettings() {
   return useApiQuery<IThemeSettings[]>({
     url: `/storefront/`,
