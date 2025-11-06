@@ -3,6 +3,7 @@ import { onMounted, ref } from "vue"
 import { useRouter } from "vue-router"
 import Icon from "@components/Icon.vue"
 import BackButton from "@components/BackButton.vue"
+import LogoutModal from "@components/core/LogoutModal.vue"
 
 const router = useRouter()
 
@@ -47,6 +48,8 @@ const expandedLink = ref<string | null>(null)
 const toggleExpand = (label: string): void => {
   expandedLink.value = expandedLink.value === label ? null : label
 }
+
+const openLogout = ref(false)
 </script>
 
 <template>
@@ -103,6 +106,20 @@ const toggleExpand = (label: string): void => {
           <Icon name="chevron-right" size="18" />
         </router-link>
       </template>
+
+      <button
+        type="button"
+        class="hover:bg-primary-100 text-error-600 flex items-center justify-between gap-2 border-b border-gray-200 py-5 pe-3 text-sm font-medium"
+        @click="openLogout = true"
+      >
+        <div class="flex items-center gap-2">
+          <Icon name="signout" size="20" />
+          <p>Logout</p>
+        </div>
+        <Icon name="chevron-right" size="18" />
+      </button>
     </div>
+
+    <LogoutModal :open="openLogout" @close="openLogout = false" />
   </div>
 </template>
