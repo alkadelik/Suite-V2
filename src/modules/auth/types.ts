@@ -5,6 +5,17 @@ export interface IUserRole {
   type: string
 }
 
+export interface SubscriptionPlan {
+  uid: string
+  plan_name: string
+  plan_price: string
+  plan_frequency: "monthly" | "yearly"
+  active_until: string
+  is_active: boolean
+  trial_mode: boolean
+  subscription_id: string
+}
+
 export interface IUser {
   uid: string
   avatar?: string | null
@@ -14,7 +25,7 @@ export interface IUser {
   is_email_verified: boolean
   assigned_locations: { uid: string; name: string }[]
   roles: IUserRole[]
-  subscription: string | null
+  subscription: SubscriptionPlan | null
   store_slug?: string
   store_uid: string
   store?: {
@@ -44,7 +55,7 @@ export interface ILoginResponse {
     is_email_verified: boolean
     assigned_locations: { uid: string; name: string }[]
     roles: IUserRole[]
-    subscription: string | null
+    subscription: SubscriptionPlan | null
     store_uid: string
     store_slug: string
   }

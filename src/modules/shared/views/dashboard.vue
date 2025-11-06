@@ -10,6 +10,7 @@
           :key="action.label"
           class="cursor-pointer rounded-lg px-2 py-3 text-center md:p-4 md:text-left"
           :class="action.color"
+          @click="action.action && action.action()"
         >
           <div class="mb-1 flex items-center justify-between md:mb-4">
             <div
@@ -51,6 +52,7 @@ import { ref } from "vue"
 import Icon from "@components/Icon.vue"
 import EmptyState from "@components/EmptyState.vue"
 import { useMediaQuery } from "@vueuse/core"
+import { toast } from "@/composables/useToast"
 
 const { user } = useAuthStore()
 const openModal = ref(false)
@@ -82,6 +84,9 @@ const quickActions = [
     label: "Record expense",
     icon: "receipt-add",
     color: "bg-pink-50 text-pink-700",
+    action: () => {
+      toast.info("Expense module is coming soon!")
+    },
   },
 ]
 </script>

@@ -29,12 +29,16 @@
 
       <hr class="border-core-200 my-6 w-full" />
 
-      <p class="mb-6 text-xl">
+      <p v-if="subscription?.active_until && subscription.trial_mode" class="mb-6 text-xl">
         Trial ends on:
-        <strong>{{ new Date().toLocaleString("en-US", { dateStyle: "long" }) }}</strong>
+        <strong>{{
+          new Date(subscription?.active_until).toLocaleString("en-US", {
+            dateStyle: "long",
+          })
+        }}</strong>
       </p>
 
-      <AppButton label="Start Exploring Now" />
+      <AppButton label="Start Exploring Now" @click="emit('close')" />
     </div>
   </Modal>
 </template>
@@ -43,7 +47,8 @@
 import AppButton from "@components/AppButton.vue"
 import Icon from "@components/Icon.vue"
 import Modal from "@components/Modal.vue"
+import { IUser } from "@modules/auth/types"
 
-defineProps<{ open: boolean }>()
+defineProps<{ open: boolean; subscription: IUser["subscription"] }>()
 const emit = defineEmits<{ close: [] }>()
 </script>
