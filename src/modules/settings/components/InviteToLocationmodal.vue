@@ -26,7 +26,7 @@
           name="roles"
           label="Role"
           type="tags"
-          :options="ROLE_OPTIONS"
+          :options="filteredRoleOptions"
           placeholder="Select Role"
           required
           placement="top"
@@ -99,6 +99,13 @@ const schema = computed(() => {
 const locationOptions = ref<ISelectOption[]>(
   LOCATIONS.map((loc) => ({ label: loc.name, value: loc.uid })),
 )
+
+// Filter out "Owner" role from the options
+const filteredRoleOptions = computed(() => {
+  return ROLE_OPTIONS.value.filter(
+    (role) => role.label.toLowerCase() !== "owner" && role.label.toLowerCase() !== "store owner",
+  )
+})
 
 const onSubmit = (values: FormValues) => {
   // Transform the form data to the required payload format
