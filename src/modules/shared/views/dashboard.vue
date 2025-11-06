@@ -1,6 +1,6 @@
 <template>
   <div class="px-2 py-4 md:p-4">
-    <SectionHeader size="lg" :title="`Good Afternoon, ${user?.first_name} 👋`" />
+    <SectionHeader size="lg" :title="`${greetings}, ${user?.first_name} 👋`" />
 
     <div class="my-4 rounded-xl bg-white px-0 pb-2 md:my-8 md:p-6">
       <h2 class="mb-3 text-lg font-semibold md:text-xl">Quick Actions</h2>
@@ -48,7 +48,7 @@
 import SectionHeader from "@components/SectionHeader.vue"
 import { useAuthStore } from "@modules/auth/store"
 import WelcomeToTeamModal from "../components/WelcomeToTeamModal.vue"
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import Icon from "@components/Icon.vue"
 import EmptyState from "@components/EmptyState.vue"
 import { useMediaQuery } from "@vueuse/core"
@@ -58,6 +58,13 @@ const { user } = useAuthStore()
 const openModal = ref(false)
 
 const isMobile = useMediaQuery("(max-width: 768px)")
+
+const greetings = computed(() => {
+  const hour = new Date().getHours()
+  if (hour < 12) return "Good morning"
+  if (hour < 18) return "Good afternoon"
+  return "Good evening"
+})
 
 const quickActions = [
   {

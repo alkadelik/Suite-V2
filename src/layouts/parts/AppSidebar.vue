@@ -91,11 +91,8 @@
     </div>
 
     <!-- Navigation -->
-    <section class="px-4 py-2">
-      <h4 class="mb-3 text-sm font-medium">Sales Suite</h4>
-      <div class="space-y-1">
-        <SidebarLink v-for="link in salesSuites" :key="link.label" v-bind="link" />
-      </div>
+    <section class="space-y-1 px-4 py-2">
+      <SidebarLink v-for="link in salesSuites" :key="link.label" v-bind="link" />
     </section>
 
     <section class="mt-auto px-4 pb-4">
@@ -113,7 +110,17 @@
             <p class="mb-4 text-sm">Upgrade to regain full access.</p>
           </template>
 
-          <div v-else class="text-sm font-semibold">You are on trial mode</div>
+          <template v-else>
+            <h3 class="mb-1 text-sm font-bold">You are on trial mode</h3>
+            <p class="mb-4 text-sm">
+              Ends:
+              {{
+                new Date(user?.subscription?.active_until).toLocaleString("en-US", {
+                  dateStyle: "medium",
+                })
+              }}
+            </p>
+          </template>
 
           <AppButton
             color="alt"
