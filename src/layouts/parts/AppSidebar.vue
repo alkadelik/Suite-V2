@@ -174,3 +174,15 @@ const storefrontUrl = computed(() => {
   return `shop.leyyow.com/${storeDetails.value?.slug || "your-store"}`
 })
 </script>
+
+<style scoped>
+aside {
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+aside::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+</style>
