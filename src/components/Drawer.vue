@@ -5,7 +5,7 @@
   <!-- Drawer -->
   <aside :class="drawerClasses" @click.stop tabindex="-1" role="dialog" aria-modal="true">
     <!-- Header -->
-    <div class="flex items-center justify-between border-b border-gray-200 p-5">
+    <div v-if="showHeader" class="flex items-center justify-between border-b border-gray-200 p-5">
       <slot name="header">
         <h2 v-if="title" class="m-0 text-lg font-semibold text-gray-800">{{ title }}</h2>
         <span v-else></span>
@@ -56,6 +56,8 @@ interface Props {
   maxWidth?: string
   /** Additional classes for the drawer body */
   bodyClass?: string
+  /** Whether to show the header section */
+  showHeader?: boolean
   /** Whether to apply padding to the drawer body (default: true) */
   handlePadding?: boolean
 }
@@ -72,6 +74,7 @@ interface Emits {
 const props = withDefaults(defineProps<Props>(), {
   position: "right",
   maxWidth: "md",
+  showHeader: true,
   handlePadding: true,
 })
 

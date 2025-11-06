@@ -16,6 +16,7 @@ import * as yup from "yup"
 import { useGetStoreDetails, useGetStoreIndustries, useUpdateStoreDetails } from "../api"
 import { IStoreDetailsForm, IUpdateStoreDetailsPayload } from "../types"
 import AccountNumberSection from "../components/store-details/AccountNumberSection.vue"
+import { useGetLiveStatus } from "@modules/shared/api"
 
 const validSchema = yup.object({
   store_name: yup.string().required("Store name is required"),
@@ -34,13 +35,14 @@ const { user } = useAuthStore()
 const { data: industries } = useGetStoreIndustries()
 const { data: storeDetails, refetch } = useGetStoreDetails(user?.store_uid || "")
 const { mutate: updateStoreDetails } = useUpdateStoreDetails()
+const { data: liveStatusData } = useGetLiveStatus(storeDetails.value?.slug || "")
+const isLive = computed(() => liveStatusData.value?.data?.is_live || false)
 
 const { handleSubmit: handleStoreSubmit, setValues: setStoreValues } = useForm<IStoreDetailsForm>({
   validationSchema: validSchema,
 })
 
 const onSubmitStoreDetails = handleStoreSubmit((formData) => {
-  console.log("Form submitted with data:", formData)
   const payload = new FormData()
 
   Object.entries(formData).forEach(([key, value]) => {
@@ -74,22 +76,28 @@ const onSubmitStoreDetails = handleStoreSubmit((formData) => {
   )
 }, onInvalidSubmit)
 
-watch(storeDetails, (newDetails) => {
-  if (newDetails) {
-    setStoreValues({
-      store_name: newDetails.name,
-      industry: { label: newDetails.industry_name, value: newDetails.industry },
-      currency: { label: "Nigerian Naira", value: "NGN" },
-      store_email: "",
-      store_phone: "",
-      support_email: "",
-      support_phone: "",
-      instagram_handle: "",
-    })
+const currentSlug = ref("")
 
-    if (newDetails.slug) currentSlug.value = newDetails.slug
-  }
-})
+watch(
+  storeDetails,
+  (newDetails) => {
+    if (newDetails) {
+      setStoreValues({
+        store_name: newDetails.name,
+        industry: { label: newDetails.industry_name, value: newDetails.industry },
+        currency: { label: "Nigerian Naira", value: "NGN" },
+        store_email: "",
+        store_phone: "",
+        support_email: "",
+        support_phone: "",
+        instagram_handle: "",
+      })
+
+      if (newDetails.slug) currentSlug.value = newDetails.slug
+    }
+  },
+  { immediate: true },
+)
 
 const INDUSTRIES = computed(() => {
   if (!industries.value?.results) return []
@@ -98,8 +106,6 @@ const INDUSTRIES = computed(() => {
     value: industry.uid,
   }))
 })
-
-const currentSlug = ref("")
 
 // Watch for store name changes to auto-generate slug
 const watchStoreNameForSlug = (storeName: string) => {
@@ -113,6 +119,7 @@ const watchStoreNameForSlug = (storeName: string) => {
 <template>
   <div>
     <div
+      v-if="!isLive"
       class="bg-primary-25 text-warning-700 border-warning-300 flex flex-col items-start gap-3 border-b px-6 py-3 md:flex-row md:items-center"
     >
       <span
@@ -130,6 +137,7 @@ const watchStoreNameForSlug = (storeName: string) => {
         icon="arrow-right"
         size="sm"
         class="flex-row-reverse underline underline-offset-4"
+        @click="$router.push('/onboarding')"
       />
     </div>
 
@@ -144,7 +152,7 @@ const watchStoreNameForSlug = (storeName: string) => {
         @submit.prevent="onSubmitStoreDetails"
         class="border-core-100 mt-6 rounded-2xl border bg-white"
       >
-        <div class="grid grid-cols-2 gap-6 p-6">
+        <div class="grid grid-cols-1 gap-6 p-6 md:grid-cols-2">
           <div>
             <FormField
               name="store_name"
@@ -216,8 +224,8 @@ const watchStoreNameForSlug = (storeName: string) => {
             placeholder="e.g. @yourstore"
           />
 
-          <div class="col-span-2 flex gap-6">
-            <div class="flex flex-col items-center gap-2">
+          <div class="flex gap-6 md:col-span-2">
+            <div v-if="false" class="flex flex-col items-center gap-2">
               <Avatar
                 :name="storeDetails?.name || 'Store Logo'"
                 :src="storeDetails?.logo"

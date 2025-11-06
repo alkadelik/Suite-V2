@@ -15,7 +15,7 @@ import {
   ThemeSection,
 } from "./types"
 import { useMutation, useQuery } from "@tanstack/vue-query"
-import { IUser } from "@modules/auth/types"
+import { IkycInfo, IUser } from "@modules/auth/types"
 
 /** get user profile */
 export function useGetProfile() {
@@ -33,6 +33,24 @@ export function useUpdateProfile() {
       baseApi.patch("/accounts/profile/", payload, {
         headers: { "Content-Type": "multipart/form-data" },
       }),
+  })
+}
+
+export function useUpdateAccountKyc() {
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: Partial<IkycInfo> }) =>
+      baseApi.patch(`/accounts/kyc/${id}/`, body, {
+        headers: { "Content-Type": "multipart/form-data" },
+      }),
+  })
+}
+
+/** get user profile */
+export function useGetAccountKyc() {
+  return useApiQuery<IkycInfo>({
+    url: "/accounts/kyc/",
+    key: "user-kyc",
+    selectData: true,
   })
 }
 
@@ -213,6 +231,30 @@ export function useUpdateStorefrontSection() {
       baseApi.patch(`/storefront/sections/${id}/`, body, {
         headers: { "Content-Type": "multipart/form-data" },
       }),
+  })
+}
+
+export function useCreateTestimonial() {
+  return useMutation({
+    mutationFn: (body: FormData) =>
+      baseApi.post(`/storefront/sections/testimonials/`, body, {
+        headers: { "Content-Type": "multipart/form-data" },
+      }),
+  })
+}
+
+export function useUpdateTestimonial() {
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: FormData }) =>
+      baseApi.patch(`/storefront/sections/testimonials/${id}/`, body, {
+        headers: { "Content-Type": "multipart/form-data" },
+      }),
+  })
+}
+
+export function useDeleteTestimonial() {
+  return useMutation({
+    mutationFn: (id: string) => baseApi.delete(`/storefront/sections/testimonials/${id}/`),
   })
 }
 
