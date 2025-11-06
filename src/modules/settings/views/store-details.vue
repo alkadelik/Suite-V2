@@ -27,7 +27,7 @@ const validSchema = yup.object({
   support_phone: yup.string().required("Support phone is required"),
   industry: yup.object().required("Industry is required"),
   instagram_handle: yup.string(),
-  logo: yup.mixed(),
+  logo: yup.mixed().nullable(),
 })
 
 const { user } = useAuthStore()
@@ -35,7 +35,7 @@ const { user } = useAuthStore()
 const { data: industries } = useGetStoreIndustries()
 const { data: storeDetails, refetch } = useGetStoreDetails(user?.store_uid || "")
 const { mutate: updateStoreDetails } = useUpdateStoreDetails()
-const { data: liveStatusData } = useGetLiveStatus(storeDetails.value?.slug || "")
+const { data: liveStatusData } = useGetLiveStatus(user?.store_slug || "")
 const isLive = computed(() => liveStatusData.value?.data?.is_live || false)
 
 const { handleSubmit: handleStoreSubmit, setValues: setStoreValues } = useForm<IStoreDetailsForm>({
@@ -45,20 +45,28 @@ const { handleSubmit: handleStoreSubmit, setValues: setStoreValues } = useForm<I
 const onSubmitStoreDetails = handleStoreSubmit((formData) => {
   const payload = new FormData()
 
-  Object.entries(formData).forEach(([key, value]) => {
-    if (key === "currency" || key === "industry") {
-      // Handle select objects
-      const selectValue = value as { label: string; value: string }
-      payload.append(key, selectValue.value)
-    } else if (key === "logo" && value instanceof File) {
-      payload.append(key, value)
-    } else if (key === "store_name") {
-      // Map store_name to name for the API
-      payload.append("name", value as string)
-    } else if (value !== null && value !== undefined) {
-      payload.append(key, value as string)
-    }
-  })
+  payload.append("name", formData.store_name)
+  payload.append("currency", formData.currency.value)
+  payload.append("store_email", formData.store_email)
+
+  // Format phone numbers: add +234 and remove leading 0
+  const formatPhoneNumber = (phone: string) => {
+    const cleaned = phone.replace(/\s+/g, "").replace(/^0+/, "")
+    return `+234${cleaned}`
+  }
+
+  payload.append("store_phone", formatPhoneNumber(formData.store_phone))
+  payload.append("support_email", formData.support_email)
+  payload.append("support_phone", formatPhoneNumber(formData.support_phone))
+  payload.append("industry", formData.industry.value)
+
+  if (formData.instagram_handle) {
+    payload.append("instagram_handle", formData.instagram_handle)
+  }
+
+  if (formData.logo instanceof File) {
+    payload.append("logo", formData.logo)
+  }
 
   if (!user?.store_uid) {
     return toast.error("Store ID not found")
@@ -86,11 +94,12 @@ watch(
         store_name: newDetails.name,
         industry: { label: newDetails.industry_name, value: newDetails.industry },
         currency: { label: "Nigerian Naira", value: "NGN" },
-        store_email: "",
-        store_phone: "",
-        support_email: "",
-        support_phone: "",
-        instagram_handle: "",
+        store_email: newDetails.store_email,
+        store_phone: newDetails.store_phone,
+        support_email: newDetails.support_email,
+        support_phone: newDetails.support_phone,
+        instagram_handle: newDetails.instagram_handle,
+        logo: (newDetails.logo as File) || null,
       })
 
       if (newDetails.slug) currentSlug.value = newDetails.slug

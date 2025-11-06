@@ -48,9 +48,16 @@ const initialValues = computed(() => ({
   avatar: null,
 }))
 
+const KYC_DOCUMENT_TYPES = [
+  { label: "Passport", value: "international_passport" },
+  { label: `Driver's License`, value: "drivers_license" },
+  { label: "National ID", value: "national_id" },
+  { label: "Voter's Card", value: "voters_card" },
+]
+
 const kycInitialValues = computed(() => ({
-  doc_type: null,
-  file: null,
+  doc_type: KYC_DOCUMENT_TYPES.find((type) => type.value === kycData.value?.doc_type) || null,
+  file: kycData.value?.file || null,
   doc_number: kycData.value?.doc_number || "",
   bvn: kycData.value?.bvn || "",
 }))
@@ -168,6 +175,8 @@ watch(
         subtitle="We require your BVN and ID to verify your identity as part of KYC regulations."
       />
 
+      {{ kycData }}
+
       <AppForm
         @submit="onUpdateKyc"
         :schema="kycSchema"
@@ -179,11 +188,7 @@ watch(
             type="select"
             name="doc_type"
             label="Select ID"
-            :options="[
-              { label: 'Passport', value: 'passport' },
-              { label: `Driver's License`, value: 'drivers_license' },
-              { label: 'National ID', value: 'national_id' },
-            ]"
+            :options="KYC_DOCUMENT_TYPES"
             placeholder="Select ID type"
             required
           />

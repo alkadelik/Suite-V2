@@ -44,7 +44,7 @@ export interface IUser {
 
 export interface IkycInfo {
   uid: string
-  doc_type: DocumentType
+  doc_type: string
   bvn: string
   doc_number: string
   file: string
