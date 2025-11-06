@@ -47,7 +47,7 @@ import { useUpdateStorefrontSection } from "@modules/settings/api"
 import type { ThemeSection } from "@modules/settings/types"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
-import { useGetProductCatalogs } from "@modules/inventory/api"
+import { useGetProductVariants } from "@modules/inventory/api"
 
 interface FeaturedProductsFormData {
   selection_mode: string
@@ -73,13 +73,13 @@ const props = defineProps<{ featuredProductsSection?: ThemeSection | null }>()
 const emit = defineEmits<{ refetch: [] }>()
 
 const { mutate: updateSection, isPending } = useUpdateStorefrontSection()
-const { data: productCatalogs } = useGetProductCatalogs()
+const { data: productInventories } = useGetProductVariants()
 
 const selectionMode = ref("default")
 
 const productOptions = computed(() => {
-  if (!productCatalogs.value?.results) return []
-  return productCatalogs.value.results.map((product) => ({
+  if (!productInventories.value?.results) return []
+  return productInventories.value.results.map((product) => ({
     label: product.name,
     value: product.uid,
   }))
@@ -128,9 +128,14 @@ watch(
   () => props.featuredProductsSection,
   (newSection) => {
     if (newSection) {
+      console.log(productOptions.value)
+      console.log(newSection.featured_products)
+      console.log(newSection.featured_products.map((p) => ({ label: p, value: p })))
       setValues({
-        selection_mode: "default",
-        products: newSection.featured_products || [],
+        selection_mode: newSection.selection_mode || "default",
+        products: productOptions.value.filter((option) =>
+          newSection.featured_products.includes(option.value),
+        ),
         title: newSection.title || "",
         description: newSection.subtitle || "",
       })
