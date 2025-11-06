@@ -73,7 +73,7 @@ const loginSchema = yup.object({
 
 const onSubmit = (values: TLoginPayload) => {
   loginFn(
-    { ...values, email: values.email },
+    { ...values, email: values.email?.toLowerCase() },
     {
       onSuccess: (res) => {
         const { access, refresh, ...user } = res.data?.data || {}
