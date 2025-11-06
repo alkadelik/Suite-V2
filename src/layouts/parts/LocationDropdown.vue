@@ -34,7 +34,7 @@ const storefrontUrl = computed(() => {
       <button
         type="button"
         :class="[
-          'bg-core-100 text-core-800 hover:bg-core-200 mt-4 w-full rounded-xl px-2 py-1.5',
+          'bg-core-100 text-core-800 hover:bg-core-200 w-full rounded-xl px-2 py-1.5',
           'flex items-center gap-2 text-sm font-medium',
         ]"
       >

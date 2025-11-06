@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import AppButton from "@components/AppButton.vue"
-import Avatar from "@components/Avatar.vue"
 import AppForm from "@components/form/AppForm.vue"
 import FileUploadField from "@components/form/FileUploadField.vue"
 import FormField from "@components/form/FormField.vue"
@@ -136,29 +135,21 @@ watch(
             label="Email Address"
             placeholder="e.g. john.doe@example.com"
             required
-            class="col-span-2"
+            class="sm:col-span-2"
             disabled
           />
 
-          <div class="flex gap-6 sm:col-span-2">
-            <Avatar
-              :name="`${user?.first_name} ${user?.last_name}`"
-              size="lg"
-              :url="user?.avatar || ''"
+          <div class="sm:col-span-2">
+            <FormField
+              name="avatar"
+              type="file"
+              label="Profile Picture"
+              :required="true"
+              accept="image/*"
+              :max-size="2"
+              placeholder="Upload your profile picture"
+              hint="Max size: 2MB, Images only"
             />
-
-            <div class="flex-1">
-              <FormField
-                name="avatar"
-                type="file"
-                label="Profile Picture"
-                :required="true"
-                accept="image/*"
-                :max-size="2"
-                placeholder="Upload your profile picture"
-                hint="Max size: 2MB, Images only"
-              />
-            </div>
           </div>
         </div>
 

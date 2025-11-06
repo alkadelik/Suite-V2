@@ -15,7 +15,7 @@
 
     <!-- User Info -->
     <div class="bg-gray-50 px-4 py-4">
-      <div class="flex items-center gap-4">
+      <div class="mb-4 flex items-center gap-4">
         <Avatar
           :name="getFullName(user as TNameObj)"
           :extraText="user?.email"

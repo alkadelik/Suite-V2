@@ -8,6 +8,7 @@
         class="h-8 w-auto"
       />
       <div class="flex-1" />
+
       <LocationDropdown v-if="isMobile" class="!w-[160px]" />
 
       <!-- Storefront status -->
