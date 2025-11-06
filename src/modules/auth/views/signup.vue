@@ -118,9 +118,8 @@ const onSubmit = (values: TSignupPayload) => {
       authStore.setTokens({ accessToken: access, refreshToken: refresh })
       authStore.setAuthUser({ ...user, email: values.email, store_slug: "" })
       toast.success("Signup successful!")
-      // check for redirect query param
-      const redirectPath = router.currentRoute.value.query.redirect as string
-      router.push(redirectPath || "/dashboard")
+      // Redirect to onboarding screen after successful signup
+      router.push("/onboarding")
     },
     onError: displayError,
   })

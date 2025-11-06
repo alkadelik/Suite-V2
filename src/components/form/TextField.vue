@@ -35,7 +35,7 @@
           :disabled="disabled"
           :readonly="readonly"
           :class="inputClasses"
-          :value="modelValue"
+          :value="displayValue"
           @input="handleInput"
           @blur="$emit('blur', $event)"
           @focus="$emit('focus', $event)"
@@ -98,7 +98,7 @@
         :disabled="disabled"
         :readonly="readonly"
         :class="inputClasses"
-        :value="modelValue"
+        :value="displayValue"
         @input="handleInput"
         @blur="$emit('blur', $event)"
         @focus="$emit('focus', $event)"
@@ -222,8 +222,12 @@ const handleInput = (event: Event) => {
   if (props.type === "tel" && value) {
     // Remove any existing +234 prefix to avoid duplication
     value = value.replace(/^\+234\s*/, "")
-    // Remove any non-digit characters except leading +
+    // Remove any non-digit characters
     value = value.replace(/[^\d]/g, "")
+    // Remove leading 0 if present
+    if (value.startsWith("0")) {
+      value = value.substring(1)
+    }
     // Add +234 prefix
     if (value) {
       value = `+234${value}`
@@ -272,6 +276,16 @@ const htmlFor = computed(() => props.id || props.name || props.label)
 const actualType = computed(() =>
   props.type === "password" && showPassword.value ? "text" : props.type,
 )
+
+// For tel inputs, display value without +234 prefix
+const displayValue = computed(() => {
+  if (props.type === "tel" && props.modelValue) {
+    const value = String(props.modelValue)
+    // Remove +234 prefix for display
+    return value.replace(/^\+234/, "")
+  }
+  return props.modelValue
+})
 
 const containerClasses = computed(() => {
   const baseClasses =

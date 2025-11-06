@@ -109,7 +109,7 @@
       :loading="isSettingUpShipping || isUpdatingShippingProfile"
       @submit-auth-form="handleSetupShippingProfile"
       @submit-couriers="handleCouriersSubmit"
-      @close="showShipbubbleScreens = false"
+      @close="handleClose"
     />
   </div>
 </template>
@@ -226,6 +226,11 @@ const handleContinue = () => {
   }
   showShipbubbleScreens.value = true
   emit("update:modelValue", false)
+}
+
+const handleClose = () => {
+  showShipbubbleScreens.value = false
+  router.back()
 }
 
 // --- Sync showShipbubbleScreens and step with route query ---
