@@ -29,12 +29,26 @@
         </header>
         <div class="flex items-center justify-between p-4">
           <div class="flex flex-col items-start gap-5">
-            <Chip color="success" label="Bud" />
+            <Chip :color="getPlanColor(currentPlan)" :label="currentPlan" />
 
-            <p class="text-core-800 text-xs md:text-sm">Free</p>
+            <p class="text-core-800 text-xs md:text-sm">
+              {{
+                currentSubscription?.plan_price
+                  ? `${formatCurrency(Number(currentSubscription.plan_price))} / ${currentSubscription.plan_frequency}`
+                  : "Free"
+              }}
+            </p>
           </div>
           <AppButton
+            v-if="currentPlan === 'Bud'"
             label="Upgrade Plan"
+            icon="arrow-right"
+            icon-placement="right"
+            @click="showPlansModal = true"
+          />
+          <AppButton
+            v-else
+            label="Manage Plan"
             icon="arrow-right"
             icon-placement="right"
             @click="showPlansModal = true"
@@ -58,7 +72,9 @@
           </div>
         </header>
         <div class="flex flex-1 items-center p-4">
-          <p class="text-core-700 text-lg font-semibold">23rd August, 2025</p>
+          <p class="text-core-700 text-lg font-semibold">
+            {{ nextPaymentDate || "N/A" }}
+          </p>
         </div>
       </div>
     </div>
@@ -150,8 +166,35 @@ import PlansModal from "../components/PlansModal.vue"
 import { getPlanColor } from "../utils"
 import { TChipColor } from "@modules/shared/types"
 import { useGetSubscriptionHistory } from "../api"
+import { useAuthStore } from "@modules/auth/store"
 
 const showPlansModal = ref(false)
+const authStore = useAuthStore()
+
+// Get current subscription from user store
+const currentSubscription = computed(() => authStore.user?.subscription)
+
+// Get current plan name
+const currentPlan = computed(() => {
+  if (!currentSubscription.value || !currentSubscription.value.is_active) {
+    return "Bud"
+  }
+  return currentSubscription.value.plan_name
+})
+
+// Calculate next payment date
+const nextPaymentDate = computed(() => {
+  if (!currentSubscription.value?.active_until || currentPlan.value === "Bud") {
+    return null
+  }
+
+  const activeUntil = new Date(currentSubscription.value.active_until)
+  return activeUntil.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  })
+})
 
 const { data: subscriptionData, isPending: isGettingSubscriptions } = useGetSubscriptionHistory()
 

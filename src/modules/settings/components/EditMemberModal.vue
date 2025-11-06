@@ -124,11 +124,15 @@ const locations = ref<ISelectOption[]>(
   LOCATIONS.map((loc) => ({ label: loc.name, value: loc.uid })),
 )
 const roles = computed<ISelectOption[]>(() =>
-  ROLE_OPTIONS.value.map((role) => ({
-    label: role.label,
-    value: role.value,
-    color: getRoleColor(role.value),
-  })),
+  ROLE_OPTIONS.value
+    .filter(
+      (role) => role.label.toLowerCase() !== "owner" && role.label.toLowerCase() !== "store owner",
+    )
+    .map((role) => ({
+      label: role.label,
+      value: role.value,
+      color: getRoleColor(role.value),
+    })),
 )
 
 // Compute initial values from member prop

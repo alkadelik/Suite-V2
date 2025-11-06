@@ -67,12 +67,24 @@ import AppHeader from "@/layouts/parts/AppHeader.vue"
 import BackButton from "@components/BackButton.vue"
 import { useRoute } from "vue-router"
 import { useSettingsStore } from "../store"
-import { computed } from "vue"
+import { computed, watch } from "vue"
 import PlansModal from "../components/PlansModal.vue"
-// import { useGetRoles } from "@modules/shared/api"
+import { useGetRoles } from "@modules/shared/api"
+import { updateStoreRoleOptions } from "@modules/shared/constants"
 
 const route = useRoute()
-// const { data: rolesData } = useGetRoles()
+const { data: rolesData } = useGetRoles()
+
+// Update ROLE_OPTIONS when roles data is fetched
+watch(
+  () => rolesData.value,
+  (data) => {
+    if (data?.data) {
+      updateStoreRoleOptions(data.data)
+    }
+  },
+  { immediate: true },
+)
 
 const LINKS = [
   { label: "Profile", path: "/settings/profile" },

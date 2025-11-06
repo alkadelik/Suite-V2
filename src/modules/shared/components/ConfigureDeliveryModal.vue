@@ -109,7 +109,7 @@
       :loading="isSettingUpShipping || isUpdatingShippingProfile"
       @submit-auth-form="handleSetupShippingProfile"
       @submit-couriers="handleCouriersSubmit"
-      @close="showShipbubbleScreens = false"
+      @close="handleClose"
     />
   </div>
 </template>
@@ -161,13 +161,37 @@ const shipbubbleAuthForm = reactive({
 })
 const courierOptions = ref<string[]>([])
 
+// Helper function to normalize phone number to +234 format
+const normalizePhoneNumber = (phone: string): string => {
+  if (!phone) return ""
+
+  // Remove all non-digit characters except leading +
+  let cleanedPhone = phone.replace(/[^\d+]/g, "")
+
+  // Remove + if present
+  cleanedPhone = cleanedPhone.replace(/^\+/, "")
+
+  // Remove leading 234 if present
+  if (cleanedPhone.startsWith("234")) {
+    cleanedPhone = cleanedPhone.substring(3)
+  }
+
+  // Remove leading 0 if present
+  if (cleanedPhone.startsWith("0")) {
+    cleanedPhone = cleanedPhone.substring(1)
+  }
+
+  // Add +234 prefix
+  return `+234${cleanedPhone}`
+}
+
 const handleSetupShippingProfile = () => {
   const payload = {
     store_name: shipbubbleAuthForm.business_name,
     store_address: shipbubbleAuthForm.address,
     email: shipbubbleAuthForm.email,
     password: shipbubbleAuthForm.password,
-    phone: shipbubbleAuthForm.phone,
+    phone: normalizePhoneNumber(shipbubbleAuthForm.phone),
     preferred_couriers: [],
   }
   setupShippingProfile(payload, {
@@ -226,6 +250,11 @@ const handleContinue = () => {
   }
   showShipbubbleScreens.value = true
   emit("update:modelValue", false)
+}
+
+const handleClose = () => {
+  showShipbubbleScreens.value = false
+  router.back()
 }
 
 // --- Sync showShipbubbleScreens and step with route query ---
