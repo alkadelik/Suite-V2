@@ -8,14 +8,16 @@ import SectionHeader from "@components/SectionHeader.vue"
 import { useAuthStore } from "@modules/auth/store"
 import { computed, watch } from "vue"
 import * as yup from "yup"
-import { useGetProfile, useUpdateProfile } from "../api"
+import { useGetAccountKyc, useGetProfile, useUpdateAccountKyc, useUpdateProfile } from "../api"
 import { toast } from "@/composables/useToast"
-import { IUser } from "@modules/auth/types"
+import { IkycInfo, IUser } from "@modules/auth/types"
 import { displayError } from "@/utils/error-handler"
 
 const { data: profile, refetch } = useGetProfile()
+const { data: kycData } = useGetAccountKyc()
 const { updateAuthUser, user } = useAuthStore()
 const { mutate: updateProfile, isPending: isUpdating } = useUpdateProfile()
+const { mutate: updateKyc, isPending: isKycUpdating } = useUpdateAccountKyc()
 
 const validSchema = yup.object({
   first_name: yup.string().required("First name is required"),
@@ -24,9 +26,15 @@ const validSchema = yup.object({
 })
 
 const kycSchema = yup.object({
-  id_type: yup.string().required("ID type is required"),
-  id_picture: yup.mixed().required("ID picture is required"),
-  license_number: yup.string().required("License number is required"),
+  doc_type: yup
+    .object()
+    .shape({
+      label: yup.string().required(),
+      value: yup.string().required(),
+    })
+    .required("ID type is required"),
+  file: yup.mixed().nullable(),
+  doc_number: yup.string().required("Document number is required"),
   bvn: yup
     .string()
     .matches(/^\d{11}$/, "BVN must be exactly 11 digits")
@@ -38,6 +46,13 @@ const initialValues = computed(() => ({
   last_name: user?.last_name || "",
   email: user?.email || "",
   avatar: null,
+}))
+
+const kycInitialValues = computed(() => ({
+  doc_type: null,
+  file: null,
+  doc_number: kycData.value?.doc_number || "",
+  bvn: kycData.value?.bvn || "",
 }))
 
 const onUpdateProfile = (values: Record<string, unknown>) => {
@@ -64,7 +79,22 @@ const onUpdateProfile = (values: Record<string, unknown>) => {
 }
 
 const onUpdateKyc = (formData: Record<string, unknown>) => {
-  console.log("KYC form submitted with data:", formData)
+  const payload = new FormData()
+  const docType = (formData.doc_type as { value: string }).value
+  payload.append("doc_type", docType)
+  if (formData.file) payload.append("file", formData.file as File)
+  payload.append("doc_number", formData.doc_number as string)
+  payload.append("bvn", formData.bvn as string)
+
+  updateKyc(
+    { id: kycData.value?.uid || "", body: payload as unknown as Partial<IkycInfo> },
+    {
+      onSuccess: () => {
+        toast.success("KYC information updated successfully")
+      },
+      onError: displayError,
+    },
+  )
 }
 
 watch(
@@ -91,7 +121,7 @@ watch(
         class="border-core-100 mt-6 rounded-2xl border bg-white"
         :initial-values="initialValues"
       >
-        <div class="grid grid-cols-2 gap-6 p-6">
+        <div class="grid grid-cols-1 gap-6 p-6 sm:grid-cols-2">
           <FormField name="first_name" label="First Name" placeholder="e.g. John" required />
           <FormField name="last_name" label="Last Name" placeholder="e.g. Doe" required />
           <FormField
@@ -103,7 +133,7 @@ watch(
             disabled
           />
 
-          <div class="col-span-2 flex gap-6">
+          <div class="flex gap-6 sm:col-span-2">
             <Avatar
               :name="`${user?.first_name} ${user?.last_name}`"
               size="lg"
@@ -142,23 +172,24 @@ watch(
         @submit="onUpdateKyc"
         :schema="kycSchema"
         class="border-core-100 mt-6 rounded-2xl border bg-white"
+        :initial-values="kycInitialValues"
       >
         <div class="flex flex-col gap-6 p-6">
           <FormField
             type="select"
-            name="id_type"
+            name="doc_type"
             label="Select ID"
             :options="[
               { label: 'Passport', value: 'passport' },
               { label: `Driver's License`, value: 'drivers_license' },
               { label: 'National ID', value: 'national_id' },
             ]"
-            placeholder="e.g. John"
+            placeholder="Select ID type"
             required
           />
 
           <FileUploadField
-            name="id_picture"
+            name="file"
             label="Click to upload your ID"
             accept="image/*"
             :show-preview="true"
@@ -167,8 +198,8 @@ watch(
           />
 
           <FormField
-            name="license_number"
-            label="License Number"
+            name="doc_number"
+            label="Document Number"
             placeholder="e.g. ABC123456"
             required
           />
@@ -177,7 +208,7 @@ watch(
         </div>
 
         <div class="border-core-100 flex justify-end gap-6 border-t px-6 py-4">
-          <AppButton type="submit" label="Save Changes" />
+          <AppButton type="submit" label="Save Changes" :loading="isKycUpdating" />
         </div>
       </AppForm>
     </section>

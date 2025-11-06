@@ -37,6 +37,16 @@ export interface IUser {
   }
 }
 
+export interface IkycInfo {
+  uid: string
+  doc_type: DocumentType
+  bvn: string
+  doc_number: string
+  file: string
+  created_at: string
+  updated_at: string
+}
+
 export interface IAuthTokens {
   accessToken: string
   refreshToken: string

@@ -16,6 +16,7 @@ import * as yup from "yup"
 import { useGetStoreDetails, useGetStoreIndustries, useUpdateStoreDetails } from "../api"
 import { IStoreDetailsForm, IUpdateStoreDetailsPayload } from "../types"
 import AccountNumberSection from "../components/store-details/AccountNumberSection.vue"
+import { useGetLiveStatus } from "@modules/shared/api"
 
 const validSchema = yup.object({
   store_name: yup.string().required("Store name is required"),
@@ -34,6 +35,8 @@ const { user } = useAuthStore()
 const { data: industries } = useGetStoreIndustries()
 const { data: storeDetails, refetch } = useGetStoreDetails(user?.store_uid || "")
 const { mutate: updateStoreDetails } = useUpdateStoreDetails()
+const { data: liveStatusData } = useGetLiveStatus(storeDetails.value?.slug || "")
+const isLive = computed(() => liveStatusData.value?.data?.is_live || false)
 
 const { handleSubmit: handleStoreSubmit, setValues: setStoreValues } = useForm<IStoreDetailsForm>({
   validationSchema: validSchema,
@@ -73,6 +76,8 @@ const onSubmitStoreDetails = handleStoreSubmit((formData) => {
   )
 }, onInvalidSubmit)
 
+const currentSlug = ref("")
+
 watch(
   storeDetails,
   (newDetails) => {
@@ -102,8 +107,6 @@ const INDUSTRIES = computed(() => {
   }))
 })
 
-const currentSlug = ref("")
-
 // Watch for store name changes to auto-generate slug
 const watchStoreNameForSlug = (storeName: string) => {
   if (storeName) {
@@ -116,6 +119,7 @@ const watchStoreNameForSlug = (storeName: string) => {
 <template>
   <div>
     <div
+      v-if="!isLive"
       class="bg-primary-25 text-warning-700 border-warning-300 flex flex-col items-start gap-3 border-b px-6 py-3 md:flex-row md:items-center"
     >
       <span
@@ -133,6 +137,7 @@ const watchStoreNameForSlug = (storeName: string) => {
         icon="arrow-right"
         size="sm"
         class="flex-row-reverse underline underline-offset-4"
+        @click="$router.push('/onboarding')"
       />
     </div>
 
