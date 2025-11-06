@@ -13,6 +13,7 @@
         :sales-suites="SALES_SUITES"
         :mobile-sidebar-open="mobileSidebarOpen"
         @logout="logout = true"
+        @upgrade="setPlanUpgradeModal(true)"
       />
 
       <!-- Main column -->
@@ -59,7 +60,11 @@
       @update:model-value="(val) => setPlanUpgradeModal(val)"
     />
 
-    <TrialActivationModal :open="openTrial" @close="openTrial = false" />
+    <TrialActivationModal
+      :open="openTrial"
+      :subscription="profile?.subscription || null"
+      @close="openTrial = false"
+    />
 
     <MobileMenuDrawer :open="openMore" @close="openMore = false" />
   </div>
@@ -102,7 +107,7 @@ const SALES_SUITES = [
   { icon: "people", label: "Customers", to: "/customers" },
 ]
 
-const { setLocations, setActiveLocation, setPlanUpgradeModal } = useSettingsStore()
+const { setLocations, activeLocation, setActiveLocation, setPlanUpgradeModal } = useSettingsStore()
 const { updateAuthUser } = useAuthStore()
 
 const { data: locations } = useGetLocations()
@@ -125,9 +130,22 @@ watch(
 )
 
 watch(
+  () => activeLocation,
+  (newLoc) => {
+    if (newLoc) {
+      console.log("Active location changed:", newLoc)
+      window.location.reload()
+    }
+  },
+)
+
+watch(
   profile,
   (val) => {
-    if (val) updateAuthUser(val)
+    if (val) {
+      updateAuthUser(val)
+      if (val.subscription?.trial_mode) openTrial.value = true
+    }
   },
   { immediate: true },
 )

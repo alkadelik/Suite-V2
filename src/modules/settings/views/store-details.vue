@@ -40,7 +40,6 @@ const { handleSubmit: handleStoreSubmit, setValues: setStoreValues } = useForm<I
 })
 
 const onSubmitStoreDetails = handleStoreSubmit((formData) => {
-  console.log("Form submitted with data:", formData)
   const payload = new FormData()
 
   Object.entries(formData).forEach(([key, value]) => {
@@ -74,22 +73,26 @@ const onSubmitStoreDetails = handleStoreSubmit((formData) => {
   )
 }, onInvalidSubmit)
 
-watch(storeDetails, (newDetails) => {
-  if (newDetails) {
-    setStoreValues({
-      store_name: newDetails.name,
-      industry: { label: newDetails.industry_name, value: newDetails.industry },
-      currency: { label: "Nigerian Naira", value: "NGN" },
-      store_email: "",
-      store_phone: "",
-      support_email: "",
-      support_phone: "",
-      instagram_handle: "",
-    })
+watch(
+  storeDetails,
+  (newDetails) => {
+    if (newDetails) {
+      setStoreValues({
+        store_name: newDetails.name,
+        industry: { label: newDetails.industry_name, value: newDetails.industry },
+        currency: { label: "Nigerian Naira", value: "NGN" },
+        store_email: "",
+        store_phone: "",
+        support_email: "",
+        support_phone: "",
+        instagram_handle: "",
+      })
 
-    if (newDetails.slug) currentSlug.value = newDetails.slug
-  }
-})
+      if (newDetails.slug) currentSlug.value = newDetails.slug
+    }
+  },
+  { immediate: true },
+)
 
 const INDUSTRIES = computed(() => {
   if (!industries.value?.results) return []
@@ -144,7 +147,7 @@ const watchStoreNameForSlug = (storeName: string) => {
         @submit.prevent="onSubmitStoreDetails"
         class="border-core-100 mt-6 rounded-2xl border bg-white"
       >
-        <div class="grid grid-cols-2 gap-6 p-6">
+        <div class="grid grid-cols-1 gap-6 p-6 md:grid-cols-2">
           <div>
             <FormField
               name="store_name"
@@ -216,8 +219,8 @@ const watchStoreNameForSlug = (storeName: string) => {
             placeholder="e.g. @yourstore"
           />
 
-          <div class="col-span-2 flex gap-6">
-            <div class="flex flex-col items-center gap-2">
+          <div class="flex gap-6 md:col-span-2">
+            <div v-if="false" class="flex flex-col items-center gap-2">
               <Avatar
                 :name="storeDetails?.name || 'Store Logo'"
                 :src="storeDetails?.logo"

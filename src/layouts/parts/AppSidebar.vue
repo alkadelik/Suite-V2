@@ -2,12 +2,14 @@
   <aside
     :class="[
       'fixed z-40 h-screen w-72 border-r border-gray-200 bg-white transition-all duration-200',
-      'flex h-full flex-col divide-y divide-gray-200',
+      'flex h-full flex-col divide-y divide-gray-200 overflow-y-auto',
       isMobile ? (mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full') : 'translate-x-0',
     ]"
   >
     <!-- Brand -->
-    <div class="flex items-center gap-3 px-4 py-4">
+    <div
+      class="sticky top-0 z-10 flex items-center gap-3 border-b border-gray-200 bg-white px-4 py-4"
+    >
       <img src="/LYW.svg?url" alt="Leyyow" class="h-8 w-auto" />
     </div>
 
@@ -41,7 +43,7 @@
               'flex items-center gap-2 text-sm font-medium',
             ]"
           >
-            <Avatar name="S" size="sm" />
+            <Avatar :name="storeDetails?.name || ''" size="sm" />
             {{ currentLocation?.name }}
             <Icon
               name="arrow-down-double"
@@ -53,9 +55,9 @@
 
         <template #prepend>
           <div class="bg-primary-50 border-primary-300 mb-1 rounded-t-lg border-b px-2.5 py-3">
-            <Avatar name="Smiles HQ" backgroundColor="var(--color-core-950)" />
+            <Avatar :name="storeDetails?.name || ''" backgroundColor="var(--color-core-950)" />
             <div class="mt-2 flex items-end gap-2">
-              <p class="truncate font-medium">Smiles Socks...</p>
+              <p class="truncate font-medium">{{ storeDetails?.name }}</p>
               <Chip label="HQ" />
             </div>
             <div class="flex items-center gap-2 text-sm text-gray-600">
@@ -99,21 +101,34 @@
     <section class="mt-auto px-4 pb-4">
       <SidebarLink icon="life-buoy" label="Support" to="/support" />
 
-      <div class="relative mt-20">
+      <div v-if="!user?.subscription?.trial_mode" class="relative mt-20">
         <div
           :class="['relative isolate flex flex-col gap-2 rounded-3xl p-6 pt-20 text-white']"
           style="
             background: linear-gradient(136.41deg, #1a2a6c -3.7%, #b21f1f 53.98%, #fdbb2d 99.39%);
           "
         >
-          <h3 class="mb-1 text-sm font-bold">Your trial has ended!</h3>
-          <p class="mb-4 text-sm">Upgrade to regain full access.</p>
-          <AppButton color="alt" label="Upgrade" class="w-full flex-row-reverse" icon="star" />
+          <template v-if="!user?.subscription?.trial_mode && !user?.subscription?.is_active">
+            <h3 class="mb-1 text-sm font-bold">Your trial has ended!</h3>
+            <p class="mb-4 text-sm">Upgrade to regain full access.</p>
+          </template>
+
+          <div v-else class="text-sm font-semibold">You are on trial mode</div>
+
+          <AppButton
+            color="alt"
+            label="Upgrade"
+            class="w-full flex-row-reverse"
+            icon="star"
+            @click="$emit('upgrade')"
+          />
         </div>
 
         <img src="@/assets/images/gift.png" class="absolute -top-16 left-4" />
       </div>
     </section>
+
+    <!--  -->
   </aside>
 </template>
 
@@ -130,22 +145,25 @@ import Chip from "@components/Chip.vue"
 import AppButton from "@components/AppButton.vue"
 import SidebarLink from "./SidebarLink.vue"
 import { useSettingsStore } from "@modules/settings/store"
+import { useGetStoreDetails } from "@modules/settings/api"
 
 defineProps<{
   mobileSidebarOpen: boolean
   salesSuites: Array<{ icon: string; label: string; to: string }>
 }>()
 
-defineEmits<{ logout: [value: boolean] }>()
+defineEmits<{ logout: [value: boolean]; upgrade: [] }>()
 
 const { locations, activeLocation } = useSettingsStore()
 
 const storedLocations = computed(() => locations?.map((loc) => ({ ...loc })))
 const currentLocation = computed(() => activeLocation)
 
-const { user } = useAuthStore()
+const user = computed(() => useAuthStore().user)
+const { data: storeDetails } = useGetStoreDetails(user.value?.store_uid || "")
+
 const isMobile = useMediaQuery("(max-width: 1024px)")
 const storefrontUrl = computed(() => {
-  return `shop.leyyow.com/smiles-socks-headquarters`
+  return `shop.leyyow.com/${storeDetails.value?.slug || "your-store"}`
 })
 </script>
