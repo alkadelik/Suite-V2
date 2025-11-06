@@ -1,4 +1,3 @@
-import { useApiQuery } from "@/composables/baseApi"
 import baseApi, { TApiPromise } from "@/composables/baseApi"
 import { useMutation, useQuery } from "@tanstack/vue-query"
 import {
@@ -8,6 +7,9 @@ import {
   TSetupShippingPayload,
   TUpdateShippingPayload,
   ILiveStatusResponse,
+  INotificationsResponse,
+  ICouriersResponse,
+  IShippingProfileResponse,
 } from "./types"
 import { IIndustriesApiResponse } from "./types"
 
@@ -54,7 +56,13 @@ export function useUpdateShippingProfile() {
 
 /** Get merchant shipping couriers options */
 export function useGetCouriers() {
-  return useApiQuery({ url: "/shipping/couriers/", key: "couriers" })
+  return useQuery({
+    queryKey: ["couriers"],
+    queryFn: async () => {
+      const res = await baseApi.get<ICouriersResponse>("/shipping/couriers/")
+      return res.data.data.results
+    },
+  })
 }
 
 /** Get merchant shipping profile */
@@ -62,8 +70,8 @@ export function useGetShippingProfile() {
   return useQuery({
     queryKey: ["getShippingProfile"],
     queryFn: async () => {
-      const { data } = await baseApi.get("/shipping/accounts/me/")
-      return data
+      const res = await baseApi.get<IShippingProfileResponse>("/shipping/accounts/me/")
+      return res.data.data
     },
     staleTime: Infinity, // Never considered stale
     retry: false, // Do not retry on failure
@@ -125,5 +133,38 @@ export function useSubmitKYC() {
       baseApi.post("/accounts/kyc/", body, {
         headers: { "Content-Type": "multipart/form-data" },
       }),
+  })
+}
+
+/** Get notifications */
+export function useGetNotifications() {
+  return useQuery({
+    queryKey: ["notifications"],
+    queryFn: async () => {
+      const res = await baseApi.get<INotificationsResponse>("/notifications/")
+      return res.data.data
+    },
+    refetchOnWindowFocus: false,
+  })
+}
+
+/** Mark all notifications as read */
+export function useMarkAllNotificationsRead() {
+  return useMutation({
+    mutationFn: () => baseApi.post("/notifications/mark-as-read/"),
+  })
+}
+
+/** Mark a specific notification as read */
+export function useMarkNotificationAsRead() {
+  return useMutation({
+    mutationFn: (uid: string) => baseApi.post(`/notifications/${uid}/mark-read/`),
+  })
+}
+
+/** Clear all notifications */
+export function useClearNotifications() {
+  return useMutation({
+    mutationFn: () => baseApi.post("/notifications/clear/"),
   })
 }

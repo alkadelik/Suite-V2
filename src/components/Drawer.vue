@@ -20,7 +20,10 @@
     </div>
 
     <!-- Body -->
-    <div class="bg-base-background flex-1 overflow-y-auto p-5" :class="props.bodyClass">
+    <div
+      class="bg-base-background flex-1 overflow-y-auto"
+      :class="[props.handlePadding ? 'p-5' : 'p-0', props.bodyClass]"
+    >
       <slot />
     </div>
 
@@ -53,6 +56,8 @@ interface Props {
   maxWidth?: string
   /** Additional classes for the drawer body */
   bodyClass?: string
+  /** Whether to apply padding to the drawer body (default: true) */
+  handlePadding?: boolean
 }
 
 /**
@@ -67,6 +72,7 @@ interface Emits {
 const props = withDefaults(defineProps<Props>(), {
   position: "right",
   maxWidth: "md",
+  handlePadding: true,
 })
 
 // Define emits

@@ -84,12 +84,7 @@
             <AppButton
               type="submit"
               label="Continue"
-              @click="
-                () => {
-                  showShipbubbleScreens = true
-                  emit('update:modelValue', false)
-                }
-              "
+              @click="handleContinue"
               class="w-full md:w-40"
             />
           </div>
@@ -134,7 +129,9 @@ import {
   useUpdateShippingProfile,
   useSetupShippingProfile,
 } from "@/modules/shared/api"
+import { useUpdateStoreDetails } from "@/modules/settings/api"
 import LoadingIcon from "@components/LoadingIcon.vue"
+import type { ICourier } from "@/modules/shared/types"
 
 defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{
@@ -153,19 +150,16 @@ const { data: shippingProfileData, isPending: isGettingShippingProfile } = useGe
 const { mutate: setupShippingProfile, isPending: isSettingUpShipping } = useSetupShippingProfile()
 const { mutate: updateShippingProfile, isPending: isUpdatingShippingProfile } =
   useUpdateShippingProfile()
+const { mutate: updateStoreDetails } = useUpdateStoreDetails()
 
 const shipbubbleAuthForm = reactive({
-  business_name: user?.store?.store_name ? user.store.store_name : "",
-  email: user?.email ? user.email : "",
+  business_name: user?.store?.store_name || "",
+  email: user?.email || "",
   password: "",
-  address: user?.store?.address ? user.store.address : "",
-  phone: user?.store?.phone1 ? user.store.phone1 : "",
+  address: user?.store?.address || "",
+  phone: user?.store?.phone1 || user?.store?.phone || "",
 })
-const courierOptions = ref(
-  shippingProfileData.value?.preferred_couriers
-    ? shippingProfileData.value.preferred_couriers.map((courier: { id: number }) => courier.id)
-    : [],
-)
+const courierOptions = ref<string[]>([])
 
 const handleSetupShippingProfile = () => {
   const payload = {
@@ -192,20 +186,59 @@ const handleCouriersSubmit = () => {
   }
   updateShippingProfile(payload, {
     onSuccess: () => {
-      shipBubbleStep.value = 3
-      setTimeout(() => {
-        showShipbubbleScreens.value = false
-      }, 3000)
+      // After successfully updating courier preferences, enable delivery
+      updateStoreDetails(
+        {
+          id: user?.store_uid || "",
+          body: { delivery_enabled: true },
+        },
+        {
+          onSuccess: () => {
+            shipBubbleStep.value = 3
+            setTimeout(() => {
+              showShipbubbleScreens.value = false
+              emit("refresh")
+            }, 3000)
+          },
+          onError: (error) => {
+            console.error("Failed to enable delivery:", error)
+            // Still proceed to step 3 even if enabling delivery fails
+            shipBubbleStep.value = 3
+            setTimeout(() => {
+              showShipbubbleScreens.value = false
+              emit("refresh")
+            }, 3000)
+          },
+        },
+      )
     },
   })
 
   console.log(payload)
 }
 
-// --- Sync showShipbubbleScreens with route query ---
+const handleContinue = () => {
+  // If user already has a shipping profile, skip step 1 and go directly to step 2
+  if (shippingProfileData.value && shippingProfileData.value.uid) {
+    shipBubbleStep.value = 2
+  } else {
+    shipBubbleStep.value = 1
+  }
+  showShipbubbleScreens.value = true
+  emit("update:modelValue", false)
+}
+
+// --- Sync showShipbubbleScreens and step with route query ---
 onMounted(() => {
   const shipbubbleParam = route.query.shipbubble
+  const stepParam = route.query.step
   showShipbubbleScreens.value = shipbubbleParam === "true"
+  if (stepParam && typeof stepParam === "string") {
+    const parsedStep = parseInt(stepParam, 10)
+    if (parsedStep >= 1 && parsedStep <= 3) {
+      shipBubbleStep.value = parsedStep
+    }
+  }
 })
 
 watch(showShipbubbleScreens, (val) => {
@@ -213,6 +246,7 @@ watch(showShipbubbleScreens, (val) => {
     query: {
       ...route.query,
       shipbubble: val ? "true" : undefined,
+      step: val ? String(shipBubbleStep.value) : undefined,
     },
   })
 })
@@ -222,5 +256,40 @@ watch(
   (val) => {
     showShipbubbleScreens.value = val === "true"
   },
+)
+
+// Sync step with query parameter
+watch(shipBubbleStep, (step) => {
+  if (showShipbubbleScreens.value) {
+    router.replace({
+      query: {
+        ...route.query,
+        step: String(step),
+      },
+    })
+  }
+})
+
+watch(
+  () => route.query.step,
+  (val) => {
+    if (val && typeof val === "string" && showShipbubbleScreens.value) {
+      const parsedStep = parseInt(val, 10)
+      if (parsedStep >= 1 && parsedStep <= 3) {
+        shipBubbleStep.value = parsedStep
+      }
+    }
+  },
+)
+
+// Update courier options when shipping profile data loads
+watch(
+  () => shippingProfileData.value,
+  (data) => {
+    if (data?.preferred_couriers) {
+      courierOptions.value = data.preferred_couriers.map((courier: ICourier) => courier.uid)
+    }
+  },
+  { immediate: true },
 )
 </script>

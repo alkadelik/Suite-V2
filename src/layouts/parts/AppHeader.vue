@@ -15,7 +15,7 @@
         </template>
       </Chip>
       <!-- Notifications -->
-      <button class="rounded-xl p-2 hover:bg-gray-100">
+      <button class="rounded-xl p-2 hover:bg-gray-100" @click="showNotifications = true">
         <Icon name="bell" size="20" />
       </button>
       <!-- Settings -->
@@ -36,17 +36,59 @@
         icon="add-circle"
       />
     </div>
+
+    <!-- Notifications Drawer -->
+    <NotificationsDrawer
+      :open="showNotifications"
+      :notifications="notifications"
+      @close="showNotifications = false"
+      @mark-all-read="handleMarkAllRead"
+    />
   </header>
 </template>
 
 <script setup lang="ts">
+import { ref, computed } from "vue"
 import { useMediaQuery } from "@vueuse/core"
+import { useQueryClient } from "@tanstack/vue-query"
 import AppButton from "@components/AppButton.vue"
 import Avatar from "@components/Avatar.vue"
 import Icon from "@components/Icon.vue"
 import Chip from "@components/Chip.vue"
+import NotificationsDrawer from "@/components/NotificationsDrawer.vue"
+import { useGetNotifications, useMarkAllNotificationsRead } from "@/modules/shared/api"
+import { useNotificationsWebSocket } from "@/composables/useNotificationsWebSocket"
 
 defineProps<{ showLogo?: boolean; logo?: "full" | "icon" }>()
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
+const showNotifications = ref(false)
+const queryClient = useQueryClient()
+
+// Fetch notifications from API
+const { data: notificationsResponse } = useGetNotifications()
+const { mutate: markAllRead } = useMarkAllNotificationsRead()
+
+// Initialize WebSocket connection for real-time notifications
+useNotificationsWebSocket({
+  onNotification: () => {
+    // Refetch notifications to include the new one
+    queryClient.invalidateQueries({ queryKey: ["notifications"] })
+  },
+})
+
+// Extract notifications from response
+const notifications = computed(() => {
+  return notificationsResponse.value?.notifications || []
+})
+
+const handleMarkAllRead = () => {
+  // Call API to mark all as read
+  markAllRead(undefined, {
+    onSuccess: () => {
+      // Refetch notifications after marking all as read
+      queryClient.invalidateQueries({ queryKey: ["notifications"] })
+    },
+  })
+}
 </script>

@@ -155,20 +155,20 @@
                 <div
                   v-for="option in filteredOptions"
                   v-else
-                  :key="option.id"
+                  :key="option.uid"
                   class="overflow-hidden rounded-lg border border-gray-200 transition-all"
                 >
                   <div
                     class="cursor-pointer p-4"
-                    :class="isSelected(option.id) ? 'bg-tigersEye/5 rounded-t-md' : 'rounded-md'"
+                    :class="isSelected(option.uid) ? 'bg-tigersEye/5 rounded-t-md' : 'rounded-md'"
                   >
                     <Checkbox
-                      :model-value="isSelected(option.id)"
+                      :model-value="isSelected(option.uid)"
                       class="flex justify-between space-x-3"
                       check-position="right"
                       check-color="#000"
                       size="14"
-                      @update:model-value="(val: boolean) => toggleOption(option.id, val)"
+                      @update:model-value="(val: boolean) => toggleOption(option.uid, val)"
                     >
                       <template #default>
                         <div class="flex">
@@ -266,7 +266,7 @@ interface AuthForm {
 
 interface Props {
   authForm?: AuthForm
-  courierOptions?: number[]
+  courierOptions?: string[]
   currentStep?: number
   loading?: boolean
   hasNoShippingProfile?: boolean
@@ -324,7 +324,7 @@ const filteredOptions = computed(() => {
 
   // Filter out null/undefined values and ensure required properties exist
   const validOptions = options.filter(
-    (option) => option && option.id && option.name && option.pin_image,
+    (option) => option && option.uid && option.name && option.pin_image,
   )
 
   if (searchQuery.value === "") return validOptions
@@ -339,15 +339,15 @@ const selectedOptions = computed({
 
 const toggleOption = (value: string, checked: boolean) => {
   if (checked) {
-    if (!selectedOptions.value.includes(+value)) {
-      selectedOptions.value.push(+value)
+    if (!selectedOptions.value.includes(value)) {
+      selectedOptions.value.push(value)
     }
   } else {
-    selectedOptions.value = selectedOptions.value.filter((v) => v !== +value)
+    selectedOptions.value = selectedOptions.value.filter((v) => v !== value)
   }
 }
 
-const isSelected = (value: string) => selectedOptions.value.includes(+value)
+const isSelected = (value: string) => selectedOptions.value.includes(value)
 
 const handleCouriersSubmit = () => {
   emit("submitCouriers", selectedOptions.value)
