@@ -193,7 +193,7 @@
 import DataTable from "@components/DataTable.vue"
 import { TProduct, type IInventoryTransferRequest } from "../types"
 import { PRODUCT_COLUMNS } from "../constants"
-import { ref, computed } from "vue"
+import { ref, computed, onMounted } from "vue"
 import Icon from "@components/Icon.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import Chip from "@components/Chip.vue"
@@ -217,6 +217,7 @@ import EmptyState from "@components/EmptyState.vue"
 import { displayError } from "@/utils/error-handler"
 import router from "@/router"
 import { useSettingsStore } from "@modules/settings/store"
+import { useRoute } from "vue-router"
 
 const { data: products, isPending: isGettingProducts, refetch: refetchProducts } = useGetProducts()
 const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct()
@@ -228,6 +229,7 @@ const activeTab = ref("products")
 const selectedRequest = ref<IInventoryTransferRequest | null>(null)
 const showReceiveRequestModal = ref(false)
 const requestsRefetchKey = ref(0)
+const route = useRoute()
 
 // Check if current location is HQ
 const isHQ = computed(() => settingsStore.activeLocation?.is_hq || false)
@@ -396,4 +398,8 @@ const handleRequestSuccess = () => {
   // Increment key to force InventoryRequests component to remount and refetch
   requestsRefetchKey.value++
 }
+
+onMounted(() => {
+  if (route.query.create === "true") openAddProductDrawer()
+})
 </script>

@@ -175,7 +175,7 @@ watch(
         subtitle="We require your BVN and ID to verify your identity as part of KYC regulations."
       />
 
-      {{ kycData }}
+      <!-- {{ kycData }} -->
 
       <AppForm
         @submit="onUpdateKyc"

@@ -32,7 +32,7 @@
                     type="url"
                     name="instagram_link"
                     label="Instagram"
-                    placeholder="E.g instagram.com/mybusiness"
+                    placeholder="E.g https://instagram.com/mybusiness"
                     :hide-label="true"
                   />
                 </div>
@@ -54,7 +54,7 @@
                     type="url"
                     name="facebook_link"
                     label="Facebook"
-                    placeholder="E.g facebook.com/mybusiness"
+                    placeholder="E.g https://facebook.com/mybusiness"
                     :hide-label="true"
                   />
                 </div>
@@ -76,7 +76,7 @@
                     type="url"
                     name="twitter_link"
                     label="Twitter"
-                    placeholder="E.g twitter.com/mybusiness"
+                    placeholder="E.g https://twitter.com/mybusiness"
                     :hide-label="true"
                   />
                 </div>
@@ -98,7 +98,7 @@
                     type="url"
                     name="tiktok_link"
                     label="Tiktok"
-                    placeholder="E.g tiktok.com/@mybusiness"
+                    placeholder="E.g https://tiktok.com/@mybusiness"
                     :hide-label="true"
                   />
                 </div>

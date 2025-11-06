@@ -32,7 +32,13 @@
           placeholder="Enter email address"
         />
 
-        <FormField name="phone" label="Phone Number" type="text" placeholder="Enter phone number" />
+        <FormField
+          name="phone"
+          label="Phone Number (Optional)"
+          type="text"
+          placeholder="Enter phone number"
+          prefix="+234"
+        />
 
         <GooglePlacesAutocomplete
           name="address"
@@ -104,6 +110,7 @@ import GooglePlacesAutocomplete from "@components/GooglePlacesAutocomplete.vue"
 import { useCreateCustomer, useUpdateCustomer } from "../api"
 import { displayError } from "@/utils/error-handler"
 import { useAuthStore } from "@modules/auth/store"
+import { formatPhoneNumber } from "@/utils/others"
 
 interface FormValues {
   [key: string]: unknown
@@ -235,7 +242,7 @@ const onSubmit = (values: FormValues) => {
     first_name: values.first_name.trim(),
     last_name: values.last_name.trim(),
     email: values.email.trim().toLowerCase(),
-    phone: values.phone.trim(),
+    phone: formatPhoneNumber(values.phone.trim()),
     address: values.address.trim() || undefined,
     state: values.state.trim() || undefined,
     city: values.city.trim() || undefined,

@@ -18,53 +18,108 @@
     <div class="flex flex-col gap-6 md:flex-row">
       <!-- Left Sidebar - Desktop -->
       <aside class="hidden w-2/5 flex-shrink-0 md:block">
-        <draggable
-          v-model="designItems"
-          item-key="id"
-          :animation="200"
-          ghost-class="ghost-item"
-          drag-class="drag-item"
-          chosen-class="chosen-item"
-          handle=".drag-handle"
-          @end="onDragEnd"
-          class="space-y-2"
-        >
-          <template #item="{ element: item }">
-            <button
-              type="button"
-              :class="[
-                'flex h-14 w-full cursor-pointer items-center gap-3 overflow-hidden rounded-lg border text-sm font-medium transition-colors',
-                {
-                  'border-primary-700': activeSection === item.id,
-                  'text-core-700 border-gray-200 hover:border-gray-300 hover:bg-gray-50':
-                    activeSection !== item.id,
-                },
-                item.id === 'hero' ? 'px-4' : 'pr-4',
-              ]"
-              @click="activeSection = item.id"
-            >
-              <div
-                v-if="item.id !== 'hero'"
-                class="drag-handle flex h-full w-6 cursor-grab items-center justify-center rounded-l-lg active:cursor-grabbing"
-                :class="activeSection === item.id ? 'bg-primary-100' : 'bg-gray-200'"
+        <div class="space-y-2">
+          <!-- Hero Section - Fixed at top, not draggable -->
+          <button
+            v-if="heroItem"
+            type="button"
+            :class="[
+              'flex h-14 w-full cursor-pointer items-center gap-3 overflow-hidden rounded-lg border px-4 text-sm font-medium transition-colors',
+              {
+                'border-primary-700': activeSection === heroItem.id,
+                'text-core-700 border-gray-200 hover:border-gray-300 hover:bg-gray-50':
+                  activeSection !== heroItem.id,
+              },
+            ]"
+            @click="activeSection = heroItem.id"
+          >
+            <div class="flex flex-1 items-center gap-3">
+              <Icon :name="heroItem.icon" size="20" />
+              <span>{{ heroItem.label }}</span>
+            </div>
+            <!-- <Icon name="eye" size="18" /> -->
+            <Icon name="arrow-right" size="18" />
+          </button>
+
+          <!-- Other Sections - Draggable -->
+          <draggable
+            v-model="draggableItems"
+            item-key="id"
+            :animation="200"
+            ghost-class="ghost-item"
+            drag-class="drag-item"
+            chosen-class="chosen-item"
+            handle=".drag-handle"
+            @end="onDragEnd"
+            class="space-y-2"
+          >
+            <template #item="{ element: item }">
+              <button
+                type="button"
+                :class="[
+                  'flex h-14 w-full cursor-pointer items-center gap-3 overflow-hidden rounded-lg border pr-4 text-sm font-medium transition-colors',
+                  {
+                    'border-primary-700': activeSection === item.id,
+                    'text-core-700 border-gray-200 hover:border-gray-300 hover:bg-gray-50':
+                      activeSection !== item.id,
+                  },
+                ]"
+                @click="activeSection = item.id"
               >
-                <Icon name="six-dots" />
-              </div>
-              <div class="flex flex-1 items-center gap-3">
-                <Icon :name="item.icon" size="20" />
-                <span>{{ item.label }}</span>
-              </div>
-              <Icon name="eye" size="18" />
-              <Icon name="arrow-right" size="18" />
-            </button>
-          </template>
-        </draggable>
+                <div
+                  class="drag-handle flex h-full w-6 cursor-grab items-center justify-center rounded-l-lg active:cursor-grabbing"
+                  :class="activeSection === item.id ? 'bg-primary-100' : 'bg-gray-200'"
+                >
+                  <Icon name="six-dots" />
+                </div>
+                <div class="flex flex-1 items-center gap-3">
+                  <Icon :name="item.icon" size="20" />
+                  <span>{{ item.label }}</span>
+                </div>
+                <!-- <Icon name="eye" size="18" /> -->
+                <Icon name="arrow-right" size="18" />
+              </button>
+            </template>
+          </draggable>
+        </div>
       </aside>
 
       <!-- Mobile Collapsibles -->
       <div class="flex flex-col gap-3 pb-20 md:hidden">
+        <!-- Hero Section - Fixed at top, not draggable -->
+        <div v-if="heroItem">
+          <button
+            type="button"
+            class="flex h-14 w-full items-center gap-3 rounded-lg border border-gray-200 px-4 text-sm font-medium transition-colors"
+            :class="{ 'rounded-b-none': expandedSection === heroItem.id }"
+            @click="toggleSection(heroItem.id)"
+          >
+            <div class="flex flex-1 items-center gap-3">
+              <Icon :name="heroItem.icon" size="20" />
+              <span>{{ heroItem.label }}</span>
+            </div>
+            <!-- <Icon name="eye" size="18" /> -->
+            <Icon
+              name="chevron-down"
+              size="18"
+              :class="{ 'rotate-180': expandedSection === heroItem.id }"
+            />
+          </button>
+          <div
+            v-if="expandedSection === heroItem.id"
+            class="rounded-b-lg border border-t-0 border-gray-200 p-4"
+          >
+            <HeroSettings
+              :hero-section="heroSection"
+              @change-section="changeSection"
+              @refetch="refetch"
+            />
+          </div>
+        </div>
+
+        <!-- Other Sections - Draggable -->
         <draggable
-          v-model="designItems"
+          v-model="draggableItems"
           item-key="id"
           :animation="200"
           ghost-class="ghost-item"
@@ -75,18 +130,16 @@
           class="flex flex-col gap-3"
         >
           <template #item="{ element: item, index }">
-            <div :class="{ 'mb-10': index === designItems.length - 1 }">
+            <div :class="{ 'mb-10': index === draggableItems.length - 1 }">
               <button
                 type="button"
                 :class="[
-                  'flex h-14 w-full items-center gap-3 rounded-lg border border-gray-200 text-sm font-medium transition-colors',
+                  'flex h-14 w-full items-center gap-3 rounded-lg border border-gray-200 pr-4 text-sm font-medium transition-colors',
                   { 'rounded-b-none': expandedSection === item.id },
-                  item.id === 'hero' ? 'px-4' : 'pr-4',
                 ]"
                 @click="toggleSection(item.id)"
               >
                 <div
-                  v-if="item.id !== 'hero'"
                   class="mobile-drag-handle flex h-full w-6 cursor-grab items-center justify-center rounded-l-lg active:cursor-grabbing"
                   :class="[
                     activeSection === item.id ? 'bg-primary-100' : 'bg-gray-200',
@@ -99,7 +152,7 @@
                   <Icon :name="item.icon" size="20" />
                   <span>{{ item.label }}</span>
                 </div>
-                <Icon name="eye" size="18" />
+                <!-- <Icon name="eye" size="18" /> -->
                 <Icon
                   name="chevron-down"
                   size="18"
@@ -110,14 +163,8 @@
                 v-if="expandedSection === item.id"
                 class="rounded-b-lg border border-t-0 border-gray-200 p-4"
               >
-                <HeroSettings
-                  v-if="item.id === 'hero'"
-                  :hero-section="heroSection"
-                  @change-section="changeSection"
-                  @refetch="refetch"
-                />
                 <FeaturedProducts
-                  v-else-if="item.id === 'featured_products'"
+                  v-if="item.id === 'featured_products'"
                   :featured-products-section="featuredProductsSection"
                   @change-section="changeSection"
                   @refetch="refetch"
@@ -316,7 +363,14 @@ interface DesignItem {
   is_visible: boolean
 }
 
-const designItems = ref<DesignItem[]>([])
+const allDesignItems = ref<DesignItem[]>([])
+
+// Separate hero from other items
+const heroItem = computed(() => {
+  return allDesignItems.value.find((item) => item.id === "hero") || null
+})
+
+const draggableItems = ref<DesignItem[]>([])
 
 const activeSection = ref<string>("hero")
 const expandedSection = ref<string | null>(null)
@@ -327,7 +381,7 @@ watch(
   (newData) => {
     if (newData && newData.results.length > 0) {
       // Map API data to the format needed for the UI
-      designItems.value = newData.results
+      allDesignItems.value = newData.results
         .filter((x) => x.section_type !== "highlight_banner")
         .map((section) => ({
           id: section.section_type,
@@ -338,6 +392,9 @@ watch(
           is_visible: true,
         }))
         .sort((a, b) => a.order - b.order)
+
+      // Separate hero from draggable items
+      draggableItems.value = allDesignItems.value.filter((item) => item.id !== "hero")
     }
   },
   { immediate: true },
@@ -345,8 +402,9 @@ watch(
 
 const onDragEnd = () => {
   // Update order based on new positions
-  designItems.value.forEach((item, index) => {
-    item.order = index + 1
+  // Hero is always at position 1, so draggable items start at position 2
+  draggableItems.value.forEach((item, index) => {
+    item.order = index + 2
   })
 }
 
@@ -360,12 +418,26 @@ const changeSection = (section: string): void => {
 }
 
 const publishPage = () => {
-  const payload = {
-    updates: designItems.value.map((item, index) => ({
-      uid: item.uid,
-      position: index + 1,
-    })),
+  const updates = []
+
+  // Always set hero at position 1
+  if (heroItem.value) {
+    updates.push({
+      uid: heroItem.value.uid,
+      position: 1,
+    })
   }
+
+  // Add other items starting from position 2
+  draggableItems.value.forEach((item, index) => {
+    updates.push({
+      uid: item.uid,
+      position: index + 2,
+    })
+  })
+
+  const payload = { updates }
+
   updateLandingPageItemsOrder(payload, {
     onSuccess: () => {
       toast.success("Landing page published successfully")

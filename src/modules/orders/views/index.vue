@@ -6,7 +6,7 @@ import TextField from "@components/form/TextField.vue"
 import MetricsGrid from "@components/MetricsGrid.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import { useMediaQuery } from "@vueuse/core"
-import { computed, ref } from "vue"
+import { computed, onMounted, ref } from "vue"
 import Avatar from "@components/Avatar.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import Chip from "@components/Chip.vue"
@@ -25,6 +25,7 @@ import ShareInvoiceReceipt from "../components/ShareInvoiceReceipt.vue"
 import OrderPaymentDrawer from "../components/OrderPaymentDrawer.vue"
 import Tabs from "@components/Tabs.vue"
 import { formatCurrency } from "@/utils/format-currency"
+import { useRoute } from "vue-router"
 
 const openCreate = ref(false)
 const openVoid = ref(false)
@@ -184,6 +185,12 @@ const handleVoidDelete = ({ action, reason }: { action: string; reason: string }
     })
   }
 }
+
+const route = useRoute()
+
+onMounted(() => {
+  if (route.query.create === "true") openCreate.value = true
+})
 </script>
 
 <template>

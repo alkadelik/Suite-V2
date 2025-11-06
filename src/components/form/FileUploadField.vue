@@ -87,7 +87,7 @@
         type="file"
         :class="[
           'absolute inset-0 h-full w-full cursor-pointer opacity-0',
-          fileName && isImage && filePreview && props.productImageMode ? 'pointer-events-none' : '',
+          fileName ? 'pointer-events-none' : '',
         ]"
         @change="handleFileChange"
       />

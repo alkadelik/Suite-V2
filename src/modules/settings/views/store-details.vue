@@ -49,15 +49,9 @@ const onSubmitStoreDetails = handleStoreSubmit((formData) => {
   payload.append("currency", formData.currency.value)
   payload.append("store_email", formData.store_email)
 
-  // Format phone numbers: add +234 and remove leading 0
-  const formatPhoneNumber = (phone: string) => {
-    const cleaned = phone.replace(/\s+/g, "").replace(/^0+/, "")
-    return `+234${cleaned}`
-  }
-
-  payload.append("store_phone", formatPhoneNumber(formData.store_phone))
+  payload.append("store_phone", formData.store_phone)
   payload.append("support_email", formData.support_email)
-  payload.append("support_phone", formatPhoneNumber(formData.support_phone))
+  payload.append("support_phone", formData.support_phone)
   payload.append("industry", formData.industry.value)
 
   if (formData.instagram_handle) {
@@ -196,9 +190,9 @@ const watchStoreNameForSlug = (storeName: string) => {
           />
 
           <FormField
+            type="tel"
             name="store_phone"
             label="Store Phone"
-            prefix="+234"
             placeholder="8012345678"
             required
           />
@@ -211,6 +205,7 @@ const watchStoreNameForSlug = (storeName: string) => {
           />
 
           <FormField
+            type="tel"
             name="support_phone"
             label="Support Phone"
             prefix="+234"

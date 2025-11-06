@@ -108,13 +108,14 @@ import { TLocation } from "../types"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
 import AddLocationModal from "../components/AddLocationModal.vue"
-import { ref, watch } from "vue"
+import { onMounted, ref, watch } from "vue"
 import { useDeleteLocation, useGetLocations } from "../api"
 import { displayError } from "@/utils/error-handler"
 import DeleteConfirmationModal from "@components/DeleteConfirmationModal.vue"
 import { toast } from "@/composables/useToast"
 import { useMediaQuery } from "@vueuse/core"
 import DropdownMenu from "@components/DropdownMenu.vue"
+import { useRoute } from "vue-router"
 
 const showModal = ref(false)
 const openArchive = ref(false)
@@ -165,4 +166,10 @@ const getActionItems = (item: TLocation) => [
     action: () => handleAction("archive", item),
   },
 ]
+
+const route = useRoute()
+
+onMounted(() => {
+  if (route.query.create === "true") showModal.value = true
+})
 </script>

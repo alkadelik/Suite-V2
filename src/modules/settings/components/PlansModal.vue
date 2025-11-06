@@ -12,7 +12,7 @@
       class="mb-6"
     />
 
-    <div class="flex justify-center">
+    <div class="mb-6 flex justify-center">
       <Tabs variant="pills" :tabs="tabs" v-model="activeTab" class="w-full md:w-1/2" />
     </div>
 

@@ -29,59 +29,7 @@
         />
       </div>
       <!-- Select Location -->
-      <DropdownMenu
-        trigger-class="w-full"
-        :items="storedLocations?.map((item) => ({ id: item.uid, label: item.name }))"
-        menuClass="!w-[248px]"
-        @select="({ id }) => $router.push('/settings/locations?id=' + id)"
-      >
-        <template #trigger="{ open }">
-          <button
-            type="button"
-            :class="[
-              'bg-core-100 text-core-800 hover:bg-core-200 mt-4 w-full rounded-xl px-2 py-1.5',
-              'flex items-center gap-2 text-sm font-medium',
-            ]"
-          >
-            <Avatar :name="storeDetails?.name || ''" size="sm" />
-            {{ currentLocation?.name }}
-            <Icon
-              name="arrow-down-double"
-              size="20"
-              :class="['ml-auto', 'transition-transform', open ? 'rotate-180' : '']"
-            />
-          </button>
-        </template>
-
-        <template #prepend>
-          <div class="bg-primary-50 border-primary-300 mb-1 rounded-t-lg border-b px-2.5 py-3">
-            <Avatar :name="storeDetails?.name || ''" backgroundColor="var(--color-core-950)" />
-            <div class="mt-2 flex items-end gap-2">
-              <p class="truncate font-medium">{{ storeDetails?.name }}</p>
-              <Chip label="HQ" />
-            </div>
-            <div class="flex items-center gap-2 text-sm text-gray-600">
-              <p class="truncate">{{ storefrontUrl }}</p>
-              <Icon
-                name="copy"
-                size="24"
-                class="text-primary-600 cursor-pointer"
-                @click="clipboardCopy('https://' + storefrontUrl)"
-              />
-            </div>
-          </div>
-        </template>
-
-        <template #footer>
-          <AppButton
-            variant="text"
-            label="Add New Location"
-            size="sm"
-            icon="add"
-            class="!w-full flex-row-reverse !justify-between !px-2.5"
-          />
-        </template>
-      </DropdownMenu>
+      <LocationDropdown />
     </div>
 
     <!-- Home & Get Started -->
@@ -142,17 +90,13 @@
 <script setup lang="ts">
 import { useAuthStore } from "@modules/auth/store"
 import { getFullName, TNameObj } from "@/utils/format-strings"
-import { clipboardCopy } from "@/utils/others"
 import { useMediaQuery } from "@vueuse/core"
 import { computed } from "vue"
-import DropdownMenu from "@components/DropdownMenu.vue"
 import Avatar from "@components/Avatar.vue"
 import Icon from "@components/Icon.vue"
-import Chip from "@components/Chip.vue"
 import AppButton from "@components/AppButton.vue"
 import SidebarLink from "./SidebarLink.vue"
-import { useSettingsStore } from "@modules/settings/store"
-import { useGetStoreDetails } from "@modules/settings/api"
+import LocationDropdown from "./LocationDropdown.vue"
 
 defineProps<{
   mobileSidebarOpen: boolean
@@ -161,18 +105,9 @@ defineProps<{
 
 defineEmits<{ logout: [value: boolean]; upgrade: [] }>()
 
-const { locations, activeLocation } = useSettingsStore()
-
-const storedLocations = computed(() => locations?.map((loc) => ({ ...loc })))
-const currentLocation = computed(() => activeLocation)
-
 const user = computed(() => useAuthStore().user)
-const { data: storeDetails } = useGetStoreDetails(user.value?.store_uid || "")
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
-const storefrontUrl = computed(() => {
-  return `shop.leyyow.com/${storeDetails.value?.slug || "your-store"}`
-})
 </script>
 
 <style scoped>

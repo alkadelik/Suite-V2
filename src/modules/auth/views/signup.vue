@@ -120,7 +120,7 @@ const onSubmit = (values: TSignupPayload) => {
       toast.success("Signup successful!")
       // check for redirect query param
       const redirectPath = router.currentRoute.value.query.redirect as string
-      router.push(redirectPath || "/dashboard")
+      router.push(redirectPath || "/onboarding")
     },
     onError: displayError,
   })

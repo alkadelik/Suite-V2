@@ -9,7 +9,7 @@ import Icon from "@components/Icon.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import Tabs from "@components/Tabs.vue"
 import { useMediaQuery } from "@vueuse/core"
-import { computed, ref } from "vue"
+import { computed, onMounted, ref } from "vue"
 import { POPUP_COLUMN } from "../constants"
 import { PopupEvent } from "../types"
 import PopupEventCard from "../components/PopupEventCard.vue"
@@ -19,6 +19,7 @@ import OrganizerPopupCard from "../components/OrganizerPopupCard.vue"
 import "vue3-carousel/carousel.css"
 import { Carousel, Slide } from "vue3-carousel"
 import DeletePopupEvent from "../components/DeletePopupEvent.vue"
+import { useRoute } from "vue-router"
 
 const TABS = [
   { title: "All", key: "" },
@@ -53,6 +54,11 @@ const computedFilters = computed(() => {
 const { data: popupEvents, isPending, refetch } = useGetPopupEvents(computedFilters)
 
 const { data: eventfulPopups } = useGetEventfulPopups()
+const route = useRoute()
+
+onMounted(() => {
+  if (route.query.create === "true") openCreate.value = true
+})
 </script>
 
 <template>

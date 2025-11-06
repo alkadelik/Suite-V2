@@ -99,7 +99,7 @@ const onUpdateBank = handleSubmit((values) => {
       class="mb-6"
     />
 
-    <form @submit.prevent="onUpdateBank" class="space-y-6 md:space-y-8">
+    <form @submit.prevent="onUpdateBank" class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-8">
       <FormField
         name="account_number"
         label="Account Number"
@@ -121,13 +121,15 @@ const onUpdateBank = handleSubmit((values) => {
         placement="top"
       />
 
-      <AppButton
-        type="submit"
-        :loading="isPending"
-        label="Save Bank Details"
-        class="w-full"
-        :class="{ 'cursor-not-allowed opacity-50': !meta.valid || !accountName || isResolving }"
-      />
+      <div class="flex justify-end sm:col-span-2">
+        <AppButton
+          type="submit"
+          :loading="isPending"
+          class="px-12"
+          label="Save Details"
+          :class="{ 'cursor-not-allowed opacity-50': !meta.valid || !accountName || isResolving }"
+        />
+      </div>
     </form>
   </section>
 </template>
