@@ -161,7 +161,7 @@ const onSubmit = (values: IStoreFormData) => {
       authStore.updateAuthUser({ store_uid: res.data?.data?.uuid, store: { ...res.data.data } })
       // check for redirect query param
       const redirectPath = router.currentRoute.value.query.redirect as string
-      router.push(redirectPath || "/dashboard")
+      window.location.href = redirectPath || "/dashboard"
     },
     onError: displayError,
   })

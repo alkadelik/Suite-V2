@@ -101,7 +101,7 @@
     <section class="mt-auto px-4 pb-4">
       <SidebarLink icon="life-buoy" label="Support" to="/support" />
 
-      <div v-if="!user?.subscription?.trial_mode" class="relative mt-20">
+      <div class="relative mt-20">
         <div
           :class="['relative isolate flex flex-col gap-1 rounded-3xl p-3 pt-12 text-white']"
           style="
