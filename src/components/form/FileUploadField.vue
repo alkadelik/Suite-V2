@@ -102,6 +102,8 @@ import Chip from "@components/Chip.vue"
 import { useImageConverter } from "@/composables/useImageConverter"
 import { toast } from "@/composables/useToast"
 
+const MAX_FILENAME_LENGTH = 99
+
 interface Props {
   label?: string
   /** Product image mode - enables fullscreen preview with product-specific UI (primary badge, replace button) */
@@ -175,16 +177,39 @@ const isImage = computed(() => {
   return imageExtensions.some((ext) => fileName.value.toLowerCase().endsWith(ext))
 })
 
+/** Truncates a filename if it exceeds the maximum length. */
+const truncateFilename = (filename: string, maxLength: number): string => {
+  if (filename.length <= maxLength) return filename
+  // Find the last dot to separate name and extension
+  const lastDotIndex = filename.lastIndexOf(".")
+  // No extension, just truncate
+  if (lastDotIndex === -1) return filename.substring(0, maxLength)
+  const extension = filename.substring(lastDotIndex)
+  const nameWithoutExt = filename.substring(0, lastDotIndex)
+  const maxNameLength = maxLength - extension.length
+  // Extension itself is too long, just truncate the whole thing
+  if (maxNameLength <= 0) return filename.substring(0, maxLength)
+  // Truncate the name and append the extension
+  return nameWithoutExt.substring(0, maxNameLength) + extension
+}
+
 const handleFileChange = async (event: Event) => {
   const target = event.target as HTMLInputElement
   const file = target.files && target.files[0]
   if (file) {
     let processedFile = file
 
+    // Truncate filename if it exceeds max length
+    if (file.name.length > MAX_FILENAME_LENGTH) {
+      const newName = truncateFilename(file.name, MAX_FILENAME_LENGTH)
+      // Create a new File instance with the truncated name
+      processedFile = new File([file], newName, { type: file.type })
+    }
+
     // Convert and compress in product image mode
     if (props.productImageMode) {
       try {
-        processedFile = await convertAndCompressImage(file)
+        processedFile = await convertAndCompressImage(processedFile)
         fileName.value = processedFile.name
       } catch (error) {
         console.error("Failed to process image:", error)
@@ -198,7 +223,7 @@ const handleFileChange = async (event: Event) => {
         return
       }
     } else {
-      fileName.value = file.name
+      fileName.value = processedFile.name
     }
 
     // Create preview for images
@@ -222,10 +247,17 @@ const handleDrop = async (event: DragEvent) => {
   if (file) {
     let processedFile = file
 
+    // Truncate filename if it exceeds max length
+    if (file.name.length > MAX_FILENAME_LENGTH) {
+      const newName = truncateFilename(file.name, MAX_FILENAME_LENGTH)
+      // Create a new File instance with the truncated name
+      processedFile = new File([file], newName, { type: file.type })
+    }
+
     // Convert and compress in product image mode
     if (props.productImageMode) {
       try {
-        processedFile = await convertAndCompressImage(file)
+        processedFile = await convertAndCompressImage(processedFile)
         fileName.value = processedFile.name
       } catch (error) {
         console.error("Failed to process image:", error)
@@ -235,7 +267,7 @@ const handleDrop = async (event: DragEvent) => {
         return
       }
     } else {
-      fileName.value = file.name
+      fileName.value = processedFile.name
     }
 
     // Create preview for images
