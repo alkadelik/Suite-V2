@@ -8,7 +8,7 @@
   <transition name="slide-up">
     <div
       v-if="showBanner"
-      class="fixed right-8 bottom-8 z-[9999] w-full max-w-[768px] rounded-lg border border-gray-200 bg-white p-6 shadow-lg"
+      class="fixed right-0 bottom-0 z-[9999] w-full max-w-[768px] rounded-lg border border-gray-200 bg-white p-6 shadow-lg lg:right-8 lg:bottom-8"
     >
       <div class="relative w-4/5">
         <h3 class="mb-2 text-lg font-semibold">We use Cookies</h3>
@@ -30,7 +30,7 @@
 
 <script setup>
 import { ref, onMounted } from "vue"
-import AppButton from "@components/AppButton.vue"
+import AppButton from "@/components/AppButton.vue"
 
 const showBanner = ref(false)
 
