@@ -1,6 +1,5 @@
 <script setup>
 import AppButton from "@components/AppButton.vue"
-import ConsentBanner from "@modules/shared/components/ConsentBanner.vue"
 import { useRouter } from "vue-router"
 
 const router = useRouter()
@@ -117,8 +116,5 @@ const footerLinks = {
         </p>
       </div>
     </footer>
-
-    <!-- Consent Banner -->
-    <ConsentBanner />
   </div>
 </template>

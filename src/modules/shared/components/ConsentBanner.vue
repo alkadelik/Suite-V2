@@ -1,18 +1,29 @@
 <template>
+  <!-- Overlay backdrop -->
+  <transition name="fade">
+    <div v-if="showBanner" class="fixed inset-0 z-[9998] bg-black/70"></div>
+  </transition>
+
+  <!-- Banner -->
   <transition name="slide-up">
     <div
       v-if="showBanner"
-      class="fixed right-0 bottom-0 left-0 z-[9999] flex flex-col items-center justify-between gap-3 border-t border-gray-200 bg-white p-4 shadow-lg md:flex-row md:gap-4"
+      class="fixed right-8 bottom-8 z-[9999] w-full max-w-[768px] rounded-lg border border-gray-200 bg-white p-6 shadow-lg"
     >
-      <p class="text-core-700 text-center text-base md:text-left">
-        We use cookies to improve your experience, personalize content and ads, and analyze how our
-        site is used. Please consent to continue.
-      </p>
+      <div class="relative w-4/5">
+        <h3 class="mb-2 text-lg font-semibold">We use Cookies</h3>
+        <p class="text-core-700 mb-4 text-base">
+          We use cookies to make your browsing smoother, personalise your experience, and help us
+          improve our website.
+        </p>
 
-      <div class="flex gap-2">
-        <AppButton label="Accept" @click="acceptConsent" />
-        <AppButton label="Decline" color="alt" @click="declineConsent" />
+        <div class="flex flex-wrap gap-2">
+          <AppButton label="Essential Cookies Only" color="alt" @click="declineConsent" />
+          <AppButton label="Accept All" variant="outlined" @click="acceptConsent" />
+        </div>
       </div>
+
+      <img src="/images/cookie.png" alt="Cookies" class="absolute -top-4 -right-4 w-28" />
     </div>
   </transition>
 </template>
@@ -62,6 +73,16 @@ const declineConsent = () => {
 .slide-up-enter-from,
 .slide-up-leave-to {
   transform: translateY(100%);
+  opacity: 0;
+}
+
+/* Fade animation for overlay */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
   opacity: 0;
 }
 </style>
