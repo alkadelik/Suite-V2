@@ -31,7 +31,16 @@
       <template #cell:action="{ item }">
         <div class="flex items-center gap-2">
           <Icon name="edit" @click="handleAction('edit', item)" />
-          <Icon v-if="!item.is_hq" name="archive" @click="handleAction('archive', item)" />
+          <Icon
+            v-if="!item.is_hq"
+            name="archive"
+            :class="
+              currentLocation?.uid === item.uid
+                ? '!cursor-not-allowed !opacity-30'
+                : 'cursor-pointer'
+            "
+            @click="handleAction('archive', item)"
+          />
         </div>
       </template>
 
@@ -108,7 +117,7 @@ import { TLocation } from "../types"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
 import AddLocationModal from "../components/AddLocationModal.vue"
-import { onMounted, ref, watch } from "vue"
+import { computed, onMounted, ref, watch } from "vue"
 import { useDeleteLocation, useGetLocations } from "../api"
 import { displayError } from "@/utils/error-handler"
 import DeleteConfirmationModal from "@components/DeleteConfirmationModal.vue"
@@ -116,6 +125,7 @@ import { toast } from "@/composables/useToast"
 import { useMediaQuery } from "@vueuse/core"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import { useRoute } from "vue-router"
+import { useSettingsStore } from "../store"
 
 const showModal = ref(false)
 const openArchive = ref(false)
@@ -125,10 +135,20 @@ const isMobile = useMediaQuery("(max-width: 768px)")
 const { data: locations, isPending, error, refetch } = useGetLocations()
 watch(error, displayError)
 
+const currentLocation = computed(() => useSettingsStore().activeLocation)
+
 const handleAction = (action: "archive" | "edit", item: TLocation) => {
   selectedLocation.value = item
   if (action === "edit") showModal.value = true
-  if (action === "archive") openArchive.value = true
+  if (action === "archive") {
+    if (item.is_hq) {
+      return toast.error("HQ location cannot be archived")
+    }
+    if (item.uid === currentLocation.value?.uid) {
+      return toast.info("You cannot archive the active location")
+    }
+    openArchive.value = true
+  }
 }
 
 const { mutate: archiveLocation, isPending: isArchiving } = useDeleteLocation()

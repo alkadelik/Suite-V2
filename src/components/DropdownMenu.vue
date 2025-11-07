@@ -112,6 +112,8 @@ interface DropdownItem {
   iconClass?: string
   /** Whether the item is disabled */
   disabled?: boolean
+  /** Whether the item is active/selected */
+  active?: boolean
   /** Function to execute when item is clicked */
   action?: () => void
   /** Whether this item is a divider */
@@ -245,7 +247,9 @@ const getItemClasses = (item: DropdownItem): string => {
 
   const stateClasses = item.disabled
     ? "text-core-300 cursor-not-allowed"
-    : "text-core-800 hover:bg-core-25 focus:bg-core-100 focus:outline-none"
+    : item.active
+      ? "bg-primary-50 text-primary-700 hover:bg-primary-100"
+      : "text-core-800 hover:bg-core-25 focus:bg-core-100 focus:outline-none"
 
   return [base, stateClasses, item.class || ""].filter(Boolean).join(" ")
 }

@@ -94,7 +94,7 @@ const defaultIcons = {
 
 // Default info messages for each variant
 const defaultInfoMessages = {
-  warning: "You can reverse this action by reactivating the member.",
+  warning: "You can reverse this action later.",
   error: "This action cannot be reversed.",
   success: "This action will be completed immediately.",
 }

@@ -35,9 +35,8 @@ const PAYMENT_STATUS_OPTIONS = [
 
 const PAYMENT_MODE = [
   { label: "Cash", value: "cash" },
-  { label: "Credit Card", value: "credit_card" },
-  { label: "Bank Transfer", value: "bank_transfer" },
-  { label: "Mobile Money", value: "mobile_money" },
+  { label: "Credit Card", value: "pos" },
+  { label: "Bank Transfer", value: "transfer" },
 ]
 
 // Local reactive state
