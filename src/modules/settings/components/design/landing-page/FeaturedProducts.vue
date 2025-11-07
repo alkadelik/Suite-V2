@@ -81,7 +81,7 @@ const productOptions = computed(() => {
   if (!productInventories.value?.results) return []
   return productInventories.value.results.map((product) => ({
     label: product.name,
-    value: product.uid,
+    value: product.uid || "",
   }))
 })
 

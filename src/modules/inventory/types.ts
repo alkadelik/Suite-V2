@@ -170,7 +170,7 @@ export interface IProductVariant {
   batch_number: string
   expiry_date: string
   attributes: IProductAttribute[]
-  uid: string
+  uid?: string
 }
 
 // Variant attribute
