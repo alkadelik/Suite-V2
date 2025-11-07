@@ -34,7 +34,7 @@
 
     <!-- Home & Get Started -->
     <div class="space-y-1 px-4 py-2">
-      <SidebarLink icon="candle" label="Get Started" to="/onboarding" />
+      <SidebarLink v-if="!isLive" icon="candle" label="Get Started" to="/onboarding" />
       <SidebarLink icon="house" label="Home" to="/dashboard" />
     </div>
 
@@ -101,6 +101,7 @@ import LocationDropdown from "./LocationDropdown.vue"
 defineProps<{
   mobileSidebarOpen: boolean
   salesSuites: Array<{ icon: string; label: string; to: string }>
+  isLive: boolean
 }>()
 
 defineEmits<{ logout: [value: boolean]; upgrade: [] }>()
