@@ -12,6 +12,7 @@
         step="0.01"
         min="0"
         required
+        :disabled="props.disablePrice"
       />
 
       <!-- Stock Section -->
@@ -85,6 +86,7 @@
               step="0.01"
               min="0"
               size="sm"
+              :disabled="props.disablePrice"
               @update:model-value="updateVariantField(index, 'price', removeLeadingZeros($event))"
               @blur="handlePriceBlur(index, $event)"
             />
@@ -119,8 +121,8 @@
       </div>
     </div>
 
-    <!-- Weight Section (hidden when Weight attribute is in variants - auto-populated) -->
-    <div v-if="!hasWeightAttributeInVariants" class="space-y-4">
+    <!-- Weight Section (hidden when Weight attribute is in variants - auto-populated, or when hideWeight prop is true) -->
+    <div v-if="!hasWeightAttributeInVariants && !props.hideWeight" class="space-y-4">
       <SelectField
         v-model="selectedDimension"
         :options="dimensionOptions"
@@ -191,6 +193,10 @@ interface Props {
   productName?: string
   /** Hide the stock/quantity field (for variant-details edit mode) */
   hideStock?: boolean
+  /** Disable the price field (for variants edit mode) */
+  disablePrice?: boolean
+  /** Hide the weight section (for variants edit mode) */
+  hideWeight?: boolean
   /** Deleted variants to display (only in edit mode) - no UIDs, just attributes */
   deletedVariants?: IProductVariant[]
 }
