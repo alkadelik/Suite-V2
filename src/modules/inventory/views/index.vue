@@ -193,7 +193,7 @@
 import DataTable from "@components/DataTable.vue"
 import { TProduct, type IInventoryTransferRequest } from "../types"
 import { PRODUCT_COLUMNS } from "../constants"
-import { ref, computed, onMounted } from "vue"
+import { ref, computed, onMounted, watch } from "vue"
 import Icon from "@components/Icon.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import Chip from "@components/Chip.vue"
@@ -375,6 +375,9 @@ const handleDeleteProduct = () => {
 // Function to handle opening add product drawer
 const openAddProductDrawer = () => {
   showProductFormDrawer.value = true
+  if (route.query.create !== "true") {
+    router.replace({ name: "Inventory", query: { create: "true" } })
+  }
 }
 
 const handleCategoryCreated = (category: { label: string; value: string }) => {
@@ -401,5 +404,11 @@ const handleRequestSuccess = () => {
 
 onMounted(() => {
   if (route.query.create === "true") openAddProductDrawer()
+})
+
+watch(showProductFormDrawer, (isOpen) => {
+  if (!isOpen && route.query.create === "true") {
+    router.replace({ name: "Inventory", query: {} })
+  }
 })
 </script>

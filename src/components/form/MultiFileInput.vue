@@ -147,6 +147,7 @@ const props = withDefaults(defineProps<MultiImageUploadProps>(), {
     "image/webp",
     "image/heic",
     "image/heif",
+    "image/avif",
   ],
   productImageMode: false,
   enabledSlots: undefined,

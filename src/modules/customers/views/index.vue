@@ -74,9 +74,7 @@
         @row-click="handleRowClick"
       >
         <template #cell:name="{ item }">
-          <div>
-            <Avatar v-if="item.full_name" :name="item?.full_name" />
-          </div>
+          <Avatar v-if="item.full_name" :name="item?.full_name" :extra-text="true" />
         </template>
 
         <template #cell:lastOrderDate="{ value }">
@@ -202,14 +200,15 @@
     <CustomerFormDrawer
       v-model="showCustomerFormDrawer"
       :mode="formMode"
-      :customer="customer"
+      :customer="formMode === 'edit' && customerData?.data ? customerData.data : customer"
       @close="showCustomerFormDrawer = false"
       @refresh="refetch()"
     />
     <ViewCustomerDrawer
       v-model="showViewCustomerDrawer"
       :mode="formMode"
-      :customer="customer"
+      :customer-data="customerData?.data || null"
+      :loading="!!customerUid && !customerData"
       @close="showViewCustomerDrawer = false"
     />
   </div>
@@ -234,14 +233,22 @@ import ExportCustomerModal from "../components/ExportCustomerModal.vue"
 import ViewCustomerDrawer from "../components/ViewCustomerDrawer.vue"
 import MetricsGrid from "@components/MetricsGrid.vue"
 import SectionHeader from "@components/SectionHeader.vue"
-import { useGetCustomers, useDeleteCustomer } from "../api"
+import { useGetCustomers, useDeleteCustomer, useGetCustomer } from "../api"
 import { displayError } from "@/utils/error-handler"
 import EmptyState from "@components/EmptyState.vue"
-import { useRoute } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
+
+// Router
+const route = useRoute()
+const router = useRouter()
 
 // API calls
 const { data: customersData, isLoading, refetch } = useGetCustomers()
 const { mutate: deleteCustomer, isPending: isDeleting } = useDeleteCustomer()
+
+// Get individual customer data when customerUid is set
+const customerUid = ref<string>("")
+const { data: customerData } = useGetCustomer(customerUid, true)
 
 // Component state
 const formMode = ref<TCustomerFormMode>("add")
@@ -321,6 +328,8 @@ const customerMetrics = computed(() => {
 const handleRowClick = (clickedCustomer: ICustomer) => {
   customer.value = { ...clickedCustomer }
   formMode.value = "view"
+  customerUid.value = clickedCustomer.uid
+  router.replace({ query: { uid: clickedCustomer.uid } })
   showViewCustomerDrawer.value = true
 }
 
@@ -394,6 +403,8 @@ const handleAction = (action: "archive" | "edit" | "view" | "delete", item: ICus
   if (action === "edit") {
     customer.value = { ...item }
     formMode.value = "edit"
+    customerUid.value = item.uid
+    router.replace({ query: { uid: item.uid } })
     setTimeout(() => {
       showCustomerFormDrawer.value = true
     }, 0)
@@ -403,6 +414,8 @@ const handleAction = (action: "archive" | "edit" | "view" | "delete", item: ICus
   } else if (action === "view") {
     customer.value = item
     formMode.value = "view"
+    customerUid.value = item.uid
+    router.replace({ query: { uid: item.uid } })
     showViewCustomerDrawer.value = true
   }
 }
@@ -440,9 +453,28 @@ watch(
   { immediate: true },
 )
 
-const route = useRoute()
+watch(showViewCustomerDrawer, (isOpen) => {
+  if (!isOpen && route.query.uid) {
+    router.replace({ query: {} })
+    customerUid.value = ""
+  }
+})
+
+// Watch for edit drawer state changes to sync query params
+watch(showCustomerFormDrawer, (isOpen) => {
+  if (!isOpen && route.query.uid) {
+    router.replace({ query: {} })
+    customerUid.value = ""
+  }
+})
 
 onMounted(() => {
-  if (route.query.create === "true") openAddCustomerDrawer()
+  if (route.query.create === "true") {
+    openAddCustomerDrawer()
+  } else if (route.query.uid && typeof route.query.uid === "string") {
+    customerUid.value = route.query.uid
+    formMode.value = "view"
+    showViewCustomerDrawer.value = true
+  }
 })
 </script>

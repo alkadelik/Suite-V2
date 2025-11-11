@@ -1,14 +1,18 @@
 <template>
-  <div class="px-2 py-4 md:p-4">
-    <SectionHeader size="lg" :title="`${greetings}, ${user?.first_name} 👋`" />
+  <div class="px-4 py-4 md:p-4">
+    <SectionHeader
+      size="lg"
+      :title="`${greetings}, ${user?.first_name} 👋`"
+      subtitle="What would you like to do today?"
+    />
 
-    <div class="my-4 rounded-xl bg-white px-0 pb-2 md:my-8 md:p-6">
-      <h2 class="mb-3 text-lg font-semibold md:text-xl">Quick Actions</h2>
-      <div class="grid grid-cols-3 gap-2 md:gap-4 xl:grid-cols-5">
+    <div class="my-4 rounded-xl bg-white px-0 pb-2 md:my-6 md:p-4">
+      <!-- <h2 class="md:text-md mb-3 text-sm font-semibold">Quick Actions</h2> -->
+      <div class="grid grid-cols-3 gap-3 md:gap-4 xl:grid-cols-5">
         <div
           v-for="action in quickActions.slice(0, isMobile ? 3 : 5)"
           :key="action.label"
-          class="cursor-pointer rounded-lg border px-2 py-3 text-center md:border-0 md:p-4 md:text-left"
+          class="cursor-pointer rounded-2xl border px-2 py-3 text-center md:border-0 md:p-4 md:text-left"
           :class="action.color"
           @click="action.action && action.action()"
         >

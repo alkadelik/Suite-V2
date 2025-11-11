@@ -66,7 +66,6 @@
 
       <!-- Product Images Gallery -->
       <ProductImageGallery
-        v-if="product?.data.images && product.data.images.length > 0"
         :images="sortedProductImages"
         :product-name="product?.data.name"
         @open-images-edit="openImagesEditDrawer"
@@ -76,6 +75,7 @@
 
       <ProductOverview
         v-if="activeTab === 'overview' && product"
+        class="mt-6"
         :product="product.data"
         :product-metrics="productMetrics"
         :loading="isPending"
