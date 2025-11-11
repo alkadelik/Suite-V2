@@ -1,6 +1,6 @@
 import { defineStore } from "pinia"
-import { TLocation } from "./types"
-import { ref } from "vue"
+import { IStoreDetails, TLocation } from "./types"
+import { computed, ref } from "vue"
 
 export const useSettingsStore = defineStore(
   "settings",
@@ -9,6 +9,11 @@ export const useSettingsStore = defineStore(
     const locations = ref<TLocation[] | null>(null)
     const activeLocation = ref<TLocation | null>(null)
     const showPlanUpgradeModal = ref(false)
+    const storeDetails = ref<IStoreDetails | null>(null)
+
+    const storefrontUrl = computed(
+      () => `buy.leyyow.com/${storeDetails.value?.slug || "your-store"}`,
+    )
 
     // Actions
     const setLocations = (locs: TLocation[]) => {
@@ -27,6 +32,10 @@ export const useSettingsStore = defineStore(
       showPlanUpgradeModal.value = value
     }
 
+    const setStoreDetails = (details: IStoreDetails) => {
+      storeDetails.value = details
+    }
+
     return {
       locations,
       activeLocation,
@@ -34,6 +43,9 @@ export const useSettingsStore = defineStore(
       setActiveLocation,
       showPlanUpgradeModal,
       setPlanUpgradeModal,
+      setStoreDetails,
+      storeDetails,
+      storefrontUrl,
     }
   },
   { persist: true },

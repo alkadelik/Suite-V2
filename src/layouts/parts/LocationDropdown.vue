@@ -29,9 +29,17 @@ const currentLocation = computed(() => useSettingsStore().activeLocation)
 const user = computed(() => useAuthStore().user)
 const { data: storeDetails } = useGetStoreDetails(user.value?.store_uid || "")
 
-const storefrontUrl = computed(() => {
-  return `buy.leyyow.com/${storeDetails.value?.slug || "your-store"}`
-})
+watch(
+  storeDetails,
+  (details) => {
+    if (details) {
+      useSettingsStore().setStoreDetails(details)
+    }
+  },
+  { immediate: true },
+)
+
+const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
 
 watch(
   locationItems,
@@ -64,16 +72,18 @@ const onLocationSelect = (id: string) => {
         <button
           type="button"
           :class="[
-            'bg-core-100 text-core-800 hover:bg-core-200 w-full rounded-xl px-2 py-1.5',
+            'lg:bg-core-100 text-core-800 hover:bg-core-200 w-full rounded-xl px-2 py-1.5',
             'flex items-center gap-2 text-sm font-medium',
           ]"
         >
           <Avatar :name="storeDetails?.name || ''" size="sm" />
-          {{ currentLocation?.name }}
+          <span class="max-w-[120px] truncate">
+            {{ currentLocation?.name }}
+          </span>
           <Icon
             name="arrow-down-double"
             size="20"
-            :class="['ml-auto', 'transition-transform', open ? 'rotate-180' : '']"
+            :class="['ml-auto !flex-shrink-0 transition-transform', open ? 'rotate-180' : '']"
           />
         </button>
       </template>

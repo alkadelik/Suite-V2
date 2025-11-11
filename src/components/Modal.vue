@@ -112,7 +112,7 @@ const overlayClasses = computed(() => {
     case "fullscreen":
       return ""
     case "bottom-nav":
-      return "flex items-end justify-center md:items-center"
+      return "flex items-end justify-center lg:items-center"
     case "centered":
     default:
       return "flex items-center justify-center"

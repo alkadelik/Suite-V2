@@ -8,7 +8,7 @@
         <div
           v-for="action in quickActions.slice(0, isMobile ? 3 : 5)"
           :key="action.label"
-          class="cursor-pointer rounded-lg px-2 py-3 text-center md:p-4 md:text-left"
+          class="cursor-pointer rounded-lg border px-2 py-3 text-center md:p-4 md:text-left xl:border-0"
           :class="action.color"
           @click="action.action && action.action()"
         >

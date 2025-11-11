@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue"
+import { computed, onMounted, ref } from "vue"
 import { useRouter } from "vue-router"
 import Icon from "@components/Icon.vue"
 import BackButton from "@components/BackButton.vue"
 import LogoutModal from "@components/core/LogoutModal.vue"
+import { clipboardCopy } from "@/utils/others"
+import { useSettingsStore } from "../store"
 
 const router = useRouter()
 
@@ -50,6 +52,8 @@ const toggleExpand = (label: string): void => {
 }
 
 const openLogout = ref(false)
+
+const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
 </script>
 
 <template>
@@ -59,7 +63,15 @@ const openLogout = ref(false)
     >
       <BackButton to="/dashboard" :center-on-mobile="true" />
       <h2 class="mt-3 text-2xl font-bold">Settings</h2>
-      <p>buy.leyyow.com</p>
+      <div class="flex min-w-0 items-center gap-2 text-sm text-gray-600">
+        <p class="truncate">{{ storefrontUrl }}</p>
+        <Icon
+          name="copy"
+          size="24"
+          class="text-primary-600 shrink-0 cursor-pointer"
+          @click="clipboardCopy('https://' + storefrontUrl)"
+        />
+      </div>
     </header>
     <div class="flex flex-col">
       <template v-for="link in settingsLinks" :key="link.path">
