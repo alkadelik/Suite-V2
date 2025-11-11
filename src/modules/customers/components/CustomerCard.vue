@@ -36,13 +36,10 @@
 <script setup lang="ts">
 import Icon from "@components/Icon.vue"
 import { getInitials } from "@/utils/format-strings"
+import { ICustomer } from "../types"
 
 interface CustomerCardProps {
-  customer: {
-    full_name: string
-    email?: string | null
-    phone?: string
-  }
+  customer: ICustomer
   class?: string
 }
 

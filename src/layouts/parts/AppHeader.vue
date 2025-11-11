@@ -28,16 +28,15 @@
         <Icon name="bell" size="20" />
       </button>
       <!-- Settings -->
-      <button class="rounded-xl p-2 hover:bg-gray-100" @click="$router.push('/settings')">
+      <button
+        v-if="!isMobile"
+        class="rounded-xl p-2 hover:bg-gray-100"
+        @click="$router.push('/settings')"
+      >
         <Icon name="setting" size="20" />
       </button>
       <!-- User or CTA -->
-      <Avatar
-        v-if="isMobile"
-        name="John Doe"
-        clickable
-        @click="$router.push('/settings/profile')"
-      />
+      <Avatar v-if="isMobile" name="John Doe" clickable @click="$router.push('/settings')" />
       <DropdownMenu v-else :items="actionMenuItems">
         <template #trigger>
           <AppButton size="md" class="!ring-primary-200 !rounded-full !ring-4" icon="add-circle" />
