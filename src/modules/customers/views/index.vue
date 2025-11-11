@@ -74,9 +74,7 @@
         @row-click="handleRowClick"
       >
         <template #cell:name="{ item }">
-          <div>
-            <Avatar v-if="item.full_name" :name="item?.full_name" />
-          </div>
+          <Avatar v-if="item.full_name" :name="item?.full_name" :extra-text="true" />
         </template>
 
         <template #cell:lastOrderDate="{ value }">
