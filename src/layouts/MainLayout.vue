@@ -58,17 +58,30 @@
         <!-- Bottom navigation for mobile -->
         <nav
           v-if="isMobile"
-          class="fixed right-0 bottom-0 left-0 z-30 border-t border-gray-200 bg-white"
+          class="fixed right-0 bottom-0 left-0 border-t border-gray-200 bg-white"
+          :class="openMore || openActions ? 'z-[1500]' : 'z-30'"
         >
           <div class="flex items-center justify-around px-2 py-2">
-            <SidebarLink v-for="link in SALES_SUITES.slice(0, 2)" :key="link.label" v-bind="link" />
+            <SidebarLink icon="house" label="Home" to="/dashboard" />
+            <SidebarLink v-for="link in SALES_SUITES.slice(0, 1)" :key="link.label" v-bind="link" />
             <AppButton
               size="sm"
               class="!ring-primary-200 !rounded-full !ring-4"
               icon="add-circle"
+              @click="
+                () => {
+                  openMore = false
+                  openActions = !openActions
+                }
+              "
             />
-            <SidebarLink v-for="link in SALES_SUITES.slice(2, 3)" :key="link.label" v-bind="link" />
-            <SidebarLink label="More" icon="six-dots" @click="openMore = true" />
+            <SidebarLink v-for="link in SALES_SUITES.slice(1, 2)" :key="link.label" v-bind="link" />
+            <SidebarLink
+              label="More"
+              icon="more"
+              :class="openMore ? '!text-primary-700' : ''"
+              @click="openMore = !openMore"
+            />
           </div>
         </nav>
       </div>
@@ -90,18 +103,33 @@
     />
 
     <MobileMenuDrawer :open="openMore" @close="openMore = false" />
+
+    <MobileQuickActionsModal :open="openActions" @close="openActions = false" />
+
+    <!-- Location switch confirmation -->
+    <ConfirmationModal
+      v-model="confirmSwitch"
+      header="Switch Location?"
+      :paragraph="`Are you sure you want to switch to ${pendingLocation?.name?.toUpperCase()}? This will reload the page.`"
+      info-message="You can reverse this action later by switching to another location."
+      action-label="Switch Location"
+      :loading="false"
+      @confirm="confirmLocationSwitch"
+      @cancel="cancelLocationSwitch"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
 import AppButton from "@components/AppButton.vue"
+import ConfirmationModal from "@components/ConfirmationModal.vue"
 import SidebarLink from "./parts/SidebarLink.vue"
 import { useMediaQuery } from "@vueuse/core"
 import LogoutModal from "@components/core/LogoutModal.vue"
 import AppHeader from "./parts/AppHeader.vue"
 import AppSidebar from "./parts/AppSidebar.vue"
-import { useGetLocations, useGetProfile } from "@modules/settings/api"
+import { useGetProfile } from "@modules/settings/api"
 import { useSettingsStore } from "@modules/settings/store"
 import { useAuthStore } from "@modules/auth/store"
 import { useGetCategories, useGetAttributes } from "@modules/inventory/api"
@@ -115,12 +143,18 @@ import TrialActivationModal from "@modules/shared/components/TrialActivationModa
 import MobileMenuDrawer from "./parts/MobileMenuDrawer.vue"
 import Icon from "@components/Icon.vue"
 import { useGetLiveStatus } from "@modules/shared/api"
+import { useLocationSwitch } from "@/composables/useLocationSwitch"
+import MobileQuickActionsModal from "./parts/MobileQuickActionsModal.vue"
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
 const mobileSidebarOpen = ref(false)
 const logout = ref(false)
 const openMore = ref(false)
+const openActions = ref(false)
+
+const { confirmSwitch, pendingLocation, confirmLocationSwitch, cancelLocationSwitch } =
+  useLocationSwitch()
 
 const sidebarPadding = computed(() => (isMobile.value ? "lg:pl-72" : "pl-72"))
 
@@ -131,10 +165,9 @@ const SALES_SUITES = [
   { icon: "people", label: "Customers", to: "/customers" },
 ]
 
-const { setLocations, activeLocation, setActiveLocation, setPlanUpgradeModal } = useSettingsStore()
+const { setPlanUpgradeModal } = useSettingsStore()
 const { updateAuthUser } = useAuthStore()
 
-const { data: locations } = useGetLocations()
 const { data: categories } = useGetCategories()
 const { data: attributes } = useGetAttributes()
 const { data: profile } = useGetProfile()
@@ -144,28 +177,6 @@ const showPlans = computed(() => useSettingsStore().showPlanUpgradeModal)
 const storeSlug = useAuthStore().user?.store_slug || ""
 const { data: liveStatusData } = useGetLiveStatus(storeSlug)
 const isLive = computed(() => liveStatusData.value?.data?.is_live || false)
-
-watch(
-  locations,
-  (newLocations) => {
-    if (newLocations) {
-      const locs = newLocations.results ?? []
-      setLocations(locs)
-      setActiveLocation(locs[0] ?? null)
-    }
-  },
-  { immediate: true },
-)
-
-watch(
-  () => activeLocation,
-  (newLoc) => {
-    if (newLoc) {
-      console.log("Active location changed:", newLoc)
-      window.location.reload()
-    }
-  },
-)
 
 const openTrial = ref(false)
 

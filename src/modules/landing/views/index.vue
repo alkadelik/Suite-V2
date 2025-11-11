@@ -7,6 +7,7 @@ import "aos/dist/aos.css"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
+import ConsentBanner from "@modules/shared/components/ConsentBanner.vue"
 
 const images = Array.from({ length: 5 }, (_, index) => ({
   id: index + 1,
@@ -480,5 +481,8 @@ onMounted(() => {
         </div>
       </div>
     </section>
+
+    <!-- Consent Banner -->
+    <ConsentBanner />
   </div>
 </template>

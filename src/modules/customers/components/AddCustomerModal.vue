@@ -1,5 +1,5 @@
 <template>
-  <Modal :open="open" title="Add Customer'" max-width="xl" body-class="!p-0" @close="emit('close')">
+  <Modal :open="open" title="Add Customer" max-width="xl" body-class="!p-0" @close="emit('close')">
     <AppForm :schema="schema" @submit="onSubmit" v-slot="{ meta }" class="flex h-full flex-col">
       <div class="m flex-1 space-y-4 px-4 py-4 md:px-6">
         <div class="grid grid-cols-2 gap-4 md:gap-6">
@@ -77,10 +77,14 @@ const schema = computed(() => {
 
 const onSubmit = (values: FormValues) => {
   const payload: Partial<ICustomerFormPayload> = {
-    first_name: values.first_name.trim(),
-    last_name: values.last_name.trim(),
-    email: values.email.trim().toLowerCase(),
-    phone: formatPhoneNumber(values.phone.trim()),
+    first_name: values.first_name?.trim(),
+    last_name: values.last_name?.trim(),
+  }
+  if (values.email) {
+    payload.email = values.email.trim().toLowerCase()
+  }
+  if (values.phone) {
+    payload.phone = formatPhoneNumber(values.phone.trim())
   }
 
   createCustomer(payload as ICustomerFormPayload, {

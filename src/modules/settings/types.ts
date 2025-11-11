@@ -207,6 +207,7 @@ export interface ThemeSection {
   storefront: string
   section_type: SectionType
   section_type_display: string
+  selection_mode: "default" | "custom"
   title: string
   subtitle: string | null
   content: string | null

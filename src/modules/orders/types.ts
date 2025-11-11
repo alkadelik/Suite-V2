@@ -83,6 +83,7 @@ export interface OrderPayload {
   coupon_code: string | null
   payment_status: "unpaid" | "paid" | "partially_paid"
   payment_amount: string | number
+  payment_source?: string
   items: OrderItemPayload[]
 }
 

@@ -208,6 +208,6 @@ const dotClasses = computed(() => {
 })
 
 const labelClasses = computed(() => {
-  return ["truncate", "flex-shrink-0"]
+  return ["truncate"]
 })
 </script>

@@ -23,9 +23,7 @@ export const useAuthStore = defineStore(
 
     const updateAuthUser = (userData: Partial<IUser>) => {
       if (user.value) {
-        console.log("Updating auth user with:", userData)
         user.value = { ...user.value, ...userData }
-        console.log("Updated user is now:", user.value)
       }
     }
 

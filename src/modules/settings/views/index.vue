@@ -10,7 +10,15 @@
         >
           <BackButton to="/dashboard" />
           <h2 class="mt-3 text-2xl font-bold">Settings</h2>
-          <p>shop.leyyow.com</p>
+          <div class="flex min-w-0 items-center gap-2 text-sm text-gray-600">
+            <p class="truncate">{{ storefrontUrl }}</p>
+            <Icon
+              name="copy"
+              size="24"
+              class="text-primary-600 shrink-0 cursor-pointer"
+              @click="clipboardCopy('https://' + storefrontUrl)"
+            />
+          </div>
         </header>
 
         <BackButton
@@ -71,6 +79,8 @@ import { computed, watch } from "vue"
 import PlansModal from "../components/PlansModal.vue"
 import { useGetRoles } from "@modules/shared/api"
 import { updateStoreRoleOptions } from "@modules/shared/constants"
+import { clipboardCopy } from "@/utils/others"
+import Icon from "@components/Icon.vue"
 
 const route = useRoute()
 const { data: rolesData } = useGetRoles()
@@ -99,4 +109,5 @@ const LINKS = [
 
 const { setPlanUpgradeModal } = useSettingsStore()
 const showPlans = computed(() => useSettingsStore().showPlanUpgradeModal)
+const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
 </script>

@@ -7,9 +7,11 @@
         alt="Leyyow"
         class="h-8 w-auto"
       />
-      <div class="flex-1" />
+      <div class="hidden flex-1 lg:block" />
 
-      <LocationDropdown v-if="isMobile" class="!w-[160px]" />
+      <div v-if="isMobile" class="mx-auto">
+        <LocationDropdown />
+      </div>
 
       <!-- Storefront status -->
       <Chip v-if="!isMobile" color="alt" size="md" label="Storefront" class="!pr-1">

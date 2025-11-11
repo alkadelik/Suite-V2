@@ -5,6 +5,7 @@ import Avatar from "@components/Avatar.vue"
 import Chip from "@components/Chip.vue"
 import Drawer from "@components/Drawer.vue"
 import Icon from "@components/Icon.vue"
+import { useSettingsStore } from "@modules/settings/store"
 import { computed } from "vue"
 
 defineProps<{
@@ -15,9 +16,9 @@ const emit = defineEmits<{
   (e: "close"): void
 }>()
 
-const storefrontUrl = computed(() => {
-  return `shop.leyyow.com/smiles-socks-headquarters`
-})
+const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
+const storeDetails = computed(() => useSettingsStore().storeDetails)
+const currentLocation = computed(() => useSettingsStore().activeLocation)
 
 const quickActions = [
   { label: "Popups", icon: "calendar-tick", to: "/popups" },
@@ -41,11 +42,15 @@ const quickActions = [
       <Icon name="close-circle" size="20" @click="emit('close')" />
     </div>
     <div class="flex items-center gap-4">
-      <Avatar name="Smiles HQ" backgroundColor="var(--color-core-950)" class="shrink-0" />
+      <Avatar
+        :name="storeDetails?.name || ''"
+        backgroundColor="var(--color-core-950)"
+        class="shrink-0"
+      />
       <div class="min-w-0 flex-1">
         <div class="mt-2 flex items-end gap-2">
-          <p class="truncate font-medium">Smiles Socks...</p>
-          <Chip label="HQ" class="shrink-0" />
+          <p class="truncate font-medium">{{ storeDetails?.name }}</p>
+          <Chip v-if="currentLocation?.is_hq" label="HQ" class="shrink-0" />
         </div>
         <div class="flex min-w-0 items-center gap-2 text-sm text-gray-600">
           <p class="truncate">{{ storefrontUrl }}</p>
@@ -65,10 +70,11 @@ const quickActions = [
           v-for="action in quickActions"
           :key="action.label"
           class="border-primary-200 text-primary-700 cursor-pointer rounded-xl border bg-white px-2 py-3 text-center"
+          @click="$router.push(action.to)"
         >
           <div class="mb-1 flex items-center">
             <div
-              class="border-core-200 bg-bloom-50 mx-auto flex size-10 items-center justify-center rounded-xl border p-2 md:mx-0"
+              class="border-core-200 bg-bloom-50 mx-auto flex size-10 items-center justify-center rounded-full border p-2"
             >
               <Icon :name="action.icon" size="28" />
             </div>

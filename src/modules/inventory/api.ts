@@ -257,6 +257,14 @@ export function useGetProductCatalogs() {
   })
 }
 
+export function useGetProductVariants() {
+  return useApiQuery<TPaginatedResponse<IProductVariant>["data"]>({
+    url: `/inventory/variants/`,
+    key: "productVariants",
+    selectData: true,
+  })
+}
+
 /** get inventory transfer requests (for HQ to view pending requests) */
 export function useGetTransferRequests(params?: MaybeRefOrGetter<Record<string, string | number>>) {
   return useQuery({
