@@ -63,7 +63,7 @@ const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
     >
       <BackButton to="/dashboard" :center-on-mobile="true" />
       <h2 class="mt-3 text-2xl font-bold">Settings</h2>
-      <div class="flex min-w-0 items-center gap-2 text-sm text-gray-600">
+      <div class="mx-auto flex min-w-0 items-center gap-2 text-sm text-gray-600 lg:mx-0">
         <p class="truncate">{{ storefrontUrl }}</p>
         <Icon
           name="copy"
