@@ -300,7 +300,7 @@ export function useVariantConfiguration(
       const newVariant: IProductVariant = {
         name: matchingVariant?.name || variantName,
         sku: matchingVariant?.sku || `SKU-${Date.now()}-${index + 1}`,
-        price: matchingVariant?.price || "",
+        price: matchingVariant ? (matchingVariant.price ?? "0") : "0",
         promo_price: matchingVariant?.promo_price || "",
         promo_expiry:
           matchingVariant?.promo_expiry ||

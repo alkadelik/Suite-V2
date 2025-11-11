@@ -53,6 +53,8 @@
             v-model="variants"
             :product-name="form.name"
             :hide-stock="true"
+            :disable-price="true"
+            :hide-weight="true"
             :deleted-variants="deletedVariants"
           />
 
@@ -841,17 +843,15 @@ const handleSubmit = async () => {
           }
         })
 
-        // Separate current variants into new (to add) and existing (to update)
+        // Separate current variants into new (to add) - only variants without existing UIDs
         const toAdd: IProductVariant[] = []
-        const toUpdate: Array<IProductVariant & { uid: string }> = []
 
         variants.value.forEach((variant) => {
           if (!variant.attributes || variant.attributes.length === 0) {
             // Single variant case - check if it existed before
             const existingUid = originalVariantUids.value.values().next().value
-            if (existingUid) {
-              toUpdate.push({ ...variant, uid: existingUid })
-            } else {
+            if (!existingUid) {
+              // New variant - no existing UID
               toAdd.push(variant)
             }
             return
@@ -860,10 +860,7 @@ const handleSubmit = async () => {
           const key = generateVariantKey(variant.attributes)
           const existingUid = originalVariantUids.value.get(key)
 
-          if (existingUid) {
-            // Existing variant - add to update list
-            toUpdate.push({ ...variant, uid: existingUid })
-          } else {
+          if (!existingUid) {
             // New variant (attribute combination didn't exist before) - add to create list
             toAdd.push(variant)
           }
@@ -904,7 +901,6 @@ const handleSubmit = async () => {
         console.log("Bulk variant operations:", {
           to_delete: toDelete,
           to_add: mappedToAdd,
-          to_update: toUpdate.length,
         })
 
         // Step 1: Call bulk operations for deletions AND additions in same payload
@@ -921,59 +917,10 @@ const handleSubmit = async () => {
           )
         }
 
-        // Step 2: Update existing variants individually (happens after bulk operations)
-        // This ensures variants are deleted/added first, then existing ones are updated
-        if (toUpdate.length > 0) {
-          console.log(`Updating ${toUpdate.length} existing variants...`)
-          for (const variant of toUpdate) {
-            const payload: Omit<IProductVariant, "opening_stock"> = {
-              name: variant.name,
-              sku: variant.sku,
-              price: variant.price,
-              promo_price: variant.promo_price,
-              promo_expiry: variant.promo_expiry
-                ? typeof variant.promo_expiry === "object" &&
-                  variant.promo_expiry &&
-                  (variant.promo_expiry as object) instanceof Date
-                  ? (variant.promo_expiry as Date).toISOString()
-                  : variant.promo_expiry
-                : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-              cost_price: variant.cost_price,
-              weight: variant.weight,
-              length: variant.length,
-              width: variant.width,
-              height: variant.height,
-              reorder_point: variant.reorder_point || "0",
-              max_stock: variant.max_stock || "0",
-              is_active: variant.is_active ?? true,
-              is_default: variant.is_default ?? false,
-              batch_number: variant.batch_number,
-              expiry_date: variant.expiry_date
-                ? Object.prototype.toString.call(variant.expiry_date) === "[object Date]"
-                  ? (variant.expiry_date as unknown as Date).toISOString().split("T")[0]
-                  : variant.expiry_date
-                : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-              attributes: variant.attributes || [],
-            }
-
-            await new Promise<void>((resolve, reject) => {
-              updateVariant(
-                { uid: variant.uid, ...payload },
-                {
-                  onSuccess: () => resolve(),
-                  onError: (error: unknown) => reject(new Error(String(error))),
-                },
-              )
-            })
-          }
-          console.log(`All ${toUpdate.length} variants updated successfully`)
-        }
-
         // Show success message with comprehensive summary
         const changesSummary = []
         if (toDelete.length > 0) changesSummary.push(`${toDelete.length} deleted`)
         if (mappedToAdd.length > 0) changesSummary.push(`${mappedToAdd.length} added`)
-        if (toUpdate.length > 0) changesSummary.push(`${toUpdate.length} updated`)
 
         console.log("All variant operations completed:", changesSummary.join(", "))
 
