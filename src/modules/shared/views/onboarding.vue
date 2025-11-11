@@ -86,12 +86,15 @@ import Switch from "@components/form/Switch.vue"
 import Icon from "@components/Icon.vue"
 import LoadingIcon from "@components/LoadingIcon.vue"
 import { ref, computed } from "vue"
+import { useRouter } from "vue-router"
 import BankAccountModal from "../components/BankAccountModal.vue"
 import SetPickupModal from "../components/ConfigurePickupModal.vue"
 import VerifyIdentityModal from "../components/VerifyIdentityModal.vue"
 import ConfigureDeliveryModal from "../components/ConfigureDeliveryModal.vue"
 import { useGetLiveStatus } from "../api"
 import { useAuthStore } from "@modules/auth/store"
+
+const router = useRouter()
 
 const authStore = useAuthStore()
 const storeSlug = authStore.user?.store_slug || ""
@@ -139,6 +142,18 @@ const tasks = computed(() => {
       icon: "personalcard",
     },
     {
+      id: 5,
+      title: "Add a product",
+      completed: criteria?.products?.status || false,
+      subtext: "Upload a product and get ready for your first sale.",
+      isButton: true,
+      buttonLabel: "Add Product",
+      action: () => {
+        router.push({ name: "Inventory", query: { create: "true" } })
+      },
+      icon: "box",
+    },
+    {
       id: 3,
       title: "Allow Pickup?",
       completed: criteria?.delivery_options?.details?.pickup_location || false,
@@ -163,18 +178,6 @@ const tasks = computed(() => {
         showConfigureDeliveryModal.value = true
       },
       icon: "truck-fast",
-    },
-    {
-      id: 5,
-      title: "Add a product",
-      completed: criteria?.products?.status || false,
-      subtext: "Upload a product and get ready for your first sale.",
-      isButton: true,
-      buttonLabel: "Add Product",
-      action: () => {
-        // Handle button click
-      },
-      icon: "box",
     },
     {
       id: 6,

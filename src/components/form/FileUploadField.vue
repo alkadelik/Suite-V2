@@ -76,7 +76,7 @@
           <div class="border-core-400 rounded-xl border p-2"><Icon name="document-upload" /></div>
           <span class="text-core-800 text-sm">{{ props.label }}</span>
           <span class="text-core-600 text-xs"
-            >Supports: JPG, PNG, HEIC{{ props.productImageMode ? "" : ", PDF" }}</span
+            >Supports: JPG, PNG, HEIC, AVIF{{ props.productImageMode ? "" : ", PDF" }}</span
           >
         </div>
       </slot>

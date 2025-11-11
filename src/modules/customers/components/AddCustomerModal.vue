@@ -16,7 +16,7 @@
         <FormField
           name="phone"
           label="Phone Number (Optional)"
-          type="text"
+          type="tel"
           placeholder="Enter phone number"
         />
 

@@ -35,15 +35,20 @@
 
 <script setup lang="ts">
 import Icon from "@components/Icon.vue"
-import { ICustomer } from "../types"
 import { getInitials } from "@/utils/format-strings"
 
-const props = defineProps<{
-  customer: ICustomer
+interface CustomerCardProps {
+  customer: {
+    full_name: string
+    email?: string | null
+    phone?: string
+  }
   class?: string
-}>()
+}
+
+const props = defineProps<CustomerCardProps>()
 
 const emit = defineEmits<{
-  (e: "click", customer: ICustomer): void
+  (e: "click", customer: CustomerCardProps["customer"]): void
 }>()
 </script>
