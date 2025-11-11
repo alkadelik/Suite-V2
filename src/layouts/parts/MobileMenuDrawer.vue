@@ -70,7 +70,12 @@ const quickActions = [
           v-for="action in quickActions"
           :key="action.label"
           class="border-primary-200 text-primary-700 cursor-pointer rounded-xl border bg-white px-2 py-3 text-center"
-          @click="$router.push(action.to)"
+          @click="
+            () => {
+              $router.push(action.to)
+              $emit('close')
+            }
+          "
         >
           <div class="mb-1 flex items-center">
             <div

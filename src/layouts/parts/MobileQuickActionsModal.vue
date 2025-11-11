@@ -45,14 +45,19 @@ const quickActions = [
 </script>
 
 <template>
-  <Modal variant="bottom-nav" max-width="3xl" :open="open" @close="onClose">
+  <Modal variant="bottom-nav" max-width="5xl" :open="open" @close="onClose">
     <div class="grid grid-cols-3 gap-2 pb-28 md:gap-4 xl:grid-cols-5">
       <div
         v-for="action in quickActions"
         :key="action.label"
         class="cursor-pointer rounded-lg border px-2 py-3 text-center md:border-0 md:p-4 md:text-left"
         :class="action.color"
-        @click="action.action && action.action()"
+        @click="
+          () => {
+            action.action && action.action()
+            onClose()
+          }
+        "
       >
         <div class="mb-1 flex items-center justify-between md:mb-4">
           <div
