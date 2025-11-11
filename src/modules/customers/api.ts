@@ -1,10 +1,12 @@
 import baseApi, { TApiPromise } from "@/composables/baseApi"
 import { useMutation, useQuery } from "@tanstack/vue-query"
+import type { Ref } from "vue"
 import type {
   ICustomerFormPayload,
   ICustomersApiResponse,
   IExportPayload,
   TCustomer,
+  ICustomerDetail,
 } from "./types"
 
 /** Create customer api request */
@@ -37,6 +39,21 @@ export function useGetCustomers() {
     queryFn: async () => {
       const { data } = await baseApi.get<ICustomersApiResponse>("/customers/")
       return data
+    },
+  })
+}
+
+export function useGetCustomer(uid: Ref<string> | string, enabled = true) {
+  return useQuery<{ data: ICustomerDetail }>({
+    queryKey: ["customer", uid],
+    queryFn: async () => {
+      const uidValue = typeof uid === "string" ? uid : uid.value
+      const { data } = await baseApi.get<{ data: ICustomerDetail }>(`/customers/${uidValue}/`)
+      return data
+    },
+    enabled: () => {
+      const uidValue = typeof uid === "string" ? uid : uid.value
+      return !!uidValue && enabled
     },
   })
 }

@@ -3,13 +3,14 @@ import imageCompression from "browser-image-compression"
 
 /**
  * Composable for converting and compressing image files
- * Supports HEIC/HEIF conversion and automatic compression
+ * Supports HEIC/HEIF/AVIF conversion and automatic compression
  * Uses heic-to library with libheif 1.20.2 for better format support
  */
 export function useImageConverter() {
   /**
    * Converts and compresses an image file
    * - HEIC/HEIF files are converted to JPEG first
+   * - AVIF files are converted to JPEG first
    * - All images are compressed to max 500KB and 1920px
    * @param file - The original image file
    * @returns Promise resolving to processed file
@@ -23,10 +24,18 @@ export function useImageConverter() {
         file.name.toLowerCase().endsWith(".heic") ||
         file.name.toLowerCase().endsWith(".heif")
 
+      // Check for AVIF files by extension and MIME type
+      const isAvif = file.type === "image/avif" || file.name.toLowerCase().endsWith(".avif")
+
       if (isHeic) {
         // Convert HEIC to JPEG, then compress
         const convertedFile = await convertHeicToJpeg(file)
         return await compressImage(convertedFile)
+      }
+
+      if (isAvif) {
+        // Convert AVIF to JPEG using browser-image-compression
+        return await compressImageWithConversion(file, "image/jpeg")
       }
 
       // For standard formats, just compress

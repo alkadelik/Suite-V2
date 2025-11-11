@@ -105,7 +105,7 @@ import Drawer from "@components/Drawer.vue"
 import AppButton from "@/components/AppButton.vue"
 import AppForm from "@/components/form/AppForm.vue"
 import FormField from "@/components/form/FormField.vue"
-import type { ICustomer, TCustomerFormMode, ICustomerFormPayload } from "../types"
+import type { ICustomer, TCustomerFormMode, ICustomerFormPayload, ICustomerDetail } from "../types"
 import GooglePlacesAutocomplete from "@components/GooglePlacesAutocomplete.vue"
 import { useCreateCustomer, useUpdateCustomer } from "../api"
 import { displayError } from "@/utils/error-handler"
@@ -131,7 +131,7 @@ interface Props {
   /** Form mode - add new customer or edit existing */
   mode?: TCustomerFormMode
   /** Customer data for editing (required when mode is 'edit') */
-  customer?: ICustomer | null
+  customer?: ICustomer | ICustomerDetail | null
   /** Loading state for async operations */
   loading?: boolean
 }
@@ -206,19 +206,26 @@ const schema = computed(() => {
   })
 })
 
-// Compute initial values based on mode and customer data
 const initialValues = computed<FormValues>(() => {
   if (props.mode === "edit" && props.customer) {
+    const customerData = props.customer as Record<string, unknown>
+    const recentAddresses = customerData.recent_addresses as
+      | Array<{ is_default: boolean; address?: string; state?: string; city?: string }>
+      | undefined
+    const defaultAddress = recentAddresses?.find((addr) => addr.is_default) || null
+
     return {
-      first_name: props.customer.full_name?.split(" ")[0] || "",
-      last_name: props.customer.full_name?.split(" ")[1] || "",
+      first_name:
+        (customerData.first_name as string) || props.customer.full_name?.split(" ")[0] || "",
+      last_name:
+        (customerData.last_name as string) || props.customer.full_name?.split(" ")[1] || "",
       email: props.customer.email || "",
       phone: props.customer.phone || "",
-      address: "",
-      state: "",
-      city: "",
-      date_of_birth: "",
-      instagram_handle: "",
+      address: defaultAddress?.address || "",
+      state: defaultAddress?.state || "",
+      city: defaultAddress?.city || "",
+      date_of_birth: (customerData.date_of_birth as string) || "",
+      instagram_handle: (customerData.instagram_handle as string) || "",
     }
   }
 

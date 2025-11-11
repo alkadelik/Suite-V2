@@ -15,7 +15,7 @@
         />
         <div
           v-else
-          class="bg-primary-50 text-primary-500 flex h-full w-full cursor-pointer flex-col items-center justify-center"
+          class="flex h-full w-full cursor-pointer flex-col items-center justify-center bg-gray-50 text-gray-400"
           @click="emit('open-images-edit')"
         >
           <Icon name="gallery-add" size="32" class="mb-2" />
@@ -80,13 +80,13 @@
         />
         <div
           v-else
-          class="border-primary-300 bg-primary-50 text-primary-500 flex h-full w-full flex-col items-center justify-center gap-2 border-2 border-dashed text-center"
+          class="hover:border-primary-400 hover:bg-primary-50 hover:text-primary-500 flex h-full w-full flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 bg-gray-50 text-center text-gray-400 transition-colors"
         >
-          <div class="border-primary-400 rounded-xl border p-2">
+          <div class="rounded-xl border border-gray-400 p-2">
             <Icon name="gallery-add" size="24" />
           </div>
-          <span class="text-primary-600 text-sm font-medium">Upload Primary Image</span>
-          <span class="text-primary-400 text-xs">Supports: JPG, PNG, HEIC</span>
+          <span class="text-sm font-medium">Upload Primary Image</span>
+          <span class="text-xs">Supports: JPG, PNG, HEIC, AVIF</span>
         </div>
         <div
           v-if="!isPlaceholder(allImages[0])"

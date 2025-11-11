@@ -83,3 +83,85 @@ export interface ICustomersApiResponse {
   message?: string
   error?: boolean
 }
+
+export interface ICustomerAddress {
+  uid: string
+  customer: string
+  customer_name: string
+  name: string
+  phone: string
+  address: string
+  address_code: string
+  city: string
+  state: string
+  is_default: boolean
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface ICustomerOrderItem {
+  uid: string
+  variant: string
+  variant_name: string
+  variant_sku: string
+  product_name: string
+  popup_inventory: string | null
+  quantity: number
+  unit_price: string
+  total_price: string
+  fulfilment_status: string
+  qty_fulfilled: number
+  notes: string
+}
+
+export interface ICustomerOrder {
+  uid: string
+  order_number: string
+  source: string
+  store: string
+  store_name: string
+  location: string
+  location_name: string
+  total_amount: string
+  total_paid: number
+  outstanding_balance: number
+  payment_status: string
+  payment_status_display: string
+  fulfilment_status: string
+  fulfilment_status_display: string
+  delivery_fee: string
+  created_at: string
+  items: ICustomerOrderItem[]
+  // Additional fields for compatibility with OrderCard
+  user_name?: string
+  customer_name?: string
+  fulfilment_method?: "pickup" | "delivery"
+  subtotal?: string
+}
+
+export interface ICustomerDetail {
+  uid: string
+  first_name: string
+  last_name: string
+  phone: string
+  email: string | null
+  date_of_birth: string | null
+  instagram_handle: string | null
+  is_active: boolean
+  notes: string | null
+  location: string
+  location_name: string
+  full_name: string
+  total_orders: number
+  total_spent: number
+  total_credits: number
+  total_returns: number
+  store_owner_uid: string
+  default_address: string
+  default_city: string
+  recent_addresses: ICustomerAddress[]
+  created_at: string
+  updated_at: string
+  recent_orders: ICustomerOrder[]
+}
