@@ -8,7 +8,7 @@ import Icon from "@components/Icon.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import { useGetStoreThemes, useUpdateActiveTheme } from "@modules/settings/api"
 import { IStoreTheme } from "@modules/settings/types"
-import { ref } from "vue"
+import { ref, inject } from "vue"
 
 const { data: themes, refetch } = useGetStoreThemes()
 const { mutate: updateActiveTheme, isPending } = useUpdateActiveTheme()
@@ -20,6 +20,7 @@ const openPreview = (themeName: string) => {
 const selectedTheme = ref<IStoreTheme | null>(null)
 
 const openConfirm = ref(false)
+const openVersionHistory = inject<() => void>("openVersionHistory")
 
 const openApply = (theme: IStoreTheme) => {
   selectedTheme.value = theme
@@ -49,7 +50,7 @@ const onUpdateTheme = () => {
         subtitle="Pick a theme that reflects your brand. You can always change it later."
       />
       <div class="flex items-center gap-4">
-        <AppButton icon="clock-rewind" color="alt" size="sm" />
+        <AppButton icon="clock-rewind" color="alt" size="sm" @click="openVersionHistory?.()" />
       </div>
     </div>
 
