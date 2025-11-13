@@ -27,6 +27,7 @@
       >
         <!-- Topbar -->
         <AppHeader :show-logo="isMobile" :isLive="isLive" @logout="logout = true" />
+        <PageHeader />
 
         <!-- Content -->
         <main>
@@ -155,6 +156,7 @@ import Icon from "@components/Icon.vue"
 import { useGetLiveStatus } from "@modules/shared/api"
 import { useLocationSwitch } from "@/composables/useLocationSwitch"
 import MobileQuickActionsModal from "./parts/MobileQuickActionsModal.vue"
+import PageHeader from "./parts/PageHeader.vue"
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
