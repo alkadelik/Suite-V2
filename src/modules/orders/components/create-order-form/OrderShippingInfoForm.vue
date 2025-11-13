@@ -66,7 +66,7 @@ const customerName = computed(() => {
 })
 
 const canProceed = computed(() => {
-  if (props.shippingInfo.fulfilment_method === "delivery") {
+  if (props.shippingInfo.delivery_method === "automatic") {
     return props.shippingInfo.delivery_address.trim().length > 0
   }
   return true
@@ -139,7 +139,16 @@ const handleNext = () => {
         <h3 class="mb-4 text-sm font-medium">Delivery Information</h3>
         <hr class="mb-4 border-gray-300" />
         <div class="space-y-4">
+          <RadioInputField
+            label="Delivery Method"
+            :options="DELIVERY_METHODS"
+            :modelValue="shippingInfo.delivery_method"
+            @update:modelValue="updateField('delivery_method', $event)"
+            disabled
+          />
+
           <FormField
+            v-if="shippingInfo.delivery_method === 'automatic'"
             type="textarea"
             name="delivery_address"
             label="Delivery Address"
@@ -147,14 +156,7 @@ const handleNext = () => {
             placeholder="Enter delivery address"
             :modelValue="shippingInfo.delivery_address"
             @update:modelValue="updateField('delivery_address', $event)"
-            :required="true"
-          />
-
-          <RadioInputField
-            label="Delivery Method"
-            :options="DELIVERY_METHODS"
-            :modelValue="shippingInfo.delivery_method"
-            @update:modelValue="updateField('delivery_method', $event)"
+            :required="false"
           />
 
           <FormField
