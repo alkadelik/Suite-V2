@@ -62,8 +62,13 @@
           :class="openMore || openActions ? 'z-[1500]' : 'z-30'"
         >
           <div class="flex items-center justify-around px-2 py-2">
-            <SidebarLink icon="house" label="Home" to="/dashboard" />
-            <SidebarLink v-for="link in SALES_SUITES.slice(0, 1)" :key="link.label" v-bind="link" />
+            <SidebarLink icon="house" label="Home" to="/dashboard" @click="openMore = false" />
+            <SidebarLink
+              v-for="link in SALES_SUITES.slice(0, 1)"
+              :key="link.label"
+              v-bind="link"
+              @click="openMore = false"
+            />
             <AppButton
               size="sm"
               class="!ring-primary-200 !rounded-full !ring-4"
@@ -75,7 +80,12 @@
                 }
               "
             />
-            <SidebarLink v-for="link in SALES_SUITES.slice(1, 2)" :key="link.label" v-bind="link" />
+            <SidebarLink
+              v-for="link in SALES_SUITES.slice(1, 2)"
+              :key="link.label"
+              v-bind="link"
+              @click="openMore = false"
+            />
             <SidebarLink
               label="More"
               icon="more"
