@@ -16,13 +16,11 @@ const emit = defineEmits<{ close: []; refresh: [] }>()
 
 const PAYMENT_METHODS = [
   { label: "Cash", value: "cash" },
-  { label: "Credit Card", value: "credit-card" },
-  { label: "Bank Transfer", value: "bank-transfer" },
-  { label: "Mobile Money", value: "mobile-money" },
+  { label: "Bank Transfer", value: "transfer" },
 ]
 
 const form = ref({
-  amount_paid: "",
+  amount: "",
   date: new Date().toISOString().split("T")[0],
   method: PAYMENT_METHODS[0],
 })
@@ -56,7 +54,7 @@ const onSubmit = () => {
       <RadioInputField v-model="form.method" label="Payment Mode" :options="PAYMENT_METHODS" />
 
       <TextField
-        v-model="form.amount_paid"
+        v-model="form.amount"
         label="Amount Paid"
         placeholder="Enter amount paid"
         :hint="`Outstanding: ${formatCurrency(props.order.total_amount - props.order.total_paid)}`"
@@ -73,7 +71,7 @@ const onSubmit = () => {
         @click="onSubmit"
         class="w-full"
         :loading="isPending"
-        :disabled="!form.amount_paid || !form.date"
+        :disabled="!form.amount || !form.date"
       />
     </template>
   </Modal>

@@ -1,7 +1,7 @@
 <template>
   <component
     :is="props.to ? 'router-link' : 'button'"
-    @click="!props.to && emit('click')"
+    @click="emit('click')"
     :to="props.to"
     :class="[
       'group flex items-center rounded-xl transition-colors duration-200',

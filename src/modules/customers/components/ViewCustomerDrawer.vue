@@ -11,7 +11,15 @@
     </div>
 
     <div v-else class="flex flex-col gap-5">
-      <CustomerCard v-if="customer" :customer="customer" />
+      <CustomerCard
+        v-if="customer"
+        :customer="{
+          uid: customer.uid,
+          full_name: customer.full_name,
+          email: customer.email || '',
+          phone: customer.phone,
+        }"
+      />
 
       <SummaryCard :items="summaryStats" />
 

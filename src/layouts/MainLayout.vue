@@ -26,7 +26,8 @@
         ]"
       >
         <!-- Topbar -->
-        <AppHeader :show-logo="isMobile" :isLive="isLive" />
+        <AppHeader :show-logo="isMobile" :isLive="isLive" @logout="logout = true" />
+        <PageHeader />
 
         <!-- Content -->
         <main>
@@ -62,8 +63,13 @@
           :class="openMore || openActions ? 'z-[1500]' : 'z-30'"
         >
           <div class="flex items-center justify-around px-2 py-2">
-            <SidebarLink icon="house" label="Home" to="/dashboard" />
-            <SidebarLink v-for="link in SALES_SUITES.slice(0, 1)" :key="link.label" v-bind="link" />
+            <SidebarLink icon="house" label="Home" to="/dashboard" @click="openMore = false" />
+            <SidebarLink
+              v-for="link in SALES_SUITES.slice(0, 1)"
+              :key="link.label"
+              v-bind="link"
+              @click="openMore = false"
+            />
             <AppButton
               size="sm"
               class="!ring-primary-200 !rounded-full !ring-4"
@@ -75,7 +81,12 @@
                 }
               "
             />
-            <SidebarLink v-for="link in SALES_SUITES.slice(1, 2)" :key="link.label" v-bind="link" />
+            <SidebarLink
+              v-for="link in SALES_SUITES.slice(1, 2)"
+              :key="link.label"
+              v-bind="link"
+              @click="openMore = false"
+            />
             <SidebarLink
               label="More"
               icon="more"
@@ -145,6 +156,7 @@ import Icon from "@components/Icon.vue"
 import { useGetLiveStatus } from "@modules/shared/api"
 import { useLocationSwitch } from "@/composables/useLocationSwitch"
 import MobileQuickActionsModal from "./parts/MobileQuickActionsModal.vue"
+import PageHeader from "./parts/PageHeader.vue"
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
@@ -180,15 +192,34 @@ const isLive = computed(() => liveStatusData.value?.data?.is_live || false)
 
 const openTrial = ref(false)
 
+const getDaysRemaining = (endDate: string | null | undefined): number => {
+  if (!endDate) return 0
+  const end = new Date(endDate)
+  const now = new Date()
+  const diffTime = end.getTime() - now.getTime()
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  return diffDays
+}
+
 watch(
   profile,
   (val) => {
     if (val) {
       updateAuthUser(val)
-      // Show trial modal on first load if in trial mode and not yet dismissed
-      if (val.subscription?.trial_mode && !localStorage.getItem("trial_dismissed")) {
-        openTrial.value = true
+
+      // Check if in trial mode
+      if (val.subscription?.trial_mode) {
+        const daysRemaining = getDaysRemaining(val.subscription?.active_until)
+
+        // Only show modal if trial has 15 or more days remaining and not dismissed
+        if (daysRemaining >= 15 && !localStorage.getItem("trial_dismissed")) {
+          openTrial.value = true
+        } else {
+          // Don't show modal if less than 15 days remaining
+          openTrial.value = false
+        }
       }
+
       // Clean up if no longer in trial mode
       if (!val.subscription?.trial_mode) {
         localStorage.removeItem("trial_dismissed")

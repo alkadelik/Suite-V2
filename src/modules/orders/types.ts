@@ -147,7 +147,7 @@ export interface IPaymentHistory {
 }
 
 export interface IPaymentPayload {
-  amount_paid: string
+  amount: string
   date: string
   method: string
 }

@@ -27,18 +27,20 @@
       <button class="rounded-xl p-2 hover:bg-gray-100" @click="showNotifications = true">
         <Icon name="bell" size="20" />
       </button>
-      <!-- Settings -->
-      <button class="rounded-xl p-2 hover:bg-gray-100" @click="$router.push('/settings')">
-        <Icon name="setting" size="20" />
+
+      <!-- Sign out -->
+      <button class="rounded-xl p-2 hover:bg-gray-100" @click="$emit('logout', true)">
+        <Icon name="signout" size="20" />
       </button>
+
       <!-- User or CTA -->
       <Avatar
-        v-if="isMobile"
-        name="John Doe"
+        :name="user?.first_name + ' ' + user?.last_name"
+        backgroundColor="var(--color-core-950)"
         clickable
-        @click="$router.push('/settings/profile')"
+        @click="$router.push('/settings')"
       />
-      <DropdownMenu v-else :items="actionMenuItems">
+      <DropdownMenu v-if="!isMobile" :items="actionMenuItems">
         <template #trigger>
           <AppButton size="md" class="!ring-primary-200 !rounded-full !ring-4" icon="add-circle" />
         </template>
@@ -70,8 +72,12 @@ import LocationDropdown from "./LocationDropdown.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import { toast } from "@/composables/useToast"
 import { useRouter } from "vue-router"
+import { useAuthStore } from "@modules/auth/store"
 
 defineProps<{ showLogo?: boolean; logo?: "full" | "icon"; isLive?: boolean }>()
+defineEmits<{
+  (e: "logout", confirm: boolean): void
+}>()
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
@@ -81,6 +87,7 @@ const queryClient = useQueryClient()
 // Fetch notifications from API
 const { data: notificationsResponse } = useGetNotifications()
 const { mutate: markAllRead } = useMarkAllNotificationsRead()
+const user = computed(() => useAuthStore().user)
 
 // Initialize WebSocket connection for real-time notifications
 useNotificationsWebSocket({

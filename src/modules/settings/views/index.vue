@@ -1,6 +1,6 @@
 <template>
   <div class="flex h-screen flex-col pt-16">
-    <AppHeader show-logo />
+    <AppHeader show-logo :is-live="isLive" />
 
     <div class="flex min-h-0 flex-1 rounded-xl bg-white p-4 pb-0 2xl:px-20">
       <!-- Fixed Header Section -->
@@ -77,13 +77,18 @@ import { useRoute } from "vue-router"
 import { useSettingsStore } from "../store"
 import { computed, watch } from "vue"
 import PlansModal from "../components/PlansModal.vue"
-import { useGetRoles } from "@modules/shared/api"
+import { useGetLiveStatus, useGetRoles } from "@modules/shared/api"
 import { updateStoreRoleOptions } from "@modules/shared/constants"
 import { clipboardCopy } from "@/utils/others"
 import Icon from "@components/Icon.vue"
+import { useAuthStore } from "@modules/auth/store"
 
 const route = useRoute()
 const { data: rolesData } = useGetRoles()
+
+const storeSlug = useAuthStore().user?.store_slug || ""
+const { data: liveStatusData } = useGetLiveStatus(storeSlug)
+const isLive = computed(() => liveStatusData.value?.data?.is_live || false)
 
 // Update ROLE_OPTIONS when roles data is fetched
 watch(

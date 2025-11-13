@@ -45,7 +45,7 @@ const quickActions = [
 </script>
 
 <template>
-  <Modal variant="bottom-nav" max-width="5xl" :open="open" @close="onClose">
+  <Modal variant="bottom-nav" max-width="5xl" body-class="!bg-white" :open="open" @close="onClose">
     <div class="grid grid-cols-3 gap-2 pb-28 md:gap-4 xl:grid-cols-5">
       <div
         v-for="action in quickActions"
