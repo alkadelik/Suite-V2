@@ -184,7 +184,11 @@ const getOriginalPrice = (item: OrderItem) => {
             :label="`${item.variant.stock} in Stock`"
             icon="box"
           />
-          <button @click="removeItem(index)" class="text-gray-400 hover:text-gray-600">
+          <button
+            v-if="localItems.length > 1"
+            @click="removeItem(index)"
+            class="text-gray-400 hover:text-gray-600"
+          >
             <Icon name="trash" class="h-5 w-5 cursor-pointer" />
           </button>
         </div>
@@ -230,17 +234,8 @@ const getOriginalPrice = (item: OrderItem) => {
 
     <div class="h-24" />
 
-    <div
-      class="border-core-200 bg-base-background fixed right-0 bottom-0 left-0 flex gap-3 border-t p-6"
-    >
-      <AppButton
-        label="Back"
-        color="alt"
-        variant="outlined"
-        class="w-1/3"
-        icon="arrow-left"
-        @click="emit('prev')"
-      />
+    <div class="border-core-200 fixed right-0 bottom-0 left-0 flex gap-3 border-t bg-white p-6">
+      <AppButton label="Back" color="alt" class="w-1/3" icon="arrow-left" @click="emit('prev')" />
       <AppButton label="Next" class="w-2/3" :disabled="!canProceed" @click="handleNext" />
     </div>
   </div>

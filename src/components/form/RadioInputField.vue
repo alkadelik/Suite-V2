@@ -6,44 +6,57 @@
     </label>
     <p v-if="hint" class="text-core-600 text-xs">{{ hint }}</p>
 
-    <div
-      class="flex flex-row items-start gap-2 space-y-2"
-      :class="{ 'flex-wrap': options.some((x) => x.description) }"
-    >
-      <div
-        v-for="option in options"
-        :key="String(option.value)"
-        :class="[
-          'flex cursor-pointer gap-3 rounded-xl border px-4 py-3 transition-all',
-          modelValue === option.value
-            ? 'border-primary-700 bg-primary-25'
-            : 'border-gray-400 bg-gray-50 hover:border-gray-500',
-          disabled ? 'cursor-not-allowed opacity-50' : '',
-          options.every((x) => !x.description) ? 'flex-1 items-center' : 'items-start md:flex-1',
-        ]"
-        @click="!disabled && handleChange(option.value)"
-      >
-        <div
+    <div :class="['flex gap-4', orientation === 'vertical' ? 'flex-col' : 'flex-row']">
+      <div v-for="option in options" :key="String(option.value)" class="flex flex-1">
+        <input
+          :id="`${label}-${String(option.value)}`"
+          type="radio"
+          :name="label"
+          :value="option.value"
+          :checked="modelValue === option.value"
+          :disabled="disabled || option.disabled"
+          @change="handleChange(option.value)"
+          class="hidden"
+        />
+        <label
+          :for="`${label}-${String(option.value)}`"
           :class="[
-            'relative flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2',
-            modelValue === option.value ? 'border-primary-700' : 'border-gray-300',
+            'flex w-full items-start gap-3 rounded-xl border px-4 py-3 transition-all',
+            disabled || option.disabled
+              ? 'cursor-not-allowed bg-gray-100 opacity-50'
+              : 'cursor-pointer',
+            !disabled && !option.disabled && modelValue === option.value
+              ? 'border-primary-700 bg-primary-25'
+              : 'border-gray-400',
+            !disabled && !option.disabled && modelValue !== option.value
+              ? 'bg-gray-50 hover:border-gray-500'
+              : '',
           ]"
         >
-          <div v-if="modelValue === option.value" class="bg-primary-700 h-2.5 w-2.5 rounded-full" />
-        </div>
-        <div class="flex-1">
-          <p
+          <!-- Radio indicator -->
+          <div
             :class="[
-              'text-xs font-medium md:text-sm',
-              modelValue === option.value ? 'text-primary-700' : 'text-core-800',
+              'mt-1 flex size-4 shrink-0 items-center justify-center rounded-full border',
+              modelValue === option.value
+                ? 'border-primary-700 bg-transparent'
+                : 'border-gray-300 bg-white',
             ]"
           >
-            {{ option.label }}
-          </p>
-          <p v-if="option.description" class="text-core-600 text-sm">
-            {{ option.description }}
-          </p>
-        </div>
+            <div v-if="modelValue === option.value" class="bg-primary-600 size-1.5 rounded-full" />
+          </div>
+
+          <!-- Radio content -->
+          <slot name="content" :option="option">
+            <div class="flex flex-1 flex-col gap-1.5">
+              <h6 class="text-sm font-medium text-gray-700">
+                {{ option.label }}
+              </h6>
+              <span v-if="option.description" class="text-xs text-gray-400">{{
+                option.description
+              }}</span>
+            </div>
+          </slot>
+        </label>
       </div>
     </div>
 
@@ -60,6 +73,8 @@ interface RadioOption {
   label: string
   value: RadioOptionValue
   description?: string
+  disabled?: boolean
+  [key: string]: unknown
 }
 
 interface RadioInputFieldProps {
@@ -72,6 +87,7 @@ interface RadioInputFieldProps {
   error?: string
   hint?: string
   size?: "sm" | "md" | "lg"
+  orientation?: "vertical" | "horizontal"
 }
 
 const props = withDefaults(defineProps<RadioInputFieldProps>(), {
@@ -79,6 +95,7 @@ const props = withDefaults(defineProps<RadioInputFieldProps>(), {
   disabled: false,
   readonly: false,
   size: "md",
+  orientation: "horizontal",
 })
 
 const emit = defineEmits<{

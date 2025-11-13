@@ -1,3 +1,5 @@
+import { IShippingCourier } from "@modules/shared/types"
+
 export type TOrderItem = {
   uid: string
   variant: string
@@ -49,8 +51,8 @@ export type TOrder = {
 
 export type TOrderChannel = {
   label: string
-  value: number
-  icon: string
+  value: string
+  icon?: string
 }
 
 export type TOrderShippingCompany = {
@@ -79,12 +81,14 @@ export interface OrderPayload {
   fulfilment_method: "pickup" | "delivery"
   delivery_address: string
   delivery_method: "manual" | "automatic"
-  courier: string
+  courier: IShippingCourier | string
   coupon_code: string | null
   payment_status: "unpaid" | "paid" | "partially_paid"
   payment_amount: string | number
   payment_source?: string
   items: OrderItemPayload[]
+  delivery_payment_option: string
+  order_channel: string
 }
 
 export interface OrderItemPayload {

@@ -199,3 +199,25 @@ export interface IShippingProfileResponse {
   message: string
   data: IShippingProfileData
 }
+
+export interface IShippingCourier {
+  courier_id: string
+  courier_name: string
+  courier_image?: string
+  total_amount?: number
+  total?: number
+  ratings: number
+  votes: number
+  estimated_days?: string
+}
+
+export interface IShippingRatesResponse {
+  error: string | null
+  message: string
+  data: {
+    rates: {
+      request_token: string
+      couriers: IShippingCourier[]
+    }
+  }
+}

@@ -169,3 +169,19 @@ export function useClearNotifications() {
     mutationFn: () => baseApi.post("/notifications/clear/"),
   })
 }
+
+/** Get shipping rates */
+export function useGetShippingRates() {
+  return useMutation({
+    mutationFn: (body: {
+      delivery_address: string
+      customer_name: string
+      customer_email: string
+      customer_phone: string
+      items: Array<{
+        variant: string
+        quantity: number
+      }>
+    }) => baseApi.post("/shipping/rates/", body),
+  })
+}

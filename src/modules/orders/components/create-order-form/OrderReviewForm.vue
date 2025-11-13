@@ -23,8 +23,9 @@ interface ShippingInfo {
   courier: string
   delivery_fee: number
   order_date: string
-  order_channel: string
+  order_channel: { label: string; value: string }
   has_shipping: boolean
+  delivery_payment_option: string
 }
 
 interface PaymentInfo {

@@ -13,13 +13,18 @@ import { formatCurrency } from "@/utils/format-currency"
 export const ORDERS: TOrder[] = []
 
 export const ORDER_CHANNELS: TOrderChannel[] = [
-  { label: "Store/Walk-in", value: 0, icon: "Shop" },
-  { label: "Instagram", value: 1, icon: "Instagram" },
-  { label: "Facebook", value: 5, icon: "Facebook" },
-  { label: "X", value: 6, icon: "Box1" },
-  { label: "Whatsapp", value: 2, icon: "Whatsapp" },
-  { label: "Website", value: 3, icon: "Global" },
-  { label: "Other", value: 4, icon: "Box2" },
+  { label: "Store/Walk-in", value: "walkin", icon: "Shop" },
+  { label: "Instagram", value: "instagram", icon: "Instagram" },
+  { label: "X", value: "x", icon: "Box1" },
+  { label: "Whatsapp", value: "whatsapp", icon: "Whatsapp" },
+  { label: "Website", value: "website", icon: "Global" },
+  { label: "Other", value: "others", icon: "Box2" },
+]
+
+export const DELIVERY_PAYMENT_OPTION = [
+  { label: "Customer pays courier directly", value: "customer_pays_courier" },
+  { label: "Customer pays merchant", value: "customer_pays_merchant" },
+  { label: "Free Shipping", value: "free_shipping" },
 ]
 
 export const ORDER_SHIPPING_COMPANIES: TOrderShippingCompany[] = [
