@@ -12,6 +12,7 @@
       @submit="onSubmit"
       v-slot="{ meta }"
       class="flex flex-col gap-6"
+      :initialValues="{ currency: CURRENCY_OPTIONS[0] }"
     >
       <FormField
         name="name"
@@ -57,9 +58,10 @@
         name="currency"
         label="Currency"
         type="select"
-        :options="CURRENCY_OPTIONS"
+        :options="CURRENCY_OPTIONS.slice(0, 1)"
         placeholder="NGN"
         required
+        disabled
       />
 
       <AppButton

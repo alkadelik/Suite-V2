@@ -28,6 +28,6 @@ export const updateStoreRoleOptions: (options: IRole[]) => void = (options) => {
 }
 
 export const CURRENCY_OPTIONS = [
-  { label: "US Dollar (USD)", value: "USD" },
   { label: "Nigerian Naira (NGN)", value: "NGN" },
+  { label: "US Dollar (USD)", value: "USD" },
 ]
