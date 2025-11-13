@@ -187,6 +187,7 @@ const { data: profile } = useGetProfile()
 const showPlans = computed(() => useSettingsStore().showPlanUpgradeModal)
 
 const storeSlug = useAuthStore().user?.store_slug || ""
+const storeUid = computed(() => useAuthStore().user?.store_uid || "")
 const { data: liveStatusData } = useGetLiveStatus(storeSlug)
 const isLive = computed(() => liveStatusData.value?.data?.is_live || false)
 
@@ -201,6 +202,8 @@ const getDaysRemaining = (endDate: string | null | undefined): number => {
   return diffDays
 }
 
+const getTrialDismissalKey = (uid: string) => `trial_dismissed_${uid}`
+
 watch(
   profile,
   (val) => {
@@ -208,21 +211,23 @@ watch(
       updateAuthUser(val)
 
       // Check if in trial mode
-      if (val.subscription?.trial_mode) {
+      if (val.subscription?.trial_mode && storeUid.value) {
         const daysRemaining = getDaysRemaining(val.subscription?.active_until)
+        const dismissalKey = getTrialDismissalKey(storeUid.value)
 
-        // Only show modal if trial has 15 or more days remaining and not dismissed
-        if (daysRemaining >= 15 && !localStorage.getItem("trial_dismissed")) {
+        // Only show modal if trial has 14 or more days remaining and not dismissed for this store
+        if (daysRemaining >= 14 && !localStorage.getItem(dismissalKey)) {
           openTrial.value = true
         } else {
-          // Don't show modal if less than 15 days remaining
+          // Don't show modal if less than 14 days remaining
           openTrial.value = false
         }
       }
 
       // Clean up if no longer in trial mode
-      if (!val.subscription?.trial_mode) {
-        localStorage.removeItem("trial_dismissed")
+      if (!val.subscription?.trial_mode && storeUid.value) {
+        const dismissalKey = getTrialDismissalKey(storeUid.value)
+        localStorage.removeItem(dismissalKey)
         openTrial.value = false
       }
     }
@@ -232,7 +237,10 @@ watch(
 
 const closeTrialModal = () => {
   openTrial.value = false
-  localStorage.setItem("trial_dismissed", "true")
+  if (storeUid.value) {
+    const dismissalKey = getTrialDismissalKey(storeUid.value)
+    localStorage.setItem(dismissalKey, "true")
+  }
 }
 
 watch<ICategoriesApiResponse | undefined>(
