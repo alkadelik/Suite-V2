@@ -3,7 +3,7 @@ import AppButton from "@components/AppButton.vue"
 import FormField from "@components/form/FormField.vue"
 import Switch from "@components/form/Switch.vue"
 import SectionHeader from "@components/SectionHeader.vue"
-import { ref, watch } from "vue"
+import { ref, watch, inject } from "vue"
 import { useForm } from "vee-validate"
 import * as yup from "yup"
 import { onInvalidSubmit } from "@/utils/validations"
@@ -12,6 +12,7 @@ import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 
 const enablePopup = ref(false)
+const openVersionHistory = inject<() => void>("openVersionHistory")
 
 // Yup validation schema for the popup form
 const popupSchema = yup.object({
@@ -93,7 +94,13 @@ const applyPopupSettings = () => {
         size="sm"
         subtitle="Show a popup modal with ongoing offers to your visitors"
       />
-      <AppButton icon="clock-rewind" color="alt" size="sm" class="ml-auto" />
+      <AppButton
+        icon="clock-rewind"
+        color="alt"
+        size="sm"
+        class="ml-auto"
+        @click="openVersionHistory?.()"
+      />
       <AppButton
         label="Publish PopUp"
         class="!hidden md:!inline-flex"

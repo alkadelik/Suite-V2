@@ -227,3 +227,14 @@ export interface ThemeSection {
   created_at: string
   updated_at: string
 }
+
+export interface IVersionHistory {
+  uid: string
+  version: number
+  previous_version: number
+  change_type: string
+  changed_fields: string
+  changed_by_name: string
+  snapshot: string
+  created_at: string
+}

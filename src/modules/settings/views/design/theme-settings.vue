@@ -2,7 +2,13 @@
   <section>
     <div class="mb-4 flex items-center gap-6 border-b border-gray-200 pb-4">
       <SectionHeader title="Theme Settings" size="sm" subtitle="Customize your theme settings" />
-      <AppButton icon="clock-rewind" color="alt" size="sm" class="ml-auto" />
+      <AppButton
+        icon="clock-rewind"
+        color="alt"
+        size="sm"
+        class="ml-auto"
+        @click="openVersionHistory?.()"
+      />
       <AppButton
         label="Publish Settings"
         class="!hidden md:!inline-flex"
@@ -164,7 +170,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from "vue"
+import { ref, watch, inject } from "vue"
 import Icon from "@components/Icon.vue"
 import LogoFaviconSettings from "@modules/settings/components/design/theme-settings/LogoFaviconSettings.vue"
 import ColorSettings from "@modules/settings/components/design/theme-settings/ColorSettings.vue"
@@ -196,6 +202,7 @@ const designItems: DesignItem[] = [
 
 const activeSection = ref<string>("logo-favicon")
 const expandedSection = ref<string | null>(null)
+const openVersionHistory = inject<() => void>("openVersionHistory")
 
 // Reactive form state
 const formState = ref({
