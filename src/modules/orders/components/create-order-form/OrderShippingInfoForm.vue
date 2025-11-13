@@ -42,8 +42,8 @@ const FULFILMENT_METHODS = [
 ]
 
 const FULFILMENT_STATUS = [
-  { label: "Fulfilled", value: "fulfilled" },
-  { label: "Unfulfilled", value: "unfulfilled" },
+  { label: "Yes", value: "fulfilled" },
+  { label: "No", value: "unfulfilled" },
 ]
 
 const DELIVERY_METHODS = [
@@ -112,7 +112,7 @@ const handleNext = () => {
       </div>
 
       <div class="my-6 rounded-xl bg-white p-4">
-        <h3 class="mb-4 text-sm font-medium">Fulfilment Status</h3>
+        <h3 class="mb-4 text-sm font-medium">Has the product been delivered?</h3>
         <hr class="mb-4 border-gray-300" />
         <RadioInputField
           :options="FULFILMENT_STATUS"
@@ -122,7 +122,11 @@ const handleNext = () => {
       </div>
 
       <div class="my-6 rounded-xl bg-white p-4">
-        <h3 class="mb-4 text-sm font-medium">Fulfilment Method</h3>
+        <h3 class="mb-4 text-sm font-medium">
+          How
+          {{ shippingInfo.fulfilment_status === "fulfilled" ? "was it" : "will it be" }} delivered?
+        </h3>
+
         <hr class="mb-4 border-gray-300" />
         <RadioInputField
           :options="FULFILMENT_METHODS"

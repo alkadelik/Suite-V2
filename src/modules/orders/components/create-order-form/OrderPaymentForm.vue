@@ -121,7 +121,7 @@ const handleNext = () => {
           />
 
           <div class="flex justify-end">
-            <AppButton size="sm" label="Apply Code" class="w-full md:w-auto" />
+            <AppButton size="sm" variant="outlined" label="Apply Code" class="w-full md:w-auto" />
           </div>
         </div>
       </div>
