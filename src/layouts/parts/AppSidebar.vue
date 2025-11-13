@@ -13,20 +13,26 @@
       <img src="/LYW.svg?url" alt="Leyyow" class="h-8 w-auto" />
     </div>
 
-    <!-- User Info -->
+    <!-- Store Info -->
     <div class="bg-gray-50 px-4 py-4">
-      <div class="mb-4 flex items-center gap-4">
-        <Avatar
-          :name="getFullName(user as TNameObj)"
-          :extraText="user?.email"
-          clickable
-          class="flex-1 truncate"
-        />
-        <Icon
-          name="signout"
-          class="flex-shrink-0 cursor-pointer text-red-600"
-          @click="$emit('logout', true)"
-        />
+      <div class="mb-3 flex items-center gap-2">
+        <Avatar :name="storeDetails?.name || ''" backgroundColor="var(--color-core-950)" />
+        <div class="min-w-0">
+          <div class="flex min-w-0 items-end gap-2">
+            <p class="min-w-0 truncate font-medium capitalize">
+              {{ storeDetails?.name }}
+            </p>
+          </div>
+          <div class="flex min-w-0 items-center gap-2 text-sm text-gray-600">
+            <p class="min-w-0 truncate">{{ storefrontUrl }}</p>
+            <Icon
+              name="copy"
+              size="20"
+              class="text-primary-600 flex-shrink-0 cursor-pointer"
+              @click="clipboardCopy('https://' + storefrontUrl)"
+            />
+          </div>
+        </div>
       </div>
       <!-- Select Location -->
       <LocationDropdown />
@@ -89,7 +95,6 @@
 
 <script setup lang="ts">
 import { useAuthStore } from "@modules/auth/store"
-import { getFullName, TNameObj } from "@/utils/format-strings"
 import { useMediaQuery } from "@vueuse/core"
 import { computed } from "vue"
 import Avatar from "@components/Avatar.vue"
@@ -97,6 +102,8 @@ import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
 import SidebarLink from "./SidebarLink.vue"
 import LocationDropdown from "./LocationDropdown.vue"
+import { clipboardCopy } from "@/utils/others"
+import { useSettingsStore } from "@modules/settings/store"
 
 defineProps<{
   mobileSidebarOpen: boolean
@@ -109,6 +116,10 @@ defineEmits<{ logout: [value: boolean]; upgrade: [] }>()
 const user = computed(() => useAuthStore().user)
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
+
+const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
+
+const storeDetails = computed(() => useSettingsStore().storeDetails)
 </script>
 
 <style scoped>

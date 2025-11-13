@@ -26,7 +26,7 @@
         ]"
       >
         <!-- Topbar -->
-        <AppHeader :show-logo="isMobile" :isLive="isLive" />
+        <AppHeader :show-logo="isMobile" :isLive="isLive" @logout="logout = true" />
 
         <!-- Content -->
         <main>
