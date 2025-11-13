@@ -1,10 +1,12 @@
 <template>
   <div class="p-4">
-    <SectionHeader
-      title="Customers"
-      subtitle="View, manage, and keep track of all your customers in one place."
-      class="mb-4"
-    />
+    <div class="hidden lg:block">
+      <SectionHeader
+        title="Customers"
+        subtitle="View, manage, and keep track of all your customers in one place."
+        class="mb-4"
+      />
+    </div>
 
     <MetricsGrid :items="customerMetrics" />
 

@@ -195,7 +195,12 @@ onMounted(() => {
 
 <template>
   <div class="flex flex-col gap-6 p-6">
-    <SectionHeader title="Orders" subtitle="Track, manage, and fulfil every order in one place." />
+    <div class="hidden lg:block">
+      <SectionHeader
+        title="Orders"
+        subtitle="Track, manage, and fulfil every order in one place."
+      />
+    </div>
 
     <EmptyState
       v-if="!orders?.results?.length && status === 'all'"

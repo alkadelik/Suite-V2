@@ -63,7 +63,12 @@ onMounted(() => {
 
 <template>
   <div class="flex flex-col gap-6 p-4 md:p-8">
-    <SectionHeader title="Popups" subtitle="Track, manage, and fulfil every order in one place." />
+    <div class="hidden lg:block">
+      <SectionHeader
+        title="Popups"
+        subtitle="Track, manage, and fulfil every order in one place."
+      />
+    </div>
 
     <div>
       <div class="flex justify-between">

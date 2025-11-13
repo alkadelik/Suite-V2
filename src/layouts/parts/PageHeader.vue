@@ -17,9 +17,9 @@ const title = computed(() => {
 <template>
   <header
     v-if="title !== 'Page'"
-    class="bg-primary-25 border-primary-200 fixed top-0 right-0 left-0 z-30 border-b"
+    class="bg-primary-25 border-primary-200 fixed top-0 right-0 left-0 z-30 border-b lg:hidden"
   >
-    <div class="flex items-end gap-1.5 px-4 py-6">
+    <div class="flex items-end gap-1 px-4 py-3.5">
       <div class="flex-1">
         <button
           type="button"
