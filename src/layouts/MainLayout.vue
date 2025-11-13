@@ -190,15 +190,34 @@ const isLive = computed(() => liveStatusData.value?.data?.is_live || false)
 
 const openTrial = ref(false)
 
+const getDaysRemaining = (endDate: string | null | undefined): number => {
+  if (!endDate) return 0
+  const end = new Date(endDate)
+  const now = new Date()
+  const diffTime = end.getTime() - now.getTime()
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  return diffDays
+}
+
 watch(
   profile,
   (val) => {
     if (val) {
       updateAuthUser(val)
-      // Show trial modal on first load if in trial mode and not yet dismissed
-      if (val.subscription?.trial_mode && !localStorage.getItem("trial_dismissed")) {
-        openTrial.value = true
+
+      // Check if in trial mode
+      if (val.subscription?.trial_mode) {
+        const daysRemaining = getDaysRemaining(val.subscription?.active_until)
+
+        // Only show modal if trial has 15 or more days remaining and not dismissed
+        if (daysRemaining >= 15 && !localStorage.getItem("trial_dismissed")) {
+          openTrial.value = true
+        } else {
+          // Don't show modal if less than 15 days remaining
+          openTrial.value = false
+        }
       }
+
       // Clean up if no longer in trial mode
       if (!val.subscription?.trial_mode) {
         localStorage.removeItem("trial_dismissed")

@@ -5,6 +5,7 @@ import Avatar from "@components/Avatar.vue"
 import Chip from "@components/Chip.vue"
 import Drawer from "@components/Drawer.vue"
 import Icon from "@components/Icon.vue"
+import { useAuthStore } from "@modules/auth/store"
 import { useSettingsStore } from "@modules/settings/store"
 import { computed } from "vue"
 
@@ -19,6 +20,7 @@ const emit = defineEmits<{
 const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
 const storeDetails = computed(() => useSettingsStore().storeDetails)
 const currentLocation = computed(() => useSettingsStore().activeLocation)
+const user = computed(() => useAuthStore().user)
 
 const quickActions = [
   { label: "Popups", icon: "calendar-tick", to: "/popups" },
@@ -94,8 +96,22 @@ const quickActions = [
       style="background: linear-gradient(136.41deg, #1a2a6c -3.7%, #b21f1f 53.98%, #fdbb2d 99.39%)"
     >
       <div class="w-full max-w-3/4">
-        <h3 class="mb-1 text-base font-semibold">Do more with Premium!</h3>
-        <p class="mb-4 text-sm">Get advanced tools to mange every aspect of your business..</p>
+        <template v-if="!user?.subscription?.trial_mode && !user?.subscription?.is_active">
+          <h3 class="mb-1 text-sm font-bold">Your trial has ended!</h3>
+          <p class="mb-4 text-sm">Upgrade to regain full access.</p>
+        </template>
+
+        <template v-else>
+          <h3 class="mb-1 text-sm font-bold">You are on trial mode</h3>
+          <p class="mb-4 text-sm">
+            Ends:
+            {{
+              new Date(user?.subscription?.active_until).toLocaleString("en-US", {
+                dateStyle: "medium",
+              })
+            }}
+          </p>
+        </template>
       </div>
       <AppButton color="alt" label="Upgrade" class="w-full flex-row-reverse" icon="star" />
       <img
