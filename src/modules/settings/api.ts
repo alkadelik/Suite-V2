@@ -13,9 +13,11 @@ import {
   IStoreTheme,
   IThemeSettings,
   ThemeSection,
+  IVersionHistory,
 } from "./types"
-import { useMutation, useQuery } from "@tanstack/vue-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query"
 import { IkycInfo, IUser } from "@modules/auth/types"
+import type { Ref } from "vue"
 
 /** get user profile */
 export function useGetProfile() {
@@ -182,9 +184,13 @@ export function useInitializeSubscription() {
 }
 
 export function useUpdatePopupSettings() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: Partial<IPopupSettings> }) =>
       baseApi.patch(`/storefront/popup/${id}/`, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["version-history"] })
+    },
   })
 }
 
@@ -205,8 +211,12 @@ export function useGetStoreThemes() {
 }
 
 export function useUpdateActiveTheme() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => baseApi.post(`/storefront/themes/${id}/apply/`, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["version-history"] })
+    },
   })
 }
 
@@ -219,18 +229,26 @@ export function useGetStorefrontSections() {
 }
 
 export function useUpdateStorefrontSectionsOrder() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (body: { updates: { uid: string; position: number }[] }) =>
       baseApi.patch(`/storefront/sections/update-section-positions/`, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["version-history"] })
+    },
   })
 }
 
 export function useUpdateStorefrontSection() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: FormData | Record<string, unknown> }) =>
       baseApi.patch(`/storefront/sections/${id}/`, body, {
         headers: { "Content-Type": "multipart/form-data" },
       }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["version-history"] })
+    },
   })
 }
 
@@ -267,10 +285,29 @@ export function useGetThemeSettings() {
 }
 
 export function useUpdateThemeSettings() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: Partial<IThemeSettings> }) =>
       baseApi.patch(`/storefront/${id}/`, body, {
         headers: { "Content-Type": "multipart/form-data" },
       }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["version-history"] })
+    },
+  })
+}
+
+export function useGetVersionHistory(storefrontUid: Ref<string> | string) {
+  return useQuery<IVersionHistory[]>({
+    queryKey: ["version-history", storefrontUid],
+    queryFn: async () => {
+      const uid = typeof storefrontUid === "string" ? storefrontUid : storefrontUid.value
+      const response = await baseApi.get(`/storefront/${uid}/version-history/`)
+      return response.data.data
+    },
+    enabled: () => {
+      const uid = typeof storefrontUid === "string" ? storefrontUid : storefrontUid.value
+      return !!uid
+    },
   })
 }

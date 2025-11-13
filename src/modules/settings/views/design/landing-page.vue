@@ -2,7 +2,13 @@
   <section>
     <div class="mb-4 flex items-center gap-6 border-b border-gray-200 pb-4">
       <SectionHeader title="Landing Page" size="sm" subtitle="Configure your landing page" />
-      <AppButton icon="clock-rewind" color="alt" size="sm" class="ml-auto" />
+      <AppButton
+        icon="clock-rewind"
+        color="alt"
+        size="sm"
+        class="ml-auto"
+        @click="openVersionHistory?.()"
+      />
       <AppButton
         :loading="isPending"
         label="Publish Page"
@@ -275,7 +281,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from "vue"
+import { ref, watch, computed, inject } from "vue"
 import draggable from "vuedraggable"
 import Icon from "@components/Icon.vue"
 import HeroSettings from "@modules/settings/components/design/landing-page/HeroSettings.vue"
@@ -295,6 +301,8 @@ import { displayError } from "@/utils/error-handler"
 
 const { mutate: updateLandingPageItemsOrder, isPending } = useUpdateStorefrontSectionsOrder()
 const { data: landingPageData, refetch } = useGetStorefrontSections()
+
+const openVersionHistory = inject<() => void>("openVersionHistory")
 
 // Get all sections from landing page data
 const heroSection = computed(() => {
