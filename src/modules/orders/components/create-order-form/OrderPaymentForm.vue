@@ -109,7 +109,7 @@ const handleNext = () => {
     <p class="mb-4 text-sm">Record full, partial, or unpaid amounts.</p>
 
     <div class="space-y-4">
-      <div class="rounded-xl bg-white p-4">
+      <div v-if="false" class="rounded-xl bg-white p-4">
         <h3 class="mb-4 text-sm font-medium">Discount</h3>
         <div class="space-y-4">
           <FormField
