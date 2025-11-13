@@ -55,7 +55,7 @@ const customerName = computed(() => {
   if (!props.customer) return "Unknown Customer"
   const firstName = props.customer.first_name || ""
   const lastName = props.customer.last_name || ""
-  return `${firstName} ${lastName}`.trim() || "Unknown Customer"
+  return `${firstName} ${lastName}`.trim() || props.customer?.full_name || "Unknown Customer"
 })
 
 const itemsCount = computed(() => {

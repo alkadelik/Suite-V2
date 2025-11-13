@@ -1,10 +1,12 @@
 <template>
   <div class="p-4">
-    <SectionHeader
-      title="Inventory"
-      subtitle="Manage and organize your product catalog efficiently."
-      class="mb-4 md:mb-6"
-    />
+    <div class="hidden lg:block">
+      <SectionHeader
+        title="Inventory"
+        subtitle="Manage and organize your product catalog efficiently."
+        class="mb-4 md:mb-6"
+      />
+    </div>
 
     <div class="hidden items-center justify-between md:flex">
       <h4 class="!font-outfit text-core-700 mb-2 text-xl font-semibold">Your product stats</h4>
