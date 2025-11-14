@@ -15,6 +15,7 @@ import CreatePopupEventModal from "../components/CreatePopupEventModal.vue"
 import DeletePopupEvent from "../components/DeletePopupEvent.vue"
 import PopupSalesTab from "../components/popup-tabs/PopupSalesTab.vue"
 import PopupInventoryTab from "../components/popup-tabs/PopupInventoryTab.vue"
+import { clipboardCopy } from "@/utils/others"
 
 const route = useRoute()
 const openDelete = ref(false)
@@ -65,60 +66,51 @@ const actionMenu = computed(() => [
   />
 
   <section v-else class="flex flex-col px-4 py-4 md:px-8 md:py-8">
-    <BackButton label="Go Back" class="mb-6" />
+    <div>
+      <BackButton label="Go Back" class="mb-6" />
+    </div>
 
-    <section class="space-y-6">
-      <div class="relative z-[1] rounded-xl">
-        <img
-          src="@/assets/images/eventful-noise-grid.svg?url"
-          :alt="popupEvt?.name"
-          class="h-48 w-full rounded-xl bg-amber-600 object-cover"
-        />
+    <section>
+      <div class="bg-primary-800 mb-6 flex flex-col gap-6 rounded-xl p-6 text-white md:flex-row">
+        <div class="bg-core-200 size-20 rounded"></div>
+        <div class="flex-1">
+          <div class="mb-2 flex items-center gap-2">
+            <h3 class="truncate text-xl font-semibold capitalize">{{ popupEvt?.name }}</h3>
+            <Chip
+              :label="getEventStatus(popupEvt)"
+              size="sm"
+              class="capitalize"
+              show-dot
+              :color="
+                getEventStatus(popupEvt) === 'upcoming'
+                  ? 'primary'
+                  : getEventStatus(popupEvt) === 'ongoing'
+                    ? 'success'
+                    : 'alt'
+              "
+            />
+          </div>
+          <div class="space-y-1">
+            <p class="flex items-center gap-2 text-sm">
+              <Icon name="calendar" size="20" />
+              {{ formatDate(popupEvt?.start_date || "") }} -
+              {{ formatDate(popupEvt?.end_date || "") }}
+            </p>
+            <p class="flex items-center gap-2 text-sm">
+              <span class="max-w-2/3 truncate md:max-w-1/3">
+                {{ `www.popup.leyyow.com/${popupEvt?.slug || ""}` }}
+              </span>
+              <Icon
+                name="copy"
+                size="20"
+                @click="clipboardCopy(`https://popup.leyyow.com/${popupEvt?.slug}`)"
+              />
+            </p>
+          </div>
+        </div>
 
-        <div class="absolute top-0 bottom-0 w-full p-8 text-white">
-          <section class="flex flex-col gap-6 md:flex-row">
-            <div class="flex-1">
-              <div class="mb-3 flex items-center gap-2">
-                <h3 class="truncate text-xl font-semibold capitalize">{{ popupEvt?.name }}</h3>
-                <Chip
-                  :label="getEventStatus(popupEvt)"
-                  size="sm"
-                  class="capitalize"
-                  :color="
-                    getEventStatus(popupEvt) === 'upcoming'
-                      ? 'primary'
-                      : getEventStatus(popupEvt) === 'ongoing'
-                        ? 'success'
-                        : 'alt'
-                  "
-                />
-              </div>
-              <div class="space-y-3">
-                <p class="flex items-center gap-2 text-sm">
-                  <Icon name="calendar" size="20" />
-                  {{ formatDate(popupEvt?.start_date || "") }} -
-                  {{ formatDate(popupEvt?.end_date || "") }}
-                </p>
-                <p class="flex items-center gap-2 text-sm capitalize">
-                  <Icon name="location" size="20" />
-                  {{ popupEvt?.event_address || "N/A" }}
-                </p>
-
-                <div class="flex items-center gap-2">
-                  <Icon name="dollar-circle" size="20" />
-                  <p class="mr-2 text-sm">
-                    {{
-                      popupEvt?.participant_fee ? formatCurrency(popupEvt?.participant_fee) : "Free"
-                    }}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <DropdownMenu :items="actionMenu" />
-            </div>
-          </section>
+        <div>
+          <DropdownMenu :items="actionMenu" />
         </div>
       </div>
 
@@ -160,7 +152,11 @@ const actionMenu = computed(() => [
       @close="openEdit = false"
       :is-edit-mode="true"
       :event="popupEvt"
-      @refresh="refetch"
+      @refresh="
+        () => {
+          refetch()
+        }
+      "
     />
 
     <DeletePopupEvent
