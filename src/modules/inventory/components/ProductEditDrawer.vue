@@ -180,6 +180,7 @@ import baseApi from "@/composables/baseApi"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
 import LoadingIcon from "@components/LoadingIcon.vue"
+import { useQueryClient } from "@tanstack/vue-query"
 
 // Import composables
 import { useProductFormState } from "../composables/useProductFormState"
@@ -222,6 +223,9 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<Emits>()
+
+// Query client for cache invalidation
+const queryClient = useQueryClient()
 
 // Ref to ProductDetailsForm component
 const productDetailsRef = ref<{
@@ -269,6 +273,9 @@ const existingImageIds = ref<Array<string | null>>([])
 
 // Track removed image UIDs
 const removedImageIds = ref<string[]>([])
+
+// Track if variant images were uploaded (to force refetch on reopen)
+const variantImagesWereUploaded = ref(false)
 
 const { step, previousStep } = useProductDrawerUtilities().useStepManagement({
   hasVariants,
@@ -336,12 +343,18 @@ const drawerTitle = computed(() => {
   }
 })
 
-// Watch for drawer opening to set productUidToFetch and reset deletedVariants
+// Watch for drawer opening to manage product fetching
 watch(
   () => [props.modelValue, props.product] as const,
   ([isOpen, product]) => {
     if (isOpen && product?.uid) {
+      // Drawer is opening - always invalidate to ensure fresh data
+      queryClient.invalidateQueries({ queryKey: ["products", product.uid] })
       productUidToFetch.value = product.uid
+
+      // Reset variant images uploaded flag
+      variantImagesWereUploaded.value = false
+
       // Reset deleted variants when drawer opens
       deletedVariants.value = []
       // Reset original variant UIDs
@@ -611,6 +624,8 @@ const handleSubmit = async () => {
       {
         onSuccess: () => {
           toast.success("Product details updated successfully")
+          // Invalidate the product query to ensure fresh data on next open
+          queryClient.invalidateQueries({ queryKey: ["products", productUidToFetch.value] })
           resetFormState()
           emit("update:modelValue", false)
           emit("refresh")
@@ -664,6 +679,8 @@ const handleSubmit = async () => {
       {
         onSuccess: () => {
           toast.success("Variant updated successfully")
+          // Invalidate the product query to ensure fresh data on next open
+          queryClient.invalidateQueries({ queryKey: ["products", productUidToFetch.value] })
           resetFormState()
           emit("update:modelValue", false)
           emit("refresh")
@@ -789,6 +806,8 @@ const handleSubmit = async () => {
         }
         if (variantImagesUploaded.length > 0) {
           console.log(`Uploaded ${variantImagesUploaded.length} variant images`)
+          // Mark that variant images were uploaded so we refetch on next open
+          variantImagesWereUploaded.value = true
         }
       }
 
@@ -807,6 +826,8 @@ const handleSubmit = async () => {
         toast.info("No changes to images")
       }
 
+      // Invalidate the product query to ensure fresh data on next open
+      queryClient.invalidateQueries({ queryKey: ["products", productUidToFetch.value] })
       resetFormState()
       emit("update:modelValue", false)
       emit("refresh")
@@ -930,6 +951,8 @@ const handleSubmit = async () => {
           toast.info("No variant changes to apply")
         }
 
+        // Invalidate the product query to ensure fresh data on next open
+        queryClient.invalidateQueries({ queryKey: ["products", productUidToFetch.value] })
         resetFormState()
         emit("update:modelValue", false)
         emit("refresh")
@@ -1049,6 +1072,8 @@ const handleSubmit = async () => {
 
                 if (variantImagesUploaded > 0) {
                   console.log(`Uploaded ${variantImagesUploaded} variant images`)
+                  // Mark that variant images were uploaded so we refetch on next open
+                  variantImagesWereUploaded.value = true
                 }
               }
             }

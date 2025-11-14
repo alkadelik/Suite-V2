@@ -3,7 +3,14 @@
     <div class="flex items-start justify-between gap-2">
       <div class="flex items-start gap-2">
         <div class="relative">
-          <div class="flex size-10 items-center justify-center rounded-xl bg-gray-100 p-2">
+          <img
+            v-if="product.primary_image?.image"
+            :src="product.primary_image.image"
+            :alt="product.primary_image.alt_text || product.name"
+            class="size-10 rounded-xl object-cover"
+            loading="lazy"
+          />
+          <div v-else class="flex size-10 items-center justify-center rounded-xl bg-gray-100 p-2">
             <Icon name="shop-add" class="text-core-600" />
           </div>
         </div>

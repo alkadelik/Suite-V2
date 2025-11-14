@@ -93,6 +93,8 @@ import VerifyIdentityModal from "../components/VerifyIdentityModal.vue"
 import ConfigureDeliveryModal from "../components/ConfigureDeliveryModal.vue"
 import { useGetLiveStatus } from "../api"
 import { useAuthStore } from "@modules/auth/store"
+import { useGetCustomers } from "@modules/customers/api"
+import { useGetOrders } from "@modules/orders/api"
 
 const router = useRouter()
 
@@ -101,12 +103,29 @@ const storeSlug = authStore.user?.store_slug || ""
 
 const {
   data: liveStatusData,
-  isPending: isLoading,
+  isPending: isLoadingLiveStatus,
   refetch: refetchLiveStatus,
 } = useGetLiveStatus(storeSlug)
 
 const isLive = computed(() => liveStatusData.value?.data?.is_live || false)
 const completionPercentage = computed(() => liveStatusData.value?.data?.completion_percentage || 0)
+
+// Check if customers exist
+const { data: customersData, isPending: isLoadingCustomers } = useGetCustomers(
+  ref({ page: 1, page_size: 1 }),
+)
+const hasCustomers = computed(() => (customersData.value.data?.count || 0) > 0)
+
+// Check if orders exist
+const { data: ordersData, isPending: isLoadingOrders } = useGetOrders(
+  ref({ page: 1, page_size: 1 }),
+)
+const hasOrders = computed(() => (ordersData.value?.count || 0) > 0)
+
+// Combined loading state
+const isLoading = computed(
+  () => isLoadingLiveStatus.value || isLoadingCustomers.value || isLoadingOrders.value,
+)
 
 const showBankAccountModal = ref(false)
 const showPickupModal = ref(false)
@@ -182,26 +201,26 @@ const tasks = computed(() => {
     {
       id: 6,
       title: "Add a customer",
-      completed: false,
+      completed: hasCustomers.value,
       subtext: "Save your first customer to start building your list.",
       isButton: true,
       buttonLabel: "Add Customer",
       action: () => {
-        // Handle button click
+        router.push({ name: "Customers", query: { create: "true" } })
       },
-      icon: "box",
+      icon: "profile-add",
     },
     {
       id: 7,
       title: "Record your first order",
-      completed: false,
+      completed: hasOrders.value,
       subtext: "Track your first order and manage your sales easily.",
       isButton: true,
       buttonLabel: "Record Order",
       action: () => {
-        // Handle button click
+        router.push({ name: "Orders", query: { create: "true" } })
       },
-      icon: "box",
+      icon: "receipt-text",
     },
     {
       id: 8,

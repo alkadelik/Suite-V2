@@ -47,7 +47,7 @@
           <!-- Single Image Upload -->
           <div class="w-20">
             <MultiFileInput
-              :model-value="[variantImages[index] || null]"
+              :model-value="[getVariantImageForIndex(index)]"
               :number-of-images="1"
               :product-image-mode="true"
               :enabled-slots="enabledVariantSlots"
@@ -169,7 +169,12 @@ watch(
 const primaryImage = computed({
   get: () => props.modelValue[0] || null,
   set: (val: File | string | null) => {
+    // Preserve all existing images when updating primary
     const newImages = [...props.modelValue]
+    // Ensure array is at least length 1
+    if (newImages.length === 0) {
+      newImages.push(null)
+    }
     newImages[0] = val
     emit("update:modelValue", newImages)
   },
@@ -179,7 +184,9 @@ const primaryImage = computed({
 const additionalImages = computed({
   get: () => props.modelValue.slice(1, 5),
   set: (val: Array<File | string | null>) => {
-    const newImages = [primaryImage.value, ...val]
+    // Preserve variant images (indices 5+) when updating additional images
+    const variantImages = props.modelValue.slice(5)
+    const newImages = [primaryImage.value, ...val, ...variantImages]
     emit("update:modelValue", newImages)
   },
 })
@@ -246,7 +253,8 @@ const hasMultipleVariants = computed(() => {
 // Images 0-4: Primary + 4 additional images
 // Images 5+: Variant-specific images (one per variant)
 const variantImages = computed(() => {
-  return props.modelValue.slice(5) || []
+  const images = props.modelValue.slice(5) || []
+  return images
 })
 
 /**
@@ -270,6 +278,15 @@ const getVariantDisplayValues = (variant: IProductVariant): string[] => {
     // Fallback to value (UID)
     return attr.value
   })
+}
+
+/**
+ * Get variant image for a specific index
+ * @param index - Index of the variant in the variants array
+ */
+const getVariantImageForIndex = (index: number): File | string | null => {
+  const image = variantImages.value[index] || null
+  return image
 }
 
 /**
