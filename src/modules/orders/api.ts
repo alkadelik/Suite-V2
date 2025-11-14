@@ -3,6 +3,7 @@ import {
   IMemoPayload,
   IPaymentHistory,
   IPaymentPayload,
+  OrderDashboardStats,
   OrderPayload,
   TOrder,
   TOrderMemo,
@@ -23,6 +24,15 @@ export function useGetOrders(
   params?: MaybeRefOrGetter<Record<string, string | number | boolean> | undefined>,
 ) {
   return useApiQuery<TOrderResponse>({ url: "/orders/", params, key: "orders", selectData: true })
+}
+
+/** Fetch order statistics */
+export function useGetOrderDashboard() {
+  return useApiQuery<OrderDashboardStats>({
+    url: `/orders/dashboard/`,
+    key: `orders-dashboard`,
+    selectData: true,
+  })
 }
 
 /** Fetch single order by ID */

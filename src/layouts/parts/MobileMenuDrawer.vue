@@ -23,6 +23,7 @@ const currentLocation = computed(() => useSettingsStore().activeLocation)
 const user = computed(() => useAuthStore().user)
 
 const quickActions = [
+  { label: "Customers", icon: "people", to: "/customers" },
   { label: "Popups", icon: "calendar-tick", to: "/popups" },
   { label: "Expenses", icon: "receipt-text", to: "/expenses" },
   { label: "Reports", icon: "pie-chart", to: "/reports" },

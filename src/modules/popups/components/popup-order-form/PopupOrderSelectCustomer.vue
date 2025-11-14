@@ -112,7 +112,7 @@ const handleNext = () => {
       class="!min-h-[500px] md:!bg-none"
     />
 
-    <div v-else class="flex min-h-[500px] items-center justify-center">
+    <div v-if="isFetching" class="flex min-h-[500px] items-center justify-center">
       <div class="text-center">
         <Icon name="user" class="text-core-300 mx-auto mb-4 h-16 w-16 animate-pulse" />
         <p class="text-core-400 text-sm">Loading customers...</p>

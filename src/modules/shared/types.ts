@@ -68,6 +68,16 @@ export type TGetSupportedAccountsResponse = {
   data: IAccount[]
 }
 
+export interface ISettlementBank {
+  uid: string
+  bank_name: string
+  bank_code: string
+  account_number: string
+  account_name: string | null
+  subaccount_code: string
+  created_at: string
+}
+
 export type TSetupShippingPayload = {
   store_name: string
   store_address: string
@@ -198,4 +208,26 @@ export interface IShippingProfileResponse {
   error: string | null
   message: string
   data: IShippingProfileData
+}
+
+export interface IShippingCourier {
+  courier_id: string
+  courier_name: string
+  courier_image?: string
+  total_amount?: number
+  total?: number
+  ratings: number
+  votes: number
+  estimated_days?: string
+}
+
+export interface IShippingRatesResponse {
+  error: string | null
+  message: string
+  data: {
+    rates: {
+      request_token: string
+      couriers: IShippingCourier[]
+    }
+  }
 }

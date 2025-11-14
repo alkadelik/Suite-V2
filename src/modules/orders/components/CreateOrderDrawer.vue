@@ -11,10 +11,11 @@ import OrderProductQtyVariant from "./create-order-form/OrderProductQtyVariant.v
 import OrderReviewForm from "./create-order-form/OrderReviewForm.vue"
 import OrderShippingInfoForm from "./create-order-form/OrderShippingInfoForm.vue"
 import OrderPaymentForm from "./create-order-form/OrderPaymentForm.vue"
-import { anonymousCustomer } from "../constants"
+import { anonymousCustomer, ORDER_CHANNELS, DELIVERY_PAYMENT_OPTION } from "../constants"
 import { displayError } from "@/utils/error-handler"
 import { useCreateOrder } from "../api"
 import { toast } from "@/composables/useToast"
+import type { IShippingCourier } from "@modules/shared/types"
 
 defineProps({
   open: { type: Boolean, required: true },
@@ -37,7 +38,14 @@ const selectedProducts = ref<IProductCatalogue[]>([])
 // Step 2: Product variants with quantities and prices
 interface OrderItem {
   product: IProductCatalogue
-  variant: { uid: string; name: string; sku: string; price: string; stock: number } | null
+  variant: {
+    uid: string
+    name: string
+    sku: string
+    price: string
+    stock: number
+    original_price?: number
+  } | null
   quantity: number
   unit_price: number
   notes?: string
@@ -53,7 +61,15 @@ const reviewOrderItems = computed(() => {
       product_name: item.product.name,
       total_stock: item.product.total_stock,
     },
-    variant: item.variant,
+    variant: item.variant
+      ? {
+          uid: item.variant.uid,
+          name: item.variant.name,
+          sku: item.variant.sku,
+          price: item.variant.price,
+          original_price: item.variant.original_price,
+        }
+      : null,
     quantity: item.quantity,
     unit_price: item.unit_price,
     notes: item.notes,
@@ -72,8 +88,13 @@ const shippingInfo = ref({
   courier: "",
   delivery_fee: 0,
   order_date: new Date().toISOString().split("T")[0],
-  order_channel: "online_store",
+  order_channel: ORDER_CHANNELS[0],
   has_shipping: true,
+  delivery_payment_option: DELIVERY_PAYMENT_OPTION[0].value,
+  shipping_courier: null as IShippingCourier | null,
+  shipping_rate_token: "",
+  customer_email: "",
+  customer_phone: "",
 })
 
 // Step 5: Payment info
@@ -86,6 +107,10 @@ const paymentInfo = ref({
 })
 
 // Computed totals
+const itemsCount = computed(() => {
+  return orderItems.value.reduce((sum, item) => sum + item.quantity, 0)
+})
+
 const productsTotal = computed(() => {
   return orderItems.value.reduce((sum, item) => {
     return sum + item.quantity * item.unit_price
@@ -112,7 +137,15 @@ const onCreateOrder = () => {
     fulfilment_method: shippingInfo.value.fulfilment_method,
     delivery_address: shippingInfo.value.delivery_address,
     delivery_method: shippingInfo.value.delivery_method,
-    courier: shippingInfo.value.courier,
+    courier:
+      shippingInfo.value.shipping_courier || shippingInfo.value.courier
+        ? {
+            courier_id: shippingInfo.value.courier?.toLowerCase(),
+            courier_name: shippingInfo.value.courier,
+            votes: 0,
+            ratings: 0,
+          }
+        : "",
     coupon_code: paymentInfo.value.coupon_code || "",
     payment_status: paymentInfo.value.payment_status,
     payment_amount:
@@ -130,6 +163,8 @@ const onCreateOrder = () => {
         notes: item.notes,
       }),
     ),
+    order_channel: shippingInfo.value.order_channel.value,
+    delivery_payment_option: shippingInfo.value.delivery_payment_option,
   }
 
   createOrder(payload, {
@@ -150,15 +185,20 @@ const resetForm = () => {
   orderItems.value = []
   selectedCustomer.value = null
   shippingInfo.value = {
-    fulfilment_method: "delivery",
+    fulfilment_method: "pickup",
     fulfilment_status: "unfulfilled",
     delivery_address: "",
     delivery_method: "manual",
     courier: "",
     delivery_fee: 0,
     order_date: new Date().toISOString().split("T")[0],
-    order_channel: "online_store",
+    order_channel: ORDER_CHANNELS[0],
     has_shipping: true,
+    delivery_payment_option: DELIVERY_PAYMENT_OPTION[0].value,
+    shipping_courier: null,
+    shipping_rate_token: "",
+    customer_email: "",
+    customer_phone: "",
   }
   paymentInfo.value = {
     payment_status: "unpaid",
@@ -203,6 +243,7 @@ const resetForm = () => {
           v-if="step === 3"
           v-model:shippingInfo="shippingInfo"
           :customer="selectedCustomer"
+          :orderItems="orderItems"
           @next="onNext"
           @prev="onPrev"
         />
@@ -214,6 +255,7 @@ const resetForm = () => {
           :productsTotal="productsTotal"
           :deliveryFee="shippingInfo.delivery_fee"
           :totalAmount="totalAmount"
+          :itemsCount="itemsCount"
           @next="onNext"
           @prev="onPrev"
         />

@@ -15,6 +15,9 @@ import CreatePopupEventModal from "../components/CreatePopupEventModal.vue"
 import DeletePopupEvent from "../components/DeletePopupEvent.vue"
 import PopupSalesTab from "../components/popup-tabs/PopupSalesTab.vue"
 import PopupInventoryTab from "../components/popup-tabs/PopupInventoryTab.vue"
+import { clipboardCopy } from "@/utils/others"
+import { useMediaQuery } from "@vueuse/core"
+import Collapsible from "@components/Collapsible.vue"
 
 const route = useRoute()
 const openDelete = ref(false)
@@ -54,6 +57,8 @@ const actionMenu = computed(() => [
     action: () => (openDelete.value = true),
   },
 ])
+
+const isMobile = useMediaQuery("(max-width: 768px)")
 </script>
 
 <template>
@@ -65,60 +70,73 @@ const actionMenu = computed(() => [
   />
 
   <section v-else class="flex flex-col px-4 py-4 md:px-8 md:py-8">
-    <BackButton label="Go Back" class="mb-6" />
+    <div>
+      <BackButton label="Go Back" class="mb-6" />
+    </div>
 
-    <section class="space-y-6">
-      <div class="relative z-[1] rounded-xl">
-        <img
-          src="@/assets/images/eventful-noise-grid.svg?url"
-          :alt="popupEvt?.name"
-          class="h-48 w-full rounded-xl bg-amber-600 object-cover"
-        />
+    <section>
+      <div class="bg-primary-800 mb-6 flex gap-2 rounded-xl p-3 text-white md:gap-6 md:p-6">
+        <div class="bg-core-200 w-16 flex-shrink-0 rounded md:h-[20] md:w-20"></div>
+        <div class="min-w-0 flex-1">
+          <div class="mb-2 flex items-center gap-2">
+            <h3
+              class="min-w-0 flex-1 truncate text-base font-semibold capitalize md:flex-none md:text-xl"
+            >
+              {{ popupEvt?.name }}
+            </h3>
+            <Chip
+              v-if="!isMobile"
+              :label="getEventStatus(popupEvt)"
+              size="sm"
+              class="flex-shrink-0 capitalize"
+              show-dot
+              :color="
+                getEventStatus(popupEvt) === 'upcoming'
+                  ? 'primary'
+                  : getEventStatus(popupEvt) === 'ongoing'
+                    ? 'success'
+                    : 'alt'
+              "
+            />
+          </div>
+          <div class="space-y-1">
+            <p class="flex items-center gap-2 text-sm">
+              <Icon name="calendar" size="20" class="flex-shrink-0" />
+              <span class="min-w-0 truncate">
+                {{ formatDate(popupEvt?.start_date || "") }} -
+                {{ formatDate(popupEvt?.end_date || "") }}
+              </span>
+            </p>
+            <p class="flex items-center gap-2 text-sm">
+              <span class="min-w-0 truncate">
+                {{ `www.popup.leyyow.com/${popupEvt?.slug || ""}` }}
+              </span>
+              <Icon
+                name="copy"
+                size="20"
+                class="flex-shrink-0 cursor-pointer"
+                @click="clipboardCopy(`https://popup.leyyow.com/${popupEvt?.slug}`)"
+              />
+            </p>
+            <Chip
+              v-if="isMobile"
+              :label="getEventStatus(popupEvt)"
+              size="sm"
+              class="capitalize"
+              show-dot
+              :color="
+                getEventStatus(popupEvt) === 'upcoming'
+                  ? 'primary'
+                  : getEventStatus(popupEvt) === 'ongoing'
+                    ? 'success'
+                    : 'alt'
+              "
+            />
+          </div>
+        </div>
 
-        <div class="absolute top-0 bottom-0 w-full p-8 text-white">
-          <section class="flex flex-col gap-6 md:flex-row">
-            <div class="flex-1">
-              <div class="mb-3 flex items-center gap-2">
-                <h3 class="truncate text-xl font-semibold capitalize">{{ popupEvt?.name }}</h3>
-                <Chip
-                  :label="getEventStatus(popupEvt)"
-                  size="sm"
-                  class="capitalize"
-                  :color="
-                    getEventStatus(popupEvt) === 'upcoming'
-                      ? 'primary'
-                      : getEventStatus(popupEvt) === 'ongoing'
-                        ? 'success'
-                        : 'alt'
-                  "
-                />
-              </div>
-              <div class="space-y-3">
-                <p class="flex items-center gap-2 text-sm">
-                  <Icon name="calendar" size="20" />
-                  {{ formatDate(popupEvt?.start_date || "") }} -
-                  {{ formatDate(popupEvt?.end_date || "") }}
-                </p>
-                <p class="flex items-center gap-2 text-sm capitalize">
-                  <Icon name="location" size="20" />
-                  {{ popupEvt?.event_address || "N/A" }}
-                </p>
-
-                <div class="flex items-center gap-2">
-                  <Icon name="dollar-circle" size="20" />
-                  <p class="mr-2 text-sm">
-                    {{
-                      popupEvt?.participant_fee ? formatCurrency(popupEvt?.participant_fee) : "Free"
-                    }}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <DropdownMenu :items="actionMenu" />
-            </div>
-          </section>
+        <div class="flex flex-shrink-0 items-start">
+          <DropdownMenu :items="actionMenu" />
         </div>
       </div>
 
@@ -130,20 +148,21 @@ const actionMenu = computed(() => [
         ]"
       >
         <template #overview>
-          <div class="mt-4 mb-8 rounded-2xl bg-white py-6 shadow">
-            <div class="border-core-200 border-b px-6 pb-4">
-              <h3 class="text-lg font-semibold">Popup Details</h3>
-            </div>
-            <div class="divide-core-100 divide-y px-6">
-              <div
-                v-for="(value, key) in overviewInfo"
-                :key="key"
-                class="flex flex-col gap-1 py-3 text-sm"
-              >
-                <p class="text-core-600 flex-1 font-semibold">{{ startCase(key) }}</p>
-                <p class="flex-2 font-medium">{{ value }}</p>
-              </div>
-            </div>
+          <div class="mb-6">
+            <Collapsible header="Popup Details" :default-open="true">
+              <template #body>
+                <div class="divide-core-100 divide-y">
+                  <div
+                    v-for="(value, key) in overviewInfo"
+                    :key="key"
+                    class="flex flex-col gap-1 py-3 text-sm"
+                  >
+                    <p class="text-core-600 flex-1 font-semibold">{{ startCase(key) }}</p>
+                    <p class="flex-2 font-medium">{{ value }}</p>
+                  </div>
+                </div>
+              </template>
+            </Collapsible>
           </div>
 
           <PopupInventoryTab />
@@ -160,7 +179,11 @@ const actionMenu = computed(() => [
       @close="openEdit = false"
       :is-edit-mode="true"
       :event="popupEvt"
-      @refresh="refetch"
+      @refresh="
+        () => {
+          refetch()
+        }
+      "
     />
 
     <DeletePopupEvent

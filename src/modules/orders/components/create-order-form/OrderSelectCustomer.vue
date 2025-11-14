@@ -84,7 +84,7 @@ const handleNext = () => {
       </div>
     </div>
 
-    <section v-if="!isFetching && filteredCustomers.length > 0" class="space-y-4">
+    <section class="space-y-4">
       <div
         class="cursor-pointer rounded-xl transition-all"
         :class="
@@ -110,7 +110,7 @@ const handleNext = () => {
     </section>
 
     <EmptyState
-      v-else-if="!isFetching && filteredCustomers.length === 0"
+      v-if="!isFetching && filteredCustomers.length === 0"
       title="No Customers Found"
       :description="
         searchQuery ? 'Try adjusting your search query' : 'Add a customer to get started'
@@ -118,7 +118,7 @@ const handleNext = () => {
       class="!min-h-[500px] md:!bg-none"
     />
 
-    <div v-else class="flex min-h-[500px] items-center justify-center">
+    <div v-if="isFetching" class="flex min-h-[500px] items-center justify-center">
       <div class="text-center">
         <Icon name="user" class="text-core-300 mx-auto mb-4 h-16 w-16 animate-pulse" />
         <p class="text-core-400 text-sm">Loading customers...</p>

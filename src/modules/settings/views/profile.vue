@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import AppButton from "@components/AppButton.vue"
 import AppForm from "@components/form/AppForm.vue"
-import FileUploadField from "@components/form/FileUploadField.vue"
 import FormField from "@components/form/FormField.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import { useAuthStore } from "@modules/auth/store"
@@ -53,6 +52,10 @@ const KYC_DOCUMENT_TYPES = [
   { label: "National ID", value: "national_id" },
   { label: "Voter's Card", value: "voters_card" },
 ]
+
+watch(kycData, (val) => {
+  console.log("KYC DATA UPDATED:", val)
+})
 
 const kycInitialValues = computed(() => ({
   doc_type: KYC_DOCUMENT_TYPES.find((type) => type.value === kycData.value?.doc_type) || null,
@@ -166,8 +169,6 @@ watch(
         subtitle="We require your BVN and ID to verify your identity as part of KYC regulations."
       />
 
-      <!-- {{ kycData }} -->
-
       <AppForm
         @submit="onUpdateKyc"
         :schema="kycSchema"
@@ -184,7 +185,8 @@ watch(
             required
           />
 
-          <FileUploadField
+          <FormField
+            type="file"
             name="file"
             label="Click to upload your ID"
             accept="image/*"

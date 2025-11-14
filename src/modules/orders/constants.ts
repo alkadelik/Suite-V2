@@ -13,13 +13,18 @@ import { formatCurrency } from "@/utils/format-currency"
 export const ORDERS: TOrder[] = []
 
 export const ORDER_CHANNELS: TOrderChannel[] = [
-  { label: "Store/Walk-in", value: 0, icon: "Shop" },
-  { label: "Instagram", value: 1, icon: "Instagram" },
-  { label: "Facebook", value: 5, icon: "Facebook" },
-  { label: "X", value: 6, icon: "Box1" },
-  { label: "Whatsapp", value: 2, icon: "Whatsapp" },
-  { label: "Website", value: 3, icon: "Global" },
-  { label: "Other", value: 4, icon: "Box2" },
+  { label: "Store/Walk-in", value: "walkin", icon: "Shop" },
+  { label: "Instagram", value: "instagram", icon: "Instagram" },
+  { label: "X", value: "x", icon: "Box1" },
+  { label: "Whatsapp", value: "whatsapp", icon: "Whatsapp" },
+  { label: "Website", value: "website", icon: "Global" },
+  { label: "Other", value: "others", icon: "Box2" },
+]
+
+export const DELIVERY_PAYMENT_OPTION = [
+  { label: "Customer pays courier directly", value: "customer_pays_courier" },
+  { label: "Customer pays merchant", value: "customer_pays_merchant" },
+  { label: "Free Shipping", value: "free_shipping" },
 ]
 
 export const ORDER_SHIPPING_COMPANIES: TOrderShippingCompany[] = [
@@ -33,14 +38,14 @@ export const ORDER_SHIPPING_COMPANIES: TOrderShippingCompany[] = [
 ]
 
 export const ORDER_PAYMENT_METHODS: TOrderPaymentMethod[] = [
-  { label: "Cash", value: 0, icon: "Moneys" },
-  { label: "POS", value: 1, icon: "CardPos" },
-  { label: "Transfer", value: 2, icon: "MoneyChange" },
-  { label: "Other", value: 3, icon: "WalletMoney" },
+  { label: "Cash", value: "cash", icon: "Moneys" },
+  { label: "POS", value: "pos", icon: "CardPos" },
+  { label: "Transfer", value: "transfer", icon: "MoneyChange" },
+  { label: "Other", value: "other", icon: "WalletMoney" },
 ]
 
 export const ORDER_PAYMENT_STATUS: TOrderPaymentStatus[] = [
-  { label: "Paid", value: "paid", icon: "card-tick", color: "success" },
+  { label: "Fully paid", value: "paid", icon: "card-tick", color: "success" },
   { label: "Unpaid", value: "unpaid", icon: "card-remove", color: "error" },
   { label: "Partially paid", value: "partially_paid", icon: "card-pos", color: "primary" },
 ]

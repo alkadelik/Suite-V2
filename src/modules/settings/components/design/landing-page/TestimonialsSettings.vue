@@ -141,7 +141,7 @@ interface Testimonial {
   quote: string
   name: string
   descriptor: string
-  image?: File | null
+  image?: File | null | string
 }
 
 interface TestimonialsFormData {
@@ -209,7 +209,7 @@ watch(
           quote: t.comment || "",
           name: t.name || "",
           descriptor: t.role || "",
-          image: null,
+          image: t.image || null,
         })) || []
 
       testimonials.value = mappedTestimonials

@@ -143,7 +143,11 @@
 
           <!-- mobile view cell templates -->
           <template #mobile="{ item }">
-            <ProductCard :product="item" :action-items="getActionItems(item)" />
+            <ProductCard
+              @click="handleRowClick(item)"
+              :product="item"
+              :action-items="getActionItems(item)"
+            />
           </template>
         </DataTable>
       </div>

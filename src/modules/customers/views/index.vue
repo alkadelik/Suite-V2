@@ -79,33 +79,6 @@
           <Avatar v-if="item.full_name" :name="item?.full_name" :extra-text="true" />
         </template>
 
-        <template #cell:lastOrderDate="{ value }">
-          <span class="text-gray-600">
-            {{
-              typeof value === "string" ||
-              typeof value === "number" ||
-              typeof value === "boolean" ||
-              value instanceof Date ||
-              value === null ||
-              value === undefined
-                ? formatDate(value)
-                : ""
-            }}
-          </span>
-        </template>
-
-        <template #cell:phone="{ value }">
-          <span class="text-sm">{{ value }}</span>
-        </template>
-
-        <template #cell:email="{ value }">
-          <span class="text-sm">{{ value }}</span>
-        </template>
-
-        <template #cell:totalOrders="{ value }">
-          <span>{{ value }}</span>
-        </template>
-
         <template #cell:action="{ item }">
           <div class="flex items-center gap-2">
             <Icon
@@ -135,17 +108,27 @@
 
         <!-- mobile view cell templates -->
         <template #mobile="{ item }">
-          <div class="space-y-2">
-            <div class="flex items-start gap-2">
-              <Avatar :name="String(item.full_name)" class="items-start" />
-              <Chip
-                :label="`${String(item.total_orders)} orders`"
-                variant="outlined"
-                size="sm"
-                showDot
-              />
-            </div>
-            <div class="ms-13 -mt-5">
+          <div
+            class="border-core-300 bg-core-25 text-core-600 flex w-full cursor-pointer gap-2 rounded-xl border p-4"
+            @click="handleRowClick(item)"
+          >
+            <Avatar :name="String(item.full_name)" />
+
+            <div class="w-full">
+              <div class="flex w-full items-center gap-2">
+                <h3 class="text-base font-semibold text-gray-700">{{ item.full_name }}</h3>
+                <Chip
+                  :label="`${String(item.total_orders)} orders`"
+                  variant="outlined"
+                  size="sm"
+                  showDot
+                />
+
+                <div class="ml-auto">
+                  <DropdownMenu :items="getActionItems(item)" />
+                </div>
+              </div>
+
               <div class="text-core-600 flex items-center gap-1">
                 <!-- Email dropdown -->
                 <DropdownMenu
@@ -227,7 +210,7 @@ import DropdownMenu from "@components/DropdownMenu.vue"
 import Chip from "@components/Chip.vue"
 import TextField from "@components/form/TextField.vue"
 import AppButton from "@components/AppButton.vue"
-import { formatDate, formatDateLong } from "../utils/dateFormatter"
+import { formatDateLong } from "../utils/dateFormatter"
 import { toast } from "@/composables/useToast"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
 import CustomerFormDrawer from "../components/CustomerFormDrawer.vue"

@@ -21,7 +21,7 @@
 
     <!-- Body -->
     <div
-      class="bg-base-background flex-1 overflow-y-auto"
+      class="bg-base-background drawer-body flex-1 overflow-y-auto"
       :class="[props.handlePadding ? 'p-5' : 'p-0', props.bodyClass]"
     >
       <slot />

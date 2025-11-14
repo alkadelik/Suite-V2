@@ -1,4 +1,4 @@
-import baseApi, { TApiPromise } from "@/composables/baseApi"
+import baseApi, { TApiPromise, useApiQuery } from "@/composables/baseApi"
 import { useMutation, useQuery } from "@tanstack/vue-query"
 import {
   IRolesApiResponse,
@@ -10,6 +10,7 @@ import {
   INotificationsResponse,
   ICouriersResponse,
   IShippingProfileResponse,
+  ISettlementBank,
 } from "./types"
 import { IIndustriesApiResponse } from "./types"
 
@@ -36,6 +37,15 @@ export function useResolveBankAccount() {
     mutationKey: ["resolveBankAccount"],
     mutationFn: (body: { account_number: string; bank_code: string }) =>
       baseApi.post("/billings/account-verification/verify/", body),
+  })
+}
+
+/** Get settlement banks  */
+export function useGetSettlementBank() {
+  return useApiQuery<ISettlementBank[]>({
+    key: "settlementBanks",
+    url: "/billings/settlements/",
+    selectData: true,
   })
 }
 
@@ -167,5 +177,21 @@ export function useMarkNotificationAsRead() {
 export function useClearNotifications() {
   return useMutation({
     mutationFn: () => baseApi.post("/notifications/clear/"),
+  })
+}
+
+/** Get shipping rates */
+export function useGetShippingRates() {
+  return useMutation({
+    mutationFn: (body: {
+      delivery_address: string
+      customer_name: string
+      customer_email: string
+      customer_phone: string
+      items: Array<{
+        variant: string
+        quantity: number
+      }>
+    }) => baseApi.post("/shipping/rates/", body),
   })
 }

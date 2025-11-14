@@ -7,6 +7,7 @@ import FormField from "@components/form/FormField.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import {
   useCreateBankAccount,
+  useGetSettlementBank,
   useGetSupportedBanks,
   useResolveBankAccount,
 } from "@modules/shared/api"
@@ -18,6 +19,7 @@ import * as yup from "yup"
 const accountName = ref<string>("")
 
 const { data: banks, isPending: isLoading } = useGetSupportedBanks()
+const { data: settlementBanks } = useGetSettlementBank()
 const { mutate: addBankAccount, isPending } = useCreateBankAccount()
 const { mutate: resolveAccount, isPending: isResolving } = useResolveBankAccount()
 
@@ -44,12 +46,24 @@ const { handleSubmit, meta, setErrors, setValues, values } = useForm<{
   }),
 })
 
+watch(settlementBanks, (mybanks) => {
+  if (mybanks) {
+    setValues({
+      bank_name: {
+        label: mybanks[0].bank_name,
+        value: mybanks[0].bank_code,
+      },
+      account_number: mybanks[0]?.account_number,
+    })
+  }
+})
+
 const validateAccountNumber = (account_number: string, bank_code: string) => {
   resolveAccount(
     { account_number, bank_code },
     {
       onSuccess: ({ data }) => {
-        console.log("Resolved account name:", data?.data?.data)
+        // console.log("Resolved account name:", data?.data?.data)
         const acct_name = data?.data?.data?.account_name
         if (acct_name) {
           accountName.value = acct_name
