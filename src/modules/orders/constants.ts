@@ -38,14 +38,14 @@ export const ORDER_SHIPPING_COMPANIES: TOrderShippingCompany[] = [
 ]
 
 export const ORDER_PAYMENT_METHODS: TOrderPaymentMethod[] = [
-  { label: "Cash", value: 0, icon: "Moneys" },
-  { label: "POS", value: 1, icon: "CardPos" },
-  { label: "Transfer", value: 2, icon: "MoneyChange" },
-  { label: "Other", value: 3, icon: "WalletMoney" },
+  { label: "Cash", value: "cash", icon: "Moneys" },
+  { label: "POS", value: "pos", icon: "CardPos" },
+  { label: "Transfer", value: "transfer", icon: "MoneyChange" },
+  { label: "Other", value: "other", icon: "WalletMoney" },
 ]
 
 export const ORDER_PAYMENT_STATUS: TOrderPaymentStatus[] = [
-  { label: "Paid", value: "paid", icon: "card-tick", color: "success" },
+  { label: "Fully paid", value: "paid", icon: "card-tick", color: "success" },
   { label: "Unpaid", value: "unpaid", icon: "card-remove", color: "error" },
   { label: "Partially paid", value: "partially_paid", icon: "card-pos", color: "primary" },
 ]

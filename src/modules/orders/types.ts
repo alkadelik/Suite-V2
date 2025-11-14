@@ -62,15 +62,15 @@ export type TOrderShippingCompany = {
 
 export type TOrderPaymentMethod = {
   label: string
-  value: number
-  icon: string
+  value: string
+  icon?: string
 }
 
 export type TOrderPaymentStatus = {
   label: string
   value: "unpaid" | "paid" | "partially_paid"
-  icon: string
-  color: "primary" | "success" | "warning" | "error" | "alt" | "blue" | "purple" | undefined
+  icon?: string
+  color?: "primary" | "success" | "warning" | "error" | "alt" | "blue" | "purple" | undefined
 }
 
 export interface OrderPayload {
@@ -161,4 +161,32 @@ export interface IMemoPayload {
   status: string
   severity: "low" | "medium" | "high"
   content: string
+}
+
+export interface OrderDashboardStats {
+  period: {
+    year: number
+    month: number
+  }
+
+  current: {
+    order_count: number
+    total_amount: number
+    total_outstanding: number
+    fulfilled_count: number
+  }
+
+  previous: {
+    order_count: number
+    total_amount: number
+    total_outstanding: number
+    fulfilled_count: number
+  }
+
+  change: {
+    order_count_pct: number
+    total_amount_pct: number
+    total_outstanding_pct: number
+    fulfilled_count_pct: number
+  }
 }

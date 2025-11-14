@@ -113,7 +113,7 @@ const handleNext = () => {
             v-if="prod.images?.length"
             :src="prod.images[0]?.image"
             alt=""
-            class="h-20 rounded-xl"
+            class="h-full w-full rounded-xl object-cover"
           />
           <Icon v-else name="box" class="h-20 w-20" />
 

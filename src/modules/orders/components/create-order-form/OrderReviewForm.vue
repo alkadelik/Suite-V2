@@ -68,82 +68,66 @@ const customerName = computed(() => {
 const itemsCount = computed(() => {
   return props.orderItems.reduce((sum, item) => sum + item.quantity, 0)
 })
-
-const getItemTotal = (item: OrderItem) => {
-  return item.quantity * item.unit_price
-}
 </script>
 
 <template>
   <div>
     <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
-      <Icon name="document-check" size="28" />
+      <Icon name="shop-add" size="28" />
     </div>
     <p class="mb-4 text-sm">Double-check everything before confirming this order.</p>
 
     <div class="space-y-4">
       <!-- Order Items -->
-      <section>
-        <h3 class="mb-4 text-lg font-semibold">Order Items</h3>
-        <div class="space-y-3">
-          <div
-            v-for="(item, idx) in orderItems"
-            :key="`${item.product.uid}-${item.variant?.uid || idx}`"
-            class="flex items-center justify-between rounded-lg bg-white p-4"
-          >
-            <div class="flex items-center gap-3">
-              <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100">
-                <Icon name="box" class="h-5 w-5 text-gray-400" />
-              </div>
-              <div>
-                <h4 class="text-sm font-medium">{{ item.product.product_name }}</h4>
-                <p v-if="item.variant" class="text-xs text-gray-500">
-                  {{ item.variant.name.split(" - ")[1] || item.variant.name }}
-                </p>
-                <div class="flex items-center gap-2">
-                  <p class="text-xs text-gray-600">
-                    {{ item.quantity }} x {{ formatCurrency(item.unit_price) }}
-                  </p>
-                  <p
-                    v-if="
-                      item.variant?.original_price &&
-                      item.variant.original_price !== item.unit_price
-                    "
-                    class="text-core-400 text-xs line-through"
-                  >
-                    {{ formatCurrency(item.variant.original_price) }}
-                  </p>
-                </div>
-                <p v-if="item.notes" class="text-xs text-gray-500 italic">{{ item.notes }}</p>
-              </div>
+
+      <div class="border-core-300 bg-core-25 my-6 space-y-4 rounded-xl border p-4">
+        <div
+          v-for="(item, idx) in orderItems"
+          :key="`${item.product.uid}-${item.variant?.uid || idx}`"
+          class="flex items-center justify-between"
+        >
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white">
+              <Icon name="box" class="h-5 w-5 text-gray-400" />
             </div>
-            <div class="text-right">
-              <p class="text-sm font-semibold">{{ formatCurrency(getItemTotal(item)) }}</p>
+            <div>
+              <h4 class="text-sm font-medium">
+                {{ item.product.product_name }}
+                <span class="text-primary-700 ml-1 text-xs font-medium">
+                  (x{{ item.quantity }})
+                </span>
+              </h4>
+              <p v-if="item.variant" class="text-core-500 text-xs">
+                {{ item.variant.name.split(" - ")[1] || item.variant.name }}
+              </p>
             </div>
           </div>
+          <div class="text-right">
+            <span
+              v-if="item.variant?.original_price && item.variant.original_price !== item.unit_price"
+              class="text-core-400 text-xs line-through"
+            >
+              {{ formatCurrency(item.quantity * item.variant.original_price) }}
+            </span>
+            <span class="ml-1 text-sm font-medium">
+              {{ formatCurrency(Number(item.quantity * item.unit_price)) }}
+            </span>
+          </div>
         </div>
-      </section>
+      </div>
 
       <!-- Customer Details -->
       <div class="border-core-300 bg-core-25 my-6 space-y-3 rounded-xl border p-4">
-        <h4 class="text-sm font-medium">Customer Details</h4>
-        <p class="flex justify-between text-sm">
-          <span class="text-core-600">Name</span>
-          <span class="font-medium">{{ customerName }}</span>
-        </p>
-        <div v-if="customer?.email" class="flex items-center justify-between">
+        <p class="text-sm font-medium">{{ customerName }}</p>
+        <div class="flex items-center justify-between">
           <div class="flex items-center gap-1">
             <Icon name="sms" class="text-core-600 h-4 w-4" />
-            <span class="text-core-600 text-sm">Email</span>
+            <span class="text-sm font-medium">{{ customer?.email || "N/A" }}</span>
           </div>
-          <span class="text-sm font-medium">{{ customer.email }}</span>
-        </div>
-        <div v-if="customer?.phone" class="flex items-center justify-between">
           <div class="flex items-center gap-1">
             <Icon name="call" class="text-core-600 h-4 w-4" />
-            <span class="text-core-600 text-sm">Phone</span>
+            <span class="text-sm font-medium">{{ customer?.phone || "N/A" }}</span>
           </div>
-          <span class="text-sm font-medium">{{ customer.phone }}</span>
         </div>
       </div>
 
@@ -245,14 +229,7 @@ const getItemTotal = (item: OrderItem) => {
     <div class="h-24" />
 
     <div class="border-core-200 fixed right-0 bottom-0 left-0 flex gap-3 border-t bg-white p-6">
-      <AppButton
-        label="Back"
-        color="alt"
-        variant="outlined"
-        class="w-1/3"
-        icon="arrow-left"
-        @click="emit('prev')"
-      />
+      <AppButton label="Back" color="alt" class="w-1/3" icon="arrow-left" @click="emit('prev')" />
       <AppButton label="Create Order" class="w-2/3" :loading="loading" @click="emit('submit')" />
     </div>
   </div>
