@@ -348,14 +348,12 @@ watch(
   () => [props.modelValue, props.product] as const,
   ([isOpen, product]) => {
     if (isOpen && product?.uid) {
-      // Drawer is opening
+      // Drawer is opening - always invalidate to ensure fresh data
+      queryClient.invalidateQueries({ queryKey: ["products", product.uid] })
       productUidToFetch.value = product.uid
 
-      // If variant images were uploaded in the last session, invalidate to force refetch
-      if (variantImagesWereUploaded.value) {
-        queryClient.invalidateQueries({ queryKey: ["products", product.uid] })
-        variantImagesWereUploaded.value = false
-      }
+      // Reset variant images uploaded flag
+      variantImagesWereUploaded.value = false
 
       // Reset deleted variants when drawer opens
       deletedVariants.value = []
@@ -626,6 +624,8 @@ const handleSubmit = async () => {
       {
         onSuccess: () => {
           toast.success("Product details updated successfully")
+          // Invalidate the product query to ensure fresh data on next open
+          queryClient.invalidateQueries({ queryKey: ["products", productUidToFetch.value] })
           resetFormState()
           emit("update:modelValue", false)
           emit("refresh")
@@ -679,6 +679,8 @@ const handleSubmit = async () => {
       {
         onSuccess: () => {
           toast.success("Variant updated successfully")
+          // Invalidate the product query to ensure fresh data on next open
+          queryClient.invalidateQueries({ queryKey: ["products", productUidToFetch.value] })
           resetFormState()
           emit("update:modelValue", false)
           emit("refresh")
@@ -824,6 +826,8 @@ const handleSubmit = async () => {
         toast.info("No changes to images")
       }
 
+      // Invalidate the product query to ensure fresh data on next open
+      queryClient.invalidateQueries({ queryKey: ["products", productUidToFetch.value] })
       resetFormState()
       emit("update:modelValue", false)
       emit("refresh")
@@ -947,6 +951,8 @@ const handleSubmit = async () => {
           toast.info("No variant changes to apply")
         }
 
+        // Invalidate the product query to ensure fresh data on next open
+        queryClient.invalidateQueries({ queryKey: ["products", productUidToFetch.value] })
         resetFormState()
         emit("update:modelValue", false)
         emit("refresh")

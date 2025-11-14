@@ -282,6 +282,7 @@ const getStockActionItems = (item: IProductVariantDetails | typeof product.value
   }
 
   const items = []
+  const hasMultipleLocations = (settingsStore.locations?.length || 0) > 1
 
   // Only HQ can add and reduce stock
   if (settingsStore.activeLocation?.is_hq) {
@@ -305,25 +306,28 @@ const getStockActionItems = (item: IProductVariantDetails | typeof product.value
     }
   }
 
-  // Any location can transfer stock (if stock is available)
-  if (availableStock > 0) {
+  // Only show transfer and request stock if there are multiple locations
+  if (hasMultipleLocations) {
+    // Any location can transfer stock (if stock is available)
+    if (availableStock > 0) {
+      items.push({
+        label: "Transfer Stock",
+        icon: "box",
+        action: (actionItem: IProductVariantDetails | typeof product.value) => {
+          openTransferRequestDrawer("transfer", actionItem)
+        },
+      })
+    }
+
+    // Any location can request stock
     items.push({
-      label: "Transfer Stock",
-      icon: "box",
+      label: "Request Stock",
+      icon: "box-time",
       action: (actionItem: IProductVariantDetails | typeof product.value) => {
-        openTransferRequestDrawer("transfer", actionItem)
+        openTransferRequestDrawer("request", actionItem)
       },
     })
   }
-
-  // Any location can request stock
-  items.push({
-    label: "Request Stock",
-    icon: "box-time",
-    action: (actionItem: IProductVariantDetails | typeof product.value) => {
-      openTransferRequestDrawer("request", actionItem)
-    },
-  })
 
   return items
 }
@@ -341,6 +345,12 @@ const openProductEditDrawer = () => {
     is_active: product.value.data.is_active,
     category: product.value.data.category,
     created_at: product.value.data.created_at,
+    primary_image: null,
+    price: null,
+    amount_sold: 0,
+    quantity_sold: 0,
+    memo_count: 0,
+    return_count: 0,
   }
 
   editMode.value = "product-details"
@@ -361,6 +371,12 @@ const openVariantPricingEdit = (variant: IProductVariantDetails) => {
     is_active: product.value.data.is_active,
     category: product.value.data.category,
     created_at: product.value.data.created_at,
+    primary_image: null,
+    price: null,
+    amount_sold: 0,
+    quantity_sold: 0,
+    memo_count: 0,
+    return_count: 0,
   }
 
   // For complex products (multiple variants), open in variants mode
@@ -389,6 +405,12 @@ const openImagesEditDrawer = () => {
     is_active: product.value.data.is_active,
     category: product.value.data.category,
     created_at: product.value.data.created_at,
+    primary_image: null,
+    price: null,
+    amount_sold: 0,
+    quantity_sold: 0,
+    memo_count: 0,
+    return_count: 0,
   }
 
   editMode.value = "images"
@@ -544,6 +566,12 @@ const handleAddVariant = () => {
     is_active: product.value.data.is_active,
     category: product.value.data.category,
     created_at: product.value.data.created_at,
+    primary_image: null,
+    price: null,
+    amount_sold: 0,
+    quantity_sold: 0,
+    memo_count: 0,
+    return_count: 0,
   }
 
   editMode.value = "variants"

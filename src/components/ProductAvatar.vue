@@ -13,7 +13,11 @@
         :style="{ height: `${sizeValue}px`, width: `${sizeValue}px` }"
         loading="lazy"
       />
-      <div v-else class="rounded-xl bg-gray-100 p-2">
+      <div
+        v-else
+        class="flex items-center justify-center rounded-xl bg-gray-100 p-2"
+        :style="{ height: `${sizeValue}px`, width: `${sizeValue}px` }"
+      >
         <Icon name="shop-add" class="text-core-600" />
       </div>
     </div>
