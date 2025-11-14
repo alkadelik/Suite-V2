@@ -1,4 +1,4 @@
-import baseApi, { TApiPromise } from "@/composables/baseApi"
+import baseApi, { TApiPromise, useApiQuery } from "@/composables/baseApi"
 import { useMutation, useQuery } from "@tanstack/vue-query"
 import {
   IRolesApiResponse,
@@ -10,6 +10,7 @@ import {
   INotificationsResponse,
   ICouriersResponse,
   IShippingProfileResponse,
+  ISettlementBank,
 } from "./types"
 import { IIndustriesApiResponse } from "./types"
 
@@ -36,6 +37,15 @@ export function useResolveBankAccount() {
     mutationKey: ["resolveBankAccount"],
     mutationFn: (body: { account_number: string; bank_code: string }) =>
       baseApi.post("/billings/account-verification/verify/", body),
+  })
+}
+
+/** Get settlement banks  */
+export function useGetSettlementBank() {
+  return useApiQuery<ISettlementBank[]>({
+    key: "settlementBanks",
+    url: "/billings/settlements/",
+    selectData: true,
   })
 }
 

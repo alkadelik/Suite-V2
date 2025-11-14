@@ -68,6 +68,16 @@ export type TGetSupportedAccountsResponse = {
   data: IAccount[]
 }
 
+export interface ISettlementBank {
+  uid: string
+  bank_name: string
+  bank_code: string
+  account_number: string
+  account_name: string | null
+  subaccount_code: string
+  created_at: string
+}
+
 export type TSetupShippingPayload = {
   store_name: string
   store_address: string

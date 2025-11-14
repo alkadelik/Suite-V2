@@ -34,9 +34,11 @@ const { user } = useAuthStore()
 
 const { data: industries } = useGetStoreIndustries()
 const { data: storeDetails, refetch } = useGetStoreDetails(user?.store_uid || "")
-const { mutate: updateStoreDetails } = useUpdateStoreDetails()
 const { data: liveStatusData } = useGetLiveStatus(user?.store_slug || "")
+
 const isLive = computed(() => liveStatusData.value?.data?.is_live || false)
+
+const { mutate: updateStoreDetails } = useUpdateStoreDetails()
 
 const { handleSubmit: handleStoreSubmit, setValues: setStoreValues } = useForm<IStoreDetailsForm>({
   validationSchema: validSchema,
