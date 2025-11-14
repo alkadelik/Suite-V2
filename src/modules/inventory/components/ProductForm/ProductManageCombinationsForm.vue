@@ -1,5 +1,57 @@
 <template>
   <div class="space-y-6">
+    <!-- Weight Section (hidden when Weight attribute is in variants - auto-populated, or when hideWeight prop is true) -->
+    <div v-if="!hasWeightAttributeInVariants && !props.hideWeight" class="space-y-4">
+      <SelectField
+        v-model="selectedDimension"
+        :options="dimensionOptions"
+        label="Product Weight"
+        placeholder="Select weight category"
+        required
+      />
+
+      <!-- Product Dimensions (only show when weight is selected) -->
+      <div v-if="selectedDimension" class="rounded-lg border border-gray-200 bg-white p-4">
+        <h4 class="mb-1 text-sm font-medium">Product Dimensions</h4>
+        <p class="mb-3 text-sm text-gray-600">
+          These are estimated dimensions based on the weight you selected. You can update them if
+          you know the exact dimensions of your product.
+        </p>
+        <div class="grid grid-cols-3 gap-3">
+          <TextField
+            :model-value="globalDimensions.height"
+            type="number"
+            label="Height (cm)"
+            placeholder="40.0"
+            step="0.1"
+            min="0"
+            required
+            @update:model-value="updateGlobalDimension('height', $event)"
+          />
+          <TextField
+            :model-value="globalDimensions.length"
+            type="number"
+            label="Length (cm)"
+            placeholder="40.0"
+            step="0.1"
+            min="0"
+            required
+            @update:model-value="updateGlobalDimension('length', $event)"
+          />
+          <TextField
+            :model-value="globalDimensions.width"
+            type="number"
+            label="Width (cm)"
+            placeholder="40.0"
+            step="0.1"
+            min="0"
+            required
+            @update:model-value="updateGlobalDimension('width', $event)"
+          />
+        </div>
+      </div>
+    </div>
+
     <!-- Single Variant View (when only one variant) -->
     <div v-if="isSingleVariant" class="space-y-6">
       <!-- Price Section -->
@@ -116,58 +168,6 @@
             :label="attributeValue"
             color="error"
             size="sm"
-          />
-        </div>
-      </div>
-    </div>
-
-    <!-- Weight Section (hidden when Weight attribute is in variants - auto-populated, or when hideWeight prop is true) -->
-    <div v-if="!hasWeightAttributeInVariants && !props.hideWeight" class="space-y-4">
-      <SelectField
-        v-model="selectedDimension"
-        :options="dimensionOptions"
-        label="Product Weight"
-        placeholder="Select weight category"
-        required
-      />
-
-      <!-- Product Dimensions (only show when weight is selected) -->
-      <div v-if="selectedDimension" class="rounded-lg border border-gray-200 bg-gray-50 p-4">
-        <h4 class="mb-1 text-sm font-medium">Product Dimensions</h4>
-        <p class="mb-3 text-sm text-gray-600">
-          These are estimated dimensions based on the weight you selected. You can update them if
-          you know the exact dimensions of your product.
-        </p>
-        <div class="grid grid-cols-3 gap-3">
-          <TextField
-            :model-value="globalDimensions.height"
-            type="number"
-            label="Height (cm)"
-            placeholder="40.0"
-            step="0.1"
-            min="0"
-            required
-            @update:model-value="updateGlobalDimension('height', $event)"
-          />
-          <TextField
-            :model-value="globalDimensions.length"
-            type="number"
-            label="Length (cm)"
-            placeholder="40.0"
-            step="0.1"
-            min="0"
-            required
-            @update:model-value="updateGlobalDimension('length', $event)"
-          />
-          <TextField
-            :model-value="globalDimensions.width"
-            type="number"
-            label="Width (cm)"
-            placeholder="40.0"
-            step="0.1"
-            min="0"
-            required
-            @update:model-value="updateGlobalDimension('width', $event)"
           />
         </div>
       </div>

@@ -38,7 +38,14 @@ const selectedProducts = ref<IProductCatalogue[]>([])
 // Step 2: Product variants with quantities and prices
 interface OrderItem {
   product: IProductCatalogue
-  variant: { uid: string; name: string; sku: string; price: string; stock: number } | null
+  variant: {
+    uid: string
+    name: string
+    sku: string
+    price: string
+    stock: number
+    original_price?: number
+  } | null
   quantity: number
   unit_price: number
   notes?: string
@@ -54,7 +61,15 @@ const reviewOrderItems = computed(() => {
       product_name: item.product.name,
       total_stock: item.product.total_stock,
     },
-    variant: item.variant,
+    variant: item.variant
+      ? {
+          uid: item.variant.uid,
+          name: item.variant.name,
+          sku: item.variant.sku,
+          price: item.variant.price,
+          original_price: item.variant.original_price,
+        }
+      : null,
     quantity: item.quantity,
     unit_price: item.unit_price,
     notes: item.notes,
@@ -92,6 +107,10 @@ const paymentInfo = ref({
 })
 
 // Computed totals
+const itemsCount = computed(() => {
+  return orderItems.value.reduce((sum, item) => sum + item.quantity, 0)
+})
+
 const productsTotal = computed(() => {
   return orderItems.value.reduce((sum, item) => {
     return sum + item.quantity * item.unit_price
@@ -236,6 +255,7 @@ const resetForm = () => {
           :productsTotal="productsTotal"
           :deliveryFee="shippingInfo.delivery_fee"
           :totalAmount="totalAmount"
+          :itemsCount="itemsCount"
           @next="onNext"
           @prev="onPrev"
         />

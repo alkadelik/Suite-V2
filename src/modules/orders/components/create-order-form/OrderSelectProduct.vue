@@ -109,7 +109,12 @@ const handleNext = () => {
         @click="toggleProductSelection(prod)"
       >
         <div class="relative flex h-[88px] items-center justify-center rounded-xl bg-gray-200">
-          <img v-if="prod.images?.length" :src="prod.images[0]" alt="" class="h-20 rounded-xl" />
+          <img
+            v-if="prod.images?.length"
+            :src="prod.images[0]?.image"
+            alt=""
+            class="h-20 rounded-xl"
+          />
           <Icon v-else name="box" class="h-20 w-20" />
 
           <Chip

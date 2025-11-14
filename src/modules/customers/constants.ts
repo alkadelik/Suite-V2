@@ -6,8 +6,9 @@ export const CUSTOMER_COLUMNS: TableColumn<ICustomer>[] = [
   { header: "Email", accessor: "email" },
   {
     header: "Last Order Date",
-    accessor: "lastOrderDate",
+    accessor: "last_order_date",
     cell: ({ value }) => {
+      if (!value) return "--"
       const date = new Date(value as string)
       return date.toLocaleDateString(undefined, {
         year: "numeric",
@@ -17,43 +18,13 @@ export const CUSTOMER_COLUMNS: TableColumn<ICustomer>[] = [
     },
   },
   { header: "Phone", accessor: "phone" },
-  { header: "Total Orders", accessor: "totalOrders", class: "pl-8" },
+  {
+    header: "Total Orders",
+    accessor: "total_orders",
+    class: "pl-8",
+  },
   { header: "", accessor: "action" },
 ]
-
-// export const CUSTOMERS: TCustomer[] = [
-//   {
-//     id: 1,
-//     first_name: "John",
-//     last_name: "Doe",
-//     email: "john.doe@example.com",
-//     lastOrderDate: "2023-09-15",
-//     phone: "555-1234",
-//     totalOrders: 5,
-//     address: "12, Adeola Odeku Street, Victoria Island Annex",
-//     city: "Lagos, Victoria Island",
-//     dateOfBirth: "19 Jan, 1998",
-//     instagramHandle: "Adebolapumping99",
-//   },
-//   {
-//     id: 2,
-//     first_name: "Jane",
-//     last_name: "Smith",
-//     email: "jane.smith@example.com",
-//     lastOrderDate: "2023-09-16",
-//     phone: "555-5678",
-//     totalOrders: 3,
-//   },
-//   {
-//     id: 3,
-//     first_name: "Alice",
-//     last_name: "Johnson",
-//     email: "alice.johnson@example.com",
-//     lastOrderDate: "2023-09-17",
-//     phone: "555-9012",
-//     totalOrders: 8,
-//   },
-// ]
 
 export const EXPORT_FIELD_OPTIONS = [
   { label: "First Name", value: "first_name" },

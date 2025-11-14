@@ -10,10 +10,30 @@ import { computed, onMounted, ref } from "vue"
 
 interface OrderItem {
   product: IProductCatalogue
-  variant: { uid: string; name: string; sku: string; price: string; stock: number } | null
+  variant: {
+    uid: string
+    name: string
+    sku: string
+    price: string
+    stock: number
+    original_price?: number
+  } | null
   quantity: number
   unit_price: number
   notes?: string
+}
+
+interface VariantItem {
+  variant: {
+    uid: string
+    name: string
+    sku: string
+    price: string
+    stock: number
+    original_price?: number
+  }
+  quantity: number
+  unit_price: number
 }
 
 const props = defineProps<{
@@ -28,6 +48,7 @@ const emit = defineEmits<{
 }>()
 
 const localItems = ref<OrderItem[]>([])
+const selectedVariants = ref<Map<string, VariantItem[]>>(new Map())
 
 // Check if a product needs variant selection (has multiple variants OR has attributes)
 const needsVariantSelection = (product: IProductCatalogue) => {
@@ -42,9 +63,7 @@ const getVariantOptions = (product: IProductCatalogue) => {
   if (!product.variants) return []
   return product.variants.map((v) => ({
     label:
-      v.attributes.length > 0
-        ? `${v.name} (${v.attributes.map((a) => a.attribute_value).join(", ")})`
-        : v.name,
+      v.attributes.length > 0 ? `${v.attributes.map((a) => a.attribute_value).join(", ")}` : v.name,
     value: v.uid,
   }))
 }
@@ -53,64 +72,119 @@ const getVariantOptions = (product: IProductCatalogue) => {
 onMounted(() => {
   if (props.orderItems.length > 0) {
     localItems.value = [...props.orderItems]
+    // Initialize selectedVariants from orderItems
+    for (const item of props.orderItems) {
+      if (item.variant) {
+        const existing = selectedVariants.value.get(item.product.uid) || []
+        existing.push({
+          variant: item.variant,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+        })
+        selectedVariants.value.set(item.product.uid, existing)
+      }
+    }
   } else {
     // Create initial items from selected products
     localItems.value = props.selectedProducts.map((product) => {
       // Auto-select variant if there's only one and no attributes
-      const defaultVariant =
+      if (
         product.variants &&
         product.variants.length === 1 &&
         product.variants[0].attributes.length === 0
-          ? {
-              uid: product.variants[0].uid,
-              name: product.variants[0].name,
-              sku: product.variants[0].sku,
-              price: product.variants[0].price,
-              stock: product.variants[0].available_stock,
-            }
-          : null
+      ) {
+        const defaultVariant = {
+          uid: product.variants[0].uid,
+          name: product.variants[0].name,
+          sku: product.variants[0].sku,
+          price: product.variants[0].price,
+          stock: product.variants[0].available_stock,
+          original_price: parseFloat(product.variants[0].price),
+        }
+
+        selectedVariants.value.set(product.uid, [
+          {
+            variant: defaultVariant,
+            quantity: 1,
+            unit_price: parseFloat(defaultVariant.price),
+          },
+        ])
+
+        return {
+          product,
+          variant: defaultVariant,
+          quantity: 1,
+          unit_price: parseFloat(defaultVariant.price),
+          notes: "",
+        }
+      }
 
       return {
         product,
-        variant: defaultVariant,
+        variant: null,
         quantity: 1,
-        unit_price: defaultVariant ? parseFloat(defaultVariant.price) : 0,
+        unit_price: 0,
         notes: "",
       }
     })
   }
 })
 
-// Handle variant selection
+// Get currently selected variant UIDs for a product
+const getSelectedVariantValues = (product: IProductCatalogue) => {
+  const variants = selectedVariants.value.get(product.uid)
+  if (!variants || variants.length === 0) return []
+  return variants.map((v) => ({ value: v.variant.uid, label: v.variant.name }))
+}
+
+// Handle variant selection (supports multiple)
 const onVariantChange = (
-  item: OrderItem,
-  variantValue:
+  product: IProductCatalogue,
+  variantValues:
     | string
     | number
     | Record<string, unknown>
     | null
     | (string | number | Record<string, unknown>)[],
 ) => {
-  if (!variantValue || Array.isArray(variantValue)) return
-  let uid = ""
-  if (typeof variantValue === "object" && variantValue.value) {
-    const val = variantValue.value
-    uid = typeof val === "string" || typeof val === "number" ? String(val) : ""
-  } else if (typeof variantValue === "string" || typeof variantValue === "number") {
-    uid = String(variantValue)
+  if (!variantValues) {
+    selectedVariants.value.set(product.uid, [])
+    return
   }
-  const selectedVariant = item.product.variants.find((v) => v.uid === uid)
-  if (selectedVariant) {
-    item.variant = {
-      uid: selectedVariant.uid,
-      name: selectedVariant.name,
-      sku: selectedVariant.sku,
-      price: selectedVariant.price,
-      stock: selectedVariant.available_stock,
+
+  const values = Array.isArray(variantValues) ? variantValues : [variantValues]
+  const variantItems: VariantItem[] = []
+
+  for (const val of values) {
+    let uid = ""
+    if (typeof val === "object" && val !== null && "value" in val) {
+      const v = val.value
+      uid = typeof v === "string" || typeof v === "number" ? String(v) : ""
+    } else if (typeof val === "string" || typeof val === "number") {
+      uid = String(val)
     }
-    // Update unit price to variant price (user can still edit)
-    item.unit_price = parseFloat(selectedVariant.price)
+
+    const selectedVariant = product.variants.find((v) => v.uid === uid)
+    if (selectedVariant) {
+      // Check if this variant already exists to preserve qty/price
+      const existing = selectedVariants.value.get(product.uid)?.find((v) => v.variant.uid === uid)
+
+      variantItems.push({
+        variant: {
+          uid: selectedVariant.uid,
+          name: selectedVariant.name,
+          sku: selectedVariant.sku,
+          price: selectedVariant.price,
+          stock: selectedVariant.available_stock,
+          original_price: parseFloat(selectedVariant.price),
+        },
+        quantity: existing?.quantity || 1,
+        unit_price: existing?.unit_price || parseFloat(selectedVariant.price),
+      })
+    }
   }
+
+  selectedVariants.value.set(product.uid, variantItems)
 }
 
 const removeItem = (index: number) => {
@@ -119,34 +193,85 @@ const removeItem = (index: number) => {
 
 const canProceed = computed(() => {
   return localItems.value.every((item) => {
-    // Must have a variant selected and valid quantity/price
-    return item.variant && item.quantity > 0 && item.unit_price > 0
+    const variants = selectedVariants.value.get(item.product.uid)
+    if (!variants || variants.length === 0) return false
+    // All variants must have valid quantity and price
+    return variants.every((v) => v.quantity > 0 && v.unit_price > 0)
   })
 })
 
 const handleNext = () => {
   if (canProceed.value) {
-    emit("update:orderItems", localItems.value)
+    // Convert selected variants to order items format
+    const orderItems: OrderItem[] = []
+    for (const item of localItems.value) {
+      const variants = selectedVariants.value.get(item.product.uid)
+      if (variants && variants.length > 0) {
+        for (const variantItem of variants) {
+          orderItems.push({
+            product: item.product,
+            variant: variantItem.variant,
+            quantity: variantItem.quantity,
+            unit_price: variantItem.unit_price,
+            notes: item.notes,
+          })
+        }
+      }
+    }
+    emit("update:orderItems", orderItems)
     emit("next")
   }
 }
 
-// Get original price for showing slash-through
-const getOriginalPrice = (item: OrderItem) => {
-  if (!item.variant) return null
-  const originalPrice = parseFloat(item.variant.price)
-  return originalPrice !== item.unit_price ? originalPrice : null
+// Get price display for products (shows original backend prices only)
+const getProductPriceDisplay = (product: IProductCatalogue) => {
+  // If product has multiple variants, ALWAYS show price range from backend
+  if (needsVariantSelection(product) && product.variants && product.variants.length > 1) {
+    const prices = product.variants.map((v) => parseFloat(v.price))
+    const minPrice = Math.min(...prices)
+    const maxPrice = Math.max(...prices)
+
+    if (minPrice === maxPrice) {
+      return formatCurrency(minPrice)
+    }
+    return `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`
+  }
+
+  // For simple products (single variant, no attributes), show the price from backend
+  if (product.variants && product.variants.length === 1) {
+    return formatCurrency(parseFloat(product.variants[0].price))
+  }
+
+  return "Select variant(s)"
 }
+
+// Calculate total quantity across all selected variants
+const totalItemsCount = computed(() => {
+  let total = 0
+  for (const variants of selectedVariants.value.values()) {
+    total += variants.reduce((sum, v) => sum + (Number(v.quantity) || 0), 0)
+  }
+  return total
+})
+
+// Calculate total amount (quantity × unit_price for all variants)
+const productsTotal = computed(() => {
+  let total = 0
+  for (const variants of selectedVariants.value.values()) {
+    total += variants.reduce((sum, v) => sum + v.quantity * v.unit_price, 0)
+  }
+  return total
+})
 </script>
 
 <template>
   <div>
     <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
-      <Icon name="box" size="28" />
+      <Icon name="shop-add" size="28" />
     </div>
     <p class="mb-4 text-sm">Adjust quantities, and review prices.</p>
 
-    <h3 class="mb-8 text-lg font-semibold">
+    <h3 class="mb-8 flex items-center gap-2 text-lg font-semibold">
       Select Products <Chip :label="String(localItems.length)" />
     </h3>
 
@@ -156,7 +281,7 @@ const getOriginalPrice = (item: OrderItem) => {
           <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100">
             <img
               v-if="item.product.images && item.product.images.length > 0"
-              :src="item.product.images[0]"
+              :src="item.product.images[0]?.image"
               :alt="item.product.name"
               class="h-full w-full rounded-lg object-cover"
             />
@@ -165,24 +290,26 @@ const getOriginalPrice = (item: OrderItem) => {
           <div class="flex-1 space-y-1.5">
             <h4 class="text-sm font-medium capitalize">{{ item.product.name }}</h4>
             <div class="flex items-center gap-1.5">
-              <span
-                v-if="getOriginalPrice(item)"
-                class="text-core-300 line-through"
-                style="font-size: 11px"
-              >
-                {{ formatCurrency(getOriginalPrice(item)!) }}
-              </span>
               <span class="text-primary-600 flex items-center gap-1 text-xs">
-                <Icon name="box" class="h-3 w-3" />
-                {{ item.unit_price > 0 ? formatCurrency(item.unit_price) : "Set price" }}
+                <Icon name="tag" class="h-3 w-3" />
+                {{ getProductPriceDisplay(item.product) }}
               </span>
             </div>
           </div>
           <Chip
-            v-if="item.variant"
-            color="success"
-            :label="`${item.variant.stock} in Stock`"
+            v-if="
+              needsVariantSelection(item.product) && selectedVariants.get(item.product.uid)?.length
+            "
+            color="primary"
+            :label="`${selectedVariants.get(item.product.uid)?.length} variant(s)`"
             icon="box"
+          />
+          <Chip
+            v-if="!needsVariantSelection(item.product)"
+            color="success"
+            :label="`${item.variant?.stock} in Stock`"
+            icon="box"
+            class="text-xs"
           />
           <button
             v-if="localItems.length > 1"
@@ -196,47 +323,88 @@ const getOriginalPrice = (item: OrderItem) => {
           <!-- Variant Selection (if needed) -->
           <SelectField
             v-if="needsVariantSelection(item.product)"
-            :modelValue="item.variant?.name"
-            @update:modelValue="onVariantChange(item, $event)"
+            :modelValue="getSelectedVariantValues(item.product)"
+            @update:modelValue="onVariantChange(item.product, $event)"
             name="variant"
-            label="Select Variant"
-            placeholder="Choose a variant"
+            label="Select Variant(s)"
+            placeholder="Choose variant(s)"
             :options="getVariantOptions(item.product)"
+            multiple
             required
           />
 
-          <!-- Quantity and Price -->
-          <div class="grid grid-cols-2 gap-4">
-            <TextField
-              v-model="item.quantity"
-              name="quantity"
-              type="number"
-              label="Quantity"
-              placeholder="1"
-              :min="1"
-              :max="item.variant?.stock || 999999"
-              :disabled="!item.variant"
-            />
-            <TextField
-              v-model="item.unit_price"
-              name="price"
-              type="number"
-              label="Unit Price"
-              placeholder="e.g. 59.99"
-              :min="0"
-              step="0.01"
-              :disabled="!item.variant"
-            />
+          <!-- Quantity and Price for each selected variant -->
+          <div
+            v-for="variantItem in selectedVariants.get(item.product.uid) || []"
+            :key="variantItem.variant.uid"
+            :class="{
+              'border-core-100 rounded-lg border bg-gray-50 p-3': needsVariantSelection(
+                item.product,
+              ),
+            }"
+          >
+            <div
+              v-if="needsVariantSelection(item.product)"
+              class="mb-2 flex items-center justify-between"
+            >
+              <div class="flex items-center gap-2">
+                <Chip color="primary" :label="`${variantItem.variant.name.split(' - ')[1]}`" />
+                <!-- display original price here -->
+                <span class="text-core-600 flex items-center gap-1 text-xs">
+                  <Icon name="tag" class="h-3 w-3" />
+                  {{ formatCurrency(parseFloat(variantItem.variant.price)) }}
+                </span>
+              </div>
+
+              <Chip
+                color="success"
+                :label="`${variantItem.variant.stock} in Stock`"
+                icon="box"
+                class="text-xs"
+              />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <TextField
+                v-model="variantItem.quantity"
+                name="quantity"
+                type="number"
+                label="Quantity"
+                placeholder="1"
+                :min="1"
+                :max="variantItem.variant.stock"
+              />
+              <TextField
+                v-model="variantItem.unit_price"
+                name="price"
+                type="number"
+                label="Unit Price"
+                placeholder="e.g. 59.99"
+                :min="0"
+                step="0.01"
+              />
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <div class="h-24" />
+    <div class="h-40" />
 
-    <div class="border-core-200 fixed right-0 bottom-0 left-0 flex gap-3 border-t bg-white p-6">
-      <AppButton label="Back" color="alt" class="w-1/3" icon="arrow-left" @click="emit('prev')" />
-      <AppButton label="Next" class="w-2/3" :disabled="!canProceed" @click="handleNext" />
+    <div class="border-core-200 fixed right-0 bottom-0 left-0 space-y-2 border-t bg-white p-6">
+      <div class="flex items-center justify-between">
+        <p class="text-sm text-gray-600">Total Items count:</p>
+        <span class="text-sm font-medium">{{ totalItemsCount }}</span>
+      </div>
+      <div class="flex items-center justify-between">
+        <p class="text-sm text-gray-600">Total products amount:</p>
+        <span class="text-primary-600 text-base font-semibold">
+          {{ formatCurrency(productsTotal) }}
+        </span>
+      </div>
+      <div class="flex gap-3">
+        <AppButton label="Back" color="alt" class="w-1/3" icon="arrow-left" @click="emit('prev')" />
+        <AppButton label="Next" class="w-2/3" :disabled="!canProceed" @click="handleNext" />
+      </div>
     </div>
   </div>
 </template>

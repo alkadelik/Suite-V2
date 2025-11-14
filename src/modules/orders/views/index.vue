@@ -6,14 +6,14 @@ import TextField from "@components/form/TextField.vue"
 import MetricsGrid from "@components/MetricsGrid.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import { useMediaQuery } from "@vueuse/core"
-import { computed, onMounted, ref } from "vue"
+import { computed, onMounted, ref, watch } from "vue"
 import Avatar from "@components/Avatar.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import Chip from "@components/Chip.vue"
 import { TOrder } from "../types"
 import CreateOrderDrawer from "../components/CreateOrderDrawer.vue"
 import VoidDeleteOrder from "../components/VoidDeleteOrder.vue"
-import { useDeleteOrder, useGetOrders, useVoidOrder } from "../api"
+import { useDeleteOrder, useGetOrderDashboard, useGetOrders, useVoidOrder } from "../api"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
 import { ORDER_COLUMNS, ORDER_STATUS_TAB } from "../constants"
@@ -36,6 +36,17 @@ const openShare = ref(false)
 const openPayment = ref(false)
 const selectedOrder = ref<TOrder | null>(null)
 const status = ref(ORDER_STATUS_TAB[0].key)
+
+const { data: orderDashboard } = useGetOrderDashboard()
+
+watch(
+  () => orderDashboard?.value,
+  (newVal) => {
+    if (newVal) {
+      console.log("Order Dashboard Data:", newVal)
+    }
+  },
+)
 
 const orderMetrics = computed(() => {
   return [
@@ -215,7 +226,7 @@ onMounted(() => {
     <section v-else>
       <MetricsGrid :items="orderMetrics" />
 
-      <div class="mt-8">
+      <div class="mt-8 mb-4">
         <Tabs v-model="status" :tabs="ORDER_STATUS_TAB" />
       </div>
 

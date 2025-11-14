@@ -19,7 +19,7 @@ const title = computed(() => {
     v-if="title !== 'Page'"
     class="bg-primary-25 border-primary-200 fixed top-0 right-0 left-0 z-30 border-b lg:hidden"
   >
-    <div class="flex items-end gap-1 px-4 py-3.5">
+    <div class="flex items-end gap-1 px-4 py-3">
       <div class="flex-1">
         <button
           type="button"
@@ -29,7 +29,7 @@ const title = computed(() => {
           <Icon name="arrow-left" size="20" />
           Back
         </button>
-        <h1 class="text-2xl font-semibold">{{ title || "Page" }}</h1>
+        <h1 class="text-xl font-semibold">{{ title || "Page" }}</h1>
       </div>
       <Chip icon="info-circle" label="Tutorial" />
     </div>

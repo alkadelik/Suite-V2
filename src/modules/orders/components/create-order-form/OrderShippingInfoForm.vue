@@ -349,7 +349,7 @@ watch(
     <p class="mb-4 text-sm">
       Provide the shipping method and address for {{ customerName }}'s order.
     </p>
-    {{ props.customer }}
+
     <div class="space-y-4">
       <div class="rounded-xl bg-white p-4">
         <h3 class="mb-4 text-sm font-medium">Order Details</h3>
@@ -417,18 +417,12 @@ watch(
         />
       </div>
 
-      <div
-        v-if="
-          shippingInfo.fulfilment_method === 'delivery' &&
-          shippingInfo.delivery_payment_option !== 'customer_pays_courier'
-        "
-        class="rounded-xl bg-white p-4"
-      >
+      <div v-if="shippingInfo.fulfilment_method === 'delivery'" class="rounded-xl bg-white p-4">
         <h3 class="mb-4 text-sm font-medium">Delivery Information</h3>
         <hr class="mb-4 border-gray-300" />
         <div class="space-y-4">
           <RadioInputField
-            v-if="shippingInfo.delivery_payment_option !== 'free_shipping'"
+            v-if="shippingInfo.delivery_payment_option == 'customer_pays_merchant'"
             label="Delivery Method"
             :options="DELIVERY_METHOD_OPTIONS"
             :modelValue="shippingInfo.delivery_method"

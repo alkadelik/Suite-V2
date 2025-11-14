@@ -9,7 +9,13 @@ import { computed } from "vue"
 
 interface OrderItem {
   product: { uid: string; product_name: string; total_stock: number }
-  variant: { uid: string; name: string; sku: string; price: string } | null
+  variant: {
+    uid: string
+    name: string
+    sku: string
+    price: string
+    original_price?: number
+  } | null
   quantity: number
   unit_price: number
   notes?: string
@@ -81,8 +87,8 @@ const getItemTotal = (item: OrderItem) => {
         <h3 class="mb-4 text-lg font-semibold">Order Items</h3>
         <div class="space-y-3">
           <div
-            v-for="item in orderItems"
-            :key="item.product.uid"
+            v-for="(item, idx) in orderItems"
+            :key="`${item.product.uid}-${item.variant?.uid || idx}`"
             class="flex items-center justify-between rounded-lg bg-white p-4"
           >
             <div class="flex items-center gap-3">
@@ -91,9 +97,23 @@ const getItemTotal = (item: OrderItem) => {
               </div>
               <div>
                 <h4 class="text-sm font-medium">{{ item.product.product_name }}</h4>
-                <p class="text-xs text-gray-600">
-                  {{ item.quantity }} x {{ formatCurrency(item.unit_price) }}
+                <p v-if="item.variant" class="text-xs text-gray-500">
+                  {{ item.variant.name.split(" - ")[1] || item.variant.name }}
                 </p>
+                <div class="flex items-center gap-2">
+                  <p class="text-xs text-gray-600">
+                    {{ item.quantity }} x {{ formatCurrency(item.unit_price) }}
+                  </p>
+                  <p
+                    v-if="
+                      item.variant?.original_price &&
+                      item.variant.original_price !== item.unit_price
+                    "
+                    class="text-core-400 text-xs line-through"
+                  >
+                    {{ formatCurrency(item.variant.original_price) }}
+                  </p>
+                </div>
                 <p v-if="item.notes" class="text-xs text-gray-500 italic">{{ item.notes }}</p>
               </div>
             </div>

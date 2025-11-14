@@ -19,6 +19,7 @@ const props = defineProps<{
   productsTotal: number
   deliveryFee: number
   totalAmount: number
+  itemsCount: number
 }>()
 
 const emit = defineEmits<{
@@ -126,27 +127,33 @@ const handleNext = () => {
         </div>
       </div>
 
-      <div class="rounded-xl bg-white p-4">
-        <h3 class="mb-4 text-sm font-medium">Order Summary</h3>
-        <div class="space-y-2">
-          <p class="flex justify-between">
-            <span class="text-gray-600">Products Total</span>
-            <span class="font-medium">{{ formatCurrency(productsTotal) }}</span>
-          </p>
-          <p class="flex justify-between">
-            <span class="text-gray-600">Delivery Fee</span>
-            <span class="font-medium">{{ formatCurrency(deliveryFee) }}</span>
-          </p>
-          <p v-if="localPaymentInfo.discount_amount > 0" class="flex justify-between text-red-600">
-            <span>Discount</span>
-            <span class="font-medium">-{{ formatCurrency(localPaymentInfo.discount_amount) }}</span>
-          </p>
-          <div class="border-core-200 my-2 border-t"></div>
-          <p class="flex justify-between text-lg font-semibold">
-            <span>Total:</span>
-            <span class="text-primary-600">{{ formatCurrency(totalAmount) }}</span>
-          </p>
-        </div>
+      <!-- Order Summary -->
+      <div class="border-core-300 bg-core-25 space-y-3 rounded-xl border p-4">
+        <h4 class="text-sm font-medium">Order Summary</h4>
+        <p class="flex justify-between text-sm">
+          <span class="text-core-600">Total items count</span>
+          <span class="font-medium">{{ itemsCount }}</span>
+        </p>
+        <p class="flex justify-between text-sm">
+          <span class="text-core-600">Total products amount</span>
+          <span class="font-medium">{{ formatCurrency(productsTotal) }}</span>
+        </p>
+        <p class="flex justify-between text-sm">
+          <span class="text-core-600">Delivery Fee</span>
+          <span class="font-medium">{{ deliveryFee > 0 ? formatCurrency(deliveryFee) : "-" }}</span>
+        </p>
+        <p
+          v-if="paymentInfo.discount_amount > 0"
+          class="flex justify-between text-sm text-green-600"
+        >
+          <span>Discount</span>
+          <span class="font-medium">-{{ formatCurrency(paymentInfo.discount_amount) }}</span>
+        </p>
+        <div class="border-core-200 my-2 border-t border-dashed"></div>
+        <p class="flex justify-between text-lg font-semibold">
+          <span>Total:</span>
+          <span class="text-primary-600">{{ formatCurrency(totalAmount) }}</span>
+        </p>
       </div>
 
       <div class="rounded-xl bg-white p-4">

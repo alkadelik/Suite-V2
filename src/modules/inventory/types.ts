@@ -569,7 +569,7 @@ export interface IProductCatalogue {
   is_active: boolean
   is_variable: boolean
   variants: ProductVariant[]
-  images: string[]
+  images: { image: string; uid: string; is_primary: boolean }[]
   total_stock: number
   created_at: string
 }

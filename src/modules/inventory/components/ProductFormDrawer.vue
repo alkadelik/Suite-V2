@@ -192,6 +192,14 @@ watch(
   { immediate: true },
 )
 
+// Watch for step changes to scroll to top
+watch(step, () => {
+  const drawerContent = document.querySelector(".drawer-body")
+  if (drawerContent) {
+    drawerContent.scrollTo({ top: 0, behavior: "smooth" })
+  }
+})
+
 // Form submission handler
 const handleSubmit = async () => {
   if (!canProceed.value) return

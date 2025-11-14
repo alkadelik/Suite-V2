@@ -25,6 +25,15 @@ export function useGetOrders(
   return useApiQuery<TOrderResponse>({ url: "/orders/", params, key: "orders", selectData: true })
 }
 
+/** Fetch order statistics */
+export function useGetOrderDashboard() {
+  return useApiQuery({
+    url: `/orders/dashboard/`,
+    key: `orders-dashboard`,
+    selectData: true,
+  })
+}
+
 /** Fetch single order by ID */
 export function useGetOrderById(id: string) {
   return useApiQuery<TOrderResponse>({

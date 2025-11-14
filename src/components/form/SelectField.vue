@@ -91,14 +91,32 @@
                   :selected="isSelected(opt)"
                 >
                   <div class="flex items-center justify-between">
-                    <span>{{ getLabel(opt) }}</span>
+                    <div class="flex items-center gap-2">
+                      <!-- Checkbox for multiple selection -->
+                      <div
+                        v-if="multiple"
+                        :class="[
+                          'flex h-4 w-4 items-center justify-center rounded border transition-colors',
+                          isSelected(opt)
+                            ? 'bg-primary-600 border-primary-600'
+                            : 'border-core-300 bg-white',
+                        ]"
+                      >
+                        <Icon v-if="isSelected(opt)" name="check" class="h-3 w-3 text-white" />
+                      </div>
+                      <span>{{ getLabel(opt) }}</span>
+                    </div>
                     <div class="flex items-center gap-2">
                       <Icon
                         v-if="getOptionIcon(opt)"
                         :name="getOptionIcon(opt)!"
                         class="text-primary-600 h-4 w-4"
                       />
-                      <Icon v-if="isSelected(opt)" name="check" class="text-primary-600 h-4 w-4" />
+                      <Icon
+                        v-if="!multiple && isSelected(opt)"
+                        name="check"
+                        class="text-primary-600 h-4 w-4"
+                      />
                     </div>
                   </div>
                 </slot>
