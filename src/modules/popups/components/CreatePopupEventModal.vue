@@ -12,7 +12,7 @@ import { PopupEvent, PopupPayload } from "../types"
 import { useCreatePopup, useUpdatePopup } from "../api"
 import { validationSchema } from "../schemas"
 
-const emit = defineEmits<{ (e: "close"): void; (e: "refresh"): void }>()
+const emit = defineEmits<{ (e: "close"): void; (e: "refresh", popup: PopupEvent): void }>()
 const props = defineProps<{ open: boolean; event?: PopupEvent | null; isEditMode?: boolean }>()
 
 const { mutate: createEvent, isPending: isCreating } = useCreatePopup()
@@ -100,9 +100,9 @@ const onSubmit = handleSubmit((data) => {
   const formData = prepareFormData(data)
 
   const handleResponse = {
-    onSuccess: () => {
+    onSuccess: (res: { data: { data: PopupEvent } }) => {
       toast.success(`Event ${props.isEditMode ? "updated" : "created"} successfully`)
-      emit("refresh")
+      emit("refresh", res.data.data)
       emit("close")
       resetForm()
     },

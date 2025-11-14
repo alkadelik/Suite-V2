@@ -57,7 +57,7 @@
           <div class="space-y-1">
             <p class="text-core-600 text-sm">Unit Cost</p>
             <p class="text-core-800 text-base font-semibold">
-              {{ formatCurrency(Number(movement.unit_cost)) }}
+              {{ formatCurrency(Number(movement.variant_price)) }}
             </p>
           </div>
 
@@ -86,7 +86,7 @@
           <!-- Created By -->
           <div class="space-y-1">
             <p class="text-core-600 text-sm">Created By</p>
-            <p class="text-core-800 text-base font-semibold">{{ movement.created_by }}</p>
+            <p class="text-core-800 text-base font-semibold">{{ movement.created_by_name }}</p>
           </div>
         </div>
       </div>

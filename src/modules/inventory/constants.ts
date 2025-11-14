@@ -10,6 +10,7 @@ import type {
 } from "./types"
 import { TableColumn } from "@components/DataTable.vue"
 import type { TOrder } from "@modules/orders/types"
+import { formatCurrency } from "@/utils/format-currency"
 
 export const PRODUCT_COLUMNS: TableColumn<TProduct>[] = [
   { header: "Name", accessor: "name", maxWidth: "300px" },
@@ -38,13 +39,17 @@ export const PRODUCT_ORDER_COLUMNS: TableColumn<TOrder>[] = [
 
 export const MOVEMENT_COLUMNS: TableColumn<IInventoryMovement>[] = [
   { header: "Date", accessor: "created_at" },
-  { header: "SKU", accessor: "variant" },
+  { header: "SKU", accessor: "variant_name" },
   { header: "Type", accessor: "type" },
   { header: "Quantity", accessor: "quantity" },
-  { header: "Unit Cost", accessor: "unit_cost" },
+  {
+    header: "Unit Cost",
+    accessor: "variant_price",
+    cell: ({ value }) => formatCurrency(Number(value)),
+  },
   { header: "Reason", accessor: "reason" },
-  { header: "Created By", accessor: "created_by" },
-  { header: "Reference", accessor: "reference" },
+  { header: "Created By", accessor: "created_by_name" },
+  { header: "Reference", accessor: "reference", class: "max-w-[150px]" },
 ]
 
 export const MOCK_INVENTORY_MOVEMENTS: IInventoryMovement[] = [

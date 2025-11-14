@@ -8,7 +8,13 @@ import { computed } from "vue"
 
 interface OrderItem {
   product: { uid: string; name: string; total_stock: number }
-  variant: { uid: string; name: string; sku: string; price: string } | null
+  variant: {
+    uid: string
+    name: string
+    sku: string
+    price: string
+    original_price?: number
+  } | null
   quantity: number
   unit_price: number
   notes?: string
@@ -51,7 +57,11 @@ const customerName = computed(() => {
   if (!props.customer) return "Unknown Customer"
   const firstName = props.customer.first_name || ""
   const lastName = props.customer.last_name || ""
-  return `${firstName} ${lastName}`.trim() || "Unknown Customer"
+  return `${firstName} ${lastName}`.trim() || props.customer?.full_name || "Unknown Customer"
+})
+
+const itemsCount = computed(() => {
+  return props.orderItems.reduce((sum, item) => sum + item.quantity, 0)
 })
 </script>
 
@@ -63,125 +73,140 @@ const customerName = computed(() => {
     <p class="mb-4 text-sm">Double-check everything before confirming this order.</p>
 
     <div class="space-y-4">
-      <!-- Customer Info -->
-      <div class="rounded-xl bg-white p-4">
-        <h3 class="mb-3 text-sm font-semibold">Customer Information</h3>
-        <div class="space-y-2 text-sm">
-          <p class="flex justify-between">
-            <span class="text-gray-600">Name:</span>
-            <span class="font-medium">{{ customerName }}</span>
-          </p>
-          <p v-if="customer?.email" class="flex justify-between">
-            <span class="text-gray-600">Email:</span>
-            <span class="font-medium">{{ customer.email }}</span>
-          </p>
-          <p v-if="customer?.phone" class="flex justify-between">
-            <span class="text-gray-600">Phone:</span>
-            <span class="font-medium">{{ customer.phone }}</span>
-          </p>
-        </div>
-      </div>
-
       <!-- Order Items -->
-      <div class="rounded-xl bg-white p-4">
-        <h3 class="mb-3 text-sm font-semibold">Order Items</h3>
-        <div class="space-y-3">
-          <div
-            v-for="(item, index) in orderItems"
-            :key="index"
-            class="border-core-200 flex items-center justify-between border-b pb-3 last:border-0"
-          >
-            <div class="flex-1">
-              <p class="font-medium">{{ item.product.name }}</p>
-              <p v-if="item.variant" class="text-xs text-gray-600">{{ item.variant.name }}</p>
-              <p class="text-xs text-gray-600">Qty: {{ item.quantity }}</p>
+
+      <div class="border-core-300 bg-core-25 my-6 space-y-4 rounded-xl border p-4">
+        <div
+          v-for="(item, idx) in orderItems"
+          :key="`${item.product.uid}-${item.variant?.uid || idx}`"
+          class="flex items-center justify-between"
+        >
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white">
+              <Icon name="box" class="h-5 w-5 text-gray-400" />
             </div>
-            <div class="text-right">
-              <p class="font-medium">{{ formatCurrency(item.unit_price) }}</p>
-              <p class="text-xs text-gray-600">
-                Subtotal: {{ formatCurrency(item.quantity * item.unit_price) }}
+            <div>
+              <h4 class="text-sm font-medium">
+                {{ item.product.name }}
+                <span class="text-primary-700 ml-1 text-xs font-medium">
+                  (x{{ item.quantity }})
+                </span>
+              </h4>
+              <p v-if="item.variant" class="text-core-500 text-xs">
+                {{ item.variant.name.split(" - ")[1] || item.variant.name }}
               </p>
             </div>
+          </div>
+          <div class="text-right">
+            <span
+              v-if="item.variant?.original_price && item.variant.original_price !== item.unit_price"
+              class="text-core-400 text-xs line-through"
+            >
+              {{ formatCurrency(item.quantity * item.variant.original_price) }}
+            </span>
+            <span class="ml-1 text-sm font-medium">
+              {{ formatCurrency(Number(item.quantity * item.unit_price)) }}
+            </span>
           </div>
         </div>
       </div>
 
-      <!-- Shipping Info -->
-      <div class="rounded-xl bg-white p-4">
-        <h3 class="mb-3 text-sm font-semibold">Shipping Information</h3>
-        <div class="space-y-2 text-sm">
-          <p class="flex justify-between">
-            <span class="text-gray-600">Method:</span>
-            <span class="font-medium capitalize">{{ shippingInfo.fulfilment_method }}</span>
-          </p>
-          <p v-if="shippingInfo.fulfilment_method === 'delivery'" class="flex justify-between">
-            <span class="text-gray-600">Address:</span>
-            <span class="max-w-xs text-right font-medium">{{ shippingInfo.delivery_address }}</span>
-          </p>
-          <p v-if="shippingInfo.courier" class="flex justify-between">
-            <span class="text-gray-600">Courier:</span>
-            <span class="font-medium">{{ shippingInfo.courier }}</span>
-          </p>
-          <p class="flex justify-between">
-            <span class="text-gray-600">Delivery Fee:</span>
-            <span class="font-medium">{{ formatCurrency(shippingInfo.delivery_fee) }}</span>
-          </p>
+      <!-- Customer Details -->
+      <div class="border-core-300 bg-core-25 my-6 space-y-3 rounded-xl border p-4">
+        <p class="text-sm font-medium">{{ customerName }}</p>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-1">
+            <Icon name="sms" class="text-core-600 h-4 w-4" />
+            <span class="text-sm font-medium">{{ customer?.email || "N/A" }}</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <Icon name="call" class="text-core-600 h-4 w-4" />
+            <span class="text-sm font-medium">{{ customer?.phone || "N/A" }}</span>
+          </div>
         </div>
       </div>
 
-      <!-- Payment Summary -->
-      <div class="rounded-xl bg-white p-4">
-        <h3 class="mb-3 text-sm font-semibold">Payment Summary</h3>
-        <div class="space-y-2 text-sm">
-          <p class="flex justify-between">
-            <span class="text-gray-600">Products Total:</span>
-            <span class="font-medium">{{ formatCurrency(productsTotal) }}</span>
-          </p>
-          <p class="flex justify-between">
-            <span class="text-gray-600">Delivery Fee:</span>
-            <span class="font-medium">{{ formatCurrency(shippingInfo.delivery_fee) }}</span>
-          </p>
-          <p v-if="paymentInfo.discount_amount > 0" class="flex justify-between text-red-600">
-            <span>Discount:</span>
-            <span class="font-medium">-{{ formatCurrency(paymentInfo.discount_amount) }}</span>
-          </p>
-          <div class="border-core-200 my-2 border-t"></div>
-          <p class="flex justify-between text-base font-semibold">
-            <span>Total Amount:</span>
-            <span class="text-primary-600">{{ formatCurrency(totalAmount) }}</span>
-          </p>
-          <p class="flex justify-between">
-            <span class="text-gray-600">Payment Status:</span>
-            <span
-              class="font-medium"
-              :class="{
-                'text-green-600': paymentInfo.payment_status === 'paid',
-                'text-yellow-600': paymentInfo.payment_status === 'partially_paid',
-                'text-red-600': paymentInfo.payment_status === 'unpaid',
-              }"
-            >
-              {{ startCase(paymentInfo.payment_status) }}
-            </span>
-          </p>
-          <p v-if="paymentInfo.payment_status === 'partially_paid'" class="flex justify-between">
-            <span class="text-gray-600">Amount Paid:</span>
-            <span class="font-medium">{{ formatCurrency(paymentInfo.payment_amount) }}</span>
-          </p>
-        </div>
+      <!-- Order Summary -->
+      <div class="border-core-300 bg-core-25 space-y-3 rounded-xl border p-4">
+        <h4 class="text-sm font-medium">Order Summary</h4>
+        <p class="flex justify-between text-sm">
+          <span class="text-core-600">Total items count</span>
+          <span class="font-medium">{{ itemsCount }}</span>
+        </p>
+        <p class="flex justify-between text-sm">
+          <span class="text-core-600">Subtotal</span>
+          <span class="font-medium">{{ formatCurrency(productsTotal) }}</span>
+        </p>
+        <p class="flex justify-between text-sm">
+          <span class="text-core-600">Delivery Fee</span>
+          <span class="font-medium">{{
+            shippingInfo.delivery_fee > 0 ? formatCurrency(shippingInfo.delivery_fee) : "Free"
+          }}</span>
+        </p>
+        <p
+          v-if="paymentInfo.discount_amount > 0"
+          class="flex justify-between text-sm text-green-600"
+        >
+          <span>Discount</span>
+          <span class="font-medium">-{{ formatCurrency(paymentInfo.discount_amount) }}</span>
+        </p>
+        <div class="border-core-200 my-2 border-t border-dashed"></div>
+        <p class="flex justify-between text-lg font-semibold">
+          <span>Total:</span>
+          <span class="text-primary-600">{{ formatCurrency(totalAmount) }}</span>
+        </p>
+      </div>
+
+      <!-- Payment Information -->
+      <div class="border-core-300 bg-core-25 my-6 space-y-3 rounded-xl border p-4">
+        <h4 class="text-sm font-medium">Payment Information</h4>
+        <p class="flex justify-between text-sm">
+          <span class="text-core-600">Payment Status</span>
+          <span
+            class="font-medium"
+            :class="{
+              'text-green-600': paymentInfo.payment_status === 'paid',
+              'text-yellow-600': paymentInfo.payment_status === 'partially_paid',
+              'text-red-600': paymentInfo.payment_status === 'unpaid',
+            }"
+          >
+            {{ startCase(paymentInfo.payment_status) }}
+          </span>
+        </p>
+        <p v-if="paymentInfo.payment_status !== 'unpaid'" class="flex justify-between text-sm">
+          <span class="text-core-600">Amount Paid</span>
+          <span class="font-medium">{{ formatCurrency(paymentInfo.payment_amount) }}</span>
+        </p>
+      </div>
+
+      <!-- Shipping & Delivery -->
+      <div class="border-core-300 bg-core-25 space-y-3 rounded-xl border p-4">
+        <h4 class="text-sm font-medium">Shipping & Delivery</h4>
+        <p class="flex justify-between text-sm">
+          <span class="text-core-600">How will it be delivered?</span>
+          <span class="font-medium">{{ startCase(shippingInfo.fulfilment_method) }}</span>
+        </p>
+        <p
+          v-if="shippingInfo.fulfilment_method === 'delivery' && shippingInfo.delivery_address"
+          class="flex justify-between text-sm"
+        >
+          <span class="text-core-600">Delivery Address</span>
+          <span class="font-medium">{{ shippingInfo.delivery_address }}</span>
+        </p>
+        <p
+          v-if="shippingInfo.fulfilment_method === 'delivery' && shippingInfo.courier"
+          class="flex justify-between text-sm"
+        >
+          <span class="text-core-600">Courier</span>
+          <span class="font-medium">{{ shippingInfo.courier }}</span>
+        </p>
       </div>
     </div>
 
     <div class="h-24" />
 
     <div class="border-core-200 fixed right-0 bottom-0 left-0 flex gap-3 border-t bg-white p-6">
-      <AppButton
-        label="Back"
-        color="alt"
-        variant="outlined"
-        class="w-1/3"
-        icon="arrow-left"
-        @click="emit('prev')"
-      />
+      <AppButton label="Back" color="alt" class="w-1/3" icon="arrow-left" @click="emit('prev')" />
       <AppButton label="Create Order" class="w-2/3" :loading="loading" @click="emit('submit')" />
     </div>
   </div>

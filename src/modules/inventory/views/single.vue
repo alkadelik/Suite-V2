@@ -71,7 +71,7 @@
         @open-images-edit="openImagesEditDrawer"
       />
 
-      <Tabs :tabs="tabs" v-model="activeTab" class="mt-5 mb-4 md:mt-8 md:mb-0" />
+      <Tabs :tabs="tabs" v-model="activeTab" class="mt-5 mb-4 md:mt-8 md:mb-4" />
 
       <ProductOverview
         v-if="activeTab === 'overview' && product"
@@ -214,7 +214,11 @@ const orderParams = computed(() => ({
 }))
 const { data: ordersData, isPending: isLoadingOrders } = useGetOrders(orderParams)
 
-const { data: movementsData, isPending: isLoadingMovements } = useGetInventoryMovements()
+const {
+  data: movementsData,
+  isPending: isLoadingMovements,
+  refetch: refetchMovements,
+} = useGetInventoryMovements()
 
 // Initialize activeTab from query parameter or default to "overview"
 const activeTab = ref((route.query.tab as string) || "overview")
@@ -251,6 +255,7 @@ const openStockModal = (
 
 const handleStockSuccess = () => {
   queryClient.refetchQueries({ queryKey: ["products", uid] })
+  refetchMovements()
 }
 
 const openTransferRequestDrawer = (
@@ -425,10 +430,13 @@ const tabs = computed(() => {
     baseTabs.push({ key: "variants", title: "Variants" })
   }
 
-  baseTabs.push(
-    { key: "orders", title: "Orders" },
-    { key: "movement_logs", title: "Movement Logs" },
-  )
+  // const locations = useSettingsStore().locations
+
+  baseTabs.push({ key: "orders", title: "Orders" })
+
+  // if (locations && locations.length > 1) {
+  baseTabs.push({ key: "movement_logs", title: "Movement Logs" })
+  // }
 
   return baseTabs
 })

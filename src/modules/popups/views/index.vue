@@ -9,7 +9,7 @@ import Icon from "@components/Icon.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import Tabs from "@components/Tabs.vue"
 import { useMediaQuery } from "@vueuse/core"
-import { computed, onMounted, ref } from "vue"
+import { computed, onMounted, ref, watch } from "vue"
 import { POPUP_COLUMN } from "../constants"
 import { PopupEvent } from "../types"
 import PopupEventCard from "../components/PopupEventCard.vue"
@@ -20,6 +20,7 @@ import "vue3-carousel/carousel.css"
 import { Carousel, Slide } from "vue3-carousel"
 import DeletePopupEvent from "../components/DeletePopupEvent.vue"
 import { useRoute } from "vue-router"
+import PopupCreatedSuccessModal from "../components/PopupCreatedSuccessModal.vue"
 
 const TABS = [
   { title: "All", key: "" },
@@ -34,6 +35,7 @@ const openCreate = ref(false)
 const openDelete = ref(false)
 const showFilter = ref(false)
 const activeSlide = ref(0)
+const openSuccess = ref(false)
 
 const selectedPopup = ref<PopupEvent | null>(null)
 
@@ -59,6 +61,13 @@ const route = useRoute()
 onMounted(() => {
   if (route.query.create === "true") openCreate.value = true
 })
+
+watch(
+  () => selectedPopup.value,
+  (newVal) => {
+    console.log("Selected Popup changed:", newVal)
+  },
+)
 </script>
 
 <template>
@@ -239,12 +248,24 @@ onMounted(() => {
       @close="
         () => {
           openCreate = false
-          selectedPopup = null
+          // Don't clear selectedPopup here if success modal is opening
+          if (!openSuccess) {
+            selectedPopup = null
+          }
         }
       "
       :is-edit-mode="!!selectedPopup"
       :event="selectedPopup"
-      @refresh="refetch"
+      @refresh="
+        (popup) => {
+          console.log('Popup', popup)
+          if (!selectedPopup) {
+            selectedPopup = popup
+            openSuccess = true
+          }
+          refetch()
+        }
+      "
     />
 
     <DeletePopupEvent
@@ -253,6 +274,17 @@ onMounted(() => {
       @close="openDelete = false"
       :event="selectedPopup"
       @refresh="refetch"
+    />
+
+    <PopupCreatedSuccessModal
+      :popup="selectedPopup"
+      :open="openSuccess"
+      @close="
+        () => {
+          selectedPopup = null
+          openSuccess = false
+        }
+      "
     />
   </div>
 </template>
