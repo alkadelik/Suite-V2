@@ -27,7 +27,7 @@ const routes: RouteRecordRaw[] = [
   // },
   {
     path: "/",
-    redirect: "/login",
+    redirect: "/dashboard",
   },
   // Auth routes with AuthLayout
   {
