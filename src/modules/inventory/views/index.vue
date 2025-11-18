@@ -88,8 +88,9 @@
           <template #cell:name="{ item }">
             <ProductAvatar
               :name="item.name"
-              :url="undefined"
+              :url="item.primary_image?.image || undefined"
               :variants-count="item.variants_count > 1 ? item.variants_count : undefined"
+              shape="rounded"
             />
           </template>
 

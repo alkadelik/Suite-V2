@@ -1,10 +1,10 @@
 <template>
   <div
-    class="!font-manrope fixed top-0 left-0 flex h-screen w-full flex-col items-center py-0 md:justify-around md:bg-gray-50 md:py-16"
+    class="!font-manrope fixed top-0 left-0 z-[9999] flex h-screen w-full flex-col items-center overflow-hidden py-0 md:justify-around md:bg-gray-50 md:py-16"
     :class="currentStep === 3 ? 'justify-center bg-white' : 'justify-start bg-white'"
   >
     <button
-      class="bg-primary-25 border-primary-300 absolute top-0 left-0 flex w-full items-center justify-center border-b py-2 text-white"
+      class="bg-primary-25 border-primary-300 absolute top-0 left-0 z-[10000] flex w-full items-center justify-center border-b py-2 text-white"
       @click="backToLeyyow"
     >
       <div class="flex items-center gap-2">
@@ -22,16 +22,18 @@
 
     <div
       :class="[
-        'w-full max-w-2xl rounded-xl bg-white md:px-6 md:py-10 md:shadow-lg',
-        currentStep === 3 ? 'h-auto' : 'max-h-2xl h-auto flex-1 md:flex-auto',
+        'flex w-full max-w-2xl flex-col rounded-xl bg-white md:px-6 md:py-10 md:shadow-lg',
+        currentStep === 3 ? 'h-auto' : 'min-h-0 flex-1 md:flex-auto',
       ]"
     >
       <div
         v-if="currentStep === 1 || currentStep === 2"
-        class="z-50 flex h-full w-full flex-col overflow-y-auto rounded-xl text-black"
+        class="z-50 flex min-h-0 flex-1 flex-col rounded-xl pt-12 text-black md:pt-0"
       >
-        <div class="mt-10 flex min-h-0 flex-1 flex-col py-3 md:mt-0">
-          <div class="flex flex-col items-center justify-center gap-3 px-5 pt-3 text-center">
+        <div class="flex min-h-0 flex-1 flex-col py-3">
+          <div
+            class="flex flex-shrink-0 flex-col items-center justify-center gap-3 px-5 pt-3 text-center"
+          >
             <img
               src="/images/shipbubble-logo-big.png"
               alt="shipbubble logo"
@@ -50,7 +52,7 @@
           <!-- step 1 -->
           <form
             v-show="currentStep === 1"
-            class="mt-4 flex flex-1 flex-col gap-4 px-5"
+            class="mt-4 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5"
             @submit.prevent="handleAuthSubmit"
           >
             <div>
@@ -111,20 +113,22 @@
               />
             </div>
 
-            <AppButton
-              label="Next"
-              type="submit"
-              :disabled="!authFormIsValid"
-              :loading="loading"
-              class="mt-4 !bg-[#D93855]"
-            />
+            <div class="sticky bottom-0 bg-white py-4">
+              <AppButton
+                label="Next"
+                type="submit"
+                :disabled="!authFormIsValid"
+                :loading="loading"
+                class="w-full !bg-[#D93855]"
+              />
+            </div>
           </form>
 
           <!-- step 2 -->
           <div v-show="currentStep === 2" class="flex min-h-0 flex-1 flex-col">
             <!-- middle section -->
             <div class="mt-3 flex min-h-0 flex-1 flex-col bg-[#FAFAFA] px-5 py-3 md:bg-white">
-              <div class="flex justify-end">
+              <div class="flex flex-shrink-0 justify-end">
                 <div
                   class="inline-flex items-center rounded-full px-2 py-1 text-[12.5px] font-semibold"
                   :class="
@@ -137,7 +141,7 @@
                 </div>
               </div>
 
-              <div class="mt-3">
+              <div class="mt-3 flex-shrink-0">
                 <input
                   v-model="searchQuery"
                   type="text"
@@ -197,7 +201,7 @@
             </div>
 
             <!-- footer pinned -->
-            <div class="px-5 py-3">
+            <div class="flex-shrink-0 bg-white px-5 py-3">
               <AppButton
                 label="Complete Setup"
                 type="button"
@@ -248,13 +252,22 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, computed } from "vue"
+import { ref, computed, onMounted, onUnmounted } from "vue"
 import AppButton from "@components/AppButton.vue"
 import Checkbox from "@components/form/Checkbox.vue"
 import Icon from "@components/Icon.vue"
 import LoadingIcon from "@components/LoadingIcon.vue"
 import GooglePlacesAutoComplete from "@/components/GooglePlacesAutocomplete.vue"
 import { useGetCouriers } from "../api"
+
+// Prevent body scroll when component is mounted
+onMounted(() => {
+  document.body.style.overflow = "hidden"
+})
+
+onUnmounted(() => {
+  document.body.style.overflow = ""
+})
 
 interface AuthForm {
   business_name: string

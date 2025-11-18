@@ -147,10 +147,11 @@ export function useProductFormState() {
     if (data.requires_approval !== undefined) form.requires_approval = data.requires_approval
     if (data.category !== undefined) form.category = data.category
     if (data.images !== undefined) form.images = data.images
-    if (data.hasVariants !== undefined) hasVariants.value = data.hasVariants
+    // Set variants before hasVariants to prevent watcher from clearing variants
     if (data.variants !== undefined) variants.value = data.variants
     if (data.variantConfiguration !== undefined)
       variantConfiguration.value = data.variantConfiguration
+    if (data.hasVariants !== undefined) hasVariants.value = data.hasVariants
   }
 
   return {

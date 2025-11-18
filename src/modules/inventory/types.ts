@@ -36,6 +36,12 @@ export type TProduct = {
   is_active: boolean
   category: string | null
   created_at: string
+  primary_image: IProductImage | null
+  price: string | null
+  amount_sold: number
+  quantity_sold: number
+  memo_count: number
+  return_count: number
 }
 
 // Detailed product type (used in single product view/edit)
