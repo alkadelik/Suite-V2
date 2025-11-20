@@ -6,6 +6,25 @@
       class="mb-10"
     />
 
+    <a
+      href="http://legacy.leyyow.com/auth/signin"
+      class="mb-8 inline-block w-full"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <div
+        class="bg-primary-50 text-primary-700 border-primary-200 flex flex-col items-start gap-2 rounded-3xl border px-2 py-2 xl:flex-row"
+      >
+        <Chip size="sm" label="✨ Returning users" variant="filled" />
+        <div class="flex flex-wrap items-center gap-2 text-sm">
+          <span class="font-medium">
+            If you created your account before Nov 18, click here to sign in
+          </span>
+          <Icon name="arrow-right" size="16" class="hidden! md:inline-block!" />
+        </div>
+      </div>
+    </a>
+
     <AppForm :schema="loginSchema" @submit="onSubmit" v-slot="{ meta }" class="space-y-8">
       <FormField name="email" label="Email Address" placeholder="example@gmail.com" required />
 
@@ -60,6 +79,8 @@ import FormField from "@components/form/FormField.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import { ref } from "vue"
 import AppButton from "@components/AppButton.vue"
+import Chip from "@components/Chip.vue"
+import Icon from "@components/Icon.vue"
 
 const authStore = useAuthStore()
 const router = useRouter()

@@ -43,7 +43,6 @@
               <Icon :name="heroItem.icon" size="20" />
               <span>{{ heroItem.label }}</span>
             </div>
-            <!-- <Icon name="eye" size="18" /> -->
             <Icon name="arrow-right" size="18" />
           </button>
 
@@ -82,7 +81,7 @@
                   <Icon :name="item.icon" size="20" />
                   <span>{{ item.label }}</span>
                 </div>
-                <!-- <Icon name="eye" size="18" /> -->
+                <Icon name="eye" size="18" @click.stop="hideSection(item.id)" />
                 <Icon name="arrow-right" size="18" />
               </button>
             </template>
@@ -104,7 +103,6 @@
               <Icon :name="heroItem.icon" size="20" />
               <span>{{ heroItem.label }}</span>
             </div>
-            <!-- <Icon name="eye" size="18" /> -->
             <Icon
               name="chevron-down"
               size="18"
@@ -158,7 +156,7 @@
                   <Icon :name="item.icon" size="20" />
                   <span>{{ item.label }}</span>
                 </div>
-                <!-- <Icon name="eye" size="18" /> -->
+                <Icon name="eye" size="18" @click.stop="hideSection(item.id)" />
                 <Icon
                   name="chevron-down"
                   size="18"
@@ -277,6 +275,18 @@
         />
       </div>
     </div>
+
+    <!--  -->
+    <ConfirmationModal
+      v-model="showHideConfirmation"
+      variant="warning"
+      :header="`Hide ${sectionToHideLabel} Section`"
+      :paragraph="`Are you sure you want to hide the '${sectionToHideLabel}' section from your landing page? This section will no longer be visible to your customers.`"
+      info-message="You can unhide this section later from the settings."
+      action-label="Hide Section"
+      :loading="isHiding"
+      @confirm="confirmHideSection"
+    />
   </section>
 </template>
 
@@ -298,11 +308,17 @@ import AppButton from "@components/AppButton.vue"
 import { useGetStorefrontSections, useUpdateStorefrontSectionsOrder } from "@modules/settings/api"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
+import ConfirmationModal from "@components/ConfirmationModal.vue"
 
 const { mutate: updateLandingPageItemsOrder, isPending } = useUpdateStorefrontSectionsOrder()
 const { data: landingPageData, refetch } = useGetStorefrontSections()
 
 const openVersionHistory = inject<() => void>("openVersionHistory")
+
+// Confirmation modal state
+const showHideConfirmation = ref(false)
+const sectionToHideId = ref<string | null>(null)
+const isHiding = ref(false)
 
 // Get all sections from landing page data
 const heroSection = computed(() => {
@@ -349,6 +365,44 @@ const newsletterSignupSection = computed(() => {
   )
 })
 
+const hideSection = (id: string): void => {
+  sectionToHideId.value = id
+  showHideConfirmation.value = true
+}
+
+const confirmHideSection = (): void => {
+  if (!sectionToHideId.value) return
+
+  const sectionToHide = draggableItems.value.find((item) => item.id === sectionToHideId.value)
+  if (!sectionToHide) return
+
+  isHiding.value = true
+
+  const payload = {
+    updates: [
+      {
+        uid: sectionToHide.uid,
+        position: sectionToHide.order,
+        is_hidden: true,
+      },
+    ],
+  }
+
+  updateLandingPageItemsOrder(payload, {
+    onSuccess: () => {
+      toast.success("Section hidden successfully")
+      showHideConfirmation.value = false
+      sectionToHideId.value = null
+      isHiding.value = false
+      refetch()
+    },
+    onError: (error) => {
+      displayError(error)
+      isHiding.value = false
+    },
+  })
+}
+
 // Icon mapping for different section types
 const sectionIconMap: Record<string, string> = {
   hero: "star",
@@ -382,6 +436,13 @@ const draggableItems = ref<DesignItem[]>([])
 
 const activeSection = ref<string>("hero")
 const expandedSection = ref<string | null>(null)
+
+// Get the label of the section being hidden
+const sectionToHideLabel = computed(() => {
+  if (!sectionToHideId.value) return ""
+  const section = draggableItems.value.find((item) => item.id === sectionToHideId.value)
+  return section?.label || ""
+})
 
 // Watch for API data and sync to local state
 watch(
