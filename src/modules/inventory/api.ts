@@ -61,6 +61,14 @@ export function useUpdateVariant() {
   })
 }
 
+/** Bulk update variants */
+export function useBulkUpdateVariants() {
+  return useMutation({
+    mutationFn: (payload: { variants: Array<Partial<IProductVariant> & { uid: string }> }) =>
+      baseApi.post(`inventory/variants/bulk-update/`, payload),
+  })
+}
+
 /** Bulk variant operations (add and delete variants) */
 export function useBulkVariantOperations() {
   return useMutation({

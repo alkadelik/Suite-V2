@@ -52,86 +52,88 @@
         </div>
       </div>
 
-      <Transition
-        enter-active-class="transition ease-out duration-100"
-        enter-from-class="transform opacity-0 scale-95"
-        enter-to-class="transform opacity-100 scale-100"
-        leave-active-class="transition ease-in duration-75"
-        leave-from-class="transform opacity-100 scale-100"
-        leave-to-class="transform opacity-0 scale-95"
-      >
-        <div v-if="open" :class="dropdownClasses" @click.stop>
-          <!-- Search Input (inside dropdown) -->
-          <div v-if="searchable" class="border-core-100 border-b p-3">
-            <input
-              ref="searchInput"
-              v-model="search"
-              placeholder="Search options..."
-              :class="searchInputClasses"
-              @click.stop
-              @keydown.escape="open = false"
-              @keydown.enter.prevent="selectHighlighted"
-              @keydown.arrow-down.prevent="highlightNext"
-              @keydown.arrow-up.prevent="highlightPrevious"
-            />
-          </div>
+      <Teleport to="body">
+        <Transition
+          enter-active-class="transition ease-out duration-100"
+          enter-from-class="transform opacity-0 scale-95"
+          enter-to-class="transform opacity-100 scale-100"
+          leave-active-class="transition ease-in duration-75"
+          leave-from-class="transform opacity-100 scale-100"
+          leave-to-class="transform opacity-0 scale-95"
+        >
+          <div v-if="open" :class="dropdownClasses" :style="dropdownStyles" @click.stop>
+            <!-- Search Input (inside dropdown) -->
+            <div v-if="searchable" class="border-core-100 border-b p-3">
+              <input
+                ref="searchInput"
+                v-model="search"
+                placeholder="Search options..."
+                :class="searchInputClasses"
+                @click.stop
+                @keydown.escape="open = false"
+                @keydown.enter.prevent="selectHighlighted"
+                @keydown.arrow-down.prevent="highlightNext"
+                @keydown.arrow-up.prevent="highlightPrevious"
+              />
+            </div>
 
-          <!-- Options List -->
-          <div class="max-h-48 overflow-auto">
-            <template v-for="(opt, idx) in filteredOptions" :key="getOptionKey(opt, idx)">
-              <div
-                :class="[getOptionClasses(opt, idx)]"
-                @click="select(opt)"
-                @mouseenter="highlightedIndex = idx"
-              >
-                <slot
-                  name="option"
-                  :option="opt"
-                  :label="getLabel(opt)"
-                  :selected="isSelected(opt)"
+            <!-- Options List -->
+            <div class="max-h-48 overflow-auto">
+              <template v-for="(opt, idx) in filteredOptions" :key="getOptionKey(opt, idx)">
+                <div
+                  :class="[getOptionClasses(opt, idx)]"
+                  @click="select(opt)"
+                  @mouseenter="highlightedIndex = idx"
                 >
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                      <!-- Checkbox for multiple selection -->
-                      <div
-                        v-if="multiple"
-                        :class="[
-                          'flex h-4 w-4 items-center justify-center rounded border transition-colors',
-                          isSelected(opt)
-                            ? 'bg-primary-600 border-primary-600'
-                            : 'border-core-300 bg-white',
-                        ]"
-                      >
-                        <Icon v-if="isSelected(opt)" name="check" class="h-3 w-3 text-white" />
+                  <slot
+                    name="option"
+                    :option="opt"
+                    :label="getLabel(opt)"
+                    :selected="isSelected(opt)"
+                  >
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-2">
+                        <!-- Checkbox for multiple selection -->
+                        <div
+                          v-if="multiple"
+                          :class="[
+                            'flex h-4 w-4 items-center justify-center rounded border transition-colors',
+                            isSelected(opt)
+                              ? 'bg-primary-600 border-primary-600'
+                              : 'border-core-300 bg-white',
+                          ]"
+                        >
+                          <Icon v-if="isSelected(opt)" name="check" class="h-3 w-3 text-white" />
+                        </div>
+                        <span>{{ getLabel(opt) }}</span>
                       </div>
-                      <span>{{ getLabel(opt) }}</span>
+                      <div class="flex items-center gap-2">
+                        <Icon
+                          v-if="getOptionIcon(opt)"
+                          :name="getOptionIcon(opt)!"
+                          class="text-primary-600 h-4 w-4"
+                        />
+                        <Icon
+                          v-if="!multiple && isSelected(opt)"
+                          name="check"
+                          class="text-primary-600 h-4 w-4"
+                        />
+                      </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                      <Icon
-                        v-if="getOptionIcon(opt)"
-                        :name="getOptionIcon(opt)!"
-                        class="text-primary-600 h-4 w-4"
-                      />
-                      <Icon
-                        v-if="!multiple && isSelected(opt)"
-                        name="check"
-                        class="text-primary-600 h-4 w-4"
-                      />
-                    </div>
-                  </div>
-                </slot>
+                  </slot>
+                </div>
+                <div v-if="hasOptionDivider(opt)" class="border-b border-gray-200" />
+              </template>
+              <div
+                v-if="filteredOptions.length === 0"
+                class="text-core-400 px-4 py-3 text-center text-sm"
+              >
+                {{ noOptionsText }}
               </div>
-              <div v-if="hasOptionDivider(opt)" class="border-b border-gray-200" />
-            </template>
-            <div
-              v-if="filteredOptions.length === 0"
-              class="text-core-400 px-4 py-3 text-center text-sm"
-            >
-              {{ noOptionsText }}
             </div>
           </div>
-        </div>
-      </Transition>
+        </Transition>
+      </Teleport>
     </div>
 
     <div v-if="error" class="mt-1 flex items-center text-sm text-red-600">
@@ -226,6 +228,7 @@ const search = ref("")
 const highlightedIndex = ref(-1)
 const selectContainer = ref<HTMLElement>()
 const searchInput = ref<HTMLInputElement>()
+const positionTrigger = ref(0) // Used to force recompute dropdown position
 
 // Check if we're inside a modal
 const isInsideModal = computed(() => {
@@ -374,13 +377,37 @@ const searchInputClasses = computed(() => {
 
 const dropdownClasses = computed(() => {
   // Use higher z-index when inside a modal (z-60) vs normal usage (z-50)
-  const zIndex = isInsideModal.value ? "z-[70]" : "z-[60]"
-  const baseClasses = `absolute ${zIndex} w-full overflow-hidden rounded-xl border bg-white shadow-lg border-core-100 py-2`
-  const placementClasses = {
-    bottom: "mt-1 top-full",
-    top: "mb-1 bottom-full",
+  const zIndex = isInsideModal.value ? "z-[1300]" : "z-[1200]"
+  const baseClasses = `fixed ${zIndex} overflow-hidden rounded-xl border bg-white shadow-lg border-core-100 py-2`
+  return baseClasses
+})
+
+// Calculate dropdown position using fixed positioning
+const dropdownStyles = computed(() => {
+  // Include positionTrigger to force recomputation on scroll/resize
+  void positionTrigger.value
+
+  if (!selectContainer.value || !open.value) return {}
+
+  const rect = selectContainer.value.getBoundingClientRect()
+  const spacing = 4 // Gap between select and dropdown
+
+  const styles: Record<string, string> = {
+    width: `${rect.width}px`,
+    minWidth: `${rect.width}px`,
   }
-  return [baseClasses, placementClasses[dropdownPlacement.value]].join(" ")
+
+  if (dropdownPlacement.value === "top") {
+    // Position above the select field
+    styles.bottom = `${window.innerHeight - rect.top + spacing}px`
+    styles.left = `${rect.left}px`
+  } else {
+    // Position below the select field
+    styles.top = `${rect.bottom + spacing}px`
+    styles.left = `${rect.left}px`
+  }
+
+  return styles
 })
 
 const getOptionClasses = (opt: OptionValue, index: number): string => {
@@ -482,10 +509,23 @@ const onClickOutside = (event: MouseEvent) => {
   }
 }
 
+// Update dropdown position on scroll and resize
+const updateDropdownPosition = () => {
+  if (open.value && selectContainer.value) {
+    // Force recompute by incrementing positionTrigger
+    positionTrigger.value++
+  }
+}
+
 onMounted(() => {
   document.addEventListener("click", onClickOutside, true) // Use capture phase
+  window.addEventListener("scroll", updateDropdownPosition, true)
+  window.addEventListener("resize", updateDropdownPosition)
 })
+
 onUnmounted(() => {
   document.removeEventListener("click", onClickOutside, true)
+  window.removeEventListener("scroll", updateDropdownPosition, true)
+  window.removeEventListener("resize", updateDropdownPosition)
 })
 </script>

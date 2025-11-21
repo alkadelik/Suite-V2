@@ -3,7 +3,10 @@ import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
 import { computed } from "vue"
 import { useRoute } from "vue-router"
+import { useInventoryStore } from "@modules/inventory/store"
+
 const route = useRoute()
+const inventoryStore = useInventoryStore()
 
 const title = computed(() => {
   if (route.path.startsWith("/order")) return "Orders"
@@ -12,6 +15,10 @@ const title = computed(() => {
   if (route.path.startsWith("/customers")) return "Customers"
   return "Page"
 })
+
+// Get product count from store
+const isInventoryPage = computed(() => route.path.startsWith("/inventory"))
+const productCount = computed(() => inventoryStore.productCount)
 </script>
 
 <template>
@@ -29,7 +36,10 @@ const title = computed(() => {
           <Icon name="arrow-left" size="20" />
           Back
         </button>
-        <h1 class="text-xl font-semibold">{{ title || "Page" }}</h1>
+        <div class="flex items-center gap-2">
+          <h1 class="text-xl font-semibold">{{ title || "Page" }}</h1>
+          <Chip v-if="isInventoryPage" :label="`${productCount} products`" color="blue" />
+        </div>
       </div>
       <Chip icon="info-circle" label="Tutorial" />
     </div>
