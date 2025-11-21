@@ -166,6 +166,15 @@
 
     <!-- Add Category Modal -->
     <AddCategoryModal v-model="showAddCategoryModal" @success="handleCategoryCreated" />
+
+    <!-- Manage Stock Modal -->
+    <ManageStockModal
+      v-if="product"
+      :open="showManageStockModal"
+      :product="product.data"
+      @close="showManageStockModal = false"
+      @success="handleStockSuccess"
+    />
   </div>
 </template>
 
@@ -191,6 +200,7 @@ import ProductOrders from "../components/ProductOrders.vue"
 import ProductMovementLogs from "../components/ProductMovementLogs.vue"
 import AddReduceStockModal from "../components/AddReduceStockModal.vue"
 import TransferRequestStockDrawer from "../components/TransferRequestStockDrawer.vue"
+import ManageStockModal from "../components/ManageStockModal.vue"
 import type { TOrder } from "@modules/orders/types"
 import { useSettingsStore } from "@modules/settings/store"
 import { useGetOrders } from "@modules/orders/api"
@@ -235,6 +245,7 @@ const editMode = ref<"product-details" | "variant-details" | "variants" | "image
 )
 const variantForEdit = ref<IProductVariantDetails | null>(null)
 const showAddCategoryModal = ref(false)
+const showManageStockModal = ref(false)
 const productEditDrawerRef = ref<{
   setCategoryFromModal: (category: { label: string; value: string }) => void
 } | null>(null)
@@ -418,18 +429,90 @@ const openImagesEditDrawer = () => {
   showProductEditDrawer.value = true
 }
 
+const openPriceWeightEdit = () => {
+  if (!product.value) return
+
+  productForEdit.value = {
+    uid: product.value.data.uid,
+    name: product.value.data.name,
+    total_stock: product.value.data.total_stock,
+    needs_reorder: product.value.data.needs_reorder,
+    variants_count: product.value.data.variants.length,
+    is_active: product.value.data.is_active,
+    category: product.value.data.category,
+    created_at: product.value.data.created_at,
+    primary_image: null,
+    price: null,
+    amount_sold: 0,
+    quantity_sold: 0,
+    memo_count: 0,
+    return_count: 0,
+  }
+
+  // Always open in variant-details mode for price & weight editing
+  editMode.value = "variant-details"
+  variantForEdit.value = product.value.data.variants[0] || null
+
+  showProductEditDrawer.value = true
+}
+
+const openVariantsManage = () => {
+  if (!product.value) return
+
+  productForEdit.value = {
+    uid: product.value.data.uid,
+    name: product.value.data.name,
+    total_stock: product.value.data.total_stock,
+    needs_reorder: product.value.data.needs_reorder,
+    variants_count: product.value.data.variants.length,
+    is_active: product.value.data.is_active,
+    category: product.value.data.category,
+    created_at: product.value.data.created_at,
+    primary_image: null,
+    price: null,
+    amount_sold: 0,
+    quantity_sold: 0,
+    memo_count: 0,
+    return_count: 0,
+  }
+
+  editMode.value = "variants"
+  variantForEdit.value = null
+  showProductEditDrawer.value = true
+}
+
 const actionItems = computed(() => [
   {
-    label: "Edit Product",
+    label: "Edit Basic Details",
     icon: "edit",
     action: openProductEditDrawer,
   },
-  ...(product?.value?.data.variants.length && !(product.value.data.variants.length > 1)
-    ? getStockActionItems(product.value).map((item) => ({
-        ...item,
-        action: () => item.action(product.value),
-      }))
+  {
+    label: "Edit Images",
+    icon: "edit",
+    action: openImagesEditDrawer,
+  },
+  {
+    label: "Edit Price & Weight",
+    icon: "edit",
+    action: openPriceWeightEdit,
+  },
+  ...(product?.value?.data.variants && product.value.data.variants.length > 1
+    ? [
+        {
+          label: "Manage Variants",
+          icon: "edit",
+          action: openVariantsManage,
+        },
+      ]
     : []),
+  {
+    label: "Manage Stock",
+    icon: "edit",
+    action: () => {
+      showManageStockModal.value = true
+    },
+  },
   {
     divider: true,
   },

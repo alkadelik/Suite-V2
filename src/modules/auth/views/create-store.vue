@@ -37,7 +37,7 @@
           {{
             environment === "staging"
               ? "https://storefronts-staging.vercel.app/"
-              : "https://buy.leyyow.com/"
+              : "https://shop.leyyow.com/"
           }}
           <span class="text-core-600 font-semibold">
             {{ currentSlug || "[SLUG]" }}

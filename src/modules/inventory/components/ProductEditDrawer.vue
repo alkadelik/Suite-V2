@@ -175,6 +175,7 @@ import {
   useGetProduct,
   useBulkVariantOperations,
   useUpdateVariantImage,
+  useBulkUpdateVariants,
 } from "../api"
 import baseApi from "@/composables/baseApi"
 import { displayError } from "@/utils/error-handler"
@@ -245,6 +246,7 @@ const { mutateAsync: bulkVariantOperations, isPending: isBulkOperating } =
   useBulkVariantOperations()
 const { mutateAsync: updateVariantImage, isPending: isUpdatingVariantImage } =
   useUpdateVariantImage()
+const { mutate: bulkUpdateVariants, isPending: isBulkUpdatingVariants } = useBulkUpdateVariants()
 
 // Product fetching
 const productUidToFetch = ref<string>("")
@@ -323,7 +325,8 @@ const isPending = computed(() => {
     isDeletingImage.value ||
     isLoadingProduct.value ||
     isBulkOperating.value ||
-    isUpdatingVariantImage.value
+    isUpdatingVariantImage.value ||
+    isBulkUpdatingVariants.value
   )
 })
 
@@ -361,6 +364,8 @@ watch(
       originalVariantUids.value.clear()
       // Reset removed image IDs
       removedImageIds.value = []
+      // Note: Don't reset variantDetailsWithUids or form state here
+      // to avoid flashing single-variant view while refetching
     }
   },
   { immediate: true },
@@ -556,10 +561,17 @@ watch(
 )
 
 // Watch for variant prop to populate form in variant-details mode
+// Only used for simple products - complex products are handled by productData watcher
 watch(
   () => [props.editMode, props.variant, props.modelValue] as const,
   ([editMode, variant, isOpen]) => {
     if (isOpen && editMode === "variant-details" && variant) {
+      // For complex products (multiple variants), let productData watcher handle it
+      // to avoid overwriting all variants with just one
+      if (variantDetailsWithUids.value.length > 1) {
+        return
+      }
+
       const mappedAttributes = (variant.attributes || []).map((attr) => ({
         attribute: attr.attribute,
         value: attr.value,
@@ -643,51 +655,66 @@ const handleSubmit = async () => {
       return
     }
 
-    const variantData = variants.value[0]
-    const payload: Omit<IProductVariant, "opening_stock"> = {
-      name: variantData.name,
-      sku: variantData.sku,
-      price: variantData.price,
-      promo_price: variantData.promo_price,
-      promo_expiry: variantData.promo_expiry
-        ? typeof variantData.promo_expiry === "object" &&
-          variantData.promo_expiry &&
-          (variantData.promo_expiry as object) instanceof Date
-          ? (variantData.promo_expiry as Date).toISOString()
-          : variantData.promo_expiry
-        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      cost_price: variantData.cost_price,
-      weight: variantData.weight,
-      length: variantData.length,
-      width: variantData.width,
-      height: variantData.height,
-      reorder_point: variantData.reorder_point || "0",
-      max_stock: variantData.max_stock || "0",
-      is_active: variantData.is_active ?? true,
-      is_default: variantData.is_default ?? false,
-      batch_number: variantData.batch_number,
-      expiry_date: variantData.expiry_date
-        ? Object.prototype.toString.call(variantData.expiry_date) === "[object Date]"
-          ? (variantData.expiry_date as unknown as Date).toISOString().split("T")[0]
-          : variantData.expiry_date
-        : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-      attributes: variantData.attributes || [],
-    }
+    // Check if this is a complex product (multiple variants)
+    const isComplexProduct = variantDetailsWithUids.value.length > 1
 
-    updateVariant(
-      { uid: props.variant.uid, ...payload },
-      {
-        onSuccess: () => {
-          toast.success("Variant updated successfully")
-          // Invalidate the product query to ensure fresh data on next open
-          queryClient.invalidateQueries({ queryKey: ["products", productUidToFetch.value] })
-          resetFormState()
-          emit("update:modelValue", false)
-          emit("refresh")
+    if (isComplexProduct) {
+      // For complex products, use bulk update endpoint
+      const bulkPayload = variantDetailsWithUids.value
+        .map((variantDetail, index) => {
+          const variantData = variants.value[index]
+          if (!variantData) return null
+
+          return {
+            uid: variantDetail.uid,
+            price: variantData.price,
+            weight: variantData.weight,
+            length: variantData.length,
+            width: variantData.width,
+            height: variantData.height,
+          }
+        })
+        .filter((item): item is NonNullable<typeof item> => item !== null)
+
+      bulkUpdateVariants(
+        { variants: bulkPayload },
+        {
+          onSuccess: () => {
+            toast.success(
+              `All ${variantDetailsWithUids.value.length} variants updated successfully`,
+            )
+            queryClient.invalidateQueries({ queryKey: ["products", productUidToFetch.value] })
+            emit("update:modelValue", false)
+            emit("refresh")
+          },
+          onError: displayError,
         },
-        onError: displayError,
-      },
-    )
+      )
+    } else {
+      // For simple products, update single variant
+      const variantData = variants.value[0]
+      const payload: Partial<IProductVariant> = {
+        name: variantData.name,
+        price: variantData.price,
+        weight: variantData.weight,
+        length: variantData.length,
+        width: variantData.width,
+        height: variantData.height,
+      }
+
+      updateVariant(
+        { uid: props.variant.uid, ...payload },
+        {
+          onSuccess: () => {
+            toast.success("Variant updated successfully")
+            queryClient.invalidateQueries({ queryKey: ["products", productUidToFetch.value] })
+            emit("update:modelValue", false)
+            emit("refresh")
+          },
+          onError: displayError,
+        },
+      )
+    }
     return
   }
 

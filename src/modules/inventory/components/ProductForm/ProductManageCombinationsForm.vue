@@ -353,7 +353,7 @@ const selectedDimension = computed({
     const rangeMatch = sortedOptions.find((opt) => weight <= opt.value.max_weight)
     return rangeMatch || null
   },
-  set: (dimension: { label: string; value: IProductDimension }) => {
+  set: (dimension: { label: string; value: IProductDimension } | null) => {
     if (dimension) {
       // Update global dimensions
       globalDimensions.value = {
@@ -363,8 +363,34 @@ const selectedDimension = computed({
         width: dimension.value.width.toString(),
       }
 
-      // Update all variants with new dimensions
-      updateAllVariantDimensions(globalDimensions.value)
+      // Ensure variants array exists before updating
+      // If no variants exist, create a default variant first
+      if (!props.modelValue || props.modelValue.length === 0) {
+        const defaultVariant: IProductVariant = {
+          name: props.productName || "Default",
+          sku: "",
+          price: "",
+          promo_price: "",
+          promo_expiry: "",
+          cost_price: "",
+          weight: globalDimensions.value.weight,
+          length: globalDimensions.value.length,
+          width: globalDimensions.value.width,
+          height: globalDimensions.value.height,
+          reorder_point: "",
+          max_stock: "",
+          opening_stock: "",
+          is_active: true,
+          is_default: true,
+          batch_number: "",
+          expiry_date: "",
+          attributes: [],
+        }
+        emit("update:modelValue", [defaultVariant])
+      } else {
+        // Update all existing variants with new dimensions
+        updateAllVariantDimensions(globalDimensions.value)
+      }
     }
   },
 })
