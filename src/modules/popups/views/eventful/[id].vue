@@ -9,7 +9,7 @@ import Icon from "@components/Icon.vue"
 import { useGetEventfulPopupById, useRegisterForEventful } from "@modules/popups/api"
 import RegisterForEventfulModal from "@modules/popups/components/RegisterForEventfulModal.vue"
 import { computed, ref } from "vue"
-import { useRoute } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
 import fallbackImg from "@/assets/images/eventful-noise-grid.svg?url"
 import Avatar from "@components/Avatar.vue"
 import AppSection from "@components/AppSection.vue"
@@ -18,6 +18,7 @@ import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 
 const route = useRoute()
+const router = useRouter()
 
 const openRegister = ref(false)
 const openConfirmation = ref(false)
@@ -43,12 +44,15 @@ const { mutate: registerForEventful, isPending } = useRegisterForEventful()
 
 const handleConfirmFreeRegistration = () => {
   registerForEventful(
-    { event: popupEvt.value?.uid || "", discount_code: "" },
+    { event: popupEvt.value?.uid || "" },
     {
       onSuccess: (res) => {
-        toast.success("You have successfully registered for the event.")
+        toast.success("Registration successful. Event has been added to your popup list.", {
+          title: "Event Registration",
+        })
         openConfirmation.value = false
         console.log("Registration Response:", res)
+        router.push("/popups")
       },
       onError: displayError,
     },

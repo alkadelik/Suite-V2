@@ -53,7 +53,7 @@ const computedFilters = computed(() => {
   if (searchQuery.value) filters.search = searchQuery.value
   return filters
 })
-const { data: popupEvents, isPending, refetch } = useGetPopupEvents(computedFilters)
+const { data: popupEvents, isPending, isFetching, refetch } = useGetPopupEvents(computedFilters)
 
 const params = computed(() => ({ status: "upcoming", limit: 5 }))
 const { data: eventfulPopups } = useGetEventfulPopups(params)
@@ -65,7 +65,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-6 p-4 md:p-8">
+  <div class="flex flex-col p-4 md:p-8">
     <div class="hidden lg:block">
       <SectionHeader
         title="Popups"
@@ -73,7 +73,7 @@ onMounted(() => {
       />
     </div>
 
-    <div>
+    <div v-if="eventfulPopups?.results?.length">
       <div class="flex justify-between">
         <h3 class="text-lg font-semibold">Upcoming events</h3>
         <AppButton
@@ -155,10 +155,10 @@ onMounted(() => {
           openCreate = true
         }
       "
-      :loading="isPending"
+      :loading="isPending || isFetching"
     />
 
-    <section v-else class="mt-8">
+    <section v-else class="mt-6">
       <Tabs v-model="status" :tabs="TABS" class="max-w-md" />
 
       <div
@@ -207,6 +207,7 @@ onMounted(() => {
           :data="popupEvents?.results ?? []"
           :columns="POPUP_COLUMN"
           :show-pagination="true"
+          :loading="isPending || isFetching"
           @row-click="(item) => $router.push(`/popups/${item.uid}`)"
         >
           <template #cell:items_sold_count="{ item }">

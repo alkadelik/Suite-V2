@@ -118,7 +118,7 @@ export function useMarkPopupOrderAsPaid() {
 
 export function useRegisterForEventful() {
   return useMutation({
-    mutationFn: (payload: { event: string; discount_code: string }) =>
+    mutationFn: (payload: { event: string; discount_code?: string }) =>
       baseApi.post(`/eventful/registrations/`, payload),
   })
 }

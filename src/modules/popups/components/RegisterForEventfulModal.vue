@@ -41,12 +41,21 @@ const handleValidate = () => {
 
 const handleRegister = () => {
   registerForEventful(
-    { event: props.event?.uid || "", discount_code: discountCode.value },
+    {
+      event: props.event?.uid || "",
+      ...(discountCode.value ? { discount_code: discountCode.value } : {}),
+    },
     {
       onSuccess: (res) => {
-        toast.success("You have successfully registered for the event.")
-        emit("close")
         console.log("Registration Response:", res)
+        const paymentLink = res.data?.data?.payment?.payment_link
+        // open link in  res.data.payment.payment_link in new tab if exists
+        if (paymentLink) {
+          window.open(String(paymentLink), "_blank")
+          emit("close")
+        } else {
+          toast.error("Event payment link not found. Please contact support.")
+        }
       },
       onError: displayError,
     },
