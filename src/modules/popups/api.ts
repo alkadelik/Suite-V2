@@ -1,6 +1,7 @@
 import baseApi, { useApiQuery } from "@/composables/baseApi"
 import {
   AddProductsPayload,
+  EventDiscountCode,
   EventfulPopup,
   EventfulResponse,
   PopupEvent,
@@ -10,7 +11,7 @@ import {
 } from "./types"
 import { useMutation } from "@tanstack/vue-query"
 import { TOrderResponse } from "@modules/orders/types"
-import { ComputedRef } from "vue"
+import { ComputedRef, MaybeRefOrGetter } from "vue"
 
 /** Create popup api request */
 export function useCreatePopup() {
@@ -53,9 +54,13 @@ export function useDeletePopupEvent() {
   })
 }
 
-export function useGetEventfulPopups() {
+/** Fetch organizer events - public */
+export function useGetEventfulPopups(
+  params?: MaybeRefOrGetter<Record<string, string | number | boolean> | undefined>,
+) {
   return useApiQuery<EventfulResponse>({
-    url: "/eventful/events",
+    url: "/eventful/events/",
+    params,
     key: "eventful-popups",
     selectData: true,
   })
@@ -108,5 +113,22 @@ export function useCreatePopupOrder() {
 export function useMarkPopupOrderAsPaid() {
   return useMutation({
     mutationFn: (orderId: string) => baseApi.post(`/orders/${orderId}/mark-paid/`),
+  })
+}
+
+export function useRegisterForEventful() {
+  return useMutation({
+    mutationFn: (payload: { event: string; discount_code: string }) =>
+      baseApi.post(`/eventful/registrations/`, payload),
+  })
+}
+
+export function useValidateEventfulDiscountCode() {
+  return useMutation({
+    mutationFn: (payload: {
+      code: string
+      event_uid: string
+    }): Promise<{ data: { data: EventDiscountCode } }> =>
+      baseApi.post(`/eventful/merchant/discounts/validate_code/`, payload),
   })
 }

@@ -12,7 +12,7 @@ export const useSettingsStore = defineStore(
     const storeDetails = ref<IStoreDetails | null>(null)
 
     const storefrontUrl = computed(
-      () => `buy.leyyow.com/${storeDetails.value?.slug || "your-store"}`,
+      () => `shop.leyyow.com/${storeDetails.value?.slug || "your-store"}`,
     )
 
     // Actions

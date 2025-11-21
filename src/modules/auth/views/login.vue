@@ -31,10 +31,10 @@
       <FormField name="password" type="password" label="Password" required />
 
       <div class="flex items-center justify-between">
-        <label class="flex cursor-pointer items-center gap-1.5 text-sm">
+        <!-- <label class="flex cursor-pointer items-center gap-1.5 text-sm">
           <input v-model="rememberMe" type="checkbox" class="accent-primary-600 h-4 w-4" />
           Remember me
-        </label>
+        </label> -->
         <RouterLink
           to="/forgot-password"
           class="text-primary-600 text-sm font-medium transition-colors duration-200 hover:underline"
@@ -77,14 +77,13 @@ import { toast } from "@/composables/useToast"
 import AppForm from "@components/form/AppForm.vue"
 import FormField from "@components/form/FormField.vue"
 import SectionHeader from "@components/SectionHeader.vue"
-import { ref } from "vue"
 import AppButton from "@components/AppButton.vue"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
 
 const authStore = useAuthStore()
 const router = useRouter()
-const rememberMe = ref(true)
+// const rememberMe = ref(true)
 const { mutate: loginFn, isPending } = useLogin()
 
 const loginSchema = yup.object({

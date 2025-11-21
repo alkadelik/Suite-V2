@@ -9,7 +9,7 @@ import Icon from "@components/Icon.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import Tabs from "@components/Tabs.vue"
 import { useMediaQuery } from "@vueuse/core"
-import { computed, onMounted, ref, watch } from "vue"
+import { computed, onMounted, ref } from "vue"
 import { POPUP_COLUMN } from "../constants"
 import { PopupEvent } from "../types"
 import PopupEventCard from "../components/PopupEventCard.vue"
@@ -55,19 +55,13 @@ const computedFilters = computed(() => {
 })
 const { data: popupEvents, isPending, refetch } = useGetPopupEvents(computedFilters)
 
-const { data: eventfulPopups } = useGetEventfulPopups()
+const params = computed(() => ({ status: "upcoming", limit: 5 }))
+const { data: eventfulPopups } = useGetEventfulPopups(params)
 const route = useRoute()
 
 onMounted(() => {
   if (route.query.create === "true") openCreate.value = true
 })
-
-watch(
-  () => selectedPopup.value,
-  (newVal) => {
-    console.log("Selected Popup changed:", newVal)
-  },
-)
 </script>
 
 <template>
@@ -114,7 +108,7 @@ watch(
           <div class="mt-6 flex items-center justify-between px-2">
             <div class="inline-flex items-center gap-1">
               <span
-                v-for="(_, n) in 5"
+                v-for="(_, n) in eventfulPopups?.count"
                 :key="n"
                 :class="['flex h-1 w-4 rounded', activeSlide === n ? 'bg-gray-500' : 'bg-gray-200']"
               />
@@ -127,7 +121,10 @@ watch(
                 size="xs"
                 icon="arrow-left"
                 class="!bg-core-25"
-                @click="activeSlide = activeSlide === 0 ? 4 : activeSlide - 1"
+                @click="
+                  activeSlide =
+                    activeSlide === 0 ? (eventfulPopups?.count || 5) - 1 : activeSlide - 1
+                "
               />
               <AppButton
                 variant="outlined"
@@ -135,7 +132,10 @@ watch(
                 size="xs"
                 icon="arrow-right"
                 class="!bg-core-25"
-                @click="activeSlide = activeSlide === 4 ? 0 : activeSlide + 1"
+                @click="
+                  activeSlide =
+                    activeSlide === (eventfulPopups?.count || 5) - 1 ? 0 : activeSlide + 1
+                "
               />
             </div>
           </div>
@@ -258,7 +258,6 @@ watch(
       :event="selectedPopup"
       @refresh="
         (popup) => {
-          console.log('Popup', popup)
           if (!selectedPopup) {
             selectedPopup = popup
             openSuccess = true

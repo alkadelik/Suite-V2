@@ -23,7 +23,7 @@
  * // Returns: "₦1,234.56"
  */
 export function formatCurrency(
-  value: number = 0,
+  value: number | string = 0,
   { currency = "NGN", kobo = false }: { currency?: string; kobo?: boolean } = {},
 ): string {
   return new Intl.NumberFormat(currency === "NGN" ? "en-NG" : "en-US", {
@@ -31,5 +31,5 @@ export function formatCurrency(
     currency,
     minimumFractionDigits: kobo ? 2 : 0,
     maximumFractionDigits: kobo ? 2 : 0,
-  }).format(value)
+  }).format(typeof value === "string" ? parseFloat(value) : value)
 }
