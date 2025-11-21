@@ -42,7 +42,7 @@
       />
       <div v-else class="mt-4 space-y-4 rounded-xl border-gray-200 pt-3 md:border md:bg-white">
         <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
-          <h3 class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
+          <h3 class="mb-2 hidden items-center gap-1 text-lg font-semibold md:mb-0 md:flex">
             All Products <Chip :label="String(products?.data?.count || 0)" />
           </h3>
           <div class="flex items-center gap-2">
@@ -80,7 +80,7 @@
         <DataTable
           :data="products?.data?.results || []"
           :columns="PRODUCT_COLUMNS"
-          :loading="isGettingProducts"
+          :loading="showTableLoading"
           :show-pagination="false"
           :enable-row-selection="true"
           @row-click="handleRowClick"
@@ -112,7 +112,7 @@
           </template>
 
           <template #cell:price="{ value }">
-            <span class="text-core-600 text-sm">{{ value ? formatCurrency(+value) : "-" }}</span>
+            <span class="text-core-600 text-sm">{{ formatPriceRange(value) }}</span>
           </template>
 
           <template #cell:action="{ item }">
@@ -124,7 +124,7 @@
               />
               <Icon
                 name="edit"
-                @click.stop="handleAction('edit', item)"
+                @click.stop="openProductEditDrawer(item)"
                 class="hidden cursor-pointer hover:text-gray-600 md:inline-block"
               />
               <DropdownMenu
@@ -177,7 +177,8 @@
       ref="productEditDrawerRef"
       v-model="showProductEditDrawer"
       :product="product"
-      edit-mode="product-details"
+      :edit-mode="editMode"
+      :variant="variantForEdit"
       @refresh="refetchProducts"
       @add-category="showAddCategoryModal = true"
     />
@@ -193,12 +194,21 @@
       @close="showReceiveRequestModal = false"
       @success="handleRequestSuccess"
     />
+
+    <!-- Manage Stock Modal -->
+    <ManageStockModal
+      v-if="productDetailsForStock?.data"
+      :open="showManageStockModal"
+      :product="productDetailsForStock.data"
+      @close="showManageStockModal = false"
+      @success="refetchProducts"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import DataTable from "@components/DataTable.vue"
-import { TProduct, type IInventoryTransferRequest } from "../types"
+import { TProduct, type IInventoryTransferRequest, type IProductVariantDetails } from "../types"
 import { PRODUCT_COLUMNS } from "../constants"
 import { ref, computed, onMounted, watch } from "vue"
 import Icon from "@components/Icon.vue"
@@ -214,22 +224,42 @@ import AddCategoryModal from "../components/AddCategoryModal.vue"
 import InventoryRequests from "../components/InventoryRequests.vue"
 import ReceiveRequestModal from "../components/ReceiveRequestModal.vue"
 import ProductCard from "../components/ProductCard.vue"
+import ManageStockModal from "../components/ManageStockModal.vue"
 import { formatCurrency } from "@/utils/format-currency"
 import SectionHeader from "@components/SectionHeader.vue"
 import PageSummaryCards from "@components/PageSummaryCards.vue"
 import Tabs from "@components/Tabs.vue"
-import { useGetProducts, useDeleteProduct } from "../api"
+import { useGetProducts, useDeleteProduct, useGetProduct } from "../api"
 import ProductAvatar from "@components/ProductAvatar.vue"
 import EmptyState from "@components/EmptyState.vue"
 import { displayError } from "@/utils/error-handler"
 import router from "@/router"
 import { useSettingsStore } from "@modules/settings/store"
+import { useInventoryStore } from "../store"
 import { useRoute } from "vue-router"
 
 const { data: products, isPending: isGettingProducts, refetch: refetchProducts } = useGetProducts()
+
+// Only show loading state on initial load, not on background refetches
+const showTableLoading = computed(() => isGettingProducts.value && !products.value)
 const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct()
 
 const settingsStore = useSettingsStore()
+const inventoryStore = useInventoryStore()
+
+// Update store when products data changes
+watch(
+  () => products.value,
+  (newProducts: typeof products.value) => {
+    if (newProducts?.data) {
+      inventoryStore.setProducts(
+        newProducts.data.results as TProduct[],
+        newProducts.data.count as number,
+      )
+    }
+  },
+  { immediate: true },
+)
 
 // Tabs state
 const activeTab = ref("products")
@@ -258,6 +288,75 @@ const productFormDrawerRef = ref<{
 const productEditDrawerRef = ref<{
   setCategoryFromModal: (category: { label: string; value: string }) => void
 } | null>(null)
+
+// Manage stock modal state
+const showManageStockModal = ref(false)
+const editMode = ref<"product-details" | "variant-details" | "variants" | "images">(
+  "product-details",
+)
+const variantForEdit = ref<IProductVariantDetails | null>(null)
+const productUidForManageStock = ref<string | null>(null)
+const productUidForEdit = ref<string | null>(null)
+
+// Fetch product details for manage stock modal
+const productUidForFetch = computed(() => productUidForManageStock.value || "")
+const { data: productDetailsForStock } = useGetProduct(productUidForFetch)
+
+// Fetch product details for edit drawer when needed
+const productUidForEditFetch = computed(() => productUidForEdit.value || "")
+const { data: productDetailsForEdit } = useGetProduct(productUidForEditFetch)
+
+// Watch for product details to be loaded and set variant for edit
+watch(
+  () => productDetailsForEdit.value,
+  (details) => {
+    // Only process if we have a pending edit request and drawer is not already open
+    if (
+      details?.data &&
+      editMode.value === "variant-details" &&
+      productUidForEdit.value &&
+      !showProductEditDrawer.value
+    ) {
+      // Set the first variant for editing
+      variantForEdit.value = details.data.variants[0] || null
+      // Update product with fetched details
+      if (details.data) {
+        product.value = {
+          uid: details.data.uid,
+          name: details.data.name,
+          total_stock: details.data.total_stock,
+          needs_reorder: details.data.needs_reorder,
+          variants_count: details.data.variants.length,
+          is_active: details.data.is_active,
+          category: details.data.category,
+          created_at: details.data.created_at,
+          primary_image: null,
+          price: details.data.variants[0]?.price || null,
+          amount_sold: 0,
+          quantity_sold: 0,
+          memo_count: 0,
+          return_count: 0,
+        }
+      }
+      // Open the drawer after data is loaded
+      setTimeout(() => {
+        showProductEditDrawer.value = true
+      }, 0)
+    }
+  },
+)
+
+// Clear edit state when drawer closes to prevent stale data issues
+watch(
+  () => showProductEditDrawer.value,
+  (isOpen) => {
+    if (!isOpen) {
+      // Clear the edit request when drawer closes
+      productUidForEdit.value = null
+      variantForEdit.value = null
+    }
+  },
+)
 
 const handleRowClick = (clickedProduct: TProduct) => {
   router.push({ name: "Product-Details", params: { uid: clickedProduct.uid } })
@@ -309,6 +408,68 @@ const getStockStatus = (item: TProduct) => {
   }
 }
 
+// Format price range from API (e.g., "10000.00 - 20000.00" or "10000.00 - 10000.00")
+const formatPriceRange = (
+  value: string | number | boolean | Record<string, unknown> | null | undefined,
+): string => {
+  if (!value || typeof value !== "string") return "-"
+
+  // Split the price range string
+  const parts = value.split(" - ")
+  if (parts.length !== 2) return "-"
+
+  const minPrice = parseFloat(parts[0])
+  const maxPrice = parseFloat(parts[1])
+
+  // If prices are invalid
+  if (isNaN(minPrice) || isNaN(maxPrice)) return "-"
+
+  // If min and max are the same, show single price
+  if (minPrice === maxPrice) {
+    return formatCurrency(minPrice)
+  }
+
+  // Otherwise, show price range
+  return `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`
+}
+
+// Helper functions for edit operations
+const openProductEditDrawer = (item: TProduct) => {
+  product.value = { ...item }
+  editMode.value = "product-details"
+  setTimeout(() => {
+    showProductEditDrawer.value = true
+  }, 0)
+}
+
+const openImagesEditDrawer = (item: TProduct) => {
+  product.value = { ...item }
+  editMode.value = "images"
+  setTimeout(() => {
+    showProductEditDrawer.value = true
+  }, 0)
+}
+
+const openPriceWeightEdit = (item: TProduct) => {
+  // Set edit mode first
+  editMode.value = "variant-details"
+  // Trigger fetch of full product details (watcher will handle opening drawer)
+  productUidForEdit.value = item.uid
+}
+
+const openVariantsManage = (item: TProduct) => {
+  product.value = { ...item }
+  editMode.value = "variants"
+  setTimeout(() => {
+    showProductEditDrawer.value = true
+  }, 0)
+}
+
+const openManageStockModal = (item: TProduct) => {
+  productUidForManageStock.value = item.uid
+  showManageStockModal.value = true
+}
+
 const getActionItems = (item: TProduct) => [
   {
     id: "view",
@@ -323,10 +484,41 @@ const getActionItems = (item: TProduct) => [
     action: () => handleAction("duplicate", item),
   },
   {
-    id: "edit",
-    label: "Edit Product",
+    divider: true,
+  },
+  {
+    id: "edit-basic",
+    label: "Edit Basic Details",
     icon: "edit",
-    action: () => handleAction("edit", item),
+    action: () => openProductEditDrawer(item),
+  },
+  {
+    id: "edit-images",
+    label: "Edit Images",
+    icon: "edit",
+    action: () => openImagesEditDrawer(item),
+  },
+  {
+    id: "edit-price",
+    label: "Edit Price & Weight",
+    icon: "edit",
+    action: () => openPriceWeightEdit(item),
+  },
+  ...(item.variants_count > 1
+    ? [
+        {
+          id: "manage-variants",
+          label: "Manage Variants",
+          icon: "edit",
+          action: () => openVariantsManage(item),
+        },
+      ]
+    : []),
+  {
+    id: "manage-stock",
+    label: "Manage Stock",
+    icon: "edit",
+    action: () => openManageStockModal(item),
   },
   {
     divider: true,
@@ -342,19 +534,12 @@ const getActionItems = (item: TProduct) => [
 ]
 
 const handleAction = (
-  action: "duplicate" | "edit" | "view" | "delete" | "activate" | "deactivate",
+  action: "duplicate" | "view" | "delete" | "activate" | "deactivate",
   item: TProduct,
 ) => {
   console.log(action, item)
 
-  if (action === "edit") {
-    // Set product data BEFORE opening the drawer
-    product.value = { ...item } // Create a copy to avoid reference issues
-    // Use setTimeout to ensure reactive updates are processed
-    setTimeout(() => {
-      showProductEditDrawer.value = true
-    }, 0)
-  } else if (action === "delete") {
+  if (action === "delete") {
     product.value = item
     showDeleteConfirmationModal.value = true
   } else if (action === "view") {
@@ -416,6 +601,14 @@ onMounted(() => {
 watch(showProductFormDrawer, (isOpen) => {
   if (!isOpen && route.query.create === "true") {
     router.replace({ name: "Inventory", query: {} })
+  }
+})
+
+// Clear product UID for edit when drawer is closed
+watch(showProductEditDrawer, (isOpen) => {
+  if (!isOpen) {
+    productUidForEdit.value = null
+    variantForEdit.value = null
   }
 })
 </script>
