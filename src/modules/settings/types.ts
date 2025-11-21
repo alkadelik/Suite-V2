@@ -211,6 +211,7 @@ export interface ThemeSection {
   title: string
   subtitle: string | null
   content: string | null
+  is_hidden: boolean
   featured_products: string[] // array of product UIDs for featured_products section
   testimonials: {
     uid: string

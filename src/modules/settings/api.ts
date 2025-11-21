@@ -231,7 +231,7 @@ export function useGetStorefrontSections() {
 export function useUpdateStorefrontSectionsOrder() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (body: { updates: { uid: string; position: number }[] }) =>
+    mutationFn: (body: { updates: { uid: string; position: number; is_hidden?: boolean }[] }) =>
       baseApi.patch(`/storefront/sections/update-section-positions/`, body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["version-history"] })

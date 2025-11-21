@@ -4,7 +4,7 @@ import { useAuthStore } from "@modules/auth/store"
 import { toast } from "@/composables/useToast"
 
 // Layout imports
-import LandingLayout from "@/layouts/LandingLayout.vue"
+// import LandingLayout from "@/layouts/LandingLayout.vue"
 import MainLayout from "@/layouts/MainLayout.vue"
 import AuthLayout from "@/layouts/AuthLayout.vue"
 
@@ -12,7 +12,7 @@ import AuthLayout from "@/layouts/AuthLayout.vue"
 import inventoryRoutes from "@modules/inventory/routes"
 import authRoutes from "@modules/auth/routes"
 import customersRoutes from "@modules/customers/routes"
-import landingRoutes from "@modules/landing/routes"
+// import landingRoutes from "@modules/landing/routes"
 import popupsRoutes from "@modules/popups/routes"
 import ordersRoutes from "@modules/orders/routes"
 import settingsRoutes from "@modules/settings/routes"
@@ -20,12 +20,15 @@ import sharedRoutes from "@modules/shared/routes"
 
 const routes: RouteRecordRaw[] = [
   // Public pages routes with LandingLayout
+  // {
+  //   path: "/",
+  //   component: LandingLayout,
+  //   children: [...landingRoutes],
+  // },
   {
     path: "/",
-    component: LandingLayout,
-    children: [...landingRoutes],
+    redirect: "/dashboard",
   },
-
   // Auth routes with AuthLayout
   {
     path: "/",
