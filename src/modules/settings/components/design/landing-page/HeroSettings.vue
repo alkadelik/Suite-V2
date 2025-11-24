@@ -101,7 +101,7 @@ watch(
         title: newSection.title || "",
         subtitle: newSection.subtitle || "",
         cta_button_text: newSection.cta_text || "",
-        cta_button_link: newSection.cta_link || "https://shop.leyyow.com/store_slug",
+        cta_button_link: newSection.cta_link || "https://buy.leyyow.com/store_slug",
         hero_image: newSection.image || null,
       })
     }
