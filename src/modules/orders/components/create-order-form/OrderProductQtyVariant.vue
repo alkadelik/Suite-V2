@@ -331,6 +331,7 @@ const productsTotal = computed(() => {
             :options="getVariantOptions(item.product)"
             multiple
             required
+            :searchable="true"
           />
 
           <!-- Quantity and Price for each selected variant -->

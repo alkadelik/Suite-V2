@@ -3,7 +3,7 @@ import { computed, ref } from "vue"
 import Chip from "@/components/Chip.vue"
 import { getSmartDateLabel } from "@/utils/formatDate"
 import { formatCurrency } from "@/utils/format-currency"
-import { ORDER_PAYMENT_STATUS } from "../constants"
+import { anonymousCustomer, ORDER_PAYMENT_STATUS } from "../constants"
 import { pluralize } from "@/utils/pluralize"
 import Icon from "@components/Icon.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
@@ -79,7 +79,7 @@ const outstandingBalance = computed(() => {
         <div class="flex-1 truncate text-sm">
           <div class="mb-1 flex items-center gap-1">
             <h4 class="truncate text-left text-sm font-medium capitalize">
-              {{ order.user_name || "Guest" }}
+              {{ order.customer_name || anonymousCustomer.full_name }}
             </h4>
             <span class="ml-4 flex-1 text-right text-sm font-semibold">
               {{ formatCurrency(+order.total_amount) }}

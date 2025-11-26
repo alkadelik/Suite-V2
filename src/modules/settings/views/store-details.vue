@@ -17,6 +17,7 @@ import { useGetStoreDetails, useGetStoreIndustries, useUpdateStoreDetails } from
 import { IStoreDetailsForm, IUpdateStoreDetailsPayload } from "../types"
 import AccountNumberSection from "../components/store-details/AccountNumberSection.vue"
 import { useGetLiveStatus } from "@modules/shared/api"
+import { formatPhoneNumber } from "@/utils/others"
 
 const validSchema = yup.object({
   store_name: yup.string().required("Store name is required"),
@@ -26,7 +27,7 @@ const validSchema = yup.object({
   support_email: yup.string().email("Invalid email").required("Support email is required"),
   support_phone: yup.string().required("Support phone is required"),
   industry: yup.object().required("Industry is required"),
-  instagram_handle: yup.string(),
+  instagram_handle: yup.string().nullable(),
   logo: yup.mixed().nullable(),
 })
 
@@ -51,9 +52,9 @@ const onSubmitStoreDetails = handleStoreSubmit((formData) => {
   payload.append("currency", formData.currency.value)
   payload.append("store_email", formData.store_email)
 
-  payload.append("store_phone", formData.store_phone)
+  payload.append("store_phone", formatPhoneNumber(formData.store_phone))
   payload.append("support_email", formData.support_email)
-  payload.append("support_phone", formData.support_phone)
+  payload.append("support_phone", formatPhoneNumber(formData.support_phone))
   payload.append("industry", formData.industry.value)
 
   if (formData.instagram_handle) {
@@ -210,7 +211,6 @@ const watchStoreNameForSlug = (storeName: string) => {
             type="tel"
             name="support_phone"
             label="Support Phone"
-            prefix="+234"
             placeholder="8012345678"
             required
           />

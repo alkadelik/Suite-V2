@@ -16,6 +16,8 @@ import { displayError } from "@/utils/error-handler"
 import { useCreateOrder } from "../api"
 import { toast } from "@/composables/useToast"
 import type { IShippingCourier } from "@modules/shared/types"
+import { useMediaQuery } from "@vueuse/core"
+import Modal from "@components/Modal.vue"
 
 defineProps({
   open: { type: Boolean, required: true },
@@ -60,6 +62,7 @@ const reviewOrderItems = computed(() => {
       uid: item.product.uid,
       product_name: item.product.name,
       total_stock: item.product.total_stock,
+      image: item.product.images?.[0]?.image || null,
     },
     variant: item.variant
       ? {
@@ -208,10 +211,19 @@ const resetForm = () => {
     discount_amount: 0,
   }
 }
+
+const isMobile = useMediaQuery("(max-width: 1028px)")
 </script>
 
 <template>
-  <Drawer :open="open" title="Create Order" max-width="2xl" @close="emit('close')">
+  <component
+    :is="isMobile ? Modal : Drawer"
+    :open="open"
+    title="Create Order"
+    max-width="2xl"
+    variant="bottom-nav"
+    @close="emit('close')"
+  >
     <StepperWizard v-model="activeStep" :steps="steps" :showIndicators="false">
       <template #default="{ step, onPrev, onNext }">
         <!-- Step 0: Select Products -->
@@ -276,5 +288,5 @@ const resetForm = () => {
         />
       </template>
     </StepperWizard>
-  </Drawer>
+  </component>
 </template>

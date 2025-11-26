@@ -31,6 +31,8 @@ const quickActions = [
     label: "Add a customer",
     icon: "profile-add",
     color: "bg-primary-50 text-primary-700 border-primary-200",
+
+    // === TODO: clear query params on close ===
     action: () => router.push("/customers?create=true"),
   },
   {

@@ -36,7 +36,7 @@
           Remember me
         </label> -->
         <RouterLink
-          to="/forgot-password"
+          :to="`/forgot-password${redirectStr}`"
           class="text-primary-600 text-sm font-medium transition-colors duration-200 hover:underline"
         >
           Forgot Password?
@@ -56,7 +56,7 @@
       <p class="text-center text-sm font-normal text-gray-500">
         I don't have an account?
         <RouterLink
-          to="/signup"
+          :to="`/signup${redirectStr}`"
           class="text-primary-600 text-sm font-semibold transition-colors duration-200 hover:underline"
         >
           Sign Up
@@ -80,6 +80,7 @@ import SectionHeader from "@components/SectionHeader.vue"
 import AppButton from "@components/AppButton.vue"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
+import { computed } from "vue"
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -108,4 +109,10 @@ const onSubmit = (values: TLoginPayload) => {
     },
   )
 }
+
+const redirectStr = computed(() =>
+  router.currentRoute.value.query.redirect
+    ? `?redirect=${router.currentRoute.value.query.redirect as string}`
+    : "",
+)
 </script>

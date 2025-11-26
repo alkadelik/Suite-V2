@@ -75,7 +75,7 @@ const onUpdateTheme = () => {
         </div>
         <div class="rounded-b-xl p-4" :class="theme.in_use ? 'bg-primary-50' : ''">
           <div class="flex items-center gap-1">
-            <h4 class="mb-1 text-lg font-medium capitalize">{{ theme.name }}</h4>
+            <h4 class="mb-1 text-lg font-semibold capitalize">{{ theme.name }}</h4>
             <Chip v-if="theme.in_use" show-dot label="Default" size="sm" variant="outlined" />
           </div>
           <p class="text-sm text-gray-600">

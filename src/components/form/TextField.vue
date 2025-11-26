@@ -234,6 +234,8 @@ const handleInput = (event: Event) => {
     }
   }
 
+  console.log("Emitting value:", value)
+
   emit("update:modelValue", value)
 }
 

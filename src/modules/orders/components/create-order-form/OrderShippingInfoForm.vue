@@ -422,7 +422,7 @@ watch(
         <hr class="mb-4 border-gray-300" />
         <div class="space-y-4">
           <RadioInputField
-            v-if="shippingInfo.delivery_payment_option == 'customer_pays_merchant'"
+            v-if="shippingInfo.delivery_payment_option !== 'customer_pays_courier'"
             label="Delivery Method"
             :options="DELIVERY_METHOD_OPTIONS"
             :modelValue="shippingInfo.delivery_method"

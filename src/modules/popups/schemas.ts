@@ -9,7 +9,7 @@ export const validationSchema = yup.object({
 
   start_date: yup
     .date()
-    // .min(new Date(), "Start date must be in the future")
+    .min(new Date(new Date().setHours(0, 0, 0, 0)), "Start date cannot be in the past")
     .required("Start date is required"),
 
   end_date: yup

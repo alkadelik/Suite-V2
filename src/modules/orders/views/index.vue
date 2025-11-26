@@ -16,7 +16,7 @@ import VoidDeleteOrder from "../components/VoidDeleteOrder.vue"
 import { useDeleteOrder, useGetOrderDashboard, useGetOrders, useVoidOrder } from "../api"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
-import { ORDER_COLUMNS, ORDER_STATUS_TAB } from "../constants"
+import { anonymousCustomer, ORDER_COLUMNS, ORDER_STATUS_TAB } from "../constants"
 import { startCase } from "@/utils/format-strings"
 import OrderCard from "../components/OrderCard.vue"
 import FulfilOrderModal from "../components/FulfilOrderModal.vue"
@@ -302,7 +302,10 @@ onMounted(() => {
           </template>
           <!--  -->
           <template #cell:customer_info="{ item }">
-            <Avatar :extra-text="true" :name="`${item.customer_name}`" />
+            <Avatar
+              :extra-text="true"
+              :name="`${item.customer_name || anonymousCustomer.full_name}`"
+            />
           </template>
           <template #cell:actions="{ item }">
             <div class="inline-flex items-center gap-1">
