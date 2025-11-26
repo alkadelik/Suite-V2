@@ -55,9 +55,12 @@ const menuActions = computed(() => [
     </div>
     <div class="flex-1">
       <div class="mb-2 flex items-center justify-between gap-2">
-        <h3 class="flex-1 truncate text-base font-semibold">
-          {{ event.name }}
-        </h3>
+        <div class="flex flex-1 items-center gap-1.5">
+          <h3 class="max-w-xs truncate text-base font-semibold">
+            {{ event.organizer_event_name || event.name }}
+          </h3>
+          <Chip v-if="event.organizer_event_name" label="Eventful" class="flex-shrink-0" />
+        </div>
 
         <DropdownMenu v-if="showActions" :items="menuActions" />
       </div>
@@ -72,7 +75,11 @@ const menuActions = computed(() => [
         <p class="flex items-center gap-2 text-sm">
           <Icon name="dollar-circle" size="20" class="text-primary-600" />
           <span>
-            {{ event.participant_fee ? formatCurrency(event.participant_fee) : "Free" }}
+            {{
+              Number(event.participation_fee)
+                ? formatCurrency(event.participation_fee || 0)
+                : "Free"
+            }}
           </span>
         </p>
         <Chip :label="`20% Sold`" size="sm" color="blue" />
