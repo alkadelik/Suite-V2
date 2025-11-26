@@ -1,6 +1,11 @@
 <template>
   <div class="flex flex-col gap-8">
-    <BackButton icon="back-arrow" label="Back to Login" to="/login" class="!text-core-700" />
+    <BackButton
+      icon="back-arrow"
+      label="Back to Login"
+      :to="`/login${redirectStr}`"
+      class="!text-core-700"
+    />
 
     <StepperWizard v-model="activeStep" :steps="[1, 2]" :show-indicators="false" v-slot="{ step }">
       <div v-if="step === 0" class="flex flex-col gap-6">
@@ -27,9 +32,12 @@
 
         <p class="text-core-600 text-center text-sm">
           Didn't get the code?
-          <button to="/forgot-password" class="btn btn-ghost text-primary-600 font-medium">
+          <RouterLink
+            :to="`/forgot-password${redirectStr}`"
+            class="btn btn-ghost text-primary-600 font-medium"
+          >
             Resend Code
-          </button>
+          </RouterLink>
         </p>
       </div>
 
@@ -72,7 +80,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { toast } from "@/composables/useToast"
 import * as yup from "yup"
@@ -121,13 +129,19 @@ const verifyToken = () => {
   }
 }
 
+const redirectStr = computed(() =>
+  router.currentRoute.value.query.redirect
+    ? `?redirect=${router.currentRoute.value.query.redirect as string}`
+    : "",
+)
+
 const onSubmit = (values: TResetPasswordPayload) => {
   resetPassword(
     { password: values.password, forgot_password_token: otp.value },
     {
       onSuccess: () => {
         toast.success("Password reset successfully. Login to continue.")
-        router.replace("/login")
+        router.replace(`/login${redirectStr.value}`)
       },
       onError: (error) => displayError(error),
     },
