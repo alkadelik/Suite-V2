@@ -25,6 +25,7 @@ export type PopupEvent = {
   total_orders: number
   total_sales_amount: number
   participant_fee: number | null
+  participation_fee: number | null
   created_at: string
   updated_at: string
   organizer_event_name?: string

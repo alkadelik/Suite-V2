@@ -39,8 +39,8 @@ const getEventStatus = (event: { start_date?: string; end_date?: string } | null
 
 const overviewInfo = computed(() => {
   return {
-    "Participation Fee": popupEvt.value?.participant_fee
-      ? formatCurrency(popupEvt.value?.participant_fee)
+    "Participation Fee": Number(popupEvt.value?.participation_fee)
+      ? formatCurrency(popupEvt.value?.participation_fee || 0)
       : "Free",
     Description: popupEvt.value?.description || "N/A",
   }
