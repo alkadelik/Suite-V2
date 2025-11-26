@@ -27,6 +27,7 @@ export type PopupEvent = {
   participant_fee: number | null
   created_at: string
   updated_at: string
+  organizer_event_name?: string
 }
 
 export interface PopupEventResponse {

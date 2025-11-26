@@ -8,8 +8,8 @@ export const POPUP_COLUMN: TableColumn<PopupEvent>[] = [
   { header: "Name", accessor: "name" },
   {
     header: "Fee",
-    accessor: "participant_fee",
-    cell: ({ value }) => (value ? formatCurrency(value as number) : "Free"),
+    accessor: "participation_fee",
+    cell: ({ value }) => (Number(value) ? formatCurrency(value as number) : "Free"),
   },
   { header: "Sales", accessor: "items_sold_count" },
   {

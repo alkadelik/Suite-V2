@@ -225,6 +225,19 @@ onMounted(() => {
               </span>
             </div>
           </template>
+          <template #cell:name="{ item }">
+            <div class="flex items-center gap-1">
+              <span class="max-w-xs truncate font-medium">
+                {{ item.organizer_event_name || item.name }}
+              </span>
+              <Chip
+                v-if="item.organizer_event_name"
+                label="Eventful"
+                size="sm"
+                class="flex-shrink-0"
+              />
+            </div>
+          </template>
           <template #cell:action="{ item }">
             <div class="flex justify-end gap-3">
               <Icon name="edit" @click.stop="handleAction('edit', item)" />
