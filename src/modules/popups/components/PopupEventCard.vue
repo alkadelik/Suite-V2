@@ -82,7 +82,7 @@ const menuActions = computed(() => [
             }}
           </span>
         </p>
-        <Chip :label="`20% Sold`" size="sm" color="blue" />
+        <!-- <Chip :label="`20% Sold`" size="sm" color="blue" /> -->
       </div>
     </div>
   </div>
