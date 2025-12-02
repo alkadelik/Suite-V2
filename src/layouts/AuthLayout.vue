@@ -8,7 +8,7 @@ const onLogout = () => {
 </script>
 
 <template>
-  <div class="flex h-screen">
+  <div class="flex h-[dvh]">
     <!-- Left Side -->
     <div class="relative hidden flex-1 lg:block">
       <div class="relative h-full w-full overflow-hidden">

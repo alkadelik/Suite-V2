@@ -1,7 +1,7 @@
 <template>
   <aside
     :class="[
-      'fixed z-40 h-screen w-72 border-r border-gray-200 bg-white transition-all duration-200',
+      'fixed z-40 h-[dvh] w-72 border-r border-gray-200 bg-white transition-all duration-200',
       'flex h-full flex-col divide-y divide-gray-200 overflow-y-auto',
       isMobile ? (mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full') : 'translate-x-0',
     ]"

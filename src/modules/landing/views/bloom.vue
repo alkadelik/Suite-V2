@@ -108,7 +108,7 @@ const goToTestimonial = (index: number) => {
 </script>
 
 <template>
-  <div class="min-h-screen text-gray-950">
+  <div class="min-h-[dvh] text-gray-950">
     <!-- Navigation -->
     <header
       class="sticky top-0 z-50 flex items-center border-b border-gray-200 bg-white py-4 md:h-20"
