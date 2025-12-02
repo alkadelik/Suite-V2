@@ -22,8 +22,8 @@
               <span class="text-sm font-bold">{{ product.total_stock }}</span>
             </div>
             <div class="flex">
-              <Icon name="shapes" class="text-core-600 me-1 size-4" />
-              <span class="text-sm font-bold">{{ product.variants_count }}</span>
+              <Icon name="moneys" class="text-core-600 me-1 size-4" />
+              <span class="text-sm font-bold">{{ formatPriceRange(product.price) }}</span>
             </div>
           </div>
         </div>
@@ -69,6 +69,7 @@ import Icon from "@components/Icon.vue"
 import Chip from "@components/Chip.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import type { TProduct } from "../types"
+import { formatPriceRange } from "@/utils/format-currency"
 
 interface Props {
   product: TProduct

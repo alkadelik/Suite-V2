@@ -540,7 +540,7 @@ const tabs = computed(() => {
   baseTabs.push({ key: "orders", title: "Orders" })
 
   // if (locations && locations.length > 1) {
-  baseTabs.push({ key: "movement_logs", title: "Movement Logs" })
+  baseTabs.push({ key: "movement_logs", title: "Logs" })
   // }
 
   return baseTabs
