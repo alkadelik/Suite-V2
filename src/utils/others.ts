@@ -17,5 +17,5 @@ export function clipboardCopy(text: string) {
 /**  Format phone numbers: add +234 and remove leading 0 */
 export const formatPhoneNumber = (phone: string) => {
   const cleaned = phone.replace(/\s+/g, "").replace(/^0+/, "")
-  return `+234${cleaned}`
+  return phone.startsWith("+234") ? phone : `+234${cleaned}`
 }

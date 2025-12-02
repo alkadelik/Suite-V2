@@ -318,8 +318,8 @@ const inputClasses = computed(() => {
 
   // Adjust padding based on icons/prefix/suffix
   const paddingClasses = {
-    sm: `${props.leftIcon || props.prefix ? "pl-0" : "pl-2"} ${props.rightIcon || props.suffix || props.type === "password" ? "pr-0" : "pr-2"} py-2 text-sm`,
-    md: `${props.leftIcon || props.prefix ? "pl-0" : "px-4"} ${props.rightIcon || props.suffix || props.type === "password" ? "pr-0" : "px-4"} py-3 text-sm`,
+    sm: `${props.leftIcon || props.prefix ? "pl-0" : "pl-2"} ${props.rightIcon || props.suffix || props.type === "password" ? "pr-0" : "pr-2"} py-2 text-base`,
+    md: `${props.leftIcon || props.prefix ? "pl-0" : "px-4"} ${props.rightIcon || props.suffix || props.type === "password" ? "pr-0" : "px-4"} py-3 text-base`,
     lg: `${props.leftIcon || props.prefix ? "pl-0" : "p-3"} ${props.rightIcon || props.suffix || props.type === "password" ? "pr-0" : "p-3"} text-base`,
   }
 
