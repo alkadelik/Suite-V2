@@ -1,5 +1,5 @@
 <template>
-  <div class="h-[100dvh] w-full bg-white md:bg-gray-50">
+  <div class="h-[100dvh] w-full overflow-y-hidden bg-white md:bg-gray-50">
     <!-- Mobile overlay -->
     <div
       v-if="isMobile && mobileSidebarOpen"
