@@ -18,7 +18,7 @@
     />
 
     <!-- Tabs for HQ users -->
-    <div class="mt-6 w-full md:w-1/2">
+    <div v-if="locationsCount > 1" class="mt-6 w-full md:w-1/2">
       <Tabs v-if="isHQ" :tabs="tabs" v-model="activeTab" />
     </div>
 
@@ -293,6 +293,7 @@ const route = useRoute()
 
 // Check if current location is HQ
 const isHQ = computed(() => settingsStore.activeLocation?.is_hq || false)
+const locationsCount = computed(() => settingsStore.locations?.length || 0)
 
 // Tabs configuration
 const tabs = computed(() => [
