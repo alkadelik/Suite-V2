@@ -609,6 +609,7 @@ watch(showProductEditDrawer, (isOpen) => {
   if (!isOpen) {
     productUidForEdit.value = null
     variantForEdit.value = null
+    router.replace({ name: "Inventory", query: {} })
   }
 })
 </script>

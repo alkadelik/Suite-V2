@@ -37,6 +37,14 @@ const emit = defineEmits([
   "delete-order",
 ])
 
+const isFulfilled = computed(() => {
+  return props.order?.fulfilment_status === "fulfilled"
+})
+
+const isBuyerCreated = computed(() => {
+  return props.order?.source?.includes("storefront")
+})
+
 const menuItems = computed(() => {
   return props.customActions?.length
     ? props.customActions
@@ -45,13 +53,13 @@ const menuItems = computed(() => {
         { label: "Share invoice", action: () => emit("share-invoice") },
         { label: "Update payment", action: () => emit("update-payment") },
         { divider: true },
-        { label: "Void order", class: "text-error", action: () => emit("void-order") },
-        { label: "Delete order", class: "text-error", action: () => emit("delete-order") },
+        ...((isFulfilled.value || props.order?.payment_status !== "unpaid") && !isBuyerCreated.value
+          ? [{ label: "Void order", class: "text-error", action: () => emit("void-order") }]
+          : []),
+        ...(!isFulfilled.value && props.order?.payment_status === "unpaid" && !isBuyerCreated.value
+          ? [{ label: "Delete order", class: "text-error", action: () => emit("delete-order") }]
+          : []),
       ]
-})
-
-const isFulfilled = computed(() => {
-  return props.order?.fulfilment_status === "fulfilled"
 })
 
 const itemsNoteCount = computed(() => {

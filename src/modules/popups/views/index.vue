@@ -95,7 +95,7 @@ onMounted(() => {
           gap: 16,
           breakpoints: {
             640: {
-              itemsToShow: 2,
+              itemsToShow: eventfulPopups?.results?.length > 1 ? 2 : 1,
             },
           },
         }"
@@ -261,6 +261,7 @@ onMounted(() => {
       :open="openCreate"
       @close="
         () => {
+          $router.replace({ name: 'Popups', query: {} })
           openCreate = false
           // Don't clear selectedPopup here if success modal is opening
           if (!openSuccess) {

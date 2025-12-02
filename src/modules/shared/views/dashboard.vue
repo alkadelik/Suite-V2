@@ -37,10 +37,60 @@
       class="mb-4"
     />
 
+    <div
+      v-if="orders?.results?.length"
+      class="space-y-4 overflow-hidden rounded-xl border-gray-200 md:border md:bg-white"
+    >
+      <DataTable
+        :data="orders?.results ?? []"
+        :columns="ORDER_COLUMNS.filter((col) => col.accessor !== 'actions')"
+        :loading="isPending"
+        :show-pagination="false"
+        :enable-row-selection="false"
+        :empty-state="{
+          title: 'You don’t have any sales data yet!',
+          description: `Once you start adding products and recording orders, your performance will show up here.`,
+        }"
+        @row-click="$router.push('/orders')"
+      >
+        <template #cell:items="{ item }">
+          <div class="max-w-[100px] truncate">
+            {{ item.items.map((v) => v.product_name).join(", ") }}
+          </div>
+        </template>
+        <!--  -->
+        <template #cell:payment_status="{ item }">
+          <Chip
+            :icon="item.payment_status === 'paid' ? 'card-tick' : 'card-pos'"
+            :label="startCase(item.payment_status)"
+            :color="
+              item.payment_status === 'paid'
+                ? 'success'
+                : item.payment_status === 'partially_paid'
+                  ? 'warning'
+                  : 'error'
+            "
+          />
+        </template>
+        <!--  -->
+        <template #cell:customer_info="{ item }">
+          <Avatar
+            :extra-text="true"
+            :name="`${item.customer_name || anonymousCustomer.full_name}`"
+          />
+        </template>
+        <template #mobile="{ item }">
+          <OrderCard :order="item" :show-actions="false" />
+        </template>
+      </DataTable>
+    </div>
+
     <EmptyState
+      v-else
       title="You don’t have any sales data yet!"
       description="Once you start adding products and recording orders, your performance will show up here."
       class="!min-h-[50vh]"
+      :loading="isPending"
     />
 
     <!--  -->
@@ -58,6 +108,13 @@ import EmptyState from "@components/EmptyState.vue"
 import { useMediaQuery } from "@vueuse/core"
 import { toast } from "@/composables/useToast"
 import { useRouter } from "vue-router"
+import { useGetOrders } from "@modules/orders/api"
+import { startCase } from "@/utils/format-strings"
+import Chip from "@components/Chip.vue"
+import { anonymousCustomer, ORDER_COLUMNS } from "@modules/orders/constants"
+import DataTable from "@components/DataTable.vue"
+import OrderCard from "@modules/orders/components/OrderCard.vue"
+import Avatar from "@components/Avatar.vue"
 
 const { user } = useAuthStore()
 const openModal = ref(false)
@@ -71,6 +128,8 @@ const greetings = computed(() => {
   if (hour < 18) return "Good afternoon"
   return "Good evening"
 })
+
+const { data: orders, isPending } = useGetOrders()
 
 const quickActions = [
   {

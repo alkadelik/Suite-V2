@@ -144,26 +144,37 @@ const getActionItems = (item: TOrder) => [
     },
   },
   { divider: true },
-  {
-    label: "Void Order",
-    icon: "trash",
-    class: "text-red-600 hover:bg-red-50",
-    iconClass: "text-red-600",
-    action: () => {
-      selectedOrder.value = item
-      openVoid.value = true
-    },
-  },
-  {
-    label: "Delete Order",
-    icon: "trash",
-    class: "text-red-600 hover:bg-red-50",
-    iconClass: "text-red-600",
-    action: () => {
-      selectedOrder.value = item
-      openDelete.value = true
-    },
-  },
+  ...((item.fulfilment_status === "fulfilled" || item.payment_status !== "unpaid") &&
+  !item.source?.includes("storefront")
+    ? [
+        {
+          label: "Void Order",
+          icon: "trash",
+          class: "text-red-600 hover:bg-red-50",
+          iconClass: "text-red-600",
+          action: () => {
+            selectedOrder.value = item
+            openVoid.value = true
+          },
+        },
+      ]
+    : []),
+  ...(item.fulfilment_status !== "fulfilled" &&
+  item.payment_status === "unpaid" &&
+  !item.source?.includes("storefront")
+    ? [
+        {
+          label: "Delete Order",
+          icon: "trash",
+          class: "text-red-600 hover:bg-red-50",
+          iconClass: "text-red-600",
+          action: () => {
+            selectedOrder.value = item
+            openDelete.value = true
+          },
+        },
+      ]
+    : []),
 ]
 
 const onCloseVoidDel = () => {
@@ -334,7 +345,12 @@ onMounted(() => {
 
     <CreateOrderDrawer
       :open="openCreate"
-      @close="openCreate = false"
+      @close="
+        () => {
+          openCreate = false
+          $router.replace({ name: 'Orders', query: {} })
+        }
+      "
       @refresh="
         () => {
           refetch()
