@@ -103,7 +103,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-white">
+  <div class="min-h-[dvh] bg-white">
     <!-- Navigation -->
     <header
       class="sticky top-0 z-50 flex items-center border-b border-gray-200 bg-white py-4 md:h-20"

@@ -61,7 +61,7 @@
                 v-if="task.isButton"
                 name="arrow-right"
                 @click="task.action"
-                class="text-primary-500 inline-flex cursor-pointer md:hidden"
+                class="text-primary-500 inline-flex cursor-pointer md:hidden!"
               />
               <Switch v-else @click="task.action" />
             </div>

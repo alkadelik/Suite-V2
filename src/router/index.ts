@@ -98,7 +98,7 @@ router.beforeEach((to, from, next) => {
 
   // Allow navigation if coming from signup completion flow
   if (from.path === "/signup" && to.path === "/confirm-email") {
-    return next({ query: { email: user?.email || "", redirect: to.fullPath } })
+    return next()
   }
 
   // Prevent redirect loops - if already on target page, continue

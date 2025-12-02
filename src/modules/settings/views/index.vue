@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-screen flex-col pt-16">
+  <div class="flex h-[dvh] flex-col pt-16">
     <AppHeader show-logo :is-live="isLive" />
 
     <div class="flex min-h-0 flex-1 rounded-xl bg-white p-4 pb-0 2xl:px-20">
