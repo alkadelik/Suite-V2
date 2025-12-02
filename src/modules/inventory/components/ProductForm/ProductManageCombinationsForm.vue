@@ -284,7 +284,9 @@ const variants = computed(() => props.modelValue || [])
 // If true, we should hide the weight dropdown as it's auto-populated
 const hasWeightAttributeInVariants = computed(() => {
   if (!props.modelValue || props.modelValue.length === 0) return false
-  return hasWeightAttribute(props.modelValue, WEIGHT_ATTRIBUTE_UID)
+
+  const hasWeight = hasWeightAttribute(props.modelValue, WEIGHT_ATTRIBUTE_UID)
+  return hasWeight
 })
 
 // Transform PRODUCT_DIMENSIONS for SelectField

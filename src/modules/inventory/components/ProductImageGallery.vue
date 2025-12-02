@@ -15,14 +15,17 @@
         />
         <div
           v-else
-          class="flex h-full w-full cursor-pointer flex-col items-center justify-center bg-gray-50 text-gray-400"
-          @click="emit('open-images-edit')"
+          :class="[
+            'flex h-full w-full flex-col items-center justify-center bg-gray-50 text-gray-400',
+            isHQ ? 'cursor-pointer' : 'cursor-not-allowed opacity-50',
+          ]"
+          @click="isHQ ? emit('open-images-edit') : null"
         >
           <Icon name="gallery-add" size="32" class="mb-2" />
-          <p class="text-xs font-medium">Add Primary Image</p>
+          <p class="text-xs font-medium">{{ isHQ ? "Add Primary Image" : "No Image" }}</p>
         </div>
         <AppButton
-          v-if="!isPlaceholder(allImages[0])"
+          v-if="isHQ && !isPlaceholder(allImages[0])"
           icon="edit"
           variant="outlined"
           color="alt"
@@ -44,8 +47,11 @@
           v-for="(image, index) in allImages.slice(1, 5)"
           :key="index"
           class="aspect-square overflow-hidden rounded-lg border border-gray-200"
-          :class="{ 'cursor-pointer': isPlaceholder(image) }"
-          @click="isPlaceholder(image) ? emit('open-images-edit') : null"
+          :class="{
+            'cursor-pointer': isPlaceholder(image) && isHQ,
+            'cursor-not-allowed opacity-50': isPlaceholder(image) && !isHQ,
+          }"
+          @click="isPlaceholder(image) && isHQ ? emit('open-images-edit') : null"
         >
           <img
             v-if="!isPlaceholder(image)"
@@ -68,8 +74,11 @@
       <!-- Primary Image (2x width = 2 columns, same height as others) -->
       <div
         class="relative col-span-2 overflow-hidden rounded-lg border border-gray-200"
-        :class="{ 'cursor-pointer': isPlaceholder(allImages[0]) }"
-        @click="isPlaceholder(allImages[0]) ? emit('open-images-edit') : null"
+        :class="{
+          'cursor-pointer': isPlaceholder(allImages[0]) && isHQ,
+          'cursor-not-allowed opacity-50': isPlaceholder(allImages[0]) && !isHQ,
+        }"
+        @click="isPlaceholder(allImages[0]) && isHQ ? emit('open-images-edit') : null"
         style="aspect-ratio: 2/1"
       >
         <img
@@ -102,8 +111,11 @@
         v-for="(image, index) in allImages.slice(1, 5)"
         :key="index"
         class="relative col-span-1 aspect-square overflow-hidden rounded-lg border border-gray-200"
-        :class="{ 'cursor-pointer': isPlaceholder(image) }"
-        @click="isPlaceholder(image) ? emit('open-images-edit') : null"
+        :class="{
+          'cursor-pointer': isPlaceholder(image) && isHQ,
+          'cursor-not-allowed opacity-50': isPlaceholder(image) && !isHQ,
+        }"
+        @click="isPlaceholder(image) && isHQ ? emit('open-images-edit') : null"
       >
         <img
           v-if="!isPlaceholder(image)"
@@ -130,6 +142,7 @@ import { computed } from "vue"
 import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
 import type { IProductImage } from "../types"
+import { useSettingsStore } from "@modules/settings/store"
 
 interface Props {
   /** Product images sorted by primary and sort order */
@@ -148,6 +161,9 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<Emits>()
+
+const settingsStore = useSettingsStore()
+const isHQ = computed(() => settingsStore.activeLocation?.is_hq ?? true)
 
 /**
  * Returns all 5 image slots, filling missing slots with placeholders

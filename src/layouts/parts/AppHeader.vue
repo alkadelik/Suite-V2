@@ -73,6 +73,7 @@ import DropdownMenu from "@components/DropdownMenu.vue"
 import { toast } from "@/composables/useToast"
 import { useRouter } from "vue-router"
 import { useAuthStore } from "@modules/auth/store"
+import { useSettingsStore } from "@modules/settings/store"
 
 defineProps<{ showLogo?: boolean; logo?: "full" | "icon"; isLive?: boolean }>()
 defineEmits<{
@@ -114,38 +115,46 @@ const handleMarkAllRead = () => {
 
 const router = useRouter()
 
-const actionMenuItems = [
-  {
-    label: "Add a product",
-    icon: "box",
-    color: "bg-blue-50 text-blue-700",
-    action: () => router.push("/inventory?create=true"),
-  },
-  {
-    label: "Record a sale",
-    icon: "bag",
-    color: "bg-green-50 text-green-700",
-    action: () => router.push("/orders?create=true"),
-  },
-  {
-    label: "Create popup",
-    icon: "calendar-tick",
-    color: "bg-purple-50 text-purple-700",
-    action: () => router.push("/popups?create=true"),
-  },
-  {
-    label: "Add a customer",
-    icon: "profile-add",
-    color: "bg-primary-50 text-primary-700",
-    action: () => router.push("/customers?create=true"),
-  },
-  {
-    label: "Record expense",
-    icon: "receipt-add",
-    color: "bg-pink-50 text-pink-700",
-    action: () => {
-      toast.info("Expense module is coming soon!")
+const isHQ = computed(() => useSettingsStore().activeLocation?.is_hq ?? true)
+
+const actionMenuItems = computed(() => {
+  const allActions = [
+    {
+      label: "Add a product",
+      icon: "box",
+      color: "bg-blue-50 text-blue-700",
+      action: () => router.push("/inventory?create=true"),
+      hqOnly: true,
     },
-  },
-]
+    {
+      label: "Record a sale",
+      icon: "bag",
+      color: "bg-green-50 text-green-700",
+      action: () => router.push("/orders?create=true"),
+    },
+    {
+      label: "Create popup",
+      icon: "calendar-tick",
+      color: "bg-purple-50 text-purple-700",
+      action: () => router.push("/popups?create=true"),
+      hqOnly: true,
+    },
+    {
+      label: "Add a customer",
+      icon: "profile-add",
+      color: "bg-primary-50 text-primary-700",
+      action: () => router.push("/customers?create=true"),
+    },
+    {
+      label: "Record expense",
+      icon: "receipt-add",
+      color: "bg-pink-50 text-pink-700",
+      action: () => {
+        toast.info("Expense module is coming soon!")
+      },
+    },
+  ]
+
+  return allActions.filter((action) => !action.hqOnly || isHQ.value)
+})
 </script>

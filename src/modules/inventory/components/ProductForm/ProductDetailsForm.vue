@@ -98,7 +98,7 @@ const hasProductVariants = computed({
 })
 
 /**
- * Category options with "Add New Category" as first item
+ * Category options with "Add New Category" always at the top
  */
 const categoryOptions = computed(() => {
   const addNewOption = {
@@ -106,6 +106,7 @@ const categoryOptions = computed(() => {
     value: "__add_new__",
     icon: "add",
     divider: true,
+    alwaysVisible: true,
   }
 
   const categories =

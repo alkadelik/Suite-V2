@@ -339,7 +339,14 @@ const validationSchema = yup.lazy(() => {
         schema
           .typeError("Please enter a valid number")
           .required("Quantity is required")
-          .positive("Quantity must be positive"),
+          .positive("Quantity must be positive")
+          .test("max-stock", "Quantity cannot exceed available stock", function (value) {
+            const { action } = this.parent
+            if (action?.value === "reduce" || action?.value === "transfer") {
+              return value <= stockLeft.value
+            }
+            return true
+          }),
       otherwise: (schema) => schema.optional(),
     }),
     unit_cost: yup.string().when("action", {
@@ -551,6 +558,12 @@ const onSubmit = handleSubmit((formValues) => {
   const variantUid = selectedVariant.value.uid
 
   if (formValues.action?.value === "add") {
+    if (!settingsStore.activeLocation?.is_hq) {
+      toast.error("Only HQ locations can manually add stock")
+      emit("close")
+      return
+    }
+
     const payload: IAddStockPayload & { uid: string } = {
       uid: variantUid,
       quantity: formValues.quantity,
@@ -566,6 +579,13 @@ const onSubmit = handleSubmit((formValues) => {
 
     addStock(payload, { onSuccess, onError: displayError })
   } else if (formValues.action?.value === "reduce") {
+    // Only HQ locations can reduce stock
+    if (!settingsStore.activeLocation?.is_hq) {
+      toast.error("Only HQ locations can manually reduce stock")
+      emit("close")
+      return
+    }
+
     if (!formValues.loss_type) return
 
     const payload: IReduceStockPayload & { uid: string } = {

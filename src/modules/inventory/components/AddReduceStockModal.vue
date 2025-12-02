@@ -93,6 +93,7 @@ import { useAddStock, useReduceStock } from "../api"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
 import type { IAddStockPayload, IReduceStockPayload, IProductVariantAttribute } from "../types"
+import { useSettingsStore } from "@modules/settings/store"
 
 interface Props {
   open: boolean
@@ -101,6 +102,7 @@ interface Props {
   productName: string
   variantAttributes?: IProductVariantAttribute[]
   variantPrice?: string
+  availableStock?: number
 }
 
 interface Emits {
@@ -117,6 +119,10 @@ const { mutate: addStock, isPending: isAdding } = useAddStock()
 const { mutate: reduceStock, isPending: isReducing } = useReduceStock()
 
 const isPending = computed(() => isAdding.value || isReducing.value)
+
+const settingsStore = useSettingsStore()
+
+const isHQ = computed(() => settingsStore.activeLocation?.is_hq ?? true)
 
 const lossTypeOptions = [
   { label: "Damage", value: "damage" },
@@ -138,7 +144,13 @@ const { handleSubmit, meta, resetForm } = useForm<FormValues>({
         .number()
         .typeError("Please enter a valid number")
         .required("Quantity is required")
-        .positive("Quantity must be positive"),
+        .positive("Quantity must be positive")
+        .test("max-stock", "Quantity cannot exceed available stock", function (value) {
+          if (props.type === "reduce" && props.availableStock !== undefined) {
+            return value <= props.availableStock
+          }
+          return true
+        }),
       ...(props.type === "add"
         ? {
             unit_cost: yup.string().required("Unit cost is required"),
@@ -182,6 +194,12 @@ watch(
 )
 
 const onSubmit = handleSubmit((values) => {
+  if (!isHQ.value) {
+    toast.error("Only HQ locations can manually add or reduce stock")
+    emit("close")
+    return
+  }
+
   if (props.type === "add") {
     const payload: IAddStockPayload & { uid: string } = {
       uid: props.variantUid,

@@ -313,10 +313,23 @@ const isSelected = (opt: OptionValue): boolean => {
 // Filter options
 const filteredOptions = computed(() => {
   let opts = props.options
+
   if (props.searchable && search.value.trim()) {
     const searchTerm = search.value.toLowerCase()
-    opts = opts.filter((option) => getLabel(option).toLowerCase().includes(searchTerm))
+    opts = opts.filter((option) => {
+      // Keep options marked as always visible
+      if (
+        typeof option === "object" &&
+        option !== null &&
+        "alwaysVisible" in option &&
+        option.alwaysVisible === true
+      ) {
+        return true
+      }
+      return getLabel(option).toLowerCase().includes(searchTerm)
+    })
   }
+
   if (props.hideSelected) {
     opts = opts.filter((option) => !isSelected(option))
   }

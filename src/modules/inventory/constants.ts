@@ -22,6 +22,7 @@ export const PRODUCT_COLUMNS: TableColumn<TProduct>[] = [
 ]
 
 export const VARIANT_COLUMNS: TableColumn<IProductVariantDetails>[] = [
+  { header: "", accessor: "image", maxWidth: "60px" },
   { header: "SKU", accessor: "sku" },
   { header: "Price", accessor: "price" },
   { header: "Actual Stock", accessor: "sellable_stock" },

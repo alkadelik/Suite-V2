@@ -9,6 +9,7 @@
       </button>
       <div class="flex items-center gap-1">
         <AppButton
+          v-if="isHQ"
           label="Edit Images"
           icon="edit"
           variant="outlined"
@@ -136,6 +137,7 @@
       :product-name="product?.data.name || ''"
       :variant-attributes="selectedVariant.attributes"
       :variant-price="selectedVariant.price"
+      :available-stock="selectedVariant.sellable_stock || selectedVariant.available_stock || 0"
       @close="showAddReduceStockModal = false"
       @success="handleStockSuccess"
     />
@@ -215,6 +217,7 @@ const route = useRoute()
 const router = useRouter()
 const queryClient = useQueryClient()
 const settingsStore = useSettingsStore()
+const isHQ = computed(() => settingsStore.activeLocation?.is_hq ?? true)
 const uid = Array.isArray(route.params.uid) ? route.params.uid[0] : route.params.uid
 const { data: product, isPending } = useGetProduct(uid)
 const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct()
@@ -254,6 +257,11 @@ const openStockModal = (
   type: "add" | "reduce",
   variant: IProductVariantDetails | typeof product.value,
 ) => {
+  if (!isHQ.value) {
+    toast.error("Only HQ locations can manually add or reduce stock")
+    return
+  }
+
   stockModalType.value = type
   if (variant && "attributes" in variant) {
     selectedVariant.value = variant
@@ -296,7 +304,7 @@ const getStockActionItems = (item: IProductVariantDetails | typeof product.value
   const hasMultipleLocations = (settingsStore.locations?.length || 0) > 1
 
   // Only HQ can add and reduce stock
-  if (settingsStore.activeLocation?.is_hq) {
+  if (isHQ.value) {
     items.push({
       label: "Add Stock",
       icon: "box-add",
@@ -390,15 +398,9 @@ const openVariantPricingEdit = (variant: IProductVariantDetails) => {
     return_count: 0,
   }
 
-  // For complex products (multiple variants), open in variants mode
-  // For simple products (single variant), open in variant-details mode
-  if (product.value.data.variants.length > 1) {
-    editMode.value = "variants"
-    variantForEdit.value = null
-  } else {
-    editMode.value = "variant-details"
-    variantForEdit.value = variant
-  }
+  // Always open in variant-details mode for price & weight editing
+  editMode.value = "variant-details"
+  variantForEdit.value = variant
 
   showProductEditDrawer.value = true
 }
@@ -481,51 +483,64 @@ const openVariantsManage = () => {
   showProductEditDrawer.value = true
 }
 
-const actionItems = computed(() => [
-  {
-    label: "Edit Basic Details",
-    icon: "edit",
-    action: openProductEditDrawer,
-  },
-  {
-    label: "Edit Images",
-    icon: "edit",
-    action: openImagesEditDrawer,
-  },
-  {
-    label: "Edit Price & Weight",
-    icon: "edit",
-    action: openPriceWeightEdit,
-  },
-  ...(product?.value?.data.variants && product.value.data.variants.length > 1
-    ? [
-        {
-          label: "Manage Variants",
-          icon: "edit",
-          action: openVariantsManage,
-        },
-      ]
-    : []),
-  {
+const actionItems = computed(() => {
+  const items = []
+
+  if (isHQ.value) {
+    items.push(
+      {
+        label: "Edit Basic Details",
+        icon: "edit",
+        action: openProductEditDrawer,
+      },
+      {
+        label: "Edit Images",
+        icon: "edit",
+        action: openImagesEditDrawer,
+      },
+      {
+        label: "Edit Price & Weight",
+        icon: "edit",
+        action: openPriceWeightEdit,
+      },
+    )
+
+    if (product?.value?.data.variants && product.value.data.variants.length > 1) {
+      items.push({
+        label: "Manage Variants",
+        icon: "edit",
+        action: openVariantsManage,
+      })
+    }
+  }
+
+  items.push({
     label: "Manage Stock",
     icon: "edit",
     action: () => {
       showManageStockModal.value = true
     },
-  },
-  {
-    divider: true,
-  },
-  {
-    label: "Delete Product",
-    icon: "trash",
-    action: () => {
-      showDeleteConfirmationModal.value = true
-    },
-    class: "text-red-600 hover:bg-red-50",
-    iconClass: "text-red-600",
-  },
-])
+  })
+
+  if (isHQ.value) {
+    items.push(
+      {
+        divider: true,
+      },
+      {
+        label: "Delete Product",
+        icon: "trash",
+        action: () => {
+          showDeleteConfirmationModal.value = true
+        },
+        class: "text-red-600 hover:bg-red-50",
+        iconClass: "text-red-600",
+      },
+    )
+  }
+
+  return items
+})
 
 const tabs = computed(() => {
   const baseTabs = [{ key: "overview", title: "Overview" }]

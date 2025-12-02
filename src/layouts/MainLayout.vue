@@ -170,12 +170,18 @@ const { confirmSwitch, pendingLocation, confirmLocationSwitch, cancelLocationSwi
 
 const sidebarPadding = computed(() => (isMobile.value ? "lg:pl-72" : "pl-72"))
 
-const SALES_SUITES = [
-  { icon: "box", label: "Orders", to: "/orders" },
-  { icon: "folder", label: "Inventory", to: "/inventory" },
-  { icon: "calendar-tick", label: "Popups", to: "/popups" },
-  { icon: "people", label: "Customers", to: "/customers" },
-]
+const isHQ = computed(() => useSettingsStore().activeLocation?.is_hq ?? true)
+
+const SALES_SUITES = computed(() => {
+  const allSuites = [
+    { icon: "box", label: "Orders", to: "/orders" },
+    { icon: "folder", label: "Inventory", to: "/inventory" },
+    { icon: "calendar-tick", label: "Popups", to: "/popups", hqOnly: true },
+    { icon: "people", label: "Customers", to: "/customers" },
+  ]
+
+  return allSuites.filter((suite) => !suite.hqOnly || isHQ.value)
+})
 
 const { setPlanUpgradeModal } = useSettingsStore()
 const { updateAuthUser } = useAuthStore()

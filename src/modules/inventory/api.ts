@@ -5,7 +5,7 @@ import {
   IProductCategoryFormPayload,
   IProductFormPayload,
   IProductAttributeFormPayload,
-  IProductAttributeValuePayload,
+  IAttributeValueItem,
   IProductImageUploadPayload,
   IProductImageUpdatePayload,
   IGetProductResponse,
@@ -140,14 +140,11 @@ export function useGetAttributeValues(attributeUid: string) {
   })
 }
 
-/** create attribute values api request */
 export function useCreateAttributeValues() {
   return useMutation({
-    mutationFn: ({
-      attributeUid,
-      ...payload
-    }: IProductAttributeValuePayload & { attributeUid: string }) =>
-      baseApi.post(`inventory/attributes/${attributeUid}/add-value/`, payload),
+    mutationFn: (payload: { attributeUid: string; values: IAttributeValueItem[] }) => {
+      return baseApi.post(`inventory/attributes/${payload.attributeUid}/add-value/`, payload.values)
+    },
   })
 }
 
