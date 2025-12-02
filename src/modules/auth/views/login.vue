@@ -13,14 +13,14 @@
       rel="noopener noreferrer"
     >
       <div
-        class="bg-primary-50 text-primary-700 border-primary-200 flex flex-col items-start gap-2 rounded-3xl border px-2 py-2 xl:flex-row"
+        class="bg-primary-50 text-primary-700 border-primary-200 flex flex-col items-start gap-2 rounded-xl border px-2 py-2 lg:rounded-3xl xl:flex-row"
       >
         <Chip size="sm" label="✨ Returning users" variant="filled" />
         <div class="flex flex-wrap items-center gap-2 text-sm">
           <span class="font-medium">
             If you created your account before Nov 18, click here to sign in
+            <Icon name="arrow-right" size="16" class="inline-block!" />
           </span>
-          <Icon name="arrow-right" size="16" class="hidden! md:inline-block!" />
         </div>
       </div>
     </a>
