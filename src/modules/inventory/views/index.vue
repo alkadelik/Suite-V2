@@ -51,6 +51,8 @@
               size="md"
               class="flex-1"
               placeholder="Search by product name or category"
+              :model-value="search"
+              @update:model-value="(val) => (search = val)"
             />
             <AppButton
               icon="filter-lines"
@@ -80,10 +82,15 @@
         <DataTable
           :data="products?.data?.results || []"
           :columns="PRODUCT_COLUMNS"
-          :loading="showTableLoading"
-          :show-pagination="false"
+          :loading="isFetching"
+          :show-pagination="true"
+          :items-per-page="itemsPerPage"
+          :total-items-count="products?.data?.count || 0"
+          :total-page-count="Math.ceil(products?.data?.count / itemsPerPage) || 1"
+          :server-pagination="true"
           :enable-row-selection="true"
           @row-click="handleRowClick"
+          @pagination-change="(d) => (page = d.currentPage)"
         >
           <template #cell:name="{ item }">
             <ProductAvatar
@@ -237,11 +244,27 @@ import router from "@/router"
 import { useSettingsStore } from "@modules/settings/store"
 import { useInventoryStore } from "../store"
 import { useRoute } from "vue-router"
+import { useDebouncedRef } from "@/composables/useDebouncedRef"
 
-const { data: products, isPending: isGettingProducts, refetch: refetchProducts } = useGetProducts()
+const page = ref(1)
+const itemsPerPage = ref(2)
+const search = ref("")
+
+const debouncedSearch = useDebouncedRef(search, 750)
+const combinedParams = computed(() => ({
+  offset: (page.value - 1) * itemsPerPage.value,
+  limit: itemsPerPage.value,
+  ...(debouncedSearch.value ? { name: debouncedSearch.value } : {}),
+}))
+const {
+  data: products,
+  isPending: isGettingProducts,
+  isFetching,
+  refetch: refetchProducts,
+} = useGetProducts(combinedParams)
 
 // Only show loading state on initial load, not on background refetches
-const showTableLoading = computed(() => isGettingProducts.value && !products.value)
+// const showTableLoading = computed(() => isGettingProducts.value && !products.value)
 const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct()
 
 const settingsStore = useSettingsStore()

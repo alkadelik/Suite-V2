@@ -311,7 +311,7 @@ onMounted(() => {
             </th>
           </tr>
         </thead>
-        <template v-if="loading && data.length">
+        <template v-if="loading && (data.length || table.getPageCount() > 1)">
           <tr>
             <td :colspan="columns.length" class="px-1 pt-2">
               <div class="bg-primary-50 h-1.5 w-full overflow-hidden rounded-xl">
@@ -405,7 +405,7 @@ onMounted(() => {
     <div
       v-if="data.length && showPagination"
       class="text-core-800 items-center justify-between gap-4 border-t border-gray-200 px-5 py-6"
-      :class="`hidden md:flex`"
+      :class="`flex`"
     >
       <!-- Pagination buttons -->
 

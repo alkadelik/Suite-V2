@@ -28,6 +28,8 @@ export function useGetCategories() {
       const { data } = await baseApi.get("/inventory/categories/")
       return data
     },
+    retry: false,
+    refetchOnWindowFocus: false,
   })
 }
 
@@ -94,13 +96,20 @@ export function useUpdateVariantImage() {
 }
 
 /** get products api request */
-export function useGetProducts() {
+export function useGetProducts(
+  params?: MaybeRefOrGetter<Record<string, string | number | boolean> | undefined>,
+) {
   return useQuery({
-    queryKey: ["products"],
+    queryKey: ["products", params],
     queryFn: async () => {
-      const { data } = await baseApi.get("/inventory/products/")
+      const { data } = await baseApi.get(
+        "/inventory/products/",
+        params ? { params: toValue(params) } : {},
+      )
       return data
     },
+    retry: false,
+    refetchOnWindowFocus: false,
   })
 }
 
@@ -119,6 +128,8 @@ export function useGetAttributes() {
       const { data } = await baseApi.get("/inventory/attributes/")
       return data
     },
+    retry: false,
+    refetchOnWindowFocus: false,
   })
 }
 
@@ -137,6 +148,8 @@ export function useGetAttributeValues(attributeUid: string) {
       const { data } = await baseApi.get(`/inventory/attributes/${attributeUid}/values/`)
       return data
     },
+    retry: false,
+    refetchOnWindowFocus: false,
   })
 }
 
@@ -209,6 +222,8 @@ export function useGetProduct(
       const { data } = await baseApi.get<IGetProductResponse>(`/inventory/products/${uidValue}/`)
       return data
     },
+    retry: false,
+    refetchOnWindowFocus: false,
     enabled: options?.enabled ?? true,
   })
 }
@@ -239,6 +254,8 @@ export function useGetInventoryMovements(params?: Record<string, string | number
       })
       return data
     },
+    retry: false,
+    refetchOnWindowFocus: false,
   })
 }
 
@@ -287,6 +304,8 @@ export function useGetTransferRequests(params?: MaybeRefOrGetter<Record<string, 
       )
       return data
     },
+    retry: false,
+    refetchOnWindowFocus: false,
   })
 }
 
