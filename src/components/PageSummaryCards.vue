@@ -64,17 +64,17 @@ const getItemSpanClass = (index: number) => {
       <div
         v-for="(item, i) in items"
         :key="i"
-        class="flex flex-col gap-1 rounded-lg px-3.5 py-3 shadow-sm md:gap-3"
+        class="shadow:none flex flex-col gap-1 rounded-lg px-3.5 py-3 md:gap-3 md:shadow-sm"
         :class="[
           'bg-primary-25 border-primary-200 border md:border-0 md:bg-white',
           getItemSpanClass(i),
         ]"
       >
         <!-- Mobile: Icon and Label together at top -->
-        <div class="flex flex-col gap-5 md:hidden">
-          <span class="flex h-10 w-10 items-center justify-center rounded-2xl">
-            <Icon :name="item.icon" :class="['text-primary-600', item.iconClass]" :size="24" />
-          </span>
+        <div class="flex flex-col gap-2 md:hidden">
+          <div class="bg-primary-600 h-0.5 w-7 rounded-sm">
+            <!-- <Icon :name="item.icon" :class="['text-primary-600', item.iconClass]" :size="24" /> -->
+          </div>
 
           <h4 class="text-core-600 !font-outfit flex items-end gap-1.5 text-sm">
             {{ item.label }}
@@ -120,7 +120,7 @@ const getItemSpanClass = (index: number) => {
         </div>
 
         <!-- Previous value comparison -->
-        <p class="text-core-600 text-xs">vs. {{ item.prev_value }} last wk</p>
+        <p class="text-core-600 hidden text-xs md:block">vs. {{ item.prev_value }} last wk</p>
       </div>
     </div>
   </div>
