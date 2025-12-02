@@ -30,7 +30,7 @@
         <PageHeader />
 
         <!-- Content -->
-        <main class="h-[calc(100vh-4rem)] flex-1 overflow-y-auto">
+        <main class="h-[calc(100vh-4rem)] overflow-y-auto">
           <div
             v-if="!isLive"
             class="bg-primary-25 text-warning-700 border-warning-300 flex flex-col items-start gap-3 border-b px-6 py-3 lg:flex-row lg:items-center"
