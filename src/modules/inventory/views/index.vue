@@ -247,10 +247,10 @@ import { useRoute } from "vue-router"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 
 const page = ref(1)
-const itemsPerPage = ref(2)
+const itemsPerPage = ref(10)
 const search = ref("")
-
 const debouncedSearch = useDebouncedRef(search, 750)
+
 const combinedParams = computed(() => ({
   offset: (page.value - 1) * itemsPerPage.value,
   limit: itemsPerPage.value,
