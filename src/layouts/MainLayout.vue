@@ -7,7 +7,7 @@
       @click="mobileSidebarOpen = false"
     />
 
-    <div class="flex">
+    <div class="flex overflow-y-hidden">
       <!-- Sidebar -->
       <AppSidebar
         :sales-suites="SALES_SUITES"
@@ -20,7 +20,7 @@
       <!-- Main column -->
       <div
         :class="[
-          'flex h-screen flex-1 flex-col overflow-x-hidden overflow-y-auto transition-all duration-200',
+          'flex h-full flex-1 flex-col overflow-x-hidden overflow-y-auto transition-all duration-200',
           'pt-16 pb-16 lg:pb-0', // height of header
           sidebarPadding,
         ]"
