@@ -232,7 +232,7 @@ import InventoryRequests from "../components/InventoryRequests.vue"
 import ReceiveRequestModal from "../components/ReceiveRequestModal.vue"
 import ProductCard from "../components/ProductCard.vue"
 import ManageStockModal from "../components/ManageStockModal.vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { formatPriceRange } from "@/utils/format-currency"
 import SectionHeader from "@components/SectionHeader.vue"
 import PageSummaryCards from "@components/PageSummaryCards.vue"
 import Tabs from "@components/Tabs.vue"
@@ -430,31 +430,6 @@ const getStockStatus = (item: TProduct) => {
   } else {
     return { label: "In Stock", color: "success" as const }
   }
-}
-
-// Format price range from API (e.g., "10000.00 - 20000.00" or "10000.00 - 10000.00")
-const formatPriceRange = (
-  value: string | number | boolean | Record<string, unknown> | null | undefined,
-): string => {
-  if (!value || typeof value !== "string") return "-"
-
-  // Split the price range string
-  const parts = value.split(" - ")
-  if (parts.length !== 2) return "-"
-
-  const minPrice = parseFloat(parts[0])
-  const maxPrice = parseFloat(parts[1])
-
-  // If prices are invalid
-  if (isNaN(minPrice) || isNaN(maxPrice)) return "-"
-
-  // If min and max are the same, show single price
-  if (minPrice === maxPrice) {
-    return formatCurrency(minPrice)
-  }
-
-  // Otherwise, show price range
-  return `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`
 }
 
 // Helper functions for edit operations
