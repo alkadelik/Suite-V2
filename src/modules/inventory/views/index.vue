@@ -1,5 +1,5 @@
 <template>
-  <div class="p-4">
+  <div class="p-4 pt-5 md:pt-4">
     <div class="hidden lg:block">
       <SectionHeader
         title="Inventory"
@@ -8,7 +8,7 @@
       />
     </div>
 
-    <div class="hidden items-center justify-between md:flex">
+    <div class="hidden items-center justify-between">
       <h4 class="!font-outfit text-core-700 mb-2 text-xl font-semibold">Your product stats</h4>
     </div>
     <PageSummaryCards
@@ -389,18 +389,18 @@ const handleRowClick = (clickedProduct: TProduct) => {
 // Calculate metrics from actual API data
 const productMetrics = computed(() => {
   const productResults = products.value?.data?.results || []
-  const totalProducts = products.value?.data?.count || 0
+  // const totalProducts = products.value?.data?.count || 0
   const inStockProducts = productResults.filter((p: TProduct) => p.total_stock > 0).length
   const outOfStockProducts = productResults.filter((p: TProduct) => p.total_stock === 0).length
   const needsReorderProducts = productResults.filter((p: TProduct) => p.needs_reorder).length
 
   return [
-    {
-      label: "Total Products",
-      value: totalProducts,
-      prev_value: 0,
-      icon: "box-filled",
-    },
+    // {
+    //   label: "Total Products",
+    //   value: totalProducts,
+    //   prev_value: 0,
+    //   icon: "box-filled",
+    // },
     {
       label: "In Stock",
       value: inStockProducts,
@@ -408,17 +408,17 @@ const productMetrics = computed(() => {
       icon: "box",
     },
     {
-      label: "Out of Stock",
-      value: outOfStockProducts,
+      label: "Low Stock",
+      value: outOfStockProducts + needsReorderProducts,
       prev_value: 0,
       icon: "box-time",
     },
-    {
-      label: "Needs Reorder",
-      value: needsReorderProducts,
-      prev_value: 0,
-      icon: "shopping-cart",
-    },
+    // {
+    //   label: "Needs Reorder",
+    //   value: needsReorderProducts,
+    //   prev_value: 0,
+    //   icon: "shopping-cart",
+    // },
   ]
 })
 
