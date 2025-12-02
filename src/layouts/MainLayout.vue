@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-[dvh] w-full bg-white md:bg-gray-50">
+  <div class="min-h-[100dvh] w-full bg-white md:bg-gray-50">
     <!-- Mobile overlay -->
     <div
       v-if="isMobile && mobileSidebarOpen"
@@ -20,7 +20,7 @@
       <!-- Main column -->
       <div
         :class="[
-          'flex min-h-[dvh] flex-1 flex-col overflow-x-hidden transition-all duration-200',
+          'flex min-h-[100dvh] flex-1 flex-col overflow-x-hidden transition-all duration-200',
           'pt-16 pb-16 lg:pb-0', // height of header
           sidebarPadding,
         ]"

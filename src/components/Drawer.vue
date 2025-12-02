@@ -110,19 +110,19 @@ const drawerClasses = computed(() => {
   switch (props.position) {
     case "left":
       baseClasses.push(
-        "top-0 bottom-0 left-0 h-[dvh]",
+        "top-0 bottom-0 left-0 h-[100dvh]",
         props.open ? "translate-x-0" : "-translate-x-full",
       )
       break
     case "right":
       baseClasses.push(
-        "top-0 bottom-0 right-0 h-[dvh]",
+        "top-0 bottom-0 right-0 h-[100dvh]",
         props.open ? "translate-x-0" : "translate-x-full",
       )
       break
     case "top":
       baseClasses.push(
-        "top-0 left-0 right-0 max-h-[80vh]",
+        "top-0 left-0 right-0 max-h-[80dvh]",
         props.open ? "translate-y-0" : "-translate-y-full",
       )
       break
