@@ -81,10 +81,12 @@ const { data: paymentHistory, refetch } = useGetOrderPaymentHistory(props.order.
             <h3 class="text-core-900 text-sm font-medium">
               {{ formatCurrency(payment.amount) }}
             </h3>
-            <span>{{ payment.source }}</span>
+            <span class="capitalize">{{ payment.source }}</span>
           </div>
 
-          <p>{{ new Date(payment.created_at).toLocaleDateString("en-CA") }}</p>
+          <p>
+            {{ new Date(payment.created_at).toLocaleDateString("en-US", { dateStyle: "medium" }) }}
+          </p>
         </div>
 
         <div

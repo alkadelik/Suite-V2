@@ -447,9 +447,11 @@ watch(showViewCustomerDrawer, (isOpen) => {
 
 // Watch for edit drawer state changes to sync query params
 watch(showCustomerFormDrawer, (isOpen) => {
-  if (!isOpen && route.query.uid) {
+  if (!isOpen) {
+    if (route.query.uid) {
+      customerUid.value = ""
+    }
     router.replace({ query: {} })
-    customerUid.value = ""
   }
 })
 

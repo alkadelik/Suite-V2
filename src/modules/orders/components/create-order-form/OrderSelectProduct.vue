@@ -94,7 +94,10 @@ const handleNext = () => {
       </div>
     </div>
 
-    <section v-if="!isFetching && filteredProducts.length > 0" class="grid grid-cols-3 gap-6">
+    <section
+      v-if="!isFetching && filteredProducts.length > 0"
+      class="grid grid-cols-2 gap-6 md:grid-cols-3"
+    >
       <div
         v-for="prod in filteredProducts"
         :key="prod.uid"
@@ -155,14 +158,11 @@ const handleNext = () => {
       class="!min-h-[500px] md:!bg-none"
     />
 
-    <div v-else class="flex min-h-[500px] items-center justify-center">
-      <div class="text-center">
-        <Icon name="box" class="text-core-300 mx-auto mb-4 h-16 w-16 animate-pulse" />
-        <p class="text-core-400 text-sm">Loading products...</p>
-      </div>
+    <div v-if="isFetching" class="flex items-center justify-center py-12">
+      <Icon name="loader" size="64" class="!animate text-primary-600 !animate-spin" />
     </div>
 
-    <div class="h-24" />
+    <div class="h-32" />
 
     <div class="border-core-200 fixed right-0 bottom-0 left-0 border-t bg-white p-6">
       <div v-if="selectedProducts.length > 0" class="mb-3 flex items-center justify-between">

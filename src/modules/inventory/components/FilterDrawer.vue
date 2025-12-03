@@ -141,7 +141,8 @@ const subCategoryOptions = [
 // Selected sub-category state
 const selectedSubCategory = ref<string | null>(null)
 
-const isMobile = ref(false)
+// Initialize isMobile with actual window width to prevent flash on mount
+const isMobile = ref(typeof window !== "undefined" ? window.innerWidth < 768 : false)
 
 // Check if mobile on mount and window resize
 const checkMobile = () => {

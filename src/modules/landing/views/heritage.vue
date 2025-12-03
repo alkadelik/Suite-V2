@@ -103,7 +103,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-[100dvh] bg-gray-50">
     <!-- Navigation -->
 
     <header

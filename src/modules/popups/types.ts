@@ -25,8 +25,10 @@ export type PopupEvent = {
   total_orders: number
   total_sales_amount: number
   participant_fee: number | null
+  participation_fee: number | null
   created_at: string
   updated_at: string
+  organizer_event_name?: string
 }
 
 export interface PopupEventResponse {
@@ -58,7 +60,7 @@ export interface EventfulPopup {
   is_active: boolean
   is_live: boolean
   status: string
-  banner_image: string | null
+  image: string | null
   qr_code: string | null
   event_ref: string
   slug: string
@@ -133,4 +135,16 @@ export interface PopupOrderPayload {
     unit_price: number
     fulfilment_status: "unfulfilled" | "fulfilled"
   }[]
+}
+
+export interface EventDiscountCode {
+  valid: boolean
+  event_price: number
+  discount_type: "flat_rate" | "percentage"
+  discount_value: number
+  discount_amount: number
+  final_amount: number
+  expires_at: string
+  event_name: string
+  usage_remaining: number | null
 }

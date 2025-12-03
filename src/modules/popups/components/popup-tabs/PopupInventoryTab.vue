@@ -7,7 +7,7 @@ import Icon from "@components/Icon.vue"
 import { useGetPopupInventory, useUpdatePopupProduct } from "@modules/popups/api"
 import { POPUP_INVENTORY_COLUMNS } from "@modules/popups/constants"
 import { useMediaQuery } from "@vueuse/core"
-import { computed, ref } from "vue"
+import { computed, onMounted, ref } from "vue"
 import { useRoute } from "vue-router"
 import SetupPopupBoothDrawer from "../SetupPopupBoothDrawer.vue"
 import AppButton from "@components/AppButton.vue"
@@ -143,6 +143,10 @@ const closeConfirmationModal = () => {
   confirmationAction.value = null
   selectedProduct.value = null
 }
+
+onMounted(() => {
+  if (route.query.setup === "true") openAddProduct.value = true
+})
 </script>
 
 <template>

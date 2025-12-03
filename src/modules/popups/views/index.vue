@@ -9,7 +9,7 @@ import Icon from "@components/Icon.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import Tabs from "@components/Tabs.vue"
 import { useMediaQuery } from "@vueuse/core"
-import { computed, onMounted, ref, watch } from "vue"
+import { computed, onMounted, ref } from "vue"
 import { POPUP_COLUMN } from "../constants"
 import { PopupEvent } from "../types"
 import PopupEventCard from "../components/PopupEventCard.vue"
@@ -53,25 +53,19 @@ const computedFilters = computed(() => {
   if (searchQuery.value) filters.search = searchQuery.value
   return filters
 })
-const { data: popupEvents, isPending, refetch } = useGetPopupEvents(computedFilters)
+const { data: popupEvents, isPending, isFetching, refetch } = useGetPopupEvents(computedFilters)
 
-const { data: eventfulPopups } = useGetEventfulPopups()
+const params = computed(() => ({ status: "upcoming", limit: 5 }))
+const { data: eventfulPopups } = useGetEventfulPopups(params)
 const route = useRoute()
 
 onMounted(() => {
   if (route.query.create === "true") openCreate.value = true
 })
-
-watch(
-  () => selectedPopup.value,
-  (newVal) => {
-    console.log("Selected Popup changed:", newVal)
-  },
-)
 </script>
 
 <template>
-  <div class="flex flex-col gap-6 p-4 md:p-8">
+  <div class="flex flex-col p-4 md:p-8">
     <div class="hidden lg:block">
       <SectionHeader
         title="Popups"
@@ -79,7 +73,7 @@ watch(
       />
     </div>
 
-    <div>
+    <div v-if="eventfulPopups?.results?.length">
       <div class="flex justify-between">
         <h3 class="text-lg font-semibold">Upcoming events</h3>
         <AppButton
@@ -101,7 +95,7 @@ watch(
           gap: 16,
           breakpoints: {
             640: {
-              itemsToShow: 2,
+              itemsToShow: eventfulPopups?.results?.length > 1 ? 2 : 1,
             },
           },
         }"
@@ -114,7 +108,7 @@ watch(
           <div class="mt-6 flex items-center justify-between px-2">
             <div class="inline-flex items-center gap-1">
               <span
-                v-for="(_, n) in 5"
+                v-for="(_, n) in eventfulPopups?.count"
                 :key="n"
                 :class="['flex h-1 w-4 rounded', activeSlide === n ? 'bg-gray-500' : 'bg-gray-200']"
               />
@@ -127,7 +121,10 @@ watch(
                 size="xs"
                 icon="arrow-left"
                 class="!bg-core-25"
-                @click="activeSlide = activeSlide === 0 ? 4 : activeSlide - 1"
+                @click="
+                  activeSlide =
+                    activeSlide === 0 ? (eventfulPopups?.count || 5) - 1 : activeSlide - 1
+                "
               />
               <AppButton
                 variant="outlined"
@@ -135,7 +132,10 @@ watch(
                 size="xs"
                 icon="arrow-right"
                 class="!bg-core-25"
-                @click="activeSlide = activeSlide === 4 ? 0 : activeSlide + 1"
+                @click="
+                  activeSlide =
+                    activeSlide === (eventfulPopups?.count || 5) - 1 ? 0 : activeSlide + 1
+                "
               />
             </div>
           </div>
@@ -155,10 +155,10 @@ watch(
           openCreate = true
         }
       "
-      :loading="isPending"
+      :loading="isPending || isFetching"
     />
 
-    <section v-else class="mt-8">
+    <section v-else class="mt-6">
       <Tabs v-model="status" :tabs="TABS" class="max-w-md" />
 
       <div
@@ -207,6 +207,7 @@ watch(
           :data="popupEvents?.results ?? []"
           :columns="POPUP_COLUMN"
           :show-pagination="true"
+          :loading="isPending || isFetching"
           @row-click="(item) => $router.push(`/popups/${item.uid}`)"
         >
           <template #cell:items_sold_count="{ item }">
@@ -222,6 +223,19 @@ watch(
                   `${parseInt(String(((item.items_sold_count || 0) / (item.products_count || 1)) * 100))}%`
                 }}
               </span>
+            </div>
+          </template>
+          <template #cell:name="{ item }">
+            <div class="flex items-center gap-1">
+              <span class="max-w-xs truncate font-medium">
+                {{ item.organizer_event_name || item.name }}
+              </span>
+              <Chip
+                v-if="item.organizer_event_name"
+                label="Eventful"
+                size="sm"
+                class="flex-shrink-0"
+              />
             </div>
           </template>
           <template #cell:action="{ item }">
@@ -247,6 +261,7 @@ watch(
       :open="openCreate"
       @close="
         () => {
+          $router.replace({ name: 'Popups', query: {} })
           openCreate = false
           // Don't clear selectedPopup here if success modal is opening
           if (!openSuccess) {
@@ -258,7 +273,6 @@ watch(
       :event="selectedPopup"
       @refresh="
         (popup) => {
-          console.log('Popup', popup)
           if (!selectedPopup) {
             selectedPopup = popup
             openSuccess = true

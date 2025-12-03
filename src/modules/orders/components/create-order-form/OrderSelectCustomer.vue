@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import AppButton from "@components/AppButton.vue"
 import Chip from "@components/Chip.vue"
-import EmptyState from "@components/EmptyState.vue"
 import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
 import { useGetCustomers } from "@modules/customers/api"
@@ -69,7 +68,8 @@ const handleNext = () => {
 
     <div class="mb-8 flex flex-col gap-3">
       <h3 class="text-lg font-semibold">
-        All Customers <Chip :label="String(filteredCustomers.length)" />
+        All Customers
+        <Chip v-if="filteredCustomers.length" :label="String(filteredCustomers.length)" />
       </h3>
       <div class="flex items-center gap-3">
         <TextField
@@ -109,33 +109,14 @@ const handleNext = () => {
       </div>
     </section>
 
-    <EmptyState
-      v-if="!isFetching && filteredCustomers.length === 0"
-      title="No Customers Found"
-      :description="
-        searchQuery ? 'Try adjusting your search query' : 'Add a customer to get started'
-      "
-      class="!min-h-[500px] md:!bg-none"
-    />
-
-    <div v-if="isFetching" class="flex min-h-[500px] items-center justify-center">
-      <div class="text-center">
-        <Icon name="user" class="text-core-300 mx-auto mb-4 h-16 w-16 animate-pulse" />
-        <p class="text-core-400 text-sm">Loading customers...</p>
-      </div>
+    <div v-if="isFetching" class="flex items-center justify-center py-12">
+      <Icon name="loader" size="64" class="!animate text-primary-600 !animate-spin" />
     </div>
 
     <div class="h-24" />
 
     <div class="border-core-200 fixed right-0 bottom-0 left-0 flex gap-3 border-t bg-white p-6">
-      <AppButton
-        label="Back"
-        color="alt"
-        variant="outlined"
-        class="w-1/3"
-        icon="arrow-left"
-        @click="emit('prev')"
-      />
+      <AppButton label="Back" color="alt" class="w-1/3" icon="arrow-left" @click="emit('prev')" />
       <AppButton label="Next" class="w-2/3" :disabled="!canProceed" @click="handleNext" />
     </div>
 

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import AppButton from "@components/AppButton.vue"
 import Chip from "@components/Chip.vue"
-import EmptyState from "@components/EmptyState.vue"
 import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
 import { useGetCustomers } from "@modules/customers/api"
@@ -84,39 +83,33 @@ const handleNext = () => {
       </div>
     </div>
 
-    <section v-if="!isFetching && filteredCustomers.length > 0" class="space-y-4">
-      <CustomerCard
-        :customer="anonymousCustomer"
+    <section class="space-y-4">
+      <div
+        class="cursor-pointer rounded-xl transition-all"
         :class="
           selectedCustomer?.uid === anonymousCustomer.uid
-            ? '!border-primary-600 !bg-primary-25'
-            : ''
+            ? 'ring-primary-600 ring-2'
+            : 'hover:shadow-md'
         "
         @click="selectCustomer(anonymousCustomer)"
-      />
-      <CustomerCard
+      >
+        <CustomerCard :customer="anonymousCustomer" />
+      </div>
+      <div
         v-for="customer in filteredCustomers"
         :key="customer.uid"
-        :customer="customer"
-        :class="selectedCustomer?.uid === customer.uid ? '!border-primary-600 !bg-primary-25' : ''"
+        class="cursor-pointer rounded-xl transition-all"
+        :class="
+          selectedCustomer?.uid === customer.uid ? 'ring-primary-600 ring-2' : 'hover:shadow-md'
+        "
         @click="selectCustomer(customer)"
-      />
+      >
+        <CustomerCard :customer="customer" />
+      </div>
     </section>
 
-    <EmptyState
-      v-else-if="!isFetching && filteredCustomers.length === 0"
-      title="No Customers Found"
-      :description="
-        searchQuery ? 'Try adjusting your search query' : 'Add a customer to get started'
-      "
-      class="!min-h-[500px] md:!bg-none"
-    />
-
-    <div v-if="isFetching" class="flex min-h-[500px] items-center justify-center">
-      <div class="text-center">
-        <Icon name="user" class="text-core-300 mx-auto mb-4 h-16 w-16 animate-pulse" />
-        <p class="text-core-400 text-sm">Loading customers...</p>
-      </div>
+    <div v-if="isFetching" class="flex items-center justify-center py-12">
+      <Icon name="loader" size="64" class="!animate text-primary-600 !animate-spin" />
     </div>
 
     <div class="h-24" />

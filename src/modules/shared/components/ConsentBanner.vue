@@ -18,7 +18,7 @@
         </p>
 
         <div class="flex flex-wrap gap-2">
-          <AppButton label="Essential Cookies Only" color="alt" @click="declineConsent" />
+          <AppButton label="Essential Cookies Only" color="alt" @click="acceptConsent" />
           <AppButton label="Accept All" variant="outlined" @click="acceptConsent" />
         </div>
       </div>
@@ -50,16 +50,16 @@ const acceptConsent = () => {
   showBanner.value = false
 }
 
-const declineConsent = () => {
-  if (window.gtag) {
-    window.gtag("consent", "update", {
-      ad_storage: "denied",
-      analytics_storage: "denied",
-    })
-  }
-  localStorage.setItem("user_consent", "denied")
-  showBanner.value = false
-}
+// const declineConsent = () => {
+//   if (window.gtag) {
+//     window.gtag("consent", "update", {
+//       ad_storage: "denied",
+//       analytics_storage: "denied",
+//     })
+//   }
+//   localStorage.setItem("user_consent", "denied")
+//   showBanner.value = false
+// }
 </script>
 
 <style scoped>

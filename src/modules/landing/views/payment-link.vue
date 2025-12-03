@@ -11,7 +11,7 @@ const { data: orderData, isPending } = useGetPublicOrderById(route.params.id as 
 </script>
 
 <template>
-  <div class="text-core-700 min-h-screen pb-12">
+  <div class="text-core-700 min-h-[100dvh] pb-12">
     <header class="border-core-200 sticky top-0 z-50 border-b bg-white p-4">
       <nav class="mx-auto flex max-w-screen-lg items-center justify-between">
         <RouterLink to="/">

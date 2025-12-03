@@ -8,7 +8,7 @@ import type { ICustomer } from "@modules/customers/types"
 import { computed } from "vue"
 
 interface OrderItem {
-  product: { uid: string; product_name: string; total_stock: number }
+  product: { uid: string; product_name: string; total_stock: number; image?: string | null }
   variant: {
     uid: string
     name: string
@@ -87,7 +87,13 @@ const itemsCount = computed(() => {
           class="flex items-center justify-between"
         >
           <div class="flex items-center gap-3">
-            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white">
+            <img
+              v-if="item.product.image"
+              :src="item.product.image"
+              :alt="item.product.product_name"
+              class="h-10 w-10 rounded-lg object-cover"
+            />
+            <div v-else class="flex h-10 w-10 items-center justify-center rounded-lg bg-white">
               <Icon name="box" class="h-5 w-5 text-gray-400" />
             </div>
             <div>
@@ -144,9 +150,7 @@ const itemsCount = computed(() => {
         </p>
         <p class="flex justify-between text-sm">
           <span class="text-core-600">Delivery Fee</span>
-          <span class="font-medium">{{
-            deliveryFee > 0 ? formatCurrency(deliveryFee) : "Free"
-          }}</span>
+          <span class="font-medium">{{ deliveryFee > 0 ? formatCurrency(deliveryFee) : "-" }}</span>
         </p>
         <p
           v-if="paymentInfo.discount_amount > 0"

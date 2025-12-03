@@ -3,7 +3,7 @@ import { computed, ref } from "vue"
 import Chip from "@/components/Chip.vue"
 import { getSmartDateLabel } from "@/utils/formatDate"
 import { formatCurrency } from "@/utils/format-currency"
-import { ORDER_PAYMENT_STATUS } from "../constants"
+import { anonymousCustomer, ORDER_PAYMENT_STATUS } from "../constants"
 import { pluralize } from "@/utils/pluralize"
 import Icon from "@components/Icon.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
@@ -37,6 +37,14 @@ const emit = defineEmits([
   "delete-order",
 ])
 
+const isFulfilled = computed(() => {
+  return props.order?.fulfilment_status === "fulfilled"
+})
+
+const isBuyerCreated = computed(() => {
+  return props.order?.source?.includes("storefront")
+})
+
 const menuItems = computed(() => {
   return props.customActions?.length
     ? props.customActions
@@ -45,13 +53,13 @@ const menuItems = computed(() => {
         { label: "Share invoice", action: () => emit("share-invoice") },
         { label: "Update payment", action: () => emit("update-payment") },
         { divider: true },
-        { label: "Void order", class: "text-error", action: () => emit("void-order") },
-        { label: "Delete order", class: "text-error", action: () => emit("delete-order") },
+        ...((isFulfilled.value || props.order?.payment_status !== "unpaid") && !isBuyerCreated.value
+          ? [{ label: "Void order", class: "text-error", action: () => emit("void-order") }]
+          : []),
+        ...(!isFulfilled.value && props.order?.payment_status === "unpaid" && !isBuyerCreated.value
+          ? [{ label: "Delete order", class: "text-error", action: () => emit("delete-order") }]
+          : []),
       ]
-})
-
-const isFulfilled = computed(() => {
-  return props.order?.fulfilment_status === "fulfilled"
 })
 
 const itemsNoteCount = computed(() => {
@@ -79,7 +87,7 @@ const outstandingBalance = computed(() => {
         <div class="flex-1 truncate text-sm">
           <div class="mb-1 flex items-center gap-1">
             <h4 class="truncate text-left text-sm font-medium capitalize">
-              {{ order.user_name || "Guest" }}
+              {{ order.customer_name || anonymousCustomer.full_name }}
             </h4>
             <span class="ml-4 flex-1 text-right text-sm font-semibold">
               {{ formatCurrency(+order.total_amount) }}

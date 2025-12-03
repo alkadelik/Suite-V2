@@ -6,7 +6,7 @@ import TextField from "@components/form/TextField.vue"
 import MetricsGrid from "@components/MetricsGrid.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import { useMediaQuery } from "@vueuse/core"
-import { computed, onMounted, ref, watch } from "vue"
+import { computed, onMounted, ref } from "vue"
 import Avatar from "@components/Avatar.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import Chip from "@components/Chip.vue"
@@ -16,7 +16,7 @@ import VoidDeleteOrder from "../components/VoidDeleteOrder.vue"
 import { useDeleteOrder, useGetOrderDashboard, useGetOrders, useVoidOrder } from "../api"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
-import { ORDER_COLUMNS, ORDER_STATUS_TAB } from "../constants"
+import { anonymousCustomer, ORDER_COLUMNS, ORDER_STATUS_TAB } from "../constants"
 import { startCase } from "@/utils/format-strings"
 import OrderCard from "../components/OrderCard.vue"
 import FulfilOrderModal from "../components/FulfilOrderModal.vue"
@@ -26,6 +26,7 @@ import OrderPaymentDrawer from "../components/OrderPaymentDrawer.vue"
 import Tabs from "@components/Tabs.vue"
 import { formatCurrency } from "@/utils/format-currency"
 import { useRoute } from "vue-router"
+import { useDebouncedRef } from "@/composables/useDebouncedRef"
 
 const openCreate = ref(false)
 const openVoid = ref(false)
@@ -38,15 +39,6 @@ const selectedOrder = ref<TOrder | null>(null)
 const status = ref(ORDER_STATUS_TAB[0].key)
 
 const { data: orderDashboard, refetch: refetchStats } = useGetOrderDashboard()
-
-watch(
-  () => orderDashboard?.value,
-  (newVal) => {
-    if (newVal) {
-      console.log("Order Dashboard Data:", newVal)
-    }
-  },
-)
 
 const orderMetrics = computed(() => {
   const { current, previous } = orderDashboard?.value || {}
@@ -91,13 +83,17 @@ const orderMetrics = computed(() => {
   ]
 })
 
-const searchQuery = ref("")
 const showFilter = ref(false)
 const isMobile = useMediaQuery("(max-width: 768px)")
 
+const page = ref(1)
+const itemsPerPage = ref(10)
+const searchQuery = ref("")
+const debouncedSearch = useDebouncedRef(searchQuery, 750)
+
 const computedParams = computed(() => {
   const params: Record<string, string> = {}
-  if (searchQuery.value) params.search = searchQuery.value
+  if (debouncedSearch.value) params.search = debouncedSearch.value
   if (status.value && status.value !== "all") {
     if (status.value.includes("paid")) {
       params.payment_status = status.value
@@ -105,10 +101,12 @@ const computedParams = computed(() => {
       params.fulfilment_status = status.value
     }
   }
+  params.offset = ((page.value - 1) * itemsPerPage.value).toString()
+  params.limit = itemsPerPage.value.toString()
   return params
 })
 
-const { data: orders, isFetching, refetch } = useGetOrders(computedParams)
+const { data: orders, isPending, isFetching, refetch } = useGetOrders(computedParams)
 
 const getActionItems = (item: TOrder) => [
   {
@@ -144,26 +142,37 @@ const getActionItems = (item: TOrder) => [
     },
   },
   { divider: true },
-  {
-    label: "Void Order",
-    icon: "trash",
-    class: "text-red-600 hover:bg-red-50",
-    iconClass: "text-red-600",
-    action: () => {
-      selectedOrder.value = item
-      openVoid.value = true
-    },
-  },
-  {
-    label: "Delete Order",
-    icon: "trash",
-    class: "text-red-600 hover:bg-red-50",
-    iconClass: "text-red-600",
-    action: () => {
-      selectedOrder.value = item
-      openDelete.value = true
-    },
-  },
+  ...((item.fulfilment_status === "fulfilled" || item.payment_status !== "unpaid") &&
+  !item.source?.includes("storefront")
+    ? [
+        {
+          label: "Void Order",
+          icon: "trash",
+          class: "text-red-600 hover:bg-red-50",
+          iconClass: "text-red-600",
+          action: () => {
+            selectedOrder.value = item
+            openVoid.value = true
+          },
+        },
+      ]
+    : []),
+  ...(item.fulfilment_status !== "fulfilled" &&
+  item.payment_status === "unpaid" &&
+  !item.source?.includes("storefront")
+    ? [
+        {
+          label: "Delete Order",
+          icon: "trash",
+          class: "text-red-600 hover:bg-red-50",
+          iconClass: "text-red-600",
+          action: () => {
+            selectedOrder.value = item
+            openDelete.value = true
+          },
+        },
+      ]
+    : []),
 ]
 
 const onCloseVoidDel = () => {
@@ -216,12 +225,12 @@ onMounted(() => {
     </div>
 
     <EmptyState
-      v-if="!orders?.results?.length && status === 'all'"
+      v-if="!orders?.results?.length && status === 'all' && !debouncedSearch && !isPending"
       title="No Orders Yet"
       description="You haven't received any orders. Once you start receiving orders, they will appear here."
       action-label="Add an order"
       action-icon="add"
-      :loading="isFetching"
+      :loading="isPending"
       @action="openCreate = true"
     />
 
@@ -271,7 +280,6 @@ onMounted(() => {
           :data="orders?.results ?? []"
           :columns="ORDER_COLUMNS"
           :loading="isFetching"
-          :show-pagination="true"
           :enable-row-selection="false"
           :empty-state="{
             title: 'No Order Found',
@@ -280,6 +288,12 @@ onMounted(() => {
                 ? 'Try adjusting your filters or search query'
                 : `You haven't received any orders. Once you start receiving orders, they will appear here.`,
           }"
+          :show-pagination="true"
+          :items-per-page="itemsPerPage"
+          :total-items-count="orders?.count || 0"
+          :total-page-count="Math.ceil((orders?.count || 0) / itemsPerPage) || 1"
+          :server-pagination="true"
+          @pagination-change="(d) => (page = d.currentPage)"
         >
           <template #cell:items="{ item }">
             <div class="max-w-[100px] truncate">
@@ -302,7 +316,10 @@ onMounted(() => {
           </template>
           <!--  -->
           <template #cell:customer_info="{ item }">
-            <Avatar :extra-text="true" :name="`${item.customer_name}`" />
+            <Avatar
+              :extra-text="true"
+              :name="`${item.customer_name || anonymousCustomer.full_name}`"
+            />
           </template>
           <template #cell:actions="{ item }">
             <div class="inline-flex items-center gap-1">
@@ -331,7 +348,12 @@ onMounted(() => {
 
     <CreateOrderDrawer
       :open="openCreate"
-      @close="openCreate = false"
+      @close="
+        () => {
+          openCreate = false
+          $router.replace({ name: 'Orders', query: {} })
+        }
+      "
       @refresh="
         () => {
           refetch()

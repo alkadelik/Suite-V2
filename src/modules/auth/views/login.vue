@@ -13,14 +13,14 @@
       rel="noopener noreferrer"
     >
       <div
-        class="bg-primary-50 text-primary-700 border-primary-200 flex flex-col items-start gap-2 rounded-3xl border px-2 py-2 xl:flex-row"
+        class="bg-primary-50 text-primary-700 border-primary-200 flex flex-col items-start gap-2 rounded-xl border px-2 py-2 lg:rounded-3xl xl:flex-row"
       >
         <Chip size="sm" label="✨ Returning users" variant="filled" />
         <div class="flex flex-wrap items-center gap-2 text-sm">
           <span class="font-medium">
             If you created your account before Nov 18, click here to sign in
+            <Icon name="arrow-right" size="16" class="inline-block!" />
           </span>
-          <Icon name="arrow-right" size="16" class="hidden! md:inline-block!" />
         </div>
       </div>
     </a>
@@ -31,12 +31,12 @@
       <FormField name="password" type="password" label="Password" required />
 
       <div class="flex items-center justify-between">
-        <label class="flex cursor-pointer items-center gap-1.5 text-sm">
+        <!-- <label class="flex cursor-pointer items-center gap-1.5 text-sm">
           <input v-model="rememberMe" type="checkbox" class="accent-primary-600 h-4 w-4" />
           Remember me
-        </label>
+        </label> -->
         <RouterLink
-          to="/forgot-password"
+          :to="`/forgot-password${redirectStr}`"
           class="text-primary-600 text-sm font-medium transition-colors duration-200 hover:underline"
         >
           Forgot Password?
@@ -56,7 +56,7 @@
       <p class="text-center text-sm font-normal text-gray-500">
         I don't have an account?
         <RouterLink
-          to="/signup"
+          :to="`/signup${redirectStr}`"
           class="text-primary-600 text-sm font-semibold transition-colors duration-200 hover:underline"
         >
           Sign Up
@@ -77,14 +77,14 @@ import { toast } from "@/composables/useToast"
 import AppForm from "@components/form/AppForm.vue"
 import FormField from "@components/form/FormField.vue"
 import SectionHeader from "@components/SectionHeader.vue"
-import { ref } from "vue"
 import AppButton from "@components/AppButton.vue"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
+import { computed } from "vue"
 
 const authStore = useAuthStore()
 const router = useRouter()
-const rememberMe = ref(true)
+// const rememberMe = ref(true)
 const { mutate: loginFn, isPending } = useLogin()
 
 const loginSchema = yup.object({
@@ -109,4 +109,10 @@ const onSubmit = (values: TLoginPayload) => {
     },
   )
 }
+
+const redirectStr = computed(() =>
+  router.currentRoute.value.query.redirect
+    ? `?redirect=${router.currentRoute.value.query.redirect as string}`
+    : "",
+)
 </script>

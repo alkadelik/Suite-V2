@@ -18,6 +18,7 @@ import PopupInventoryTab from "../components/popup-tabs/PopupInventoryTab.vue"
 import { clipboardCopy } from "@/utils/others"
 import { useMediaQuery } from "@vueuse/core"
 import Collapsible from "@components/Collapsible.vue"
+import { useSettingsStore } from "@modules/settings/store"
 
 const route = useRoute()
 const openDelete = ref(false)
@@ -39,8 +40,8 @@ const getEventStatus = (event: { start_date?: string; end_date?: string } | null
 
 const overviewInfo = computed(() => {
   return {
-    "Participation Fee": popupEvt.value?.participant_fee
-      ? formatCurrency(popupEvt.value?.participant_fee)
+    "Participation Fee": Number(popupEvt.value?.participation_fee)
+      ? formatCurrency(popupEvt.value?.participation_fee || 0)
       : "Free",
     Description: popupEvt.value?.description || "N/A",
   }
@@ -59,6 +60,8 @@ const actionMenu = computed(() => [
 ])
 
 const isMobile = useMediaQuery("(max-width: 768px)")
+
+const storeDetails = computed(() => useSettingsStore().storeDetails)
 </script>
 
 <template>
@@ -76,7 +79,18 @@ const isMobile = useMediaQuery("(max-width: 768px)")
 
     <section>
       <div class="bg-primary-800 mb-6 flex gap-2 rounded-xl p-3 text-white md:gap-6 md:p-6">
-        <div class="bg-core-200 w-16 flex-shrink-0 rounded md:h-[20] md:w-20"></div>
+        <div
+          class="bg-core-50 flex w-16 flex-shrink-0 items-center justify-center rounded md:h-[20] md:w-20"
+        >
+          <img
+            v-if="popupEvt?.banner_image"
+            :src="popupEvt?.banner_image"
+            alt="Popup Banner"
+            class="h-full w-full rounded object-cover"
+          />
+
+          <Icon v-else name="calendar-tick" size="40" class="text-core-800" />
+        </div>
         <div class="min-w-0 flex-1">
           <div class="mb-2 flex items-center gap-2">
             <h3
@@ -109,13 +123,17 @@ const isMobile = useMediaQuery("(max-width: 768px)")
             </p>
             <p class="flex items-center gap-2 text-sm">
               <span class="min-w-0 truncate">
-                {{ `www.popup.leyyow.com/${popupEvt?.slug || ""}` }}
+                {{ `www.buy.leyyow.com/${storeDetails?.slug}/events/${popupEvt?.slug}` }}
               </span>
               <Icon
                 name="copy"
                 size="20"
                 class="flex-shrink-0 cursor-pointer"
-                @click="clipboardCopy(`https://popup.leyyow.com/${popupEvt?.slug}`)"
+                @click="
+                  clipboardCopy(
+                    `https://buy.leyyow.com/${storeDetails?.slug}/events/${popupEvt?.slug}`,
+                  )
+                "
               />
             </p>
             <Chip

@@ -1,5 +1,5 @@
 <template>
-  <div class="p-4">
+  <div class="p-4 pt-5 md:pt-4">
     <div class="hidden lg:block">
       <SectionHeader
         title="Inventory"
@@ -8,222 +8,232 @@
       />
     </div>
 
-    <!-- Initial Loading State for entire page -->
-    <div
-      v-if="isGettingProducts && !products"
-      class="flex min-h-[70vh] items-center justify-center rounded-xl border-gray-200 md:border md:bg-white md:shadow-xs"
-    >
-      <Icon name="loader" size="120" class="text-primary-600 animate-spin" />
+    <!-- Page content - always visible -->
+    <div class="hidden items-center justify-between md:flex">
+      <h4 class="!font-outfit text-core-700 mb-2 text-xl font-semibold">Your product stats</h4>
+    </div>
+    <PageSummaryCards
+      :items="productMetrics"
+      default-icon="bag"
+      default-icon-class="text-success-500"
+    />
+
+    <!-- Tabs for HQ users -->
+    <div v-if="locationsCount > 1" class="mt-6 w-full md:w-1/2">
+      <Tabs v-if="isHQ" :tabs="tabs" v-model="activeTab" />
     </div>
 
-    <!-- Content after loading -->
-    <template v-else>
-      <div class="hidden items-center justify-between md:flex">
-        <h4 class="!font-outfit text-core-700 mb-2 text-xl font-semibold">Your product stats</h4>
-      </div>
-      <PageSummaryCards
-        :items="productMetrics"
-        default-icon="bag"
-        default-icon-class="text-success-500"
-      />
+    <!-- Requests Tab Content -->
+    <InventoryRequests
+      v-if="activeTab === 'requests' && isHQ"
+      :key="requestsRefetchKey"
+      @request-click="handleRequestClick"
+    />
 
-      <!-- Tabs for HQ users -->
-      <div class="mt-6 w-full md:w-1/2">
-        <Tabs v-if="isHQ" :tabs="tabs" v-model="activeTab" />
-      </div>
+    <!-- Products Tab Content -->
+    <template v-if="activeTab === 'products'">
+      <!-- Always visible content with search bar -->
+      <div class="mt-4 space-y-4 rounded-xl border-gray-200 pt-3 md:border md:bg-white">
+        <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
+          <h3 class="mb-2 hidden items-center gap-1 text-lg font-semibold md:mb-0 md:flex">
+            All Products <Chip :label="String(products?.data?.count || 0)" />
+          </h3>
+          <div class="flex items-center gap-2">
+            <TextField
+              :model-value="search"
+              @update:model-value="(val) => (search = val)"
+              left-icon="search-lg"
+              size="md"
+              class="flex-1"
+              placeholder="Search by product name or category"
+            />
+            <AppButton
+              icon="filter-lines"
+              size="sm"
+              color="alt"
+              label="Filter"
+              @click="showFilterDrawer = true"
+              class="!hidden md:!inline-flex"
+            />
+            <AppButton
+              icon="filter-lines"
+              size="sm"
+              color="alt"
+              label=""
+              @click="showFilterDrawer = true"
+              class="md:hidden"
+            />
+            <AppButton
+              icon="add"
+              size="sm"
+              label="Add Product"
+              @click="openAddProductDrawer"
+              class="!hidden md:!inline-flex"
+            />
+            <AppButton
+              icon="add"
+              size="sm"
+              label=""
+              @click="openAddProductDrawer"
+              class="md:hidden"
+            />
+          </div>
+        </div>
 
-      <!-- Requests Tab Content -->
-      <InventoryRequests
-        v-if="activeTab === 'requests' && isHQ"
-        :key="requestsRefetchKey"
-        @request-click="handleRequestClick"
-      />
-
-      <!-- Products Tab Content -->
-      <template v-if="activeTab === 'products'">
+        <!-- Empty State: Only show when no products exist AND no search/filters are active -->
         <EmptyState
-          v-if="!products?.data?.results?.length"
+          v-if="
+            !isFetching &&
+            filteredProducts.length === 0 &&
+            !search &&
+            activeFilters.categories.length === 0 &&
+            activeFilters.status === null &&
+            activeFilters.subCategory === null
+          "
           icon="box"
           title="No products found"
           description="Start adding products to manage your inventory."
-          :action-label="isHQ ? 'Add Product' : undefined"
-          :action-icon="isHQ ? 'add' : undefined"
+          action-label="Add Product"
+          action-icon="add"
           @action="showProductFormDrawer = true"
         />
-        <div v-else class="mt-4 space-y-4 rounded-xl border-gray-200 pt-3 md:border md:bg-white">
-          <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
-            <h3 class="mb-2 hidden items-center gap-1 text-lg font-semibold md:mb-0 md:flex">
-              All Products <Chip :label="String(filteredProducts.length)" />
-            </h3>
+
+        <!-- DataTable: Show when loading OR when there are results OR when search/filters are active -->
+        <DataTable
+          v-else
+          :data="filteredProducts"
+          :columns="PRODUCT_COLUMNS"
+          :loading="isFetching"
+          :show-pagination="true"
+          :items-per-page="itemsPerPage"
+          :total-items-count="products?.data?.count || 0"
+          :total-page-count="Math.ceil((products?.data?.count || 0) / itemsPerPage) || 1"
+          :server-pagination="true"
+          :enable-row-selection="true"
+          @row-click="handleRowClick"
+          @pagination-change="(d) => (page = d.currentPage)"
+        >
+          <template #cell:name="{ item }">
+            <ProductAvatar
+              :name="item.name"
+              :url="item.primary_image?.image || undefined"
+              :variants-count="item.variants_count > 1 ? item.variants_count : undefined"
+              shape="rounded"
+            />
+          </template>
+
+          <template #cell:category="{ value }">
+            <Chip :label="String(value) || 'Uncategorized'" icon="tag" color="purple" size="sm" />
+          </template>
+
+          <template #cell:total_stock="{ value }">
+            <span class="text-sm font-semibold">{{ value }}</span>
+          </template>
+
+          <template #cell:status="{ item }">
+            <Chip
+              showDot
+              :label="getStockStatus(item).label"
+              :color="getStockStatus(item).color"
+              size="sm"
+            />
+          </template>
+
+          <template #cell:price="{ value }">
+            <span class="text-core-600 text-sm">{{ formatPriceRange(value) }}</span>
+          </template>
+
+          <template #cell:action="{ item }">
             <div class="flex items-center gap-2">
-              <TextField
-                v-model="searchQuery"
-                left-icon="search-lg"
-                size="md"
-                class="flex-1"
-                placeholder="Search by product name or category"
+              <Icon
+                name="copy-01"
+                @click.stop="handleAction('duplicate', item)"
+                class="hidden cursor-pointer hover:text-gray-600 md:inline-block"
               />
-              <AppButton
-                icon="filter-lines"
+              <Icon
+                name="edit"
+                @click.stop="openProductEditDrawer(item)"
+                class="hidden cursor-pointer hover:text-gray-600 md:inline-block"
+              />
+              <DropdownMenu
+                :items="getActionItems(item)"
+                placement="bottom-end"
+                :show-chevron="false"
                 size="sm"
-                color="alt"
-                label="Filter"
-                @click="showFilterDrawer = true"
-                class="!hidden md:!inline-flex"
-              />
-              <AppButton
-                icon="filter-lines"
-                size="sm"
-                color="alt"
-                label=""
-                @click="showFilterDrawer = true"
-                class="md:hidden"
-              />
-              <AppButton
-                v-if="isHQ"
-                icon="add"
-                size="sm"
-                label="Add Product"
-                @click="openAddProductDrawer"
-                class="!hidden md:!inline-flex"
-              />
-              <AppButton
-                v-if="isHQ"
-                icon="add"
-                size="sm"
-                label=""
-                @click="openAddProductDrawer"
-                class="md:hidden"
-              />
+                trigger-class="!p-1 !min-h-6 !w-6 hover:bg-gray-100 !border-0"
+                @click.stop
+              >
+                <template #trigger>
+                  <Icon name="dots-vertical" />
+                </template>
+              </DropdownMenu>
             </div>
-          </div>
+          </template>
 
-          <DataTable
-            :data="filteredProducts"
-            :columns="PRODUCT_COLUMNS"
-            :loading="isGettingProducts"
-            :show-pagination="false"
-            :enable-row-selection="true"
-            @row-click="handleRowClick"
-          >
-            <template #cell:name="{ item }">
-              <ProductAvatar
-                :name="item.name"
-                :url="item.primary_image?.image || undefined"
-                :variants-count="item.variants_count > 1 ? item.variants_count : undefined"
-                shape="rounded"
-              />
-            </template>
-
-            <template #cell:category="{ value }">
-              <Chip :label="String(value) || 'Uncategorized'" icon="tag" color="purple" size="sm" />
-            </template>
-
-            <template #cell:total_stock="{ value }">
-              <span class="text-sm font-semibold">{{ value }}</span>
-            </template>
-
-            <template #cell:status="{ item }">
-              <Chip
-                showDot
-                :label="getStockStatus(item).label"
-                :color="getStockStatus(item).color"
-                size="sm"
-              />
-            </template>
-
-            <template #cell:price="{ value }">
-              <span class="text-core-600 text-sm">{{ formatPriceRange(value) }}</span>
-            </template>
-
-            <template #cell:action="{ item }">
-              <div class="flex items-center gap-2">
-                <Icon
-                  v-if="isHQ"
-                  name="copy-01"
-                  @click.stop="handleAction('duplicate', item)"
-                  class="hidden cursor-pointer hover:text-gray-600 md:inline-block"
-                />
-                <Icon
-                  v-if="isHQ"
-                  name="edit"
-                  @click.stop="openProductEditDrawer(item)"
-                  class="hidden cursor-pointer hover:text-gray-600 md:inline-block"
-                />
-                <DropdownMenu
-                  :items="getActionItems(item)"
-                  placement="bottom-end"
-                  :show-chevron="false"
-                  size="sm"
-                  trigger-class="!p-1 !min-h-6 !w-6 hover:bg-gray-100 !border-0"
-                  @click.stop
-                >
-                  <template #trigger>
-                    <Icon name="dots-vertical" />
-                  </template>
-                </DropdownMenu>
-              </div>
-            </template>
-
-            <!-- mobile view cell templates -->
-            <template #mobile="{ item }">
-              <ProductCard
-                @click="handleRowClick(item)"
-                :product="item"
-                :action-items="getActionItems(item)"
-              />
-            </template>
-          </DataTable>
-        </div>
-      </template>
-
-      <!-- modals -->
-      <ConfirmationModal
-        v-model="showDeleteConfirmationModal"
-        @close="showDeleteConfirmationModal = false"
-        header="Delete Product"
-        paragraph="Are you sure you want to delete this product?"
-        variant="error"
-        @confirm="handleDeleteProduct"
-        :loading="isDeletingProduct"
-      />
-      <!-- <ExportProductModal v-model="showExportProductModal" @close="showExportProductModal = false" /> -->
-
-      <!-- drawers  -->
-      <ProductFormDrawer
-        ref="productFormDrawerRef"
-        v-model="showProductFormDrawer"
-        @refresh="refetchProducts"
-        @add-category="showAddCategoryModal = true"
-      />
-      <ProductEditDrawer
-        ref="productEditDrawerRef"
-        v-model="showProductEditDrawer"
-        :product="product"
-        :edit-mode="editMode"
-        :variant="variantForEdit"
-        @refresh="refetchProducts"
-        @add-category="showAddCategoryModal = true"
-      />
-      <FilterDrawer v-model="showFilterDrawer" @apply="handleApplyFilters" />
-
-      <!-- Modals -->
-      <AddCategoryModal v-model="showAddCategoryModal" @success="handleCategoryCreated" />
-      <ReceiveRequestModal
-        v-model="showReceiveRequestModal"
-        :open="showReceiveRequestModal"
-        :request="selectedRequest"
-        @close="showReceiveRequestModal = false"
-        @success="handleRequestSuccess"
-      />
-      <ManageStockModal
-        v-if="productDetailsForStock?.data"
-        :open="showManageStockModal"
-        :product="productDetailsForStock.data"
-        @close="showManageStockModal = false"
-        @success="refetchProducts"
-      />
+          <!-- mobile view cell templates -->
+          <template #mobile="{ item }">
+            <ProductCard
+              @click="handleRowClick(item)"
+              :product="item"
+              :action-items="getActionItems(item)"
+            />
+          </template>
+        </DataTable>
+      </div>
     </template>
+
+    <!-- modals -->
+    <ConfirmationModal
+      v-model="showDeleteConfirmationModal"
+      @close="showDeleteConfirmationModal = false"
+      header="Delete Product"
+      paragraph="Are you sure you want to delete this product?"
+      variant="error"
+      @confirm="handleDeleteProduct"
+      :loading="isDeletingProduct"
+    />
+    <!-- <ExportProductModal v-model="showExportProductModal" @close="showExportProductModal = false" /> -->
+
+    <!-- drawers  -->
+    <ProductFormDrawer
+      v-if="showProductFormDrawer"
+      ref="productFormDrawerRef"
+      v-model="showProductFormDrawer"
+      @refresh="refetchProducts"
+      @add-category="showAddCategoryModal = true"
+    />
+    <ProductEditDrawer
+      v-if="showProductEditDrawer"
+      ref="productEditDrawerRef"
+      v-model="showProductEditDrawer"
+      :product="product"
+      :edit-mode="editMode"
+      :variant="variantForEdit"
+      @refresh="refetchProducts"
+      @add-category="showAddCategoryModal = true"
+    />
+    <FilterDrawer
+      v-if="showFilterDrawer || hasOpenedFilterDrawer"
+      v-model="showFilterDrawer"
+      @apply="handleApplyFilters"
+    />
+
+    <!-- Modals -->
+    <AddCategoryModal v-model="showAddCategoryModal" @success="handleCategoryCreated" />
+    <ReceiveRequestModal
+      v-model="showReceiveRequestModal"
+      :open="showReceiveRequestModal"
+      :request="selectedRequest"
+      @close="showReceiveRequestModal = false"
+      @success="handleRequestSuccess"
+    />
+    <ManageStockModal
+      v-if="productDetailsForStock?.data"
+      :open="showManageStockModal"
+      :product="productDetailsForStock.data"
+      @close="showManageStockModal = false"
+      @success="refetchProducts"
+    />
   </div>
 </template>
 
@@ -246,7 +256,7 @@ import InventoryRequests from "../components/InventoryRequests.vue"
 import ReceiveRequestModal from "../components/ReceiveRequestModal.vue"
 import ProductCard from "../components/ProductCard.vue"
 import ManageStockModal from "../components/ManageStockModal.vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { formatPriceRange } from "@/utils/format-currency"
 import SectionHeader from "@components/SectionHeader.vue"
 import PageSummaryCards from "@components/PageSummaryCards.vue"
 import Tabs from "@components/Tabs.vue"
@@ -259,8 +269,20 @@ import router from "@/router"
 import { useSettingsStore } from "@modules/settings/store"
 import { useInventoryStore } from "../store"
 import { useRoute } from "vue-router"
+import { useDebouncedRef } from "@/composables/useDebouncedRef"
 
-const { data: products, isFetching: isGettingProducts, refetch: refetchProducts } = useGetProducts()
+const page = ref(1)
+const itemsPerPage = ref(10)
+const search = ref("")
+const debouncedSearch = useDebouncedRef(search, 750)
+
+const combinedParams = computed(() => ({
+  offset: (page.value - 1) * itemsPerPage.value,
+  limit: itemsPerPage.value,
+  ...(debouncedSearch.value ? { name: debouncedSearch.value } : {}),
+}))
+
+const { data: products, isFetching, refetch: refetchProducts } = useGetProducts(combinedParams)
 const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct()
 const { data: categories } = useGetCategories()
 
@@ -290,6 +312,7 @@ const route = useRoute()
 
 // Check if current location is HQ
 const isHQ = computed(() => settingsStore.activeLocation?.is_hq || false)
+const locationsCount = computed(() => settingsStore.locations?.length || 0)
 
 // Tabs configuration
 const tabs = computed(() => [
@@ -301,9 +324,9 @@ const showDeleteConfirmationModal = ref(false)
 const showProductFormDrawer = ref(false)
 const showProductEditDrawer = ref(false)
 const showFilterDrawer = ref(false)
+const hasOpenedFilterDrawer = ref(false)
 const product = ref<TProduct | null>(null)
 const showAddCategoryModal = ref(false)
-const searchQuery = ref("")
 
 // Active filters
 const activeFilters = ref<{
@@ -333,15 +356,11 @@ const productUidForEdit = ref<string | null>(null)
 
 // Fetch product details for manage stock modal
 const productUidForFetch = computed(() => productUidForManageStock.value || "")
-const { data: productDetailsForStock } = useGetProduct(productUidForFetch, {
-  enabled: computed(() => !!productUidForFetch.value),
-})
+const { data: productDetailsForStock } = useGetProduct(productUidForFetch)
 
 // Fetch product details for edit drawer when needed
 const productUidForEditFetch = computed(() => productUidForEdit.value || "")
-const { data: productDetailsForEdit } = useGetProduct(productUidForEditFetch, {
-  enabled: computed(() => !!productUidForEditFetch.value),
-})
+const { data: productDetailsForEdit } = useGetProduct(productUidForEditFetch)
 
 // Watch for product details to be loaded and set variant for edit
 watch(
@@ -402,18 +421,18 @@ const handleRowClick = (clickedProduct: TProduct) => {
 // Calculate metrics from actual API data
 const productMetrics = computed(() => {
   const productResults = products.value?.data?.results || []
-  const totalProducts = products.value?.data?.count || 0
+  // const totalProducts = products.value?.data?.count || 0
   const inStockProducts = productResults.filter((p: TProduct) => p.total_stock > 0).length
   const outOfStockProducts = productResults.filter((p: TProduct) => p.total_stock === 0).length
   const needsReorderProducts = productResults.filter((p: TProduct) => p.needs_reorder).length
 
   return [
-    {
-      label: "Total Products",
-      value: totalProducts,
-      prev_value: 0,
-      icon: "box-filled",
-    },
+    // {
+    //   label: "Total Products",
+    //   value: totalProducts,
+    //   prev_value: 0,
+    //   icon: "box-filled",
+    // },
     {
       label: "In Stock",
       value: inStockProducts,
@@ -421,17 +440,17 @@ const productMetrics = computed(() => {
       icon: "box",
     },
     {
-      label: "Out of Stock",
-      value: outOfStockProducts,
+      label: "Low Stock",
+      value: outOfStockProducts + needsReorderProducts,
       prev_value: 0,
       icon: "box-time",
     },
-    {
-      label: "Needs Reorder",
-      value: needsReorderProducts,
-      prev_value: 0,
-      icon: "shopping-cart",
-    },
+    // {
+    //   label: "Needs Reorder",
+    //   value: needsReorderProducts,
+    //   prev_value: 0,
+    //   icon: "shopping-cart",
+    // },
   ]
 })
 
@@ -443,31 +462,6 @@ const getStockStatus = (item: TProduct) => {
   } else {
     return { label: "In Stock", color: "success" as const }
   }
-}
-
-// Format price range from API (e.g., "10000.00 - 20000.00" or "10000.00 - 10000.00")
-const formatPriceRange = (
-  value: string | number | boolean | Record<string, unknown> | null | undefined,
-): string => {
-  if (!value || typeof value !== "string") return "-"
-
-  // Split the price range string
-  const parts = value.split(" - ")
-  if (parts.length !== 2) return "-"
-
-  const minPrice = parseFloat(parts[0])
-  const maxPrice = parseFloat(parts[1])
-
-  // If prices are invalid
-  if (isNaN(minPrice) || isNaN(maxPrice)) return "-"
-
-  // If min and max are the same, show single price
-  if (minPrice === maxPrice) {
-    return formatCurrency(minPrice)
-  }
-
-  // Otherwise, show price range
-  return `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`
 }
 
 // Helper functions for edit operations
@@ -507,82 +501,68 @@ const openManageStockModal = (item: TProduct) => {
   showManageStockModal.value = true
 }
 
-const getActionItems = (item: TProduct) => {
-  const items = []
-
-  items.push({
+const getActionItems = (item: TProduct) => [
+  {
     id: "view",
     label: "View Product",
     icon: "eye-outline",
     action: () => handleAction("view", item),
-  })
-
-  if (isHQ.value) {
-    items.push(
-      {
-        id: "duplicate",
-        label: "Duplicate Product",
-        icon: "copy",
-        action: () => handleAction("duplicate", item),
-      },
-      {
-        divider: true,
-      },
-      {
-        id: "edit-basic",
-        label: "Edit Basic Details",
-        icon: "edit",
-        action: () => openProductEditDrawer(item),
-      },
-      {
-        id: "edit-images",
-        label: "Edit Images",
-        icon: "edit",
-        action: () => openImagesEditDrawer(item),
-      },
-      {
-        id: "edit-price",
-        label: "Edit Price & Weight",
-        icon: "edit",
-        action: () => openPriceWeightEdit(item),
-      },
-    )
-
-    if (item.variants_count > 1) {
-      items.push({
-        id: "manage-variants",
-        label: "Manage Variants",
-        icon: "edit",
-        action: () => openVariantsManage(item),
-      })
-    }
-  }
-
-  items.push({
+  },
+  {
+    id: "duplicate",
+    label: "Duplicate Product",
+    icon: "copy",
+    action: () => handleAction("duplicate", item),
+  },
+  {
+    divider: true,
+  },
+  {
+    id: "edit-basic",
+    label: "Edit Basic Details",
+    icon: "edit",
+    action: () => openProductEditDrawer(item),
+  },
+  {
+    id: "edit-images",
+    label: "Edit Images",
+    icon: "edit",
+    action: () => openImagesEditDrawer(item),
+  },
+  {
+    id: "edit-price",
+    label: "Edit Price & Weight",
+    icon: "edit",
+    action: () => openPriceWeightEdit(item),
+  },
+  ...(item.variants_count > 1
+    ? [
+        {
+          id: "manage-variants",
+          label: "Manage Variants",
+          icon: "edit",
+          action: () => openVariantsManage(item),
+        },
+      ]
+    : []),
+  {
     id: "manage-stock",
     label: "Manage Stock",
     icon: "edit",
     action: () => openManageStockModal(item),
-  })
-
-  if (isHQ.value) {
-    items.push(
-      {
-        divider: true,
-      },
-      {
-        id: "delete",
-        label: "Delete Product",
-        icon: "trash",
-        class: "text-red-600 hover:bg-red-50",
-        iconClass: "text-red-600",
-        action: () => handleAction("delete", item),
-      },
-    )
-  }
-
-  return items
-}
+  },
+  {
+    divider: true,
+  },
+  {
+    id: "delete",
+    label: "Delete Product",
+    icon: "trash",
+    class: "text-red-600 hover:bg-red-50",
+    iconClass: "text-red-600",
+    action: () => handleAction("delete", item),
+  },
+]
 
 const handleAction = (
   action: "duplicate" | "view" | "delete" | "activate" | "deactivate",
@@ -660,6 +640,14 @@ watch(showProductEditDrawer, (isOpen) => {
   if (!isOpen) {
     productUidForEdit.value = null
     variantForEdit.value = null
+    router.replace({ name: "Inventory", query: {} })
+  }
+})
+
+// Track if filter drawer has ever been opened to prevent mount flash
+watch(showFilterDrawer, (isOpen) => {
+  if (isOpen) {
+    hasOpenedFilterDrawer.value = true
   }
 })
 
@@ -682,33 +670,21 @@ const handleApplyFilters = (filters: {
   activeFilters.value = filters
 }
 
-// Filtered products based on active filters
+// Filtered products based on active filters (client-side filters only, search is server-side)
 const filteredProducts = computed(() => {
   const productResults = products.value?.data?.results || []
 
-  // If no filters or search are active, return all products
+  // If no filters are active, return all products
   const hasActiveFilters =
     activeFilters.value.categories.length > 0 ||
     activeFilters.value.status !== null ||
-    activeFilters.value.subCategory !== null ||
-    searchQuery.value.trim() !== ""
+    activeFilters.value.subCategory !== null
 
   if (!hasActiveFilters) {
     return productResults
   }
 
   return productResults.filter((product: TProduct) => {
-    // Search filter (by name or category)
-    if (searchQuery.value.trim() !== "") {
-      const query = searchQuery.value.toLowerCase()
-      const matchesName = product.name.toLowerCase().includes(query)
-      const matchesCategory = product.category?.toLowerCase().includes(query) || false
-
-      if (!matchesName && !matchesCategory) {
-        return false
-      }
-    }
-
     // Category filter
     if (activeFilters.value.categories.length > 0) {
       // Convert category UIDs to names

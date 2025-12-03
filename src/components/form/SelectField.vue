@@ -384,7 +384,7 @@ const contentClasses = computed(() => {
 const searchInputClasses = computed(() => {
   const base =
     "w-full border border-core-200 rounded-lg px-3 py-2 bg-white focus:outline-none  focus:border-primary-300 placeholder-core-400 text-core-800"
-  const sizeClasses = { sm: "text-sm", md: "text-sm", lg: "text-base" }
+  const sizeClasses = { sm: "text-base", md: "text-base", lg: "text-base" }
   return [base, sizeClasses[props.size]].join(" ")
 })
 

@@ -1,6 +1,6 @@
 <template>
   <div
-    class="!font-manrope fixed top-0 left-0 z-[9999] flex h-screen w-full flex-col items-center overflow-hidden py-0 md:justify-around md:bg-gray-50 md:py-16"
+    class="!font-manrope fixed top-0 left-0 z-[9999] flex h-[100dvh] w-full flex-col items-center overflow-hidden py-0 md:justify-around md:bg-gray-50 md:py-16"
     :class="currentStep === 3 ? 'justify-center bg-white' : 'justify-start bg-white'"
   >
     <button

@@ -311,7 +311,7 @@ onMounted(() => {
             </th>
           </tr>
         </thead>
-        <template v-if="loading && data.length">
+        <template v-if="loading && (data.length || table.getPageCount() > 1)">
           <tr>
             <td :colspan="columns.length" class="px-1 pt-2">
               <div class="bg-primary-50 h-1.5 w-full overflow-hidden rounded-xl">
@@ -371,31 +371,66 @@ onMounted(() => {
     <!-- MOBILE TABLE -->
     <!--  -->
     <div class="space-y-4 md:hidden">
-      <div v-for="row in table.getRowModel().rows" :key="row.id">
-        <!-- Custom mobile card slot -->
-        <slot name="mobile" :item="row.original">
-          <!-- default mobile card layout -->
-          <div
-            :class="[
-              'rounded-lg border border-gray-200',
-              { 'cursor-pointer hover:bg-gray-50': true },
-            ]"
-            @click="handleRowClick(row.original as T)"
-          >
-            <div
-              v-for="cell in row.getVisibleCells()"
-              :key="cell.id"
-              class="flex justify-between gap-4 border-b border-gray-200 px-4 py-3 text-sm last:border-0"
-            >
-              <span class="text-core-600 font-medium">
-                <FlexRender :render="cell.column.columnDef.header" :props="cell.getContext()" />
-              </span>
-              <span class="text-core-800 text-right">
-                <FlexRender :render="cell.column.columnDef.cell" :props="cell.getContext()" />
-              </span>
-            </div>
+      <!-- Loading progress bar for mobile when there's data -->
+      <template v-if="loading && (data.length || table.getPageCount() > 1)">
+        <div class="px-1">
+          <div class="bg-primary-50 h-1.5 w-full overflow-hidden rounded-xl">
+            <div class="progress left-right bg-primary-500 h-full w-full rounded" />
           </div>
-        </slot>
+        </div>
+      </template>
+
+      <!-- Mobile cards with loading opacity -->
+      <div v-if="data.length" :class="{ 'opacity-50': loading }">
+        <div v-for="row in table.getRowModel().rows" :key="row.id" class="mb-4">
+          <!-- Custom mobile card slot -->
+          <slot name="mobile" :item="row.original">
+            <!-- default mobile card layout -->
+            <div
+              :class="[
+                'rounded-lg border border-gray-200',
+                { 'cursor-pointer hover:bg-gray-50': true },
+              ]"
+              @click="handleRowClick(row.original as T)"
+            >
+              <div
+                v-for="cell in row.getVisibleCells()"
+                :key="cell.id"
+                class="flex justify-between gap-4 border-b border-gray-200 px-4 py-3 text-sm last:border-0"
+              >
+                <span class="text-core-600 font-medium">
+                  <FlexRender :render="cell.column.columnDef.header" :props="cell.getContext()" />
+                </span>
+                <span class="text-core-800 text-right">
+                  <FlexRender :render="cell.column.columnDef.cell" :props="cell.getContext()" />
+                </span>
+              </div>
+            </div>
+          </slot>
+        </div>
+      </div>
+
+      <!-- Empty state for mobile -->
+      <div
+        v-if="!data.length"
+        class="mx-auto flex w-full flex-col items-center justify-center px-4 py-16"
+      >
+        <div v-if="loading" class="flex items-center justify-center">
+          <Icon name="loader" size="80" class="text-primary-500 animate-spin" />
+        </div>
+        <EmptyState
+          v-else
+          :icon="props.emptyState?.icon || 'box'"
+          :title="props.emptyState?.title || 'No Data Available'"
+          :description="
+            props.emptyState?.description || 'There are currently no records to display.'
+          "
+          :action-label="props.emptyState?.actionLabel"
+          :action-icon="props.emptyState?.actionIcon"
+          size="md"
+          class="!min-h-[auto] !shadow-none"
+          @action="$emit('empty-action')"
+        />
       </div>
     </div>
 
@@ -405,7 +440,7 @@ onMounted(() => {
     <div
       v-if="data.length && showPagination"
       class="text-core-800 items-center justify-between gap-4 border-t border-gray-200 px-5 py-6"
-      :class="`hidden md:flex`"
+      :class="`flex`"
     >
       <!-- Pagination buttons -->
 

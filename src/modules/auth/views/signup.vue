@@ -68,7 +68,7 @@
       <p class="text-center text-sm font-normal text-gray-500">
         Already have an account?
         <RouterLink
-          to="/login"
+          :to="`/login${redirectStr}`"
           class="text-primary-600 text-sm font-semibold transition-colors duration-200 hover:underline"
         >
           Sign In
@@ -79,7 +79,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import { useRouter } from "vue-router"
 import PasswordStrength from "@components/form/PasswordStrength.vue"
 import * as yup from "yup"
@@ -111,6 +111,12 @@ const validationSchema = yup.object().shape({
 
 const currentPassword = ref("")
 
+const redirectStr = computed(() =>
+  router.currentRoute.value.query.redirect
+    ? `?redirect=${router.currentRoute.value.query.redirect as string}`
+    : "",
+)
+
 const onSubmit = (values: TSignupPayload) => {
   signupFn(values, {
     onSuccess: (res) => {
@@ -119,8 +125,7 @@ const onSubmit = (values: TSignupPayload) => {
       authStore.setAuthUser({ ...user, email: values.email, store_slug: "" })
       toast.success("Signup successful!")
       // check for redirect query param
-      const redirectPath = router.currentRoute.value.query.redirect as string
-      router.push(redirectPath || "/onboarding")
+      router.push(`/confirm-email?email=${values.email}${redirectStr.value.replace("?", "&")}`)
     },
     onError: displayError,
   })

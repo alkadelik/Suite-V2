@@ -22,17 +22,27 @@ const PAYMENT_METHODS = [
 const form = ref({
   amount: "",
   date: new Date().toISOString().split("T")[0],
-  method: PAYMENT_METHODS[0],
+  source: PAYMENT_METHODS[0].value,
 })
 
 const { mutate: addPayment, isPending } = useAddUpdateOrderPayment()
 
+const resetForm = () => {
+  form.value = {
+    amount: "",
+    date: new Date().toISOString().split("T")[0],
+    source: PAYMENT_METHODS[0].value,
+  }
+}
+
 const onSubmit = () => {
+  console.log("Form values:", form.value)
   addPayment(
-    { id: props.order.uid, body: { ...form.value, method: form.value.method.value } },
+    { id: props.order.uid, body: form.value },
     {
       onSuccess: () => {
         toast.success("Payment added successfully!")
+        resetForm()
         emit("close")
         emit("refresh")
       },
@@ -51,7 +61,7 @@ const onSubmit = () => {
   >
     <div class="space-y-5">
       <!-- Severity -->
-      <RadioInputField v-model="form.method" label="Payment Mode" :options="PAYMENT_METHODS" />
+      <RadioInputField v-model="form.source" label="Payment Source" :options="PAYMENT_METHODS" />
 
       <TextField
         v-model="form.amount"

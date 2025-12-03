@@ -111,13 +111,13 @@ router.beforeEach((to, from, next) => {
     // Check email confirmation status
     if (!user.is_email_verified && !to.path.includes("/confirm-email")) {
       toast.info("Please confirm your email to continue.")
-      return next({ path: "/confirm-email", query: { email: user.email } })
+      return next({ path: "/confirm-email", query: { email: user.email, redirect: to.fullPath } })
     }
 
     // Check payment account status (only for confirmed users)
     if (user.is_email_verified && user.store_uid === "" && !to.path.includes("/create-store")) {
       toast.info("Please create your store to complete your profile.")
-      return next({ path: "/create-store" })
+      return next({ path: "/create-store", query: { redirect: to.fullPath } })
     }
 
     // Redirect authenticated users away from auth pages to dashboard

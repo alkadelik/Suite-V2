@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col gap-8">
-    <BackButton to="/login" label="Back to Login" />
+    <BackButton :to="`/login${redirectStr}`" label="Back to Login" />
 
     <SectionHeader title="Confirm Your Email" class="mb-2">
       <template #subtitle>
@@ -39,7 +39,7 @@ import AppButton from "@components/AppButton.vue"
 import BackButton from "@components/BackButton.vue"
 import OtpField from "@components/form/OtpField.vue"
 import SectionHeader from "@components/SectionHeader.vue"
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { useResendVerificationCode, useVerifyEmail } from "../api"
 import { toast } from "@/composables/useToast"
@@ -56,6 +56,12 @@ const otp = ref("")
 const { mutate: resendCode, isPending: isResending } = useResendVerificationCode()
 const { mutate: verifyEmail, isPending } = useVerifyEmail()
 
+const redirectStr = computed(() =>
+  router.currentRoute.value.query.redirect
+    ? `?redirect=${router.currentRoute.value.query.redirect as string}`
+    : "",
+)
+
 const onSubmit = () => {
   verifyEmail(
     { token: otp.value },
@@ -63,7 +69,7 @@ const onSubmit = () => {
       onSuccess: () => {
         toast.success("Email verified successfully")
         authStore.updateAuthUser({ is_email_verified: true })
-        router.push("/create-store")
+        router.push(`/create-store${redirectStr.value}`)
       },
       onError: displayError,
     },

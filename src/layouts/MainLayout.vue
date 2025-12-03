@@ -1,13 +1,13 @@
 <template>
-  <div class="min-h-screen w-full bg-white md:bg-gray-50">
+  <div class="h-full w-full bg-white lg:bg-gray-50">
     <!-- Mobile overlay -->
-    <div
+    <!-- <div
       v-if="isMobile && mobileSidebarOpen"
       class="fixed inset-0 z-30 bg-black/40 lg:hidden"
       @click="mobileSidebarOpen = false"
-    />
+    /> -->
 
-    <div class="flex">
+    <div class="flex h-screen overflow-hidden">
       <!-- Sidebar -->
       <AppSidebar
         :sales-suites="SALES_SUITES"
@@ -20,7 +20,7 @@
       <!-- Main column -->
       <div
         :class="[
-          'flex min-h-screen flex-1 flex-col overflow-x-hidden transition-all duration-200',
+          'flex h-full flex-1 flex-col overflow-hidden transition-all duration-200',
           'pt-16 pb-16 lg:pb-0', // height of header
           sidebarPadding,
         ]"
@@ -30,17 +30,17 @@
         <PageHeader />
 
         <!-- Content -->
-        <main>
+        <main class="h-[calc(100vh-4rem)] overflow-y-auto">
           <div
             v-if="!isLive"
-            class="bg-primary-25 text-warning-700 border-warning-300 flex flex-col items-start gap-3 border-b px-6 py-3 md:flex-row md:items-center"
+            class="bg-primary-25 text-warning-700 border-warning-300 flex flex-col items-start gap-3 border-b px-6 py-3 lg:flex-row lg:items-center"
           >
             <span
-              class="border-primary-200 ring-primary-100 hidden size-8 items-center justify-center rounded-full border-2 p-0.5 ring-2 ring-offset-2 md:flex"
+              class="border-primary-200 ring-primary-100 hidden size-8 items-center justify-center rounded-full border-2 p-0.5 ring-2 ring-offset-2 lg:flex"
             >
               <Icon name="info-circle" size="20" />
             </span>
-            <div class="flex flex-1 flex-col gap-1 text-sm md:flex-row">
+            <div class="flex flex-1 flex-col gap-1 text-sm lg:flex-row">
               <span class="font-medium">Your storefront isn't live yet! </span> Complete your bank
               details, delivery options, and KYC to start selling online.
             </div>

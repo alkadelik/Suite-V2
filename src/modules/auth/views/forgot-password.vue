@@ -1,6 +1,11 @@
 <template>
   <div class="flex flex-col gap-8">
-    <BackButton icon="back-arrow" label="Back to Login" to="/login" class="!text-core-700" />
+    <BackButton
+      icon="back-arrow"
+      label="Back to Login"
+      :to="`/login${redirectStr}`"
+      class="!text-core-700"
+    />
 
     <SectionHeader
       title="Forgot Password"
@@ -31,6 +36,7 @@ import * as yup from "yup"
 import SectionHeader from "@components/SectionHeader.vue"
 import { toast } from "@/composables/useToast"
 import AppButton from "@components/AppButton.vue"
+import { computed } from "vue"
 
 const router = useRouter()
 const { mutate: forgotPassword, isPending } = useForgotPassword()
@@ -39,11 +45,19 @@ const schema = yup.object({
   email: yup.string().email("Enter a valid email address").required(),
 })
 
+const redirectStr = computed(() =>
+  router.currentRoute.value.query.redirect
+    ? `?redirect=${router.currentRoute.value.query.redirect as string}`
+    : "",
+)
+
 const onSubmit = (values: { email: string }) => {
   forgotPassword(values, {
     onSuccess: () => {
       toast.success("Password reset OTP sent to your email address.")
-      router.push(`/reset-password?email=${encodeURIComponent(values.email)}`)
+      router.push(
+        `/reset-password?email=${encodeURIComponent(values.email)}${redirectStr.value?.length ? redirectStr.value.replace("?", "&") : ""}`,
+      )
     },
     onError: displayError,
   })
