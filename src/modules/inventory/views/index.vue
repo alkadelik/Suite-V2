@@ -8,7 +8,8 @@
       />
     </div>
 
-    <div class="hidden items-center justify-between">
+    <!-- Page content - always visible -->
+    <div class="hidden items-center justify-between md:flex">
       <h4 class="!font-outfit text-core-700 mb-2 text-xl font-semibold">Your product stats</h4>
     </div>
     <PageSummaryCards
@@ -31,37 +32,37 @@
 
     <!-- Products Tab Content -->
     <template v-if="activeTab === 'products'">
-      <EmptyState
-        v-if="!isGettingProducts && products?.data?.results.length === 0"
-        icon="box"
-        title="No products found"
-        description="Start adding products to manage your inventory."
-        action-label="Add Product"
-        action-icon="add"
-        @action="showProductFormDrawer = true"
-      />
-      <div v-else class="mt-4 space-y-4 rounded-xl border-gray-200 pt-3 md:border md:bg-white">
+      <!-- Always visible content with search bar -->
+      <div class="mt-4 space-y-4 rounded-xl border-gray-200 pt-3 md:border md:bg-white">
         <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
           <h3 class="mb-2 hidden items-center gap-1 text-lg font-semibold md:mb-0 md:flex">
             All Products <Chip :label="String(products?.data?.count || 0)" />
           </h3>
           <div class="flex items-center gap-2">
             <TextField
+              :model-value="search"
+              @update:model-value="(val) => (search = val)"
               left-icon="search-lg"
               size="md"
               class="flex-1"
               placeholder="Search by product name or category"
-              :model-value="search"
-              @update:model-value="(val) => (search = val)"
             />
             <AppButton
               icon="filter-lines"
               size="sm"
               color="alt"
               label="Filter"
+              @click="showFilterDrawer = true"
               class="!hidden md:!inline-flex"
             />
-            <AppButton icon="filter-lines" size="sm" color="alt" label="" class="md:hidden" />
+            <AppButton
+              icon="filter-lines"
+              size="sm"
+              color="alt"
+              label=""
+              @click="showFilterDrawer = true"
+              class="md:hidden"
+            />
             <AppButton
               icon="add"
               size="sm"
@@ -79,14 +80,34 @@
           </div>
         </div>
 
+        <!-- Empty State: Only show when no products exist AND no search/filters are active -->
+        <EmptyState
+          v-if="
+            !isFetching &&
+            filteredProducts.length === 0 &&
+            !search &&
+            activeFilters.categories.length === 0 &&
+            activeFilters.status === null &&
+            activeFilters.subCategory === null
+          "
+          icon="box"
+          title="No products found"
+          description="Start adding products to manage your inventory."
+          action-label="Add Product"
+          action-icon="add"
+          @action="showProductFormDrawer = true"
+        />
+
+        <!-- DataTable: Show when loading OR when there are results OR when search/filters are active -->
         <DataTable
-          :data="products?.data?.results || []"
+          v-else
+          :data="filteredProducts"
           :columns="PRODUCT_COLUMNS"
           :loading="isFetching"
           :show-pagination="true"
           :items-per-page="itemsPerPage"
           :total-items-count="products?.data?.count || 0"
-          :total-page-count="Math.ceil(products?.data?.count / itemsPerPage) || 1"
+          :total-page-count="Math.ceil((products?.data?.count || 0) / itemsPerPage) || 1"
           :server-pagination="true"
           :enable-row-selection="true"
           @row-click="handleRowClick"
@@ -175,12 +196,14 @@
 
     <!-- drawers  -->
     <ProductFormDrawer
+      v-if="showProductFormDrawer"
       ref="productFormDrawerRef"
       v-model="showProductFormDrawer"
       @refresh="refetchProducts"
       @add-category="showAddCategoryModal = true"
     />
     <ProductEditDrawer
+      v-if="showProductEditDrawer"
       ref="productEditDrawerRef"
       v-model="showProductEditDrawer"
       :product="product"
@@ -189,11 +212,14 @@
       @refresh="refetchProducts"
       @add-category="showAddCategoryModal = true"
     />
+    <FilterDrawer
+      v-if="showFilterDrawer || hasOpenedFilterDrawer"
+      v-model="showFilterDrawer"
+      @apply="handleApplyFilters"
+    />
 
-    <!-- Add Category Modal -->
+    <!-- Modals -->
     <AddCategoryModal v-model="showAddCategoryModal" @success="handleCategoryCreated" />
-
-    <!-- Receive Request Modal -->
     <ReceiveRequestModal
       v-model="showReceiveRequestModal"
       :open="showReceiveRequestModal"
@@ -201,8 +227,6 @@
       @close="showReceiveRequestModal = false"
       @success="handleRequestSuccess"
     />
-
-    <!-- Manage Stock Modal -->
     <ManageStockModal
       v-if="productDetailsForStock?.data"
       :open="showManageStockModal"
@@ -236,7 +260,8 @@ import { formatPriceRange } from "@/utils/format-currency"
 import SectionHeader from "@components/SectionHeader.vue"
 import PageSummaryCards from "@components/PageSummaryCards.vue"
 import Tabs from "@components/Tabs.vue"
-import { useGetProducts, useDeleteProduct, useGetProduct } from "../api"
+import FilterDrawer from "../components/FilterDrawer.vue"
+import { useGetProducts, useDeleteProduct, useGetProduct, useGetCategories } from "../api"
 import ProductAvatar from "@components/ProductAvatar.vue"
 import EmptyState from "@components/EmptyState.vue"
 import { displayError } from "@/utils/error-handler"
@@ -256,16 +281,10 @@ const combinedParams = computed(() => ({
   limit: itemsPerPage.value,
   ...(debouncedSearch.value ? { name: debouncedSearch.value } : {}),
 }))
-const {
-  data: products,
-  isPending: isGettingProducts,
-  isFetching,
-  refetch: refetchProducts,
-} = useGetProducts(combinedParams)
 
-// Only show loading state on initial load, not on background refetches
-// const showTableLoading = computed(() => isGettingProducts.value && !products.value)
+const { data: products, isFetching, refetch: refetchProducts } = useGetProducts(combinedParams)
 const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct()
+const { data: categories } = useGetCategories()
 
 const settingsStore = useSettingsStore()
 const inventoryStore = useInventoryStore()
@@ -304,8 +323,21 @@ const tabs = computed(() => [
 const showDeleteConfirmationModal = ref(false)
 const showProductFormDrawer = ref(false)
 const showProductEditDrawer = ref(false)
+const showFilterDrawer = ref(false)
+const hasOpenedFilterDrawer = ref(false)
 const product = ref<TProduct | null>(null)
 const showAddCategoryModal = ref(false)
+
+// Active filters
+const activeFilters = ref<{
+  categories: string[]
+  status: string | null
+  subCategory: string | null
+}>({
+  categories: [],
+  status: null,
+  subCategory: null,
+})
 const productFormDrawerRef = ref<{
   setCategoryFromModal: (category: { label: string; value: string }) => void
 } | null>(null)
@@ -610,5 +642,84 @@ watch(showProductEditDrawer, (isOpen) => {
     variantForEdit.value = null
     router.replace({ name: "Inventory", query: {} })
   }
+})
+
+// Track if filter drawer has ever been opened to prevent mount flash
+watch(showFilterDrawer, (isOpen) => {
+  if (isOpen) {
+    hasOpenedFilterDrawer.value = true
+  }
+})
+
+// Create a mapping of category UID to category name
+const categoryUidToNameMap = computed(() => {
+  const map: Record<string, string> = {}
+  const categoryList = categories.value?.data?.results || []
+  categoryList.forEach((category: { uid: string; name: string }) => {
+    map[category.uid] = category.name
+  })
+  return map
+})
+
+// Handle filter application
+const handleApplyFilters = (filters: {
+  categories: string[]
+  status: string | null
+  subCategory: string | null
+}) => {
+  activeFilters.value = filters
+}
+
+// Filtered products based on active filters (client-side filters only, search is server-side)
+const filteredProducts = computed(() => {
+  const productResults = products.value?.data?.results || []
+
+  // If no filters are active, return all products
+  const hasActiveFilters =
+    activeFilters.value.categories.length > 0 ||
+    activeFilters.value.status !== null ||
+    activeFilters.value.subCategory !== null
+
+  if (!hasActiveFilters) {
+    return productResults
+  }
+
+  return productResults.filter((product: TProduct) => {
+    // Category filter
+    if (activeFilters.value.categories.length > 0) {
+      // Convert category UIDs to names
+      const selectedCategoryNames = activeFilters.value.categories.map(
+        (uid) => categoryUidToNameMap.value[uid],
+      )
+
+      if (!product.category || !selectedCategoryNames.includes(product.category)) {
+        return false
+      }
+    }
+
+    // Status filter
+    if (activeFilters.value.status !== null) {
+      const isInStock = product.total_stock > 0
+      if (activeFilters.value.status === "in_stock" && !isInStock) {
+        return false
+      }
+      if (activeFilters.value.status === "out_of_stock" && isInStock) {
+        return false
+      }
+    }
+
+    // Sub-category filter (simple vs complex)
+    if (activeFilters.value.subCategory !== null) {
+      const isSimple = product.variants_count === 1
+      if (activeFilters.value.subCategory === "simple" && !isSimple) {
+        return false
+      }
+      if (activeFilters.value.subCategory === "complex" && isSimple) {
+        return false
+      }
+    }
+
+    return true
+  })
 })
 </script>

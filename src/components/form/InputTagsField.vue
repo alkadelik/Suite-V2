@@ -324,10 +324,33 @@ const handleKeydown = (event: KeyboardEvent) => {
 
 const handleInput = (event: Event) => {
   const target = event.target as HTMLInputElement
-  const value = target.value
+  let value = target.value
 
-  // Skip comma handling for number inputs (weight attribute)
-  if (props.isWeightAttribute) return
+  // For weight attribute, allow only valid numeric characters
+  if (props.isWeightAttribute && value) {
+    // Allow only digits, decimal point, and minus sign (at the start only)
+    let sanitized = value.replace(/[^0-9.-]/g, "")
+
+    // Ensure only one decimal point
+    const decimalCount = (sanitized.match(/\./g) || []).length
+    if (decimalCount > 1) {
+      const parts = sanitized.split(".")
+      sanitized = parts[0] + "." + parts.slice(1).join("")
+    }
+
+    // Ensure minus sign only at the start
+    if (sanitized.includes("-")) {
+      const minusCount = (sanitized.match(/-/g) || []).length
+      if (minusCount > 1 || sanitized.indexOf("-") > 0) {
+        sanitized = sanitized.replace(/-/g, "")
+      }
+    }
+
+    value = sanitized
+    target.value = sanitized
+    inputValue.value = sanitized
+    return
+  }
 
   // Auto-add tag when comma is typed (in case keydown doesn't catch it)
   if (value.includes(",")) {

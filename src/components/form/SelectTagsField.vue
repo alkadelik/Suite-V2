@@ -439,34 +439,14 @@ const highlightPrevious = () => {
   if (highlightedIndex.value > 0) highlightedIndex.value--
 }
 
-// Outside click handler
 const onClickOutside = (event: MouseEvent) => {
   if (
     open.value &&
     selectContainer.value &&
     !selectContainer.value.contains(event.target as Node)
   ) {
-    const target = event.target as HTMLElement
-
-    if (isInsideModal.value) {
-      const isClickOnModalOverlay =
-        target.classList.contains("fixed") &&
-        target.classList.contains("inset-0") &&
-        (target.classList.contains("bg-black") || target.style.backgroundColor)
-
-      const isModalCloseButton =
-        target.closest('[class*="close"]') ||
-        target.closest('button[aria-label*="close"]') ||
-        target.closest('button[title*="close"]')
-
-      if (isClickOnModalOverlay || isModalCloseButton) {
-        open.value = false
-        search.value = ""
-      }
-    } else {
-      open.value = false
-      search.value = ""
-    }
+    open.value = false
+    search.value = ""
   }
 }
 

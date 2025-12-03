@@ -37,6 +37,10 @@
       :show-pagination="false"
       :enable-row-selection="true"
     >
+      <template #cell:image="{ item }">
+        <ProductAvatar :url="item.image || undefined" size="sm" shape="rounded" />
+      </template>
+
       <template #cell:sku="{ item }">
         <div class="flex flex-wrap gap-1">
           <Chip
@@ -102,6 +106,7 @@ import DataTable from "@components/DataTable.vue"
 import TextField from "@components/form/TextField.vue"
 import AppButton from "@components/AppButton.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
+import ProductAvatar from "@components/ProductAvatar.vue"
 import ProductVariantCard from "./ProductVariantCard.vue"
 import { formatCurrency } from "@/utils/format-currency"
 import type { IProductDetails, IProductVariantDetails } from "../types"

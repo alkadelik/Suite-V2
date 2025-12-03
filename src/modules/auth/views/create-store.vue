@@ -119,7 +119,11 @@ const validationSchema = yup.object().shape({
     .string()
     .required("Store name is required")
     .min(2, "Store name must be at least 2 characters")
-    .max(50, "Store name cannot exceed 50 characters"),
+    .max(50, "Store name cannot exceed 50 characters")
+    .matches(
+      /^[a-zA-Z\s'-]+$/,
+      "Store name cannot contain numbers or special characters (except hyphens and apostrophes)",
+    ),
   slug: yup
     .string()
     .required("Store slug is required")

@@ -17,13 +17,17 @@
         <div class="flex flex-col gap-2">
           <p class="truncate text-sm font-semibold">{{ product.name }}</p>
           <div class="flex gap-3">
-            <div class="flex">
+            <div v-if="formattedPrice" class="flex items-center">
+              <Icon name="moneys" class="text-core-600 me-1 size-4" />
+              <span class="text-sm font-bold">{{ formattedPrice }}</span>
+            </div>
+            <div class="flex items-center">
               <Icon name="cube" class="text-core-600 me-1 size-4" />
               <span class="text-sm font-bold">{{ product.total_stock }}</span>
             </div>
-            <div class="flex">
-              <Icon name="moneys" class="text-core-600 me-1 size-4" />
-              <span class="text-sm font-bold">{{ formatPriceRange(product.price) }}</span>
+            <div class="flex items-center">
+              <Icon name="shapes" class="text-core-600 me-1 size-4" />
+              <span class="text-sm font-bold">{{ product.variants_count }}</span>
             </div>
           </div>
         </div>
@@ -68,8 +72,8 @@ import { computed } from "vue"
 import Icon from "@components/Icon.vue"
 import Chip from "@components/Chip.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
+import { formatCurrency } from "@/utils/format-currency"
 import type { TProduct } from "../types"
-import { formatPriceRange } from "@/utils/format-currency"
 
 interface Props {
   product: TProduct
@@ -94,5 +98,21 @@ const stockStatus = computed(() => {
   } else {
     return { label: "In Stock", color: "success" as const }
   }
+})
+
+const formattedPrice = computed(() => {
+  if (!props.product.price) return null
+
+  if (props.product.price.includes(" - ")) {
+    const [minPrice, maxPrice] = props.product.price.split(" - ").map((p) => Number(p.trim()))
+
+    if (minPrice === maxPrice) {
+      return formatCurrency(minPrice)
+    }
+
+    return `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`
+  }
+
+  return formatCurrency(Number(props.product.price))
 })
 </script>

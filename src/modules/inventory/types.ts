@@ -363,7 +363,11 @@ export interface IProductAttributeFormPayload {
   is_active: boolean
 }
 
-// Attribute value
+export interface IAttributeValueItem {
+  value: string
+  sort_order: number
+}
+
 export interface IProductAttributeValuePayload {
   value: string
   sort_order: number

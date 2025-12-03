@@ -57,7 +57,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue"
+import { computed } from "vue"
 import * as yup from "yup"
 import { toast } from "@/composables/useToast"
 import AppButton from "@/components/AppButton.vue"
@@ -65,12 +65,11 @@ import Modal from "@/components/Modal.vue"
 import AppForm from "@/components/form/AppForm.vue"
 import FormField from "@/components/form/FormField.vue"
 import IconHeader from "@/components/IconHeader.vue"
-import { LOCATIONS } from "../constants"
 import { ROLE_OPTIONS } from "@modules/shared/constants"
-import { ISelectOption } from "@modules/shared/types"
 import { IInvitePayload } from "../types"
 import { useInviteUserToLocation } from "../api"
 import { displayError } from "@/utils/error-handler"
+import { useSettingsStore } from "../store"
 
 interface FormValues {
   email: string
@@ -85,8 +84,8 @@ const emit = defineEmits<{
 }>()
 
 const { mutate: inviteUser, isPending } = useInviteUserToLocation()
+const settingsStore = useSettingsStore()
 
-// Dynamic validation schema
 const schema = computed(() => {
   return yup.object({
     email: yup.string().email().required(),
@@ -95,10 +94,9 @@ const schema = computed(() => {
   })
 })
 
-// Mock data for development
-const locationOptions = ref<ISelectOption[]>(
-  LOCATIONS.map((loc) => ({ label: loc.name, value: loc.uid })),
-)
+const locationOptions = computed(() => {
+  return settingsStore.locations?.map((loc) => ({ label: loc.name, value: loc.uid })) || []
+})
 
 // Filter out "Owner" role from the options
 const filteredRoleOptions = computed(() => {
@@ -108,14 +106,11 @@ const filteredRoleOptions = computed(() => {
 })
 
 const onSubmit = (values: FormValues) => {
-  // Transform the form data to the required payload format
   const payload: IInvitePayload = {
     email: values.email,
     roles: values.roles,
     locations: values.locations,
   }
-
-  console.log("Submitting invite member payload:", payload)
 
   inviteUser(payload, {
     onSuccess: () => {

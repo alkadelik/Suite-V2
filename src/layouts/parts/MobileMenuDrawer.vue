@@ -22,15 +22,21 @@ const storeDetails = computed(() => useSettingsStore().storeDetails)
 const currentLocation = computed(() => useSettingsStore().activeLocation)
 const user = computed(() => useAuthStore().user)
 
-const quickActions = [
-  { label: "Customers", icon: "people", to: "/customers" },
-  { label: "Popups", icon: "calendar-tick", to: "/popups" },
-  { label: "Expenses", icon: "receipt-text", to: "/expenses" },
-  { label: "Reports", icon: "pie-chart", to: "/reports" },
-  { label: "Discounts", icon: "tag", to: "#" },
-  { label: "Support", icon: "life-buoy", to: "#" },
-  { label: "Settings", icon: "setting", to: "/settings" },
-]
+const isHQ = computed(() => currentLocation.value?.is_hq ?? true)
+
+const quickActions = computed(() => {
+  const allActions = [
+    { label: "Customers", icon: "people", to: "/customers" },
+    { label: "Popups", icon: "calendar-tick", to: "/popups", hqOnly: true },
+    { label: "Expenses", icon: "receipt-text", to: "/expenses" },
+    { label: "Reports", icon: "pie-chart", to: "/reports" },
+    { label: "Discounts", icon: "tag", to: "#" },
+    { label: "Support", icon: "life-buoy", to: "#" },
+    { label: "Settings", icon: "setting", to: "/settings" },
+  ]
+
+  return allActions.filter((action) => !action.hqOnly || isHQ.value)
+})
 </script>
 
 <template>

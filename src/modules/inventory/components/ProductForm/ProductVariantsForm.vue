@@ -205,12 +205,11 @@ const onVariantNameChange = (
   value: string | number | Record<string, unknown> | null,
 ) => {
   if (!variants.value) return
-  // Store the entire object/value as-is
   variants.value[index].name = typeof value === "number" ? value.toString() : value
+  variants.value[index].values = []
 
   const variantValue = getVariantValue(index)
 
-  // Add new custom variant to attributes if it doesn't exist and it's not custom_type
   if (variantValue && variantValue !== "custom_type") {
     const existingAttr = PRODUCT_ATTRIBUTES.value.find(
       (attr) =>
@@ -224,7 +223,6 @@ const onVariantNameChange = (
     }
   }
 
-  // Clear custom name when switching away from custom type
   if (variantValue !== "custom_type" && variants.value) {
     variants.value[index].customName = ""
   }

@@ -6,6 +6,11 @@ import { displayError } from "@/utils/error-handler"
  * API Mutation Functions Type
  * Type-safe wrappers for API mutations
  */
+interface IAttributeValueItem {
+  value: string
+  sort_order: number
+}
+
 interface IApiMutations {
   createAttribute: (
     payload: {
@@ -22,9 +27,8 @@ interface IApiMutations {
   ) => void
   createAttributeValues: (
     payload: {
-      value: string
-      sort_order: number
       attributeUid: string
+      values: IAttributeValueItem[]
     },
     options: {
       onSuccess: (response: unknown) => void
@@ -110,7 +114,6 @@ export function useVariantProcessing(
               reject(new Error(`No UID returned for custom attribute: ${customName}`))
               return
             }
-            console.log(`Custom attribute "${customName}" created with UID: ${uid}`)
             resolve(uid)
           },
           onError: (error: unknown) => {
@@ -123,43 +126,66 @@ export function useVariantProcessing(
     })
   }
 
-  /**
-   * Create attribute value and return its UID
-   * Wraps API call in Promise for async/await usage
-   */
-  const createValueAndGetUid = async (
-    value: string | { label: string; value: string },
+  const createValuesInBulk = async (
+    valuesToCreate: Array<{
+      label: string
+      value: string | { label: string; value: string }
+      sortOrder: number
+    }>,
     attributeUid: string,
-    sortOrder: number,
-  ): Promise<string> => {
-    // For weight attributes, we want to send the label (e.g., "1 kg") instead of the value (e.g., "1")
-    // For other attributes, label and value are the same
-    const valueString =
-      typeof value === "object" && value !== null && "label" in value
-        ? value.label
-        : typeof value === "string"
-          ? value
-          : String(value)
+  ): Promise<Array<{ label: string; uid: string }>> => {
+    const bulkPayload = valuesToCreate.map((item) => {
+      const valueString =
+        typeof item.value === "object" && item.value !== null && "label" in item.value
+          ? item.value.label
+          : typeof item.value === "string"
+            ? item.value
+            : String(item.value)
 
-    console.log(`Calling createAttributeValues for "${valueString}"`)
+      return {
+        value: valueString,
+        sort_order: item.sortOrder,
+      }
+    })
 
     return new Promise((resolve, reject) => {
       createAttributeValues(
         {
-          value: valueString,
-          sort_order: sortOrder,
           attributeUid: attributeUid,
+          values: bulkPayload,
         },
         {
           onSuccess: (response: unknown) => {
-            const uid = extractUid(response)
-            if (!uid) {
-              reject(new Error(`No UID returned for value: ${valueString}`))
-              return
+            try {
+              const responseData = (
+                response as { data: { data: Array<{ uid: string; value: string }> } }
+              )?.data?.data
+
+              if (!Array.isArray(responseData)) {
+                reject(new Error("Invalid response format from bulk create"))
+                return
+              }
+
+              const results = valuesToCreate.map((item, index) => {
+                const responseItem = responseData[index]
+                if (!responseItem?.uid) {
+                  throw new Error(`No UID returned for value at index ${index}`)
+                }
+                return {
+                  label: item.label,
+                  uid: responseItem.uid,
+                }
+              })
+
+              resolve(results)
+            } catch (error) {
+              console.error("Failed to process bulk create response:", error)
+              reject(error instanceof Error ? error : new Error(String(error)))
             }
-            resolve(uid)
           },
           onError: (error: unknown) => {
+            console.error("Bulk create API call failed:", error)
+            displayError(error)
             reject(new Error(String(error)))
           },
         },
@@ -167,10 +193,6 @@ export function useVariantProcessing(
     })
   }
 
-  /**
-   * Process all values for a variant
-   * Skips values that already have UIDs (idempotent)
-   */
   const processVariantValues = async (
     variant: IVariantConfiguration,
     attributeUid: string,
@@ -182,40 +204,24 @@ export function useVariantProcessing(
     }
 
     const processedValues: Array<{ label: string; value: string }> = []
-    let valuesToProcess = 0
+    const valuesToCreate: Array<{
+      label: string
+      value: string | { label: string; value: string }
+      sortOrder: number
+    }> = []
 
-    // Identify which values need processing
-    for (const value of values) {
-      const isObject =
-        typeof value === "object" && value !== null && "label" in value && "value" in value
-      const hasUID = isObject && isValidUuid(value.value) && value.value !== "custom_type"
-
-      if (hasUID) {
-        // Already processed, keep as-is
-        processedValues.push({
-          label: value.label,
-          value: value.value,
-        })
-        console.log(`Using existing UID for value "${value.label}": ${value.value}`)
-      } else {
-        valuesToProcess++
-      }
-    }
-
-    if (valuesToProcess > 0) {
-      console.log(`Creating ${valuesToProcess} new values for attribute: ${attributeUid}`)
-    }
-
-    // Process values that need API calls
     for (let index = 0; index < values.length; index++) {
       const value = values[index]
       const isObject =
         typeof value === "object" && value !== null && "label" in value && "value" in value
       const hasUID = isObject && isValidUuid(value.value) && value.value !== "custom_type"
 
-      if (!hasUID) {
-        console.log(`Processing value ${index + 1}/${values.length}:`, value)
-
+      if (hasUID) {
+        processedValues.push({
+          label: value.label,
+          value: value.value,
+        })
+      } else {
         const labelString =
           typeof value === "object" && value !== null && "label" in value
             ? value.label
@@ -223,26 +229,31 @@ export function useVariantProcessing(
               ? value
               : String(value)
 
-        try {
-          const valueUid = await createValueAndGetUid(value, attributeUid, index + 1)
-
-          processedValues.push({
-            label: labelString,
-            value: valueUid,
-          })
-
-          console.log(`Value "${labelString}" processed successfully`)
-        } catch (error) {
-          console.error(`[FAIL] Failed to process value at index ${index}:`, error)
-          throw new Error(`Failed to create value "${labelString}": ${String(error)}`)
-        }
+        valuesToCreate.push({
+          label: labelString,
+          value: value,
+          sortOrder: index + 1,
+        })
       }
     }
 
-    // Update variant with processed values
-    variant.values = processedValues.map((v) => ({ label: v.label, value: v.value }))
+    if (valuesToCreate.length > 0) {
+      try {
+        const createdValues = await createValuesInBulk(valuesToCreate, attributeUid)
 
-    console.log(`Finished processing values for attribute: ${attributeUid}`)
+        for (const created of createdValues) {
+          processedValues.push({
+            label: created.label,
+            value: created.uid,
+          })
+        }
+      } catch (error) {
+        console.error(`[FAIL] Failed to create values in bulk:`, error)
+        throw new Error(`Failed to create values: ${String(error)}`)
+      }
+    }
+
+    variant.values = processedValues.map((v) => ({ label: v.label, value: v.value }))
   }
 
   /**
@@ -260,8 +271,6 @@ export function useVariantProcessing(
         return
       }
 
-      // Create new attribute for custom types
-      console.log(`Creating custom attribute: "${customName}"`)
       attributeUid = await createAttributeAndGetUid(customName)
 
       // Update variant name with new attribute UID
@@ -275,17 +284,11 @@ export function useVariantProcessing(
         console.warn("Existing variant has no attribute UID, skipping")
         return
       }
-      console.log(`Processing existing attribute: ${attributeUid}`)
     }
 
-    // Process all values for this variant
     await processVariantValues(variant, attributeUid)
   }
 
-  /**
-   * Process all variants in configuration
-   * Sequential processing to maintain data integrity
-   */
   const processVariantConfiguration = async (): Promise<void> => {
     const variantsToProcess = variantConfiguration.value.filter(
       (variant) => variant.values.length > 0,
@@ -295,25 +298,16 @@ export function useVariantProcessing(
       return
     }
 
-    console.log(`Processing ${variantsToProcess.length} variants...`)
-
-    // Process each variant sequentially
     for (const variant of variantsToProcess) {
       await processVariant(variant)
     }
-
-    console.log("All variants processed successfully")
   }
 
   return {
-    // Helper functions
     extractUid,
     getVariantValue,
     isValidUuid,
-
-    // Processing functions
     createAttributeAndGetUid,
-    createValueAndGetUid,
     processVariantValues,
     processVariant,
     processVariantConfiguration,

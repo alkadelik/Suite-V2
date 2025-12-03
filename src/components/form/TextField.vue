@@ -218,6 +218,31 @@ const handleInput = (event: Event) => {
   const target = event.target as HTMLInputElement
   let value = target.value
 
+  // For number inputs, allow only valid numeric characters
+  if (props.type === "number" && value) {
+    // Allow only digits, decimal point, and minus sign (at the start only)
+    // Remove any characters that are not digits, decimal point, or minus
+    let sanitized = value.replace(/[^0-9.-]/g, "")
+
+    // Ensure only one decimal point
+    const decimalCount = (sanitized.match(/\./g) || []).length
+    if (decimalCount > 1) {
+      const parts = sanitized.split(".")
+      sanitized = parts[0] + "." + parts.slice(1).join("")
+    }
+
+    // Ensure minus sign only at the start
+    if (sanitized.includes("-")) {
+      const minusCount = (sanitized.match(/-/g) || []).length
+      if (minusCount > 1 || sanitized.indexOf("-") > 0) {
+        sanitized = sanitized.replace(/-/g, "")
+      }
+    }
+
+    value = sanitized
+    target.value = sanitized // Update the input value to reflect the sanitized value
+  }
+
   // For tel inputs, prefix with +234
   if (props.type === "tel" && value) {
     // Remove any existing +234 prefix to avoid duplication

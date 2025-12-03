@@ -39,7 +39,9 @@
             :class="{
               'border-t border-dashed border-gray-300': task.id === 3, // 3rd item
               'border-b border-dashed border-gray-300': task.id === 4, // 4th item
+              'cursor-pointer md:cursor-default': !task.completed,
             }"
+            @click="!task.completed ? task.action() : null"
           >
             <div class="rounded-xl bg-gray-200 p-2" :class="{ 'opacity-30': task.completed }">
               <Icon :name="task.icon" size="20" />
@@ -54,16 +56,16 @@
               <AppButton
                 v-if="task.isButton"
                 :label="task.buttonLabel"
-                @click="task.action"
+                @click.stop="task.action"
                 class="!hidden w-40 md:!inline-flex"
               />
               <Icon
                 v-if="task.isButton"
                 name="arrow-right"
-                @click="task.action"
-                class="text-primary-500 inline-flex cursor-pointer md:hidden!"
+                @click.stop="task.action"
+                class="text-primary-500 inline-flex cursor-pointer md:hidden"
               />
-              <Switch v-else @click="task.action" />
+              <Switch v-else @click.stop="task.action" />
             </div>
             <Icon v-else name="tick-circle" class="!size-7 text-green-500 md:!size-10" />
           </div>

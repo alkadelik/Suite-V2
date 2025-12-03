@@ -8,7 +8,7 @@
       <img
         v-if="url && !loading"
         :src="url"
-        :alt="name"
+        :alt="name || 'Product image'"
         :class="imageClasses"
         :style="{ height: `${sizeValue}px`, width: `${sizeValue}px` }"
         loading="lazy"
@@ -22,7 +22,7 @@
       </div>
     </div>
 
-    <div :class="textClasses" :style="maxWidth ? { maxWidth } : {}">
+    <div v-if="name" :class="textClasses" :style="maxWidth ? { maxWidth } : {}">
       <h4 :class="nameClasses">{{ name }}</h4>
       <p v-if="extraText" :class="extraTextClasses">{{ extraText }}</p>
     </div>
@@ -43,8 +43,8 @@ type AvatarStatus = "online" | "offline" | "away" | "busy"
 interface AvatarProps {
   /** Avatar image URL */
   url?: string
-  /** User's name (required for alt text and initials) */
-  name: string
+  /** User's name (optional for alt text and initials) */
+  name?: string
   /** Additional text to display next to avatar */
   extraText?: string
   /** Size of the avatar - preset or custom number */

@@ -24,7 +24,7 @@
 
     <div class="mt-8 flex flex-col gap-3 md:flex-row">
       <div class="w-full rounded-xl border border-gray-200 bg-white p-4 shadow-sm md:w-7/12">
-        <div class="-mb-4 flex items-center justify-end">
+        <div v-if="isHQ" class="-mb-4 flex items-center justify-end">
           <AppButton
             variant="text"
             color="alt"
@@ -49,7 +49,7 @@
         </div>
       </div>
       <div class="w-full rounded-xl border border-gray-200 bg-white p-4 shadow-sm md:w-5/12">
-        <div v-if="!hasVaryingWeights" class="-mb-4 flex items-center justify-end">
+        <div v-if="isHQ && !hasVaryingWeights" class="-mb-4 flex items-center justify-end">
           <AppButton
             variant="text"
             color="alt"
@@ -127,6 +127,7 @@ import Icon from "@components/Icon.vue"
 import Chip from "@components/Chip.vue"
 import AppButton from "@components/AppButton.vue"
 import InfoBox from "@components/InfoBox.vue"
+import { useSettingsStore } from "@modules/settings/store"
 
 interface Props {
   product: IProductDetails
@@ -148,6 +149,9 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+
+const settingsStore = useSettingsStore()
+const isHQ = computed(() => settingsStore.activeLocation?.is_hq ?? true)
 
 const productPrice = computed(() => {
   if (!props.product.variants.length) return "-"

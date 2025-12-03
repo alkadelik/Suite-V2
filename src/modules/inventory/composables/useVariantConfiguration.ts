@@ -223,18 +223,12 @@ export function useVariantConfiguration(
       return []
     }
 
-    console.log("Generating variant combinations...")
-
-    // Get all possible combinations
     const combinations = generateCombinations(processedVariants)
 
-    // Store existing variants for matching
     const existingVariants = [...variants.value]
 
-    // Detect deleted variants
     const deletedVariants = detectDeletedVariants(existingVariants, combinations)
 
-    // Get default dimensions from first existing variant
     const defaultDimensions =
       existingVariants.length > 0
         ? {
@@ -289,11 +283,6 @@ export function useVariantConfiguration(
             length: dimensionMapping.length,
             width: dimensionMapping.width,
           }
-
-          console.log(
-            `Auto-populated dimensions for weight ${weightValue}kg:`,
-            dimensionMapping.dimension.shortLabel,
-          )
         }
       }
 
@@ -325,11 +314,6 @@ export function useVariantConfiguration(
 
       variants.value.push(newVariant)
     })
-
-    console.log(`Generated ${variants.value.length} variant combinations`)
-    if (deletedVariants.length > 0) {
-      console.log(`Detected ${deletedVariants.length} deleted variants`)
-    }
 
     return deletedVariants
   }

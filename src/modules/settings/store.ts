@@ -21,14 +21,12 @@ export const useSettingsStore = defineStore(
     }
 
     const setActiveLocation = (loc: TLocation | null) => {
-      console.log("Setting active location to:", loc)
       if (loc) {
         activeLocation.value = loc
       }
     }
 
     const setPlanUpgradeModal = (value: boolean) => {
-      console.log("Setting plan upgrade modal to:", value)
       showPlanUpgradeModal.value = value
     }
 

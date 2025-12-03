@@ -1,14 +1,20 @@
 <template>
   <div class="bg-core-25 border-core-300 rounded-xl border p-3">
-    <div class="flex items-start justify-between gap-2">
-      <div class="flex flex-wrap gap-1">
-        <Chip
-          v-for="attr in variant.attributes"
-          :key="attr.uid"
-          :label="attr.attribute_value"
-          color="primary"
-          size="sm"
-        />
+    <div class="flex items-start justify-between gap-3">
+      <div class="flex items-start gap-3">
+        <ProductAvatar :url="variant.image || undefined" size="sm" shape="rounded" />
+        <div class="flex flex-col gap-1">
+          <div class="flex flex-wrap gap-1">
+            <Chip
+              v-for="attr in variant.attributes"
+              :key="attr.uid"
+              :label="attr.attribute_value"
+              color="primary"
+              size="sm"
+            />
+          </div>
+          <p class="text-sm font-semibold">{{ formatCurrency(Number(variant.price)) }}</p>
+        </div>
       </div>
       <DropdownMenu
         :items="variantActionItems"
@@ -23,8 +29,6 @@
         </template>
       </DropdownMenu>
     </div>
-
-    <p class="mt-2 text-sm font-semibold">{{ formatCurrency(Number(variant.price)) }}</p>
 
     <hr class="border-core-300 my-2" />
 
@@ -49,6 +53,7 @@
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
+import ProductAvatar from "@components/ProductAvatar.vue"
 import { formatCurrency } from "@/utils/format-currency"
 import type { IProductVariantDetails } from "../types"
 

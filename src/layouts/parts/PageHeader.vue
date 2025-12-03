@@ -16,8 +16,7 @@ const title = computed(() => {
   return "Page"
 })
 
-// Get product count from store
-const isInventoryPage = computed(() => route.path.startsWith("/inventory"))
+const isInventoryPage = computed(() => route.path === "/inventory")
 const productCount = computed(() => inventoryStore.productCount)
 </script>
 

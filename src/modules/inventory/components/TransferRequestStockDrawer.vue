@@ -72,6 +72,7 @@
         label="Select Location"
         type="radio"
         :radio-options="locationOptions"
+        orientation="vertical"
         required
       />
     </div>
@@ -195,7 +196,13 @@ const { handleSubmit, meta, resetForm } = useForm<FormValues>({
       .number()
       .typeError("Please enter a valid number")
       .required("Quantity is required")
-      .positive("Quantity must be positive"),
+      .positive("Quantity must be positive")
+      .test("max-stock", "Quantity cannot exceed available stock", function (value) {
+        if (props.type === "transfer") {
+          return value <= stockLeft.value
+        }
+        return true
+      }),
     note: yup.string().required("Notes are required"),
   }),
   initialValues: {
