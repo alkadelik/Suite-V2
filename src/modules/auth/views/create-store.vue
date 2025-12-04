@@ -34,11 +34,7 @@
         />
         <p class="text-core-400 mt-1.5 inline-flex items-center text-xs font-medium">
           <Icon name="global" size="12" class="mr-1 text-gray-400" />
-          {{
-            environment === "staging"
-              ? "https://storefronts-staging.vercel.app/"
-              : "https://buy.leyyow.com/"
-          }}
+          {{ isStaging ? "https://storefronts-v2.vercel.app/" : "https://buy.leyyow.com/" }}
           <span class="text-core-600 font-semibold">
             {{ currentSlug || "[SLUG]" }}
           </span>
@@ -98,6 +94,7 @@ import type { IIndustriesApiResponse } from "@modules/shared/types"
 import IconHeader from "@components/IconHeader.vue"
 import { useGetStoreIndustries } from "@/modules/shared/api"
 import { useAuthStore } from "../store"
+import { isStaging } from "@/utils/others"
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -111,7 +108,6 @@ watch<IIndustriesApiResponse | undefined>(
     }
   },
 )
-const environment = import.meta.env.VITE_ENVIRONMENT
 
 // Form validation schema
 const validationSchema = yup.object().shape({
