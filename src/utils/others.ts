@@ -19,3 +19,6 @@ export const formatPhoneNumber = (phone: string) => {
   const cleaned = phone.replace(/\s+/g, "").replace(/^0+/, "")
   return phone.startsWith("+234") ? phone : `+234${cleaned}`
 }
+
+/** Checks whether app is in staging environment  */
+export const isStaging = String(import.meta.env.VITE_API_BASE_URL).includes("bpi")

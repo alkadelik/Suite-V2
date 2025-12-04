@@ -17,7 +17,7 @@ import { useGetStoreDetails, useGetStoreIndustries, useUpdateStoreDetails } from
 import { IStoreDetailsForm, IUpdateStoreDetailsPayload } from "../types"
 import AccountNumberSection from "../components/store-details/AccountNumberSection.vue"
 import { useGetLiveStatus } from "@modules/shared/api"
-import { formatPhoneNumber } from "@/utils/others"
+import { formatPhoneNumber, isStaging } from "@/utils/others"
 
 const validSchema = yup.object({
   store_name: yup.string().required("Store name is required"),
@@ -169,7 +169,7 @@ const watchStoreNameForSlug = (storeName: string) => {
             />
             <p class="text-core-400 mt-1.5 inline-flex items-center text-xs font-medium">
               <Icon name="global" size="12" class="mr-1 text-gray-400" />
-              {{ "https://buy.leyyow.com/" }}
+              {{ `https://${isStaging ? "storefronts-v2.vercel.app" : "buy.leyyow.com"}/` }}
               <span class="text-core-600 font-semibold">
                 {{ currentSlug || "[SLUG]" }}
               </span>

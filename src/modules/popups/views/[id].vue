@@ -15,7 +15,7 @@ import CreatePopupEventModal from "../components/CreatePopupEventModal.vue"
 import DeletePopupEvent from "../components/DeletePopupEvent.vue"
 import PopupSalesTab from "../components/popup-tabs/PopupSalesTab.vue"
 import PopupInventoryTab from "../components/popup-tabs/PopupInventoryTab.vue"
-import { clipboardCopy } from "@/utils/others"
+import { clipboardCopy, isStaging } from "@/utils/others"
 import { useMediaQuery } from "@vueuse/core"
 import Collapsible from "@components/Collapsible.vue"
 import { useSettingsStore } from "@modules/settings/store"
@@ -123,7 +123,9 @@ const storeDetails = computed(() => useSettingsStore().storeDetails)
             </p>
             <p class="flex items-center gap-2 text-sm">
               <span class="min-w-0 truncate">
-                {{ `www.buy.leyyow.com/${storeDetails?.slug}/events/${popupEvt?.slug}` }}
+                {{
+                  `${isStaging ? "www.storefronts-v2.vercel.app" : "www.buy.leyyow.com"}/${storeDetails?.slug}/events/${popupEvt?.slug}`
+                }}
               </span>
               <Icon
                 name="copy"
@@ -131,7 +133,7 @@ const storeDetails = computed(() => useSettingsStore().storeDetails)
                 class="flex-shrink-0 cursor-pointer"
                 @click="
                   clipboardCopy(
-                    `https://buy.leyyow.com/${storeDetails?.slug}/events/${popupEvt?.slug}`,
+                    `https://${isStaging ? 'storefronts-v2.vercel.app' : 'buy.leyyow.com'}/${storeDetails?.slug}/events/${popupEvt?.slug}`,
                   )
                 "
               />

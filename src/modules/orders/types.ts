@@ -30,7 +30,7 @@ export type TOrder = {
   delivery_method: "manual" | "automatic"
   discount_amount: string
   fulfilment_method: "pickup" | "delivery"
-  fulfilment_status: "unfulfilled" | "fulfilled" | "partially_fulfilled"
+  fulfilment_status: "unfulfilled" | "fulfilled" | "partially_fulfilled" | "voided"
   items: TOrderItem[]
   location: string
   location_name: string
