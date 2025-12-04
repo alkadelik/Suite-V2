@@ -1,6 +1,6 @@
 <template>
   <div class="flex h-[100dvh] flex-col pt-16">
-    <AppHeader show-logo :is-live="isLive" />
+    <AppHeader show-logo :is-live="isLive" @logout="logout = true" />
 
     <div class="flex min-h-0 flex-1 rounded-xl bg-white p-4 pb-0 2xl:px-20">
       <!-- Fixed Header Section -->
@@ -67,6 +67,8 @@
       :hide-bud="true"
       @update:model-value="(val) => setPlanUpgradeModal(val)"
     />
+
+    <LogoutModal :open="logout" @close="logout = false" />
   </div>
 </template>
 
@@ -75,16 +77,19 @@ import AppHeader from "@/layouts/parts/AppHeader.vue"
 import BackButton from "@components/BackButton.vue"
 import { useRoute } from "vue-router"
 import { useSettingsStore } from "../store"
-import { computed, watch } from "vue"
+import { computed, ref, watch } from "vue"
 import PlansModal from "../components/PlansModal.vue"
 import { useGetLiveStatus, useGetRoles } from "@modules/shared/api"
 import { updateStoreRoleOptions } from "@modules/shared/constants"
 import { clipboardCopy } from "@/utils/others"
 import Icon from "@components/Icon.vue"
 import { useAuthStore } from "@modules/auth/store"
+import LogoutModal from "@components/core/LogoutModal.vue"
 
 const route = useRoute()
 const { data: rolesData } = useGetRoles()
+
+const logout = ref(false)
 
 const storeSlug = useAuthStore().user?.store_slug || ""
 const { data: liveStatusData } = useGetLiveStatus(storeSlug)

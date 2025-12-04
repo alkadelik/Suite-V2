@@ -81,7 +81,11 @@
                   <Icon :name="item.icon" size="20" />
                   <span>{{ item.label }}</span>
                 </div>
-                <Icon name="eye" size="18" @click.stop="hideSection(item.id)" />
+                <Icon
+                  :name="item.is_visible ? 'eye' : 'eye-slash'"
+                  size="18"
+                  @click.stop="hideSection(item.id)"
+                />
                 <Icon name="arrow-right" size="18" />
               </button>
             </template>
@@ -156,7 +160,11 @@
                   <Icon :name="item.icon" size="20" />
                   <span>{{ item.label }}</span>
                 </div>
-                <Icon name="eye" size="18" @click.stop="hideSection(item.id)" />
+                <Icon
+                  :name="item.is_visible ? 'eye' : 'eye-slash'"
+                  size="18"
+                  @click.stop="hideSection(item.id)"
+                />
                 <Icon
                   name="chevron-down"
                   size="18"
@@ -280,10 +288,10 @@
     <ConfirmationModal
       v-model="showHideConfirmation"
       variant="warning"
-      :header="`Hide ${sectionToHideLabel} Section`"
-      :paragraph="`Are you sure you want to hide the '${sectionToHideLabel}' section from your landing page? This section will no longer be visible to your customers.`"
+      :header="`${sectionToHideVisibility ? 'Unhide' : 'Hide'} ${sectionToHideLabel} Section`"
+      :paragraph="`Are you sure you want to ${sectionToHideVisibility ? 'unhide' : 'hide'} the '${sectionToHideLabel}' section from your landing page? This action can be reversed later.`"
       info-message="You can unhide this section later from the settings."
-      action-label="Hide Section"
+      :action-label="sectionToHideVisibility ? 'Unhide Section' : 'Hide Section'"
       :loading="isHiding"
       @confirm="confirmHideSection"
     />
@@ -383,7 +391,7 @@ const confirmHideSection = (): void => {
       {
         uid: sectionToHide.uid,
         position: sectionToHide.order,
-        is_hidden: true,
+        is_hidden: sectionToHide.is_visible ? true : false,
       },
     ],
   }
@@ -444,6 +452,12 @@ const sectionToHideLabel = computed(() => {
   return section?.label || ""
 })
 
+const sectionToHideVisibility = computed(() => {
+  if (!sectionToHideId.value) return true
+  const section = draggableItems.value.find((item) => item.id === sectionToHideId.value)
+  return section?.is_visible || false
+})
+
 // Watch for API data and sync to local state
 watch(
   () => landingPageData.value,
@@ -458,7 +472,7 @@ watch(
           label: section.section_type_display,
           icon: sectionIconMap[section.section_type] || "information",
           order: section.position,
-          is_visible: true,
+          is_visible: !section.is_hidden,
         }))
         .sort((a, b) => a.order - b.order)
 
