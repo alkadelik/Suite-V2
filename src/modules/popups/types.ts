@@ -101,6 +101,7 @@ export type PopupInventory = {
   variant_name: string
   variant_sku: string
   product_name: string
+  product_image: string
   available_quantity: number
   quantity: number
   sold_quantity: number
