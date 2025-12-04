@@ -227,11 +227,14 @@ const orderParams = computed(() => ({
 }))
 const { data: ordersData, isPending: isLoadingOrders } = useGetOrders(orderParams)
 
+const movementParams = computed(() => ({
+  product: uid,
+}))
 const {
   data: movementsData,
   isPending: isLoadingMovements,
   refetch: refetchMovements,
-} = useGetInventoryMovements()
+} = useGetInventoryMovements(movementParams)
 
 // Initialize activeTab from query parameter or default to "overview"
 const activeTab = ref((route.query.tab as string) || "overview")
