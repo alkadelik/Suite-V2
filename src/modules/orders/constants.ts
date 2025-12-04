@@ -72,6 +72,7 @@ export const ORDER_COLUMNS: TableColumn<TOrder>[] = [
   },
   { header: "Order", accessor: "items" },
   { header: "Status", accessor: "payment_status" },
+  { header: "Fulfilled", accessor: "fulfilment_status" },
   {
     header: "Order Date",
     accessor: "created_at",

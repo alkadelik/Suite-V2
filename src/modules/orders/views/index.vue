@@ -108,6 +108,11 @@ const computedParams = computed(() => {
 
 const { data: orders, isPending, isFetching, refetch } = useGetOrders(computedParams)
 
+const handleRefresh = () => {
+  refetch()
+  refetchStats()
+}
+
 const getActionItems = (item: TOrder) => [
   {
     label: "View memos",
@@ -133,14 +138,18 @@ const getActionItems = (item: TOrder) => [
       openPayment.value = true
     },
   },
-  {
-    label: "Fulfill Order",
-    icon: "money-add",
-    action: () => {
-      selectedOrder.value = item
-      openFulfil.value = true
-    },
-  },
+  ...(item.fulfilment_status === "unfulfilled"
+    ? [
+        {
+          label: "Fulfill Order",
+          icon: "money-add",
+          action: () => {
+            selectedOrder.value = item
+            openFulfil.value = true
+          },
+        },
+      ]
+    : []),
   { divider: true },
   ...((item.fulfilment_status === "fulfilled" || item.payment_status !== "unpaid") &&
   !item.source?.includes("storefront")
@@ -191,7 +200,7 @@ const handleVoidDelete = ({ action, reason }: { action: string; reason: string }
         onSuccess: () => {
           toast.success("Order voided successfully")
           onCloseVoidDel()
-          refetch()
+          handleRefresh()
         },
         onError: displayError,
       },
@@ -201,7 +210,7 @@ const handleVoidDelete = ({ action, reason }: { action: string; reason: string }
       onSuccess: () => {
         toast.success("Order deleted successfully")
         onCloseVoidDel()
-        refetch()
+        handleRefresh()
       },
       onError: displayError,
     })
@@ -277,8 +286,11 @@ onMounted(() => {
         </div>
 
         <DataTable
+          :key="status"
           :data="orders?.results ?? []"
-          :columns="ORDER_COLUMNS"
+          :columns="
+            ORDER_COLUMNS.filter((v) => (status === 'voided' ? v.accessor !== 'actions' : true))
+          "
           :loading="isFetching"
           :enable-row-selection="false"
           :empty-state="{
@@ -299,6 +311,12 @@ onMounted(() => {
             <div class="max-w-[100px] truncate">
               {{ item.items.map((v) => v.product_name).join(", ") }}
             </div>
+          </template>
+          <template #cell:fulfilment_status="{ item }">
+            <Chip
+              :color="item.fulfilment_status === 'fulfilled' ? 'success' : 'primary'"
+              :label="item.fulfilment_status === 'fulfilled' ? 'Yes' : 'No'"
+            />
           </template>
           <!--  -->
           <template #cell:payment_status="{ item }">
@@ -339,9 +357,11 @@ onMounted(() => {
 
     <!--  -->
     <VoidDeleteOrder
+      v-if="selectedOrder"
       :open="openVoid || openDelete"
       :action="openVoid ? 'void' : 'delete'"
       :loading="isVoiding || isDeleting"
+      :order="selectedOrder"
       @close="onCloseVoidDel"
       @action="handleVoidDelete"
     />
@@ -354,12 +374,7 @@ onMounted(() => {
           $router.replace({ name: 'Orders', query: {} })
         }
       "
-      @refresh="
-        () => {
-          refetch()
-          refetchStats()
-        }
-      "
+      @refresh="handleRefresh"
     />
     <FulfilOrderModal
       v-if="selectedOrder"
@@ -367,6 +382,7 @@ onMounted(() => {
       @close="openFulfil = false"
       :order-id="selectedOrder?.uid"
       :items="selectedOrder?.items || []"
+      @refresh="handleRefresh"
     />
 
     <OrderMemoDrawer
