@@ -44,17 +44,6 @@
             {{ isResolving ? "Validating..." : errorMsg || resolvedAccountName }}
           </p>
         </div>
-
-        <WarningBox header="Payment Processing Fees">
-          <ul class="list-disc space-y-1 pl-5">
-            <li><span class="font-semibold">2%</span> for online orders below ₦2000.</li>
-            <li>
-              <span class="font-semibold">2% + ₦100 flat fee</span> for online orders ₦2000 and
-              above.
-            </li>
-            <li><span class="font-semibold">Capped at ₦2500</span> per transaction.</li>
-          </ul>
-        </WarningBox>
       </div>
 
       <div class="bg-white px-6 py-4">
@@ -83,7 +72,6 @@ import Modal from "@/components/Modal.vue"
 import AppForm from "@/components/form/AppForm.vue"
 import FormField from "@/components/form/FormField.vue"
 import Icon from "@components/Icon.vue"
-import WarningBox from "@components/WarningBox.vue"
 import { useCreateBankAccount, useGetSupportedBanks, useResolveBankAccount } from "../api"
 import { TCreateAccountPayload } from "../types.ts"
 
