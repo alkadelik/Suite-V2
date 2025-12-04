@@ -13,6 +13,8 @@ import { useRoute } from "vue-router"
 import { displayError } from "@/utils/error-handler"
 import { AddProductsPayload } from "../types"
 import { toast } from "@/composables/useToast"
+import Modal from "@components/Modal.vue"
+import { useMediaQuery } from "@vueuse/core"
 
 interface OrderItem {
   product: IProductCatalogue
@@ -102,10 +104,19 @@ const onSubmitBooth = () => {
     },
   )
 }
+
+const isMobile = useMediaQuery("(max-width: 1028px)")
 </script>
 
 <template>
-  <Drawer :open="open" title="Setup Booth" max-width="2xl" @close="handleClose">
+  <component
+    :is="isMobile ? Modal : Drawer"
+    :open="open"
+    variant="bottom-nav"
+    title="Setup Booth"
+    max-width="2xl"
+    @close="handleClose"
+  >
     <StepperWizard v-model="activeStep" :steps="steps" :showIndicators="false">
       <template #default="{ step, onPrev, onNext }">
         <!-- Step 0: Select Products -->
@@ -240,5 +251,5 @@ const onSubmitBooth = () => {
         </div>
       </template>
     </StepperWizard>
-  </Drawer>
+  </component>
 </template>

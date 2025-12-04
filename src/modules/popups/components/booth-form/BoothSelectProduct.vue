@@ -94,7 +94,10 @@ const handleNext = () => {
       </div>
     </div>
 
-    <section v-if="!isFetching && filteredProducts.length > 0" class="grid grid-cols-3 gap-6">
+    <section
+      v-if="!isFetching && filteredProducts.length > 0"
+      class="grid grid-cols-2 gap-6 md:grid-cols-3"
+    >
       <div
         v-for="prod in filteredProducts"
         :key="prod.uid"

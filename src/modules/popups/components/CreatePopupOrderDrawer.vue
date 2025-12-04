@@ -13,6 +13,8 @@ import PopupOrderSelectCustomer from "./popup-order-form/PopupOrderSelectCustome
 import PopupOrderShippingInfoForm from "./popup-order-form/PopupOrderShippingInfoForm.vue"
 import PopupOrderPaymentForm from "./popup-order-form/PopupOrderPaymentForm.vue"
 import PopupOrderReview from "./popup-order-form/PopupOrderReview.vue"
+import { useMediaQuery } from "@vueuse/core"
+import Modal from "@components/Modal.vue"
 
 const props = defineProps({
   open: { type: Boolean, required: true },
@@ -147,10 +149,19 @@ const resetForm = () => {
     discount_amount: 0,
   }
 }
+
+const isMobile = useMediaQuery("(max-width: 1028px)")
 </script>
 
 <template>
-  <Drawer :open="open" title="Add Popup Order" max-width="2xl" @close="emit('close')">
+  <component
+    :is="isMobile ? Modal : Drawer"
+    :open="open"
+    variant="bottom-nav"
+    title="Add Popup Order"
+    max-width="2xl"
+    @close="emit('close')"
+  >
     <StepperWizard v-model="activeStep" :steps="steps" :showIndicators="false">
       <template #default="{ step, onPrev, onNext }">
         <!-- Step 0: Select Products -->
@@ -215,5 +226,5 @@ const resetForm = () => {
         />
       </template>
     </StepperWizard>
-  </Drawer>
+  </component>
 </template>
