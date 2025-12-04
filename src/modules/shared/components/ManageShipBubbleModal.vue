@@ -25,7 +25,12 @@
           <h3 class="mb-1 text-base font-semibold">Manage Shipping Details</h3>
           <p class="text-core-600 text-sm">Keep your shipping/delivery details up to date.</p>
         </div>
-        <AppButton label="Edit Details" @click="$router.push(`/onboarding?shipbubble=true`)" />
+        <AppButton
+          label="Edit Details"
+          @click="
+            $router.push(`/onboarding?shipbubble=true&redirect=${encodeURIComponent(route.path)}`)
+          "
+        />
       </div>
 
       <div class="border-core-200 flex items-center gap-4 rounded-xl border bg-white px-4 py-3">
@@ -38,7 +43,11 @@
         </div>
         <AppButton
           label="Edit Couriers"
-          @click="$router.push(`/onboarding?shipbubble=true&step=2`)"
+          @click="
+            $router.push(
+              `/onboarding?shipbubble=true&step=2&redirect=${encodeURIComponent(route.path)}`,
+            )
+          "
         />
       </div>
     </div>
@@ -49,7 +58,10 @@
 import AppButton from "@/components/AppButton.vue"
 import Modal from "@/components/Modal.vue"
 import Icon from "@components/Icon.vue"
+import { useRoute } from "vue-router"
 
 defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{ "update:modelValue": [boolean] }>()
+
+const route = useRoute()
 </script>

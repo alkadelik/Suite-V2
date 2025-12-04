@@ -254,7 +254,9 @@ const handleContinue = () => {
 
 const handleClose = () => {
   showShipbubbleScreens.value = false
-  router.back()
+  // Get the redirect path from query parameter, or default to current path without query params
+  const redirectPath = (route.query.redirect as string) || route.path.split("?")[0]
+  router.push(redirectPath)
 }
 
 // --- Sync showShipbubbleScreens and step with route query ---
