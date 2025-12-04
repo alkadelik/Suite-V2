@@ -28,18 +28,25 @@
         <Icon name="bell" size="20" />
       </button>
 
-      <!-- Sign out -->
-      <button class="rounded-xl p-2 hover:bg-gray-100" @click="$emit('logout', true)">
-        <Icon name="signout" size="20" />
-      </button>
-
       <!-- User or CTA -->
-      <Avatar
-        :name="user?.first_name + ' ' + user?.last_name"
-        backgroundColor="var(--color-core-950)"
-        clickable
-        @click="$router.push('/settings')"
-      />
+      <DropdownMenu v-if="!isMobile" :items="profileMenuItems" menuClass="w-56">
+        <template #prepend>
+          <div class="max-w-xs overflow-hidden border-b border-gray-200 px-4 py-2">
+            <p class="text-core-800 block w-full max-w-xs truncate text-sm font-medium">
+              {{ user?.first_name + " " + user?.last_name }}
+            </p>
+            <p class="text-core-600 block w-full max-w-xs truncate text-xs">
+              {{ user?.email }}
+            </p>
+          </div>
+        </template>
+        <template #trigger>
+          <Avatar
+            :name="user?.first_name + ' ' + user?.last_name"
+            backgroundColor="var(--color-core-950)"
+          />
+        </template>
+      </DropdownMenu>
       <DropdownMenu v-if="!isMobile" :items="actionMenuItems">
         <template #trigger>
           <AppButton size="md" class="!ring-primary-200 !rounded-full !ring-4" icon="add-circle" />
@@ -76,7 +83,7 @@ import { useAuthStore } from "@modules/auth/store"
 import { useSettingsStore } from "@modules/settings/store"
 
 defineProps<{ showLogo?: boolean; logo?: "full" | "icon"; isLive?: boolean }>()
-defineEmits<{
+const emit = defineEmits<{
   (e: "logout", confirm: boolean): void
 }>()
 
@@ -157,4 +164,20 @@ const actionMenuItems = computed(() => {
 
   return allActions.filter((action) => !action.hqOnly || isHQ.value)
 })
+
+const profileMenuItems = [
+  {
+    label: "Settings",
+    icon: "setting",
+    action: () => router.push("/settings"),
+  },
+  { divider: true },
+  {
+    label: "Logout",
+    icon: "signoutt",
+    class: "text-red-600 hover:bg-red-50",
+    iconClass: "text-red-600",
+    action: () => emit("logout", true),
+  },
+]
 </script>
