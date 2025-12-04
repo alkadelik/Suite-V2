@@ -29,7 +29,7 @@
       </button>
 
       <!-- User or CTA -->
-      <DropdownMenu v-if="!isMobile" :items="profileMenuItems" menuClass="w-56">
+      <DropdownMenu :items="profileMenuItems" menuClass="w-56">
         <template #prepend>
           <div class="max-w-xs overflow-hidden border-b border-gray-200 px-4 py-2">
             <p class="text-core-800 block w-full max-w-xs truncate text-sm font-medium">
