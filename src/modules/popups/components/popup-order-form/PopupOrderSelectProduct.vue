@@ -97,7 +97,10 @@ const handleNext = () => {
       </div>
     </div>
 
-    <section v-if="!isFetching && filteredProducts.length > 0" class="grid grid-cols-3 gap-6">
+    <section
+      v-if="!isFetching && filteredProducts.length > 0"
+      class="grid grid-cols-2 gap-6 md:grid-cols-3"
+    >
       <div
         v-for="prod in filteredProducts"
         :key="prod.uid"
@@ -111,7 +114,7 @@ const handleNext = () => {
         "
         @click="toggleProductSelection(prod)"
       >
-        <div class="relative flex h-[88px] items-center justify-center rounded-xl bg-gray-200">
+        <!-- <div class="relative flex h-[88px] items-center justify-center rounded-xl bg-gray-200">
           <Icon name="box" class="h-20 w-20" />
 
           <Chip
@@ -127,7 +130,32 @@ const handleNext = () => {
             :checked="isProductSelected(prod.uid)"
             class="accent-primary-600 pointer-events-none absolute top-2 right-2 h-4 w-4 rounded border-gray-300 bg-white"
           />
+        </div> -->
+
+        <div class="relative flex h-[88px] items-center justify-center rounded-xl bg-gray-200">
+          <img
+            v-if="prod.product_image"
+            :src="prod.product_image"
+            alt=""
+            class="h-full w-full rounded-xl object-cover"
+          />
+          <Icon v-else name="box" class="h-20 w-20" />
+
+          <Chip
+            v-if="prod.quantity === 0"
+            label="Out of stock"
+            size="sm"
+            color="error"
+            class="absolute top-2 right-2 !rounded-lg"
+          />
+          <input
+            v-else
+            type="checkbox"
+            :checked="isProductSelected(prod.uid)"
+            class="accent-primary-600 pointer-events-none absolute top-2 right-2 h-4 w-4 rounded border-gray-300 bg-white"
+          />
         </div>
+
         <div class="space-y-1 p-1 py-2">
           <h4 class="text-xs font-medium">{{ prod.product_name }}</h4>
           <div class="flex justify-between gap-2 text-xs">

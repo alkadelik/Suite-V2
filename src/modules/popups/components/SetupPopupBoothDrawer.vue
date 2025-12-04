@@ -128,33 +128,80 @@ const onSubmitBooth = () => {
         <!-- Step 2: Review & Confirm -->
         <div v-if="step === 2" class="space-y-6">
           <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
-            <Icon name="document-check" size="28" />
+            <Icon name="shop" size="28" />
           </div>
           <p class="mb-4 text-sm">Review your booth setup and confirm the products.</p>
 
           <!-- Booth Items -->
           <div class="rounded-xl bg-white p-4">
             <h3 class="mb-3 text-sm font-semibold">Booth Products</h3>
-            <div class="space-y-3">
+
+            <div class="border-core-300 bg-core-25 my-6 space-y-4 rounded-xl border p-4">
               <div
-                v-for="(item, index) in orderItems"
-                :key="index"
-                class="border-core-200 flex items-center justify-between border-b pb-3 last:border-0"
+                v-for="(item, idx) in orderItems"
+                :key="`${item.product.uid}-${item.variant?.uid || idx}`"
+                class="flex items-center justify-between"
               >
-                <div class="flex-1">
-                  <p class="font-medium">{{ item.product.name }}</p>
-                  <p v-if="item.variant" class="text-xs text-gray-600">{{ item.variant.name }}</p>
-                  <p class="text-xs text-gray-600">Qty: {{ item.quantity }}</p>
-                  <p class="text-xs" :class="item.is_visible ? 'text-green-600' : 'text-gray-400'">
-                    {{ item.is_visible ? "Visible" : "Hidden" }} •
-                    {{ item.is_active ? "Active" : "Inactive" }}
-                  </p>
+                <!-- LEFT -->
+                <div class="flex items-center gap-3">
+                  <!-- Product Image -->
+                  <img
+                    v-if="item.product.images?.length"
+                    :src="item.product.images[0].image"
+                    :alt="item.product.name"
+                    class="h-10 w-10 rounded-lg object-cover"
+                  />
+
+                  <div
+                    v-else
+                    class="flex h-10 w-10 items-center justify-center rounded-lg bg-white"
+                  >
+                    <Icon name="box" class="h-5 w-5 text-gray-400" />
+                  </div>
+
+                  <!-- Product Info -->
+                  <div>
+                    <h4 class="text-sm font-medium">
+                      {{ item.product.name }}
+                      <span class="text-primary-700 ml-1 text-xs font-medium">
+                        (x{{ item.quantity }})
+                      </span>
+                    </h4>
+
+                    <!-- Variant Label -->
+                    <p v-if="item.variant" class="text-core-500 text-xs">
+                      {{ item.variant.name.split(" - ")[1] || item.variant.name }}
+                    </p>
+
+                    <!-- Visibility + Active -->
+                    <!-- <p class="mt-0.5 text-xs">
+                      <span :class="item.is_visible ? 'text-green-600' : 'text-gray-400'">
+                        {{ item.is_visible ? "Visible" : "Hidden" }}
+                      </span>
+                      •
+                      <span :class="item.is_active ? 'text-green-600' : 'text-gray-400'">
+                        {{ item.is_active ? "Active" : "Inactive" }}
+                      </span>
+                    </p> -->
+                  </div>
                 </div>
+
+                <!-- RIGHT PRICE COLUMN -->
                 <div class="text-right">
-                  <p class="font-medium">{{ formatCurrency(item.event_price) }}</p>
-                  <p class="text-xs text-gray-600">
-                    Total: {{ formatCurrency(item.quantity * item.event_price) }}
-                  </p>
+                  <!-- Show original price if discounted -->
+                  <!-- <span
+                    v-if="
+                      item.variant?.original_price &&
+                      item.variant.original_price !== item.unit_price
+                    "
+                    class="text-core-400 text-xs line-through"
+                  >
+                    {{ formatCurrency(item.quantity * item.variant.original_price) }}
+                  </span> -->
+
+                  <span class="ml-1 block text-sm font-medium">
+                    {{ formatCurrency(Number(item.quantity * item.unit_price)) }}
+                  </span>
                 </div>
               </div>
             </div>
@@ -182,14 +229,7 @@ const onSubmitBooth = () => {
           <div
             class="border-core-200 fixed right-0 bottom-0 left-0 flex gap-3 border-t bg-white p-6"
           >
-            <AppButton
-              label="Back"
-              color="alt"
-              variant="outlined"
-              class="w-1/3"
-              icon="arrow-left"
-              @click="onPrev"
-            />
+            <AppButton label="Back" color="alt" class="w-1/3" icon="arrow-left" @click="onPrev" />
             <AppButton
               label="Setup Booth"
               class="w-2/3"

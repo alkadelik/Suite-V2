@@ -209,7 +209,11 @@ onMounted(() => {
         :show-pagination="false"
       >
         <template #cell:name="{ item }">
-          <ProductAvatar :name="item.product_name" :url="undefined" :variants-count="undefined" />
+          <ProductAvatar
+            :name="item.variant_name || item.product_name"
+            :url="undefined"
+            :variants-count="undefined"
+          />
         </template>
 
         <template #cell:category="{ value }">

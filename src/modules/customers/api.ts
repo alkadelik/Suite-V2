@@ -40,6 +40,8 @@ export function useGetCustomers() {
       const { data } = await baseApi.get<ICustomersApiResponse>("/customers/")
       return data
     },
+    retry: false,
+    refetchOnWindowFocus: false,
   })
 }
 
@@ -55,6 +57,8 @@ export function useGetCustomer(uid: Ref<string> | string, enabled = true) {
       const uidValue = typeof uid === "string" ? uid : uid.value
       return !!uidValue && enabled
     },
+    retry: false,
+    refetchOnWindowFocus: false,
   })
 }
 
