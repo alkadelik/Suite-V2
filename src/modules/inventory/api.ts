@@ -5,7 +5,6 @@ import {
   IProductCategoryFormPayload,
   IProductFormPayload,
   IProductAttributeFormPayload,
-  IAttributeValueItem,
   IProductImageUploadPayload,
   IProductImageUpdatePayload,
   IGetProductResponse,
@@ -18,6 +17,7 @@ import {
   IInventoryTransferRequestsApiResponse,
   IApproveRejectRequestPayload,
   IBulkVariantPayload,
+  IProductAttributeValuePayload,
 } from "./types"
 
 /** Get categories api request */
@@ -155,9 +155,11 @@ export function useGetAttributeValues(attributeUid: string) {
 
 export function useCreateAttributeValues() {
   return useMutation({
-    mutationFn: (payload: { attributeUid: string; values: IAttributeValueItem[] }) => {
-      return baseApi.post(`inventory/attributes/${payload.attributeUid}/add-value/`, payload.values)
-    },
+    mutationFn: ({
+      attributeUid,
+      ...payload
+    }: IProductAttributeValuePayload & { attributeUid: string }) =>
+      baseApi.post(`inventory/attributes/${attributeUid}/add-value/`, payload),
   })
 }
 
