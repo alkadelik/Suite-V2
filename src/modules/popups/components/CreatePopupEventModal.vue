@@ -33,7 +33,7 @@ const getInitialValues = (): Partial<PopupPayload> => {
       start_date: props.event.start_date,
       end_date: props.event.end_date,
       event_address: props.event.event_address,
-      participant_fee: props.event.participant_fee,
+      participation_fee: props.event.participation_fee,
       description: props.event.description,
       banner_image: null,
     }
@@ -55,8 +55,8 @@ const prepareFormData = (currentData: Partial<PopupPayload>): FormData => {
     formData.append("description", currentData.description || "")
     formData.append("start_date", currentData.start_date!)
     formData.append("end_date", currentData.end_date!)
-    if (currentData.participant_fee !== null && currentData.participant_fee !== undefined) {
-      formData.append("participant_fee", currentData.participant_fee.toString())
+    if (currentData.participation_fee !== null && currentData.participation_fee !== undefined) {
+      formData.append("participation_fee", currentData.participation_fee.toString())
     }
     if (currentData.banner_image) formData.append("banner_image", currentData.banner_image)
   } else {
@@ -76,11 +76,11 @@ const prepareFormData = (currentData: Partial<PopupPayload>): FormData => {
     if (currentData.end_date !== initialValues.value.end_date) {
       formData.append("end_date", currentData.end_date!)
     }
-    if (currentData.participant_fee !== initialValues.value.participant_fee) {
-      if (currentData.participant_fee !== null && currentData.participant_fee !== undefined) {
-        formData.append("participant_fee", currentData.participant_fee.toString())
+    if (currentData.participation_fee !== initialValues.value.participation_fee) {
+      if (currentData.participation_fee !== null && currentData.participation_fee !== undefined) {
+        formData.append("participation_fee", currentData.participation_fee.toString())
       } else {
-        formData.append("participant_fee", "")
+        formData.append("participation_fee", "")
       }
     }
     if (currentData.banner_image) {
@@ -136,7 +136,7 @@ const handleReset = () => {
       start_date: "",
       end_date: "",
       event_address: "",
-      participant_fee: null,
+      participation_fee: null,
       description: "",
       banner_image: null,
     },
@@ -177,7 +177,7 @@ watch(
 
       <FormField name="event_address" required />
 
-      <FormField name="participant_fee" type="number" />
+      <FormField name="participation_fee" type="number" />
 
       <FormField name="description" label="Description (optional)" type="textarea" :rows="4" />
 

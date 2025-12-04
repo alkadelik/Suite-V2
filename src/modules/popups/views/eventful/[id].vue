@@ -33,7 +33,7 @@ const overviewInfo = computed(() => {
 })
 
 const handleRegister = () => {
-  if (Number(popupEvt.value?.participant_fee) === 0) {
+  if (Number(popupEvt.value?.participation_fee) === 0) {
     openConfirmation.value = true
   } else {
     openRegister.value = true
@@ -144,8 +144,8 @@ const handleConfirmFreeRegistration = () => {
               <Icon name="tag" size="20" />
               <h2 class="text-2xl font-bold">
                 {{
-                  Number(popupEvt?.participant_fee)
-                    ? formatCurrency(Number(popupEvt?.participant_fee), { kobo: true })
+                  Number(popupEvt?.participation_fee)
+                    ? formatCurrency(Number(popupEvt?.participation_fee), { kobo: true })
                     : "Free"
                 }}
               </h2>

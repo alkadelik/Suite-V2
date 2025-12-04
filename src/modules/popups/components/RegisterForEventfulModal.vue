@@ -18,7 +18,7 @@ const discountCode = ref("")
 const discountValue = ref(0)
 
 const totalAmount = computed(() => {
-  const fee = Number(props.event?.participant_fee) || 0
+  const fee = Number(props.event?.participation_fee) || 0
   return fee - discountValue.value
 })
 
@@ -83,7 +83,7 @@ const handleRegister = () => {
         <p class="flex justify-between text-sm">
           <span>1x Registration</span>
           <span class="font-medium">
-            {{ formatCurrency(Number(event?.participant_fee), { kobo: true }) }}
+            {{ formatCurrency(Number(event?.participation_fee), { kobo: true }) }}
           </span>
         </p>
         <p class="my-3 flex justify-between text-sm">
