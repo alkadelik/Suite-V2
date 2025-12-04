@@ -60,7 +60,7 @@
           <!-- Bottom navigation for mobile -->
           <nav
             v-if="isMobile"
-            class="fixed right-0 bottom-0 left-0 max-h-16 border-t border-gray-200 bg-red-200"
+            class="fixed right-0 bottom-0 left-0 max-h-16 border-t border-gray-200 bg-white"
             :class="openMore || openActions ? 'z-[1500]' : 'z-30'"
           >
             <div class="flex items-center justify-around px-2 py-2">
