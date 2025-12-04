@@ -8,7 +8,10 @@
       variant="bottom-nav"
       :handle-padding="false"
     >
-      <LoadingIcon v-if="isGettingShippingProfile" icon-class="text-black h-6 w-6" />
+      <LoadingIcon
+        v-if="isGettingShippingProfile || isGettingStoreDetails"
+        icon-class="text-black h-6 w-6"
+      />
       <div v-else class="space-y-4 px-4 py-4 md:space-y-8 md:px-6">
         <div class="space-y-4">
           <div class="flex size-10 items-center justify-center rounded-xl bg-neutral-50 p-2">
@@ -129,7 +132,7 @@ import {
   useUpdateShippingProfile,
   useSetupShippingProfile,
 } from "@/modules/shared/api"
-import { useUpdateStoreDetails } from "@/modules/settings/api"
+import { useUpdateStoreDetails, useGetStoreDetails } from "@/modules/settings/api"
 import LoadingIcon from "@components/LoadingIcon.vue"
 import type { ICourier } from "@/modules/shared/types"
 
@@ -147,6 +150,9 @@ const showShipbubbleScreens = ref<boolean>(false)
 const isShippingProfileActive = ref<boolean>(false)
 
 const { data: shippingProfileData, isPending: isGettingShippingProfile } = useGetShippingProfile()
+const { data: storeDetails, isPending: isGettingStoreDetails } = useGetStoreDetails(
+  user?.store_uid || "",
+)
 const { mutate: setupShippingProfile, isPending: isSettingUpShipping } = useSetupShippingProfile()
 const { mutate: updateShippingProfile, isPending: isUpdatingShippingProfile } =
   useUpdateShippingProfile()
@@ -254,7 +260,9 @@ const handleContinue = () => {
 
 const handleClose = () => {
   showShipbubbleScreens.value = false
-  router.back()
+  // Get the redirect path from query parameter, or default to current path without query params
+  const redirectPath = (route.query.redirect as string) || route.path.split("?")[0]
+  router.push(redirectPath)
 }
 
 // --- Sync showShipbubbleScreens and step with route query ---
@@ -320,5 +328,53 @@ watch(
     }
   },
   { immediate: true },
+)
+
+// Update form when store details are fetched
+watch(
+  () => storeDetails.value,
+  (details) => {
+    if (details) {
+      shipbubbleAuthForm.business_name = details.name || ""
+      shipbubbleAuthForm.email = details.store_email || user?.email || ""
+      shipbubbleAuthForm.phone = details.store_phone || ""
+      // Address comes from the first location if available
+      if (details.locations && details.locations.length > 0 && details.locations[0]?.address) {
+        shipbubbleAuthForm.address = details.locations[0].address
+      }
+    }
+  },
+  { immediate: true },
+)
+
+// Update form when shipping profile data is available (for existing profiles)
+watch(
+  () => shippingProfileData.value,
+  (profileData) => {
+    if (profileData) {
+      // Prefill from existing shipping profile if available
+      shipbubbleAuthForm.business_name = profileData.store_name || shipbubbleAuthForm.business_name
+      shipbubbleAuthForm.email = profileData.email || shipbubbleAuthForm.email
+      shipbubbleAuthForm.address = profileData.store_address || shipbubbleAuthForm.address
+    }
+  },
+  { immediate: true },
+)
+
+// Update form when user data becomes available (fallback)
+watch(
+  () => user,
+  (userData) => {
+    if (userData && !storeDetails.value) {
+      // Only use user data as fallback if store details haven't loaded yet
+      shipbubbleAuthForm.business_name =
+        userData.store?.store_name || shipbubbleAuthForm.business_name
+      shipbubbleAuthForm.email = userData.email || shipbubbleAuthForm.email
+      shipbubbleAuthForm.address = userData.store?.address || shipbubbleAuthForm.address
+      shipbubbleAuthForm.phone =
+        userData.store?.phone1 || userData.store?.phone || shipbubbleAuthForm.phone
+    }
+  },
+  { immediate: true, deep: true },
 )
 </script>

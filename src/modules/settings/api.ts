@@ -47,7 +47,7 @@ export function useUpdateAccountKyc() {
   })
 }
 
-/** get user profile */
+/** get user kyc */
 export function useGetAccountKyc() {
   return useApiQuery<IkycInfo>({
     url: "/accounts/kyc/",
