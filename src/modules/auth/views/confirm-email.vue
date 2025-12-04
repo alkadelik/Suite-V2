@@ -11,6 +11,13 @@
       </template>
     </SectionHeader>
 
+    <div class="bg-primary-25 border-primary-300 rounded-lg border px-4 py-3 text-sm">
+      <p class="text-primary-700">
+        We've sent a verification code to your email. It may take a moment to arrive — be sure to
+        check your junk or spam folder.
+      </p>
+    </div>
+
     <OtpField v-model="otp" />
 
     <AppButton

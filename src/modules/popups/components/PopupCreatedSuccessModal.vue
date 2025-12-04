@@ -54,7 +54,7 @@ const popupUrl = computed(() => `popup.leyyow.com/${props.popup?.slug}`)
 
         <p class="my-4 text-center text-sm">
           You now have a virtual storefront for this event. Customers can scan your QR code or use
-          your link to:
+          your link to shop.
         </p>
 
         <div
