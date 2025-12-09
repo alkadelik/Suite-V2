@@ -4,9 +4,10 @@ import gridPng from "@/assets/images/empty-grid.png"
 import Chip from "@components/Chip.vue"
 import { PopupEvent } from "../types"
 import { computed } from "vue"
-import { clipboardCopy } from "@/utils/others"
+import { clipboardCopy, isStaging } from "@/utils/others"
 import Modal from "@components/Modal.vue"
 import { watch } from "vue"
+import { useSettingsStore } from "@modules/settings/store"
 
 const props = defineProps<{ popup: PopupEvent | null; open: boolean }>()
 
@@ -19,8 +20,12 @@ watch(
     // You can add any side effects here if needed when popup changes
   },
 )
-
-const popupUrl = computed(() => `popup.leyyow.com/${props.popup?.slug}`)
+const storeDetails = computed(() => useSettingsStore().storeDetails)
+// const popupUrl2 = computed(() => `popup.leyyow.com/${props.popup?.slug}`)
+const popupUrl = computed(
+  () =>
+    `${isStaging ? "www.storefronts-v2.vercel.app" : "www.buy.leyyow.com"}/${storeDetails.value?.slug}/events/${props.popup?.slug}`,
+)
 </script>
 
 <template>

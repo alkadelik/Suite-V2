@@ -63,11 +63,13 @@ watch(
       />
 
       <div class="border-core-100 mt-6 rounded-2xl border bg-white">
-        <div class="grid gap-10 p-6">
+        <div class="grid gap-10 p-4 md:p-6">
           <!-- pickup -->
-          <div class="flex items-center gap-6">
-            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-200">
-              <Icon name="shop" size="24" class="text-gray-600" />
+          <div class="flex items-start gap-3 md:items-center md:gap-6">
+            <span
+              class="flex h-8 w-8 items-center justify-center rounded-xl bg-gray-200 md:h-10 md:w-10"
+            >
+              <Icon name="shop" size="20" class="text-gray-600" />
             </span>
 
             <div class="flex-1">
@@ -76,7 +78,7 @@ watch(
                 <button
                   v-if="computedLiveStatusDelivery?.pickup_location"
                   type="button"
-                  class="text-primary-600 text-sm underline"
+                  class="text-primary-600 hidden text-sm underline md:block"
                 >
                   Manage address
                 </button>
@@ -84,6 +86,13 @@ watch(
               <p class="text-core-600 text-sm">
                 Let customers pick up their orders directly from you.
               </p>
+              <button
+                v-if="computedLiveStatusDelivery?.pickup_location"
+                type="button"
+                class="text-primary-600 block text-sm font-semibold underline md:hidden"
+              >
+                Manage address
+              </button>
             </div>
             <Switch
               :model-value="form.allow_pickup"
@@ -97,9 +106,11 @@ watch(
           </div>
 
           <!-- delivery -->
-          <div class="flex items-center gap-6">
-            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-200">
-              <Icon name="truck-fast" size="24" class="text-gray-600" />
+          <div class="flex items-start gap-3 md:items-center md:gap-6">
+            <span
+              class="flex h-8 w-8 items-center justify-center rounded-xl bg-gray-200 md:h-10 md:w-10"
+            >
+              <Icon name="truck-fast" size="20" class="text-gray-600" />
             </span>
 
             <div class="flex-1">
@@ -108,13 +119,21 @@ watch(
                 <button
                   v-if="computedLiveStatusDelivery?.delivery_enabled"
                   type="button"
-                  class="text-primary-600 text-sm underline"
+                  class="text-primary-600 hidden text-sm underline md:block"
                   @click="openDelivery = true"
                 >
                   Manage shipping
                 </button>
               </h3>
               <p class="text-core-600 text-sm">Offer deliver to your customers.</p>
+              <button
+                v-if="computedLiveStatusDelivery?.delivery_enabled"
+                type="button"
+                class="text-primary-600 block text-sm font-semibold underline md:hidden"
+                @click="openDelivery = true"
+              >
+                Manage shipping
+              </button>
             </div>
             <Switch
               :model-value="form.allow_delivery"
