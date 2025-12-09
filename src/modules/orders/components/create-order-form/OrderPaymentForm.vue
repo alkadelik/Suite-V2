@@ -5,7 +5,8 @@ import FormField from "@components/form/FormField.vue"
 import RadioInputField from "@components/form/RadioInputField.vue"
 import Icon from "@components/Icon.vue"
 import { ORDER_PAYMENT_METHODS, ORDER_PAYMENT_STATUS } from "@modules/orders/constants"
-import { computed, watch } from "vue"
+import { useMediaQuery } from "@vueuse/core"
+import { computed, watch, onMounted } from "vue"
 
 interface PaymentInfo {
   payment_status: "unpaid" | "paid" | "partially_paid"
@@ -29,6 +30,16 @@ const emit = defineEmits<{
 
 // Use defineModel for two-way binding - cleaner than manual v-model implementation
 const paymentInfo = defineModel<PaymentInfo>("paymentInfo", { required: true })
+
+// Initialize payment amount on mount if status is paid
+onMounted(() => {
+  if (paymentInfo.value.payment_status === "paid") {
+    paymentInfo.value = {
+      ...paymentInfo.value,
+      payment_amount: props.totalAmount,
+    }
+  }
+})
 
 // Watch for payment status changes and auto-fill amount accordingly
 watch(
@@ -82,6 +93,8 @@ const handleNext = () => {
     emit("next")
   }
 }
+
+const isMobile = useMediaQuery("(max-width: 768px)")
 </script>
 
 <template>
@@ -142,7 +155,11 @@ const handleNext = () => {
         <h3 class="mb-4 text-sm font-medium">Payment Status</h3>
         <hr class="mb-4 border-gray-300" />
         <div class="space-y-4">
-          <RadioInputField :options="ORDER_PAYMENT_STATUS" v-model="paymentInfo.payment_status" />
+          <RadioInputField
+            :options="ORDER_PAYMENT_STATUS"
+            v-model="paymentInfo.payment_status"
+            :orientation="isMobile ? 'vertical' : 'horizontal'"
+          />
         </div>
       </div>
 
@@ -166,6 +183,8 @@ const handleNext = () => {
           :max="totalAmount"
           step="0.01"
           required
+          :readonly="paymentInfo.payment_status === 'paid'"
+          :disabled="paymentInfo.payment_status === 'paid'"
         />
       </div>
     </div>

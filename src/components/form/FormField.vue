@@ -9,7 +9,7 @@
       :options="optionsData || []"
       :placeholder="placeholder"
       :required="required"
-      :disabled="disabled"
+      :disabled="isDisabled"
       :readonly="readonly"
       :error="fieldErrors[0]"
       :hint="hintText"
@@ -17,7 +17,7 @@
       :variant="variant"
       :size="size"
       :clearable="clearable"
-      :placement="placement"
+      :placement="isMobile && searchable ? 'top' : placement"
       @update:model-value="field.value = $event"
     />
 
@@ -30,7 +30,7 @@
       :options="normalizedTagOptions"
       :placeholder="placeholder"
       :required="required"
-      :disabled="disabled"
+      :disabled="isDisabled"
       :readonly="readonly"
       :error="fieldErrors[0]"
       :hint="hintText"
@@ -49,7 +49,7 @@
       :label="hideLabel ? '' : label || startCase(name)"
       :placeholder="placeholder"
       :required="required"
-      :disabled="disabled"
+      :disabled="isDisabled"
       :readonly="readonly"
       :error="fieldErrors[0]"
       :hint="hintText"
@@ -70,7 +70,7 @@
       :model-value="field.value"
       :label="hideLabel ? '' : label || startCase(name)"
       :required="required"
-      :disabled="disabled"
+      :disabled="isDisabled"
       :error="fieldErrors[0]"
       :hint="hintText"
       :variant="variant"
@@ -87,7 +87,7 @@
       v-bind="{ ...field, ...$attrs }"
       :label="hideLabel ? '' : label || startCase(name)"
       :required="required"
-      :disabled="disabled"
+      :disabled="isDisabled"
       :error="fieldErrors[0]"
       :hint="hintText"
       :variant="variant"
@@ -105,7 +105,7 @@
       :label="hideLabel ? '' : label || startCase(name)"
       :options="radioOptions || []"
       :required="required"
-      :disabled="disabled"
+      :disabled="isDisabled"
       :readonly="readonly"
       :error="fieldErrors[0]"
       :hint="hintText"
@@ -122,7 +122,7 @@
       :label="hideLabel ? '' : label || startCase(name)"
       :placeholder="placeholder"
       :required="required"
-      :disabled="disabled"
+      :disabled="isDisabled"
       :readonly="readonly"
       :error="fieldErrors[0]"
       :hint="hintText"
@@ -153,6 +153,7 @@ import { startCase } from "@/utils/format-strings"
 import { computed } from "vue"
 import FileUploadField from "./FileUploadField.vue"
 import { TChipColor } from "@modules/shared/types"
+import { useMediaQuery } from "@vueuse/core"
 
 // Import or define the ISelectOption interface to match your existing type
 interface ISelectOption {
@@ -364,7 +365,6 @@ const {
   label,
   placeholder,
   required,
-  disabled,
   readonly,
   variant,
   size,
@@ -390,4 +390,7 @@ const {
 // Computed properties for options and hint text because of dynamic props
 const optionsData = computed(() => props.options ?? [])
 const hintText = computed(() => props.hint ?? "")
+const isDisabled = computed(() => props.disabled ?? false)
+
+const isMobile = useMediaQuery("(max-width: 1024px)")
 </script>

@@ -114,16 +114,16 @@
   --color-bloom-800: #bf4555;
   --color-bloom-900: #8e2f3b;
   /* colors - pink */
-  --color-pink-25: #FEF6FB;
-  --color-pink-50: #FDF2FA;
-  --color-pink-100: #FCE7F6;
-  --color-pink-200: #FCCEEE;
-  --color-pink-300: #FAA7E0;
-  --color-pink-400: #F670C7;
-  --color-pink-500: #EE46BC;
-  --color-pink-600: #DD2590;
-  --color-pink-700: #C11574;
-  --color-pink-800: #9E165F;
+  --color-pink-25: #fef6fb;
+  --color-pink-50: #fdf2fa;
+  --color-pink-100: #fce7f6;
+  --color-pink-200: #fcceee;
+  --color-pink-300: #faa7e0;
+  --color-pink-400: #f670c7;
+  --color-pink-500: #ee46bc;
+  --color-pink-600: #dd2590;
+  --color-pink-700: #c11574;
+  --color-pink-800: #9e165f;
   --color-pink-900: #851651;
   /* animations */
   --animate-spin: spin 2s linear infinite;

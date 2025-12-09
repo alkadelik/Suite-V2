@@ -11,6 +11,8 @@ import { onInvalidSubmit } from "@/utils/validations"
 import { PopupEvent, PopupPayload } from "../types"
 import { useCreatePopup, useUpdatePopup } from "../api"
 import { validationSchema } from "../schemas"
+import { useMediaQuery } from "@vueuse/core"
+import Drawer from "@components/Drawer.vue"
 
 const emit = defineEmits<{ (e: "close"): void; (e: "refresh", popup: PopupEvent): void }>()
 const props = defineProps<{ open: boolean; event?: PopupEvent | null; isEditMode?: boolean }>()
@@ -155,10 +157,19 @@ watch(
   },
   { immediate: false },
 )
+
+const isMobile = useMediaQuery("(max-width: 1024px)")
 </script>
 
 <template>
-  <Modal :open="open" @close="emit('close')" :title="modalTitle" max-width="2xl">
+  <component
+    :is="isMobile ? Modal : Drawer"
+    :open="open"
+    variant="fullscreen"
+    @close="emit('close')"
+    :title="modalTitle"
+    max-width="2xl"
+  >
     <form @submit.prevent="onSubmit" class="space-y-6">
       <div>
         <span class="bg-core-200 flex size-10 items-center justify-center rounded-lg p-2">
@@ -204,5 +215,5 @@ watch(
         />
       </div>
     </template>
-  </Modal>
+  </component>
 </template>

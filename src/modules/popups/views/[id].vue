@@ -19,6 +19,7 @@ import { clipboardCopy, isStaging } from "@/utils/others"
 import { useMediaQuery } from "@vueuse/core"
 import Collapsible from "@components/Collapsible.vue"
 import { useSettingsStore } from "@modules/settings/store"
+import { getEventStatus } from "../constants"
 
 const route = useRoute()
 const openDelete = ref(false)
@@ -26,17 +27,6 @@ const openEdit = ref(false)
 const activeTab = ref("overview")
 
 const { data: popupEvt, isPending, refetch } = useGetPopupEventById(route.params.id as string)
-
-const getEventStatus = (event: { start_date?: string; end_date?: string } | null) => {
-  if (!event?.start_date || !event?.end_date) return "ended"
-  const now = new Date()
-  const startDate = new Date(event.start_date)
-  const endDate = new Date(event.end_date)
-
-  if (now < startDate) return "upcoming"
-  if (now >= startDate && now <= endDate) return "ongoing"
-  return "ended"
-}
 
 const overviewInfo = computed(() => {
   return {
@@ -73,8 +63,8 @@ const storeDetails = computed(() => useSettingsStore().storeDetails)
   />
 
   <section v-else class="flex flex-col px-4 py-4 md:px-8 md:py-8">
-    <div>
-      <BackButton label="Go Back" class="mb-6" />
+    <div class="pt-6">
+      <BackButton label="Go Back" class="mb-4" />
     </div>
 
     <section>
@@ -188,7 +178,7 @@ const storeDetails = computed(() => useSettingsStore().storeDetails)
           <PopupInventoryTab />
         </template>
         <template #sales>
-          <PopupSalesTab />
+          <PopupSalesTab :is-active="getEventStatus(popupEvt) === 'ongoing'" />
         </template>
       </Tabs>
     </section>

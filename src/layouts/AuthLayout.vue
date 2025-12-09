@@ -8,7 +8,7 @@ const onLogout = () => {
 </script>
 
 <template>
-  <div class="flex h-[100dvh]">
+  <div class="flex h-screen max-h-screen overflow-hidden">
     <!-- Left Side -->
     <div class="relative hidden flex-1 lg:block">
       <div class="relative h-full w-full overflow-hidden">
@@ -21,7 +21,7 @@ const onLogout = () => {
     </div>
 
     <!-- Right Side -->
-    <div class="flex flex-1 justify-center overflow-auto p-4">
+    <div class="flex flex-1 justify-center overflow-y-auto p-4">
       <div class="w-full px-4 py-12 md:px-24">
         <div class="mb-5 flex justify-between md:mb-8">
           <img src="/LYW.svg?url" alt="leyyow logo" class="h-8" />

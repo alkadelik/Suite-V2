@@ -6,7 +6,9 @@
     </label>
     <p v-if="hint" class="text-core-600 text-xs">{{ hint }}</p>
 
-    <div :class="['flex gap-4', orientation === 'vertical' ? 'flex-col' : 'flex-row']">
+    <div
+      :class="['flex gap-4', props.orientation === 'vertical' ? '!flex-col' : 'flex-row flex-wrap']"
+    >
       <div v-for="option in options" :key="String(option.value)" class="flex flex-1">
         <input
           :id="`${label}-${String(option.value)}`"

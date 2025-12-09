@@ -166,6 +166,11 @@ const validateManualDelivery = async (): Promise<boolean> => {
 
 const canProceed = computed(() => {
   if (props.shippingInfo.fulfilment_method === "delivery") {
+    // Allow proceeding if customer pays courier directly
+    if (props.shippingInfo.delivery_payment_option === "customer_pays_courier") {
+      return true
+    }
+
     if (props.shippingInfo.delivery_method === "automatic") {
       return (
         props.shippingInfo.delivery_address.trim().length > 0 &&
@@ -179,6 +184,15 @@ const canProceed = computed(() => {
 })
 
 const handleNext = async () => {
+  // Skip validation if customer pays courier directly
+  if (
+    props.shippingInfo.fulfilment_method === "delivery" &&
+    props.shippingInfo.delivery_payment_option === "customer_pays_courier"
+  ) {
+    emit("next")
+    return
+  }
+
   if (
     props.shippingInfo.fulfilment_method === "delivery" &&
     props.shippingInfo.delivery_method === "automatic" &&
@@ -417,7 +431,13 @@ watch(
         />
       </div>
 
-      <div v-if="shippingInfo.fulfilment_method === 'delivery'" class="rounded-xl bg-white p-4">
+      <div
+        v-if="
+          shippingInfo.fulfilment_method === 'delivery' &&
+          shippingInfo.delivery_payment_option !== 'customer_pays_courier'
+        "
+        class="rounded-xl bg-white p-4"
+      >
         <h3 class="mb-4 text-sm font-medium">Delivery Information</h3>
         <hr class="mb-4 border-gray-300" />
         <div class="space-y-4">

@@ -77,26 +77,39 @@ const getItemTotal = (item: PopupOrderItem) => {
     <!-- Order Items -->
     <section class="mb-8">
       <h3 class="mb-4 text-lg font-semibold">Order Items</h3>
-      <div class="space-y-3">
+      <div class="border-core-300 bg-core-25 space-y-4 rounded-xl border p-4">
         <div
           v-for="item in orderItems"
           :key="item.product.uid"
-          class="flex items-center justify-between rounded-lg bg-white p-4"
+          class="flex items-center justify-between"
         >
           <div class="flex items-center gap-3">
-            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100">
+            <img
+              v-if="item.product.product_image"
+              :src="item.product.product_image"
+              :alt="item.product.product_name"
+              class="h-10 w-10 rounded-lg object-cover"
+            />
+            <div v-else class="flex h-10 w-10 items-center justify-center rounded-lg bg-white">
               <Icon name="box" class="h-5 w-5 text-gray-400" />
             </div>
             <div>
-              <h4 class="text-sm font-medium">{{ item.product.product_name }}</h4>
-              <p class="text-xs text-gray-600">
-                {{ item.quantity }} x {{ formatCurrency(item.unit_price) }}
+              <h4 class="text-sm font-medium">
+                {{ item.product.product_name }}
+                <span class="text-primary-700 ml-1 text-xs font-medium">
+                  (x{{ item.quantity }})
+                </span>
+              </h4>
+              <p v-if="item.product.variant_name" class="text-core-500 text-xs">
+                {{ item.product.variant_name }}
               </p>
-              <p v-if="item.notes" class="text-xs text-gray-500 italic">{{ item.notes }}</p>
+              <p v-if="item.notes" class="text-core-500 text-xs italic">{{ item.notes }}</p>
             </div>
           </div>
           <div class="text-right">
-            <p class="text-sm font-semibold">{{ formatCurrency(getItemTotal(item)) }}</p>
+            <span class="text-sm font-medium">
+              {{ formatCurrency(getItemTotal(item)) }}
+            </span>
           </div>
         </div>
       </div>

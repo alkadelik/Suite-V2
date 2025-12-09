@@ -43,7 +43,11 @@ export const useAuthStore = defineStore(
       // redirect to login page
       localStorage.removeItem("auth")
       localStorage.removeItem("settings")
-      window.location.href = "/login"
+      // window.location.href = "/login"
+
+      // redirect user back to previous page
+      const redirectPath = window.location.pathname + window.location.search
+      window.location.href = `/login?redirect=${encodeURIComponent(redirectPath)}`
     }
 
     const setLoading = (loading: boolean) => {

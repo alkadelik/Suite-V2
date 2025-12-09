@@ -3,7 +3,7 @@ import Drawer from "@components/Drawer.vue"
 import AppButton from "@components/AppButton.vue"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import { useGetOrderPaymentHistory } from "../api"
 import { TOrder } from "../types"
 import AddPaymentModal from "./AddPaymentModal.vue"
@@ -25,7 +25,9 @@ const openCreatePaymentModal = () => {
   emit("close")
 }
 
-const { data: paymentHistory, refetch } = useGetOrderPaymentHistory(props.order.uid)
+const id = computed(() => props.order.uid)
+
+const { data: paymentHistory, refetch } = useGetOrderPaymentHistory(id)
 </script>
 
 <template>

@@ -1,5 +1,7 @@
 <template>
-  <Drawer
+  <component
+    :is="isMobile ? Modal : Drawer"
+    variant="fullscreen"
     :open="modelValue"
     :title="mode === 'add' ? 'Add New Customer' : 'Edit Customer'"
     :position="drawerPosition"
@@ -84,7 +86,9 @@
         </div>
       </div>
 
-      <div class="sticky bottom-0 space-y-3 border-t border-gray-200 bg-white px-4 py-4 md:px-6">
+      <div
+        class="fixed right-0 bottom-0 left-0 w-full space-y-3 border-t border-gray-200 bg-white px-4 py-4 md:px-6"
+      >
         <AppButton
           type="submit"
           :label="mode === 'add' ? 'Add Customer' : 'Save Changes'"
@@ -94,7 +98,7 @@
         />
       </div>
     </AppForm>
-  </Drawer>
+  </component>
 </template>
 
 <script setup lang="ts">
@@ -111,6 +115,10 @@ import { useCreateCustomer, useUpdateCustomer } from "../api"
 import { displayError } from "@/utils/error-handler"
 import { useAuthStore } from "@modules/auth/store"
 import { formatPhoneNumber } from "@/utils/others"
+import Modal from "@components/Modal.vue"
+import { useMediaQuery } from "@vueuse/core"
+
+const isMobile = useMediaQuery("(max-width: 1024px)")
 
 interface FormValues {
   [key: string]: unknown
@@ -163,7 +171,6 @@ const { mutate: createCustomer, isPending: isCreating } = useCreateCustomer()
 const { mutate: updateCustomer, isPending: isUpdating } = useUpdateCustomer()
 
 // Reactive state
-const isMobile = ref(false)
 const formKey = ref(0) // Force form re-render when switching modes
 
 // Computed loading state based on mode
@@ -174,16 +181,6 @@ const isPending = computed(() => {
 // Watch for changes in customer or mode to force form re-render
 watch([() => props.customer, () => props.mode, () => props.modelValue], () => {
   formKey.value += 1
-})
-
-// Check if mobile on mount and window resize
-const checkMobile = () => {
-  isMobile.value = window.innerWidth < 768 // md breakpoint
-}
-
-onMounted(() => {
-  checkMobile()
-  window.addEventListener("resize", checkMobile)
 })
 
 // Computed drawer position based on screen size
