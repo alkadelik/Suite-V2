@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/vue-query"
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from "axios"
 import { toast } from "./useToast"
 import { useSettingsStore } from "@modules/settings/store"
-import { toValue, MaybeRefOrGetter } from "vue"
+import { toValue, MaybeRefOrGetter, computed } from "vue"
 
 const baseURL = import.meta.env.VITE_API_BASE_URL as string
 
@@ -88,19 +88,20 @@ baseApi.interceptors.response.use(
 )
 
 export type TQueryArg = {
-  url: string
+  url: MaybeRefOrGetter<string>
   params?: MaybeRefOrGetter<Record<string, string | number | boolean> | undefined>
   enabled?: boolean
-  key: string
+  key: MaybeRefOrGetter<string>
   selectData?: boolean
 }
 export const useApiQuery = <T>({ url, params, enabled, key, selectData }: TQueryArg) => {
   return useQuery<T>({
-    queryKey: [key, params],
+    queryKey: computed(() => [toValue(key), toValue(params)]),
     queryFn: async () => {
       // Use toValue to handle both reactive and non-reactive values
+      const urlValue = toValue(url)
       const paramValue = toValue(params)
-      const { data } = await baseApi.get<T>(url, paramValue ? { params: paramValue } : {})
+      const { data } = await baseApi.get<T>(urlValue, paramValue ? { params: paramValue } : {})
       return data
     },
     retry: false,

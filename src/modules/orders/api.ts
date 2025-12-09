@@ -10,7 +10,7 @@ import {
   TOrderResponse,
 } from "./types"
 import baseApi, { TPaginatedResponse, useApiQuery } from "@/composables/baseApi"
-import { MaybeRefOrGetter } from "vue"
+import { MaybeRefOrGetter, computed, toValue } from "vue"
 
 /** Create order api request */
 export function useCreateOrder() {
@@ -124,10 +124,10 @@ export function useAddUpdateOrderPayment() {
 }
 
 /** Fetch order memos */
-export function useGetOrderPaymentHistory(id: string) {
+export function useGetOrderPaymentHistory(id: MaybeRefOrGetter<string>) {
   return useApiQuery<IPaymentHistory>({
-    url: `/orders/${id}/payments/`,
-    key: "orderPayments",
+    url: computed(() => `/orders/${toValue(id)}/payments/`),
+    key: computed(() => `orderPayments/${toValue(id)}`),
     selectData: true,
   })
 }

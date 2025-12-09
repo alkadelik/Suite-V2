@@ -61,7 +61,13 @@
           leave-from-class="transform opacity-100 scale-100"
           leave-to-class="transform opacity-0 scale-95"
         >
-          <div v-if="open" :class="dropdownClasses" :style="dropdownStyles" @click.stop>
+          <div
+            v-if="open"
+            ref="dropdownElement"
+            :class="dropdownClasses"
+            :style="dropdownStyles"
+            @click.stop
+          >
             <!-- Search Input (inside dropdown) -->
             <div v-if="searchable" class="border-core-100 border-b p-3">
               <input
@@ -75,6 +81,20 @@
                 @keydown.arrow-down.prevent="highlightNext"
                 @keydown.arrow-up.prevent="highlightPrevious"
               />
+            </div>
+
+            <!-- Select All Button (for multiple selection) -->
+            <div
+              v-if="multiple && filteredOptions.length > 0"
+              class="border-core-100 border-b px-3 pb-2"
+            >
+              <button
+                type="button"
+                class="text-primary-600 hover:text-primary-700 text-xs font-medium"
+                @click.stop="selectAll"
+              >
+                {{ allSelected ? "Unselect All" : "Select All" }}
+              </button>
             </div>
 
             <!-- Options List -->
@@ -131,6 +151,20 @@
                 {{ noOptionsText }}
               </div>
             </div>
+
+            <!-- Done Button (for multiple selection) -->
+            <div
+              v-if="multiple && filteredOptions.length > 0"
+              class="border-core-100 flex justify-end border-t px-3 pt-2"
+            >
+              <button
+                type="button"
+                class="text-primary-600 hover:text-primary-700 text-xs font-medium"
+                @click.stop="closeDropdown"
+              >
+                Done
+              </button>
+            </div>
           </div>
         </Transition>
       </Teleport>
@@ -152,6 +186,7 @@
 <script setup lang="ts">
 import { capitalizeFirstChar } from "@/utils/format-strings"
 import Icon from "@components/Icon.vue"
+import { useMediaQuery } from "@vueuse/core"
 import { ref, computed, onMounted, onUnmounted } from "vue"
 
 type OptionValue = string | number | Record<string, unknown>
@@ -214,7 +249,7 @@ const props = withDefaults(defineProps<Props>(), {
   noOptionsText: "No options found",
   variant: "default",
   size: "md",
-  placement: "bottom",
+  placement: "top",
 })
 
 const emit = defineEmits<{
@@ -228,6 +263,7 @@ const search = ref("")
 const highlightedIndex = ref(-1)
 const selectContainer = ref<HTMLElement>()
 const searchInput = ref<HTMLInputElement>()
+const dropdownElement = ref<HTMLElement>()
 const positionTrigger = ref(0) // Used to force recompute dropdown position
 
 // Check if we're inside a modal
@@ -247,8 +283,12 @@ const hasSelection = computed(() =>
   props.multiple ? selectedArray.value.length > 0 : selected.value != null,
 )
 
+const isMobile = useMediaQuery("(max-width: 768px)")
+
 // Dropdown placement logic
 const dropdownPlacement = computed(() => {
+  if (isMobile && props.searchable) return "bottom"
+
   if (props.placement === "auto" && selectContainer.value && open.value) {
     const rect = selectContainer.value.getBoundingClientRect()
     const viewportHeight = window.innerHeight
@@ -261,7 +301,7 @@ const dropdownPlacement = computed(() => {
     }
     return "bottom"
   }
-  return props.placement === "auto" ? "bottom" : props.placement
+  return props.placement === "auto" ? "top" : props.placement
 })
 
 // Helper functions
@@ -449,10 +489,37 @@ const select = (opt: OptionValue) => {
   if (props.multiple) {
     if (isSelected(opt)) remove(opt)
     else emit("update:modelValue", [...selectedArray.value, opt])
+    // Don't close dropdown for multiple selection
   } else {
     emit("update:modelValue", opt)
     open.value = false
   }
+  search.value = ""
+}
+
+const allSelected = computed(() => {
+  if (!props.multiple || filteredOptions.value.length === 0) return false
+  return filteredOptions.value.every((opt) => isSelected(opt))
+})
+
+const selectAll = () => {
+  if (!props.multiple) return
+  if (allSelected.value) {
+    // Unselect all filtered options
+    const filteredValues = filteredOptions.value.map((opt) => JSON.stringify(getValue(opt)))
+    const newValue = selectedArray.value.filter(
+      (item) => !filteredValues.includes(JSON.stringify(getValue(item))),
+    )
+    emit("update:modelValue", newValue)
+  } else {
+    // Select all filtered options (merge with existing selections)
+    const newSelections = filteredOptions.value.filter((opt) => !isSelected(opt))
+    emit("update:modelValue", [...selectedArray.value, ...newSelections])
+  }
+}
+
+const closeDropdown = () => {
+  open.value = false
   search.value = ""
 }
 
@@ -489,36 +556,42 @@ const highlightPrevious = () => {
 
 // Outside click handler
 const onClickOutside = (event: MouseEvent) => {
-  if (
-    open.value &&
-    selectContainer.value &&
-    !selectContainer.value.contains(event.target as Node)
-  ) {
-    const target = event.target as HTMLElement
+  if (!open.value || !selectContainer.value) return
 
-    // Special handling for clicks inside modals
-    if (isInsideModal.value) {
-      // Check if the click is on the modal overlay (which should close the dropdown)
-      const isClickOnModalOverlay =
-        target.classList.contains("fixed") &&
-        target.classList.contains("inset-0") &&
-        (target.classList.contains("bg-black") || target.style.backgroundColor)
+  const target = event.target as HTMLElement
 
-      // Check if click is on the modal close button
-      const isModalCloseButton =
-        target.closest('[class*="close"]') ||
-        target.closest('button[aria-label*="close"]') ||
-        target.closest('button[title*="close"]')
+  // Check if click is inside the select container
+  if (selectContainer.value.contains(target)) return
 
-      if (isClickOnModalOverlay || isModalCloseButton) {
-        open.value = false
-        search.value = ""
-      }
-    } else {
-      // Normal outside click behavior for non-modal usage
+  // Check if click is inside the dropdown (via ref or by checking parent elements)
+  if (dropdownElement.value?.contains(target)) return
+
+  // Also check if the target is within any teleported dropdown
+  const isInsideDropdown = target.closest('[class*="z-[1200]"], [class*="z-[1300]"]')
+  if (isInsideDropdown) return
+
+  // Special handling for clicks inside modals
+  if (isInsideModal.value) {
+    // Check if the click is on the modal overlay (which should close the dropdown)
+    const isClickOnModalOverlay =
+      target.classList.contains("fixed") &&
+      target.classList.contains("inset-0") &&
+      (target.classList.contains("bg-black") || target.style.backgroundColor)
+
+    // Check if click is on the modal close button
+    const isModalCloseButton =
+      target.closest('[class*="close"]') ||
+      target.closest('button[aria-label*="close"]') ||
+      target.closest('button[title*="close"]')
+
+    if (isClickOnModalOverlay || isModalCloseButton) {
       open.value = false
       search.value = ""
     }
+  } else {
+    // Normal outside click behavior for non-modal usage
+    open.value = false
+    search.value = ""
   }
 }
 

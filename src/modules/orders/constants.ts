@@ -23,7 +23,7 @@ export const ORDER_CHANNELS: TOrderChannel[] = [
 
 export const DELIVERY_PAYMENT_OPTION = [
   { label: "Customer pays courier directly", value: "customer_pays_courier" },
-  { label: "Customer pays merchant", value: "customer_pays_merchant" },
+  { label: "Customer pays you", value: "customer_pays_merchant" },
   { label: "Free Shipping", value: "free_shipping" },
 ]
 
@@ -64,13 +64,13 @@ export const anonymousCustomer: TCustomer = {
 
 export const ORDER_COLUMNS: TableColumn<TOrder>[] = [
   { header: "Order ID", accessor: "order_number" },
+  { header: "Items", accessor: "items" },
   { header: "Customer", accessor: "customer_info", class: "max-w-[200px]" },
   {
     header: "Amount",
     accessor: "total_amount",
     cell: ({ value }) => formatCurrency(Number(value)),
   },
-  { header: "Order", accessor: "items" },
   { header: "Status", accessor: "payment_status" },
   { header: "Fulfilled", accessor: "fulfilment_status" },
   {

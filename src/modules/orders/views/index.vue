@@ -7,7 +7,6 @@ import MetricsGrid from "@components/MetricsGrid.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, onMounted, ref } from "vue"
-import Avatar from "@components/Avatar.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import Chip from "@components/Chip.vue"
 import { TOrder } from "../types"
@@ -27,6 +26,7 @@ import Tabs from "@components/Tabs.vue"
 import { formatCurrency } from "@/utils/format-currency"
 import { useRoute } from "vue-router"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
+import ProductAvatar from "@components/ProductAvatar.vue"
 
 const openCreate = ref(false)
 const openVoid = ref(false)
@@ -308,9 +308,18 @@ onMounted(() => {
           @pagination-change="(d) => (page = d.currentPage)"
         >
           <template #cell:items="{ item }">
-            <div class="max-w-[100px] truncate">
+            <ProductAvatar
+              :name="item.items?.[0].product_name"
+              :url="undefined"
+              :variants-count="item.items.length > 1 ? item.items.length : undefined"
+              :variants-count-text="`+ ${item.items.length - 1}`"
+              shape="rounded"
+              class="!gap-2"
+            />
+            <!-- <div class="max-w-[100px] truncate">
               {{ item.items.map((v) => v.product_name).join(", ") }}
-            </div>
+              <Chip v-if="item.items.length > 1" :label="`+ ${item.items.length - 1}`" />
+            </div> -->
           </template>
           <template #cell:fulfilment_status="{ item }">
             <Chip
@@ -334,10 +343,9 @@ onMounted(() => {
           </template>
           <!--  -->
           <template #cell:customer_info="{ item }">
-            <Avatar
-              :extra-text="true"
-              :name="`${item.customer_name || anonymousCustomer.full_name}`"
-            />
+            <span>
+              {{ item.customer_name || anonymousCustomer.full_name }}
+            </span>
           </template>
           <template #cell:actions="{ item }">
             <div class="inline-flex items-center gap-1">

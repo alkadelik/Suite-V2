@@ -6,11 +6,19 @@ import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
 import { PopupInventory } from "@modules/popups/types"
 import { computed, onMounted, ref } from "vue"
+import * as yup from "yup"
 
 interface PopupOrderItem {
   product: PopupInventory
   quantity: number
   unit_price: number
+}
+
+interface ValidationErrors {
+  [key: string]: {
+    quantity?: string
+    unit_price?: string
+  }
 }
 
 const props = defineProps<{
@@ -25,6 +33,7 @@ const emit = defineEmits<{
 }>()
 
 const localItems = ref<PopupOrderItem[]>([])
+const validationErrors = ref<ValidationErrors>({})
 
 // Initialize local items when component mounts or products change
 onMounted(() => {
@@ -41,7 +50,60 @@ onMounted(() => {
 })
 
 const removeItem = (index: number) => {
+  const productUid = localItems.value[index].product.uid
+  delete validationErrors.value[productUid]
   localItems.value.splice(index, 1)
+}
+
+// Validate a single item
+const validateItem = async (item: PopupOrderItem) => {
+  const schema = yup.object({
+    quantity: yup
+      .number()
+      .transform((value, originalValue) => (originalValue === "" ? undefined : value))
+      .typeError("Quantity must be a number")
+      .required("Quantity is required")
+      .positive("Quantity must be greater than 0")
+      .integer("Quantity must be a whole number")
+      .max(
+        item.product.available_quantity,
+        `Only ${item.product.available_quantity} available in stock`,
+      ),
+    unit_price: yup
+      .number()
+      .transform((value, originalValue) => (originalValue === "" ? undefined : value))
+      .typeError("Price must be a number")
+      .required("Price is required")
+      .positive("Price must be greater than 0")
+      .min(0.01, "Price must be at least 0.01"),
+  })
+
+  try {
+    await schema.validate(
+      { quantity: item.quantity, unit_price: item.unit_price },
+      { abortEarly: false },
+    )
+    // Clear errors for this item if validation passes
+    delete validationErrors.value[item.product.uid]
+    return true
+  } catch (err) {
+    if (err instanceof yup.ValidationError) {
+      const errors: { quantity?: string; unit_price?: string } = {}
+      err.inner.forEach((error) => {
+        if (error.path) {
+          errors[error.path as "quantity" | "unit_price"] = error.message
+        }
+      })
+      validationErrors.value[item.product.uid] = errors
+    }
+    return false
+  }
+}
+
+// Validate all items
+const validateAllItems = async () => {
+  const validations = await Promise.all(localItems.value.map((item) => validateItem(item)))
+  return validations.every((isValid) => isValid)
 }
 
 const canProceed = computed(() => {
@@ -51,8 +113,9 @@ const canProceed = computed(() => {
   })
 })
 
-const handleNext = () => {
-  if (canProceed.value) {
+const handleNext = async () => {
+  const isValid = await validateAllItems()
+  if (isValid && canProceed.value) {
     emit("update:orderItems", localItems.value)
     emit("next")
   }
@@ -119,6 +182,8 @@ const getOriginalPrice = (item: PopupOrderItem) => {
               placeholder="1"
               :min="1"
               :max="item.product.available_quantity"
+              :error="validationErrors[item.product.uid]?.quantity"
+              @blur="validateItem(item)"
             />
             <TextField
               v-model="item.unit_price"
@@ -128,6 +193,8 @@ const getOriginalPrice = (item: PopupOrderItem) => {
               placeholder="e.g. 59.99"
               :min="0"
               step="0.01"
+              :error="validationErrors[item.product.uid]?.unit_price"
+              @blur="validateItem(item)"
             />
           </div>
         </div>

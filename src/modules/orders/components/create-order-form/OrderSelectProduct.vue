@@ -89,8 +89,6 @@ const handleNext = () => {
           placeholder="Search by name"
           v-model="searchQuery"
         />
-        <AppButton icon="filter-lines" variant="outlined" color="alt" class="flex-shrink-0" />
-        <AppButton icon="add" class="flex-shrink-0" />
       </div>
     </div>
 

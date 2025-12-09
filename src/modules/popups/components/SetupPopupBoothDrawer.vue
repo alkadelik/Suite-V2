@@ -112,7 +112,7 @@ const isMobile = useMediaQuery("(max-width: 1028px)")
   <component
     :is="isMobile ? Modal : Drawer"
     :open="open"
-    variant="bottom-nav"
+    variant="fullscreen"
     title="Setup Booth"
     max-width="2xl"
     @close="handleClose"

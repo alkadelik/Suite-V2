@@ -8,6 +8,7 @@
 
     <div class="my-4 rounded-xl bg-white px-0 pb-2 md:my-6 md:p-4">
       <!-- <h2 class="md:text-md mb-3 text-sm font-semibold">Quick Actions</h2> -->
+
       <div class="grid grid-cols-3 gap-3 md:gap-4 xl:grid-cols-5">
         <div
           v-for="action in quickActions.slice(0, isMobile ? 3 : 5)"

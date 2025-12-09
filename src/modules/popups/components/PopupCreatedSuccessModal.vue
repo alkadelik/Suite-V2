@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import AppButton from "@components/AppButton.vue"
-import gridPng from "@/assets/images/empty-grid.png"
 import Chip from "@components/Chip.vue"
 import { PopupEvent } from "../types"
 import { computed } from "vue"
-import { clipboardCopy } from "@/utils/others"
+import { clipboardCopy, isStaging } from "@/utils/others"
 import Modal from "@components/Modal.vue"
 import { watch } from "vue"
+import { useSettingsStore } from "@modules/settings/store"
+import gridPng from "@/assets/images/empty-grid.png"
 
 const props = defineProps<{ popup: PopupEvent | null; open: boolean }>()
 
 defineEmits<{ "setup-booth": []; close: [] }>()
+
+const storeDetails = computed(() => useSettingsStore().storeDetails)
 
 watch(
   () => props.popup,
@@ -20,7 +23,10 @@ watch(
   },
 )
 
-const popupUrl = computed(() => `popup.leyyow.com/${props.popup?.slug}`)
+const popupUrl = computed(
+  () =>
+    `${isStaging ? "storefronts-v2.vercel.app/" : "buy.leyyow.com/"}/${storeDetails.value?.slug}/events/${props.popup?.slug}`,
+)
 </script>
 
 <template>

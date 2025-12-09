@@ -12,6 +12,7 @@ export const POPUP_COLUMN: TableColumn<PopupEvent>[] = [
     cell: ({ value }) => (Number(value) ? formatCurrency(value as number) : "Free"),
   },
   { header: "Sales", accessor: "items_sold_count" },
+  { header: "Status", accessor: "status" },
   {
     header: "Start Date",
     accessor: "start_date",
@@ -60,3 +61,14 @@ export const POPUP_ORDER_COLUMNS: TableColumn<TOrder>[] = [
   },
   { header: "Actions", accessor: "actions" },
 ]
+
+export const getEventStatus = (event: { start_date?: string; end_date?: string } | null) => {
+  if (!event?.start_date || !event?.end_date) return "ended"
+  const now = new Date()
+  const startDate = new Date(event.start_date)
+  const endDate = new Date(event.end_date)
+
+  if (now < startDate) return "upcoming"
+  if (now >= startDate && now <= endDate) return "ongoing"
+  return "ended"
+}
