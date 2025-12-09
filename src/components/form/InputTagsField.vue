@@ -33,12 +33,11 @@
           <input
             ref="inputRef"
             v-model="inputValue"
-            :type="props.isWeightAttribute ? 'number' : 'text'"
+            type="text"
+            :inputmode="props.isWeightAttribute ? 'decimal' : 'text'"
             :placeholder="placeholder"
             :disabled="disabled"
             :class="inputClasses"
-            :step="props.isWeightAttribute ? '0.01' : undefined"
-            :min="props.isWeightAttribute ? '0' : undefined"
             @keydown.enter.prevent="addTag"
             @keydown="handleKeydown"
             @input="handleInput"
@@ -326,24 +325,16 @@ const handleInput = (event: Event) => {
   const target = event.target as HTMLInputElement
   let value = target.value
 
-  // For weight attribute, allow only valid numeric characters
+  // For weight attribute, allow only valid numeric characters (no negative values)
   if (props.isWeightAttribute && value) {
-    // Allow only digits, decimal point, and minus sign (at the start only)
-    let sanitized = value.replace(/[^0-9.-]/g, "")
+    // Allow only digits and decimal point (no minus sign for weights)
+    let sanitized = value.replace(/[^0-9.]/g, "")
 
     // Ensure only one decimal point
     const decimalCount = (sanitized.match(/\./g) || []).length
     if (decimalCount > 1) {
       const parts = sanitized.split(".")
       sanitized = parts[0] + "." + parts.slice(1).join("")
-    }
-
-    // Ensure minus sign only at the start
-    if (sanitized.includes("-")) {
-      const minusCount = (sanitized.match(/-/g) || []).length
-      if (minusCount > 1 || sanitized.indexOf("-") > 0) {
-        sanitized = sanitized.replace(/-/g, "")
-      }
     }
 
     value = sanitized

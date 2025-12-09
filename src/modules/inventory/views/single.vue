@@ -131,6 +131,7 @@
 
     <AddReduceStockModal
       v-if="selectedVariant"
+      :key="`stock-modal-${selectedVariant.uid}`"
       :open="showAddReduceStockModal"
       :type="stockModalType"
       :variant-uid="selectedVariant.uid"
@@ -162,8 +163,10 @@
       :product="productForEdit"
       :edit-mode="editMode"
       :variant="variantForEdit"
+      :loading="isFetching"
       @refresh="handleStockSuccess"
       @add-category="showAddCategoryModal = true"
+      @edit-variant-details="handleEditVariantDetails"
     />
 
     <!-- Add Category Modal -->
@@ -206,7 +209,7 @@ import ManageStockModal from "../components/ManageStockModal.vue"
 import type { TOrder } from "@modules/orders/types"
 import { useSettingsStore } from "@modules/settings/store"
 import { useGetOrders } from "@modules/orders/api"
-import { useGetInventoryMovements } from "../api"
+import { useGetProductMovements } from "../api"
 import AppButton from "@components/AppButton.vue"
 import ProductEditDrawer from "../components/ProductEditDrawer.vue"
 import AddCategoryModal from "../components/AddCategoryModal.vue"
@@ -219,7 +222,7 @@ const queryClient = useQueryClient()
 const settingsStore = useSettingsStore()
 const isHQ = computed(() => settingsStore.activeLocation?.is_hq ?? true)
 const uid = Array.isArray(route.params.uid) ? route.params.uid[0] : route.params.uid
-const { data: product, isPending } = useGetProduct(uid)
+const { data: product, isPending, isFetching } = useGetProduct(uid)
 const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct()
 
 const orderParams = computed(() => ({
@@ -227,14 +230,11 @@ const orderParams = computed(() => ({
 }))
 const { data: ordersData, isPending: isLoadingOrders } = useGetOrders(orderParams)
 
-const movementParams = computed(() => ({
-  product: uid,
-}))
 const {
   data: movementsData,
   isPending: isLoadingMovements,
   refetch: refetchMovements,
-} = useGetInventoryMovements(movementParams)
+} = useGetProductMovements(uid)
 
 // Initialize activeTab from query parameter or default to "overview"
 const activeTab = ref((route.query.tab as string) || "overview")
@@ -484,6 +484,14 @@ const openVariantsManage = () => {
   editMode.value = "variants"
   variantForEdit.value = null
   showProductEditDrawer.value = true
+}
+
+const handleEditVariantDetails = () => {
+  // Open drawer immediately
+  openPriceWeightEdit()
+
+  // Refetch product data in the background
+  queryClient.refetchQueries({ queryKey: ["products", uid] })
 }
 
 const actionItems = computed(() => {

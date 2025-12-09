@@ -71,6 +71,7 @@ export interface IStoreDetails {
   support_phone: string
   instagram_handle: string
   currency: string
+  pickup_location?: string
 }
 
 export interface IUpdateStoreDetailsPayload {

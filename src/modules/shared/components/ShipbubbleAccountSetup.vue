@@ -153,6 +153,35 @@
                 <div v-if="isGettingCouriers" class="flex items-center justify-center">
                   <LoadingIcon icon-class="text-black h-6 w-6" />
                 </div>
+
+                <!-- Empty state when no couriers match search -->
+                <div
+                  v-else-if="filteredOptions.length === 0"
+                  class="flex flex-col items-center justify-center py-12 text-center"
+                >
+                  <div
+                    class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100"
+                  >
+                    <Icon name="truck-fast" size="28" class="text-gray-400" />
+                  </div>
+                  <h4 class="mb-1 text-base font-semibold text-black">No couriers found</h4>
+                  <p class="max-w-[240px] text-sm text-[#838383]">
+                    {{
+                      searchQuery
+                        ? `No couriers match "${searchQuery}". Try a different search term.`
+                        : "No couriers available at the moment."
+                    }}
+                  </p>
+                  <button
+                    v-if="searchQuery"
+                    type="button"
+                    class="mt-4 text-sm font-semibold text-[#D93855] hover:underline"
+                    @click="searchQuery = ''"
+                  >
+                    Clear search
+                  </button>
+                </div>
+
                 <div
                   v-for="option in filteredOptions"
                   v-else

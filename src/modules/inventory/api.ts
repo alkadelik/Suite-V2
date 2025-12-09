@@ -5,6 +5,7 @@ import {
   IProductCategoryFormPayload,
   IProductFormPayload,
   IProductAttributeFormPayload,
+  IAttributeValueItem,
   IProductImageUploadPayload,
   IProductImageUpdatePayload,
   IGetProductResponse,
@@ -17,7 +18,6 @@ import {
   IInventoryTransferRequestsApiResponse,
   IApproveRejectRequestPayload,
   IBulkVariantPayload,
-  IProductAttributeValuePayload,
 } from "./types"
 
 /** Get categories api request */
@@ -155,11 +155,9 @@ export function useGetAttributeValues(attributeUid: string) {
 
 export function useCreateAttributeValues() {
   return useMutation({
-    mutationFn: ({
-      attributeUid,
-      ...payload
-    }: IProductAttributeValuePayload & { attributeUid: string }) =>
-      baseApi.post(`inventory/attributes/${attributeUid}/add-value/`, payload),
+    mutationFn: (payload: { attributeUid: string; values: IAttributeValueItem[] }) => {
+      return baseApi.post(`inventory/attributes/${payload.attributeUid}/add-value/`, payload.values)
+    },
   })
 }
 
@@ -253,6 +251,22 @@ export function useGetInventoryMovements(
       const { data } = await baseApi.get<IInventoryMovementsApiResponse>("/inventory/movements/", {
         params: toValue(params),
       })
+      return data
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
+  })
+}
+
+/** get product movements */
+export function useGetProductMovements(productUid: MaybeRefOrGetter<string>) {
+  return useQuery({
+    queryKey: ["product-movements", productUid],
+    queryFn: async () => {
+      const uid = toValue(productUid)
+      const { data } = await baseApi.get<IInventoryMovementsApiResponse>(
+        `/inventory/products/${uid}/movements/`,
+      )
       return data
     },
     retry: false,
