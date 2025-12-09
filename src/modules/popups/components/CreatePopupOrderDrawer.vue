@@ -63,8 +63,9 @@ const shippingInfo = ref({
 
 // Step 5: Payment info
 const paymentInfo = ref({
-  payment_status: "paid" as "unpaid" | "paid" | "partially_paid",
+  payment_status: "unpaid" as "unpaid" | "paid" | "partially_paid",
   payment_amount: 0,
+  payment_source: undefined as { label: string; value: string } | undefined,
   coupon_code: null as string | null,
   discount_amount: 0,
 })
@@ -103,6 +104,7 @@ const onCreateOrder = () => {
     courier: shippingInfo.value.courier,
     coupon_code: paymentInfo.value.coupon_code || "",
     payment_status: paymentInfo.value.payment_status,
+    payment_source: paymentInfo.value.payment_source?.value,
     payment_amount:
       paymentInfo.value.payment_status === "paid"
         ? totalAmount.value
@@ -144,6 +146,7 @@ const resetForm = () => {
   }
   paymentInfo.value = {
     payment_status: "unpaid",
+    payment_source: undefined,
     payment_amount: 0,
     coupon_code: null,
     discount_amount: 0,

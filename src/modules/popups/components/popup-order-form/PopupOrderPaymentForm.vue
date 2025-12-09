@@ -3,13 +3,14 @@ import { formatCurrency } from "@/utils/format-currency"
 import AppButton from "@components/AppButton.vue"
 import FormField from "@components/form/FormField.vue"
 import RadioInputField from "@components/form/RadioInputField.vue"
+import { ORDER_PAYMENT_METHODS, ORDER_PAYMENT_STATUS } from "@modules/orders/constants"
 import Icon from "@components/Icon.vue"
 import { computed } from "vue"
 
 interface PaymentInfo {
   payment_status: "unpaid" | "paid" | "partially_paid"
   payment_amount: number
-  payment_mode?: string
+  payment_source?: { label: string; value: string }
   coupon_code: string | null
   discount_amount: number
 }
@@ -28,18 +29,18 @@ const emit = defineEmits<{
   "update:paymentInfo": [info: PaymentInfo]
 }>()
 
-const PAYMENT_STATUS_OPTIONS = [
-  { label: "Fully Paid", value: "paid" },
-  { label: "Unpaid", value: "unpaid" },
-  { label: "Partial Payment", value: "partially_paid" },
-]
+// const PAYMENT_STATUS_OPTIONS = [
+//   { label: "Fully Paid", value: "paid" },
+//   { label: "Unpaid", value: "unpaid" },
+//   { label: "Partial Payment", value: "partially_paid" },
+// ]
 
-const PAYMENT_MODE = [
-  { label: "Cash", value: "cash" },
-  { label: "Credit Card", value: "credit_card" },
-  { label: "Bank Transfer", value: "bank_transfer" },
-  { label: "Mobile Money", value: "mobile_money" },
-]
+// const PAYMENT_MODE = [
+//   { label: "Cash", value: "cash" },
+//   { label: "Credit Card", value: "credit_card" },
+//   { label: "Bank Transfer", value: "bank_transfer" },
+//   { label: "Mobile Money", value: "mobile_money" },
+// ]
 
 const updateField = (field: keyof PaymentInfo, value: unknown) => {
   let updatedInfo = { ...props.paymentInfo, [field]: value }
@@ -97,7 +98,7 @@ const handleNext = () => {
       <div class="rounded-xl bg-white p-4">
         <h3 class="mb-4 text-sm font-medium">Payment Status</h3>
         <RadioInputField
-          :options="PAYMENT_STATUS_OPTIONS"
+          :options="ORDER_PAYMENT_STATUS"
           :modelValue="paymentInfo.payment_status"
           @update:modelValue="updateField('payment_status', $event)"
         />
@@ -106,11 +107,11 @@ const handleNext = () => {
       <div v-if="paymentInfo.payment_status !== 'unpaid'" class="space-y-6 rounded-xl bg-white p-4">
         <FormField
           type="select"
-          :options="PAYMENT_MODE"
-          name="payment_mode"
+          :options="ORDER_PAYMENT_METHODS"
+          name="payment_source"
           label="Payment Mode"
-          :modelValue="paymentInfo.payment_mode"
-          @update:modelValue="updateField('payment_mode', $event)"
+          :modelValue="paymentInfo.payment_source"
+          @update:modelValue="updateField('payment_source', $event)"
           required
         />
 
