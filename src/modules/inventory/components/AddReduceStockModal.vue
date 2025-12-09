@@ -181,14 +181,7 @@ watch(
   () => props.open,
   (isOpen) => {
     if (isOpen) {
-      resetForm({
-        values: {
-          quantity: 0,
-          unit_cost: props.variantPrice || "",
-          note: "",
-          loss_type: null,
-        },
-      })
+      resetForm()
     }
   },
 )

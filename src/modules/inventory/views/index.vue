@@ -150,11 +150,6 @@
                 @click.stop="handleAction('duplicate', item)"
                 class="hidden cursor-pointer hover:text-gray-600 md:inline-block"
               />
-              <Icon
-                name="edit"
-                @click.stop="openProductEditDrawer(item)"
-                class="hidden cursor-pointer hover:text-gray-600 md:inline-block"
-              />
               <DropdownMenu
                 :items="getActionItems(item)"
                 placement="bottom-end"

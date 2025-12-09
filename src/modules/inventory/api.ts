@@ -258,6 +258,22 @@ export function useGetInventoryMovements(
   })
 }
 
+/** get product movements */
+export function useGetProductMovements(productUid: MaybeRefOrGetter<string>) {
+  return useQuery({
+    queryKey: ["product-movements", productUid],
+    queryFn: async () => {
+      const uid = toValue(productUid)
+      const { data } = await baseApi.get<IInventoryMovementsApiResponse>(
+        `/inventory/products/${uid}/movements/`,
+      )
+      return data
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
+  })
+}
+
 /** direct stock transfer */
 export function useDirectStockTransfer() {
   return useMutation({

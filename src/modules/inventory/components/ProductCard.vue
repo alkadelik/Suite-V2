@@ -25,7 +25,10 @@
               <Icon name="cube" class="text-core-600 me-1 size-4" />
               <span class="text-sm font-bold">{{ product.total_stock }}</span>
             </div>
-            <div class="flex items-center">
+            <div
+              class="flex items-center"
+              :class="{ 'hidden md:flex': product.variants_count === 1 }"
+            >
               <Icon name="shapes" class="text-core-600 me-1 size-4" />
               <span class="text-sm font-bold">{{ product.variants_count }}</span>
             </div>

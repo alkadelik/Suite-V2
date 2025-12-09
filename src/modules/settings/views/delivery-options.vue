@@ -6,38 +6,95 @@ import Icon from "@components/Icon.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import { useAuthStore } from "@modules/auth/store"
 import { useGetLiveStatus } from "@modules/shared/api"
+import { useGetStoreDetails, useUpdateStoreDetails } from "@modules/settings/api"
 import ConfigureDeliveryModal from "@modules/shared/components/ConfigureDeliveryModal.vue"
 import ConfigurePickupModal from "@modules/shared/components/ConfigurePickupModal.vue"
 import ManageShipBubbleModal from "@modules/shared/components/ManageShipBubbleModal.vue"
+import { toast } from "@/composables/useToast"
+import { displayError } from "@/utils/error-handler"
 
 import { computed, ref, watch } from "vue"
 const form = ref({ allow_pickup: false, allow_delivery: false })
+const originalValues = ref({ allow_pickup: false, allow_delivery: false })
 
 const openPickup = ref(false)
 const openDelivery = ref(false)
 const openNewDelivery = ref(false)
 const storeSlug = computed(() => useAuthStore().user?.store_slug || "")
+const storeUid = computed(() => useAuthStore().user?.store_uid || "")
 
 const { data: liveStatus, refetch: refetchLiveStatus } = useGetLiveStatus(storeSlug.value)
+const { data: storeDetails, refetch: refetchStoreDetails } = useGetStoreDetails(storeUid.value)
+const { mutate: updateStore, isPending: isUpdating } = useUpdateStoreDetails()
+
 const computedLiveStatusDelivery = computed(
   () => liveStatus.value?.data?.criteria?.delivery_options?.details || null,
 )
 
+// Watch store details for pickup location and delivery settings
 watch(
-  liveStatus,
+  storeDetails,
   (newVal) => {
-    console.log({ newVal })
     if (newVal) {
-      form.value.allow_pickup =
-        newVal.data?.criteria?.delivery_options?.details?.pickup_location || false
-      form.value.allow_delivery =
-        newVal.data?.criteria?.delivery_options?.details?.delivery_enabled || false
+      // Pickup location
+      const pickupLocation = newVal.pickup_location
+      const hasPickup = typeof pickupLocation === "string" ? pickupLocation.trim() !== "" : false
+      form.value.allow_pickup = hasPickup
+      originalValues.value.allow_pickup = hasPickup
+
+      // Delivery enabled
+      form.value.allow_delivery = newVal.delivery_enabled || false
+      originalValues.value.allow_delivery = newVal.delivery_enabled || false
     }
   },
   { immediate: true },
 )
 
-// Watch both delivery modals to refetch status and reset form when they close
+// Check if form has changes
+const hasChanges = computed(() => {
+  return (
+    form.value.allow_pickup !== originalValues.value.allow_pickup ||
+    form.value.allow_delivery !== originalValues.value.allow_delivery
+  )
+})
+
+// Handle save
+const handleSave = () => {
+  const payload: Record<string, unknown> = {}
+
+  if (form.value.allow_pickup !== originalValues.value.allow_pickup) {
+    // If turning off pickup, clear the pickup location
+    if (!form.value.allow_pickup) {
+      payload.pickup_location = ""
+    }
+    // If turning on pickup, the ConfigurePickupModal handles the save
+  }
+
+  if (form.value.allow_delivery !== originalValues.value.allow_delivery) {
+    payload.delivery_enabled = form.value.allow_delivery
+  }
+
+  updateStore(
+    { id: storeUid.value, body: payload },
+    {
+      onSuccess: () => {
+        toast.success("Delivery options updated successfully")
+        refetchStoreDetails()
+        refetchLiveStatus()
+      },
+      onError: displayError,
+    },
+  )
+}
+
+// Watch pickup modal to refetch store details when it closes
+watch(openPickup, (newOpen, oldOpen) => {
+  if (oldOpen === true && newOpen === false) {
+    refetchStoreDetails()
+  }
+})
+
+// Watch both delivery modals to refetch data when they close
 watch(
   [openDelivery, openNewDelivery],
   ([newOpenDelivery, newOpenNewDelivery], [oldOpenDelivery, oldOpenNewDelivery]) => {
@@ -46,7 +103,8 @@ watch(
     const newDeliveryModalClosed = oldOpenNewDelivery === true && newOpenNewDelivery === false
 
     if (deliveryModalClosed || newDeliveryModalClosed) {
-      // Refetch the live status to get the actual delivery state
+      // Refetch both store details and live status
+      refetchStoreDetails()
       refetchLiveStatus()
     }
   },
@@ -139,13 +197,26 @@ watch(
         </div>
 
         <div class="border-core-100 flex justify-end gap-6 border-t px-6 py-4">
-          <AppButton label="Save Changes" disabled />
+          <AppButton
+            label="Save Changes"
+            :disabled="!hasChanges"
+            :loading="isUpdating"
+            @click="handleSave"
+          />
         </div>
       </div>
     </section>
 
     <ConfigurePickupModal v-model="openPickup" />
     <ManageShipBubbleModal v-model="openDelivery" />
-    <ConfigureDeliveryModal v-model="openNewDelivery" @refresh="refetchLiveStatus" />
+    <ConfigureDeliveryModal
+      v-model="openNewDelivery"
+      @refresh="
+        () => {
+          refetchStoreDetails()
+          refetchLiveStatus()
+        }
+      "
+    />
   </div>
 </template>
