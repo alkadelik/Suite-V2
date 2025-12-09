@@ -5,7 +5,6 @@ import { PopupEvent } from "../types"
 import { computed } from "vue"
 import { clipboardCopy, isStaging } from "@/utils/others"
 import Modal from "@components/Modal.vue"
-import { watch } from "vue"
 import { useSettingsStore } from "@modules/settings/store"
 import gridPng from "@/assets/images/empty-grid.png"
 
@@ -15,17 +14,9 @@ defineEmits<{ "setup-booth": []; close: [] }>()
 
 const storeDetails = computed(() => useSettingsStore().storeDetails)
 
-watch(
-  () => props.popup,
-  (newPopup) => {
-    console.log("Popup changed:", newPopup)
-    // You can add any side effects here if needed when popup changes
-  },
-)
-
 const popupUrl = computed(
   () =>
-    `${isStaging ? "storefronts-v2.vercel.app/" : "buy.leyyow.com/"}/${storeDetails.value?.slug}/events/${props.popup?.slug}`,
+    `${isStaging ? "www.storefronts-v2.vercel.app" : "www.buy.leyyow.com"}/${storeDetails.value?.slug}/events/${props.popup?.slug}`,
 )
 </script>
 
