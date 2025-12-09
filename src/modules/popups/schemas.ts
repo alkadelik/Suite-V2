@@ -22,7 +22,7 @@ export const validationSchema = yup.object({
     .min(10, "Event address must be at least 10 characters")
     .required("Event address is required"),
 
-  participant_fee: yup
+  participation_fee: yup
     .number()
     .typeError("Must be a number")
     .min(0, "Participant fee cannot be negative")

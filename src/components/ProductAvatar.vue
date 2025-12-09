@@ -27,7 +27,11 @@
       <p v-if="extraText" :class="extraTextClasses">{{ extraText }}</p>
     </div>
 
-    <Chip v-if="variantsCount" radius="lg" :label="`${variantsCount} Variants`" />
+    <Chip
+      v-if="variantsCount"
+      radius="lg"
+      :label="variantsCountText || `${variantsCount} Variants`"
+    />
   </div>
 </template>
 
@@ -69,6 +73,8 @@ interface AvatarProps {
   variants?: boolean
   /** Number of variants to display */
   variantsCount?: number
+  /** Custom text for variants chip */
+  variantsCountText?: string
 }
 
 const props = withDefaults(defineProps<AvatarProps>(), {
@@ -130,7 +136,7 @@ const statusContainerClasses = computed(() => [
 const textClasses = computed(() => ["min-w-0"])
 
 const nameClasses = computed(() => [
-  "font-medium text-gray-800 truncate m-0",
+  "font-medium text-gray-800 truncate m-0 !font-outfit",
   {
     "text-xs": sizeClass.value === "sm",
     "text-sm": sizeClass.value === "md" || !sizeClass.value,

@@ -16,7 +16,11 @@
     <!-- Store Info -->
     <div class="bg-gray-50 px-4 py-4">
       <div class="mb-3 flex items-center gap-2">
-        <Avatar :name="storeDetails?.name || ''" backgroundColor="var(--color-core-950)" />
+        <!-- <Avatar :name="storeDetails?.name || ''" backgroundColor="var(--color-core-950)" /> -->
+
+        <div class="bg-core-200 flex size-10 items-center justify-center rounded-xl p-2">
+          <Icon name="shop" class="text-primary-800" />
+        </div>
         <div class="min-w-0">
           <div class="flex min-w-0 items-end gap-2">
             <p class="min-w-0 truncate font-medium capitalize">
@@ -65,7 +69,12 @@
           </template>
 
           <template v-else>
-            <h3 class="mb-1 text-sm font-bold">You are on trial mode</h3>
+            <h3 v-if="user?.subscription?.trial_mode" class="mb-1 text-sm font-bold">
+              You are on trial mode
+            </h3>
+            <h3 v-if="user?.subscription?.is_active" class="mb-1 text-sm font-semibold">
+              Active: <b>{{ user?.subscription?.plan_name + " Plan" }}</b>
+            </h3>
             <p class="mb-4 text-sm">
               Ends:
               {{
@@ -97,7 +106,7 @@
 import { useAuthStore } from "@modules/auth/store"
 import { useMediaQuery } from "@vueuse/core"
 import { computed } from "vue"
-import Avatar from "@components/Avatar.vue"
+// import Avatar from "@components/Avatar.vue"
 import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
 import SidebarLink from "./SidebarLink.vue"

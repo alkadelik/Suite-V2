@@ -92,12 +92,13 @@ const handleNext = () => {
           placeholder="Search by name"
           v-model="searchQuery"
         />
-        <AppButton icon="filter-lines" variant="outlined" color="alt" class="flex-shrink-0" />
-        <AppButton icon="add" class="flex-shrink-0" />
       </div>
     </div>
 
-    <section v-if="!isFetching && filteredProducts.length > 0" class="grid grid-cols-3 gap-6">
+    <section
+      v-if="!isFetching && filteredProducts.length > 0"
+      class="grid grid-cols-2 gap-6 md:grid-cols-3"
+    >
       <div
         v-for="prod in filteredProducts"
         :key="prod.uid"
@@ -112,10 +113,16 @@ const handleNext = () => {
         @click="toggleProductSelection(prod)"
       >
         <div class="relative flex h-[88px] items-center justify-center rounded-xl bg-gray-200">
-          <Icon name="box" class="h-20 w-20" />
+          <img
+            v-if="prod.product_image"
+            :src="prod.product_image"
+            alt=""
+            class="h-full w-full rounded-xl object-cover"
+          />
+          <Icon v-else name="box" class="h-20 w-20" />
 
           <Chip
-            v-if="prod.available_quantity === 0"
+            v-if="prod.quantity === 0"
             label="Out of stock"
             size="sm"
             color="error"
@@ -128,8 +135,9 @@ const handleNext = () => {
             class="accent-primary-600 pointer-events-none absolute top-2 right-2 h-4 w-4 rounded border-gray-300 bg-white"
           />
         </div>
+
         <div class="space-y-1 p-1 py-2">
-          <h4 class="text-xs font-medium">{{ prod.product_name }}</h4>
+          <h4 class="text-xs font-medium">{{ prod.variant_name }}</h4>
           <div class="flex justify-between gap-2 text-xs">
             <span class="text-primary-600 flex items-center gap-1">
               <Icon name="box" class="h-3 w-3" />
@@ -152,14 +160,11 @@ const handleNext = () => {
       class="!min-h-[500px] md:!bg-none"
     />
 
-    <div v-else class="flex min-h-[500px] items-center justify-center">
-      <div class="text-center">
-        <Icon name="box" class="text-core-300 mx-auto mb-4 h-16 w-16 animate-pulse" />
-        <p class="text-core-400 text-sm">Loading products...</p>
-      </div>
+    <div v-if="isFetching" class="flex items-center justify-center py-12">
+      <Icon name="loader" size="64" class="!animate text-primary-600 !animate-spin" />
     </div>
 
-    <div class="h-24" />
+    <div class="h-32" />
 
     <div class="border-core-200 fixed right-0 bottom-0 left-0 border-t bg-white p-6">
       <div v-if="selectedProducts.length > 0" class="mb-3 flex items-center justify-between">

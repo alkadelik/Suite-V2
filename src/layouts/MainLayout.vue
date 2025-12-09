@@ -1,135 +1,146 @@
 <template>
-  <div class="bg-blue-800">
-    <div class="h-full w-full bg-white lg:bg-gray-50">
-      <!-- Mobile overlay -->
-      <!-- <div
+  <div class="bg-white lg:bg-gray-50">
+    <!-- Mobile overlay -->
+    <!-- <div
         v-if="isMobile && mobileSidebarOpen"
         class="fixed inset-0 z-30 bg-black/40 lg:hidden"
         @click="mobileSidebarOpen = false"
       /> -->
 
-      <div class="flex h-screen overflow-hidden">
-        <!-- Sidebar -->
-        <AppSidebar
-          :sales-suites="SALES_SUITES"
-          :mobile-sidebar-open="mobileSidebarOpen"
-          :isLive="isLive"
-          @logout="logout = true"
-          @upgrade="setPlanUpgradeModal(true)"
-        />
+    <div class="flex h-[100dvh] overflow-hidden lg:h-screen">
+      <!-- Sidebar -->
+      <AppSidebar
+        :sales-suites="SALES_SUITES"
+        :mobile-sidebar-open="mobileSidebarOpen"
+        :isLive="isLive"
+        @logout="logout = true"
+        @upgrade="setPlanUpgradeModal(true)"
+      />
 
-        <!-- Main column -->
-        <div
-          :class="[
-            'flex h-full flex-1 flex-col overflow-hidden transition-all duration-200',
-            'pt-16 pb-16 lg:pb-0', // height of header
-            sidebarPadding,
-          ]"
-        >
-          <!-- Topbar -->
-          <AppHeader :show-logo="isMobile" :isLive="isLive" @logout="logout = true" />
-          <PageHeader />
+      <!-- Main column -->
+      <div
+        :class="[
+          'flex h-full flex-1 flex-col overflow-hidden transition-all duration-200',
+          'pt-16 pb-16 lg:pt-8 lg:pb-8',
+          sidebarPadding,
+        ]"
+      >
+        <!-- Topbar -->
+        <AppHeader :show-logo="isMobile" :isLive="isLive" @logout="logout = true" />
+        <PageHeader />
 
-          <!-- Content -->
-          <main class="h-[calc(100vh-4rem)] overflow-y-auto">
-            <div
-              v-if="!isLive"
-              class="bg-primary-25 text-warning-700 border-warning-300 flex flex-col items-start gap-3 border-b px-6 py-3 lg:flex-row lg:items-center"
-            >
-              <span
-                class="border-primary-200 ring-primary-100 hidden size-8 items-center justify-center rounded-full border-2 p-0.5 ring-2 ring-offset-2 lg:flex"
-              >
-                <Icon name="info-circle" size="20" />
-              </span>
-              <div class="flex flex-1 flex-col gap-1 text-sm lg:flex-row">
-                <span class="font-medium">Your storefront isn't live yet! </span> Complete your bank
-                details, delivery options, and KYC to start selling online.
-              </div>
-              <AppButton
-                variant="text"
-                label="Complete Setup"
-                icon="arrow-right"
-                size="sm"
-                class="flex-row-reverse underline underline-offset-4"
-                @click="$router.push('/onboarding')"
-              />
-            </div>
-            <router-view />
-          </main>
-
-          <!-- Bottom navigation for mobile -->
-          <nav
-            v-if="isMobile"
-            class="fixed right-0 bottom-0 left-0 border-t border-gray-200 bg-white"
-            :class="openMore || openActions ? 'z-[1500]' : 'z-30'"
+        <!-- Content -->
+        <main class="h-[calc(100dvh-4rem)] overflow-y-auto lg:h-[calc(100vh-4rem)]">
+          <div
+            v-if="!isLive"
+            class="bg-primary-25 text-warning-700 border-warning-300 flex flex-col items-start gap-3 border-b px-6 py-3 lg:flex-row lg:items-center"
           >
-            <div class="flex items-center justify-around px-2 py-2">
-              <SidebarLink icon="house" label="Home" to="/dashboard" @click="openMore = false" />
-              <SidebarLink
-                v-for="link in SALES_SUITES.slice(0, 1)"
-                :key="link.label"
-                v-bind="link"
-                @click="openMore = false"
-              />
-              <AppButton
-                size="sm"
-                class="!ring-primary-200 !rounded-full !ring-4"
-                icon="add-circle"
-                @click="
-                  () => {
-                    openMore = false
-                    openActions = !openActions
-                  }
-                "
-              />
-              <SidebarLink
-                v-for="link in SALES_SUITES.slice(1, 2)"
-                :key="link.label"
-                v-bind="link"
-                @click="openMore = false"
-              />
-              <SidebarLink
-                label="More"
-                icon="more"
-                :class="openMore ? '!text-primary-700' : ''"
-                @click="openMore = !openMore"
-              />
+            <span
+              class="border-primary-200 ring-primary-100 hidden size-8 items-center justify-center rounded-full border-2 p-0.5 ring-2 ring-offset-2 lg:flex"
+            >
+              <Icon name="info-circle" size="20" />
+            </span>
+            <div class="flex flex-1 flex-col gap-1 text-sm lg:flex-row">
+              <span class="font-medium">Your storefront isn't live yet! </span> Complete your bank
+              details, delivery options, and KYC to start selling online.
             </div>
-          </nav>
+            <AppButton
+              variant="text"
+              label="Complete Setup"
+              icon="arrow-right"
+              size="sm"
+              class="flex-row-reverse underline underline-offset-4"
+              @click="$router.push('/onboarding')"
+            />
+          </div>
+          <router-view />
+        </main>
+
+        <!-- Bottom navigation for mobile -->
+        <nav
+          v-if="isMobile"
+          class="fixed right-0 bottom-0 left-0 max-h-16 border-t border-gray-200 bg-white"
+          :class="openMore || openActions ? 'z-[1500]' : 'z-30'"
+        >
+          <div class="flex items-center justify-around px-2 py-2">
+            <SidebarLink icon="house" label="Home" to="/dashboard" @click="openMore = false" />
+            <SidebarLink
+              v-for="link in SALES_SUITES.slice(0, 1)"
+              :key="link.label"
+              v-bind="link"
+              @click="openMore = false"
+            />
+            <AppButton
+              size="sm"
+              class="!ring-primary-200 !rounded-full !ring-4"
+              icon="add-circle"
+              @click="
+                () => {
+                  openMore = false
+                  openActions = !openActions
+                }
+              "
+            />
+            <SidebarLink
+              v-for="link in SALES_SUITES.slice(1, 2)"
+              :key="link.label"
+              v-bind="link"
+              @click="openMore = false"
+            />
+            <SidebarLink
+              label="More"
+              icon="more"
+              :class="openMore ? '!text-primary-700' : ''"
+              @click="openMore = !openMore"
+            />
+          </div>
+        </nav>
+
+        <!-- FAB -->
+        <div v-if="!isMobile" class="fixed right-4 bottom-4 hidden lg:inline-block">
+          <DropdownMenu :items="actionMenuItems">
+            <template #trigger="{ open }">
+              <AppButton
+                size="md"
+                class="!ring-primary-200 !rounded-full !ring-4"
+                :icon="open ? 'x-close' : 'add-circle'"
+              />
+            </template>
+          </DropdownMenu>
         </div>
       </div>
     </div>
-    <!--  -->
-    <LogoutModal :open="logout" @close="logout = false" />
-
-    <PlansModal
-      :model-value="showPlans"
-      :hide-bud="true"
-      @update:model-value="(val) => setPlanUpgradeModal(val)"
-    />
-
-    <TrialActivationModal
-      :open="openTrial"
-      :subscription="profile?.subscription || null"
-      @close="closeTrialModal"
-    />
-
-    <MobileMenuDrawer :open="openMore" @close="openMore = false" />
-
-    <MobileQuickActionsModal :open="openActions" @close="openActions = false" />
-
-    <!-- Location switch confirmation -->
-    <ConfirmationModal
-      v-model="confirmSwitch"
-      header="Switch Location?"
-      :paragraph="`Are you sure you want to switch to ${pendingLocation?.name?.toUpperCase()}? This will reload the page.`"
-      info-message="You can reverse this action later by switching to another location."
-      action-label="Switch Location"
-      :loading="false"
-      @confirm="confirmLocationSwitch"
-      @cancel="cancelLocationSwitch"
-    />
   </div>
+  <!--  -->
+  <LogoutModal :open="logout" @close="logout = false" />
+
+  <PlansModal
+    :model-value="showPlans"
+    :hide-bud="true"
+    @update:model-value="(val) => setPlanUpgradeModal(val)"
+  />
+
+  <TrialActivationModal
+    :open="openTrial"
+    :subscription="profile?.subscription || null"
+    @close="closeTrialModal"
+  />
+
+  <MobileMenuDrawer :open="openMore" @close="openMore = false" />
+
+  <MobileQuickActionsModal :open="openActions" @close="openActions = false" />
+
+  <!-- Location switch confirmation -->
+  <ConfirmationModal
+    v-model="confirmSwitch"
+    header="Switch Location?"
+    :paragraph="`Are you sure you want to switch to ${pendingLocation?.name?.toUpperCase()}? This will reload the page.`"
+    info-message="You can reverse this action later by switching to another location."
+    action-label="Switch Location"
+    :loading="false"
+    @confirm="confirmLocationSwitch"
+    @cancel="cancelLocationSwitch"
+  />
 </template>
 
 <script setup lang="ts">
@@ -158,6 +169,9 @@ import { useGetLiveStatus } from "@modules/shared/api"
 import { useLocationSwitch } from "@/composables/useLocationSwitch"
 import MobileQuickActionsModal from "./parts/MobileQuickActionsModal.vue"
 import PageHeader from "./parts/PageHeader.vue"
+import DropdownMenu from "@components/DropdownMenu.vue"
+import { toast } from "@/composables/useToast"
+import { useRouter } from "vue-router"
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
@@ -172,6 +186,7 @@ const { confirmSwitch, pendingLocation, confirmLocationSwitch, cancelLocationSwi
 const sidebarPadding = computed(() => (isMobile.value ? "lg:pl-72" : "pl-72"))
 
 const isHQ = computed(() => useSettingsStore().activeLocation?.is_hq ?? true)
+const router = useRouter()
 
 const SALES_SUITES = computed(() => {
   const allSuites = [
@@ -182,6 +197,52 @@ const SALES_SUITES = computed(() => {
   ]
 
   return allSuites.filter((suite) => !suite.hqOnly || isHQ.value)
+})
+
+const actionMenuItems = computed(() => {
+  const allActions = [
+    {
+      label: "Add a product",
+      icon: "box",
+      class: "!bg-blue-50 !text-blue-700 mb-1",
+      iconClass: "!text-blue-700",
+      action: () => router.push("/inventory?create=true"),
+      hqOnly: true,
+    },
+    {
+      label: "Record a sale",
+      icon: "bag",
+      class: "!bg-green-50 !text-green-700 mb-1",
+      iconClass: "!text-green-700",
+      action: () => router.push("/orders?create=true"),
+    },
+    {
+      label: "Create popup",
+      icon: "calendar-tick",
+      class: "!bg-purple-50 !text-purple-700 mb-1",
+      iconClass: "!text-purple-700",
+      action: () => router.push("/popups?create=true"),
+      hqOnly: true,
+    },
+    {
+      label: "Add a customer",
+      icon: "profile-add",
+      class: "!bg-primary-50 !text-primary-700 mb-1",
+      iconClass: "!text-primary-700",
+      action: () => router.push("/customers?create=true"),
+    },
+    {
+      label: "Record expense",
+      icon: "receipt-add",
+      class: "!bg-pink-50 !text-pink-700",
+      iconClass: "!text-primary-700",
+      action: () => {
+        toast.info("Expense module is coming soon!")
+      },
+    },
+  ]
+
+  return allActions.filter((action) => !action.hqOnly || isHQ.value)
 })
 
 const { setPlanUpgradeModal } = useSettingsStore()

@@ -129,7 +129,7 @@ const modalClasses = computed(() => {
   if (props.variant === "fullscreen") {
     baseClasses.push("w-full h-full")
   } else {
-    baseClasses.push("w-full")
+    baseClasses.push("w-full max-h-[95dvh]")
 
     // Max width handling
     const maxWidthMap: Record<string, string> = {
@@ -175,9 +175,9 @@ const bodyClasses = computed(() => {
   const classes = []
 
   if (props.variant === "fullscreen") {
-    classes.push("h-full overflow-y-auto")
+    classes.push("h-full max-h-[85dvh] overflow-y-auto")
   } else {
-    classes.push("max-h-[90vh] overflow-y-auto")
+    classes.push("max-h-[80dvh] overflow-y-auto")
   }
 
   return classes.join(" ")

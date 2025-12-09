@@ -24,7 +24,6 @@ export type PopupEvent = {
   products_count: number
   total_orders: number
   total_sales_amount: number
-  participant_fee: number | null
   participation_fee: number | null
   created_at: string
   updated_at: string
@@ -44,7 +43,7 @@ export interface PopupPayload {
   event_address: string
   start_date: string
   end_date: string
-  participant_fee: number | null
+  participation_fee: number | null
   banner_image?: File | null
 }
 
@@ -69,7 +68,7 @@ export interface EventfulPopup {
   company: string
   company_name: string
   company_email: string
-  participant_fee: number | null
+  participation_fee: number | null
 }
 
 export interface EventfulResponse {
@@ -101,6 +100,7 @@ export type PopupInventory = {
   variant_name: string
   variant_sku: string
   product_name: string
+  product_image: string
   available_quantity: number
   quantity: number
   sold_quantity: number

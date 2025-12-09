@@ -236,7 +236,7 @@
 import DataTable from "@components/DataTable.vue"
 import { TProduct, type IInventoryTransferRequest, type IProductVariantDetails } from "../types"
 import { PRODUCT_COLUMNS } from "../constants"
-import { ref, computed, onMounted, watch } from "vue"
+import { ref, computed, watch } from "vue"
 import Icon from "@components/Icon.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import Chip from "@components/Chip.vue"
@@ -620,9 +620,16 @@ const handleRequestSuccess = () => {
   requestsRefetchKey.value++
 }
 
-onMounted(() => {
-  if (route.query.create === "true") openAddProductDrawer()
-})
+// Watch for route query to open create modal/drawer
+const routeQueryCreate = computed(() => route.query.create)
+watch(
+  routeQueryCreate,
+  (newVal) => {
+    console.log("Route query 'create' changed:", newVal)
+    if (newVal) openAddProductDrawer()
+  },
+  { immediate: true },
+)
 
 watch(showProductFormDrawer, (isOpen) => {
   if (!isOpen && route.query.create === "true") {

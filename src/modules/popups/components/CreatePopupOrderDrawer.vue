@@ -13,6 +13,8 @@ import PopupOrderSelectCustomer from "./popup-order-form/PopupOrderSelectCustome
 import PopupOrderShippingInfoForm from "./popup-order-form/PopupOrderShippingInfoForm.vue"
 import PopupOrderPaymentForm from "./popup-order-form/PopupOrderPaymentForm.vue"
 import PopupOrderReview from "./popup-order-form/PopupOrderReview.vue"
+import { useMediaQuery } from "@vueuse/core"
+import Modal from "@components/Modal.vue"
 
 const props = defineProps({
   open: { type: Boolean, required: true },
@@ -61,8 +63,9 @@ const shippingInfo = ref({
 
 // Step 5: Payment info
 const paymentInfo = ref({
-  payment_status: "paid" as "unpaid" | "paid" | "partially_paid",
+  payment_status: "unpaid" as "unpaid" | "paid" | "partially_paid",
   payment_amount: 0,
+  payment_source: undefined as { label: string; value: string } | undefined,
   coupon_code: null as string | null,
   discount_amount: 0,
 })
@@ -101,6 +104,7 @@ const onCreateOrder = () => {
     courier: shippingInfo.value.courier,
     coupon_code: paymentInfo.value.coupon_code || "",
     payment_status: paymentInfo.value.payment_status,
+    payment_source: paymentInfo.value.payment_source?.value,
     payment_amount:
       paymentInfo.value.payment_status === "paid"
         ? totalAmount.value
@@ -142,15 +146,25 @@ const resetForm = () => {
   }
   paymentInfo.value = {
     payment_status: "unpaid",
+    payment_source: undefined,
     payment_amount: 0,
     coupon_code: null,
     discount_amount: 0,
   }
 }
+
+const isMobile = useMediaQuery("(max-width: 1028px)")
 </script>
 
 <template>
-  <Drawer :open="open" title="Add Popup Order" max-width="2xl" @close="emit('close')">
+  <component
+    :is="isMobile ? Modal : Drawer"
+    :open="open"
+    variant="bottom-nav"
+    title="Add Popup Order"
+    max-width="2xl"
+    @close="emit('close')"
+  >
     <StepperWizard v-model="activeStep" :steps="steps" :showIndicators="false">
       <template #default="{ step, onPrev, onNext }">
         <!-- Step 0: Select Products -->
@@ -215,5 +229,5 @@ const resetForm = () => {
         />
       </template>
     </StepperWizard>
-  </Drawer>
+  </component>
 </template>

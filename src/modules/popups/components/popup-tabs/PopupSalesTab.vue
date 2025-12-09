@@ -11,7 +11,7 @@ import { POPUP_ORDER_COLUMNS } from "@modules/popups/constants"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, ref } from "vue"
 import { useRoute } from "vue-router"
-import CreatePopupOrderDrawer from "../CreatePopupOrderDrawer.vue"
+import CreateOrderDrawer from "@modules/orders/components/CreateOrderDrawer.vue"
 import DataTable from "@components/DataTable.vue"
 import AppButton from "@components/AppButton.vue"
 import TextField from "@components/form/TextField.vue"
@@ -27,6 +27,8 @@ const openMarkPaid = ref(false)
 
 const route = useRoute()
 const isMobile = useMediaQuery("(max-width: 768px)")
+
+defineProps<{ isActive: boolean }>()
 
 const { data: popupOrders, refetch, isPending } = useGetPopupOrders(route.params.id as string)
 
@@ -53,8 +55,8 @@ const handleMarkAsPaid = () => {
     v-if="!popupOrders?.count"
     title="You haven't made any sales yet!"
     description="Your popup sales will appear here when customers purchase from you. You can also add an order."
-    action-icon="add"
-    action-label="Add an order"
+    :action-icon="isActive ? 'add' : undefined"
+    :action-label="isActive ? 'Add an order' : undefined"
     :loading="isPending"
     @action="openCreate = true"
   />
@@ -139,10 +141,10 @@ const handleMarkAsPaid = () => {
   </section>
 
   <!--  -->
-  <CreatePopupOrderDrawer
+  <CreateOrderDrawer
     :open="openCreate"
     @close="openCreate = false"
-    :popup-id="String(route.params.id)"
+    :popup-event-id="String(route.params.id)"
     @refresh="refetch()"
   />
 

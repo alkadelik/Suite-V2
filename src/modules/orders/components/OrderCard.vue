@@ -35,6 +35,7 @@ const emit = defineEmits([
   "update-payment",
   "void-order",
   "delete-order",
+  "fulfill",
 ])
 
 const isFulfilled = computed(() => {
@@ -52,6 +53,7 @@ const menuItems = computed(() => {
         { label: "View memos", action: () => emit("view-memos") },
         { label: "Share invoice", action: () => emit("share-invoice") },
         { label: "Update payment", action: () => emit("update-payment") },
+        ...(isFulfilled.value ? [] : [{ label: "Fulfil Order", action: () => emit("fulfill") }]),
         { divider: true },
         ...((isFulfilled.value || props.order?.payment_status !== "unpaid") && !isBuyerCreated.value
           ? [{ label: "Void order", class: "text-error", action: () => emit("void-order") }]
@@ -221,7 +223,10 @@ const outstandingBalance = computed(() => {
     <div>
       <div class="mb-2 flex justify-between">
         <h4 class="text-core-700 text-sm">Order state</h4>
-        <DropdownMenu v-if="showActions" :items="menuItems" />
+        <DropdownMenu
+          v-if="showActions && order.fulfilment_status !== 'voided'"
+          :items="menuItems"
+        />
       </div>
       <!-- footer chips -->
       <div class="flex justify-between gap-1">

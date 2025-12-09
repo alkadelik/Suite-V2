@@ -2,12 +2,10 @@
 import DeleteConfirmationModal from "@components/DeleteConfirmationModal.vue"
 import FormField from "@components/form/FormField.vue"
 import { ref } from "vue"
+import OrderCard from "./OrderCard.vue"
+import { TOrder } from "../types"
 
-defineProps({
-  open: { type: Boolean, required: true },
-  action: { type: String, required: true }, // 'void' or 'delete'
-  loading: Boolean,
-})
+defineProps<{ open: boolean; action: string; loading: boolean; order: TOrder }>()
 
 const emit = defineEmits(["close", "action"])
 
@@ -27,12 +25,7 @@ const reason = ref("")
       <div class="space-y-4">
         <p class="text-sm">This will completely remove all records of this order.</p>
 
-        <div class="bg-core-25 border-core-300 cursor-pointer divide-y rounded-2xl border p-4">
-          <!-- top -->
-          <div>
-            <div class="item-center flex gap-2"></div>
-          </div>
-        </div>
+        <OrderCard :order="order" :show-actions="false" />
 
         <FormField
           v-if="action === 'void'"

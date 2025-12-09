@@ -10,7 +10,7 @@ import SectionHeader from "@components/SectionHeader.vue"
 import Tabs from "@components/Tabs.vue"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, onMounted, ref } from "vue"
-import { POPUP_COLUMN } from "../constants"
+import { getEventStatus, POPUP_COLUMN } from "../constants"
 import { PopupEvent } from "../types"
 import PopupEventCard from "../components/PopupEventCard.vue"
 import CreatePopupEventModal from "../components/CreatePopupEventModal.vue"
@@ -225,6 +225,21 @@ onMounted(() => {
               </span>
             </div>
           </template>
+          <template #cell:status="{ item }">
+            <Chip
+              :label="getEventStatus(item)"
+              size="sm"
+              class="capitalize"
+              show-dot
+              :color="
+                getEventStatus(item) === 'upcoming'
+                  ? 'primary'
+                  : getEventStatus(item) === 'ongoing'
+                    ? 'success'
+                    : 'alt'
+              "
+            />
+          </template>
           <template #cell:name="{ item }">
             <div class="flex items-center gap-1">
               <span class="max-w-xs truncate font-medium">
@@ -240,7 +255,11 @@ onMounted(() => {
           </template>
           <template #cell:action="{ item }">
             <div class="flex justify-end gap-3">
-              <Icon name="edit" @click.stop="handleAction('edit', item)" />
+              <Icon
+                v-if="getEventStatus(item) !== 'ended'"
+                name="edit"
+                @click.stop="handleAction('edit', item)"
+              />
               <Icon name="trash" @click.stop="handleAction('delete', item)" />
             </div>
           </template>

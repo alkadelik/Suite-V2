@@ -1,6 +1,7 @@
 import { defineStore } from "pinia"
 import { IStoreDetails, TLocation } from "./types"
 import { computed, ref } from "vue"
+import { isStaging } from "@/utils/others"
 
 export const useSettingsStore = defineStore(
   "settings",
@@ -12,7 +13,8 @@ export const useSettingsStore = defineStore(
     const storeDetails = ref<IStoreDetails | null>(null)
 
     const storefrontUrl = computed(
-      () => `buy.leyyow.com/${storeDetails.value?.slug || "your-store"}`,
+      () =>
+        `${isStaging ? "storefronts-v2.vercel.app" : "buy.leyyow.com"}/${storeDetails.value?.slug || "your-store"}`,
     )
 
     // Actions

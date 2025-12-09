@@ -1,6 +1,6 @@
 <template>
   <div
-    class="!font-manrope fixed top-0 left-0 z-[9999] flex h-[100dvh] w-full flex-col items-center overflow-hidden py-0 md:justify-around md:bg-gray-50 md:py-16"
+    class="!font-manrope fixed top-0 left-0 z-[9999] flex h-[100dvh] w-full flex-col items-center overflow-hidden py-0 !pb-0 md:justify-start md:bg-gray-50 md:py-16"
     :class="currentStep === 3 ? 'justify-center bg-white' : 'justify-start bg-white'"
   >
     <button
@@ -22,7 +22,7 @@
 
     <div
       :class="[
-        'flex w-full max-w-2xl flex-col rounded-xl bg-white md:px-6 md:py-10 md:shadow-lg',
+        'flex w-full max-w-2xl flex-col rounded-xl rounded-b-none bg-white md:!flex-grow-0 md:px-6 md:py-10 md:pb-4 md:shadow-lg',
         currentStep === 3 ? 'h-auto' : 'min-h-0 flex-1 md:flex-auto',
       ]"
     >
@@ -30,7 +30,7 @@
         v-if="currentStep === 1 || currentStep === 2"
         class="z-50 flex min-h-0 flex-1 flex-col rounded-xl pt-12 text-black md:pt-0"
       >
-        <div class="flex min-h-0 flex-1 flex-col py-3">
+        <div class="flex min-h-0 flex-1 flex-col overflow-y-auto py-3">
           <div
             class="flex flex-shrink-0 flex-col items-center justify-center gap-3 px-5 pt-3 text-center"
           >
@@ -52,9 +52,40 @@
           <!-- step 1 -->
           <form
             v-show="currentStep === 1"
-            class="mt-4 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5"
+            class="mt-4 flex min-h-0 flex-1 flex-col gap-4 px-5"
             @submit.prevent="handleAuthSubmit"
           >
+            <div>
+              <label for="phone" class="text-sm font-semibold">Phone Number</label
+              ><span class="text-red-500">*</span>
+              <input
+                v-model="authForm.phone"
+                type="text"
+                name="phone"
+                placeholder="e.g 09039336005"
+                class="w-full rounded-md border border-[#D7D5D5] px-2 py-3 text-sm placeholder:text-sm placeholder:text-black/60 focus:border-black/60 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label for="address" class="text-sm font-semibold">Store Address</label
+              ><span class="text-red-500">*</span>
+              <GooglePlacesAutoComplete
+                v-model="authForm.address"
+                direction="up"
+                class="!bg-white"
+              />
+            </div>
+            <div>
+              <label for="password" class="text-sm font-semibold">Password</label
+              ><span class="text-red-500">*</span>
+              <input
+                v-model="authForm.password"
+                type="password"
+                name="password"
+                placeholder="e.g solesnshades, smile socks"
+                class="w-full rounded-md border border-[#D7D5D5] px-2 py-3 text-sm placeholder:text-sm placeholder:text-black/60 focus:border-black/60 focus:outline-none"
+              />
+            </div>
             <div>
               <label for="business_name" class="text-sm font-semibold">Business Name</label
               ><span class="text-red-500">*</span>
@@ -79,41 +110,7 @@
               />
             </div>
 
-            <div>
-              <label for="phone" class="text-sm font-semibold">Phone Number</label
-              ><span class="text-red-500">*</span>
-              <input
-                v-model="authForm.phone"
-                type="text"
-                name="phone"
-                placeholder="e.g 09039336005"
-                class="w-full rounded-md border border-[#D7D5D5] px-2 py-3 text-sm placeholder:text-sm placeholder:text-black/60 focus:border-black/60 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label for="password" class="text-sm font-semibold">Password</label
-              ><span class="text-red-500">*</span>
-              <input
-                v-model="authForm.password"
-                type="password"
-                name="password"
-                placeholder="e.g solesnshades, smile socks"
-                class="w-full rounded-md border border-[#D7D5D5] px-2 py-3 text-sm placeholder:text-sm placeholder:text-black/60 focus:border-black/60 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label for="address" class="text-sm font-semibold">Store Address</label
-              ><span class="text-red-500">*</span>
-              <GooglePlacesAutoComplete
-                v-model="authForm.address"
-                direction="up"
-                class="!bg-white"
-              />
-            </div>
-
-            <div class="sticky bottom-0 bg-white py-4">
+            <div class="bottom-0 bg-white py-4">
               <AppButton
                 label="Next"
                 type="submit"
@@ -127,7 +124,7 @@
           <!-- step 2 -->
           <div v-show="currentStep === 2" class="flex min-h-0 flex-1 flex-col">
             <!-- middle section -->
-            <div class="mt-3 flex min-h-0 flex-1 flex-col bg-[#FAFAFA] px-5 py-3 md:bg-white">
+            <div class="mt-3 flex flex-1 flex-col bg-[#FAFAFA] px-5 py-3 md:bg-white">
               <div class="flex flex-shrink-0 justify-end">
                 <div
                   class="inline-flex items-center rounded-full px-2 py-1 text-[12.5px] font-semibold"

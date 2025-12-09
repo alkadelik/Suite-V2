@@ -29,7 +29,9 @@ const props = withDefaults(
       />
 
       <div class="absolute top-2 left-0 rounded-r bg-white px-2 py-1 text-sm font-semibold shadow">
-        {{ Number(event.participant_fee) ? formatCurrency(Number(event.participant_fee)) : "Free" }}
+        {{
+          Number(event.participation_fee) ? formatCurrency(Number(event.participation_fee)) : "Free"
+        }}
       </div>
 
       <img src="/images/logos/leyyow-icon.svg?url" class="absolute right-1 bottom-1 h-8 w-8" />
