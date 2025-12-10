@@ -16,10 +16,8 @@
     <!-- Store Info -->
     <div class="bg-gray-50 px-4 py-4">
       <div class="mb-3 flex items-center gap-2">
-        <!-- <Avatar :name="storeDetails?.name || ''" backgroundColor="var(--color-core-950)" /> -->
-
-        <div class="bg-core-200 flex size-10 items-center justify-center rounded-xl p-2">
-          <Icon name="shop" class="text-primary-800" />
+        <div class="bg-core-200 flex size-10 items-center justify-center rounded-xl">
+          <Icon name="shop" class="text-primary-800" size="24" />
         </div>
         <div class="min-w-0">
           <div class="flex min-w-0 items-end gap-2">
