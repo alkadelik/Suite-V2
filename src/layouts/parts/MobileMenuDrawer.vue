@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { clipboardCopy } from "@/utils/others"
 import AppButton from "@components/AppButton.vue"
-import Avatar from "@components/Avatar.vue"
 import Chip from "@components/Chip.vue"
 import Drawer from "@components/Drawer.vue"
 import Icon from "@components/Icon.vue"
@@ -9,13 +8,9 @@ import { useAuthStore } from "@modules/auth/store"
 import { useSettingsStore } from "@modules/settings/store"
 import { computed } from "vue"
 
-defineProps<{
-  open: boolean
-}>()
+defineProps<{ open: boolean }>()
 
-const emit = defineEmits<{
-  (e: "close"): void
-}>()
+const emit = defineEmits<{ (e: "close"): void }>()
 
 const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
 const storeDetails = computed(() => useSettingsStore().storeDetails)
@@ -51,11 +46,9 @@ const quickActions = computed(() => {
       <Icon name="close-circle" size="20" @click="emit('close')" />
     </div>
     <div class="flex items-center gap-4">
-      <Avatar
-        :name="storeDetails?.name || ''"
-        backgroundColor="var(--color-core-950)"
-        class="shrink-0"
-      />
+      <div class="bg-core-200 flex size-10 items-center justify-center rounded-xl">
+        <Icon name="shop" class="text-primary-800" size="24" />
+      </div>
       <div class="min-w-0 flex-1">
         <div class="mt-2 flex items-end gap-2">
           <p class="truncate font-medium">{{ storeDetails?.name }}</p>
