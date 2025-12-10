@@ -174,6 +174,7 @@ watch(
         :schema="kycSchema"
         class="border-core-100 mt-6 rounded-2xl border bg-white"
         :initial-values="kycInitialValues"
+        :key="`kyc-form-${kycData?.uid || 'empty'}`"
       >
         <div class="flex flex-col gap-6 p-6">
           <FormField

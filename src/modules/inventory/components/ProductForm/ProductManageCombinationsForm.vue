@@ -56,6 +56,7 @@
     <div v-if="isSingleVariant" class="space-y-6">
       <!-- Price Section -->
       <TextField
+        v-if="!props.hidePrice"
         :model-value="singleVariantForm.price"
         @update:model-value="updateSingleVariantField('price', removeLeadingZeros($event))"
         label="Price"
@@ -90,7 +91,7 @@
         <div v-if="!props.hideStock" class="w-32 text-center">
           <h3 class="text-sm font-medium text-gray-900">Quantity</h3>
         </div>
-        <div class="w-32 text-center">
+        <div v-if="!props.hidePrice" class="w-32 text-center">
           <h3 class="text-sm font-medium text-gray-900">Price</h3>
         </div>
       </div>
@@ -130,7 +131,7 @@
           </div>
 
           <!-- Price Input -->
-          <div class="w-32">
+          <div v-if="!props.hidePrice" class="w-32">
             <TextField
               :model-value="variant.price"
               placeholder=""
@@ -195,6 +196,8 @@ interface Props {
   hideStock?: boolean
   /** Disable the price field (for variants edit mode) */
   disablePrice?: boolean
+  /** Hide the price field entirely (for variants edit mode) */
+  hidePrice?: boolean
   /** Hide the weight section (for variants edit mode) */
   hideWeight?: boolean
   /** Deleted variants to display (only in edit mode) - no UIDs, just attributes */

@@ -137,6 +137,12 @@ export function useGetLiveStatus(slug: string) {
   })
 }
 
+/** Fetch live status for login redirect flow (non-reactive, imperative call) */
+export async function fetchLiveStatusForLogin(slug: string): Promise<ILiveStatusResponse> {
+  const res = await baseApi.get<ILiveStatusResponse>(`/stores/public/live-status/${slug}/`)
+  return res.data
+}
+
 /** Submit KYC verification */
 export function useSubmitKYC() {
   return useMutation({

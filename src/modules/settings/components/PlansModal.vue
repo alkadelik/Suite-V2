@@ -284,6 +284,9 @@ const processedPlans = computed((): ProcessedPlan[] => {
     plans = plans.filter((plan) => plan.name !== "Bud")
   }
 
+  // Filter out Burst plan - only show Bud and Bloom
+  plans = plans.filter((plan) => plan.name !== "Burst")
+
   // Sort by plan order
   return plans.sort((a, b) => a.planOrder - b.planOrder)
 })

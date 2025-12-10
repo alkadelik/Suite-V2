@@ -9,7 +9,7 @@
     <IconHeader icon-name="shop-add" :title="getHeaderTitle" :subtext="getHeaderText" />
 
     <!-- Loading state for fetching product -->
-    <LoadingIcon v-if="isLoadingProduct" class="min-h-[400px]" />
+    <LoadingIcon v-if="isLoadingProduct || props.loading" class="min-h-[400px]" />
 
     <form v-else id="product-edit-form" @submit.prevent="handleSubmit" class="min-h-full">
       <div>
@@ -53,7 +53,7 @@
             v-model="variants"
             :product-name="form.name"
             :hide-stock="true"
-            :disable-price="true"
+            :hide-price="true"
             :hide-weight="true"
             :deleted-variants="deletedVariants"
           />
@@ -214,6 +214,8 @@ interface Emits {
   "add-category": []
   /** Emitted when a new category is successfully created */
   "category-created": [category: { label: string; value: string }]
+  /** Emitted when variants are updated and should trigger editing variant details */
+  "edit-variant-details": []
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -614,6 +616,17 @@ watch(
   { immediate: true },
 )
 
+// Reset step when drawer closes (especially important for variants mode)
+watch(
+  () => props.modelValue,
+  (isOpen, wasOpen) => {
+    // When drawer closes, reset step to 1
+    if (!isOpen && wasOpen) {
+      step.value = 1
+    }
+  },
+)
+
 // Form submission handler
 const handleSubmit = async () => {
   if (!canProceed.value) return
@@ -983,6 +996,8 @@ const handleSubmit = async () => {
         resetFormState()
         emit("update:modelValue", false)
         emit("refresh")
+        // Emit event to trigger editing variant details
+        emit("edit-variant-details")
       } catch (error) {
         console.error("Failed to update variants:", error)
         displayError(error)

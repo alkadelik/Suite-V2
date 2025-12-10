@@ -45,7 +45,7 @@
 
       <AppButton
         type="submit"
-        :loading="isPending"
+        :loading="isPending || isCheckingLiveStatus"
         label="Log In"
         class="w-full"
         :disabled="!meta.valid"
@@ -74,18 +74,20 @@ import { displayError } from "@/utils/error-handler"
 import { useAuthStore } from "../store"
 import { TLoginPayload } from "../types"
 import { toast } from "@/composables/useToast"
+import { fetchLiveStatusForLogin } from "@modules/shared/api"
 import AppForm from "@components/form/AppForm.vue"
 import FormField from "@components/form/FormField.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import AppButton from "@components/AppButton.vue"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
-import { computed } from "vue"
+import { computed, ref } from "vue"
 
 const authStore = useAuthStore()
 const router = useRouter()
 // const rememberMe = ref(true)
 const { mutate: loginFn, isPending } = useLogin()
+const isCheckingLiveStatus = ref(false)
 
 const loginSchema = yup.object({
   email: yup.string().email("Enter a valid email address").required("Email is required"),
@@ -101,9 +103,30 @@ const onSubmit = (values: TLoginPayload) => {
         authStore.setTokens({ accessToken: access, refreshToken: refresh })
         authStore.setAuthUser({ ...user, email: values.email })
         toast.success("Your login was successful...")
-        // check for redirect query param
-        const redirectPath = router.currentRoute.value.query.redirect as string
-        router.push(redirectPath || "/dashboard")
+
+        // Check live status before redirecting
+        const checkLiveStatusAndRedirect = async () => {
+          if (user.store_slug) {
+            isCheckingLiveStatus.value = true
+            try {
+              const liveStatus = await fetchLiveStatusForLogin(user.store_slug)
+              if (!liveStatus.data?.is_live) {
+                router.push("/onboarding")
+                return
+              }
+            } catch {
+              // If live status check fails, proceed to dashboard
+            } finally {
+              isCheckingLiveStatus.value = false
+            }
+          }
+
+          // check for redirect query param
+          const redirectPath = router.currentRoute.value.query.redirect as string
+          router.push(redirectPath || "/dashboard")
+        }
+
+        void checkLiveStatusAndRedirect()
       },
       onError: displayError,
     },
