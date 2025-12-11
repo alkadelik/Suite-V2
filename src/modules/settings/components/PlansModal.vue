@@ -113,7 +113,7 @@
             "
             :disabled="plan.active || loadingPlanId === plan.uid"
             :loading="loadingPlanId === plan.uid && isInitializing"
-            class="w-full"4
+            class="w-full"
             @click="handlePlanAction(plan)"
           />
         </div>
@@ -137,7 +137,6 @@ import LoadingIcon from "@components/LoadingIcon.vue"
 import { displayError } from "@/utils/error-handler"
 import { useAuthStore } from "@modules/auth/store"
 import { useMediaQuery } from "@vueuse/core"
-import { useAuthStore } from "@modules/auth/store"
 
 const props = defineProps<{ modelValue: boolean; hideBud?: boolean }>()
 const emit = defineEmits<{
@@ -151,22 +150,21 @@ const { mutate: initializeSubscription, isPending: isInitializing } = useInitial
 const authStore = useAuthStore()
 
 // Get current subscription plan name
-const currentPlanName = computed(() => {
-  const subscription = authStore.user?.subscription
-  if (!subscription || !subscription.is_active) {
-    return null // No active plan
-  }
-  // If user is on trial, don't mark any plan as active (allow upgrading to any plan)
-  if (subscription.trial_mode) {
-    return null
-  }
-  return subscription.plan_name
-})
+// const currentPlanName = computed(() => {
+//   const subscription = authStore.user?.subscription
+//   if (!subscription || !subscription.is_active) {
+//     return null // No active plan
+//   }
+//   // If user is on trial, don't mark any plan as active (allow upgrading to any plan)
+//   if (subscription.trial_mode) {
+//     return null
+//   }
+//   return subscription.plan_name
+// })
 
 // Track which plan is currently loading
 const loadingPlanId = ref<string | null>(null)
 
-const authStore = useAuthStore()
 const user = computed(() => authStore.user)
 
 // Get current plan from user subscription
