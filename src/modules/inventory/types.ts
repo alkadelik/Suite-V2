@@ -66,6 +66,7 @@ export interface IProductDetails {
   quantity_sold: number
   memo_count: number
   return_count: number
+  popup_quantity_taken: number
   created_at: string
 }
 
@@ -98,6 +99,7 @@ export interface IProductVariantDetails {
   sellable_stock: number
   needs_reorder: boolean
   is_overstocked: boolean
+  popup_quantity_taken: number
   [key: string]: unknown
 }
 

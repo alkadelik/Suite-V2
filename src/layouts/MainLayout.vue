@@ -32,7 +32,7 @@
         <!-- Content -->
         <main class="h-[calc(100dvh-4rem)] overflow-y-auto lg:h-[calc(100vh-4rem)]">
           <div
-            v-if="!isLive"
+            v-if="!isLive && !isLoadingLiveStatus"
             class="bg-primary-25 text-warning-700 border-warning-300 flex flex-col items-start gap-3 border-b px-6 py-3 lg:flex-row lg:items-center"
           >
             <span
@@ -97,13 +97,14 @@
         </nav>
 
         <!-- FAB -->
-        <div v-if="!isMobile" class="fixed right-4 bottom-4 hidden lg:inline-block">
+        <div v-if="!isMobile" class="fixed right-4 bottom-4 z-[50] hidden lg:inline-block">
           <DropdownMenu :items="actionMenuItems">
             <template #trigger="{ open }">
               <AppButton
                 size="md"
-                class="!ring-primary-200 !rounded-full !ring-4"
+                :class="['!ring-primary-200 !rounded-full !ring-4']"
                 :icon="open ? 'x-close' : 'add-circle'"
+                :label="!open ? 'Add New' : ''"
               />
             </template>
           </DropdownMenu>
@@ -114,11 +115,7 @@
   <!--  -->
   <LogoutModal :open="logout" @close="logout = false" />
 
-  <PlansModal
-    :model-value="showPlans"
-    :hide-bud="true"
-    @update:model-value="(val) => setPlanUpgradeModal(val)"
-  />
+  <PlansModal :model-value="showPlans" @update:model-value="(val) => setPlanUpgradeModal(val)" />
 
   <TrialActivationModal
     :open="openTrial"
@@ -256,7 +253,7 @@ const showPlans = computed(() => useSettingsStore().showPlanUpgradeModal)
 
 const storeSlug = useAuthStore().user?.store_slug || ""
 const storeUid = computed(() => useAuthStore().user?.store_uid || "")
-const { data: liveStatusData } = useGetLiveStatus(storeSlug)
+const { data: liveStatusData, isPending: isLoadingLiveStatus } = useGetLiveStatus(storeSlug)
 const isLive = computed(() => liveStatusData.value?.data?.is_live || false)
 
 const openTrial = ref(false)

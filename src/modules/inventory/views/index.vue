@@ -114,12 +114,21 @@
           @pagination-change="(d) => (page = d.currentPage)"
         >
           <template #cell:name="{ item }">
-            <ProductAvatar
-              :name="item.name"
-              :url="item.primary_image?.image || undefined"
-              :variants-count="item.variants_count > 1 ? item.variants_count : undefined"
-              shape="rounded"
-            />
+            <div class="flex min-w-0 items-center gap-2">
+              <ProductAvatar
+                :name="item.name"
+                :url="item.primary_image?.image || undefined"
+                :variants-count="item.variants_count > 1 ? item.variants_count : undefined"
+                shape="rounded"
+                class="min-w-0 flex-1"
+              />
+              <Icon
+                v-if="!item.is_active"
+                name="eye-slash-outline"
+                size="16"
+                class="flex-shrink-0 text-gray-500"
+              />
+            </div>
           </template>
 
           <template #cell:category="{ value }">
@@ -186,6 +195,21 @@
       variant="error"
       @confirm="handleDeleteProduct"
       :loading="isDeletingProduct"
+    />
+    <ConfirmationModal
+      v-model="showHideConfirmationModal"
+      @close="showHideConfirmationModal = false"
+      :header="product?.is_active ? 'Hide Product' : 'Unhide Product'"
+      :paragraph="
+        product?.is_active
+          ? 'Are you sure you want to hide this product from the storefront? Customers will not be able to see or purchase it.'
+          : 'Are you sure you want to make this product visible on the storefront? Customers will be able to see and purchase it.'
+      "
+      :variant="product?.is_active ? 'warning' : 'success'"
+      info-box-variant="neutral"
+      :action-label="product?.is_active ? 'Hide' : 'Unhide'"
+      :loading="isUpdatingProduct"
+      @confirm="handleToggleVisibility"
     />
     <!-- <ExportProductModal v-model="showExportProductModal" @close="showExportProductModal = false" /> -->
 
@@ -256,7 +280,13 @@ import SectionHeader from "@components/SectionHeader.vue"
 import PageSummaryCards from "@components/PageSummaryCards.vue"
 import Tabs from "@components/Tabs.vue"
 import FilterDrawer from "../components/FilterDrawer.vue"
-import { useGetProducts, useDeleteProduct, useGetProduct, useGetCategories } from "../api"
+import {
+  useGetProducts,
+  useDeleteProduct,
+  useGetProduct,
+  useGetCategories,
+  useUpdateProduct,
+} from "../api"
 import ProductAvatar from "@components/ProductAvatar.vue"
 import EmptyState from "@components/EmptyState.vue"
 import { displayError } from "@/utils/error-handler"
@@ -279,6 +309,7 @@ const combinedParams = computed(() => ({
 
 const { data: products, isFetching, refetch: refetchProducts } = useGetProducts(combinedParams)
 const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct()
+const { mutate: updateProduct, isPending: isUpdatingProduct } = useUpdateProduct()
 const { data: categories } = useGetCategories()
 
 const settingsStore = useSettingsStore()
@@ -316,6 +347,7 @@ const tabs = computed(() => [
 ])
 
 const showDeleteConfirmationModal = ref(false)
+const showHideConfirmationModal = ref(false)
 const showProductFormDrawer = ref(false)
 const showProductEditDrawer = ref(false)
 const showFilterDrawer = ref(false)
@@ -549,6 +581,23 @@ const getActionItems = (item: TProduct) => [
   {
     divider: true,
   },
+  ...(isHQ.value
+    ? [
+        item.is_active
+          ? {
+              id: "hide",
+              label: "Hide Product",
+              icon: "eye-slash-outline",
+              action: () => handleAction("hide", item),
+            }
+          : {
+              id: "unhide",
+              label: "Unhide Product",
+              icon: "eye-outline",
+              action: () => handleAction("unhide", item),
+            },
+      ]
+    : []),
   {
     id: "delete",
     label: "Delete Product",
@@ -560,7 +609,7 @@ const getActionItems = (item: TProduct) => [
 ]
 
 const handleAction = (
-  action: "duplicate" | "view" | "delete" | "activate" | "deactivate",
+  action: "duplicate" | "view" | "delete" | "activate" | "deactivate" | "hide" | "unhide",
   item: TProduct,
 ) => {
   console.log(action, item)
@@ -568,6 +617,9 @@ const handleAction = (
   if (action === "delete") {
     product.value = item
     showDeleteConfirmationModal.value = true
+  } else if (action === "hide" || action === "unhide") {
+    product.value = item
+    showHideConfirmationModal.value = true
   } else if (action === "view") {
     router.push({ name: "Product-Details", params: { uid: item.uid } })
   } else if (action === "duplicate") {
@@ -575,7 +627,7 @@ const handleAction = (
   }
 }
 
-// Handle product deletion - following the customers page pattern
+// Handle product deletion
 const handleDeleteProduct = () => {
   if (!product.value) return
 
@@ -588,6 +640,31 @@ const handleDeleteProduct = () => {
     },
     onError: displayError,
   })
+}
+
+// Handle toggling product visibility (hide/unhide)
+const handleToggleVisibility = () => {
+  if (!product.value) return
+
+  const isCurrentlyActive = product.value.is_active
+  const newActiveState = !isCurrentlyActive
+
+  updateProduct(
+    { uid: product.value.uid, is_active: newActiveState },
+    {
+      onSuccess: () => {
+        toast.success(
+          newActiveState
+            ? "Product is now visible on storefront"
+            : "Product hidden from storefront",
+        )
+        showHideConfirmationModal.value = false
+        product.value = null
+        refetchProducts()
+      },
+      onError: displayError,
+    },
+  )
 }
 
 // Function to handle opening add product drawer

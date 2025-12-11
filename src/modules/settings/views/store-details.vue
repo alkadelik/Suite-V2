@@ -35,7 +35,9 @@ const { user } = useAuthStore()
 
 const { data: industries } = useGetStoreIndustries()
 const { data: storeDetails, refetch } = useGetStoreDetails(user?.store_uid || "")
-const { data: liveStatusData } = useGetLiveStatus(user?.store_slug || "")
+const { data: liveStatusData, isPending: isLoadingLiveStatus } = useGetLiveStatus(
+  user?.store_slug || "",
+)
 
 const isLive = computed(() => liveStatusData.value?.data?.is_live || false)
 
@@ -125,7 +127,7 @@ const watchStoreNameForSlug = (storeName: string) => {
 <template>
   <div>
     <div
-      v-if="!isLive"
+      v-if="!isLive && !isLoadingLiveStatus"
       class="bg-primary-25 text-warning-700 border-warning-300 flex flex-col items-start gap-3 border-b px-6 py-3 md:flex-row md:items-center"
     >
       <span

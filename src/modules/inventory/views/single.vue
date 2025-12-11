@@ -44,9 +44,17 @@
     />
     <div v-else>
       <div class="flex flex-col justify-between gap-3">
-        <h5 class="text-core-700 !font-outfit font-regular text-lg md:text-xl md:font-semibold">
-          {{ product?.data.name }}
-        </h5>
+        <div class="flex items-center gap-2">
+          <h5 class="text-core-700 !font-outfit font-regular text-lg md:text-xl md:font-semibold">
+            {{ product?.data.name }}
+          </h5>
+          <Icon
+            v-if="!product?.data.is_active"
+            name="eye-slash-outline"
+            size="20"
+            class="flex-shrink-0 text-gray-500"
+          />
+        </div>
         <div class="inline-flex flex-wrap gap-2">
           <Chip
             v-if="product?.data.category_name"
@@ -129,6 +137,22 @@
       :loading="isDeletingProduct"
     />
 
+    <ConfirmationModal
+      v-model="showHideConfirmationModal"
+      @close="showHideConfirmationModal = false"
+      :header="product?.data.is_active ? 'Hide Product' : 'Unhide Product'"
+      :paragraph="
+        product?.data.is_active
+          ? 'Are you sure you want to hide this product from the storefront? Customers will not be able to see or purchase it.'
+          : 'Are you sure you want to make this product visible on the storefront? Customers will be able to see and purchase it.'
+      "
+      :variant="product?.data.is_active ? 'warning' : 'success'"
+      info-box-variant="neutral"
+      :action-label="product?.data.is_active ? 'Hide' : 'Unhide'"
+      @confirm="handleToggleVisibility"
+      :loading="isUpdatingProduct"
+    />
+
     <AddReduceStockModal
       v-if="selectedVariant"
       :key="`stock-modal-${selectedVariant.uid}`"
@@ -185,7 +209,7 @@
 
 <script setup lang="ts">
 import Icon from "@components/Icon.vue"
-import { useGetProduct, useDeleteProduct } from "../api"
+import { useGetProduct, useDeleteProduct, useUpdateProduct } from "../api"
 import { useRoute, useRouter } from "vue-router"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import { ref, computed, watch, onMounted } from "vue"
@@ -224,6 +248,7 @@ const isHQ = computed(() => settingsStore.activeLocation?.is_hq ?? true)
 const uid = Array.isArray(route.params.uid) ? route.params.uid[0] : route.params.uid
 const { data: product, isPending, isFetching } = useGetProduct(uid)
 const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct()
+const { mutate: updateProduct, isPending: isUpdatingProduct } = useUpdateProduct()
 
 const orderParams = computed(() => ({
   product: uid,
@@ -239,6 +264,7 @@ const {
 // Initialize activeTab from query parameter or default to "overview"
 const activeTab = ref((route.query.tab as string) || "overview")
 const showDeleteConfirmationModal = ref(false)
+const showHideConfirmationModal = ref(false)
 const showAddReduceStockModal = ref(false)
 const stockModalType = ref<"add" | "reduce">("add")
 const showTransferRequestDrawer = ref(false)
@@ -534,7 +560,16 @@ const actionItems = computed(() => {
   })
 
   if (isHQ.value) {
+    const isHidden = !product?.value?.data.is_active
+
     items.push(
+      {
+        label: isHidden ? "Unhide Product" : "Hide Product",
+        icon: isHidden ? "eye-outline" : "eye-slash-outline",
+        action: () => {
+          showHideConfirmationModal.value = true
+        },
+      },
       {
         divider: true,
       },
@@ -613,24 +648,31 @@ const productMetrics = computed(() => {
       value: totalAvailableStock,
       prev_value: 0,
       icon: "shop",
+      chipText: undefined,
     },
     {
       label: "Sellable Inventory",
       value: totalSellableStock,
       prev_value: 0,
       icon: "shopping-cart",
+      chipText:
+        productData.popup_quantity_taken > 0
+          ? `${productData.popup_quantity_taken} in popups`
+          : undefined,
     },
     {
       label: "Quantity Sold",
       value: productData.quantity_sold || 0,
       prev_value: 0,
       icon: "box-time",
+      chipText: undefined,
     },
     {
       label: "Reserved Inventory",
       value: totalReservedStock,
       prev_value: 0,
       icon: "box-time",
+      chipText: undefined,
     },
   ]
 })
@@ -647,6 +689,32 @@ const handleDeleteProduct = () => {
     },
     onError: displayError,
   })
+}
+
+const handleToggleVisibility = () => {
+  if (!product.value) return
+
+  const isCurrentlyActive = product.value.data.is_active
+  const newActiveState = !isCurrentlyActive
+
+  updateProduct(
+    {
+      uid: product.value.data.uid,
+      is_active: newActiveState,
+    },
+    {
+      onSuccess: () => {
+        toast.success(
+          newActiveState
+            ? "Product is now visible on storefront"
+            : "Product hidden from storefront",
+        )
+        showHideConfirmationModal.value = false
+        queryClient.refetchQueries({ queryKey: ["products", uid] })
+      },
+      onError: displayError,
+    },
+  )
 }
 
 const getVariantActionItems = (variant: IProductVariantDetails) => {

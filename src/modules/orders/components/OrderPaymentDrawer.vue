@@ -8,6 +8,8 @@ import { useGetOrderPaymentHistory } from "../api"
 import { TOrder } from "../types"
 import AddPaymentModal from "./AddPaymentModal.vue"
 import { formatCurrency } from "@/utils/format-currency"
+import Modal from "@components/Modal.vue"
+import { useMediaQuery } from "@vueuse/core"
 
 // Props & Emits
 const props = defineProps<{ open: boolean; order: TOrder }>()
@@ -28,12 +30,21 @@ const openCreatePaymentModal = () => {
 const id = computed(() => props.order.uid)
 
 const { data: paymentHistory, refetch } = useGetOrderPaymentHistory(id)
+
+const isMobile = useMediaQuery("(max-width: 1024px)")
 </script>
 
 <template>
   <div>
     <!-- Drawer -->
-    <Drawer :open="open" title="Add Payment" max-width="2xl" @close="emit('close')">
+    <component
+      :is="isMobile ? Modal : Drawer"
+      variant="fullscreen"
+      :open="open"
+      title="Order Payment"
+      max-width="2xl"
+      @close="emit('close')"
+    >
       <div class="mb-6 flex items-center justify-between">
         <div>
           <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
@@ -68,7 +79,11 @@ const { data: paymentHistory, refetch } = useGetOrderPaymentHistory(id)
 
         <div class="my-6 flex items-center justify-between">
           <h3 class="flex items-center gap-1 text-lg font-semibold">
-            Payment History <Chip :label="paymentHistory?.payments?.length || 0" />
+            Payment History
+            <Chip
+              v-if="paymentHistory?.payments?.length"
+              :label="paymentHistory?.payments?.length"
+            />
           </h3>
 
           <AppButton icon="add" class="flex-shrink-0" label="Add" @click="openAdd = true" />
@@ -107,7 +122,7 @@ const { data: paymentHistory, refetch } = useGetOrderPaymentHistory(id)
           />
         </div>
       </div>
-    </Drawer>
+    </component>
 
     <!-- Create Payment Modal -->
     <AddPaymentModal

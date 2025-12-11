@@ -55,9 +55,10 @@ export interface ConfirmationModalProps {
    * - warning: Yellow/orange color scheme for warnings (default)
    * - error: Red color scheme for destructive actions
    * - success: Green color scheme for positive actions
+   * - neutral: Grey color scheme for neutral actions
    * @default "warning"
    */
-  variant?: "warning" | "error" | "success"
+  variant?: "warning" | "error" | "success" | "neutral"
 
   /**
    * Custom header icon name (overrides default variant icons)
@@ -74,6 +75,11 @@ export interface ConfirmationModalProps {
    * Custom action button label (overrides default variant labels)
    */
   actionLabel?: string
+
+  /**
+   * Custom variant for the info box only (overrides main variant for info box styling)
+   */
+  infoBoxVariant?: "warning" | "error" | "success" | "neutral"
 }
 
 const props = withDefaults(defineProps<ConfirmationModalProps>(), {
@@ -90,6 +96,7 @@ const defaultIcons = {
   warning: "pause",
   error: "trash-01",
   success: "check-circle",
+  neutral: "info-circle",
 }
 
 // Default info messages for each variant
@@ -97,6 +104,7 @@ const defaultInfoMessages = {
   warning: "You can reverse this action later.",
   error: "This action cannot be reversed.",
   success: "This action will be completed immediately.",
+  neutral: "You can reverse this action later.",
 }
 
 // Default action labels for each variant
@@ -104,6 +112,7 @@ const defaultActionLabels = {
   warning: "Suspend",
   error: "Delete",
   success: "Confirm",
+  neutral: "Confirm",
 }
 
 const displayHeaderIcon = computed(() => props.headerIcon || defaultIcons[props.variant])
@@ -116,6 +125,7 @@ const headerIconContainerClasses = computed(() => {
     warning: "bg-warning-50",
     error: "bg-error-50",
     success: "bg-success-50",
+    neutral: "bg-gray-50",
   }
 
   return ["absolute top-3 self-start rounded-full p-1.5", variantClasses[props.variant]]
@@ -126,6 +136,7 @@ const headerIconInnerClasses = computed(() => {
     warning: "bg-warning-100",
     error: "bg-error-100",
     success: "bg-success-100",
+    neutral: "bg-gray-100",
   }
 
   return ["rounded-full p-2", variantClasses[props.variant]]
@@ -136,6 +147,7 @@ const headerIconClasses = computed(() => {
     warning: "text-warning-600",
     error: "text-error-600",
     success: "text-success-600",
+    neutral: "text-gray-700",
   }
 
   return variantClasses[props.variant]
@@ -147,9 +159,11 @@ const infoBoxClasses = computed(() => {
     warning: "border-warning-300 bg-warning-25 text-warning-700",
     error: "border-error-300 bg-error-25 text-error-700",
     success: "border-success-300 bg-success-25 text-success-700",
+    neutral: "border-gray-300 bg-gray-50 text-gray-700",
   }
 
-  return ["my-3 flex items-center gap-3 rounded-lg border p-3", variantClasses[props.variant]]
+  const activeVariant = props.infoBoxVariant || props.variant
+  return ["my-3 flex items-center gap-3 rounded-lg border p-3", variantClasses[activeVariant]]
 })
 
 const infoIconContainerClasses = computed(() => {
@@ -157,9 +171,11 @@ const infoIconContainerClasses = computed(() => {
     warning: "border-warning-100",
     error: "border-error-100",
     success: "border-success-100",
+    neutral: "border-gray-100",
   }
 
-  return ["rounded-full border-2 p-0.5", variantClasses[props.variant]]
+  const activeVariant = props.infoBoxVariant || props.variant
+  return ["rounded-full border-2 p-0.5", variantClasses[activeVariant]]
 })
 
 const infoIconInnerClasses = computed(() => {
@@ -167,9 +183,11 @@ const infoIconInnerClasses = computed(() => {
     warning: "border-warning-300",
     error: "border-error-300",
     success: "border-success-300",
+    neutral: "border-gray-300",
   }
 
-  return ["rounded-full border-2 p-0.5", variantClasses[props.variant]]
+  const activeVariant = props.infoBoxVariant || props.variant
+  return ["rounded-full border-2 p-0.5", variantClasses[activeVariant]]
 })
 
 const infoIconClasses = computed(() => {
@@ -177,9 +195,11 @@ const infoIconClasses = computed(() => {
     warning: "text-warning-600",
     error: "text-error-600",
     success: "text-success-600",
+    neutral: "text-gray-700",
   }
 
-  return variantClasses[props.variant]
+  const activeVariant = props.infoBoxVariant || props.variant
+  return variantClasses[activeVariant]
 })
 
 // Action button classes
@@ -188,6 +208,7 @@ const actionButtonClasses = computed(() => {
     warning: "!bg-warning-600 hover:!bg-warning-500",
     error: "!bg-error-600 hover:!bg-error-500",
     success: "!bg-success-600 hover:!bg-success-500",
+    neutral: "!bg-gray-700 hover:!bg-gray-600",
   }
 
   return ["flex-1", variantClasses[props.variant]]
