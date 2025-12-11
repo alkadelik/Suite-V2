@@ -62,11 +62,15 @@ export const POPUP_ORDER_COLUMNS: TableColumn<TOrder>[] = [
   { header: "Actions", accessor: "actions" },
 ]
 
+/**
+ * This should be gotten from the backend instead - - ended, ongoing, upcoming, closed. NOTES!!!!!!!!!
+ */
 export const getEventStatus = (event: { start_date?: string; end_date?: string } | null) => {
   if (!event?.start_date || !event?.end_date) return "ended"
   const now = new Date()
   const startDate = new Date(event.start_date)
   const endDate = new Date(event.end_date)
+  endDate.setHours(23, 59, 59, 999) // Set to end of day
 
   if (now < startDate) return "upcoming"
   if (now >= startDate && now <= endDate) return "ongoing"
