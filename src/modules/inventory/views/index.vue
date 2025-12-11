@@ -464,7 +464,7 @@ const productMetrics = computed(() => {
       label: "In Stock",
       value: inStockProducts,
       prev_value: 0,
-      icon: "box",
+      icon: "box-filled",
     },
     {
       label: "Low Stock",
