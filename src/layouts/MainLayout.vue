@@ -115,11 +115,7 @@
   <!--  -->
   <LogoutModal :open="logout" @close="logout = false" />
 
-  <PlansModal
-    :model-value="showPlans"
-    :hide-bud="true"
-    @update:model-value="(val) => setPlanUpgradeModal(val)"
-  />
+  <PlansModal :model-value="showPlans" @update:model-value="(val) => setPlanUpgradeModal(val)" />
 
   <TrialActivationModal
     :open="openTrial"

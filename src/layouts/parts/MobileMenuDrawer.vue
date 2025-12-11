@@ -142,7 +142,6 @@ const { setPlanUpgradeModal } = useSettingsStore()
     <!--  -->
     <PlansModal
       :model-value="showPlans"
-      :hide-bud="true"
       @update:model-value="(val: boolean) => setPlanUpgradeModal(val)"
     />
   </div>
