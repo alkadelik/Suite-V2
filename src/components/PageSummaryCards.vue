@@ -74,8 +74,8 @@ const getItemSpanClass = (index: number) => {
       >
         <!-- Mobile: Icon and Label together at top -->
         <div class="flex flex-col gap-2 md:hidden">
-          <div class="bg-primary-600 h-0.5 w-7 rounded-sm">
-            <!-- <Icon :name="item.icon" :class="['text-primary-600', item.iconClass]" :size="24" /> -->
+          <div class="flex h-8 w-8 items-center justify-center rounded-lg">
+            <Icon :name="item.icon" :class="['text-primary-600', item.iconClass]" :size="20" />
           </div>
 
           <h4 class="text-core-600 !font-outfit flex items-end gap-1.5 text-sm">
