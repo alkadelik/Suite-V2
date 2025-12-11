@@ -29,18 +29,23 @@
         </header>
         <div class="flex items-center justify-between p-4">
           <div class="flex flex-col items-start gap-5">
-            <Chip :color="getPlanColor(currentPlan)" :label="currentPlan" />
+            <Chip
+              :color="basePlanName === 'N/A' ? 'alt' : getPlanColor(basePlanName)"
+              :label="currentPlan"
+            />
 
             <p class="text-core-800 text-xs md:text-sm">
               {{
-                currentSubscription?.plan_price
-                  ? `${formatCurrency(Number(currentSubscription.plan_price))} / ${currentSubscription.plan_frequency}`
-                  : "Free"
+                basePlanName === "Bud" && budPlanPrice !== null
+                  ? `${formatCurrency(budPlanPrice)} / ${currentSubscription?.plan_frequency || "month"}`
+                  : currentSubscription?.plan_price
+                    ? `${formatCurrency(Number(currentSubscription.plan_price))} / ${currentSubscription.plan_frequency}`
+                    : "N/A"
               }}
             </p>
           </div>
           <AppButton
-            v-if="currentPlan === 'Bud'"
+            v-if="basePlanName === 'N/A' || basePlanName === 'Bud'"
             label="Upgrade Plan"
             icon="arrow-right"
             icon-placement="right"
@@ -165,7 +170,7 @@ import { SUBSCRIPTION_COLUMN } from "../constants"
 import PlansModal from "../components/PlansModal.vue"
 import { getPlanColor } from "../utils"
 import { TChipColor } from "@modules/shared/types"
-import { useGetSubscriptionHistory } from "../api"
+import { useGetSubscriptionHistory, useGetPlans } from "../api"
 import { useAuthStore } from "@modules/auth/store"
 
 const showPlansModal = ref(false)
@@ -174,17 +179,39 @@ const authStore = useAuthStore()
 // Get current subscription from user store
 const currentSubscription = computed(() => authStore.user?.subscription)
 
+// Get plans data to fetch Bud plan price
+const { data: plansData } = useGetPlans()
+
+// Get Bud plan price based on subscription frequency
+const budPlanPrice = computed(() => {
+  if (!plansData.value?.data?.results) return null
+
+  const frequency = currentSubscription.value?.plan_frequency || "monthly"
+  const budPlan = plansData.value.data.results.find(
+    (plan) => plan.name === "Bud" && plan.frequency === frequency,
+  )
+
+  return budPlan ? parseFloat(budPlan.price) : null
+})
+
 // Get current plan name
 const currentPlan = computed(() => {
   if (!currentSubscription.value || !currentSubscription.value.is_active) {
-    return "Bud"
+    return "N/A"
   }
-  return currentSubscription.value.plan_name
+  const planName = currentSubscription.value.plan_name || "N/A"
+  const isTrial = currentSubscription.value.trial_mode || false
+  return isTrial ? `${planName} trial` : planName
+})
+
+// Get base plan name without trial suffix for comparisons
+const basePlanName = computed(() => {
+  return currentSubscription.value?.plan_name || "N/A"
 })
 
 // Calculate next payment date
 const nextPaymentDate = computed(() => {
-  if (!currentSubscription.value?.active_until || currentPlan.value === "Bud") {
+  if (!currentSubscription.value?.active_until || currentPlan.value === "N/A") {
     return null
   }
 

@@ -3,7 +3,7 @@ import Drawer from "@components/Drawer.vue"
 import StepperWizard from "@components/StepperWizard.vue"
 import AppButton from "@components/AppButton.vue"
 import Icon from "@components/Icon.vue"
-import { ref, computed } from "vue"
+import { ref, computed, watch } from "vue"
 import { formatCurrency } from "@/utils/format-currency"
 import type { IProductCatalogue } from "@modules/inventory/types"
 import BoothSelectProduct from "./booth-form/BoothSelectProduct.vue"
@@ -106,6 +106,13 @@ const onSubmitBooth = () => {
 }
 
 const isMobile = useMediaQuery("(max-width: 1028px)")
+
+// Clear orderItems when going back to step 0 to ensure fresh initialization
+watch(activeStep, (newStep, oldStep) => {
+  if (newStep === 0 && oldStep === 1) {
+    orderItems.value = []
+  }
+})
 </script>
 
 <template>

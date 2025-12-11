@@ -5,7 +5,7 @@
       title="Set Up Delivery"
       max-width="xl"
       @close="emit('update:modelValue', false)"
-      variant="bottom-nav"
+      :variant="isMobile ? 'fullscreen' : 'centered'"
       :handle-padding="false"
     >
       <LoadingIcon
@@ -135,6 +135,7 @@ import {
 import { useUpdateStoreDetails, useGetStoreDetails } from "@/modules/settings/api"
 import LoadingIcon from "@components/LoadingIcon.vue"
 import type { ICourier } from "@/modules/shared/types"
+import { useMediaQuery } from "@vueuse/core"
 
 defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{
@@ -148,6 +149,7 @@ const { user } = useAuthStore()
 const shipBubbleStep = ref<number>(1)
 const showShipbubbleScreens = ref<boolean>(false)
 const isShippingProfileActive = ref<boolean>(false)
+const isMobile = useMediaQuery("(max-width: 768px)")
 
 const { data: shippingProfileData, isPending: isGettingShippingProfile } = useGetShippingProfile()
 const { data: storeDetails, isPending: isGettingStoreDetails } = useGetStoreDetails(

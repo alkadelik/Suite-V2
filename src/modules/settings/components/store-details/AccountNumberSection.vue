@@ -17,6 +17,7 @@ import { computed, watch } from "vue"
 import * as yup from "yup"
 
 const accountName = ref<string>("")
+const loadedFromBackend = ref<{ account_number: string; bank_code: string } | null>(null)
 
 const { data: banks, isPending: isLoading } = useGetSupportedBanks()
 const { data: settlementBanks } = useGetSettlementBank()
@@ -47,14 +48,25 @@ const { handleSubmit, meta, setErrors, setValues, values } = useForm<{
 })
 
 watch(settlementBanks, (mybanks) => {
-  if (mybanks) {
+  if (mybanks && mybanks[0]) {
+    // Store the loaded values to prevent re-verification
+    loadedFromBackend.value = {
+      account_number: mybanks[0].account_number,
+      bank_code: mybanks[0].bank_code,
+    }
+
+    // Set form values including account name from backend
     setValues({
       bank_name: {
         label: mybanks[0].bank_name,
         value: mybanks[0].bank_code,
       },
-      account_number: mybanks[0]?.account_number,
+      account_number: mybanks[0].account_number,
+      account_name: mybanks[0].account_name || "",
     })
+
+    // Set account name display
+    accountName.value = mybanks[0].account_name || ""
   }
 })
 
@@ -81,7 +93,15 @@ watch(
   () => values,
   (newValue) => {
     if (newValue.bank_name && newValue.account_number?.length === 10) {
-      validateAccountNumber(newValue.account_number, newValue.bank_name.value)
+      // Only verify if values differ from what was loaded from backend
+      const isDifferentFromLoaded =
+        !loadedFromBackend.value ||
+        newValue.account_number !== loadedFromBackend.value.account_number ||
+        newValue.bank_name.value !== loadedFromBackend.value.bank_code
+
+      if (isDifferentFromLoaded) {
+        validateAccountNumber(newValue.account_number, newValue.bank_name.value)
+      }
     } else {
       accountName.value = ""
     }
