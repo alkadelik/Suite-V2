@@ -357,11 +357,8 @@ const sampleOrders: TOrder[] | null = []
               :variants-count-text="`+ ${item.items.length - 1}`"
               shape="rounded"
               class="!gap-2"
+              max-width="100px"
             />
-            <!-- <div class="max-w-[100px] truncate">
-              {{ item.items.map((v) => v.product_name).join(", ") }}
-              <Chip v-if="item.items.length > 1" :label="`+ ${item.items.length - 1}`" />
-            </div> -->
           </template>
           <template #cell:fulfilment_status="{ item }">
             <Chip
