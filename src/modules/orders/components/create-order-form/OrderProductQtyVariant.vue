@@ -52,7 +52,7 @@ const emit = defineEmits<{
 
 const localItems = ref<OrderItem[]>([])
 const selectedVariants = ref<Map<string, VariantItem[]>>(new Map())
-const showNotes = ref<Record<string, boolean>>({})
+const showNotes = ref<Map<string, boolean>>(new Map())
 
 interface ValidationErrors {
   [variantUid: string]: {
@@ -205,16 +205,17 @@ const removeItem = (index: number) => {
   if (variants) {
     variants.forEach((v) => delete validationErrors.value[v.variant.uid])
   }
-  delete showNotes.value[product.uid]
+  showNotes.value.delete(product.uid)
   localItems.value.splice(index, 1)
 }
 
 const toggleNotes = (productUid: string) => {
-  showNotes.value[productUid] = !showNotes.value[productUid]
+  const currentValue = showNotes.value.get(productUid) || false
+  showNotes.value.set(productUid, !currentValue)
 }
 
 const getActionItems = (item: OrderItem) => {
-  const notesVisible = showNotes.value[item.product.uid] || false
+  const notesVisible = showNotes.value.get(item.product.uid) || false
   return [
     {
       label: notesVisible ? "Hide Note" : "Show Note",
@@ -482,7 +483,7 @@ const productsTotal = computed(() => {
             </div>
           </div>
           <!-- Notes Section -->
-          <div v-if="showNotes[item.product.uid]" class="pt-2">
+          <div v-if="showNotes.get(item.product.uid)" class="pt-2">
             <TextAreaField
               v-model="item.notes"
               name="notes"

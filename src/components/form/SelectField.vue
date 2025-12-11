@@ -249,7 +249,7 @@ const props = withDefaults(defineProps<Props>(), {
   noOptionsText: "No options found",
   variant: "default",
   size: "md",
-  placement: "top",
+  placement: "bottom",
 })
 
 const emit = defineEmits<{
@@ -283,11 +283,11 @@ const hasSelection = computed(() =>
   props.multiple ? selectedArray.value.length > 0 : selected.value != null,
 )
 
-const isMobile = useMediaQuery("(max-width: 768px)")
+const isMobile = useMediaQuery("(max-width: 1024px)")
 
 // Dropdown placement logic
 const dropdownPlacement = computed(() => {
-  if (isMobile && props.searchable) return "bottom"
+  if (isMobile.value && props.searchable) return "top"
 
   if (props.placement === "auto" && selectContainer.value && open.value) {
     const rect = selectContainer.value.getBoundingClientRect()
