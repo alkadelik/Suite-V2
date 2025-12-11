@@ -70,7 +70,7 @@
             <h3 v-if="user?.subscription?.trial_mode" class="mb-1 text-sm font-bold">
               You are on trial mode
             </h3>
-            <h3 v-if="user?.subscription?.is_active" class="mb-1 text-sm font-semibold">
+            <h3 v-else class="mb-1 text-sm font-semibold">
               Active: <b>{{ user?.subscription?.plan_name + " Plan" }}</b>
             </h3>
             <p class="mb-4 text-sm">
