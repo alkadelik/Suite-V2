@@ -621,12 +621,12 @@ const handleRequestSuccess = () => {
 }
 
 // Watch for route query to open create modal/drawer
-const routeQueryCreate = computed(() => route.query.create)
 watch(
-  routeQueryCreate,
+  () => route.query.create,
   (newVal) => {
-    console.log("Route query 'create' changed:", newVal)
-    if (newVal) openAddProductDrawer()
+    if (newVal === "true") {
+      openAddProductDrawer()
+    }
   },
   { immediate: true },
 )

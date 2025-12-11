@@ -175,7 +175,7 @@ const bodyClasses = computed(() => {
   const classes = []
 
   if (props.variant === "fullscreen") {
-    classes.push("h-full max-h-[85dvh] overflow-y-auto")
+    classes.push("h-full max-h-[calc(100%-60px)] overflow-y-auto")
   } else {
     classes.push("max-h-[80dvh] overflow-y-auto")
   }

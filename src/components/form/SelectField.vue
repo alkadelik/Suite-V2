@@ -186,6 +186,7 @@
 <script setup lang="ts">
 import { capitalizeFirstChar } from "@/utils/format-strings"
 import Icon from "@components/Icon.vue"
+import { useClickOutside } from "@/composables/useClickOutside"
 import { useMediaQuery } from "@vueuse/core"
 import { ref, computed, onMounted, onUnmounted } from "vue"
 
@@ -261,9 +262,9 @@ const emit = defineEmits<{
 const open = ref(false)
 const search = ref("")
 const highlightedIndex = ref(-1)
-const selectContainer = ref<HTMLElement>()
-const searchInput = ref<HTMLInputElement>()
-const dropdownElement = ref<HTMLElement>()
+const selectContainer = ref<HTMLElement | null>(null)
+const searchInput = ref<HTMLInputElement | null>(null)
+const dropdownElement = ref<HTMLElement | null>(null)
 const positionTrigger = ref(0) // Used to force recompute dropdown position
 
 // Check if we're inside a modal
@@ -554,46 +555,17 @@ const highlightPrevious = () => {
   if (highlightedIndex.value > 0) highlightedIndex.value--
 }
 
-// Outside click handler
-const onClickOutside = (event: MouseEvent) => {
-  if (!open.value || !selectContainer.value) return
-
-  const target = event.target as HTMLElement
-
-  // Check if click is inside the select container
-  if (selectContainer.value.contains(target)) return
-
-  // Check if click is inside the dropdown (via ref or by checking parent elements)
-  if (dropdownElement.value?.contains(target)) return
-
-  // Also check if the target is within any teleported dropdown
-  const isInsideDropdown = target.closest('[class*="z-[1200]"], [class*="z-[1300]"]')
-  if (isInsideDropdown) return
-
-  // Special handling for clicks inside modals
-  if (isInsideModal.value) {
-    // Check if the click is on the modal overlay (which should close the dropdown)
-    const isClickOnModalOverlay =
-      target.classList.contains("fixed") &&
-      target.classList.contains("inset-0") &&
-      (target.classList.contains("bg-black") || target.style.backgroundColor)
-
-    // Check if click is on the modal close button
-    const isModalCloseButton =
-      target.closest('[class*="close"]') ||
-      target.closest('button[aria-label*="close"]') ||
-      target.closest('button[title*="close"]')
-
-    if (isClickOnModalOverlay || isModalCloseButton) {
+// Use click outside composable to close dropdown when clicking outside
+useClickOutside(
+  [selectContainer, dropdownElement],
+  () => {
+    if (open.value) {
       open.value = false
       search.value = ""
     }
-  } else {
-    // Normal outside click behavior for non-modal usage
-    open.value = false
-    search.value = ""
-  }
-}
+  },
+  { enabled: open },
+)
 
 // Update dropdown position on scroll and resize
 const updateDropdownPosition = () => {
@@ -604,13 +576,11 @@ const updateDropdownPosition = () => {
 }
 
 onMounted(() => {
-  document.addEventListener("click", onClickOutside, true) // Use capture phase
   window.addEventListener("scroll", updateDropdownPosition, true)
   window.addEventListener("resize", updateDropdownPosition)
 })
 
 onUnmounted(() => {
-  document.removeEventListener("click", onClickOutside, true)
   window.removeEventListener("scroll", updateDropdownPosition, true)
   window.removeEventListener("resize", updateDropdownPosition)
 })
