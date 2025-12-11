@@ -50,7 +50,7 @@ export function useCreateProduct() {
 /** Update product api request */
 export function useUpdateProduct() {
   return useMutation({
-    mutationFn: ({ uid, ...body }: IProductFormPayload & { uid: string }) =>
+    mutationFn: ({ uid, ...body }: Partial<IProductFormPayload> & { uid: string }) =>
       baseApi.patch(`inventory/products/${uid}/`, body),
   })
 }

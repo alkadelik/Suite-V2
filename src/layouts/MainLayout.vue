@@ -32,7 +32,7 @@
         <!-- Content -->
         <main class="h-[calc(100dvh-4rem)] overflow-y-auto lg:h-[calc(100vh-4rem)]">
           <div
-            v-if="!isLive"
+            v-if="!isLive && !isLoadingLiveStatus"
             class="bg-primary-25 text-warning-700 border-warning-300 flex flex-col items-start gap-3 border-b px-6 py-3 lg:flex-row lg:items-center"
           >
             <span
@@ -256,7 +256,7 @@ const showPlans = computed(() => useSettingsStore().showPlanUpgradeModal)
 
 const storeSlug = useAuthStore().user?.store_slug || ""
 const storeUid = computed(() => useAuthStore().user?.store_uid || "")
-const { data: liveStatusData } = useGetLiveStatus(storeSlug)
+const { data: liveStatusData, isPending: isLoadingLiveStatus } = useGetLiveStatus(storeSlug)
 const isLive = computed(() => liveStatusData.value?.data?.is_live || false)
 
 const openTrial = ref(false)
