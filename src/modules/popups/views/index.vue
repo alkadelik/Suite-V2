@@ -207,6 +207,7 @@ onMounted(() => {
           :data="popupEvents?.results ?? []"
           :columns="POPUP_COLUMN"
           :show-pagination="true"
+          fix-last-column
           :loading="isPending || isFetching"
           @row-click="(item) => $router.push(`/popups/${item.uid}`)"
         >

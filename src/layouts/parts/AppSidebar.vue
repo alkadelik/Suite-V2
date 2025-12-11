@@ -104,7 +104,6 @@
 import { useAuthStore } from "@modules/auth/store"
 import { useMediaQuery } from "@vueuse/core"
 import { computed } from "vue"
-// import Avatar from "@components/Avatar.vue"
 import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
 import SidebarLink from "./SidebarLink.vue"

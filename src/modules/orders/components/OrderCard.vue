@@ -50,16 +50,34 @@ const menuItems = computed(() => {
   return props.customActions?.length
     ? props.customActions
     : [
-        { label: "View memos", action: () => emit("view-memos") },
-        { label: "Share invoice", action: () => emit("share-invoice") },
-        { label: "Update payment", action: () => emit("update-payment") },
-        ...(isFulfilled.value ? [] : [{ label: "Fulfil Order", action: () => emit("fulfill") }]),
+        { label: "View memos", icon: "eye", action: () => emit("view-memos") },
+        { label: "Share invoice", icon: "share", action: () => emit("share-invoice") },
+        { label: "Update Payment", icon: "money-add", action: () => emit("update-payment") },
+        ...(isFulfilled.value
+          ? []
+          : [{ label: "Fulfill Order", icon: "money-add", action: () => emit("fulfill") }]),
         { divider: true },
         ...((isFulfilled.value || props.order?.payment_status !== "unpaid") && !isBuyerCreated.value
-          ? [{ label: "Void order", class: "text-error", action: () => emit("void-order") }]
+          ? [
+              {
+                label: "Void Order",
+                icon: "trash",
+                class: "text-red-600 hover:bg-red-50",
+                iconClass: "text-red-600",
+                action: () => emit("void-order"),
+              },
+            ]
           : []),
         ...(!isFulfilled.value && props.order?.payment_status === "unpaid" && !isBuyerCreated.value
-          ? [{ label: "Delete order", class: "text-error", action: () => emit("delete-order") }]
+          ? [
+              {
+                label: "Delete Order",
+                icon: "trash",
+                class: "text-red-600 hover:bg-red-50",
+                iconClass: "text-red-600",
+                action: () => emit("delete-order"),
+              },
+            ]
           : []),
       ]
 })
