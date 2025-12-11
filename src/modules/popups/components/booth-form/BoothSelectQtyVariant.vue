@@ -71,8 +71,16 @@ const getVariantOptions = (product: IProductCatalogue) => {
 // Initialize local items when component mounts or products change
 onMounted(() => {
   if (props.orderItems.length > 0) {
-    localItems.value = [...props.orderItems]
-    // Initialize selectedVariants from orderItems
+    // Use selectedProducts for localItems (one per product)
+    localItems.value = props.selectedProducts.map((product) => ({
+      product,
+      variant: null,
+      quantity: 1,
+      unit_price: 0,
+      notes: "",
+    }))
+
+    // Populate selectedVariants from orderItems
     for (const item of props.orderItems) {
       if (item.variant) {
         const existing = selectedVariants.value.get(item.product.uid) || []

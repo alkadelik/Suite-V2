@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Icon from "@components/Icon.vue"
+import Chip from "@components/Chip.vue"
 
 const props = defineProps<{
   items: {
@@ -12,6 +13,7 @@ const props = defineProps<{
     valueTag?: string
     valueTagClass?: string
     iconClass?: string
+    chipText?: string
   }[]
   loading?: boolean
   defaultIcon: string
@@ -101,22 +103,33 @@ const getItemSpanClass = (index: number) => {
         </h4>
 
         <!-- Value section -->
-        <div class="flex items-center gap-2">
-          <!-- Desktop icon beside value -->
-          <span class="hidden h-10 w-10 items-center justify-center rounded-2xl bg-gray-50 md:flex">
-            <Icon :name="defaultIcon" :class="['text-primary-600', defaultIconClass]" :size="24" />
-          </span>
-
-          <p class="text-core-800 flex items-end gap-1.5 text-xl font-bold">
-            {{ item.value }}
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <!-- Desktop icon beside value -->
             <span
-              v-if="item.valueTag"
-              class="bg-primary-50 text-primary-400 inline-flex h-5 w-fit items-center justify-center rounded-xl !px-2.5 text-[12px] font-medium"
-              :class="item.valueTagClass"
+              class="hidden h-10 w-10 items-center justify-center rounded-2xl bg-gray-50 md:flex"
             >
-              {{ item.valueTag }}
+              <Icon
+                :name="defaultIcon"
+                :class="['text-primary-600', defaultIconClass]"
+                :size="24"
+              />
             </span>
-          </p>
+
+            <p class="text-core-800 flex items-end gap-1.5 text-xl font-bold">
+              {{ item.value }}
+              <span
+                v-if="item.valueTag"
+                class="bg-primary-50 text-primary-400 inline-flex h-5 w-fit items-center justify-center rounded-xl !px-2.5 text-[12px] font-medium"
+                :class="item.valueTagClass"
+              >
+                {{ item.valueTag }}
+              </span>
+            </p>
+          </div>
+
+          <!-- Blue chip opposite the numbers -->
+          <Chip v-if="item.chipText" :label="item.chipText" color="blue" size="sm" />
         </div>
 
         <!-- Previous value comparison -->

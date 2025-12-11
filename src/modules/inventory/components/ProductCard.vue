@@ -1,8 +1,8 @@
 <template>
   <div @click="$emit('click')" class="space-y-2 rounded-xl border border-gray-200 bg-white p-4">
     <div class="flex items-start justify-between gap-2">
-      <div class="flex items-start gap-2">
-        <div class="relative">
+      <div class="flex min-w-0 flex-1 items-start gap-2">
+        <div class="relative flex-shrink-0">
           <img
             v-if="product.primary_image?.image"
             :src="product.primary_image.image"
@@ -14,8 +14,16 @@
             <Icon name="shop-add" class="text-core-600" />
           </div>
         </div>
-        <div class="flex flex-col gap-2">
-          <p class="truncate text-sm font-semibold">{{ product.name }}</p>
+        <div class="flex min-w-0 flex-1 flex-col gap-2">
+          <div class="flex min-w-0 items-center gap-2">
+            <p class="truncate text-sm font-semibold">{{ product.name }}</p>
+            <Icon
+              v-if="!product.is_active"
+              name="eye-slash-outline"
+              size="14"
+              class="flex-shrink-0 text-gray-500"
+            />
+          </div>
           <div class="flex gap-3">
             <div v-if="formattedPrice" class="flex items-center">
               <Icon name="moneys" class="text-core-600 me-1 size-4" />
