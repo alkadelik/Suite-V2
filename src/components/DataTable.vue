@@ -74,6 +74,10 @@ interface Props {
 
   /** Hide total items count in title */
   hideTotal?: boolean
+  /** Fix the first column during horizontal scroll */
+  fixFirstColumn?: boolean
+  /** Fix the last column during horizontal scroll */
+  fixLastColumn?: boolean
 }
 
 // Define emits
@@ -118,6 +122,8 @@ const props = withDefaults(defineProps<Props>(), {
   perPageOptions: () => [5, 10, 25, 50, 100],
   totalPageCount: -1,
   layout: "table-auto",
+  fixFirstColumn: false,
+  fixLastColumn: false,
 })
 
 const rowSelection = ref<Record<string, boolean>>({})
@@ -289,6 +295,23 @@ const paginationPages = computed(() => {
 onMounted(() => {
   pagination.value = { pageIndex: props.currentPage - 1, pageSize: props.itemsPerPage }
 })
+
+// Helper function to determine if a column should be fixed
+const isFixedColumn = (index: number, totalColumns: number) => {
+  if (props.fixFirstColumn && index === 0) return "left"
+  if (props.fixLastColumn && index === totalColumns - 1) return "right"
+  return null
+}
+
+// Helper function to get fixed column classes
+const getFixedColumnClasses = (position: "left" | "right" | null) => {
+  if (!position) return ""
+  const baseClasses = "sticky bg-white z-5"
+  if (position === "left") {
+    return `${baseClasses} left-0 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]`
+  }
+  return `${baseClasses} right-0 shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.1)]`
+}
 </script>
 
 <template>
@@ -298,7 +321,12 @@ onMounted(() => {
       <table class="min-w-full border-0" :class="props.layout">
         <thead class="bg-gray-50">
           <tr v-for="headerGroup in table.getHeaderGroups()" :key="headerGroup.id">
-            <th v-for="header in headerGroup.headers" :key="header.id" :colSpan="header.colSpan">
+            <th
+              v-for="(header, headerIndex) in headerGroup.headers"
+              :key="header.id"
+              :colSpan="header.colSpan"
+              :class="getFixedColumnClasses(isFixedColumn(headerIndex, headerGroup.headers.length))"
+            >
               <span
                 class="text-core-700 flex gap-1 px-4 py-3 text-left text-sm font-medium whitespace-nowrap capitalize"
               >
@@ -328,9 +356,13 @@ onMounted(() => {
             @click="handleRowClick(row.original as T)"
           >
             <td
-              v-for="cell in row.getVisibleCells()"
+              v-for="(cell, cellIndex) in row.getVisibleCells()"
               :key="cell.id"
-              :class="['p-4 text-sm', (cell.column.columnDef.meta as { class?: string })?.class]"
+              :class="[
+                'p-4 text-sm',
+                (cell.column.columnDef.meta as { class?: string })?.class,
+                getFixedColumnClasses(isFixedColumn(cellIndex, row.getVisibleCells().length)),
+              ]"
               :style="
                 (cell.column.columnDef.meta as { maxWidth?: string })?.maxWidth
                   ? { maxWidth: (cell.column.columnDef.meta as { maxWidth?: string }).maxWidth }

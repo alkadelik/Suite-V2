@@ -353,6 +353,20 @@ watch(
     }
   },
 )
+
+// Reset automatic delivery fields when switching to manual
+watch(
+  () => props.shippingInfo.delivery_method,
+  (val) => {
+    if (val === "manual") {
+      // Clear automatic delivery-specific fields
+      shipBubbleRates.value = { couriers: [] }
+      updateField("shipping_courier", null)
+      updateField("shipping_rate_token", "")
+      shippingRateErrors.value = { email: "", phone: "", address: "" }
+    }
+  },
+)
 </script>
 
 <template>

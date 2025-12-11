@@ -4,7 +4,7 @@
     title="Upgrade Plan"
     max-width="6xl"
     @close="emit('update:modelValue', false)"
-    variant="bottom-nav"
+    :variant="isMobile ? 'fullscreen' : 'centered'"
   >
     <IconHeader
       icon-name="shop-add"
@@ -133,6 +133,7 @@ import AppButton from "@/components/AppButton.vue"
 import { useGetPlans, useInitializeSubscription } from "../api"
 import LoadingIcon from "@components/LoadingIcon.vue"
 import { displayError } from "@/utils/error-handler"
+import { useMediaQuery } from "@vueuse/core"
 
 const props = defineProps<{ modelValue: boolean; hideBud?: boolean }>()
 const emit = defineEmits<{
@@ -160,6 +161,8 @@ const tabs = ref([
     key: "yearly",
   },
 ])
+
+const isMobile = useMediaQuery("(max-width: 1024px)")
 
 // Static features for each plan type
 const planFeatures = computed(() => ({

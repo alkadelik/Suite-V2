@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import Modal from "@components/Modal.vue"
-import { ref } from "vue"
+import { computed, watch } from "vue"
+import { useForm } from "vee-validate"
 import { useAddUpdateOrderPayment } from "../api"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
-import RadioInputField from "@components/form/RadioInputField.vue"
-import TextField from "@components/form/TextField.vue"
+import FormField from "@components/form/FormField.vue"
 import AppButton from "@components/AppButton.vue"
 import { TOrder } from "../types"
 import { formatCurrency } from "@/utils/format-currency"
+import * as yup from "yup"
 
 const props = defineProps<{ open: boolean; order: TOrder }>()
 
@@ -19,26 +20,43 @@ const PAYMENT_METHODS = [
   { label: "Bank Transfer", value: "transfer" },
 ]
 
-const form = ref({
-  amount: "",
-  date: new Date().toISOString().split("T")[0],
-  source: PAYMENT_METHODS[0].value,
+const outstandingAmount = computed(() => props.order.total_amount - props.order.total_paid)
+
+interface FormValues {
+  amount: string
+  date: string
+  source: string
+}
+
+const { handleSubmit, meta, resetForm } = useForm<FormValues>({
+  validationSchema: computed(() =>
+    yup.object({
+      amount: yup
+        .number()
+        .transform((value, originalValue) => (originalValue === "" ? undefined : value))
+        .typeError("Amount must be a number")
+        .required("Amount is required")
+        .positive("Amount must be greater than 0")
+        .max(
+          outstandingAmount.value,
+          `Amount cannot exceed outstanding balance of ${formatCurrency(outstandingAmount.value)}`,
+        ),
+      date: yup.string().required("Date is required"),
+      source: yup.string().required("Payment source is required"),
+    }),
+  ),
+  initialValues: {
+    amount: "",
+    date: new Date().toISOString().split("T")[0],
+    source: PAYMENT_METHODS[0].value,
+  },
 })
 
 const { mutate: addPayment, isPending } = useAddUpdateOrderPayment()
 
-const resetForm = () => {
-  form.value = {
-    amount: "",
-    date: new Date().toISOString().split("T")[0],
-    source: PAYMENT_METHODS[0].value,
-  }
-}
-
-const onSubmit = () => {
-  console.log("Form values:", form.value)
+const onSubmit = handleSubmit((values) => {
   addPayment(
-    { id: props.order.uid, body: form.value },
+    { id: props.order.uid, body: values },
     {
       onSuccess: () => {
         toast.success("Payment added successfully!")
@@ -49,7 +67,17 @@ const onSubmit = () => {
       onError: displayError,
     },
   )
-}
+})
+
+// Reset form when modal opens
+watch(
+  () => props.open,
+  (isOpen) => {
+    if (isOpen) {
+      resetForm()
+    }
+  },
+)
 </script>
 
 <template>
@@ -60,18 +88,17 @@ const onSubmit = () => {
     @close="emit('close')"
   >
     <div class="space-y-5">
-      <!-- Severity -->
-      <RadioInputField v-model="form.source" label="Payment Source" :options="PAYMENT_METHODS" />
+      <FormField type="select" name="source" label="Payment Source" :options="PAYMENT_METHODS" />
 
-      <TextField
-        v-model="form.amount"
+      <FormField
+        name="amount"
         label="Amount Paid"
         placeholder="Enter amount paid"
-        :hint="`Outstanding: ${formatCurrency(props.order.total_amount - props.order.total_paid)}`"
+        :hint="`Outstanding: ${formatCurrency(outstandingAmount)}`"
         required
       />
 
-      <TextField v-model="form.date" label="Date" type="date" required />
+      <FormField name="date" label="Date" type="date" required />
     </div>
 
     <!-- Footer -->
@@ -81,7 +108,7 @@ const onSubmit = () => {
         @click="onSubmit"
         class="w-full"
         :loading="isPending"
-        :disabled="!form.amount || !form.date"
+        :disabled="!meta.valid || isPending"
       />
     </template>
   </Modal>

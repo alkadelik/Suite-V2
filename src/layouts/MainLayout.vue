@@ -97,13 +97,14 @@
         </nav>
 
         <!-- FAB -->
-        <div v-if="!isMobile" class="fixed right-4 bottom-4 hidden lg:inline-block">
+        <div v-if="!isMobile" class="fixed right-4 bottom-4 z-[50] hidden lg:inline-block">
           <DropdownMenu :items="actionMenuItems">
             <template #trigger="{ open }">
               <AppButton
                 size="md"
-                class="!ring-primary-200 !rounded-full !ring-4"
+                :class="['!ring-primary-200 !rounded-full !ring-4']"
                 :icon="open ? 'x-close' : 'add-circle'"
+                :label="!open ? 'Add New' : ''"
               />
             </template>
           </DropdownMenu>
@@ -114,11 +115,7 @@
   <!--  -->
   <LogoutModal :open="logout" @close="logout = false" />
 
-  <PlansModal
-    :model-value="showPlans"
-    :hide-bud="true"
-    @update:model-value="(val) => setPlanUpgradeModal(val)"
-  />
+  <PlansModal :model-value="showPlans" @update:model-value="(val) => setPlanUpgradeModal(val)" />
 
   <TrialActivationModal
     :open="openTrial"

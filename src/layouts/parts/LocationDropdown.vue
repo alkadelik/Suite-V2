@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { clipboardCopy } from "@/utils/others"
 import AppButton from "@components/AppButton.vue"
-import Avatar from "@components/Avatar.vue"
 import Chip from "@components/Chip.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import Icon from "@components/Icon.vue"
@@ -76,7 +75,9 @@ const onLocationSelect = (id: string) => {
             'flex items-center gap-2 text-sm font-medium',
           ]"
         >
-          <Avatar :name="storeDetails?.name || ''" size="sm" />
+          <div class="bg-core-200 flex size-6 items-center justify-center rounded-xl">
+            <Icon name="shop" class="text-primary-800" size="14" />
+          </div>
           <span class="max-w-[120px] truncate">
             {{ currentLocation?.name }}
           </span>
@@ -90,7 +91,10 @@ const onLocationSelect = (id: string) => {
 
       <template #prepend>
         <div class="bg-primary-50 border-primary-300 mb-1 rounded-t-lg border-b px-2.5 py-3">
-          <Avatar :name="storeDetails?.name || ''" backgroundColor="var(--color-core-950)" />
+          <div class="bg-core-200 flex size-8 items-center justify-center rounded-xl">
+            <Icon name="shop" class="text-primary-800" />
+          </div>
+
           <div class="mt-2 mb-1 flex min-w-0 items-end gap-2">
             <p class="min-w-0 truncate font-medium capitalize">
               {{ storeDetails?.name }}

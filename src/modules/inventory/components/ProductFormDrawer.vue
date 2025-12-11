@@ -1,9 +1,11 @@
 <template>
-  <Drawer
+  <component
+    :is="isMobile ? Modal : Drawer"
+    max-width="2xl"
+    variant="fullscreen"
     :open="modelValue"
     title="Add Product"
     :position="drawerPosition"
-    max-width="xl"
     @close="emit('update:modelValue', false)"
   >
     <IconHeader icon-name="shop-add" :title="getHeaderTitle" :subtext="getHeaderText" />
@@ -65,7 +67,7 @@
         </div>
       </div>
     </template>
-  </Drawer>
+  </component>
 </template>
 
 <script setup lang="ts">
@@ -95,6 +97,8 @@ import { useVariantConfiguration } from "../composables/useVariantConfiguration"
 import { useVariantValidation } from "../composables/useVariantValidation"
 import { useVariantProcessing } from "../composables/useVariantProcessing"
 import { useProductDrawerUtilities } from "../composables/useProductDrawerUtilities"
+import { useMediaQuery } from "@vueuse/core"
+import Modal from "@components/Modal.vue"
 
 interface Props {
   /** Whether the drawer is open/visible */
@@ -124,6 +128,8 @@ const emit = defineEmits<Emits>()
 const productDetailsRef = ref<{
   setCategory: (category: { label: string; value: string }) => void
 } | null>(null)
+
+const isMobile = useMediaQuery("(max-width: 1024px)")
 
 // API mutations
 const { mutate: createProduct, isPending: isCreating } = useCreateProduct()
