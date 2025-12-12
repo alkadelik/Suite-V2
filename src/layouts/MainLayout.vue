@@ -22,7 +22,7 @@
         :class="[
           'flex h-full flex-1 flex-col overflow-hidden transition-all duration-200',
           'pb-16',
-          showAppHeader ? 'pt-16' : 'pt-20',
+          showAppHeader ? 'pt-16' : 'pt-24',
           sidebarPadding,
         ]"
       >
