@@ -14,9 +14,7 @@ import { useMediaQuery } from "@vueuse/core"
 // Props & Emits
 const props = defineProps<{ open: boolean; order: TOrder }>()
 
-const emit = defineEmits<{
-  close: []
-}>()
+const emit = defineEmits<{ close: []; refresh: [] }>()
 
 // State
 const openAdd = ref(false)
@@ -32,6 +30,11 @@ const id = computed(() => props.order.uid)
 const { data: paymentHistory, refetch } = useGetOrderPaymentHistory(id)
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
+
+const handleRefresh = () => {
+  refetch()
+  emit("refresh")
+}
 </script>
 
 <template>
@@ -135,7 +138,7 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
       :open="openAdd"
       :order="props.order"
       @close="openAdd = false"
-      @refresh="refetch"
+      @refresh="handleRefresh"
     />
   </div>
 </template>

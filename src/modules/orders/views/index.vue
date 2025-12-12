@@ -124,21 +124,25 @@ const getActionItems = (item: TOrder) => [
     },
   },
   {
-    label: "Share invoice",
+    label: `Share ${item.payment_status === "paid" ? "receipt" : "invoice"}`,
     icon: "share",
     action: () => {
       selectedOrder.value = item
       openShare.value = true
     },
   },
-  {
-    label: "Update Payment",
-    icon: "money-add",
-    action: () => {
-      selectedOrder.value = item
-      openPayment.value = true
-    },
-  },
+  ...(item.payment_status !== "paid"
+    ? [
+        {
+          label: "Update Payment",
+          icon: "money-add",
+          action: () => {
+            selectedOrder.value = item
+            openPayment.value = true
+          },
+        },
+      ]
+    : []),
   ...(item.fulfilment_status === "unfulfilled"
     ? [
         {
@@ -499,6 +503,7 @@ const sampleOrders: TOrder[] | null = []
       :open="openPayment"
       @close="openPayment = false"
       :order="selectedOrder"
+      @refresh="handleRefresh"
     />
   </div>
 </template>

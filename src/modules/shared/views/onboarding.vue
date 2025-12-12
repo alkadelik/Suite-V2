@@ -97,6 +97,8 @@ import { useGetLiveStatus } from "../api"
 import { useAuthStore } from "@modules/auth/store"
 import { useGetCustomers } from "@modules/customers/api"
 import { useGetOrders } from "@modules/orders/api"
+import { watch } from "vue"
+import { useSettingsStore } from "@modules/settings/store"
 
 const router = useRouter()
 
@@ -109,8 +111,10 @@ const {
   refetch: refetchLiveStatus,
 } = useGetLiveStatus(storeSlug)
 
-const isLive = computed(() => liveStatusData.value?.data?.is_live || false)
-const completionPercentage = computed(() => liveStatusData.value?.data?.completion_percentage || 0)
+const isLive = computed(() => useSettingsStore().liveStatus?.is_live || false)
+const completionPercentage = computed(
+  () => useSettingsStore().liveStatus?.completion_percentage || 0,
+)
 
 // Check if customers exist
 const { data: customersData, isPending: isLoadingCustomers } = useGetCustomers(
@@ -237,5 +241,11 @@ const tasks = computed(() => {
       icon: "routing",
     },
   ]
+})
+
+watch(liveStatusData, (newData) => {
+  if (newData?.data) {
+    useSettingsStore().setLiveStatus(newData.data)
+  }
 })
 </script>
