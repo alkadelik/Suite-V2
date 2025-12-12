@@ -22,7 +22,7 @@
         :class="[
           'flex h-full flex-1 flex-col overflow-hidden transition-all duration-200',
           'pb-16',
-          showAppHeader ? 'pt-16' : 'pt-24',
+          showAppHeader || isInner ? 'pt-14' : 'pt-20',
           sidebarPadding,
         ]"
       >
@@ -194,6 +194,8 @@ const showAppHeader = computed(() => {
   const hide = Boolean((route.meta || {})["hideAppHeader"])
   return !hide || !isMobile.value
 })
+
+const isInner = computed(() => !!route.params.id)
 
 const SALES_SUITES = computed(() => {
   const allSuites = [

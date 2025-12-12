@@ -23,7 +23,7 @@ const productCount = computed(() => inventoryStore.productCount)
 <template>
   <header
     v-if="title !== 'Page'"
-    class="bg-primary-25 border-primary-200 fixed top-0 right-0 left-0 z-30 border-b lg:hidden"
+    class="bg-primary-25 border-primary-200 sticky top-0 right-0 left-0 z-30 border-b lg:hidden"
   >
     <div class="flex items-end gap-1 px-4 py-3">
       <div class="flex-1">
