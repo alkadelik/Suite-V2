@@ -2,6 +2,7 @@ import { defineStore } from "pinia"
 import { IStoreDetails, TLocation } from "./types"
 import { computed, ref } from "vue"
 import { isStaging } from "@/utils/others"
+import { ILiveStatusData } from "@modules/shared/types"
 
 export const useSettingsStore = defineStore(
   "settings",
@@ -11,6 +12,7 @@ export const useSettingsStore = defineStore(
     const activeLocation = ref<TLocation | null>(null)
     const showPlanUpgradeModal = ref(false)
     const storeDetails = ref<IStoreDetails | null>(null)
+    const liveStatus = ref<ILiveStatusData | null>(null)
 
     const storefrontUrl = computed(
       () =>
@@ -36,6 +38,10 @@ export const useSettingsStore = defineStore(
       storeDetails.value = details
     }
 
+    const setLiveStatus = (status: ILiveStatusData) => {
+      liveStatus.value = status
+    }
+
     return {
       locations,
       activeLocation,
@@ -46,6 +52,8 @@ export const useSettingsStore = defineStore(
       setStoreDetails,
       storeDetails,
       storefrontUrl,
+      liveStatus,
+      setLiveStatus,
     }
   },
   { persist: true },
