@@ -79,6 +79,7 @@ export interface OrderPayload {
   total_amount: string | number
   delivery_fee: string | number
   fulfilment_method: "pickup" | "delivery"
+  fulfilment_status: "unfulfilled" | "fulfilled" | "partially_fulfilled" | "voided"
   delivery_address: string
   delivery_method: "manual" | "automatic"
   courier: IShippingCourier | string
@@ -89,6 +90,7 @@ export interface OrderPayload {
   items: OrderItemPayload[]
   delivery_payment_option: string
   order_channel: string
+  order_date?: string
 }
 
 export interface OrderItemPayload {

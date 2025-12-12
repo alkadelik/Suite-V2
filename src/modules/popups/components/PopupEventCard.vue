@@ -6,6 +6,7 @@ import { PopupEvent } from "../types"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import Avatar from "@components/Avatar.vue"
 import { computed } from "vue"
+import { getEventStatus } from "../constants"
 
 interface EventCardProps {
   /**  Additional custom classes */
@@ -82,7 +83,19 @@ const menuActions = computed(() => [
             }}
           </span>
         </p>
-        <!-- <Chip :label="`20% Sold`" size="sm" color="blue" /> -->
+        <Chip
+          :label="getEventStatus(event)"
+          size="sm"
+          class="capitalize"
+          show-dot
+          :color="
+            getEventStatus(event) === 'upcoming'
+              ? 'primary'
+              : getEventStatus(event) === 'ongoing'
+                ? 'success'
+                : 'alt'
+          "
+        />
       </div>
     </div>
   </div>

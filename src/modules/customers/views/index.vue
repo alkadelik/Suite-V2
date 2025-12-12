@@ -1,4 +1,6 @@
 <template>
+  <PageHeader title="Customers" :count="customers.length" count-label="customers" />
+
   <div class="p-4">
     <div class="hidden lg:block">
       <SectionHeader
@@ -204,7 +206,7 @@ import DataTable from "@components/DataTable.vue"
 import Avatar from "@components/Avatar.vue"
 import { ICustomer, TCustomerFormMode } from "../types"
 import { CUSTOMER_COLUMNS } from "../constants"
-import { ref, computed, watch, onMounted } from "vue"
+import { ref, computed, watch } from "vue"
 import Icon from "@components/Icon.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import Chip from "@components/Chip.vue"
@@ -218,6 +220,7 @@ import ExportCustomerModal from "../components/ExportCustomerModal.vue"
 import ViewCustomerDrawer from "../components/ViewCustomerDrawer.vue"
 import MetricsGrid from "@components/MetricsGrid.vue"
 import SectionHeader from "@components/SectionHeader.vue"
+import PageHeader from "@components/PageHeader.vue"
 import { useGetCustomers, useDeleteCustomer, useGetCustomer } from "../api"
 import { displayError } from "@/utils/error-handler"
 import EmptyState from "@components/EmptyState.vue"
@@ -455,13 +458,27 @@ watch(showCustomerFormDrawer, (isOpen) => {
   }
 })
 
-onMounted(() => {
-  if (route.query.create === "true") {
-    openAddCustomerDrawer()
-  } else if (route.query.uid && typeof route.query.uid === "string") {
-    customerUid.value = route.query.uid
-    formMode.value = "view"
-    showViewCustomerDrawer.value = true
-  }
-})
+// Watch for route query to open create modal/drawer
+watch(
+  () => route.query.create,
+  (newVal) => {
+    if (newVal === "true") {
+      openAddCustomerDrawer()
+    }
+  },
+  { immediate: true },
+)
+
+// Watch for route query to open view drawer
+watch(
+  () => route.query.uid,
+  (newVal) => {
+    if (newVal && typeof newVal === "string" && !route.query.create) {
+      customerUid.value = newVal
+      formMode.value = "view"
+      showViewCustomerDrawer.value = true
+    }
+  },
+  { immediate: true },
+)
 </script>

@@ -4,14 +4,16 @@ import AppButton from "@components/AppButton.vue"
 import Chip from "@components/Chip.vue"
 import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
+import TextAreaField from "@components/form/TextAreaField.vue"
 import { PopupInventory } from "@modules/popups/types"
-import { computed, onMounted, ref } from "vue"
+import { computed, onMounted, ref, reactive } from "vue"
 import * as yup from "yup"
 
 interface PopupOrderItem {
   product: PopupInventory
   quantity: number
   unit_price: number
+  notes?: string
 }
 
 interface ValidationErrors {
@@ -34,6 +36,10 @@ const emit = defineEmits<{
 
 const localItems = ref<PopupOrderItem[]>([])
 const validationErrors = ref<ValidationErrors>({})
+const showNotes = reactive<Record<string, boolean>>({})
+
+// Toggle this to true to clear notes when hidden
+const CLEAR_NOTE_ON_HIDE = false
 
 // Initialize local items when component mounts or products change
 onMounted(() => {
@@ -45,6 +51,7 @@ onMounted(() => {
       product,
       quantity: 1,
       unit_price: parseFloat(product.event_price), // Use event price as default
+      notes: "",
     }))
   }
 })
@@ -52,7 +59,18 @@ onMounted(() => {
 const removeItem = (index: number) => {
   const productUid = localItems.value[index].product.uid
   delete validationErrors.value[productUid]
+  delete showNotes[productUid]
   localItems.value.splice(index, 1)
+}
+
+const toggleNotes = (productUid: string) => {
+  const current = showNotes[productUid] || false
+  const next = !current
+  showNotes[productUid] = next
+  if (CLEAR_NOTE_ON_HIDE && current && !next) {
+    const item = localItems.value.find((i) => i.product.uid === productUid)
+    if (item) item.notes = ""
+  }
 }
 
 // Validate a single item
@@ -167,6 +185,13 @@ const getOriginalPrice = (item: PopupOrderItem) => {
             :label="`${item.product.available_quantity} available`"
             icon="box"
           />
+          <button
+            @click="toggleNotes(item.product.uid)"
+            class="mr-2 text-gray-400 hover:text-gray-600"
+            :aria-pressed="showNotes[item.product.uid] ? 'true' : 'false'"
+          >
+            <Icon name="note-text" class="h-5 w-5 cursor-pointer" />
+          </button>
           <button @click="removeItem(index)" class="text-gray-400 hover:text-gray-600">
             <Icon name="trash" class="h-5 w-5 cursor-pointer" />
           </button>
@@ -197,6 +222,15 @@ const getOriginalPrice = (item: PopupOrderItem) => {
               @blur="validateItem(item)"
             />
           </div>
+        </div>
+        <div v-if="showNotes[item.product.uid]" class="pt-2">
+          <TextAreaField
+            v-model="item.notes"
+            name="notes"
+            label="Notes"
+            placeholder="Add special instructions or notes for this item..."
+            :rows="3"
+          />
         </div>
       </div>
     </section>

@@ -7,9 +7,10 @@ import EmptyState from "@components/EmptyState.vue"
 import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
 import SectionHeader from "@components/SectionHeader.vue"
+import PageHeader from "@components/PageHeader.vue"
 import Tabs from "@components/Tabs.vue"
 import { useMediaQuery } from "@vueuse/core"
-import { computed, onMounted, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import { getEventStatus, POPUP_COLUMN } from "../constants"
 import { PopupEvent } from "../types"
 import PopupEventCard from "../components/PopupEventCard.vue"
@@ -59,12 +60,22 @@ const params = computed(() => ({ status: "upcoming", limit: 5 }))
 const { data: eventfulPopups } = useGetEventfulPopups(params)
 const route = useRoute()
 
-onMounted(() => {
-  if (route.query.create === "true") openCreate.value = true
-})
+// Watch for route query to open create modal/drawer
+watch(
+  () => route.query.create,
+  (newVal) => {
+    if (newVal === "true") {
+      selectedPopup.value = null
+      openCreate.value = true
+    }
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
+  <PageHeader title="Popups" :count="popupEvents?.count" count-label="popups" />
+
   <div class="flex flex-col p-4 md:p-8">
     <div class="hidden lg:block">
       <SectionHeader

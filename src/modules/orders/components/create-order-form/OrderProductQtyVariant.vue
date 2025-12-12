@@ -7,7 +7,7 @@ import SelectField from "@components/form/SelectField.vue"
 import Icon from "@components/Icon.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import type { IProductCatalogue } from "@modules/inventory/types"
-import { computed, onMounted, ref } from "vue"
+import { computed, onMounted, ref, reactive } from "vue"
 import * as yup from "yup"
 import TextAreaField from "@components/form/TextAreaField.vue"
 
@@ -52,7 +52,10 @@ const emit = defineEmits<{
 
 const localItems = ref<OrderItem[]>([])
 const selectedVariants = ref<Map<string, VariantItem[]>>(new Map())
-const showNotes = ref<Map<string, boolean>>(new Map())
+const showNotes = reactive<Record<string, boolean>>({})
+
+// Toggle this to true if you want notes cleared when the notes panel is hidden
+const CLEAR_NOTE_ON_HIDE = false
 
 interface ValidationErrors {
   [variantUid: string]: {
@@ -205,30 +208,36 @@ const removeItem = (index: number) => {
   if (variants) {
     variants.forEach((v) => delete validationErrors.value[v.variant.uid])
   }
-  showNotes.value.delete(product.uid)
+  delete showNotes[product.uid]
   localItems.value.splice(index, 1)
 }
 
 const toggleNotes = (productUid: string) => {
-  const currentValue = showNotes.value.get(productUid) || false
-  showNotes.value.set(productUid, !currentValue)
+  const currentValue = showNotes[productUid] || false
+  const newValue = !currentValue
+  showNotes[productUid] = newValue
+
+  // Optionally clear the note when user hides it
+  if (CLEAR_NOTE_ON_HIDE && currentValue && !newValue) {
+    const item = localItems.value.find((i) => i.product.uid === productUid)
+    if (item) item.notes = ""
+  }
 }
 
 const getActionItems = (item: OrderItem) => {
-  const notesVisible = showNotes.value.get(item.product.uid) || false
+  const notesVisible = showNotes[item.product.uid] || false
   return [
     {
       label: notesVisible ? "Hide Note" : "Show Note",
       icon: "note-text",
-      onClick: () => {
-        console.log("Toggling notes for", item.product.uid)
+      action: () => {
         toggleNotes(item.product.uid)
       },
     },
     {
       label: "Remove Item",
       icon: "trash",
-      onClick: () => {
+      action: () => {
         const index = localItems.value.findIndex((i) => i.product.uid === item.product.uid)
         if (index !== -1) removeItem(index)
       },
@@ -483,7 +492,7 @@ const productsTotal = computed(() => {
             </div>
           </div>
           <!-- Notes Section -->
-          <div v-if="showNotes.get(item.product.uid)" class="pt-2">
+          <div v-if="showNotes[item.product.uid]" class="pt-2">
             <TextAreaField
               v-model="item.notes"
               name="notes"

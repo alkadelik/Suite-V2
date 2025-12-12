@@ -213,7 +213,8 @@ const onCreateOrder = () => {
     total_amount: totalAmount.value,
     delivery_fee: shippingInfo.value.delivery_fee,
     fulfilment_method: shippingInfo.value.fulfilment_method,
-    delivery_address: shippingInfo.value.delivery_address,
+    delivery_address:
+      shippingInfo.value.delivery_method === "automatic" ? shippingInfo.value.delivery_address : "",
     delivery_method: shippingInfo.value.delivery_method,
     courier:
       shippingInfo.value.shipping_courier || shippingInfo.value.courier
@@ -241,7 +242,9 @@ const onCreateOrder = () => {
         notes: item.notes,
       }),
     ),
+    fulfilment_status: shippingInfo.value.fulfilment_status,
     order_channel: shippingInfo.value.order_channel.value,
+    order_date: shippingInfo.value.order_date,
     delivery_payment_option: shippingInfo.value.delivery_payment_option,
   }
 
@@ -267,7 +270,8 @@ const onCreatePopupOrder = () => {
     total_amount: totalAmount.value,
     delivery_fee: shippingInfo.value.delivery_fee,
     fulfilment_method: shippingInfo.value.fulfilment_method,
-    delivery_address: shippingInfo.value.delivery_address,
+    delivery_address:
+      shippingInfo.value.delivery_method === "automatic" ? shippingInfo.value.delivery_address : "",
     delivery_method: shippingInfo.value.delivery_method,
     courier: shippingInfo.value.courier,
     coupon_code: paymentInfo.value.coupon_code || "",
@@ -282,7 +286,10 @@ const onCreatePopupOrder = () => {
       quantity: item.quantity,
       unit_price: item.unit_price,
       fulfilment_status: shippingInfo.value.fulfilment_status,
+      notes: item.notes,
     })),
+    fulfilment_status: shippingInfo.value.fulfilment_status,
+    order_date: shippingInfo.value.order_date,
   }
 
   createPopupOrder(payload, {

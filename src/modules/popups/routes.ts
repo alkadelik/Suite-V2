@@ -5,11 +5,13 @@ const popupsRoutes: RouteRecordRaw[] = [
     path: "popups",
     name: "Popups",
     component: () => import("./views/index.vue"),
+    meta: { hideAppHeader: true },
   },
   {
     path: "popups/:id",
     name: "PopupDetails",
     component: () => import("./views/[id].vue"),
+    meta: { hideAppHeader: true },
   },
   {
     path: "popups/eventful",

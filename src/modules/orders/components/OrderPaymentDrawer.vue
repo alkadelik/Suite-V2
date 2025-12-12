@@ -56,29 +56,29 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
 
       <!-- Memos List -->
       <div class="space-y-4">
-        <div class="grid grid-cols-3 gap-4 rounded-lg border-gray-200 bg-white p-4">
+        <div class="border-core-300 bg-core-25 grid grid-cols-3 gap-4 rounded-xl border p-4">
           <div>
-            <h3 class="text-core-900 text-sm font-medium">Order Total</h3>
-            <p class="text-lg font-semibold text-gray-900">
+            <h3 class="text-core-900 !font-outfit mb-0.5 text-sm font-normal">Order Total</h3>
+            <p class="text-lg font-medium text-gray-900">
               {{ formatCurrency(paymentHistory?.total_amount || 0) }}
             </p>
           </div>
           <div>
-            <h3 class="text-core-900 text-sm font-medium">Total Paid</h3>
-            <p class="text-lg font-semibold text-gray-900">
+            <h3 class="text-core-900 !font-outfit mb-0.5 text-sm font-normal">Total Paid</h3>
+            <p class="text-lg font-medium text-green-800">
               {{ formatCurrency(paymentHistory?.total_paid || 0) }}
             </p>
           </div>
           <div>
-            <h3 class="text-core-900 text-sm font-medium">Total Outstanding</h3>
-            <p class="text-lg font-semibold text-gray-900">
+            <h3 class="text-core-900 !font-outfit mb-0.5 text-sm !font-normal">Outstanding</h3>
+            <p class="text-lg font-medium text-red-600">
               {{ formatCurrency(paymentHistory?.outstanding_balance || 0) }}
             </p>
           </div>
         </div>
 
-        <div class="my-6 flex items-center justify-between">
-          <h3 class="flex items-center gap-1 text-lg font-semibold">
+        <div class="mt-8 mb-3 flex items-center justify-between">
+          <h3 class="font-outfit flex items-center gap-1 text-lg font-medium">
             Payment History
             <Chip
               v-if="paymentHistory?.payments?.length"
@@ -86,13 +86,19 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
             />
           </h3>
 
-          <AppButton icon="add" class="flex-shrink-0" label="Add" @click="openAdd = true" />
+          <AppButton
+            v-if="paymentHistory?.outstanding_balance"
+            icon="add"
+            class="flex-shrink-0"
+            label="Add"
+            @click="openAdd = true"
+          />
         </div>
 
         <div
           v-for="payment in paymentHistory?.payments"
           :key="payment.uid"
-          class="border-core-200 rounded-xl border bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+          class="border-core-200 rounded-xl border bg-white p-4 transition-shadow hover:shadow-md"
         >
           <div class="flex justify-between gap-2">
             <h3 class="text-core-900 text-sm font-medium">

@@ -5,8 +5,9 @@ import EmptyState from "@components/EmptyState.vue"
 import TextField from "@components/form/TextField.vue"
 import MetricsGrid from "@components/MetricsGrid.vue"
 import SectionHeader from "@components/SectionHeader.vue"
+import PageHeader from "@components/PageHeader.vue"
 import { useMediaQuery } from "@vueuse/core"
-import { computed, onMounted, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import Chip from "@components/Chip.vue"
 import { TOrder } from "../types"
@@ -219,9 +220,16 @@ const handleVoidDelete = ({ action, reason }: { action: string; reason: string }
 
 const route = useRoute()
 
-onMounted(() => {
-  if (route.query.create === "true") openCreate.value = true
-})
+// Watch for route query to open create modal/drawer
+watch(
+  () => route.query.create,
+  (newVal) => {
+    if (newVal === "true") {
+      openCreate.value = true
+    }
+  },
+  { immediate: true },
+)
 
 // const sampleOrders: TOrder[] = ORDER_COLUMNS.map((_, index) => ({
 //   uid: `order_${String(index + 1).padStart(3, "0")}`,
@@ -260,6 +268,8 @@ const sampleOrders: TOrder[] | null = []
 </script>
 
 <template>
+  <PageHeader title="Orders" :count="orders?.count" count-label="orders" />
+
   <div class="flex flex-col gap-6 p-6">
     <div class="hidden lg:block">
       <SectionHeader

@@ -2,7 +2,7 @@
 import { formatCurrency } from "@/utils/format-currency"
 import { startCase } from "@/utils/format-strings"
 import { formatDate } from "@/utils/formatDate"
-import BackButton from "@components/BackButton.vue"
+import PageHeader from "@components/PageHeader.vue"
 import Chip from "@components/Chip.vue"
 import EmptyState from "@components/EmptyState.vue"
 import Icon from "@components/Icon.vue"
@@ -38,8 +38,12 @@ const overviewInfo = computed(() => {
 })
 
 const actionMenu = computed(() => [
-  { label: "Edit Event", icon: "edit", action: () => (openEdit.value = true) },
-  { divider: true },
+  ...(getEventStatus(popupEvt.value!) === "ended"
+    ? []
+    : [
+        { label: "Edit Event", icon: "edit", action: () => (openEdit.value = true) },
+        { divider: true },
+      ]),
   {
     label: "Delete Event",
     icon: "trash",
@@ -55,6 +59,8 @@ const storeDetails = computed(() => useSettingsStore().storeDetails)
 </script>
 
 <template>
+  <PageHeader title="Popup Details" inner />
+
   <EmptyState
     v-if="isPending || !popupEvt"
     title="Event Details"
@@ -63,10 +69,6 @@ const storeDetails = computed(() => useSettingsStore().storeDetails)
   />
 
   <section v-else class="flex flex-col px-4 py-4 md:px-8 md:py-8">
-    <div class="pt-6">
-      <BackButton label="Go Back" class="mb-4" />
-    </div>
-
     <section>
       <div class="bg-primary-800 mb-6 flex gap-2 rounded-xl p-3 text-white md:gap-6 md:p-6">
         <div
@@ -178,7 +180,10 @@ const storeDetails = computed(() => useSettingsStore().storeDetails)
           <PopupInventoryTab />
         </template>
         <template #sales>
-          <PopupSalesTab :is-active="getEventStatus(popupEvt) === 'ongoing'" />
+          <PopupSalesTab
+            :is-active="getEventStatus(popupEvt) === 'ongoing'"
+            :start-date="popupEvt?.start_date"
+          />
         </template>
       </Tabs>
     </section>

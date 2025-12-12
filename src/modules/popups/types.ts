@@ -68,7 +68,7 @@ export interface EventfulPopup {
   company: string
   company_name: string
   company_email: string
-  participation_fee: number | null
+  participant_fee: number | null
 }
 
 export interface EventfulResponse {

@@ -33,14 +33,17 @@
               bodyClasses,
               props.bodyClass,
               props.handlePadding !== false ? 'px-6 py-4' : '',
-              !$slots.footer ? 'rounded-b-2xl' : '',
+              $slots.footer ? '' : 'rounded-b-2xl',
             ]"
           >
             <slot />
           </div>
 
           <!-- Footer -->
-          <div v-if="$slots.footer" :class="[props.handlePadding !== false ? 'px-6 py-4' : '']">
+          <div
+            v-if="$slots.footer"
+            :class="['border-core-200 sticky right-0 bottom-0 left-0 border-t bg-white p-6']"
+          >
             <slot name="footer" />
           </div>
         </div>
@@ -124,6 +127,8 @@ const overlayClasses = computed(() => {
  */
 const modalClasses = computed(() => {
   const baseClasses = []
+  // layout as column so header/body/footer can size properly
+  baseClasses.push("flex flex-col")
 
   // Width and max-width classes
   if (props.variant === "fullscreen") {
@@ -175,9 +180,10 @@ const bodyClasses = computed(() => {
   const classes = []
 
   if (props.variant === "fullscreen") {
-    classes.push("h-full max-h-[85dvh] overflow-y-auto")
+    classes.push("h-full max-h-[calc(100%-60px)] overflow-y-auto flex-1")
   } else {
-    classes.push("max-h-[80dvh] overflow-y-auto")
+    // allow the body to flex and scroll within the modal container
+    classes.push("flex-1 min-h-0 overflow-y-auto")
   }
 
   return classes.join(" ")
