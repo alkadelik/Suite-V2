@@ -191,7 +191,7 @@ const route = useRoute()
 
 const showAppHeader = computed(() => {
   const hide = Boolean((route.meta || {})["hideAppHeader"])
-  return !hide
+  return !hide || !isMobile.value
 })
 
 const SALES_SUITES = computed(() => {
