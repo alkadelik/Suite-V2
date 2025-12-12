@@ -499,6 +499,7 @@ const sampleOrders: TOrder[] | null = []
       :open="openPayment"
       @close="openPayment = false"
       :order="selectedOrder"
+      @refresh="handleRefresh"
     />
   </div>
 </template>
