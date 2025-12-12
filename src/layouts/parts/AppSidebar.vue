@@ -74,7 +74,7 @@
 
           <template v-else-if="isActive">
             <h3 class="mb-1 text-sm font-semibold">
-              Active: <b>{{ planName }}</b>
+              Active: <b>{{ planName }} plan</b>
             </h3>
             <p class="mb-4 text-sm">Ends: {{ formattedEnds }}</p>
           </template>

@@ -44,13 +44,17 @@ const actionMenu = computed(() => [
         { label: "Edit Event", icon: "edit", action: () => (openEdit.value = true) },
         { divider: true },
       ]),
-  {
-    label: "Delete Event",
-    icon: "trash",
-    iconClass: "text-red-500",
-    class: "text-red-500",
-    action: () => (openDelete.value = true),
-  },
+  ...(!popupEvt.value?.total_orders
+    ? [
+        {
+          label: "Delete Event",
+          icon: "trash",
+          iconClass: "text-red-500",
+          class: "text-red-500",
+          action: () => (openDelete.value = true),
+        },
+      ]
+    : []),
 ])
 
 const isMobile = useMediaQuery("(max-width: 768px)")
@@ -147,7 +151,10 @@ const storeDetails = computed(() => useSettingsStore().storeDetails)
           </div>
         </div>
 
-        <div class="flex flex-shrink-0 items-start">
+        <div
+          v-if="getEventStatus(popupEvt) !== 'ended' || popupEvt.total_orders"
+          class="flex flex-shrink-0 items-start"
+        >
           <DropdownMenu :items="actionMenu" />
         </div>
       </div>
