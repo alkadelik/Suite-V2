@@ -104,7 +104,7 @@
         />
 
         <img
-          v-else-if="isActive && planNameLower === 'bud'"
+          v-else-if="(isActive && planNameLower === 'bud') || !isActive"
           src="@/assets/images/bud-plant.png"
           class="absolute -top-8 left-4 h-16"
         />
