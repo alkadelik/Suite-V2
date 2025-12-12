@@ -5,6 +5,7 @@ import EmptyState from "@components/EmptyState.vue"
 import TextField from "@components/form/TextField.vue"
 import MetricsGrid from "@components/MetricsGrid.vue"
 import SectionHeader from "@components/SectionHeader.vue"
+import PageHeader from "@components/PageHeader.vue"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, ref, watch } from "vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
@@ -267,6 +268,8 @@ const sampleOrders: TOrder[] | null = []
 </script>
 
 <template>
+  <PageHeader title="Orders" :count="orders?.count" count-label="orders" />
+
   <div class="flex flex-col gap-6 p-6">
     <div class="hidden lg:block">
       <SectionHeader

@@ -1,4 +1,6 @@
 <template>
+  <PageHeader title="Inventory" :count="products?.data?.count" count-label="products" />
+
   <div class="p-4 pt-5 md:pt-4">
     <div class="hidden lg:block">
       <SectionHeader
@@ -277,6 +279,7 @@ import ProductCard from "../components/ProductCard.vue"
 import ManageStockModal from "../components/ManageStockModal.vue"
 import { formatPriceRange } from "@/utils/format-currency"
 import SectionHeader from "@components/SectionHeader.vue"
+import PageHeader from "@components/PageHeader.vue"
 import PageSummaryCards from "@components/PageSummaryCards.vue"
 import Tabs from "@components/Tabs.vue"
 import FilterDrawer from "../components/FilterDrawer.vue"

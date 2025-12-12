@@ -26,8 +26,12 @@
         ]"
       >
         <!-- Topbar -->
-        <AppHeader :show-logo="isMobile" :isLive="isLive" @logout="logout = true" />
-        <PageHeader />
+        <AppHeader
+          v-if="showAppHeader"
+          :show-logo="isMobile"
+          :isLive="isLive"
+          @logout="logout = true"
+        />
 
         <!-- Content -->
         <main class="h-[calc(100dvh-4rem)] overflow-y-auto lg:h-[calc(100vh-4rem)]">
@@ -165,10 +169,9 @@ import Icon from "@components/Icon.vue"
 import { useGetLiveStatus } from "@modules/shared/api"
 import { useLocationSwitch } from "@/composables/useLocationSwitch"
 import MobileQuickActionsModal from "./parts/MobileQuickActionsModal.vue"
-import PageHeader from "./parts/PageHeader.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import { toast } from "@/composables/useToast"
-import { useRouter } from "vue-router"
+import { useRouter, useRoute } from "vue-router"
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
@@ -184,6 +187,12 @@ const sidebarPadding = computed(() => (isMobile.value ? "lg:pl-72" : "pl-72"))
 
 const isHQ = computed(() => useSettingsStore().activeLocation?.is_hq ?? true)
 const router = useRouter()
+const route = useRoute()
+
+const showAppHeader = computed(() => {
+  const hide = Boolean((route.meta || {})["hideAppHeader"])
+  return !hide
+})
 
 const SALES_SUITES = computed(() => {
   const allSuites = [

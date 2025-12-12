@@ -7,6 +7,7 @@ import EmptyState from "@components/EmptyState.vue"
 import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
 import SectionHeader from "@components/SectionHeader.vue"
+import PageHeader from "@components/PageHeader.vue"
 import Tabs from "@components/Tabs.vue"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, ref, watch } from "vue"
@@ -73,6 +74,8 @@ watch(
 </script>
 
 <template>
+  <PageHeader title="Popups" :count="popupEvents?.count" count-label="popups" />
+
   <div class="flex flex-col p-4 md:p-8">
     <div class="hidden lg:block">
       <SectionHeader
