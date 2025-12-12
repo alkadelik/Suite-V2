@@ -66,10 +66,7 @@ baseApi.interceptors.response.use(
       } catch (refreshError) {
         // If refresh fails, perform a logout or redirect
         toast.error("Session expired. Please log in again.")
-        useAuthStore().logout()
-        // redirect to login page with the current path as redirect query
-        const redirectPath = window.location.pathname + window.location.search
-        window.location.href = `/login?redirect=${encodeURIComponent(redirectPath)}`
+        useAuthStore().logout(true)
         return Promise.reject(refreshError as Error)
       }
     }

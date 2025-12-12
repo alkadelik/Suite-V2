@@ -38,16 +38,19 @@ export const useAuthStore = defineStore(
       refreshToken.value = null
     }
 
-    const logout = () => {
+    const logout = (redirect?: boolean) => {
       clearAuth()
-      // redirect to login page
+      // clear local storage - auth, settings, etc.
       localStorage.removeItem("auth")
       localStorage.removeItem("settings")
-      // window.location.href = "/login"
 
-      // redirect user back to previous page
-      const redirectPath = window.location.pathname + window.location.search
-      window.location.href = `/login?redirect=${encodeURIComponent(redirectPath)}`
+      // redirect user back to previous page or login page
+      if (redirect) {
+        const redirectPath = window.location.pathname + window.location.search
+        window.location.href = `/login?redirect=${encodeURIComponent(redirectPath)}`
+      } else {
+        window.location.href = "/login"
+      }
     }
 
     const setLoading = (loading: boolean) => {

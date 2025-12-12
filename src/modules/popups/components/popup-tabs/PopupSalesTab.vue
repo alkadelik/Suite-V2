@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { startCase } from "@/utils/format-strings"
+import { formatDate } from "@/utils/formatDate"
 import Avatar from "@components/Avatar.vue"
 import Chip from "@components/Chip.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
@@ -28,9 +29,29 @@ const openMarkPaid = ref(false)
 const route = useRoute()
 const isMobile = useMediaQuery("(max-width: 768px)")
 
-defineProps<{ isActive: boolean }>()
+const props = defineProps<{ isActive: boolean; startDate?: string }>()
+const startDate = props.startDate
 
 const { data: popupOrders, refetch, isPending } = useGetPopupOrders(route.params.id as string)
+
+const hasStarted = computed(() => {
+  if (!startDate) return true
+  try {
+    return new Date(String(startDate)) <= new Date()
+  } catch {
+    return true
+  }
+})
+
+const formattedStartDate = computed(() => (startDate ? formatDate(String(startDate)) : ""))
+
+const emptyStateDescription = computed(() => {
+  if (!hasStarted.value) {
+    return `Hang tight! You can add your orders as soon as the popup launches on ${formattedStartDate.value}.`
+  }
+
+  return "Your popup sales will appear here when customers purchase from you. You can also add an order."
+})
 
 const actionMenu = computed(() => [
   { label: "Mark As Paid", icon: "money-add", action: () => (openMarkPaid.value = true) },
@@ -54,11 +75,11 @@ const handleMarkAsPaid = () => {
   <EmptyState
     v-if="!popupOrders?.count"
     title="You haven't made any sales yet!"
-    description="Your popup sales will appear here when customers purchase from you. You can also add an order."
-    :action-icon="isActive ? 'add' : undefined"
-    :action-label="isActive ? 'Add an order' : undefined"
+    :description="emptyStateDescription"
+    :action-icon="hasStarted ? 'add' : undefined"
+    :action-label="hasStarted ? 'Add an order' : undefined"
     :loading="isPending"
-    @action="openCreate = true"
+    @action="hasStarted && (openCreate = true)"
   />
 
   <section v-else>
@@ -93,7 +114,8 @@ const handleMarkAsPaid = () => {
             size="sm"
             class="flex-shrink-0"
             :label="isMobile ? '' : 'Add Order'"
-            @click="openCreate = true"
+            :disabled="!hasStarted"
+            @click="hasStarted && (openCreate = true)"
           />
         </div>
       </div>
