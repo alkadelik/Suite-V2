@@ -180,7 +180,10 @@ const storeDetails = computed(() => useSettingsStore().storeDetails)
           <PopupInventoryTab />
         </template>
         <template #sales>
-          <PopupSalesTab :is-active="getEventStatus(popupEvt) === 'ongoing'" />
+          <PopupSalesTab
+            :is-active="getEventStatus(popupEvt) === 'ongoing'"
+            :start-date="popupEvt?.start_date"
+          />
         </template>
       </Tabs>
     </section>
