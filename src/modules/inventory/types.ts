@@ -565,6 +565,7 @@ interface ProductVariant {
   reorder_point: number
   reserved_stock: number
   sellable_stock: number
+  popup_quantity_taken: number
   updated_at: string
   weight: string
   width: string

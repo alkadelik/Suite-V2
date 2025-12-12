@@ -4,7 +4,11 @@ import Chip from "@components/Chip.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import EmptyState from "@components/EmptyState.vue"
 import Icon from "@components/Icon.vue"
-import { useGetPopupInventory, useUpdatePopupProduct } from "@modules/popups/api"
+import {
+  useDeletePopupProducts,
+  useGetPopupInventory,
+  useUpdatePopupProduct,
+} from "@modules/popups/api"
 import { POPUP_INVENTORY_COLUMNS } from "@modules/popups/constants"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, onMounted, ref } from "vue"
@@ -26,7 +30,7 @@ const showFilter = ref(false)
 const selectedProduct = ref<PopupInventory | null>(null)
 const openManageProduct = ref(false)
 const showConfirmationModal = ref(false)
-const confirmationAction = ref<"enable" | "disable" | null>(null)
+const confirmationAction = ref<"enable" | "disable" | "remove" | null>(null)
 
 // Form data for managing product
 const productForm = ref({ price: 0, quantity: 0 })
@@ -36,8 +40,14 @@ const isMobile = useMediaQuery("(max-width: 768px)")
 
 const { data: popupInventory, isPending, refetch } = useGetPopupInventory(route.params.id as string)
 const { mutate: updatePopupProduct, isPending: isUpdating } = useUpdatePopupProduct()
+const { mutate: deletePopupProducts, isPending: isDeleting } = useDeletePopupProducts()
 
 const isEmpty = computed(() => !popupInventory.value?.length)
+
+// Get all existing variant SKUs in the popup inventory
+const existingVariantSkus = computed(() => {
+  return popupInventory.value?.map((item) => item.variant_sku) || []
+})
 
 const getActionMenu = (item: PopupInventory) => [
   { label: "Manage Product", icon: "eye", action: () => handleAction("Manage Product", item) },
@@ -77,6 +87,9 @@ const handleAction = (action: string, item: PopupInventory) => {
   } else if (action === "Disable Availability") {
     confirmationAction.value = "disable"
     showConfirmationModal.value = true
+  } else if (action === "Remove Product") {
+    confirmationAction.value = "remove"
+    showConfirmationModal.value = true
   }
 }
 
@@ -111,31 +124,53 @@ const saveProductChanges = () => {
 
 const handleConfirmAction = () => {
   if (!selectedProduct.value || !confirmationAction.value) return
-  const payload = {
-    popup_event: route.params.id as string,
-    items: [
-      {
-        uid: selectedProduct.value.uid,
-        is_visible: confirmationAction.value === "enable",
+
+  if (confirmationAction.value === "remove") {
+    const payload = {
+      popup_event: route.params.id as string,
+      uids: [selectedProduct.value.uid],
+    }
+
+    deletePopupProducts(payload, {
+      onSuccess: () => {
+        toast.success("Product removed successfully")
+        // Close confirmation modal
+        showConfirmationModal.value = false
+        confirmationAction.value = null
+        selectedProduct.value = null
+
+        // Refresh data
+        refetch()
       },
-    ],
+      onError: displayError,
+    })
+  } else {
+    const payload = {
+      popup_event: route.params.id as string,
+      items: [
+        {
+          uid: selectedProduct.value.uid,
+          is_visible: confirmationAction.value === "enable",
+        },
+      ],
+    }
+
+    updatePopupProduct(payload, {
+      onSuccess: () => {
+        toast.success(
+          `Product ${confirmationAction.value === "enable" ? "enabled" : "disabled"} successfully`,
+        )
+        // Close confirmation modal
+        showConfirmationModal.value = false
+        confirmationAction.value = null
+        selectedProduct.value = null
+
+        // Refresh data
+        refetch()
+      },
+      onError: displayError,
+    })
   }
-
-  updatePopupProduct(payload, {
-    onSuccess: () => {
-      toast.success(
-        `Product ${confirmationAction.value === "enable" ? "enabled" : "disabled"} successfully`,
-      )
-      // Close confirmation modal
-      showConfirmationModal.value = false
-      confirmationAction.value = null
-      selectedProduct.value = null
-
-      // Refresh data
-      refetch()
-    },
-    onError: displayError,
-  })
 }
 
 const closeConfirmationModal = () => {
@@ -296,6 +331,7 @@ onMounted(() => {
   <!-- Setup Booth Drawer - Available for both empty and populated states -->
   <SetupPopupBoothDrawer
     :open="openAddProduct"
+    :existing-variant-skus="existingVariantSkus"
     @close="openAddProduct = false"
     @refresh="refetch"
   />
@@ -380,23 +416,43 @@ onMounted(() => {
     </template>
   </Modal>
 
-  <!-- Confirmation Modal for Toggle Availability -->
+  <!-- Confirmation Modal for Toggle Availability and Remove Product -->
   <ConfirmationModal
     v-model="showConfirmationModal"
     :header="
       confirmationAction === 'enable'
         ? 'Enable Product Availability'
-        : 'Disable Product Availability'
+        : confirmationAction === 'disable'
+          ? 'Disable Product Availability'
+          : 'Remove Product'
     "
     :paragraph="
       confirmationAction === 'enable'
         ? `Are you sure you want to enable availability for '${selectedProduct?.product_name}'? Customers will be able to see and purchase this product.`
-        : `Are you sure you want to disable availability for '${selectedProduct?.product_name}'? This product will no longer be visible to customers.`
+        : confirmationAction === 'disable'
+          ? `Are you sure you want to disable availability for '${selectedProduct?.product_name}'? This product will no longer be visible to customers.`
+          : `Are you sure you want to remove '${selectedProduct?.product_name}' from this popup event? This action cannot be undone.`
     "
-    :info-message="`You can ${confirmationAction === 'disable' ? 're-activate' : 'de-activate '} it later if needed.`"
-    :variant="confirmationAction === 'disable' ? 'warning' : 'success'"
-    :action-label="confirmationAction === 'enable' ? 'Enable' : 'Disable'"
-    :loading="isUpdating"
+    :info-message="
+      confirmationAction === 'remove'
+        ? 'You can always add the product back later if needed.'
+        : `You can ${confirmationAction === 'disable' ? 're-activate' : 'de-activate '} it later if needed.`
+    "
+    :variant="
+      confirmationAction === 'remove'
+        ? 'error'
+        : confirmationAction === 'disable'
+          ? 'warning'
+          : 'success'
+    "
+    :action-label="
+      confirmationAction === 'enable'
+        ? 'Enable'
+        : confirmationAction === 'disable'
+          ? 'Disable'
+          : 'Remove'
+    "
+    :loading="confirmationAction === 'remove' ? isDeleting : isUpdating"
     @confirm="handleConfirmAction"
     @close="closeConfirmationModal"
   />

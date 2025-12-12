@@ -24,8 +24,9 @@ interface OrderItem {
   notes?: string
 }
 
-defineProps({
+const props = defineProps({
   open: { type: Boolean, required: true },
+  existingVariantSkus: { type: Array as () => string[], default: () => [] },
 })
 const emit = defineEmits(["close", "refresh"])
 
@@ -130,6 +131,7 @@ watch(activeStep, (newStep, oldStep) => {
         <BoothSelectProduct
           v-if="step === 0"
           v-model:selectedProducts="selectedProducts"
+          :existingVariantSkus="props.existingVariantSkus"
           @next="onNext"
         />
 

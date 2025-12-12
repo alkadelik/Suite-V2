@@ -42,7 +42,7 @@ const isProductSelected = (productUid: string) => {
 
 // Toggle product selection
 const toggleProductSelection = (product: IProductCatalogue) => {
-  if (product.total_stock === 0) return // Don't allow selection of out-of-stock products
+  if (getAvailableProductQty(product) === 0) return // Don't allow selection of out-of-stock products
 
   const index = props.selectedProducts.findIndex((p) => p.uid === product.uid)
 
@@ -67,6 +67,17 @@ const handleNext = () => {
   if (canProceed.value) {
     emit("next")
   }
+}
+
+// Get available quantity for a product (sellable_stock - popup_quantity_taken across all variants)
+const getAvailableProductQty = (product: IProductCatalogue) => {
+  if (!product.variants || product.variants.length === 0) return 0
+
+  return product.variants.reduce((total, variant) => {
+    const sellableStock = Number(variant.sellable_stock ?? variant.available_stock ?? 0)
+    const popupQtyTaken = Number(variant.popup_quantity_taken ?? 0)
+    return total + Math.max(0, sellableStock - popupQtyTaken)
+  }, 0)
 }
 </script>
 
@@ -101,7 +112,7 @@ const handleNext = () => {
         :key="prod.uid"
         class="rounded-xl bg-white p-1.5 transition-all"
         :class="
-          prod.total_stock === 0
+          getAvailableProductQty(prod) === 0
             ? 'cursor-not-allowed opacity-60'
             : isProductSelected(prod.uid)
               ? 'ring-primary-600 cursor-pointer shadow-lg ring-2'
@@ -119,7 +130,7 @@ const handleNext = () => {
           <Icon v-else name="box" class="h-20 w-20" />
 
           <Chip
-            v-if="prod.total_stock === 0"
+            v-if="getAvailableProductQty(prod) === 0"
             label="Out of stock"
             size="sm"
             color="error"
@@ -142,7 +153,7 @@ const handleNext = () => {
             <!--  -->
             <span class="flex items-center gap-1">
               <Icon name="box" class="h-3 w-3" />
-              {{ prod.total_stock }}
+              {{ getAvailableProductQty(prod) }}
             </span>
           </div>
         </div>
