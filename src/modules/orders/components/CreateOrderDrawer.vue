@@ -286,6 +286,7 @@ const onCreatePopupOrder = () => {
       quantity: item.quantity,
       unit_price: item.unit_price,
       fulfilment_status: shippingInfo.value.fulfilment_status,
+      notes: item.notes,
     })),
     fulfilment_status: shippingInfo.value.fulfilment_status,
     order_date: shippingInfo.value.order_date,
