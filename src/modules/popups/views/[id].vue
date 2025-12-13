@@ -20,6 +20,8 @@ import { useMediaQuery } from "@vueuse/core"
 import Collapsible from "@components/Collapsible.vue"
 import { useSettingsStore } from "@modules/settings/store"
 import { getEventStatus } from "../constants"
+import popupEmpty from "@/assets/images/popup-empty.svg?url"
+import popupBanner from "@/assets/images/popup-banner.svg?url"
 
 const route = useRoute()
 const openDelete = ref(false)
@@ -44,13 +46,17 @@ const actionMenu = computed(() => [
         { label: "Edit Event", icon: "edit", action: () => (openEdit.value = true) },
         { divider: true },
       ]),
-  {
-    label: "Delete Event",
-    icon: "trash",
-    iconClass: "text-red-500",
-    class: "text-red-500",
-    action: () => (openDelete.value = true),
-  },
+  ...(!popupEvt.value?.total_orders
+    ? [
+        {
+          label: "Delete Event",
+          icon: "trash",
+          iconClass: "text-red-500",
+          class: "text-red-500",
+          action: () => (openDelete.value = true),
+        },
+      ]
+    : []),
 ])
 
 const isMobile = useMediaQuery("(max-width: 768px)")
@@ -70,18 +76,20 @@ const storeDetails = computed(() => useSettingsStore().storeDetails)
 
   <section v-else class="flex flex-col px-4 py-4 md:px-8 md:py-8">
     <section>
-      <div class="bg-primary-800 mb-6 flex gap-2 rounded-xl p-3 text-white md:gap-6 md:p-6">
-        <div
-          class="bg-core-50 flex w-16 flex-shrink-0 items-center justify-center rounded md:h-[20] md:w-20"
-        >
+      <div
+        class="bg-primary-800 mb-6 flex gap-4 rounded-xl p-3 text-white md:gap-6 md:p-6"
+        :style="{
+          backgroundImage: `url(${popupBanner})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }"
+      >
+        <div class="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded">
           <img
-            v-if="popupEvt?.banner_image"
-            :src="popupEvt?.banner_image"
+            :src="popupEvt?.banner_image || popupEmpty"
             alt="Popup Banner"
-            class="h-full w-full rounded object-cover"
+            class="h-full w-full rounded object-contain"
           />
-
-          <Icon v-else name="calendar-tick" size="40" class="text-core-800" />
         </div>
         <div class="min-w-0 flex-1">
           <div class="mb-2 flex items-center gap-2">
@@ -106,14 +114,14 @@ const storeDetails = computed(() => useSettingsStore().storeDetails)
             />
           </div>
           <div class="space-y-1">
-            <p class="flex items-center gap-2 text-sm">
-              <Icon name="calendar" size="20" class="flex-shrink-0" />
+            <p class="flex items-center gap-2 text-xs md:text-sm">
+              <Icon name="calendar" class="!h-4 !w-4 flex-shrink-0 md:h-5! md:w-4!" />
               <span class="min-w-0 truncate">
                 {{ formatDate(popupEvt?.start_date || "") }} -
                 {{ formatDate(popupEvt?.end_date || "") }}
               </span>
             </p>
-            <p class="flex items-center gap-2 text-sm">
+            <p class="flex items-center gap-2 text-xs md:text-sm">
               <span class="min-w-0 truncate">
                 {{
                   `${isStaging ? "www.storefronts-v2.vercel.app" : "www.buy.leyyow.com"}/${storeDetails?.slug}/events/${popupEvt?.slug}`
@@ -147,7 +155,10 @@ const storeDetails = computed(() => useSettingsStore().storeDetails)
           </div>
         </div>
 
-        <div class="flex flex-shrink-0 items-start">
+        <div
+          v-if="getEventStatus(popupEvt) !== 'ended' || popupEvt.total_orders"
+          class="flex flex-shrink-0 items-start"
+        >
           <DropdownMenu :items="actionMenu" />
         </div>
       </div>
@@ -160,7 +171,7 @@ const storeDetails = computed(() => useSettingsStore().storeDetails)
         ]"
       >
         <template #overview>
-          <div class="mb-6">
+          <div class="mb-6 pt-3">
             <Collapsible header="Popup Details" :default-open="true">
               <template #body>
                 <div class="divide-core-100 divide-y">

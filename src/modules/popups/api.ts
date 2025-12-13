@@ -96,6 +96,13 @@ export function useUpdatePopupProduct() {
   })
 }
 
+export function useDeletePopupProducts() {
+  return useMutation({
+    mutationFn: (payload: { popup_event: string; uids: string[] }) =>
+      baseApi.delete(`/popup-events/inventory/bulk_delete/`, { data: payload }),
+  })
+}
+
 export function useGetPopupOrders(popupId: string) {
   return useApiQuery<TOrderResponse>({
     url: `/orders/?popup_event=${popupId}`,

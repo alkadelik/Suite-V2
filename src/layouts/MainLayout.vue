@@ -22,7 +22,7 @@
         :class="[
           'flex h-full flex-1 flex-col overflow-hidden transition-all duration-200',
           'pb-16',
-          showAppHeader ? 'pt-16' : 'pt-24',
+          showAppHeader || isInner ? 'pt-14' : 'pt-20',
           sidebarPadding,
         ]"
       >
@@ -195,6 +195,8 @@ const showAppHeader = computed(() => {
   return !hide || !isMobile.value
 })
 
+const isInner = computed(() => !!route.params.id)
+
 const SALES_SUITES = computed(() => {
   const allSuites = [
     { icon: "box", label: "Orders", to: "/orders" },
@@ -252,19 +254,18 @@ const actionMenuItems = computed(() => {
   return allActions.filter((action) => !action.hqOnly || isHQ.value)
 })
 
-const { setPlanUpgradeModal } = useSettingsStore()
+const { setPlanUpgradeModal, setLiveStatus } = useSettingsStore()
 const { updateAuthUser } = useAuthStore()
 
 const { data: categories } = useGetCategories()
 const { data: attributes } = useGetAttributes()
 const { data: profile } = useGetProfile()
-
 const showPlans = computed(() => useSettingsStore().showPlanUpgradeModal)
-
 const storeSlug = useAuthStore().user?.store_slug || ""
-const storeUid = computed(() => useAuthStore().user?.store_uid || "")
 const { data: liveStatusData, isPending: isLoadingLiveStatus } = useGetLiveStatus(storeSlug)
-const isLive = computed(() => liveStatusData.value?.data?.is_live || false)
+
+const storeUid = computed(() => useAuthStore().user?.store_uid || "")
+const isLive = computed(() => useSettingsStore().liveStatus?.is_live || false)
 
 const openTrial = ref(false)
 
@@ -335,4 +336,10 @@ watch<IProductAttributesApiResponse | undefined>(
     }
   },
 )
+
+watch(liveStatusData, (newData) => {
+  if (newData?.data) {
+    setLiveStatus(newData.data)
+  }
+})
 </script>

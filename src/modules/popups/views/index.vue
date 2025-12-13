@@ -272,7 +272,12 @@ watch(
                 name="edit"
                 @click.stop="handleAction('edit', item)"
               />
-              <Icon name="trash" @click.stop="handleAction('delete', item)" />
+              <Icon
+                v-if="!item.total_orders"
+                name="trash"
+                @click.stop="handleAction('delete', item)"
+              />
+              <span v-if="item.total_orders && getEventStatus(item) === 'ended'"> -- </span>
             </div>
           </template>
 

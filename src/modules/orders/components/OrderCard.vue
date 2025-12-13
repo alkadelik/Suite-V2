@@ -51,8 +51,14 @@ const menuItems = computed(() => {
     ? props.customActions
     : [
         { label: "View memos", icon: "eye", action: () => emit("view-memos") },
-        { label: "Share invoice", icon: "share", action: () => emit("share-invoice") },
-        { label: "Update Payment", icon: "money-add", action: () => emit("update-payment") },
+        {
+          label: `Share ${props.order.payment_status === "paid" ? "receipt" : "invoice"}`,
+          icon: "share",
+          action: () => emit("share-invoice"),
+        },
+        ...(props.order.payment_status !== "paid"
+          ? [{ label: "Update Payment", icon: "money-add", action: () => emit("update-payment") }]
+          : []),
         ...(isFulfilled.value
           ? []
           : [{ label: "Fulfill Order", icon: "money-add", action: () => emit("fulfill") }]),

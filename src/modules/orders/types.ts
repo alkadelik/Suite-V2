@@ -21,6 +21,7 @@ export type TOrder = {
   coupon: string | null
   courier: string
   created_at: string
+  order_date: string
   customer: string
   customer_email: string
   customer_phone: string

@@ -139,7 +139,7 @@ const headerIconInnerClasses = computed(() => {
     neutral: "bg-gray-100",
   }
 
-  return ["rounded-full p-2", variantClasses[props.variant]]
+  return ["rounded-full h-9 w-9 flex items-center justify-center", variantClasses[props.variant]]
 })
 
 const headerIconClasses = computed(() => {
@@ -187,7 +187,10 @@ const infoIconInnerClasses = computed(() => {
   }
 
   const activeVariant = props.infoBoxVariant || props.variant
-  return ["rounded-full border-2 p-0.5", variantClasses[activeVariant]]
+  return [
+    "rounded-full border-2 h-6 w-6 flex items-center justify-center",
+    variantClasses[activeVariant],
+  ]
 })
 
 const infoIconClasses = computed(() => {

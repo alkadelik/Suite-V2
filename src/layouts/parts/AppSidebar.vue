@@ -70,19 +70,18 @@
           <template v-else-if="isTrial">
             <h3 class="mb-1 text-sm font-bold">{{ trialTitle }}</h3>
             <p class="mb-2 text-sm">{{ trialSubtitle }}</p>
-            <p class="mb-4 text-sm">Ends: {{ formattedEnds }}</p>
           </template>
 
           <template v-else-if="isActive">
             <h3 class="mb-1 text-sm font-semibold">
-              Active: <b>{{ planName }}</b>
+              Active: <b>{{ planName }} plan</b>
             </h3>
             <p class="mb-4 text-sm">Ends: {{ formattedEnds }}</p>
           </template>
 
           <template v-else>
-            <h3 class="mb-1 text-sm font-bold">Subscribe</h3>
-            <p class="mb-4 text-sm">Choose a plan to get started.</p>
+            <h3 class="mb-1 text-sm font-bold">Do more with Premium!</h3>
+            <p class="mb-4 text-sm">Get advanced tools to manage every aspect of your business.</p>
           </template>
 
           <AppButton
@@ -105,7 +104,7 @@
         />
 
         <img
-          v-else-if="isActive && planNameLower === 'bud'"
+          v-else-if="(isActive && planNameLower === 'bud') || !isActive"
           src="@/assets/images/bud-plant.png"
           class="absolute -top-8 left-4 h-16"
         />
