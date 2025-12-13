@@ -33,15 +33,21 @@ const formatDate = (dateStr: string) => {
 
 const menuActions = computed(() => [
   { label: "View Event", icon: "eye", action: () => emit("click") },
-  { label: "Edit Event", icon: "edit", action: () => emit("edit") },
-  { divider: true },
-  {
-    label: "Delete Event",
-    icon: "trash",
-    class: "text-red-500",
-    iconClass: "text-red-500",
-    action: () => emit("delete"),
-  },
+  ...(getEventStatus(props.event) !== "ended"
+    ? [{ label: "Edit Event", icon: "edit", action: () => emit("edit") }]
+    : []),
+  ...(props.event.total_orders ? [{ divider: true }] : []),
+  ...(!props.event.total_orders
+    ? [
+        {
+          label: "Delete Event",
+          icon: "trash",
+          class: "text-red-500",
+          iconClass: "text-red-500",
+          action: () => emit("delete"),
+        },
+      ]
+    : []),
 ])
 </script>
 

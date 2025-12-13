@@ -7,6 +7,7 @@ import Icon from "@components/Icon.vue"
 import { useGetProductCatalogs } from "@modules/inventory/api"
 import type { IProductCatalogue } from "@modules/inventory/types"
 import { computed, ref } from "vue"
+import AddNewProductModal from "./AddNewProductModal.vue"
 
 const props = defineProps<{
   selectedProducts: IProductCatalogue[]
@@ -18,7 +19,7 @@ const emit = defineEmits<{
   "update:selectedProducts": [products: IProductCatalogue[]]
 }>()
 
-const { data: productsData, isFetching } = useGetProductCatalogs()
+const { data: productsData, isFetching, refetch } = useGetProductCatalogs()
 const products = computed(() => productsData?.value?.results ?? [])
 
 // Filtered products based on search query
@@ -42,7 +43,7 @@ const isProductSelected = (productUid: string) => {
 
 // Toggle product selection
 const toggleProductSelection = (product: IProductCatalogue) => {
-  if (product.total_stock === 0) return // Don't allow selection of out-of-stock products
+  if (getAvailableProductQty(product) === 0) return // Don't allow selection of out-of-stock products
 
   const index = props.selectedProducts.findIndex((p) => p.uid === product.uid)
 
@@ -68,6 +69,35 @@ const handleNext = () => {
     emit("next")
   }
 }
+
+// Get available quantity for a product (sellable_stock - popup_quantity_taken across all variants)
+const getAvailableProductQty = (product: IProductCatalogue) => {
+  if (!product.variants || product.variants.length === 0) return 0
+
+  return product.variants.reduce((total, variant) => {
+    const sellableStock = Number(variant.sellable_stock ?? variant.available_stock ?? 0)
+    const popupQtyTaken = Number(variant.popup_quantity_taken ?? 0)
+    return total + Math.max(0, sellableStock - popupQtyTaken)
+  }, 0)
+}
+
+const showAdd = ref(false)
+
+// Handle successful product creation
+const handleProductCreated = async (productUid: string) => {
+  showAdd.value = false
+
+  // Refetch products
+  await refetch()
+
+  // Find and auto-select the newly created product
+  if (productUid) {
+    const newProduct = products.value.find((p) => p.uid === productUid)
+    if (newProduct && getAvailableProductQty(newProduct) > 0) {
+      toggleProductSelection(newProduct)
+    }
+  }
+}
 </script>
 
 <template>
@@ -89,6 +119,7 @@ const handleNext = () => {
           placeholder="Search by name"
           v-model="searchQuery"
         />
+        <AppButton icon="add" @click="showAdd = true" />
       </div>
     </div>
 
@@ -101,7 +132,7 @@ const handleNext = () => {
         :key="prod.uid"
         class="rounded-xl bg-white p-1.5 transition-all"
         :class="
-          prod.total_stock === 0
+          getAvailableProductQty(prod) === 0
             ? 'cursor-not-allowed opacity-60'
             : isProductSelected(prod.uid)
               ? 'ring-primary-600 cursor-pointer shadow-lg ring-2'
@@ -116,10 +147,10 @@ const handleNext = () => {
             alt=""
             class="h-full w-full rounded-xl object-cover"
           />
-          <Icon v-else name="box" class="h-20 w-20" />
+          <Icon v-else name="box" size="40" />
 
           <Chip
-            v-if="prod.total_stock === 0"
+            v-if="getAvailableProductQty(prod) === 0"
             label="Out of stock"
             size="sm"
             color="error"
@@ -142,7 +173,7 @@ const handleNext = () => {
             <!--  -->
             <span class="flex items-center gap-1">
               <Icon name="box" class="h-3 w-3" />
-              {{ prod.total_stock }}
+              {{ getAvailableProductQty(prod) }}
             </span>
           </div>
         </div>
@@ -177,4 +208,6 @@ const handleNext = () => {
       <AppButton label="Next" class="w-full" :disabled="!canProceed" @click="handleNext" />
     </div>
   </div>
+
+  <AddNewProductModal :open="showAdd" @close="showAdd = false" @success="handleProductCreated" />
 </template>

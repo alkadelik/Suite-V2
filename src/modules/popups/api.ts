@@ -74,9 +74,10 @@ export function useGetEventfulPopupById(id: string) {
   })
 }
 
-export function useGetPopupInventory(popupId: string) {
+export function useGetPopupInventory(popupId: string, search?: string) {
   return useApiQuery<PopupInventory[]>({
     url: `/popup-events/inventory/event/${popupId}`,
+    params: search ? { search } : undefined,
     key: `popup-inventory-${popupId}`,
     selectData: true,
   })
@@ -93,6 +94,13 @@ export function useUpdatePopupProduct() {
   return useMutation({
     mutationFn: (payload: { popup_event: string; items: Partial<AddProductsPayload>[] }) =>
       baseApi.patch(`/popup-events/inventory/bulk_update/`, payload),
+  })
+}
+
+export function useDeletePopupProducts() {
+  return useMutation({
+    mutationFn: (payload: { popup_event: string; uids: string[] }) =>
+      baseApi.delete(`/popup-events/inventory/bulk_delete/`, { data: payload }),
   })
 }
 

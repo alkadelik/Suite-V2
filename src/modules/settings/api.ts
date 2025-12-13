@@ -95,11 +95,12 @@ export function useInviteUserToLocation() {
 }
 
 /** Fetch all store members */
-export function useGetStoreMembers() {
+export function useGetStoreMembers(search?: Ref<string>) {
   return useQuery({
-    queryKey: ["store-members"],
+    queryKey: ["store-members", search],
     queryFn: async () => {
-      const { data } = await baseApi.get<IStoreMembersResponse>("/stores/members/")
+      const params = search?.value ? { search: search.value } : {}
+      const { data } = await baseApi.get<IStoreMembersResponse>("/stores/members/", { params })
       return data
     },
   })

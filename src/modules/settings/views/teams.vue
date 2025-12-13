@@ -7,7 +7,7 @@
     />
 
     <EmptyState
-      v-if="!isPending && teamMembers.length === 0"
+      v-if="!isPending && teamMembers.length === 0 && !searchQuery"
       title="No team members found"
       description="Add your first ream member to start managing them."
       action-label="Add Member"
@@ -28,14 +28,14 @@
             placeholder="Search by member name or email"
             v-model="searchQuery"
           />
-          <AppButton
+          <!-- <AppButton
             icon="filter-lines"
             size="sm"
             color="alt"
             label="Filter"
             class="!hidden md:!inline-flex"
           />
-          <AppButton icon="filter-lines" size="sm" color="alt" label="" class="md:hidden" />
+          <AppButton icon="filter-lines" size="sm" color="alt" label="" class="md:hidden" /> -->
           <AppButton
             icon="add"
             size="sm"
@@ -54,7 +54,7 @@
       </div>
 
       <DataTable
-        :data="filteredTeamMembers"
+        :data="teamMembers"
         :columns="TEAMS_COLUMN"
         :loading="isPending"
         :show-pagination="false"
@@ -128,9 +128,6 @@
                 <Icon name="dots-vertical" />
               </template>
             </DropdownMenu>
-          </div>
-          <div v-else class="text-sm text-gray-400">
-            <!-- Empty space or placeholder when no actions are available -->
           </div>
         </template>
 
@@ -251,10 +248,6 @@ import { getRoleColor } from "@modules/shared/utils"
 import { useAuthStore } from "@modules/auth/store"
 import EmptyState from "@components/EmptyState.vue"
 
-// API calls
-const { data: storeMembersData, isPending, refetch } = useGetStoreMembers()
-const { mutate: suspendMember, isPending: isSuspending } = useSuspendMember()
-
 // Component state
 const showInvitationModal = ref(false)
 const showEditMemberModal = ref(false)
@@ -263,6 +256,10 @@ const showSuspendMemberModal = ref(false)
 const member = ref<TTeam | null>(null)
 const searchQuery = ref("")
 const { user } = useAuthStore()
+
+// API calls
+const { data: storeMembersData, isPending, refetch } = useGetStoreMembers(searchQuery)
+const { mutate: suspendMember, isPending: isSuspending } = useSuspendMember()
 
 // Helper function to get full name
 const getFullName = (item: TTeam) => {
@@ -284,17 +281,6 @@ const canPerformActions = (item: TTeam) => {
 const teamMembers = computed(() => {
   if (!storeMembersData.value?.data?.results) return []
   return storeMembersData.value.data.results
-})
-
-const filteredTeamMembers = computed(() => {
-  if (!searchQuery.value) return teamMembers.value
-
-  const query = searchQuery.value.toLowerCase()
-  return teamMembers.value.filter(
-    (member: TTeam) =>
-      `${member.first_name} ${member.last_name}`.toLowerCase().includes(query) ||
-      member.email?.toLowerCase().includes(query),
-  )
 })
 
 const isLoggedInUserOwner = computed(() => {

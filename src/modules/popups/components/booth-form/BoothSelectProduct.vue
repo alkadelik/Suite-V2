@@ -10,6 +10,7 @@ import { computed, ref } from "vue"
 
 const props = defineProps<{
   selectedProducts: IProductCatalogue[]
+  existingVariantSkus?: string[]
 }>()
 
 const searchQuery = ref("")
@@ -40,9 +41,24 @@ const isProductSelected = (productUid: string) => {
   return props.selectedProducts.some((p) => p.uid === productUid)
 }
 
+// Check if ALL variants of a product are already in popup inventory
+const isProductFullyInPopup = (product: IProductCatalogue) => {
+  if (!props.existingVariantSkus || props.existingVariantSkus.length === 0) return false
+  if (!product.variants || product.variants.length === 0) return false
+  // Check if ALL variants are in popup
+  return product.variants.every((variant) => props.existingVariantSkus?.includes(variant.sku))
+}
+
+// Check if product has SOME variants already in popup
+const hasPartiallySelectedVariants = (product: IProductCatalogue) => {
+  if (!props.existingVariantSkus || props.existingVariantSkus.length === 0) return false
+  if (!product.variants || product.variants.length === 0) return false
+  return product.variants.some((variant) => props.existingVariantSkus?.includes(variant.sku))
+}
+
 // Toggle product selection
 const toggleProductSelection = (product: IProductCatalogue) => {
-  if (product.total_stock === 0) return // Don't allow selection of out-of-stock products
+  if (getAvailableProductQty(product) === 0 || isProductFullyInPopup(product)) return // Don't allow selection of out-of-stock or fully added products
 
   const index = props.selectedProducts.findIndex((p) => p.uid === product.uid)
 
@@ -67,6 +83,17 @@ const handleNext = () => {
   if (canProceed.value) {
     emit("next")
   }
+}
+
+// Get available quantity for a product (sellable_stock - popup_quantity_taken across all variants)
+const getAvailableProductQty = (product: IProductCatalogue) => {
+  if (!product.variants || product.variants.length === 0) return 0
+
+  return product.variants.reduce((total, variant) => {
+    const sellableStock = Number(variant.sellable_stock ?? variant.available_stock ?? 0)
+    const popupQtyTaken = Number(variant.popup_quantity_taken ?? 0)
+    return total + Math.max(0, sellableStock - popupQtyTaken)
+  }, 0)
 }
 </script>
 
@@ -103,8 +130,8 @@ const handleNext = () => {
         :key="prod.uid"
         class="rounded-xl bg-white p-1.5 transition-all"
         :class="
-          prod.total_stock === 0
-            ? 'cursor-not-allowed opacity-60'
+          getAvailableProductQty(prod) === 0 || isProductFullyInPopup(prod)
+            ? 'cursor-not-allowed opacity-50'
             : isProductSelected(prod.uid)
               ? 'ring-primary-600 cursor-pointer shadow-lg ring-2'
               : 'cursor-pointer hover:shadow-lg'
@@ -121,10 +148,24 @@ const handleNext = () => {
           <Icon v-else name="box" class="h-20 w-20" />
 
           <Chip
-            v-if="prod.total_stock === 0"
+            v-if="getAvailableProductQty(prod) === 0"
             label="Out of stock"
             size="sm"
             color="error"
+            class="absolute top-2 right-2 !rounded-lg"
+          />
+          <Chip
+            v-else-if="isProductFullyInPopup(prod)"
+            label="Fully added"
+            size="sm"
+            color="success"
+            class="absolute top-2 right-2 !rounded-lg"
+          />
+          <Chip
+            v-else-if="hasPartiallySelectedVariants(prod)"
+            label="Some added"
+            size="sm"
+            color="warning"
             class="absolute top-2 right-2 !rounded-lg"
           />
           <input
@@ -144,7 +185,7 @@ const handleNext = () => {
             <!--  -->
             <span class="flex items-center gap-1">
               <Icon name="box" class="h-3 w-3" />
-              {{ prod.total_stock }}
+              {{ getAvailableProductQty(prod) }}
             </span>
           </div>
         </div>
@@ -158,11 +199,8 @@ const handleNext = () => {
       class="!min-h-[500px] md:!bg-none"
     />
 
-    <div v-else class="flex min-h-[500px] items-center justify-center">
-      <div class="text-center">
-        <Icon name="box" class="text-core-300 mx-auto mb-4 h-16 w-16 animate-pulse" />
-        <p class="text-core-400 text-sm">Loading products...</p>
-      </div>
+    <div v-if="isFetching" class="flex items-center justify-center py-12">
+      <Icon name="loader" size="64" class="!animate text-primary-600 !animate-spin" />
     </div>
 
     <div class="h-24" />

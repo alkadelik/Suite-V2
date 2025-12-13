@@ -7,6 +7,7 @@ import GooglePlacesAutocomplete from "@components/GooglePlacesAutocomplete.vue"
 import Icon from "@components/Icon.vue"
 import Chip from "@components/Chip.vue"
 import LoadingIcon from "@components/LoadingIcon.vue"
+import EmptyState from "@components/EmptyState.vue"
 import type { ICustomer } from "@modules/customers/types"
 import type { IShippingCourier } from "@modules/shared/types"
 import { computed, ref, watch } from "vue"
@@ -19,6 +20,7 @@ import { useGetShippingRates } from "@modules/shared/api"
 import { toast } from "@/composables/useToast"
 import { formatCurrency } from "@/utils/format-currency"
 import * as yup from "yup"
+import { useSettingsStore } from "@modules/settings/store"
 
 interface ShippingInfo {
   fulfilment_method: "pickup" | "delivery"
@@ -367,6 +369,11 @@ watch(
     }
   },
 )
+
+const isShippingSetupComplete = computed(() => {
+  const liveStatusData = useSettingsStore().liveStatus
+  return liveStatusData?.criteria.delivery_options.details?.delivery_enabled
+})
 </script>
 
 <template>
@@ -485,7 +492,27 @@ watch(
 
           <!-- ShipBubble Automatic Delivery -->
           <template v-if="shippingInfo.delivery_method === 'automatic'">
-            <div class="space-y-3 rounded-lg border border-gray-200 bg-white p-4">
+            <!-- Empty State when shipping is not set up -->
+            <EmptyState
+              v-if="!isShippingSetupComplete"
+              title="You don't have shipping setup yet"
+              description="You need shipping to be able to use automatic delivery."
+              action-label="Setup Shipping"
+              action-icon="add"
+              class="!min-h-[40vh] !bg-none !py-0 !shadow-none"
+              @action="$router.push('/settings/delivery-options')"
+            >
+              <template #image>
+                <img
+                  src="@/assets/images/empty-location.svg?url"
+                  alt="Empty State Illustration"
+                  class="mx-auto mb-4"
+                />
+              </template>
+            </EmptyState>
+
+            <!-- Shipping form when setup is complete -->
+            <div v-else class="space-y-3 rounded-lg border border-gray-200 bg-white p-4">
               <TextField
                 type="tel"
                 name="customer_phone"

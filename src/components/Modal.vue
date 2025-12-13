@@ -42,7 +42,9 @@
           <!-- Footer -->
           <div
             v-if="$slots.footer"
-            :class="['border-core-200 sticky right-0 bottom-0 left-0 border-t bg-white p-6']"
+            :class="[
+              'border-core-200 sticky right-0 bottom-0 left-0 rounded-b-xl border-t bg-white p-6',
+            ]"
           >
             <slot name="footer" />
           </div>
