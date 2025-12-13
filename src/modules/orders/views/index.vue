@@ -28,6 +28,7 @@ import { formatCurrency } from "@/utils/format-currency"
 import { useRoute } from "vue-router"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import ProductAvatar from "@components/ProductAvatar.vue"
+import { usePremiumAccess } from "@/composables/usePremiumAccess"
 
 const openCreate = ref(false)
 const openVoid = ref(false)
@@ -108,6 +109,15 @@ const computedParams = computed(() => {
 })
 
 const { data: orders, isPending, isFetching, refetch } = useGetOrders(computedParams)
+const { checkPremiumAccess } = usePremiumAccess()
+
+// Function to handle opening create order drawer
+const handleOpenCreate = () => {
+  // Check premium access before opening drawer
+  if (!checkPremiumAccess()) return
+
+  openCreate.value = true
+}
 
 const handleRefresh = () => {
   refetch()
@@ -229,7 +239,7 @@ watch(
   () => route.query.create,
   (newVal) => {
     if (newVal === "true") {
-      openCreate.value = true
+      handleOpenCreate()
     }
   },
   { immediate: true },
@@ -295,7 +305,7 @@ const sampleOrders: TOrder[] | null = []
       action-label="Add an order"
       action-icon="add"
       :loading="isPending"
-      @action="openCreate = true"
+      @action="handleOpenCreate"
     />
 
     <section v-else>
@@ -335,7 +345,7 @@ const sampleOrders: TOrder[] | null = []
               size="sm"
               class="flex-shrink-0"
               :label="isMobile ? '' : 'Add Order'"
-              @click="openCreate = true"
+              @click="handleOpenCreate"
             />
           </div>
         </div>

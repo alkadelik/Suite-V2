@@ -22,6 +22,7 @@ import { Carousel, Slide } from "vue3-carousel"
 import DeletePopupEvent from "../components/DeletePopupEvent.vue"
 import { useRoute } from "vue-router"
 import PopupCreatedSuccessModal from "../components/PopupCreatedSuccessModal.vue"
+import { usePremiumAccess } from "@/composables/usePremiumAccess"
 
 const TABS = [
   { title: "All", key: "" },
@@ -59,14 +60,23 @@ const { data: popupEvents, isPending, isFetching, refetch } = useGetPopupEvents(
 const params = computed(() => ({ status: "upcoming", limit: 5 }))
 const { data: eventfulPopups } = useGetEventfulPopups(params)
 const route = useRoute()
+const { checkPremiumAccess } = usePremiumAccess()
+
+// Function to handle opening create popup modal
+const handleOpenCreate = () => {
+  // Check premium access before opening modal
+  if (!checkPremiumAccess()) return
+
+  selectedPopup.value = null
+  openCreate.value = true
+}
 
 // Watch for route query to open create modal/drawer
 watch(
   () => route.query.create,
   (newVal) => {
     if (newVal === "true") {
-      selectedPopup.value = null
-      openCreate.value = true
+      handleOpenCreate()
     }
   },
   { immediate: true },
@@ -160,12 +170,7 @@ watch(
       description="Create a popup event."
       action-label="Create a popup event"
       action-icon="add"
-      @action="
-        () => {
-          selectedPopup = null
-          openCreate = true
-        }
-      "
+      @action="handleOpenCreate"
       :loading="isPending || isFetching"
     />
 
@@ -204,12 +209,7 @@ watch(
               size="sm"
               class="flex-shrink-0"
               :label="isMobile ? '' : 'Add Popup'"
-              @click="
-                () => {
-                  selectedPopup = null
-                  openCreate = true
-                }
-              "
+              @click="handleOpenCreate"
             />
           </div>
         </div>

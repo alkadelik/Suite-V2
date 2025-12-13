@@ -5,10 +5,12 @@ import Icon from "@components/Icon.vue"
 import Modal from "@components/Modal.vue"
 import { useRouter } from "vue-router"
 import { useSettingsStore } from "@modules/settings/store"
+import { usePremiumAccess } from "@/composables/usePremiumAccess"
 
 defineProps<{ open: boolean; onClose: () => void }>()
 
 const router = useRouter()
+const { checkPremiumAccess } = usePremiumAccess()
 
 const isHQ = computed(() => useSettingsStore().activeLocation?.is_hq ?? true)
 
@@ -18,27 +20,39 @@ const quickActions = computed(() => {
       label: "Add a product",
       icon: "box",
       color: "bg-blue-50 text-blue-700 border-blue-200",
-      action: () => router.push("/inventory?create=true"),
+      action: () => {
+        if (!checkPremiumAccess()) return
+        router.push("/inventory?create=true")
+      },
       hqOnly: true,
     },
     {
       label: "Record a sale",
       icon: "bag",
       color: "bg-green-50 text-green-700 border-green-200",
-      action: () => router.push("/orders?create=true"),
+      action: () => {
+        if (!checkPremiumAccess()) return
+        router.push("/orders?create=true")
+      },
     },
     {
       label: "Create popup",
       icon: "calendar-tick",
       color: "bg-purple-50 text-purple-700 border-purple-200",
-      action: () => router.push("/popups?create=true"),
+      action: () => {
+        if (!checkPremiumAccess()) return
+        router.push("/popups?create=true")
+      },
       hqOnly: true,
     },
     {
       label: "Add a customer",
       icon: "profile-add",
       color: "bg-primary-50 text-primary-700 border-primary-200",
-      action: () => router.push("/customers?create=true"),
+      action: () => {
+        if (!checkPremiumAccess()) return
+        router.push("/customers?create=true")
+      },
     },
     {
       label: "Record expense",

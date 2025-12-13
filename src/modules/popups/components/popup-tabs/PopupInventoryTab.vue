@@ -238,18 +238,11 @@ onMounted(() => {
         </template>
 
         <template #cell:action="{ item }">
-          <div class="flex items-center gap-2">
-            <Icon
-              name="edit"
-              @click.stop="handleAction('manage', item)"
-              class="hidden cursor-pointer hover:text-gray-600 md:inline-block"
-            />
-            <DropdownMenu
-              :items="getActionMenu(item)"
-              size="sm"
-              @action="(action: string) => handleAction(action, item)"
-            />
-          </div>
+          <DropdownMenu
+            :items="getActionMenu(item)"
+            size="sm"
+            @action="(action: string) => handleAction(action, item)"
+          />
         </template>
 
         <!-- mobile view cell templates -->
