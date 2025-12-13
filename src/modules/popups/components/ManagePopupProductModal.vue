@@ -278,7 +278,7 @@ const closeModal = () => {
               :min="1"
               :max="item.available_stock"
               :error="validationErrors[item.variant_uid]?.quantity"
-              @blur="validateVariantItem(item)"
+              @input="validateVariantItem(item)"
             />
             <TextField
               v-model="item.event_price"
@@ -289,7 +289,7 @@ const closeModal = () => {
               :min="0"
               step="0.01"
               :error="validationErrors[item.variant_uid]?.event_price"
-              @blur="validateVariantItem(item)"
+              @input="validateVariantItem(item)"
             />
           </div>
         </div>
