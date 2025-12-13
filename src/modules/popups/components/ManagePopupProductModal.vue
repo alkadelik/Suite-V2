@@ -81,11 +81,11 @@ const initializeVariants = () => {
   // Calculate available stock from main catalogue
   const sellableStock = Number(catalogueVariant.sellable_stock)
   const popupQtyTaken = Number(catalogueVariant.popup_quantity_taken ?? 0)
+  const currentPopupQuantity = Number(props.selectedProduct.quantity)
 
   // Available stock = sellable_stock - popup_quantity_taken + current_popup_quantity
   // We add back the current popup quantity because it's already included in popup_quantity_taken
-  const availableStock = sellableStock - popupQtyTaken
-
+  const availableStock = sellableStock - popupQtyTaken + currentPopupQuantity
   // Set the current product variant
   variantItems.value = [
     {
