@@ -14,12 +14,12 @@ import { useMediaQuery } from "@vueuse/core"
 import { computed, onMounted, ref } from "vue"
 import { useRoute } from "vue-router"
 import SetupPopupBoothDrawer from "../SetupPopupBoothDrawer.vue"
+import ManagePopupProductModal from "../ManagePopupProductModal.vue"
 import AppButton from "@components/AppButton.vue"
 import TextField from "@components/form/TextField.vue"
 import DataTable from "@components/DataTable.vue"
 import ProductAvatar from "@components/ProductAvatar.vue"
 import { PopupInventory } from "@modules/popups/types"
-import Modal from "@components/Modal.vue"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
@@ -31,9 +31,6 @@ const selectedProduct = ref<PopupInventory | null>(null)
 const openManageProduct = ref(false)
 const showConfirmationModal = ref(false)
 const confirmationAction = ref<"enable" | "disable" | "remove" | null>(null)
-
-// Form data for managing product
-const productForm = ref({ price: 0, quantity: 0 })
 
 const route = useRoute()
 const isMobile = useMediaQuery("(max-width: 768px)")
@@ -75,11 +72,6 @@ const getActionMenu = (item: PopupInventory) => [
 const handleAction = (action: string, item: PopupInventory) => {
   selectedProduct.value = item
   if (action === "Manage Product") {
-    // Populate form with current product data
-    productForm.value = {
-      price: Number(item.event_price) || 0,
-      quantity: item.quantity || 0,
-    }
     openManageProduct.value = true
   } else if (action === "Enable Availability") {
     confirmationAction.value = "enable"
@@ -96,30 +88,6 @@ const handleAction = (action: string, item: PopupInventory) => {
 const closeManageModal = () => {
   openManageProduct.value = false
   selectedProduct.value = null
-}
-
-const saveProductChanges = () => {
-  if (!selectedProduct.value) return
-
-  const payload = {
-    popup_event: route.params.id as string,
-    items: [
-      {
-        uid: selectedProduct.value.uid,
-        event_price: productForm.value.price,
-        quantity: productForm.value.quantity,
-      },
-    ],
-  }
-
-  updatePopupProduct(payload, {
-    onSuccess: () => {
-      toast.success(`Product updated successfully`)
-      closeManageModal()
-      refetch()
-    },
-    onError: displayError,
-  })
 }
 
 const handleConfirmAction = () => {
@@ -337,84 +305,13 @@ onMounted(() => {
   />
 
   <!-- Modal to manage price and quantity of a particular product -->
-  <Modal
+  <ManagePopupProductModal
     :open="openManageProduct"
-    title="Manage Product"
-    max-width="lg"
-    variant="bottom-nav"
+    :selected-product="selectedProduct"
+    :existing-variant-skus="existingVariantSkus"
     @close="closeManageModal"
-  >
-    <div v-if="selectedProduct" class="rounded-xl bg-white">
-      <div class="flex gap-4 p-4">
-        <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100">
-          <Icon name="box" class="h-6 w-6 text-gray-400" />
-        </div>
-        <div class="flex-1 space-y-1.5">
-          <h4 class="text-sm font-medium capitalize">{{ selectedProduct.product_name }}</h4>
-          <div class="flex items-center gap-1.5">
-            <span
-              v-if="
-                selectedProduct.original_price &&
-                Number(selectedProduct.original_price) !== Number(selectedProduct.event_price)
-              "
-              class="text-core-300 line-through"
-              style="font-size: 11px"
-            >
-              {{ formatCurrency(Number(selectedProduct.original_price)) }}
-            </span>
-            <span class="text-primary-600 flex items-center gap-1 text-xs">
-              <Icon name="box" class="h-3 w-3" />
-              {{
-                Number(selectedProduct.event_price) > 0
-                  ? formatCurrency(Number(selectedProduct.event_price))
-                  : "Set price"
-              }}
-            </span>
-          </div>
-        </div>
-        <Chip
-          color="success"
-          :label="`${selectedProduct.available_quantity} in Stock`"
-          icon="box"
-        />
-      </div>
-      <div class="border-core-200 grid gap-4 border-t p-4">
-        <!-- Quantity and Price -->
-        <div class="grid grid-cols-2 gap-4">
-          <TextField
-            v-model="productForm.quantity"
-            name="quantity"
-            type="number"
-            label="Quantity"
-            placeholder="1"
-            :min="1"
-            :max="selectedProduct.available_quantity || 999999"
-          />
-          <TextField
-            v-model="productForm.price"
-            name="price"
-            type="number"
-            label="Event Price"
-            placeholder="e.g. 59.99"
-            :min="0"
-            step="0.01"
-          />
-        </div>
-      </div>
-    </div>
-
-    <!-- Modal Actions -->
-    <template #footer>
-      <div class="flex gap-3">
-        <AppButton
-          label="Save Changes"
-          class="flex-1"
-          :loading="isUpdating"
-          @click="saveProductChanges"
-        />
-      </div>
-    </template>
-  </Modal>
+    @refresh="refetch"
+  />
 
   <!-- Confirmation Modal for Toggle Availability and Remove Product -->
   <ConfirmationModal

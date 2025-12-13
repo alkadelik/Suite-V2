@@ -140,6 +140,7 @@ watch(activeStep, (newStep, oldStep) => {
           v-if="step === 1"
           :orderItems="orderItems"
           :selectedProducts="selectedProducts"
+          :existingVariantSkus="props.existingVariantSkus"
           @update:orderItems="updateOrderItems"
           @next="onNext"
           @prev="onPrev"
