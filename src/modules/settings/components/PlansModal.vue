@@ -149,26 +149,19 @@ const { data: plansData, isPending } = useGetPlans()
 const { mutate: initializeSubscription, isPending: isInitializing } = useInitializeSubscription()
 const authStore = useAuthStore()
 
-// Get current subscription plan name
-// const currentPlanName = computed(() => {
-//   const subscription = authStore.user?.subscription
-//   if (!subscription || !subscription.is_active) {
-//     return null // No active plan
-//   }
-//   // If user is on trial, don't mark any plan as active (allow upgrading to any plan)
-//   if (subscription.trial_mode) {
-//     return null
-//   }
-//   return subscription.plan_name
-// })
-
 // Track which plan is currently loading
 const loadingPlanId = ref<string | null>(null)
 
 const user = computed(() => authStore.user)
 
 // Get current plan from user subscription
-const currentPlan = computed(() => user.value?.subscription?.plan_name || null)
+// If user is on trial, return null so no plan is marked as active (allows upgrading to any plan)
+const currentPlan = computed(() => {
+  const subscription = user.value?.subscription
+  if (!subscription || !subscription.is_active) return null
+  if (subscription.trial_mode) return null // Trial users can upgrade to any plan
+  return subscription.plan_name || null
+})
 const isTrialMode = computed(() => user.value?.subscription?.trial_mode || false)
 
 // Track expanded state for each plan

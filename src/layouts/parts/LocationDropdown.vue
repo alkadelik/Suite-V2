@@ -11,7 +11,8 @@ import { useLocationSwitch } from "@/composables/useLocationSwitch"
 import { computed, watch } from "vue"
 
 const { data: locations } = useGetLocations()
-const { setLocations, setActiveLocation } = useSettingsStore()
+const settingsStore = useSettingsStore()
+const { setLocations, setActiveLocation } = settingsStore
 const { requestLocationSwitch } = useLocationSwitch()
 
 const locationItems = computed(
@@ -122,7 +123,7 @@ const onLocationSelect = (id: string) => {
           size="sm"
           icon="add"
           class="!w-full flex-row-reverse !justify-between !px-2.5"
-          @click="$router.push('/settings/locations?create=true')"
+          @click="settingsStore.setAddLocationModal(true)"
         />
       </template>
     </DropdownMenu>

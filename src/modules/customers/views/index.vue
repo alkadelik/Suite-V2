@@ -225,6 +225,7 @@ import { useGetCustomers, useDeleteCustomer, useGetCustomer } from "../api"
 import { displayError } from "@/utils/error-handler"
 import EmptyState from "@components/EmptyState.vue"
 import { useRoute, useRouter } from "vue-router"
+import { usePremiumAccess } from "@/composables/usePremiumAccess"
 
 // Router
 const route = useRoute()
@@ -233,6 +234,7 @@ const router = useRouter()
 // API calls
 const { data: customersData, isLoading, refetch } = useGetCustomers()
 const { mutate: deleteCustomer, isPending: isDeleting } = useDeleteCustomer()
+const { checkPremiumAccess } = usePremiumAccess()
 
 // Get individual customer data when customerUid is set
 const customerUid = ref<string>("")
@@ -425,6 +427,9 @@ const handleDeleteCustomer = () => {
 
 // Function to handle opening add customer drawer
 const openAddCustomerDrawer = () => {
+  // Check premium access before opening drawer
+  if (!checkPremiumAccess()) return
+
   customer.value = null
   formMode.value = "add"
   showCustomerFormDrawer.value = true
