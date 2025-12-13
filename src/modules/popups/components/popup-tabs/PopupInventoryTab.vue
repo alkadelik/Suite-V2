@@ -35,7 +35,11 @@ const confirmationAction = ref<"enable" | "disable" | "remove" | null>(null)
 const route = useRoute()
 const isMobile = useMediaQuery("(max-width: 768px)")
 
-const { data: popupInventory, isPending, refetch } = useGetPopupInventory(route.params.id as string)
+const {
+  data: popupInventory,
+  isPending,
+  refetch,
+} = useGetPopupInventory(route.params.id as string, searchQuery.value)
 const { mutate: updatePopupProduct, isPending: isUpdating } = useUpdatePopupProduct()
 const { mutate: deletePopupProducts, isPending: isDeleting } = useDeletePopupProducts()
 
@@ -181,19 +185,9 @@ onMounted(() => {
             left-icon="search-lg"
             size="md"
             class="w-full md:min-w-64"
-            placeholder="Search by customer or order ref"
+            placeholder="Search by name"
             v-model="searchQuery"
           />
-
-          <!-- <AppButton
-            icon="filter-lines"
-            variant="outlined"
-            size="sm"
-            color="alt"
-            class="flex-shrink-0"
-            :label="isMobile ? '' : 'Filter'"
-            @click="showFilter = true"
-          /> -->
 
           <AppButton
             icon="add"
