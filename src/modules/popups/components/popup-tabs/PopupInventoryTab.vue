@@ -26,7 +26,7 @@ import { toast } from "@/composables/useToast"
 
 const searchQuery = ref("")
 const openAddProduct = ref(false)
-const showFilter = ref(false)
+// const showFilter = ref(false)
 const selectedProduct = ref<PopupInventory | null>(null)
 const openManageProduct = ref(false)
 const showConfirmationModal = ref(false)
@@ -185,7 +185,7 @@ onMounted(() => {
             v-model="searchQuery"
           />
 
-          <AppButton
+          <!-- <AppButton
             icon="filter-lines"
             variant="outlined"
             size="sm"
@@ -193,7 +193,7 @@ onMounted(() => {
             class="flex-shrink-0"
             :label="isMobile ? '' : 'Filter'"
             @click="showFilter = true"
-          />
+          /> -->
 
           <AppButton
             icon="add"
