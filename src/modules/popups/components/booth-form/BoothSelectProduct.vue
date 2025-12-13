@@ -41,17 +41,24 @@ const isProductSelected = (productUid: string) => {
   return props.selectedProducts.some((p) => p.uid === productUid)
 }
 
-// Check if product already exists in popup inventory
-const isProductInPopup = (product: IProductCatalogue) => {
+// Check if ALL variants of a product are already in popup inventory
+const isProductFullyInPopup = (product: IProductCatalogue) => {
   if (!props.existingVariantSkus || props.existingVariantSkus.length === 0) return false
-  return (
-    product.variants?.some((variant) => props.existingVariantSkus?.includes(variant.sku)) || false
-  )
+  if (!product.variants || product.variants.length === 0) return false
+  // Check if ALL variants are in popup
+  return product.variants.every((variant) => props.existingVariantSkus?.includes(variant.sku))
+}
+
+// Check if product has SOME variants already in popup
+const hasPartiallySelectedVariants = (product: IProductCatalogue) => {
+  if (!props.existingVariantSkus || props.existingVariantSkus.length === 0) return false
+  if (!product.variants || product.variants.length === 0) return false
+  return product.variants.some((variant) => props.existingVariantSkus?.includes(variant.sku))
 }
 
 // Toggle product selection
 const toggleProductSelection = (product: IProductCatalogue) => {
-  if (getAvailableProductQty(product) === 0 || isProductInPopup(product)) return // Don't allow selection of out-of-stock or already added products
+  if (getAvailableProductQty(product) === 0 || isProductFullyInPopup(product)) return // Don't allow selection of out-of-stock or fully added products
 
   const index = props.selectedProducts.findIndex((p) => p.uid === product.uid)
 
@@ -123,7 +130,7 @@ const getAvailableProductQty = (product: IProductCatalogue) => {
         :key="prod.uid"
         class="rounded-xl bg-white p-1.5 transition-all"
         :class="
-          getAvailableProductQty(prod) === 0 || isProductInPopup(prod)
+          getAvailableProductQty(prod) === 0 || isProductFullyInPopup(prod)
             ? 'cursor-not-allowed opacity-50'
             : isProductSelected(prod.uid)
               ? 'ring-primary-600 cursor-pointer shadow-lg ring-2'
@@ -148,10 +155,17 @@ const getAvailableProductQty = (product: IProductCatalogue) => {
             class="absolute top-2 right-2 !rounded-lg"
           />
           <Chip
-            v-else-if="isProductInPopup(prod)"
-            label="Already added"
+            v-else-if="isProductFullyInPopup(prod)"
+            label="Fully added"
             size="sm"
             color="success"
+            class="absolute top-2 right-2 !rounded-lg"
+          />
+          <Chip
+            v-else-if="hasPartiallySelectedVariants(prod)"
+            label="Some added"
+            size="sm"
+            color="warning"
             class="absolute top-2 right-2 !rounded-lg"
           />
           <input

@@ -45,6 +45,7 @@ interface VariantItem {
 const props = defineProps<{
   selectedProducts: IProductCatalogue[]
   orderItems: OrderItem[]
+  existingVariantSkus?: string[]
 }>()
 
 const emit = defineEmits<{
@@ -75,14 +76,19 @@ const needsVariantSelection = (product: IProductCatalogue) => {
   return product.variants[0].attributes && product.variants[0].attributes.length > 0
 }
 
-// Get variant options for select dropdown
+// Get variant options for select dropdown (exclude already added variants)
 const getVariantOptions = (product: IProductCatalogue) => {
   if (!product.variants) return []
-  return product.variants.map((v) => ({
-    label:
-      v.attributes.length > 0 ? `${v.attributes.map((a) => a.attribute_value).join(", ")}` : v.name,
-    value: v.uid,
-  }))
+  return product.variants
+    .filter((v) => !props.existingVariantSkus?.includes(v.sku)) // Exclude already added variants
+    .map((v) => ({
+      label:
+        v.attributes.length > 0
+          ? `${v.attributes.map((a) => a.attribute_value).join(", ")}`
+          : v.name,
+      value: v.uid,
+      disabled: props.existingVariantSkus?.includes(v.sku), // Mark as disabled if already in popup
+    }))
 }
 
 // Initialize local items when component mounts or products change
