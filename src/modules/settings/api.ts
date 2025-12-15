@@ -163,6 +163,8 @@ export function useGetPlans() {
       const { data } = await baseApi.get<IPlansResponse>("/billings/plans/")
       return data
     },
+    retry: false,
+    refetchOnWindowFocus: false,
   })
 }
 

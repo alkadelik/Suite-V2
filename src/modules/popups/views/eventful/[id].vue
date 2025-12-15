@@ -33,6 +33,8 @@ const overviewInfo = computed(() => {
 })
 
 const handleRegister = () => {
+  if (popupEvt.value?.is_registered) return
+  //
   if (Number(popupEvt.value?.participant_fee) === 0) {
     openConfirmation.value = true
   } else {
@@ -151,7 +153,12 @@ const handleConfirmFreeRegistration = () => {
               </h2>
             </div>
 
-            <AppButton label="Register Now" class="w-full" @click="handleRegister" />
+            <AppButton
+              :disabled="popupEvt?.is_registered"
+              :label="popupEvt?.is_registered ? 'Already Registered' : 'Register Now'"
+              class="w-full"
+              @click="handleRegister"
+            />
           </div>
 
           <!-- organizer card -->

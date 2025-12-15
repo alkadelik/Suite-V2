@@ -11,7 +11,7 @@ import PageHeader from "@components/PageHeader.vue"
 import Tabs from "@components/Tabs.vue"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, ref, watch } from "vue"
-import { getEventStatus, POPUP_COLUMN } from "../constants"
+import { POPUP_COLUMN } from "../constants"
 import { PopupEvent } from "../types"
 import PopupEventCard from "../components/PopupEventCard.vue"
 import CreatePopupEventModal from "../components/CreatePopupEventModal.vue"
@@ -51,7 +51,7 @@ const handleAction = (action: string, item: PopupEvent) => {
 
 const computedFilters = computed(() => {
   const filters: Record<string, string> = {}
-  if (status.value) filters.status = status.value
+  if (status.value && status.value !== "all") filters.status = status.value
   if (searchQuery.value) filters.search = searchQuery.value
   return filters
 })
@@ -237,19 +237,13 @@ watch(
               </span>
             </div>
           </template>
-          <template #cell:status="{ item }">
+          <template #cell:status="{ value }">
             <Chip
-              :label="getEventStatus(item)"
+              :label="String(value)"
               size="sm"
               class="capitalize"
               show-dot
-              :color="
-                getEventStatus(item) === 'upcoming'
-                  ? 'primary'
-                  : getEventStatus(item) === 'ongoing'
-                    ? 'success'
-                    : 'alt'
-              "
+              :color="value === 'upcoming' ? 'primary' : value === 'ongoing' ? 'success' : 'alt'"
             />
           </template>
           <template #cell:name="{ item }">
@@ -268,7 +262,7 @@ watch(
           <template #cell:action="{ item }">
             <div class="flex justify-end gap-3">
               <Icon
-                v-if="getEventStatus(item) !== 'ended'"
+                v-if="item.status !== 'past'"
                 name="edit"
                 @click.stop="handleAction('edit', item)"
               />
@@ -277,7 +271,7 @@ watch(
                 name="trash"
                 @click.stop="handleAction('delete', item)"
               />
-              <span v-if="item.total_orders && getEventStatus(item) === 'ended'"> -- </span>
+              <span v-if="item.total_orders && item.status === 'past'"> -- </span>
             </div>
           </template>
 

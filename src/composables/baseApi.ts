@@ -90,8 +90,16 @@ export type TQueryArg = {
   enabled?: boolean
   key: MaybeRefOrGetter<string>
   selectData?: boolean
+  refetchOnWindowFocus?: boolean
 }
-export const useApiQuery = <T>({ url, params, enabled, key, selectData }: TQueryArg) => {
+export const useApiQuery = <T>({
+  url,
+  params,
+  enabled,
+  key,
+  selectData,
+  refetchOnWindowFocus = false,
+}: TQueryArg) => {
   return useQuery<T>({
     queryKey: computed(() => [toValue(key), toValue(params)]),
     queryFn: async () => {
@@ -102,7 +110,7 @@ export const useApiQuery = <T>({ url, params, enabled, key, selectData }: TQuery
       return data
     },
     retry: false,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus,
     enabled,
     select: selectData
       ? (response: T) => {
