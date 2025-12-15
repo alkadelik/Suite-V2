@@ -5,7 +5,8 @@
         v-if="showLogo"
         :src="`${isMobile ? '/LYW-icon.svg' : '/LYW.svg'}`"
         alt="Leyyow"
-        class="h-8 w-auto"
+        class="h-8 w-auto cursor-pointer"
+        @click="router.push('/dashboard')"
       />
       <div class="hidden flex-1 lg:block" />
 

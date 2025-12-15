@@ -10,7 +10,12 @@
     <div
       class="sticky top-0 z-10 flex items-center gap-3 border-b border-gray-200 bg-white px-4 py-4"
     >
-      <img src="/LYW.svg?url" alt="Leyyow" class="h-8 w-auto" />
+      <img
+        src="/LYW.svg?url"
+        alt="Leyyow"
+        class="h-8 w-auto cursor-pointer"
+        @click="router.push('/dashboard')"
+      />
     </div>
 
     <!-- Store Info -->
@@ -149,6 +154,7 @@ import SidebarLink from "./SidebarLink.vue"
 import LocationDropdown from "./LocationDropdown.vue"
 import { clipboardCopy } from "@/utils/others"
 import { useSettingsStore } from "@modules/settings/store"
+import { useRouter } from "vue-router"
 
 defineProps<{
   mobileSidebarOpen: boolean
@@ -158,6 +164,7 @@ defineProps<{
 
 defineEmits<{ logout: [value: boolean]; upgrade: [] }>()
 
+const router = useRouter()
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
 const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
