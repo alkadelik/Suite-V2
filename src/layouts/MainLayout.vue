@@ -122,6 +122,13 @@
 
   <PlansModal :model-value="showPlans" @update:model-value="(val) => setPlanUpgradeModal(val)" />
 
+  <AddLocationModal
+    :open="showAddLocationModal"
+    :location="locationForEdit"
+    @close="setAddLocationModal(false)"
+    @refresh="handleLocationRefresh"
+  />
+
   <TrialActivationModal
     :open="openTrial"
     :subscription="profile?.subscription || null"
@@ -164,6 +171,7 @@ import {
 } from "@modules/inventory/constants"
 import { ICategoriesApiResponse, IProductAttributesApiResponse } from "@modules/inventory/types"
 import PlansModal from "@modules/settings/components/PlansModal.vue"
+import AddLocationModal from "@modules/settings/components/AddLocationModal.vue"
 import TrialActivationModal from "@modules/shared/components/TrialActivationModal.vue"
 import MobileMenuDrawer from "./parts/MobileMenuDrawer.vue"
 import Icon from "@components/Icon.vue"
@@ -254,13 +262,24 @@ const actionMenuItems = computed(() => {
   return allActions.filter((action) => !action.hqOnly || isHQ.value)
 })
 
-const { setPlanUpgradeModal, setLiveStatus } = useSettingsStore()
+const { setPlanUpgradeModal, setAddLocationModal, setLocationForEdit, setLiveStatus } =
+  useSettingsStore()
 const { updateAuthUser } = useAuthStore()
 
 const { data: categories } = useGetCategories()
 const { data: attributes } = useGetAttributes()
 const { data: profile } = useGetProfile()
 const showPlans = computed(() => useSettingsStore().showPlanUpgradeModal)
+const showAddLocationModal = computed(() => useSettingsStore().showAddLocationModal)
+const locationForEdit = computed(() => useSettingsStore().locationForEdit)
+
+// Handle location refresh after adding/updating location
+const handleLocationRefresh = () => {
+  // The LocationDropdown component automatically refetches locations via useGetLocations
+  // So we just need to close the modal and clear the edit location
+  setAddLocationModal(false)
+  setLocationForEdit(null)
+}
 const storeSlug = useAuthStore().user?.store_slug || ""
 const { data: liveStatusData, isPending: isLoadingLiveStatus } = useGetLiveStatus(storeSlug)
 

@@ -14,7 +14,12 @@
         size="sm"
         :variant="isMobile ? 'outlined' : 'filled'"
         label="Add new location"
-        @click="showModal = true"
+        @click="
+          () => {
+            settingsStore.setLocationForEdit(null)
+            settingsStore.setAddLocationModal(true)
+          }
+        "
       />
     </div>
 
@@ -82,13 +87,6 @@
       </template>
     </DataTable>
 
-    <AddLocationModal
-      :open="showModal"
-      @close="onClose"
-      @refresh="refetch"
-      :location="selectedLocation"
-    />
-
     <DeleteConfirmationModal
       v-model="openArchive"
       @close="onClose"
@@ -116,7 +114,6 @@ import { LOCATION_COLUMNS } from "../constants"
 import { TLocation } from "../types"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
-import AddLocationModal from "../components/AddLocationModal.vue"
 import { computed, onMounted, ref, watch } from "vue"
 import { useDeleteLocation, useGetLocations } from "../api"
 import { displayError } from "@/utils/error-handler"
@@ -127,10 +124,10 @@ import DropdownMenu from "@components/DropdownMenu.vue"
 import { useRoute } from "vue-router"
 import { useSettingsStore } from "../store"
 
-const showModal = ref(false)
 const openArchive = ref(false)
 const selectedLocation = ref<TLocation | null>(null)
 const isMobile = useMediaQuery("(max-width: 768px)")
+const settingsStore = useSettingsStore()
 
 const { data: locations, isPending, error, refetch } = useGetLocations()
 watch(error, displayError)
@@ -139,7 +136,10 @@ const currentLocation = computed(() => useSettingsStore().activeLocation)
 
 const handleAction = (action: "archive" | "edit", item: TLocation) => {
   selectedLocation.value = item
-  if (action === "edit") showModal.value = true
+  if (action === "edit") {
+    settingsStore.setLocationForEdit(item)
+    settingsStore.setAddLocationModal(true)
+  }
   if (action === "archive") {
     if (item.is_hq) {
       return toast.error("HQ location cannot be archived")
@@ -167,7 +167,6 @@ const handleDeleteLocation = () => {
 }
 
 const onClose = () => {
-  showModal.value = false
   openArchive.value = false
   selectedLocation.value = null
 }
@@ -190,6 +189,9 @@ const getActionItems = (item: TLocation) => [
 const route = useRoute()
 
 onMounted(() => {
-  if (route.query.create === "true") showModal.value = true
+  if (route.query.create === "true") {
+    settingsStore.setLocationForEdit(null)
+    settingsStore.setAddLocationModal(true)
+  }
 })
 </script>

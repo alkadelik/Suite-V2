@@ -11,6 +11,8 @@ export const useSettingsStore = defineStore(
     const locations = ref<TLocation[] | null>(null)
     const activeLocation = ref<TLocation | null>(null)
     const showPlanUpgradeModal = ref(false)
+    const showAddLocationModal = ref(false)
+    const locationForEdit = ref<TLocation | null>(null)
     const storeDetails = ref<IStoreDetails | null>(null)
     const liveStatus = ref<ILiveStatusData | null>(null)
 
@@ -34,12 +36,20 @@ export const useSettingsStore = defineStore(
       showPlanUpgradeModal.value = value
     }
 
+    const setAddLocationModal = (value: boolean) => {
+      showAddLocationModal.value = value
+    }
+
     const setStoreDetails = (details: IStoreDetails) => {
       storeDetails.value = details
     }
 
     const setLiveStatus = (status: ILiveStatusData) => {
       liveStatus.value = status
+    }
+
+    const setLocationForEdit = (location: TLocation | null) => {
+      locationForEdit.value = location
     }
 
     return {
@@ -49,6 +59,10 @@ export const useSettingsStore = defineStore(
       setActiveLocation,
       showPlanUpgradeModal,
       setPlanUpgradeModal,
+      showAddLocationModal,
+      setAddLocationModal,
+      locationForEdit,
+      setLocationForEdit,
       setStoreDetails,
       storeDetails,
       storefrontUrl,
