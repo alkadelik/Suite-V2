@@ -10,7 +10,7 @@
     <div class="flex h-[100dvh] overflow-hidden lg:h-screen">
       <!-- Sidebar -->
       <AppSidebar
-        :sales-suites="SALES_SUITES"
+        :menu-items="MENU_ITEMS"
         :mobile-sidebar-open="mobileSidebarOpen"
         :isLive="isLive"
         @logout="logout = true"
@@ -70,7 +70,7 @@
           <div class="flex items-center justify-around px-2 py-2">
             <SidebarLink icon="house" label="Home" to="/dashboard" @click="openMore = false" />
             <SidebarLink
-              v-for="link in SALES_SUITES.slice(0, 1)"
+              v-for="link in MENU_ITEMS.slice(0, 1)"
               :key="link.label"
               v-bind="link"
               @click="openMore = false"
@@ -87,7 +87,7 @@
               "
             />
             <SidebarLink
-              v-for="link in SALES_SUITES.slice(1, 2)"
+              v-for="link in MENU_ITEMS.slice(1, 2)"
               :key="link.label"
               v-bind="link"
               @click="openMore = false"
@@ -179,7 +179,6 @@ import { useGetLiveStatus } from "@modules/shared/api"
 import { useLocationSwitch } from "@/composables/useLocationSwitch"
 import MobileQuickActionsModal from "./parts/MobileQuickActionsModal.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
-import { toast } from "@/composables/useToast"
 import { useRouter, useRoute } from "vue-router"
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
@@ -205,12 +204,13 @@ const showAppHeader = computed(() => {
 
 const isInner = computed(() => !!route.params.id)
 
-const SALES_SUITES = computed(() => {
+const MENU_ITEMS = computed(() => {
   const allSuites = [
     { icon: "box", label: "Orders", to: "/orders" },
     { icon: "folder", label: "Inventory", to: "/inventory" },
     { icon: "calendar-tick", label: "Popups", to: "/popups", hqOnly: true },
     { icon: "people", label: "Customers", to: "/customers" },
+    { icon: "receipt-text", label: "Expenses", to: "/expenses" },
   ]
 
   return allSuites.filter((suite) => !suite.hqOnly || isHQ.value)
@@ -253,9 +253,7 @@ const actionMenuItems = computed(() => {
       icon: "receipt-add",
       class: "!bg-pink-50 !text-pink-700",
       iconClass: "!text-primary-700",
-      action: () => {
-        toast.info("Expense module is coming soon!")
-      },
+      action: () => router.push("/expenses?create=true"),
     },
   ]
 

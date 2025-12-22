@@ -53,7 +53,7 @@
 
     <!-- Navigation -->
     <section class="space-y-1 px-4 py-2">
-      <SidebarLink v-for="link in salesSuites" :key="link.label" v-bind="link" />
+      <SidebarLink v-for="link in menuItems" :key="link.label" v-bind="link" />
     </section>
 
     <section class="mt-auto px-4 pb-4">
@@ -158,7 +158,7 @@ import { useRouter } from "vue-router"
 
 defineProps<{
   mobileSidebarOpen: boolean
-  salesSuites: Array<{ icon: string; label: string; to: string }>
+  menuItems: Array<{ icon: string; label: string; to: string }>
   isLive: boolean
 }>()
 

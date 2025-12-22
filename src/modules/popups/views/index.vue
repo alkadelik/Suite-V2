@@ -23,6 +23,8 @@ import DeletePopupEvent from "../components/DeletePopupEvent.vue"
 import { useRoute } from "vue-router"
 import PopupCreatedSuccessModal from "../components/PopupCreatedSuccessModal.vue"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
+import ClosePopupModal from "../components/ClosePopupModal.vue"
+import DropdownMenu from "@components/DropdownMenu.vue"
 
 const TABS = [
   { title: "All", key: "" },
@@ -38,6 +40,7 @@ const openDelete = ref(false)
 const showFilter = ref(false)
 const activeSlide = ref(0)
 const openSuccess = ref(false)
+const openClose = ref(false)
 
 const selectedPopup = ref<PopupEvent | null>(null)
 
@@ -47,6 +50,7 @@ const handleAction = (action: string, item: PopupEvent) => {
   selectedPopup.value = item
   if (action === "edit") openCreate.value = true
   if (action === "delete") openDelete.value = true
+  if (action === "close") openClose.value = true
 }
 
 const computedFilters = computed(() => {
@@ -81,6 +85,37 @@ watch(
   },
   { immediate: true },
 )
+
+const getMenuAction = (item: PopupEvent) => {
+  const actions = []
+  if (item.status !== "past") {
+    actions.push({
+      label: "Edit Event",
+      icon: "edit",
+      action: () => handleAction("edit", item),
+    })
+  }
+  if (!item.total_orders && item.status !== "closed") {
+    actions.push({ divider: true })
+  }
+  if (!item.total_orders) {
+    actions.push({
+      label: "Delete Event",
+      icon: "trash",
+      iconClass: "text-red-500",
+      class: "text-red-500",
+      action: () => handleAction("delete", item),
+    })
+  }
+  if (item.status !== "closed") {
+    actions.push({
+      label: "Close Event",
+      icon: "times-circle",
+      action: () => handleAction("close", item),
+    })
+  }
+  return actions
+}
 </script>
 
 <template>
@@ -273,6 +308,7 @@ watch(
               />
               <span v-if="item.total_orders && item.status === 'past'"> -- </span>
             </div>
+            <DropdownMenu :items="getMenuAction(item)" />
           </template>
 
           <template #mobile="{ item }">
@@ -281,6 +317,7 @@ watch(
               @click="() => $router.push(`/popups/${item.uid}`)"
               @edit="() => handleAction('edit', item)"
               @delete="() => handleAction('delete', item)"
+              @close="() => handleAction('close', item)"
             />
           </template>
         </DataTable>
@@ -329,6 +366,14 @@ watch(
           openSuccess = false
         }
       "
+    />
+
+    <ClosePopupModal
+      v-if="selectedPopup"
+      :open="openClose"
+      @close="openClose = false"
+      :event="selectedPopup"
+      @refresh="refetch"
     />
   </div>
 </template>

@@ -47,10 +47,16 @@ const isBuyerCreated = computed(() => {
 })
 
 const menuItems = computed(() => {
+  const showVoid =
+    (isFulfilled.value || props.order?.payment_status !== "unpaid") && !isBuyerCreated.value
+  const showDelete =
+    !isFulfilled.value && props.order?.payment_status === "unpaid" && !isBuyerCreated.value
+
   return props.customActions?.length
     ? props.customActions
     : [
-        { label: "View memos", icon: "eye", action: () => emit("view-memos") },
+        { label: "View details", icon: "eye", action: () => emit("click") },
+        { label: "View memos", icon: "note", action: () => emit("view-memos") },
         {
           label: `Share ${props.order.payment_status === "paid" ? "receipt" : "invoice"}`,
           icon: "share",
@@ -62,8 +68,8 @@ const menuItems = computed(() => {
         ...(isFulfilled.value
           ? []
           : [{ label: "Fulfill Order", icon: "money-add", action: () => emit("fulfill") }]),
-        { divider: true },
-        ...((isFulfilled.value || props.order?.payment_status !== "unpaid") && !isBuyerCreated.value
+        ...(showVoid || showDelete ? [{ divider: true }] : []),
+        ...(showVoid
           ? [
               {
                 label: "Void Order",
@@ -74,7 +80,7 @@ const menuItems = computed(() => {
               },
             ]
           : []),
-        ...(!isFulfilled.value && props.order?.payment_status === "unpaid" && !isBuyerCreated.value
+        ...(showDelete
           ? [
               {
                 label: "Delete Order",

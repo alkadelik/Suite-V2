@@ -54,6 +54,12 @@ export function useDeletePopupEvent() {
   })
 }
 
+export function useClosePopupEvent() {
+  return useMutation({
+    mutationFn: (id: string) => baseApi.post(`/popup-events/${id}/close/`),
+  })
+}
+
 /** Fetch organizer events - public */
 export function useGetEventfulPopups(
   params?: MaybeRefOrGetter<Record<string, string | number | boolean> | undefined>,

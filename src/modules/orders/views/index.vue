@@ -29,6 +29,7 @@ import { useRoute } from "vue-router"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import ProductAvatar from "@components/ProductAvatar.vue"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
+import OrderDetailsDrawer from "../components/OrderDetailsDrawer.vue"
 
 const openCreate = ref(false)
 const openVoid = ref(false)
@@ -37,6 +38,7 @@ const openMemo = ref(false)
 const openFulfil = ref(false)
 const openShare = ref(false)
 const openPayment = ref(false)
+const openDetails = ref(false)
 const selectedOrder = ref<TOrder | null>(null)
 const status = ref(ORDER_STATUS_TAB[0].key)
 
@@ -244,6 +246,33 @@ watch(
   },
   { immediate: true },
 )
+
+const handleAction = (action: string, order: TOrder) => {
+  selectedOrder.value = order
+  switch (action) {
+    case "click":
+      openDetails.value = true
+      break
+    case "view-memos":
+      openMemo.value = true
+      break
+    case "share-invoice":
+      openShare.value = true
+      break
+    case "update-payment":
+      openPayment.value = true
+      break
+    case "fulfill":
+      openFulfil.value = true
+      break
+    case "void-order":
+      openVoid.value = true
+      break
+    case "delete-order":
+      openDelete.value = true
+      break
+  }
+}
 </script>
 
 <template>
@@ -331,6 +360,12 @@ watch(
           :total-page-count="Math.ceil((orders?.count || 0) / itemsPerPage) || 1"
           :server-pagination="true"
           @pagination-change="(d) => (page = d.currentPage)"
+          @row-click="
+            (row) => {
+              selectedOrder = row
+              openDetails = true
+            }
+          "
         >
           <template #cell:items="{ item }">
             <ProductAvatar
@@ -381,42 +416,13 @@ watch(
           <template #mobile="{ item }">
             <OrderCard
               :order="item"
-              @view-memos="
-                () => {
-                  selectedOrder = item
-                  openMemo = true
-                }
-              "
-              @share-invoice="
-                () => {
-                  selectedOrder = item
-                  openShare = true
-                }
-              "
-              @update-payment="
-                () => {
-                  selectedOrder = item
-                  openPayment = true
-                }
-              "
-              @fulfill="
-                () => {
-                  selectedOrder = item
-                  openFulfil = true
-                }
-              "
-              @void-order="
-                () => {
-                  selectedOrder = item
-                  openVoid = true
-                }
-              "
-              @delete-order="
-                () => {
-                  selectedOrder = item
-                  openDelete = true
-                }
-              "
+              @click="handleAction('click', item)"
+              @view-memos="handleAction('view-memos', item)"
+              @share-invoice="handleAction('share-invoice', item)"
+              @update-payment="handleAction('update-payment', item)"
+              @fulfill="handleAction('fulfill', item)"
+              @void-order="handleAction('void-order', item)"
+              @delete-order="handleAction('delete-order', item)"
             />
           </template>
         </DataTable>
@@ -473,6 +479,13 @@ watch(
       @close="openPayment = false"
       :order="selectedOrder"
       @refresh="handleRefresh"
+    />
+
+    <OrderDetailsDrawer
+      v-if="selectedOrder"
+      :open="openDetails"
+      @close="openDetails = false"
+      :order="selectedOrder"
     />
   </div>
 </template>

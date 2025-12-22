@@ -9,7 +9,9 @@
     <!-- Dynamic header -->
     <h6 class="text sm mt-2 font-bold">{{ header }}</h6>
     <!-- Dynamic paragraph -->
-    <p class="mt-2 text-xs md:text-sm">{{ paragraph }}</p>
+    <slot name="paragraph">
+      <p class="mt-2 text-xs md:text-sm">{{ paragraph }}</p>
+    </slot>
 
     <div :class="infoBoxClasses">
       <div :class="infoIconContainerClasses">

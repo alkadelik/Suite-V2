@@ -156,7 +156,7 @@ const handleMarkAsPaid = () => {
           </div>
         </template>
         <template #mobile="{ item }">
-          <OrderCard :order="item" />
+          <OrderCard :order="item" :show-actions="false" />
         </template>
       </DataTable>
     </div>

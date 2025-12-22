@@ -1,7 +1,7 @@
 <template>
   <MessageModal :open="modelValue" max-width="lg" @close="emit('update:modelValue', false)">
     <div class="bg-error-50 absolute top-3 self-start rounded-full p-1.5">
-      <div class="bg-error-100 rounded-full p-2">
+      <div class="bg-error-100 flex size-7 items-center justify-center rounded-full">
         <Icon name="trash-01" size="16" class="text-error-600" />
       </div>
     </div>
@@ -18,8 +18,8 @@
       :class="{ 'items-center sm:!items-center': !$slots.warning }"
     >
       <div class="border-error-100 flex-shrink-0 rounded-full border-2 p-0.5">
-        <div class="border-error-300 rounded-full border-2 p-0.5">
-          <Icon name="info-circle-filled" size="20" class="text-error-600" />
+        <div class="border-error-300 flex size-6 items-center justify-center rounded-full border-2">
+          <Icon name="info-circle-filled" size="16" class="text-error-600" />
         </div>
       </div>
       <div class="flex-1 text-sm">
