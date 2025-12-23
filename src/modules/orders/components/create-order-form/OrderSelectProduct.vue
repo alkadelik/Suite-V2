@@ -4,10 +4,11 @@ import Chip from "@components/Chip.vue"
 import EmptyState from "@components/EmptyState.vue"
 import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
-import { useGetProductCatalogs } from "@modules/inventory/api"
+import { useGetProductCatalogsInfinite } from "@modules/inventory/api"
 import type { IProductCatalogue } from "@modules/inventory/types"
 import { computed, ref } from "vue"
 import AddNewProductModal from "./AddNewProductModal.vue"
+import { useInfinitePagination } from "@/utils/useInfinitePagination"
 
 const props = defineProps<{
   selectedProducts: IProductCatalogue[]
@@ -19,8 +20,19 @@ const emit = defineEmits<{
   "update:selectedProducts": [products: IProductCatalogue[]]
 }>()
 
-const { data: productsData, isFetching, refetch } = useGetProductCatalogs()
-const products = computed(() => productsData?.value?.results ?? [])
+const { data, isPending, fetchNextPage, hasNextPage, refetch } = useGetProductCatalogsInfinite(20)
+
+// Flatten all pages into a single products array
+const products = computed(() => {
+  if (!data.value?.pages) return []
+  return data.value.pages.flatMap((page) => page.results)
+})
+
+// Get total count from first page
+const totalCount = computed(() => data.value?.pages?.[0]?.count ?? 0)
+
+// Setup infinite scroll - scrollContainer is used as template ref
+const scrollContainer = useInfinitePagination(fetchNextPage, hasNextPage, 200).el
 
 // Filtered products based on search query
 const filteredProducts = computed(() => {
@@ -109,7 +121,7 @@ const handleProductCreated = async (productUid: string) => {
 
     <div class="mb-8 flex flex-col gap-3">
       <h3 class="text-lg font-semibold">
-        All Products <Chip :label="`${productsData?.count || products.length}`" />
+        All Products <Chip :label="`${totalCount || products.length}`" />
       </h3>
       <div class="flex items-center gap-3">
         <TextField
@@ -124,7 +136,8 @@ const handleProductCreated = async (productUid: string) => {
     </div>
 
     <section
-      v-if="!isFetching && filteredProducts.length > 0"
+      ref="scrollContainer"
+      v-if="!isPending && filteredProducts.length > 0"
       class="grid grid-cols-2 gap-6 md:grid-cols-3"
     >
       <div
@@ -181,13 +194,13 @@ const handleProductCreated = async (productUid: string) => {
     </section>
 
     <EmptyState
-      v-else-if="!isFetching && filteredProducts.length === 0"
+      v-else-if="!isPending && filteredProducts.length === 0"
       title="No Products Found"
       :description="searchQuery ? 'Try adjusting your search query' : 'Add products to get started'"
       class="!min-h-[500px] md:!bg-none"
     />
 
-    <div v-if="isFetching" class="flex items-center justify-center py-12">
+    <div v-if="isPending" class="flex items-center justify-center py-12">
       <Icon name="loader" size="64" class="!animate text-primary-600 !animate-spin" />
     </div>
 

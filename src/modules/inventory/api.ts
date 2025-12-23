@@ -1,5 +1,5 @@
 import baseApi, { TPaginatedResponse, useApiQuery } from "@/composables/baseApi"
-import { useMutation, useQuery } from "@tanstack/vue-query"
+import { useMutation, useQuery, useInfiniteQuery } from "@tanstack/vue-query"
 import { toValue, type MaybeRefOrGetter } from "vue"
 import {
   IProductCategoryFormPayload,
@@ -294,6 +294,33 @@ export function useGetProductCatalogs() {
     url: `/inventory/catalog/`,
     key: "productCatalogs",
     selectData: true,
+  })
+}
+
+/** Get product catalogs with infinite scroll */
+export function useGetProductCatalogsInfinite(limit = 20) {
+  return useInfiniteQuery({
+    queryKey: ["productCatalogsInfinite", limit],
+    queryFn: async ({ pageParam = 0 }) => {
+      const { data } = await baseApi.get<TPaginatedResponse<IProductCatalogue>>(
+        `/inventory/catalog/`,
+        {
+          params: {
+            limit,
+            offset: pageParam,
+          },
+        },
+      )
+      return data.data
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      const totalFetched = allPages.reduce((sum, page) => sum + page.results.length, 0)
+      if (lastPage.next && totalFetched < lastPage.count) {
+        return totalFetched
+      }
+      return undefined
+    },
+    initialPageParam: 0,
   })
 }
 

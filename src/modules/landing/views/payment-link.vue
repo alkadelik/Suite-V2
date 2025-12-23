@@ -3,11 +3,29 @@ import { formatCurrency } from "@/utils/format-currency"
 import AppButton from "@components/AppButton.vue"
 import EmptyState from "@components/EmptyState.vue"
 import { formatDate } from "@modules/customers/utils/dateFormatter"
-import { useGetPublicOrderById } from "@modules/orders/api"
+import { useGetPublicOrderById, useInitializeOrderPayment } from "@modules/orders/api"
 import { useRoute } from "vue-router"
+import { displayError } from "@/utils/error-handler"
 
 const route = useRoute()
 const { data: orderData, isPending } = useGetPublicOrderById(route.params.id as string)
+
+// Initialize payment
+const { mutate: initializePayment, isPending: isInitializing } = useInitializeOrderPayment()
+
+const handlePayNow = () => {
+  if (!orderData.value?.uid) return
+
+  initializePayment(orderData.value.uid, {
+    onSuccess: (response) => {
+      const paymentLink = response.data.data.payment_link
+      if (paymentLink) {
+        window.location.href = paymentLink
+      }
+    },
+    onError: displayError,
+  })
+}
 </script>
 
 <template>
@@ -209,7 +227,12 @@ const { data: orderData, isPending } = useGetPublicOrderById(route.params.id as 
 
         <div v-if="orderData?.payment_status !== 'paid'">
           <p class="mt-4 mb-2 text-sm">To complete your order, click below</p>
-          <AppButton label="Pay Now (38000)" class="w-full" />
+          <AppButton
+            :label="`Pay Now (${formatCurrency(orderData?.outstanding_balance, { kobo: true })})`"
+            :loading="isInitializing"
+            class="w-full"
+            @click="handlePayNow"
+          />
         </div>
 
         <div class="bg-warning-50 border-primary-300 text-primary-600 mt-4 rounded-xl border p-4">
