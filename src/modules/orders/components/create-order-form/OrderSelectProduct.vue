@@ -31,7 +31,7 @@ const products = computed(() => {
 // Get total count from first page
 const totalCount = computed(() => data.value?.pages?.[0]?.count ?? 0)
 
-// @ts-expect-error - Used as template ref, not read in script
+// Setup infinite scroll - scrollContainer is used as template ref
 const scrollContainer = useInfinitePagination(fetchNextPage, hasNextPage, 200).el
 
 // Filtered products based on search query
