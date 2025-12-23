@@ -27,6 +27,10 @@ export interface ILiveStatusCriteria {
     status: boolean
     description: string
   }
+  subscription: {
+    status: boolean
+    description: string
+  }
 }
 
 export interface ILiveStatusData {
@@ -37,6 +41,7 @@ export interface ILiveStatusData {
   completion_percentage: number
   criteria: ILiveStatusCriteria
   missing_requirements: string[]
+  has_subscription: boolean
 }
 
 export interface ILiveStatusResponse {

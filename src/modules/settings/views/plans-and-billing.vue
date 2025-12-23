@@ -76,10 +76,17 @@
             <h4 class="text-primary-800 text-lg font-medium md:text-xl">Next Payment</h4>
           </div>
         </header>
-        <div class="flex flex-1 items-center p-4">
+        <div class="flex flex-1 items-center justify-between gap-3 p-4">
           <p class="text-core-700 text-lg font-semibold">
             {{ nextPaymentDate || "N/A" }}
           </p>
+          <AppButton
+            v-if="nextPaymentDate && currentPlan !== 'N/A'"
+            label="Cancel Subscription"
+            variant="outlined"
+            class="!border-gray-300 bg-transparent !text-gray-700 hover:!bg-gray-50"
+            @click="showCancelModal = true"
+          />
         </div>
       </div>
     </div>
@@ -154,6 +161,14 @@
 
     <!-- modals -->
     <PlansModal v-model="showPlansModal" @close="showPlansModal = false" />
+    <CancelSubscriptionModal
+      v-model="showCancelModal"
+      :next-payment-date="nextPaymentDate || ''"
+      :current-plan="currentPlan"
+      :loading="isCancelling"
+      @confirm="handleCancelSubscription"
+      @view-plans="handleViewPlans"
+    />
   </div>
 </template>
 
@@ -168,12 +183,16 @@ import DataTable from "@components/DataTable.vue"
 import type { TSubscription } from "../types"
 import { SUBSCRIPTION_COLUMN } from "../constants"
 import PlansModal from "../components/PlansModal.vue"
+import CancelSubscriptionModal from "../components/CancelSubscriptionModal.vue"
 import { getPlanColor } from "../utils"
 import { TChipColor } from "@modules/shared/types"
-import { useGetSubscriptionHistory, useGetPlans } from "../api"
+import { useGetSubscriptionHistory, useGetPlans, useCancelSubscription } from "../api"
 import { useAuthStore } from "@modules/auth/store"
+import { toast } from "@/composables/useToast"
+import { displayError } from "@/utils/error-handler"
 
 const showPlansModal = ref(false)
+const showCancelModal = ref(false)
 const authStore = useAuthStore()
 
 // Get current subscription from user store
@@ -225,6 +244,9 @@ const nextPaymentDate = computed(() => {
 
 const { data: subscriptionData, isPending: isGettingSubscriptions } = useGetSubscriptionHistory()
 
+// Cancel subscription mutation
+const { mutate: cancelSubscription, isPending: isCancelling } = useCancelSubscription()
+
 // Transform API data to match table structure
 const subscriptions = computed(() => {
   if (!subscriptionData.value?.data?.results) return []
@@ -272,5 +294,20 @@ const handleAction = (action: string, item: TSubscription) => {
   } else if (action === "download") {
     // Handle download action
   }
+}
+
+const handleCancelSubscription = () => {
+  cancelSubscription(undefined, {
+    onSuccess: () => {
+      toast.success("Subscription cancelled successfully")
+      showCancelModal.value = false
+    },
+    onError: displayError,
+  })
+}
+
+const handleViewPlans = () => {
+  showCancelModal.value = false
+  showPlansModal.value = true
 }
 </script>

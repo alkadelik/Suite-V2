@@ -109,6 +109,7 @@ const LINKS = [
   { label: "Teams", path: "/settings/teams" },
   { label: "Plans & Billing", path: "/settings/billing" },
   { label: "Locations", path: "/settings/locations" },
+  { label: "Taxes", path: "/settings/taxes" },
   { label: "Storefront Design", path: "/settings/design" },
   { label: "Delivery Options", path: "/settings/delivery-options" },
 ]

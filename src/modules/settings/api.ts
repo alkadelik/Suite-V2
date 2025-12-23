@@ -184,6 +184,19 @@ export function useInitializeSubscription() {
   })
 }
 
+/** cancel subscription */
+export function useCancelSubscription() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => baseApi.delete(`/billings/subscriptions/cancel/`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["subscription-history"] })
+      queryClient.invalidateQueries({ queryKey: ["user-profile"] })
+      queryClient.invalidateQueries({ queryKey: ["liveStatus"] })
+    },
+  })
+}
+
 export function useUpdatePopupSettings() {
   const queryClient = useQueryClient()
   return useMutation({

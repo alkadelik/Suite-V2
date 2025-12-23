@@ -138,7 +138,7 @@ export interface MultiImageUploadProps {
 const props = withDefaults(defineProps<MultiImageUploadProps>(), {
   numberOfImages: 1,
   modelValue: () => [],
-  maxFileSize: 5 * 1024 * 1024, // 5MB
+  maxFileSize: 15 * 1024 * 1024, // 15MB
   allowedTypes: () => [
     "image/jpeg",
     "image/jpg",
