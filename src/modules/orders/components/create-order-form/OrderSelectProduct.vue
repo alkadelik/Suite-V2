@@ -20,7 +20,7 @@ const emit = defineEmits<{
   "update:selectedProducts": [products: IProductCatalogue[]]
 }>()
 
-const { data, isFetching, fetchNextPage, hasNextPage, refetch } = useGetProductCatalogsInfinite(20)
+const { data, isPending, fetchNextPage, hasNextPage, refetch } = useGetProductCatalogsInfinite(20)
 
 // Flatten all pages into a single products array
 const products = computed(() => {
@@ -137,7 +137,7 @@ const handleProductCreated = async (productUid: string) => {
 
     <section
       ref="scrollContainer"
-      v-if="!isFetching && filteredProducts.length > 0"
+      v-if="!isPending && filteredProducts.length > 0"
       class="grid grid-cols-2 gap-6 md:grid-cols-3"
     >
       <div
@@ -194,13 +194,13 @@ const handleProductCreated = async (productUid: string) => {
     </section>
 
     <EmptyState
-      v-else-if="!isFetching && filteredProducts.length === 0"
+      v-else-if="!isPending && filteredProducts.length === 0"
       title="No Products Found"
       :description="searchQuery ? 'Try adjusting your search query' : 'Add products to get started'"
       class="!min-h-[500px] md:!bg-none"
     />
 
-    <div v-if="isFetching" class="flex items-center justify-center py-12">
+    <div v-if="isPending" class="flex items-center justify-center py-12">
       <Icon name="loader" size="64" class="!animate text-primary-600 !animate-spin" />
     </div>
 
