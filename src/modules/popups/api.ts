@@ -71,6 +71,7 @@ export function useGetEventfulPopupById(id: string) {
     url: `/eventful/events/${id}`,
     key: `eventful-popup-${id}`,
     selectData: true,
+    refetchOnWindowFocus: true,
   })
 }
 

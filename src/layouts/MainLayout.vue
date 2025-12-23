@@ -21,7 +21,7 @@
       <div
         :class="[
           'flex h-full flex-1 flex-col overflow-hidden transition-all duration-200',
-          'pb-16',
+          'pb-16 lg:pb-2',
           showAppHeader || isInner ? 'pt-14' : 'pt-20',
           sidebarPadding,
         ]"

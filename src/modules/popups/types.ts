@@ -9,7 +9,7 @@ export type PopupEvent = {
   end_date: string
   is_active: boolean
   is_live: boolean
-  status: string
+  status: "upcoming" | "ongoing" | "past" | "closed"
   banner_image: string | null
   qr_code: string | null
   event_ref: string
@@ -58,6 +58,7 @@ export interface EventfulPopup {
   end_date: string
   is_active: boolean
   is_live: boolean
+  is_registered: boolean
   status: string
   image: string | null
   qr_code: string | null

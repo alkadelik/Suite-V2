@@ -134,6 +134,8 @@ export function useGetLiveStatus(slug: string) {
       return res.data
     },
     enabled: !!slug,
+    retry: false,
+    refetchOnWindowFocus: false,
   })
 }
 
