@@ -36,28 +36,7 @@
 
         <!-- Content -->
         <main class="h-[calc(100dvh-4rem)] overflow-y-auto lg:h-[calc(100vh-4rem)]">
-          <div
-            v-if="!isLive && !isLoadingLiveStatus"
-            class="bg-primary-25 text-warning-700 border-warning-300 flex flex-col items-start gap-3 border-b px-6 py-3 lg:flex-row lg:items-center"
-          >
-            <span
-              class="border-primary-200 ring-primary-100 hidden size-8 items-center justify-center rounded-full border-2 p-0.5 ring-2 ring-offset-2 lg:flex"
-            >
-              <Icon name="info-circle" size="20" />
-            </span>
-            <div class="flex flex-1 flex-col gap-1 text-sm lg:flex-row">
-              <span class="font-medium">Your storefront isn't live yet! </span> Complete your bank
-              details, delivery options, and KYC to start selling online.
-            </div>
-            <AppButton
-              variant="text"
-              label="Complete Setup"
-              icon="arrow-right"
-              size="sm"
-              class="flex-row-reverse underline underline-offset-4"
-              @click="$router.push('/onboarding')"
-            />
-          </div>
+          <StorefrontNotLiveBanner />
           <router-view />
         </main>
 
@@ -174,13 +153,13 @@ import PlansModal from "@modules/settings/components/PlansModal.vue"
 import AddLocationModal from "@modules/settings/components/AddLocationModal.vue"
 import TrialActivationModal from "@modules/shared/components/TrialActivationModal.vue"
 import MobileMenuDrawer from "./parts/MobileMenuDrawer.vue"
-import Icon from "@components/Icon.vue"
-import { useGetLiveStatus } from "@modules/shared/api"
+import StorefrontNotLiveBanner from "@components/StorefrontNotLiveBanner.vue"
 import { useLocationSwitch } from "@/composables/useLocationSwitch"
 import MobileQuickActionsModal from "./parts/MobileQuickActionsModal.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import { toast } from "@/composables/useToast"
 import { useRouter, useRoute } from "vue-router"
+import { useGetLiveStatus } from "@modules/shared/api"
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
@@ -281,7 +260,7 @@ const handleLocationRefresh = () => {
   setLocationForEdit(null)
 }
 const storeSlug = useAuthStore().user?.store_slug || ""
-const { data: liveStatusData, isPending: isLoadingLiveStatus } = useGetLiveStatus(storeSlug)
+const { data: liveStatusData } = useGetLiveStatus(storeSlug)
 
 const storeUid = computed(() => useAuthStore().user?.store_uid || "")
 const isLive = computed(() => useSettingsStore().liveStatus?.is_live || false)

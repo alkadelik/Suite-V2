@@ -103,6 +103,7 @@ import { useImageConverter } from "@/composables/useImageConverter"
 import { toast } from "@/composables/useToast"
 
 const MAX_FILENAME_LENGTH = 99
+const MAX_FILE_SIZE = 15 * 1024 * 1024 // 15MB
 
 interface Props {
   label?: string
@@ -197,6 +198,17 @@ const handleFileChange = async (event: Event) => {
   const target = event.target as HTMLInputElement
   const file = target.files && target.files[0]
   if (file) {
+    // Validate file size for product images
+    if (props.productImageMode && file.size > MAX_FILE_SIZE) {
+      const maxSizeMB = (MAX_FILE_SIZE / (1024 * 1024)).toFixed(0)
+      toast.error(`File size exceeds ${maxSizeMB}MB limit. Please select a smaller image.`)
+      // Reset file input
+      if (fileInputRef.value) {
+        fileInputRef.value.value = ""
+      }
+      return
+    }
+
     let processedFile = file
 
     // Truncate filename if it exceeds max length
@@ -245,6 +257,13 @@ const handleDrop = async (event: DragEvent) => {
   event.preventDefault()
   const file = event.dataTransfer?.files[0]
   if (file) {
+    // Validate file size for product images
+    if (props.productImageMode && file.size > MAX_FILE_SIZE) {
+      const maxSizeMB = (MAX_FILE_SIZE / (1024 * 1024)).toFixed(0)
+      toast.error(`File size exceeds ${maxSizeMB}MB limit. Please select a smaller image.`)
+      return
+    }
+
     let processedFile = file
 
     // Truncate filename if it exceeds max length

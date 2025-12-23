@@ -5,7 +5,7 @@ import Chip from "@components/Chip.vue"
 const props = defineProps<{
   items: {
     label: string
-    value: string | number
+    value: string | number | { text: string; boldNumbers?: boolean }
     prev_value: string | number
     icon: string
     labelTag?: string
@@ -13,7 +13,7 @@ const props = defineProps<{
     valueTag?: string
     valueTagClass?: string
     iconClass?: string
-    chipText?: string
+    chipText?: string | { text: string; boldNumbers?: boolean }
   }[]
   loading?: boolean
   defaultIcon: string
@@ -23,6 +23,12 @@ const props = defineProps<{
 // Calculate remainder items that don't fill a complete row
 const getRemainder = (total: number, max: number) => {
   return total % max
+}
+
+// Format chip text to make numbers bold and text smaller
+const formatChipText = (text: string) => {
+  // Match numbers and wrap them in <strong> tags, wrap text in smaller span
+  return text.replace(/(\d+)(\s+.+)/g, '<strong>$1</strong><span class="text-sm">$2</span>')
 }
 
 // Get span class for an item based on its position
@@ -116,8 +122,12 @@ const getItemSpanClass = (index: number) => {
               />
             </span>
 
-            <p class="text-core-800 flex items-end gap-1.5 text-xl font-bold">
-              {{ item.value }}
+            <p class="text-core-800 flex items-end gap-1.5 text-xl">
+              <span
+                v-if="typeof item.value === 'object' && item.value.boldNumbers"
+                v-html="formatChipText(item.value.text)"
+              ></span>
+              <span v-else class="font-bold">{{ item.value }}</span>
               <span
                 v-if="item.valueTag"
                 class="bg-primary-50 text-primary-400 inline-flex h-5 w-fit items-center justify-center rounded-xl !px-2.5 text-[12px] font-medium"
@@ -129,7 +139,14 @@ const getItemSpanClass = (index: number) => {
           </div>
 
           <!-- Blue chip opposite the numbers -->
-          <Chip v-if="item.chipText" :label="item.chipText" color="blue" size="sm" />
+          <Chip v-if="item.chipText" color="blue" size="sm">
+            <template v-if="typeof item.chipText === 'object' && item.chipText.boldNumbers">
+              <span v-html="formatChipText(item.chipText.text)"></span>
+            </template>
+            <template v-else>
+              {{ typeof item.chipText === "string" ? item.chipText : item.chipText.text }}
+            </template>
+          </Chip>
         </div>
 
         <!-- Previous value comparison -->
