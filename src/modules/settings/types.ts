@@ -72,6 +72,8 @@ export interface IStoreDetails {
   instagram_handle: string
   currency: string
   pickup_location?: string
+  collect_vat?: boolean
+  tax_collection_enabled?: boolean
 }
 
 export interface IUpdateStoreDetailsPayload {
@@ -86,6 +88,8 @@ export interface IUpdateStoreDetailsPayload {
   instagram_handle?: string
   delivery_enabled?: boolean
   pickup_location?: string
+  collect_vat?: boolean
+  tax_collection_enabled?: boolean
 }
 
 export type TIndustry = {
