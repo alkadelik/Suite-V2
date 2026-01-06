@@ -3,7 +3,6 @@ import AppButton from "@components/AppButton.vue"
 import DataTable from "@components/DataTable.vue"
 import EmptyState from "@components/EmptyState.vue"
 import TextField from "@components/form/TextField.vue"
-import MetricsGrid from "@components/MetricsGrid.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import PageHeader from "@components/PageHeader.vue"
 import { useMediaQuery } from "@vueuse/core"
@@ -15,7 +14,7 @@ import CreateExpenseDrawer from "../components/CreateExpenseDrawer.vue"
 import { useDeleteExpense, useGetExpenseDashboard, useGetExpenses } from "../api"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
-import { EXPENSE_COLUMN } from "../constants"
+import { EXPENSE_COLUMN, getExpenseStatusColor } from "../constants"
 import { useRoute } from "vue-router"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
@@ -23,6 +22,8 @@ import ExpenseCard from "../components/ExpenseCard.vue"
 import DeleteConfirmationModal from "@components/DeleteConfirmationModal.vue"
 import Icon from "@components/Icon.vue"
 import ExpenseDetailsDrawer from "../components/ExpenseDetailsDrawer.vue"
+import StatCard from "@components/StatCard.vue"
+import { formatCurrency } from "@/utils/format-currency"
 
 const openCreate = ref(false)
 const openDelete = ref(false)
@@ -33,37 +34,31 @@ const { data: expenseDashboard, refetch: refetchStats } = useGetExpenseDashboard
 
 const expenseMetrics = computed(() => {
   const stat = expenseDashboard?.value
+
   const biggestExpenseCategory = stat?.category_breakdown.reduce((prev, current) =>
     current.total_amount > prev.total_amount ? current : prev,
-  )?.category
+  )?.category_name
 
   return [
     {
       label: "Total Expenses",
-      value: stat?.current.total_amount || 0,
-      prev_value: stat?.previous.total_amount || 0,
+      value: formatCurrency(stat?.current.total_amount) || 0,
       icon: "user-octagon",
-      iconClass: "md:text-green-700",
-      chartData: [0, 0, 0, 0, 0, 0, 0],
-      chartColor: "#D0F8AA",
+      iconClass: "md:text-green-700 md:!bg-green-50",
     },
     {
-      label: "Number of Transactions",
+      label: "No. of Transactions",
       value: stat?.current.expense_count || 0,
       prev_value: stat?.previous.expense_count || 0,
       icon: "user-octagon",
-      chartData: [0, 0, 0, 0, 0, 0, 0],
-      chartColor: "#D0F8AA",
-      iconClass: "md:text-bloom-700",
+      iconClass: "md:text-bloom-700 md:!bg-bloom-50",
     },
     {
       label: "Biggest Expense Category",
-      value: biggestExpenseCategory || "",
-      prev_value: 0,
+      chip: biggestExpenseCategory || "",
+      chipColor: "purple",
       icon: "user-circle-add",
-      chartData: [0, 0, 0, 0, 0, 0, 0],
-      chartColor: "#FECCD6",
-      iconClass: "md:text-bloom-700",
+      iconClass: "md:text-bloom-700 md:!bg-bloom-50",
     },
   ]
 })
@@ -178,7 +173,16 @@ watch(
       </EmptyState>
 
       <section v-else class="flex flex-col gap-8">
-        <MetricsGrid :items="expenseMetrics" />
+        <!-- <MetricsGrid :items="expenseMetrics" /> -->
+
+        <div class="grid grid-cols-2 gap-4 md:grid-cols-3">
+          <StatCard
+            v-for="item in expenseMetrics"
+            :key="item.label"
+            :stat="item"
+            :same-view="false"
+          />
+        </div>
 
         <div
           class="space-y-4 overflow-hidden rounded-xl border-gray-200 pt-3 md:border md:bg-white"
@@ -241,21 +245,23 @@ watch(
             "
           >
             <template #cell:name="{ item }">
-              <div class="flex max-w-40 items-center gap-2 truncate">
-                <span class="bg-core-200 flex size-10 items-center justify-center rounded-xl">
-                  <Icon name="truck-fast" :size="24" class="text-core-800" />
+              <div class="flex max-w-48 items-center gap-2 truncate">
+                <span
+                  class="bg-core-200 flex size-10 shrink-0 items-center justify-center rounded-xl"
+                >
+                  <Icon name="receipt-text" :size="24" class="text-core-800" />
                 </span>
-                <h4 class="truncate text-left text-sm font-medium capitalize">
+                <h4 class="!font-outfit truncate text-left text-sm font-medium capitalize">
                   {{ item.name }}
                 </h4>
               </div>
             </template>
-            <template #cell:category="{ item }">
-              <Chip :label="item.category" color="purple" icon="tag" />
+            <template #cell:category_name="{ item }">
+              <Chip :label="item.category_name" color="purple" icon="tag" />
             </template>
             <template #cell:status="{ item }">
               <Chip
-                :color="item.status === 'completed' ? 'success' : 'warning'"
+                :color="getExpenseStatusColor(item.status)"
                 :label="item.status"
                 class="capitalize"
                 show-dot
@@ -295,9 +301,11 @@ watch(
     <!--  -->
     <CreateExpenseDrawer
       :open="openCreate"
+      :expense="selectedExpense"
       @close="
         () => {
           openCreate = false
+          selectedExpense = null
           $router.replace({ name: 'Expenses', query: {} })
         }
       "

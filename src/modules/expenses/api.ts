@@ -1,10 +1,9 @@
 import { useMutation } from "@tanstack/vue-query"
 import {
-  ExpenseCategory,
   ExpenseDashboardStats,
   ExpensePayload,
-  ExpenseSubCategory,
   TExpense,
+  TExpenseCategoryResponse,
   TExpenseResponse,
 } from "./types"
 import baseApi, { TApiPromise, useApiQuery } from "@/composables/baseApi"
@@ -13,7 +12,8 @@ import { MaybeRefOrGetter } from "vue"
 /** Create expense api request */
 export function useCreateExpense() {
   return useMutation({
-    mutationFn: (body: FormData) => baseApi.post("/expenses/", body),
+    mutationFn: (body: FormData) =>
+      baseApi.post("/expenses/", body, { headers: { "Content-Type": "multipart/form-data" } }),
   })
 }
 
@@ -40,18 +40,9 @@ export function useGetExpenseDashboard() {
 
 /** Fetch expense statistics */
 export function useGetExpenseCategories() {
-  return useApiQuery<ExpenseCategory[]>({
+  return useApiQuery<TExpenseCategoryResponse>({
     url: `/expenses/categories/`,
     key: `expenses-categories`,
-    selectData: true,
-  })
-}
-
-/** Fetch expense statistics */
-export function useGetExpenseSubCategories() {
-  return useApiQuery<ExpenseSubCategory[]>({
-    url: `/expenses/sub-categories/`,
-    key: `expenses-sub-categories`,
     selectData: true,
   })
 }
@@ -68,8 +59,11 @@ export function useGetExpensesById(id: string) {
 /** Edit expense api request */
 export function useEditExpense() {
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: Partial<ExpensePayload> }) =>
-      baseApi.patch(`/expenses/${id}/`, payload),
+    mutationFn: ({ id, payload }: { id: string; payload: FormData | Partial<ExpensePayload> }) =>
+      baseApi.patch(`/expenses/${id}/`, payload, {
+        headers:
+          payload instanceof FormData ? { "Content-Type": "multipart/form-data" } : undefined,
+      }),
   })
 }
 

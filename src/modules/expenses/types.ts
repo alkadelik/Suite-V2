@@ -1,12 +1,23 @@
 export type TExpense = {
   uid: string
   name: string
-  category: string
+  store_name: string
+  date: string
   amount: string
-  expense_date: string
+  currency: string
+  category: string
+  category_name: string
+  sub_category: string | null
+  sub_category_name: string | null
+  vendor: string
+  notes: string
+  attachment_url: string
+  entry_type: string
+  entry_type_display: string
+  status: "paid" | "unpaid" | "pending"
+  status_display: string
   created_at: string
-  reciept_image: string | null
-  status: "pending" | "completed"
+  updated_at: string
 }
 
 export type TExpenseResponse = {
@@ -71,7 +82,7 @@ export interface ExpenseDashboardStats {
     total_sales: number
   }>
   category_breakdown: Array<{
-    category: string
+    category_name: string
     total_amount: number
     expense_count: number
   }>
@@ -82,18 +93,6 @@ export interface ExpenseDashboardStats {
   }>
 }
 
-export interface ExpenseCategory {
-  category: string
-  total_amount: string
-  expense_count: number
-}
-
-export interface ExpenseSubCategory {
-  sub_category: string
-  total_amount: string
-  expense_count: number
-}
-
 export interface TExpenseSubCategory {
   uid: string
   category: string
@@ -101,8 +100,7 @@ export interface TExpenseSubCategory {
   name: string
   sort_order: number
   is_default: boolean
-  store: string
-  store_name: string
+  store: string | null
   created_at: string
 }
 
@@ -112,7 +110,6 @@ export interface TExpenseCategory {
   description: string
   sort_order: number
   is_default: boolean
-  store_name: string
   sub_categories: TExpenseSubCategory[]
   created_at: string
 }

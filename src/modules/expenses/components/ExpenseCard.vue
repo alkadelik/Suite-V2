@@ -5,6 +5,8 @@ import { formatCurrency } from "@/utils/format-currency"
 import Icon from "@components/Icon.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import type { TExpense } from "../types"
+import { formatDate } from "@/utils/formatDate"
+import { getExpenseStatusColor } from "../constants"
 
 const props = withDefaults(
   defineProps<{
@@ -53,21 +55,23 @@ const menuItems = computed(() => {
       <div class="flex items-start gap-3">
         <div class="flex flex-1 items-start gap-2 truncate text-sm">
           <span class="bg-core-200 flex size-12 items-center justify-center rounded-xl">
-            <Icon name="truck-fast" :size="24" />
+            <Icon name="receipt-text" :size="24" />
           </span>
 
           <div class="flex-1 truncate">
             <h4 class="truncate text-left text-sm font-semibold capitalize">
-              GIG Logistics - Dispatch fee
+              {{ expense.name || "Unnamed Expense" }}
             </h4>
             <div class="mt-1 flex items-center">
               <Icon name="calendar" size="16" />
-              <span class="text-sm">{{ new Date().toLocaleDateString() }}</span>
+              <span class="text-sm">{{ formatDate(expense.date) }}</span>
             </div>
           </div>
         </div>
         <div class="flex items-start gap-2">
-          <span class="text-error-600 text-sm font-semibold">{{ formatCurrency(72400) }}</span>
+          <span class="text-error-600 text-sm font-semibold">
+            {{ formatCurrency(expense.amount) }}
+          </span>
           <div>
             <DropdownMenu v-if="showActions" :items="menuItems" />
           </div>
@@ -75,9 +79,14 @@ const menuItems = computed(() => {
       </div>
       <div class="mt-3 flex flex-wrap items-center gap-2 text-sm">
         <!-- type -->
-        <Chip icon="tag" color="pink" label="Packaging" />
+        <Chip icon="tag" color="purple" :label="expense.category_name" />
         <!-- status -->
-        <Chip show-dot color="success" label="Completed" />
+        <Chip
+          :color="getExpenseStatusColor(expense.status)"
+          :label="expense.status"
+          class="capitalize"
+          show-dot
+        />
       </div>
     </div>
   </div>

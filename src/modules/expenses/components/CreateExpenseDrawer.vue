@@ -5,61 +5,108 @@ import FormField from "@components/form/FormField.vue"
 import Icon from "@components/Icon.vue"
 import Modal from "@components/Modal.vue"
 import { useMediaQuery } from "@vueuse/core"
-import { useCreateExpense, useGetExpenseCategories, useGetExpenseSubCategories } from "../api"
+import { useCreateExpense, useEditExpense, useGetExpenseCategories } from "../api"
 import { useForm } from "vee-validate"
 import * as yup from "yup"
-import { watch } from "vue"
+import { watch, computed, ref } from "vue"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 import { onInvalidSubmit } from "@/utils/validations"
+import { TExpense } from "../types"
 
-const props = defineProps<{ open: boolean }>()
+const props = defineProps<{ open: boolean; expense?: TExpense | null }>()
 const emit = defineEmits(["close", "refresh"])
 
 const { data: expCategories } = useGetExpenseCategories()
-const { data: expSubCategories } = useGetExpenseSubCategories()
 
-watch([expCategories, expSubCategories], ([categories, subcategories]) => {
-  console.log("expenses", { categories, subcategories })
+const selectedCategory = ref<{ label: string; value: string }>({ label: "", value: "" })
+
+const categoriesOptions = computed(() => {
+  if (!expCategories.value?.results) return []
+  return expCategories.value.results.map((cat) => ({
+    label: cat.name,
+    value: cat.uid,
+  }))
+})
+
+const subCategoriesOptions = computed(() => {
+  if (!expCategories.value?.results || !selectedCategory.value) return []
+
+  const category = expCategories.value.results.find(
+    (cat) => cat.uid === selectedCategory.value.value,
+  )
+
+  if (!category?.sub_categories) return []
+
+  return category.sub_categories.map((subCat) => ({
+    label: subCat.name,
+    value: subCat.uid,
+  }))
+})
+
+const hasSubCategories = computed(() => {
+  if (!expCategories.value?.results || !selectedCategory.value) return false
+  const category = expCategories.value.results.find(
+    (cat) => cat.uid === selectedCategory.value.value,
+  )
+  return (category?.sub_categories?.length ?? 0) > 0
 })
 
 const isMobile = useMediaQuery("(max-width: 1028px)")
 
+const isEditMode = computed(() => !!props.expense)
+
 interface FormValues {
   name: string
   amount: string
-  category: string
-  subcategory: string
+  category: { label: string; value: string }
+  sub_category: { label: string; value: string }
   vendor: string
   date: string
   notes: string
   receipt: File | null
 }
 
-const { handleSubmit, meta, resetForm } = useForm<FormValues>({
-  validationSchema: yup.object({
-    name: yup
-      .string()
-      .required("Expense name is required")
-      .min(3, "Name must be at least 3 characters"),
-    amount: yup
-      .number()
-      .transform((value, originalValue) => (originalValue === "" ? undefined : value))
-      .typeError("Amount must be a number")
-      .required("Amount is required")
-      .positive("Amount must be greater than 0"),
-    category: yup.string().required("Expense category is required"),
-    subcategory: yup.string().required("Sub-category is required"),
-    vendor: yup.string().optional(),
-    date: yup.string().required("Expense date is required"),
-    notes: yup.string().optional(),
-    receipt: yup.mixed().nullable().optional(),
-  }),
+const { handleSubmit, meta, resetForm, values, setFieldValue } = useForm<FormValues>({
+  validationSchema: computed(() =>
+    yup.object({
+      name: yup
+        .string()
+        .required("Expense name is required")
+        .min(3, "Name must be at least 3 characters"),
+      amount: yup
+        .number()
+        .transform((value, originalValue) => (originalValue === "" ? undefined : value))
+        .typeError("Amount must be a number")
+        .required("Amount is required")
+        .positive("Amount must be greater than 0"),
+      category: yup
+        .object()
+        .shape({
+          label: yup.string().required(),
+          value: yup.string().required(),
+        })
+        .required("Expense category is required"),
+      sub_category: hasSubCategories.value
+        ? yup
+            .object()
+            .shape({
+              label: yup.string().required(),
+              value: yup.string().required(),
+            })
+            .required("Sub-category is required")
+        : yup.object().nullable().optional(),
+      vendor: yup.string().optional(),
+      date: yup.string().required("Expense date is required"),
+      notes: yup.string().optional(),
+      receipt: yup.mixed().nullable().optional(),
+    }),
+  ),
   initialValues: {
     name: "",
     amount: "",
-    category: "",
-    subcategory: "",
+    category: { label: "", value: "" },
+    sub_category: { label: "", value: "" },
     vendor: "",
     date: new Date().toISOString().split("T")[0],
     notes: "",
@@ -68,42 +115,113 @@ const { handleSubmit, meta, resetForm } = useForm<FormValues>({
   validateOnMount: false,
 })
 
-const { mutate: createExpense, isPending } = useCreateExpense()
+// Watch category changes and clear sub_category
+watch(
+  () => values.category,
+  (newCategory, oldCategory) => {
+    selectedCategory.value = newCategory
+    // Only clear sub_category when category actually changes (not on initial mount)
+    if (
+      oldCategory?.value &&
+      newCategory?.value !== oldCategory?.value &&
+      values.sub_category?.value
+    ) {
+      setFieldValue("sub_category", { label: "", value: "" })
+    }
+  },
+)
+
+const { mutate: createExpense, isPending: isCreating } = useCreateExpense()
+const { mutate: editExpense, isPending: isEditing } = useEditExpense()
+
+const isPending = computed(() => isCreating.value || isEditing.value)
 
 const onSubmit = handleSubmit((values) => {
-  const formData = new FormData()
-  formData.append("name", values.name)
-  formData.append("amount", values.amount)
-  formData.append("category", values.category)
-  formData.append("subcategory", values.subcategory)
-  formData.append("expense_date", values.date)
-  if (values.vendor) {
-    formData.append("vendor", values.vendor)
-  }
-  if (values.notes) {
-    formData.append("notes", values.notes)
-  }
-  if (values.receipt) {
-    formData.append("receipt", values.receipt)
-  }
+  if (isEditMode.value && props.expense) {
+    // Edit mode
+    const formData = new FormData()
+    formData.append("name", values.name)
+    formData.append("amount", values.amount)
+    formData.append("category", values.category.value)
+    formData.append("sub_category", values.sub_category?.value || "")
+    formData.append("date", values.date)
+    formData.append("vendor", values.vendor || "")
+    formData.append("notes", values.notes || "")
+    if (values.receipt) {
+      formData.append("receipt", values.receipt)
+    }
 
-  createExpense(formData, {
-    onSuccess: () => {
-      toast.success("Expense created successfully!")
-      resetForm()
-      emit("close")
-      emit("refresh")
-    },
-    onError: displayError,
-  })
+    editExpense(
+      { id: props.expense.uid, payload: formData },
+      {
+        onSuccess: () => {
+          toast.success("Expense updated successfully!")
+          resetForm()
+          emit("close")
+          emit("refresh")
+        },
+        onError: displayError,
+      },
+    )
+  } else {
+    // Create mode
+    const formData = new FormData()
+    formData.append("name", values.name)
+    formData.append("amount", values.amount)
+    formData.append("category", values.category.value)
+    formData.append("sub_category", values.sub_category?.value || "")
+    formData.append("date", values.date)
+    formData.append("vendor", values.vendor || "")
+    formData.append("notes", values.notes || "")
+    if (values.receipt) {
+      formData.append("receipt", values.receipt)
+    }
+
+    createExpense(formData, {
+      onSuccess: () => {
+        toast.success("Expense created successfully!")
+        resetForm()
+        emit("close")
+        emit("refresh")
+      },
+      onError: displayError,
+    })
+  }
 }, onInvalidSubmit)
 
-// Reset form when drawer opens
+// Reset form or populate with expense data when drawer opens
 watch(
   () => props.open,
   (isOpen) => {
     if (isOpen) {
-      resetForm()
+      if (isEditMode.value && props.expense) {
+        // Populate form with expense data
+        const categoryOption = categoriesOptions.value.find(
+          (cat) => cat.value === props.expense?.category,
+        ) || { label: props.expense?.category_name || "", value: props.expense?.category || "" }
+
+        resetForm({
+          values: {
+            name: props.expense.name,
+            amount: props.expense.amount,
+            category: categoryOption,
+            sub_category: props.expense.sub_category
+              ? {
+                  label: props.expense.sub_category_name || "",
+                  value: props.expense.sub_category,
+                }
+              : { label: "", value: "" },
+            vendor: props.expense.vendor || "",
+            date: props.expense.date,
+            notes: props.expense.notes || "",
+            receipt: null,
+          },
+        })
+        selectedCategory.value = categoryOption
+      } else {
+        resetForm()
+        selectedCategory.value = { label: "", value: "" }
+      }
     }
   },
 )
@@ -113,16 +231,18 @@ watch(
   <component
     :is="isMobile ? Modal : Drawer"
     :open="open"
-    :title="'Create Expense'"
+    :title="isEditMode ? 'Edit Expense' : 'Create Expense'"
     max-width="2xl"
     variant="fullscreen"
     @close="emit('close')"
   >
     <div>
       <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
-        <icon name="receipt-add" size="28" />
+        <icon :name="isEditMode ? 'edit' : 'receipt-add'" size="28" />
       </div>
-      <p class="text-sm text-gray-600">Add a new expense</p>
+      <p class="text-sm text-gray-600">
+        {{ isEditMode ? "Update expense details" : "Add a new expense" }}
+      </p>
     </div>
 
     <form class="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2" @submit.prevent="onSubmit">
@@ -146,7 +266,9 @@ watch(
           name="category"
           label="Expense Category"
           placeholder="e.g. Shipping"
-          :options="[]"
+          :options="categoriesOptions"
+          value-key="value"
+          label-key="label"
           required
         />
       </div>
@@ -154,11 +276,14 @@ watch(
       <div>
         <FormField
           type="select"
-          name="subcategory"
+          name="sub_category"
           label="Sub-category"
           placeholder="e.g. Local Delivery"
-          :options="[]"
-          required
+          :options="subCategoriesOptions"
+          :disabled="!selectedCategory"
+          value-key="value"
+          label-key="label"
+          :required="hasSubCategories"
         />
       </div>
 
@@ -200,7 +325,7 @@ watch(
 
     <template #footer>
       <AppButton
-        label="Create Expense"
+        :label="isEditMode ? 'Update Expense' : 'Create Expense'"
         type="submit"
         class="w-full"
         :loading="isPending"
