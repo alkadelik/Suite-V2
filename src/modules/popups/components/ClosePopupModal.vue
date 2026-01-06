@@ -1,52 +1,74 @@
 <script setup lang="ts">
-import DeleteConfirmationModal from "@components/DeleteConfirmationModal.vue"
 import { PopupEvent } from "../types"
-import { useClosePopupEvent } from "../api"
+import { useClosePopupEvent, useGetPopupEventById } from "../api"
 import { displayError } from "@/utils/error-handler"
 import Icon from "@components/Icon.vue"
 import Chip from "@components/Chip.vue"
 import { computed } from "vue"
 import { truncateCurrency } from "@/utils/format-currency"
+import { formatDate } from "../constants"
+import ConfirmationModal from "@components/ConfirmationModal.vue"
 
-const props = defineProps<{ open: boolean; event: PopupEvent }>()
+const props = withDefaults(
+  defineProps<{ open: boolean; event: PopupEvent; hasFullDetails?: boolean }>(),
+  { hasFullDetails: true },
+)
 const emit = defineEmits(["close", "refresh"])
 
+// Only fetch details when not already provided
+const shouldFetch = computed(() => !props.hasFullDetails && props.open)
+
+const { data: popupEvt, isPending: isFetchingDetails } = useGetPopupEventById(
+  () => props.event.uid,
+  shouldFetch,
+)
+
+// Use fetched data if available, otherwise use props
+const eventData = computed(() => {
+  if (props.hasFullDetails) {
+    return props.event
+  }
+  return popupEvt.value || props.event
+})
+
 const stats = computed(() => {
+  const data = eventData.value
   return [
     {
-      icon: "shopping-cart",
+      icon: "bag",
       label: "Starting Inventory",
-      value: 26,
+      value: data.starting_inventory.products,
       valueText: "products",
-      chip: "134 items",
+      chip: `${data.starting_inventory.items} items`,
     },
     {
-      icon: "shopping-cart",
+      icon: "bag",
       label: "Closing Inventory",
-      value: 26,
+      value: data.closing_inventory.products,
       valueText: "products",
-      chip: "134 items",
+      chip: `${data.closing_inventory.items} items`,
     },
     {
       icon: "shopping-cart",
       label: "Total Sales",
-      value: truncateCurrency(100000),
-      valueText: "products",
-      chip: "8 items sold",
+      value: truncateCurrency(data.total_sales_amount || 0),
+      valueText: "",
+      chip: data.total_orders ? `${data.total_orders || 0} items sold` : "",
     },
     {
       icon: "people",
       label: "Customers",
-      value: 8,
+      value: data.customer_count || 0,
       valueText: "",
       chip: "",
     },
   ]
 })
 
-const { mutate: closePopupEvent, isPending } = useClosePopupEvent()
+const { mutate: closePopupEvent, isPending: isClosing } = useClosePopupEvent()
 
 const handleClose = () => {
+  console.log("COLOSINF")
   closePopupEvent(props.event.uid, {
     onSuccess: () => {
       emit("refresh")
@@ -58,48 +80,60 @@ const handleClose = () => {
 </script>
 
 <template>
-  <DeleteConfirmationModal
+  <ConfirmationModal
     :model-value="open"
     @update:model-value="() => emit('close')"
-    :loading="isPending"
+    :loading="isClosing"
     header="Close Popup"
-    @delete="handleClose"
+    @confirm="handleClose"
     action-label="Close Popup"
+    max-width="2xl"
+    variant="error"
+    :info-message="`The closing inventory (${eventData?.closing_inventory?.items || 0} items) will be returned to your main inventory.`"
   >
     <template #paragraph>
       <div class="space-y-4">
         <p class="text-sm">This will completely remove all records of this popup.</p>
 
         <div class="border-core-200 rounded-xl border bg-white p-4">
-          <h4>My Latest Popup</h4>
-          <p class="flex items-center">
+          <h4 class="mb-2 text-base font-semibold">{{ event.name }}</h4>
+          <p class="flex items-center text-sm">
             <Icon name="calendar" size="16" class="mr-1" />
-            Aug 1, 2024 - Aug 7, 2024
+            {{ formatDate(event.start_date || "") }} -
+            {{ formatDate(event.end_date || "") }}
           </p>
-          <hr class="border-core-200 my-2" />
+          <hr class="border-core-200 my-4" />
 
-          <div class="grid grid-cols-2 gap-4">
+          <div
+            v-if="!hasFullDetails && isFetchingDetails"
+            class="flex items-center justify-center py-12"
+          >
+            <Icon name="loader" size="64" class="!animate text-primary-600 !animate-spin" />
+          </div>
+
+          <div v-else class="grid grid-cols-2 gap-4">
             <!-- stats card -->
             <div
               v-for="stat in stats"
               :key="stat.label"
-              class="border-primary-300 bg-primary-100 rounded-lg border p-4"
+              class="border-primary-200 bg-primary-25 rounded-xl border p-4"
             >
               <!-- title -->
               <div class="flex items-center gap-2">
                 <div
-                  class="border-primary-500 flex h-10 w-10 items-center justify-center rounded-lg border bg-white"
+                  class="bg-core-200 mb-2 flex size-10 items-center justify-center rounded-xl p-2"
                 >
-                  <Icon name="popup" class="text-primary-600 h-5 w-5" />
+                  <Icon :name="stat.icon" size="28" />
                 </div>
-                <h3>Starting Inventory</h3>
+                <h3 class="!font-outfit text-base">{{ stat.label }}</h3>
               </div>
               <!-- value -->
               <div class="flex items-center justify-between">
                 <p>
-                  <span class="text-xl font-semibold">500</span> <span class="text-sm">items</span>
+                  <span class="text-xl font-semibold">{{ stat.value }}</span>
+                  <span v-if="stat.valueText" class="text-sm">{{ " " + stat.valueText }}</span>
                 </p>
-                <Chip label="134 items" color="blue" />
+                <Chip v-if="stat.chip" :label="stat.chip" color="blue" />
               </div>
             </div>
             <!--  -->
@@ -107,11 +141,5 @@ const handleClose = () => {
         </div>
       </div>
     </template>
-
-    <template #warning>
-      <p class="font-semibold md:text-sm">
-        The closing inventory (134 items) will be returned to your main inventory
-      </p>
-    </template>
-  </DeleteConfirmationModal>
+  </ConfirmationModal>
 </template>

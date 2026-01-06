@@ -1,5 +1,3 @@
-import { TProduct } from "@modules/inventory/types"
-
 export type PopupEvent = {
   uid: string
   name: string
@@ -9,7 +7,7 @@ export type PopupEvent = {
   end_date: string
   is_active: boolean
   is_live: boolean
-  status: "upcoming" | "ongoing" | "past" | "closed"
+  status: "upcoming" | "active" | "past" | "closed"
   banner_image: string | null
   qr_code: string | null
   event_ref: string
@@ -28,6 +26,14 @@ export type PopupEvent = {
   created_at: string
   updated_at: string
   organizer_event_name?: string
+  starting_inventory: {
+    products: number
+    items: number
+  }
+  closing_inventory: {
+    products: number
+    items: number
+  }
 }
 
 export interface PopupEventResponse {
@@ -79,8 +85,73 @@ export interface EventfulResponse {
   previous: string | null
 }
 
+// ===== OLD shape ===============
+// export type PopupInventory = {
+//   uid: string
+//   variant: string
+//   variant_name: string
+//   variant_sku: string
+//   product_name: string
+//   product_image: string
+//   available_quantity: number
+//   quantity: number
+//   sold_quantity: number
+//   is_active: boolean
+//   is_visible: boolean
+//   is_out_of_stock: boolean
+//   original_price: string
+//   event_price: string
+//   total_sales_value: string
+//   created_at: string
+//   updated_at: string
+// }
+
+// === NEW shape ====
+export type PopupInventory = {
+  uid: string
+  name: string
+  description: string
+  category: string
+  category_name: string
+  brand: string
+  images: {
+    uid: string
+    image: string
+    alt_text: string
+    is_primary: boolean
+    sort_order: number
+    created_at: string
+    updated_at: string
+  }[]
+  variants: PopupInventoryVariant[]
+}
+
+export interface PopupInventoryVariant {
+  uid: string
+  name: string
+  sku: string
+  price: string
+  image: string | null
+  attributes: {
+    uid: string
+    attribute: string
+    value: string
+    attribute_name: string
+    attribute_value: string
+  }[]
+  popup_inventory_uid: string
+  quantity: number
+  event_price: string
+  original_price: string
+  sold_quantity: number
+  available_quantity: number
+  is_out_of_stock: boolean
+  is_visible: boolean
+  is_active: boolean
+}
+
 export interface PopupInventoryResponse {
-  results: TProduct[]
+  results: PopupInventory[]
   count: number
   next: string | null
   previous: string | null
@@ -93,26 +164,6 @@ export interface AddProductsPayload {
   is_visible: boolean
   is_active: boolean
   uid?: string
-}
-
-export type PopupInventory = {
-  uid: string
-  variant: string
-  variant_name: string
-  variant_sku: string
-  product_name: string
-  product_image: string
-  available_quantity: number
-  quantity: number
-  sold_quantity: number
-  is_active: boolean
-  is_visible: boolean
-  is_out_of_stock: boolean
-  original_price: string
-  event_price: string
-  total_sales_value: string
-  created_at: string
-  updated_at: string
 }
 
 export interface PopupOrderPayload {

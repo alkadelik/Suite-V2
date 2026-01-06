@@ -19,13 +19,15 @@ import { clipboardCopy, isStaging } from "@/utils/others"
 import { useMediaQuery } from "@vueuse/core"
 import Collapsible from "@components/Collapsible.vue"
 import { useSettingsStore } from "@modules/settings/store"
-import { getEventStatus } from "../constants"
 import popupEmpty from "@/assets/images/popup-empty.svg?url"
 import popupBanner from "@/assets/images/popup-banner.svg?url"
+import ClosePopupModal from "../components/ClosePopupModal.vue"
+import BackButton from "@components/BackButton.vue"
 
 const route = useRoute()
 const openDelete = ref(false)
 const openEdit = ref(false)
+const openClose = ref(false)
 const activeTab = ref("overview")
 
 const { data: popupEvt, isPending, refetch } = useGetPopupEventById(route.params.id as string)
@@ -39,25 +41,38 @@ const overviewInfo = computed(() => {
   }
 })
 
-const actionMenu = computed(() => [
-  ...(getEventStatus(popupEvt.value!) === "ended"
-    ? []
-    : [
-        { label: "Edit Event", icon: "edit", action: () => (openEdit.value = true) },
-        { divider: true },
-      ]),
-  ...(!popupEvt.value?.total_orders
-    ? [
-        {
-          label: "Delete Event",
-          icon: "trash",
-          iconClass: "text-red-500",
-          class: "text-red-500",
-          action: () => (openDelete.value = true),
-        },
-      ]
-    : []),
-])
+const actionMenu = computed(() => {
+  const actions = []
+  if (popupEvt.value?.status !== "past") {
+    actions.push({
+      label: "Edit Event",
+      icon: "edit",
+      action: () => (openEdit.value = true),
+    })
+  }
+  if (!popupEvt.value?.total_orders && !["past", "closed"].includes(popupEvt.value?.status || "")) {
+    actions.push({ divider: true })
+  }
+  if (popupEvt.value?.status !== "closed") {
+    actions.push({
+      label: "Close Event",
+      icon: "close-circle",
+      iconClass: "text-red-500",
+      class: "text-red-500",
+      action: () => (openClose.value = true),
+    })
+  }
+  if (!popupEvt.value?.total_orders) {
+    actions.push({
+      label: "Delete Event",
+      icon: "trash",
+      iconClass: "text-red-500",
+      class: "text-red-500",
+      action: () => (openDelete.value = true),
+    })
+  }
+  return actions
+})
 
 const isMobile = useMediaQuery("(max-width: 768px)")
 
@@ -67,6 +82,10 @@ const storeDetails = computed(() => useSettingsStore().storeDetails)
 <template>
   <PageHeader title="Popup Details" inner />
 
+  <div class="hidden p-4 pb-0 md:inline-block">
+    <BackButton label="Back to Popups" to="/popups" />
+  </div>
+
   <EmptyState
     v-if="isPending || !popupEvt"
     title="Event Details"
@@ -74,7 +93,7 @@ const storeDetails = computed(() => useSettingsStore().storeDetails)
     :loading="isPending"
   />
 
-  <section v-else class="flex flex-col px-4 py-4 md:px-8 md:py-8">
+  <section v-else class="flex flex-col px-4 py-4 md:px-8 md:py-6">
     <section>
       <div
         class="bg-primary-800 mb-6 flex gap-4 rounded-xl p-3 text-white md:gap-6 md:p-6"
@@ -100,16 +119,18 @@ const storeDetails = computed(() => useSettingsStore().storeDetails)
             </h3>
             <Chip
               v-if="!isMobile"
-              :label="getEventStatus(popupEvt)"
+              :label="popupEvt.status"
               size="sm"
               class="flex-shrink-0 capitalize"
               show-dot
               :color="
-                getEventStatus(popupEvt) === 'upcoming'
+                popupEvt.status === 'upcoming'
                   ? 'primary'
-                  : getEventStatus(popupEvt) === 'ongoing'
+                  : popupEvt.status === 'active'
                     ? 'success'
-                    : 'alt'
+                    : popupEvt.status === 'closed'
+                      ? 'error'
+                      : 'alt'
               "
             />
           </div>
@@ -140,25 +161,24 @@ const storeDetails = computed(() => useSettingsStore().storeDetails)
             </p>
             <Chip
               v-if="isMobile"
-              :label="getEventStatus(popupEvt)"
+              :label="popupEvt.status"
               size="sm"
               class="capitalize"
               show-dot
               :color="
-                getEventStatus(popupEvt) === 'upcoming'
+                popupEvt.status === 'upcoming'
                   ? 'primary'
-                  : getEventStatus(popupEvt) === 'ongoing'
+                  : popupEvt.status === 'active'
                     ? 'success'
-                    : 'alt'
+                    : popupEvt.status === 'closed'
+                      ? 'error'
+                      : 'alt'
               "
             />
           </div>
         </div>
 
-        <div
-          v-if="getEventStatus(popupEvt) !== 'ended' || popupEvt.total_orders"
-          class="flex flex-shrink-0 items-start"
-        >
+        <div v-if="popupEvt.status !== 'closed'" class="flex flex-shrink-0 items-start">
           <DropdownMenu :items="actionMenu" />
         </div>
       </div>
@@ -188,12 +208,13 @@ const storeDetails = computed(() => useSettingsStore().storeDetails)
             </Collapsible>
           </div>
 
-          <PopupInventoryTab />
+          <PopupInventoryTab :popup="popupEvt" />
         </template>
         <template #sales>
           <PopupSalesTab
-            :is-active="getEventStatus(popupEvt) === 'ongoing'"
+            :is-active="popupEvt.status === 'active'"
             :start-date="popupEvt?.start_date"
+            :popup="popupEvt"
           />
         </template>
       </Tabs>
@@ -217,6 +238,13 @@ const storeDetails = computed(() => useSettingsStore().storeDetails)
       @close="openDelete = false"
       :event="popupEvt"
       @refresh="() => $router.push('/popups')"
+    />
+
+    <ClosePopupModal
+      :open="openClose"
+      @close="openClose = false"
+      :event="popupEvt"
+      @refresh="refetch"
     />
   </section>
 </template>

@@ -5,7 +5,6 @@ import Chip from "@components/Chip.vue"
 import DataTable from "@components/DataTable.vue"
 import EmptyState from "@components/EmptyState.vue"
 import TextField from "@components/form/TextField.vue"
-import Icon from "@components/Icon.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import PageHeader from "@components/PageHeader.vue"
 import Tabs from "@components/Tabs.vue"
@@ -28,7 +27,7 @@ import DropdownMenu from "@components/DropdownMenu.vue"
 
 const TABS = [
   { title: "All", key: "" },
-  { title: "Ongoing", key: "ongoing" },
+  { title: "Ongoing", key: "active" },
   { title: "Upcoming", key: "upcoming" },
   { title: "Past", key: "past" },
 ]
@@ -95,8 +94,17 @@ const getMenuAction = (item: PopupEvent) => {
       action: () => handleAction("edit", item),
     })
   }
-  if (!item.total_orders && item.status !== "closed") {
+  if (!item.total_orders && !["past", "closed"].includes(item.status)) {
     actions.push({ divider: true })
+  }
+  if (item.status !== "closed") {
+    actions.push({
+      label: "Close Event",
+      icon: "close-circle",
+      iconClass: "text-red-500",
+      class: "text-red-500",
+      action: () => handleAction("close", item),
+    })
   }
   if (!item.total_orders) {
     actions.push({
@@ -105,13 +113,6 @@ const getMenuAction = (item: PopupEvent) => {
       iconClass: "text-red-500",
       class: "text-red-500",
       action: () => handleAction("delete", item),
-    })
-  }
-  if (item.status !== "closed") {
-    actions.push({
-      label: "Close Event",
-      icon: "times-circle",
-      action: () => handleAction("close", item),
     })
   }
   return actions
@@ -207,6 +208,7 @@ const getMenuAction = (item: PopupEvent) => {
       action-icon="add"
       @action="handleOpenCreate"
       :loading="isPending || isFetching"
+      class="mt-6"
     />
 
     <section v-else class="mt-6">
@@ -223,7 +225,7 @@ const getMenuAction = (item: PopupEvent) => {
           <div class="flex items-center gap-2">
             <TextField
               left-icon="search-lg"
-              size="md"
+              size="sm"
               class="w-full md:min-w-64"
               placeholder="Search by name"
               v-model="searchQuery"
@@ -278,7 +280,15 @@ const getMenuAction = (item: PopupEvent) => {
               size="sm"
               class="capitalize"
               show-dot
-              :color="value === 'upcoming' ? 'primary' : value === 'ongoing' ? 'success' : 'alt'"
+              :color="
+                value === 'upcoming'
+                  ? 'primary'
+                  : value === 'active'
+                    ? 'success'
+                    : value === 'closed'
+                      ? 'error'
+                      : 'alt'
+              "
             />
           </template>
           <template #cell:name="{ item }">
@@ -295,20 +305,8 @@ const getMenuAction = (item: PopupEvent) => {
             </div>
           </template>
           <template #cell:action="{ item }">
-            <div class="flex justify-end gap-3">
-              <Icon
-                v-if="item.status !== 'past'"
-                name="edit"
-                @click.stop="handleAction('edit', item)"
-              />
-              <Icon
-                v-if="!item.total_orders"
-                name="trash"
-                @click.stop="handleAction('delete', item)"
-              />
-              <span v-if="item.total_orders && item.status === 'past'"> -- </span>
-            </div>
-            <DropdownMenu :items="getMenuAction(item)" />
+            <DropdownMenu v-if="item.status !== 'closed'" :items="getMenuAction(item)" />
+            <span v-else>--</span>
           </template>
 
           <template #mobile="{ item }">
@@ -374,6 +372,7 @@ const getMenuAction = (item: PopupEvent) => {
       @close="openClose = false"
       :event="selectedPopup"
       @refresh="refetch"
+      :has-full-details="false"
     />
   </div>
 </template>

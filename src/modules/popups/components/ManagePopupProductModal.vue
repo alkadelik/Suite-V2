@@ -14,6 +14,7 @@ import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
 import type { IProductCatalogue } from "@modules/inventory/types"
 import * as yup from "yup"
+import { getPopupPriceRange } from "../constants"
 
 interface Props {
   open: boolean
@@ -22,9 +23,9 @@ interface Props {
 
 interface VariantItem {
   uid: string
-  variant_uid: string
-  variant_name: string
+  popup_inventory_uid: string
   variant_sku: string
+  variant_name: string
   quantity: number
   event_price: number
   available_stock: number
@@ -44,7 +45,7 @@ const route = useRoute()
 // Fetch all products to get the full product details with all variants
 const { data: productsResponse } = useGetProductCatalogs()
 
-// Local state for managing the variant
+// Local state for managing the variants
 const variantItems = ref<VariantItem[]>([])
 
 const { mutate: updatePopupProduct, isPending: isUpdating } = useUpdatePopupProduct()
@@ -62,45 +63,40 @@ const fullProduct = computed<IProductCatalogue | undefined>(() => {
   if (!props.selectedProduct || !productsResponse.value) return undefined
 
   const products = productsResponse.value.results || []
-  return products.find((p: IProductCatalogue) =>
-    p.variants?.some((v) => v.sku === props.selectedProduct?.variant_sku),
-  )
+  return products.find((p: IProductCatalogue) => p.uid === props.selectedProduct?.uid)
 })
 
 // Initialize variant items when modal opens
 const initializeVariants = () => {
   if (!props.selectedProduct || !fullProduct.value) return
 
-  // Find the variant in the main catalogue to get accurate stock info
-  const catalogueVariant = fullProduct.value.variants?.find(
-    (v) => v.sku === props.selectedProduct?.variant_sku,
-  )
+  // Map through all variants in the selected product
+  variantItems.value = props.selectedProduct.variants.map((popupVariant) => {
+    // Find the corresponding variant in the main catalogue to get accurate stock info
+    const catalogueVariant = fullProduct.value?.variants?.find((v) => v.sku === popupVariant.sku)
 
-  if (!catalogueVariant) return
+    // Calculate available stock from main catalogue
+    const sellableStock = Number(catalogueVariant?.sellable_stock ?? 0)
+    const popupQtyTaken = Number(catalogueVariant?.popup_quantity_taken ?? 0)
+    const currentPopupQuantity = Number(popupVariant.quantity)
 
-  // Calculate available stock from main catalogue
-  const sellableStock = Number(catalogueVariant.sellable_stock)
-  const popupQtyTaken = Number(catalogueVariant.popup_quantity_taken ?? 0)
-  const currentPopupQuantity = Number(props.selectedProduct.quantity)
+    // Available stock = sellable_stock - popup_quantity_taken + current_popup_quantity
+    // We add back the current popup quantity because it's already included in popup_quantity_taken
+    const availableStock = sellableStock - popupQtyTaken + currentPopupQuantity
 
-  // Available stock = sellable_stock - popup_quantity_taken + current_popup_quantity
-  // We add back the current popup quantity because it's already included in popup_quantity_taken
-  const availableStock = sellableStock - popupQtyTaken + currentPopupQuantity
-  // Set the current product variant
-  variantItems.value = [
-    {
-      uid: props.selectedProduct.uid, // popup inventory uid
-      variant_uid: props.selectedProduct.variant,
-      variant_name: props.selectedProduct.variant_name,
-      variant_sku: props.selectedProduct.variant_sku,
-      quantity: props.selectedProduct.quantity,
-      event_price: Number(props.selectedProduct.event_price),
+    return {
+      uid: popupVariant.uid, // This is the popup_inventory variant uid
+      popup_inventory_uid: popupVariant.popup_inventory_uid, // This is the main popup inventory product uid
+      variant_sku: popupVariant.sku,
+      variant_name: popupVariant.name,
+      quantity: popupVariant.quantity,
+      event_price: Number(popupVariant.event_price),
       available_stock: Math.max(0, availableStock),
       sellable_stock: sellableStock,
       popup_quantity_taken: popupQtyTaken,
-      original_price: Number(props.selectedProduct.original_price || catalogueVariant.price),
-    },
-  ]
+      original_price: Number(popupVariant.original_price || popupVariant.price),
+    }
+  })
 
   validationErrors.value = {}
 }
@@ -146,7 +142,7 @@ const validateVariantItem = async (item: VariantItem) => {
       { quantity: item.quantity, event_price: item.event_price },
       { abortEarly: false },
     )
-    delete validationErrors.value[item.variant_uid]
+    delete validationErrors.value[item.uid]
     return true
   } catch (err) {
     if (err instanceof yup.ValidationError) {
@@ -154,7 +150,7 @@ const validateVariantItem = async (item: VariantItem) => {
       err.inner.forEach((error) => {
         if (error.path) errors[error.path as "quantity" | "event_price"] = error.message
       })
-      validationErrors.value[item.variant_uid] = errors
+      validationErrors.value[item.uid] = errors
     }
     return false
   }
@@ -180,17 +176,13 @@ const saveChanges = async () => {
   const isValid = await validateAllItems()
   if (!isValid || !canSave.value) return
 
-  const item = variantItems.value[0]
-
   const updatePayload = {
     popup_event: route.params.id as string,
-    items: [
-      {
-        uid: item.uid,
-        event_price: item.event_price,
-        quantity: item.quantity,
-      },
-    ],
+    items: variantItems.value.map((item) => ({
+      uid: item.popup_inventory_uid,
+      event_price: item.event_price,
+      quantity: item.quantity,
+    })),
   }
 
   updatePopupProduct(updatePayload, {
@@ -221,40 +213,29 @@ const closeModal = () => {
       <div class="rounded-xl bg-white">
         <div class="flex gap-4 p-4">
           <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100">
-            <Icon name="box" class="h-6 w-6 text-gray-400" />
+            <img
+              v-if="selectedProduct.images?.[0]?.image"
+              :src="selectedProduct.images[0].image"
+              :alt="selectedProduct.name"
+              class="h-full w-full rounded-lg object-cover"
+            />
+            <Icon v-else name="box" class="h-6 w-6 text-gray-400" />
           </div>
           <div class="flex-1 space-y-1.5">
-            <h4 class="text-sm font-medium capitalize">{{ selectedProduct.product_name }}</h4>
-            <div class="flex items-center gap-1.5">
-              <span
-                v-if="
-                  selectedProduct.original_price &&
-                  Number(selectedProduct.original_price) !== Number(selectedProduct.event_price)
-                "
-                class="text-core-300 line-through"
-                style="font-size: 11px"
-              >
-                {{ formatCurrency(Number(selectedProduct.original_price)) }}
-              </span>
-              <span class="text-primary-600 flex items-center gap-1 text-xs">
-                <Icon name="tag" class="h-3 w-3" />
-                {{ formatCurrency(Number(selectedProduct.event_price)) }}
-              </span>
-            </div>
+            <h4 class="text-sm font-medium capitalize">{{ selectedProduct.name }}</h4>
+            <p class="text-core-600 text-xs">
+              {{ getPopupPriceRange(selectedProduct) }}
+            </p>
           </div>
         </div>
       </div>
 
       <!-- Variant Details -->
       <div class="space-y-3">
-        <div v-for="item in variantItems" :key="item.variant_uid" class="rounded-xl bg-white">
+        <div v-for="item in variantItems" :key="item.uid" class="rounded-xl bg-white">
           <div class="flex items-center justify-between p-3">
             <div class="flex items-center gap-2">
-              <Chip
-                color="primary"
-                :label="item.variant_name.split(' - ').slice(1).join(' - ') || item.variant_name"
-                size="sm"
-              />
+              <Chip color="primary" :label="item.variant_name" size="sm" />
               <span class="text-core-600 flex items-center gap-1 text-xs">
                 <Icon name="tag" class="h-3 w-3" />
                 {{ formatCurrency(item.original_price) }}
@@ -277,7 +258,7 @@ const closeModal = () => {
               placeholder="1"
               :min="1"
               :max="item.available_stock"
-              :error="validationErrors[item.variant_uid]?.quantity"
+              :error="validationErrors[item.uid]?.quantity"
               @input="validateVariantItem(item)"
             />
             <TextField
@@ -288,7 +269,7 @@ const closeModal = () => {
               placeholder="e.g. 59.99"
               :min="0"
               step="0.01"
-              :error="validationErrors[item.variant_uid]?.event_price"
+              :error="validationErrors[item.uid]?.event_price"
               @input="validateVariantItem(item)"
             />
           </div>
