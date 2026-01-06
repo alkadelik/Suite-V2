@@ -9,8 +9,8 @@
           v-model="termsLinkModel"
           type="url"
           name="terms_conditions_link"
-          label="Terms & Conditions"
-          placeholder="https://example.com/terms"
+          label="Return Policy"
+          placeholder="https://example.com/return-policy"
         />
 
         <div>

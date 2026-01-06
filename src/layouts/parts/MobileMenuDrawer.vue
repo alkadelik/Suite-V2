@@ -6,6 +6,7 @@ import Chip from "@components/Chip.vue"
 import Drawer from "@components/Drawer.vue"
 import Icon from "@components/Icon.vue"
 import { useAuthStore } from "@modules/auth/store"
+import PlansModal from "@modules/settings/components/PlansModal.vue"
 import { useSettingsStore } from "@modules/settings/store"
 import { computed } from "vue"
 

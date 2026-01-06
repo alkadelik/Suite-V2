@@ -1,5 +1,5 @@
 <template>
-  <MessageModal :open="modelValue" max-width="lg" @close="emit('update:modelValue', false)">
+  <MessageModal :open="modelValue" :max-width="maxWidth" @close="emit('update:modelValue', false)">
     <div :class="headerIconContainerClasses">
       <div :class="headerIconInnerClasses">
         <Icon :name="displayHeaderIcon" size="16" :class="headerIconClasses" />
@@ -49,7 +49,7 @@ import Icon from "@components/Icon.vue"
 export interface ConfirmationModalProps {
   modelValue: boolean
   header: string
-  paragraph: string
+  paragraph?: string
   loading: boolean
 
   /**
@@ -82,10 +82,17 @@ export interface ConfirmationModalProps {
    * Custom variant for the info box only (overrides main variant for info box styling)
    */
   infoBoxVariant?: "warning" | "error" | "success" | "neutral"
+
+  /**
+   * Maximum width of the modal
+   * @default "lg"
+   */
+  maxWidth?: string
 }
 
 const props = withDefaults(defineProps<ConfirmationModalProps>(), {
   variant: "warning",
+  maxWidth: "lg",
 })
 
 const emit = defineEmits<{

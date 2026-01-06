@@ -1,5 +1,9 @@
 <template>
-  <MessageModal :open="modelValue" max-width="lg" @close="emit('update:modelValue', false)">
+  <MessageModal
+    :open="modelValue"
+    :max-width="maxWidth || 'lg'"
+    @close="emit('update:modelValue', false)"
+  >
     <div class="bg-error-50 absolute top-3 self-start rounded-full p-1.5">
       <div class="bg-error-100 flex size-7 items-center justify-center rounded-full">
         <Icon name="trash-01" size="16" class="text-error-600" />
@@ -58,6 +62,7 @@ defineProps<{
   paragraph?: string
   loading: boolean
   actionLabel?: string
+  maxWidth?: string
 }>()
 
 const emit = defineEmits<{
