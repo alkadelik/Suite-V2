@@ -131,3 +131,11 @@ export function useGetOrderPaymentHistory(id: MaybeRefOrGetter<string>) {
     selectData: true,
   })
 }
+
+/** Initialize order payment */
+export function useInitializeOrderPayment() {
+  return useMutation({
+    mutationFn: (uid: string) =>
+      baseApi.post<{ data: { payment_link: string } }>(`/billings/orders/${uid}/initialize/`),
+  })
+}

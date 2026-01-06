@@ -630,51 +630,65 @@ const isBestseller = computed(() => {
   return false
 })
 
-const productMetrics = computed(() => {
-  if (!product.value?.data) return []
+const productMetrics = computed(
+  (): Array<{
+    label: string
+    value: number | string | { text: string; boldNumbers?: boolean }
+    prev_value: number | string
+    icon: string
+    chipText?: string | { text: string; boldNumbers?: boolean }
+  }> => {
+    if (!product.value?.data) return []
 
-  const productData = product.value.data
-  const variants = productData.variants
+    const productData = product.value.data
+    const variants = productData.variants
 
-  // Calculate totals from variants
-  const totalSellableStock = variants.reduce((sum, v) => sum + (v.sellable_stock || 0), 0)
-  const totalReservedStock = variants.reduce((sum, v) => sum + (v.reserved_stock || 0), 0)
-  const totalAvailableStock = variants.reduce((sum, v) => sum + (v.available_stock || 0), 0)
+    // Calculate totals from variants
+    const totalSellableStock = variants.reduce((sum, v) => sum + (v.sellable_stock || 0), 0)
+    const totalReservedStock = variants.reduce((sum, v) => sum + (v.reserved_stock || 0), 0)
+    const totalAvailableStock = variants.reduce((sum, v) => sum + (v.available_stock || 0), 0)
 
-  return [
-    {
-      label: "Actual Inventory",
-      value: totalAvailableStock,
-      prev_value: 0,
-      icon: "shop",
-      chipText: undefined,
-    },
-    {
-      label: "Sellable Inventory",
-      value: totalSellableStock,
-      prev_value: 0,
-      icon: "shopping-cart",
-      chipText:
-        productData.popup_quantity_taken > 0
-          ? `${productData.popup_quantity_taken} in popups`
-          : undefined,
-    },
-    {
-      label: "Quantity Sold",
-      value: productData.quantity_sold || 0,
-      prev_value: 0,
-      icon: "box-time",
-      chipText: undefined,
-    },
-    {
-      label: "Reserved Inventory",
-      value: totalReservedStock,
-      prev_value: 0,
-      icon: "box-time",
-      chipText: undefined,
-    },
-  ]
-})
+    return [
+      {
+        label: "Actual Inventory",
+        value: totalAvailableStock,
+        prev_value: 0,
+        icon: "shop",
+        chipText: undefined,
+      },
+      {
+        label: "Sellable Inventory",
+        value: {
+          text: `${totalSellableStock} in main`,
+          boldNumbers: true,
+        },
+        prev_value: 0,
+        icon: "shopping-cart",
+        chipText:
+          productData.popup_quantity_taken > 0
+            ? {
+                text: `+${productData.popup_quantity_taken} in popups`,
+                boldNumbers: true,
+              }
+            : undefined,
+      },
+      {
+        label: "Quantity Sold",
+        value: productData.quantity_sold || 0,
+        prev_value: 0,
+        icon: "box-time",
+        chipText: undefined,
+      },
+      {
+        label: "Reserved Inventory",
+        value: totalReservedStock,
+        prev_value: 0,
+        icon: "box-time",
+        chipText: undefined,
+      },
+    ]
+  },
+)
 
 const handleDeleteProduct = () => {
   if (!product.value) return
