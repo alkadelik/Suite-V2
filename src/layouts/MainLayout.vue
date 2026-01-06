@@ -21,38 +21,22 @@
       <div
         :class="[
           'flex h-full flex-1 flex-col overflow-hidden transition-all duration-200',
-          'pt-16 pb-16 lg:pt-16 lg:pb-8',
+          'pb-16 lg:pb-2',
+          showAppHeader || isInner ? 'pt-14' : 'pt-20',
           sidebarPadding,
         ]"
       >
         <!-- Topbar -->
-        <AppHeader :show-logo="isMobile" :isLive="isLive" @logout="logout = true" />
-        <PageHeader />
+        <AppHeader
+          v-if="showAppHeader"
+          :show-logo="isMobile"
+          :isLive="isLive"
+          @logout="logout = true"
+        />
 
         <!-- Content -->
         <main class="h-[calc(100dvh-4rem)] overflow-y-auto lg:h-[calc(100vh-4rem)]">
-          <div
-            v-if="!isLive && !isLoadingLiveStatus"
-            class="bg-primary-25 text-warning-700 border-warning-300 flex flex-col items-start gap-3 border-b px-6 py-3 lg:flex-row lg:items-center"
-          >
-            <span
-              class="border-primary-200 ring-primary-100 hidden size-8 items-center justify-center rounded-full border-2 p-0.5 ring-2 ring-offset-2 lg:flex"
-            >
-              <Icon name="info-circle" size="20" />
-            </span>
-            <div class="flex flex-1 flex-col gap-1 text-sm lg:flex-row">
-              <span class="font-medium">Your storefront isn't live yet! </span> Complete your bank
-              details, delivery options, and KYC to start selling online.
-            </div>
-            <AppButton
-              variant="text"
-              label="Complete Setup"
-              icon="arrow-right"
-              size="sm"
-              class="flex-row-reverse underline underline-offset-4"
-              @click="$router.push('/onboarding')"
-            />
-          </div>
+          <StorefrontNotLiveBanner />
           <router-view />
         </main>
 
@@ -117,6 +101,13 @@
 
   <PlansModal :model-value="showPlans" @update:model-value="(val) => setPlanUpgradeModal(val)" />
 
+  <AddLocationModal
+    :open="showAddLocationModal"
+    :location="locationForEdit"
+    @close="setAddLocationModal(false)"
+    @refresh="handleLocationRefresh"
+  />
+
   <TrialActivationModal
     :open="openTrial"
     :subscription="profile?.subscription || null"
@@ -159,16 +150,16 @@ import {
 } from "@modules/inventory/constants"
 import { ICategoriesApiResponse, IProductAttributesApiResponse } from "@modules/inventory/types"
 import PlansModal from "@modules/settings/components/PlansModal.vue"
+import AddLocationModal from "@modules/settings/components/AddLocationModal.vue"
 import TrialActivationModal from "@modules/shared/components/TrialActivationModal.vue"
 import MobileMenuDrawer from "./parts/MobileMenuDrawer.vue"
-import Icon from "@components/Icon.vue"
-import { useGetLiveStatus } from "@modules/shared/api"
+import StorefrontNotLiveBanner from "@components/StorefrontNotLiveBanner.vue"
 import { useLocationSwitch } from "@/composables/useLocationSwitch"
 import MobileQuickActionsModal from "./parts/MobileQuickActionsModal.vue"
-import PageHeader from "./parts/PageHeader.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import { toast } from "@/composables/useToast"
-import { useRouter } from "vue-router"
+import { useRouter, useRoute } from "vue-router"
+import { useGetLiveStatus } from "@modules/shared/api"
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
@@ -184,6 +175,14 @@ const sidebarPadding = computed(() => (isMobile.value ? "lg:pl-72" : "pl-72"))
 
 const isHQ = computed(() => useSettingsStore().activeLocation?.is_hq ?? true)
 const router = useRouter()
+const route = useRoute()
+
+const showAppHeader = computed(() => {
+  const hide = Boolean((route.meta || {})["hideAppHeader"])
+  return !hide || !isMobile.value
+})
+
+const isInner = computed(() => !!route.params.id)
 
 const SALES_SUITES = computed(() => {
   const allSuites = [
@@ -242,19 +241,29 @@ const actionMenuItems = computed(() => {
   return allActions.filter((action) => !action.hqOnly || isHQ.value)
 })
 
-const { setPlanUpgradeModal } = useSettingsStore()
+const { setPlanUpgradeModal, setAddLocationModal, setLocationForEdit, setLiveStatus } =
+  useSettingsStore()
 const { updateAuthUser } = useAuthStore()
 
 const { data: categories } = useGetCategories()
 const { data: attributes } = useGetAttributes()
 const { data: profile } = useGetProfile()
-
 const showPlans = computed(() => useSettingsStore().showPlanUpgradeModal)
+const showAddLocationModal = computed(() => useSettingsStore().showAddLocationModal)
+const locationForEdit = computed(() => useSettingsStore().locationForEdit)
 
+// Handle location refresh after adding/updating location
+const handleLocationRefresh = () => {
+  // The LocationDropdown component automatically refetches locations via useGetLocations
+  // So we just need to close the modal and clear the edit location
+  setAddLocationModal(false)
+  setLocationForEdit(null)
+}
 const storeSlug = useAuthStore().user?.store_slug || ""
+const { data: liveStatusData } = useGetLiveStatus(storeSlug)
+
 const storeUid = computed(() => useAuthStore().user?.store_uid || "")
-const { data: liveStatusData, isPending: isLoadingLiveStatus } = useGetLiveStatus(storeSlug)
-const isLive = computed(() => liveStatusData.value?.data?.is_live || false)
+const isLive = computed(() => useSettingsStore().liveStatus?.is_live || false)
 
 const openTrial = ref(false)
 
@@ -325,4 +334,10 @@ watch<IProductAttributesApiResponse | undefined>(
     }
   },
 )
+
+watch(liveStatusData, (newData) => {
+  if (newData?.data) {
+    setLiveStatus(newData.data)
+  }
+})
 </script>

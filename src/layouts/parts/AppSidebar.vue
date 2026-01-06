@@ -10,7 +10,12 @@
     <div
       class="sticky top-0 z-10 flex items-center gap-3 border-b border-gray-200 bg-white px-4 py-4"
     >
-      <img src="/LYW.svg?url" alt="Leyyow" class="h-8 w-auto" />
+      <img
+        src="/LYW.svg?url"
+        alt="Leyyow"
+        class="h-8 w-auto cursor-pointer"
+        @click="router.push('/dashboard')"
+      />
     </div>
 
     <!-- Store Info -->
@@ -54,6 +59,7 @@
     <section class="mt-auto px-4 pb-4">
       <SidebarLink icon="life-buoy" label="Support" to="/support" />
 
+      <!-- Subscription view -->
       <div class="relative mt-20">
         <div
           :class="['relative isolate flex flex-col gap-1 rounded-3xl p-3 pt-12 text-white']"
@@ -61,29 +67,30 @@
             background: linear-gradient(136.41deg, #1a2a6c -3.7%, #b21f1f 53.98%, #fdbb2d 99.39%);
           "
         >
-          <template v-if="!user?.subscription?.trial_mode && !user?.subscription?.is_active">
+          <template v-if="subscription && !isActive && !isTrial">
             <h3 class="mb-1 text-sm font-bold">Your trial has ended!</h3>
             <p class="mb-4 text-sm">Upgrade to regain full access.</p>
           </template>
 
+          <template v-else-if="isTrial">
+            <h3 class="mb-1 text-sm font-bold">{{ trialTitle }}</h3>
+            <p class="mb-2 text-sm">{{ trialSubtitle }}</p>
+          </template>
+
+          <template v-else-if="isActive">
+            <h3 class="mb-1 text-sm font-semibold">
+              Active: <b>{{ planName }} plan</b>
+            </h3>
+            <p class="mb-4 text-sm">Ends: {{ formattedEnds }}</p>
+          </template>
+
           <template v-else>
-            <h3 v-if="user?.subscription?.trial_mode" class="mb-1 text-sm font-bold">
-              You are on trial mode
-            </h3>
-            <h3 v-else class="mb-1 text-sm font-semibold">
-              Active: <b>{{ user?.subscription?.plan_name + " Plan" }}</b>
-            </h3>
-            <p class="mb-4 text-sm">
-              Ends:
-              {{
-                new Date(user?.subscription?.active_until).toLocaleString("en-US", {
-                  dateStyle: "medium",
-                })
-              }}
-            </p>
+            <h3 class="mb-1 text-sm font-bold">Do more with Premium!</h3>
+            <p class="mb-4 text-sm">Get advanced tools to manage every aspect of your business.</p>
           </template>
 
           <AppButton
+            v-if="isTrial || planNameLower !== 'bloom'"
             color="alt"
             label="Upgrade"
             class="w-full flex-row-reverse"
@@ -92,7 +99,44 @@
           />
         </div>
 
-        <img src="@/assets/images/gift.png" class="absolute -top-8 left-4 h-16" />
+        <!-- Decorative images based on state -->
+        <img v-if="isTrial" src="@/assets/images/gift.png" class="absolute -top-8 left-4 h-16" />
+
+        <img
+          v-else-if="subscription && !isActive && !isTrial"
+          src="@/assets/images/gift-timer.png"
+          class="absolute -top-8 left-4 h-16"
+        />
+
+        <img
+          v-else-if="(isActive && planNameLower === 'bud') || !isActive"
+          src="@/assets/images/bud-plant.png"
+          class="absolute -top-8 left-4 h-16"
+        />
+
+        <img
+          v-else-if="isActive && planNameLower === 'bloom'"
+          src="@/assets/images/bloom-plant.png"
+          class="absolute -top-8 left-4 h-16"
+        />
+
+        <!-- Active plan pill -->
+        <!-- <div
+          v-if="isActive && !isTrial"
+          class="absolute bottom-4 left-4 flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs text-white"
+        >
+          <img
+            v-if="planNameLower === 'bloom'"
+            src="@/assets/images/bloom-plant.png"
+            class="h-6 w-6 rounded-md"
+          />
+          <img
+            v-else-if="planNameLower === 'bud'"
+            src="@/assets/images/bud-plant.png"
+            class="h-6 w-6 rounded-md"
+          />
+          <span>{{ planName }} Plan Active</span>
+        </div> -->
       </div>
     </section>
 
@@ -110,6 +154,7 @@ import SidebarLink from "./SidebarLink.vue"
 import LocationDropdown from "./LocationDropdown.vue"
 import { clipboardCopy } from "@/utils/others"
 import { useSettingsStore } from "@modules/settings/store"
+import { useRouter } from "vue-router"
 
 defineProps<{
   mobileSidebarOpen: boolean
@@ -119,13 +164,57 @@ defineProps<{
 
 defineEmits<{ logout: [value: boolean]; upgrade: [] }>()
 
-const user = computed(() => useAuthStore().user)
-
+const router = useRouter()
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
 const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
 
 const storeDetails = computed(() => useSettingsStore().storeDetails)
+
+// Subscription derived state
+const subscription = computed(() => useAuthStore().user?.subscription)
+
+const isTrial = computed(() => !!subscription.value?.trial_mode)
+const isActive = computed(() => !!subscription.value?.is_active)
+
+const planName = computed(() => subscription.value?.plan_name ?? "")
+const planNameLower = computed(() => planName.value.toLowerCase())
+
+const formattedEnds = computed(() => {
+  const until = subscription.value?.active_until
+  if (!until) return ""
+  try {
+    return new Date(until).toLocaleString("en-US", { dateStyle: "medium" })
+  } catch {
+    return ""
+  }
+})
+
+const daysLeft = computed(() => {
+  const until = subscription.value?.active_until
+  if (!until) return null
+  const diff = new Date(until).getTime() - Date.now()
+  return Math.ceil(diff / (1000 * 60 * 60 * 24))
+})
+
+const trialTitle = computed(() => {
+  if (!isTrial.value) return ""
+  const d = daysLeft.value
+  if (d === null) return "Your trial is active"
+  if (d <= 0) return "Your trial ends today!"
+  if (d === 1) return "Your trial ends tomorrow!"
+  return `Your trial ends in ${d} days!`
+})
+
+const trialSubtitle = computed(() => {
+  if (!isTrial.value) return ""
+  const d = daysLeft.value
+  if (d === null) return ""
+  if (d <= 0) return "Your trial ends today — upgrade now to avoid any interruption."
+  if (d === 1) return "1 day left in your trial! Upgrade to keep your store live."
+  if (d <= 7) return `${d} days left in your trial! Upgrade to keep your store live.`
+  return "Subscribe to any plan before your trial ends to keep your store live."
+})
 </script>
 
 <style scoped>

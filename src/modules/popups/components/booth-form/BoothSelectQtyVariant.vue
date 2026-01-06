@@ -6,7 +6,9 @@ import TextField from "@components/form/TextField.vue"
 import SelectField from "@components/form/SelectField.vue"
 import Icon from "@components/Icon.vue"
 import type { IProductCatalogue } from "@modules/inventory/types"
-import { computed, onMounted, ref } from "vue"
+import { computed, onMounted, ref, watch } from "vue"
+import * as yup from "yup"
+import { useForm } from "vee-validate"
 
 interface OrderItem {
   product: IProductCatalogue
@@ -16,6 +18,8 @@ interface OrderItem {
     sku: string
     price: string
     stock: number
+    sellable_stock?: number
+    popup_quantity_taken?: number
     original_price?: number
   } | null
   quantity: number
@@ -30,6 +34,8 @@ interface VariantItem {
     sku: string
     price: string
     stock: number
+    sellable_stock?: number
+    popup_quantity_taken?: number
     original_price?: number
   }
   quantity: number
@@ -39,6 +45,7 @@ interface VariantItem {
 const props = defineProps<{
   selectedProducts: IProductCatalogue[]
   orderItems: OrderItem[]
+  existingVariantSkus?: string[]
 }>()
 
 const emit = defineEmits<{
@@ -50,6 +57,17 @@ const emit = defineEmits<{
 const localItems = ref<OrderItem[]>([])
 const selectedVariants = ref<Map<string, VariantItem[]>>(new Map())
 
+// Initialize form with validation
+const { meta } = useForm()
+
+interface ValidationErrors {
+  [variantUid: string]: {
+    quantity?: string
+    unit_price?: string
+  }
+}
+const validationErrors = ref<ValidationErrors>({})
+
 // Check if a product needs variant selection (has multiple variants OR has attributes)
 const needsVariantSelection = (product: IProductCatalogue) => {
   if (!product.variants || product.variants.length === 0) return false
@@ -58,14 +76,19 @@ const needsVariantSelection = (product: IProductCatalogue) => {
   return product.variants[0].attributes && product.variants[0].attributes.length > 0
 }
 
-// Get variant options for select dropdown
+// Get variant options for select dropdown (exclude already added variants)
 const getVariantOptions = (product: IProductCatalogue) => {
   if (!product.variants) return []
-  return product.variants.map((v) => ({
-    label:
-      v.attributes.length > 0 ? `${v.attributes.map((a) => a.attribute_value).join(", ")}` : v.name,
-    value: v.uid,
-  }))
+  return product.variants
+    .filter((v) => !props.existingVariantSkus?.includes(v.sku)) // Exclude already added variants
+    .map((v) => ({
+      label:
+        v.attributes.length > 0
+          ? `${v.attributes.map((a) => a.attribute_value).join(", ")}`
+          : v.name,
+      value: v.uid,
+      disabled: props.existingVariantSkus?.includes(v.sku), // Mark as disabled if already in popup
+    }))
 }
 
 // Initialize local items when component mounts or products change
@@ -84,8 +107,18 @@ onMounted(() => {
     for (const item of props.orderItems) {
       if (item.variant) {
         const existing = selectedVariants.value.get(item.product.uid) || []
+        // Ensure stock is properly calculated when restoring
+        const availableStock =
+          Number(item.variant.sellable_stock ?? item.variant.stock) -
+          Number(item.variant.popup_quantity_taken ?? 0)
         existing.push({
-          variant: item.variant,
+          variant: {
+            ...item.variant,
+            stock: Math.max(0, availableStock),
+            sellable_stock: Number(item.variant.sellable_stock ?? item.variant.stock),
+            popup_quantity_taken: Number(item.variant.popup_quantity_taken ?? 0),
+            original_price: item.variant.original_price ?? parseFloat(item.variant.price),
+          },
           quantity: item.quantity,
           unit_price: item.unit_price,
         })
@@ -101,13 +134,18 @@ onMounted(() => {
         product.variants.length === 1 &&
         product.variants[0].attributes.length === 0
       ) {
+        const src = product.variants[0]
+        const availableStock =
+          Number(src.sellable_stock ?? src.available_stock) - Number(src.popup_quantity_taken ?? 0)
         const defaultVariant = {
-          uid: product.variants[0].uid,
-          name: product.variants[0].name,
-          sku: product.variants[0].sku,
-          price: product.variants[0].price,
-          stock: product.variants[0].available_stock,
-          original_price: parseFloat(product.variants[0].price),
+          uid: src.uid,
+          name: src.name,
+          sku: src.sku,
+          price: src.price,
+          stock: Math.max(0, availableStock),
+          sellable_stock: Number(src.sellable_stock ?? src.available_stock),
+          popup_quantity_taken: Number(src.popup_quantity_taken ?? 0),
+          original_price: parseFloat(src.price),
         }
 
         selectedVariants.value.set(product.uid, [
@@ -177,13 +215,19 @@ const onVariantChange = (
       // Check if this variant already exists to preserve qty/price
       const existing = selectedVariants.value.get(product.uid)?.find((v) => v.variant.uid === uid)
 
+      const availableStock =
+        Number(selectedVariant.sellable_stock ?? selectedVariant.available_stock) -
+        Number(selectedVariant.popup_quantity_taken ?? 0)
+
       variantItems.push({
         variant: {
           uid: selectedVariant.uid,
           name: selectedVariant.name,
           sku: selectedVariant.sku,
           price: selectedVariant.price,
-          stock: selectedVariant.available_stock,
+          stock: Math.max(0, availableStock),
+          sellable_stock: Number(selectedVariant.sellable_stock ?? selectedVariant.available_stock),
+          popup_quantity_taken: Number(selectedVariant.popup_quantity_taken ?? 0),
           original_price: parseFloat(selectedVariant.price),
         },
         quantity: existing?.quantity || 1,
@@ -196,20 +240,89 @@ const onVariantChange = (
 }
 
 const removeItem = (index: number) => {
+  const product = localItems.value[index].product
+  const variants = selectedVariants.value.get(product.uid)
+  if (variants) {
+    variants.forEach((v) => delete validationErrors.value[v.variant.uid])
+  }
   localItems.value.splice(index, 1)
 }
 
+// Validate a single variant item
+const validateVariantItem = async (variantItem: VariantItem) => {
+  const maxAvailable =
+    Number(variantItem.variant.sellable_stock ?? variantItem.variant.stock) -
+    Number(variantItem.variant.popup_quantity_taken ?? 0)
+  const schema = yup.object({
+    quantity: yup
+      .number()
+      .transform((value, originalValue) => (originalValue === "" ? undefined : value))
+      .typeError("Quantity must be a number")
+      .required("Quantity is required")
+      .positive("Quantity must be greater than 0")
+      .integer("Quantity must be a whole number")
+      .max(maxAvailable, `Only ${maxAvailable} available in stock`),
+    unit_price: yup
+      .number()
+      .transform((value, originalValue) => (originalValue === "" ? undefined : value))
+      .typeError("Price must be a number")
+      .required("Price is required")
+      .positive("Price must be greater than 0")
+      .min(0.01, "Price must be at least 0.01"),
+  })
+
+  try {
+    await schema.validate(
+      { quantity: variantItem.quantity, unit_price: variantItem.unit_price },
+      { abortEarly: false },
+    )
+    delete validationErrors.value[variantItem.variant.uid]
+    return true
+  } catch (err) {
+    if (err instanceof yup.ValidationError) {
+      const errors: { quantity?: string; unit_price?: string } = {}
+      err.inner.forEach((error) => {
+        if (error.path) errors[error.path as "quantity" | "unit_price"] = error.message
+      })
+      validationErrors.value[variantItem.variant.uid] = errors
+    }
+    return false
+  }
+}
+
+const validateAllItems = async () => {
+  const allVariants: VariantItem[] = []
+  for (const variants of selectedVariants.value.values()) {
+    allVariants.push(...variants)
+  }
+  const results = await Promise.all(allVariants.map((v) => validateVariantItem(v)))
+  return results.every((r) => r)
+}
+
+const hasValidationErrors = () => Object.keys(validationErrors.value).length > 0
+
+// Watch for changes in selectedVariants and trigger validation
+watch(
+  selectedVariants,
+  async () => {
+    await validateAllItems()
+  },
+  { deep: true },
+)
+
 const canProceed = computed(() => {
-  return localItems.value.every((item) => {
+  const hasItems = localItems.value.every((item) => {
     const variants = selectedVariants.value.get(item.product.uid)
     if (!variants || variants.length === 0) return false
     // All variants must have valid quantity and price
     return variants.every((v) => v.quantity > 0 && v.unit_price > 0)
   })
+  return hasItems && !hasValidationErrors() && meta.value.valid
 })
 
-const handleNext = () => {
-  if (canProceed.value) {
+const handleNext = async () => {
+  const isValid = await validateAllItems()
+  if (isValid && canProceed.value) {
     // Convert selected variants to order items format
     const orderItems: OrderItem[] = []
     for (const item of localItems.value) {
@@ -315,7 +428,7 @@ const productsTotal = computed(() => {
           <Chip
             v-if="!needsVariantSelection(item.product)"
             color="success"
-            :label="`${item.variant?.stock} in Stock`"
+            :label="`${item.variant?.stock ?? 0} in Stock`"
             icon="box"
             class="text-xs"
           />
@@ -380,6 +493,8 @@ const productsTotal = computed(() => {
                 placeholder="1"
                 :min="1"
                 :max="variantItem.variant.stock"
+                :error="validationErrors[variantItem.variant.uid]?.quantity"
+                @blur="validateVariantItem(variantItem)"
               />
               <TextField
                 v-model="variantItem.unit_price"
@@ -389,6 +504,8 @@ const productsTotal = computed(() => {
                 placeholder="e.g. 59.99"
                 :min="0"
                 step="0.01"
+                :error="validationErrors[variantItem.variant.uid]?.unit_price"
+                @blur="validateVariantItem(variantItem)"
               />
             </div>
           </div>

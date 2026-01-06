@@ -95,11 +95,12 @@ export function useInviteUserToLocation() {
 }
 
 /** Fetch all store members */
-export function useGetStoreMembers() {
+export function useGetStoreMembers(search?: Ref<string>) {
   return useQuery({
-    queryKey: ["store-members"],
+    queryKey: ["store-members", search],
     queryFn: async () => {
-      const { data } = await baseApi.get<IStoreMembersResponse>("/stores/members/")
+      const params = search?.value ? { search: search.value } : {}
+      const { data } = await baseApi.get<IStoreMembersResponse>("/stores/members/", { params })
       return data
     },
   })
@@ -162,6 +163,8 @@ export function useGetPlans() {
       const { data } = await baseApi.get<IPlansResponse>("/billings/plans/")
       return data
     },
+    retry: false,
+    refetchOnWindowFocus: false,
   })
 }
 
@@ -180,6 +183,19 @@ export function useGetSubscriptionHistory() {
 export function useInitializeSubscription() {
   return useMutation({
     mutationFn: (uid: string) => baseApi.post(`/billings/plan/${uid}/initialize/`),
+  })
+}
+
+/** cancel subscription */
+export function useCancelSubscription() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => baseApi.delete(`/billings/subscriptions/cancel/`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["subscription-history"] })
+      queryClient.invalidateQueries({ queryKey: ["user-profile"] })
+      queryClient.invalidateQueries({ queryKey: ["liveStatus"] })
+    },
   })
 }
 

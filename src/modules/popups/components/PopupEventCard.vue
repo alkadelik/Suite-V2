@@ -6,6 +6,7 @@ import { PopupEvent } from "../types"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import Avatar from "@components/Avatar.vue"
 import { computed } from "vue"
+import { getEventStatus } from "../constants"
 
 interface EventCardProps {
   /**  Additional custom classes */
@@ -32,15 +33,21 @@ const formatDate = (dateStr: string) => {
 
 const menuActions = computed(() => [
   { label: "View Event", icon: "eye", action: () => emit("click") },
-  { label: "Edit Event", icon: "edit", action: () => emit("edit") },
-  { divider: true },
-  {
-    label: "Delete Event",
-    icon: "trash",
-    class: "text-red-500",
-    iconClass: "text-red-500",
-    action: () => emit("delete"),
-  },
+  ...(getEventStatus(props.event) !== "ended"
+    ? [{ label: "Edit Event", icon: "edit", action: () => emit("edit") }]
+    : []),
+  ...(props.event.total_orders ? [{ divider: true }] : []),
+  ...(!props.event.total_orders
+    ? [
+        {
+          label: "Delete Event",
+          icon: "trash",
+          class: "text-red-500",
+          iconClass: "text-red-500",
+          action: () => emit("delete"),
+        },
+      ]
+    : []),
 ])
 </script>
 
@@ -82,7 +89,19 @@ const menuActions = computed(() => [
             }}
           </span>
         </p>
-        <!-- <Chip :label="`20% Sold`" size="sm" color="blue" /> -->
+        <Chip
+          :label="getEventStatus(event)"
+          size="sm"
+          class="capitalize"
+          show-dot
+          :color="
+            getEventStatus(event) === 'upcoming'
+              ? 'primary'
+              : getEventStatus(event) === 'ongoing'
+                ? 'success'
+                : 'alt'
+          "
+        />
       </div>
     </div>
   </div>

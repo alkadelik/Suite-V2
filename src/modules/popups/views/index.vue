@@ -7,10 +7,11 @@ import EmptyState from "@components/EmptyState.vue"
 import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
 import SectionHeader from "@components/SectionHeader.vue"
+import PageHeader from "@components/PageHeader.vue"
 import Tabs from "@components/Tabs.vue"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, ref, watch } from "vue"
-import { getEventStatus, POPUP_COLUMN } from "../constants"
+import { POPUP_COLUMN } from "../constants"
 import { PopupEvent } from "../types"
 import PopupEventCard from "../components/PopupEventCard.vue"
 import CreatePopupEventModal from "../components/CreatePopupEventModal.vue"
@@ -21,6 +22,7 @@ import { Carousel, Slide } from "vue3-carousel"
 import DeletePopupEvent from "../components/DeletePopupEvent.vue"
 import { useRoute } from "vue-router"
 import PopupCreatedSuccessModal from "../components/PopupCreatedSuccessModal.vue"
+import { usePremiumAccess } from "@/composables/usePremiumAccess"
 
 const TABS = [
   { title: "All", key: "" },
@@ -49,7 +51,7 @@ const handleAction = (action: string, item: PopupEvent) => {
 
 const computedFilters = computed(() => {
   const filters: Record<string, string> = {}
-  if (status.value) filters.status = status.value
+  if (status.value && status.value !== "all") filters.status = status.value
   if (searchQuery.value) filters.search = searchQuery.value
   return filters
 })
@@ -58,14 +60,23 @@ const { data: popupEvents, isPending, isFetching, refetch } = useGetPopupEvents(
 const params = computed(() => ({ status: "upcoming", limit: 5 }))
 const { data: eventfulPopups } = useGetEventfulPopups(params)
 const route = useRoute()
+const { checkPremiumAccess } = usePremiumAccess()
+
+// Function to handle opening create popup modal
+const handleOpenCreate = () => {
+  // Check premium access before opening modal
+  if (!checkPremiumAccess()) return
+
+  selectedPopup.value = null
+  openCreate.value = true
+}
 
 // Watch for route query to open create modal/drawer
 watch(
   () => route.query.create,
   (newVal) => {
     if (newVal === "true") {
-      selectedPopup.value = null
-      openCreate.value = true
+      handleOpenCreate()
     }
   },
   { immediate: true },
@@ -73,6 +84,8 @@ watch(
 </script>
 
 <template>
+  <PageHeader title="Popups" :count="popupEvents?.count" count-label="popups" />
+
   <div class="flex flex-col p-4 md:p-8">
     <div class="hidden lg:block">
       <SectionHeader
@@ -157,12 +170,7 @@ watch(
       description="Create a popup event."
       action-label="Create a popup event"
       action-icon="add"
-      @action="
-        () => {
-          selectedPopup = null
-          openCreate = true
-        }
-      "
+      @action="handleOpenCreate"
       :loading="isPending || isFetching"
     />
 
@@ -201,12 +209,7 @@ watch(
               size="sm"
               class="flex-shrink-0"
               :label="isMobile ? '' : 'Add Popup'"
-              @click="
-                () => {
-                  selectedPopup = null
-                  openCreate = true
-                }
-              "
+              @click="handleOpenCreate"
             />
           </div>
         </div>
@@ -234,19 +237,13 @@ watch(
               </span>
             </div>
           </template>
-          <template #cell:status="{ item }">
+          <template #cell:status="{ value }">
             <Chip
-              :label="getEventStatus(item)"
+              :label="String(value)"
               size="sm"
               class="capitalize"
               show-dot
-              :color="
-                getEventStatus(item) === 'upcoming'
-                  ? 'primary'
-                  : getEventStatus(item) === 'ongoing'
-                    ? 'success'
-                    : 'alt'
-              "
+              :color="value === 'upcoming' ? 'primary' : value === 'ongoing' ? 'success' : 'alt'"
             />
           </template>
           <template #cell:name="{ item }">
@@ -265,11 +262,16 @@ watch(
           <template #cell:action="{ item }">
             <div class="flex justify-end gap-3">
               <Icon
-                v-if="getEventStatus(item) !== 'ended'"
+                v-if="item.status !== 'past'"
                 name="edit"
                 @click.stop="handleAction('edit', item)"
               />
-              <Icon name="trash" @click.stop="handleAction('delete', item)" />
+              <Icon
+                v-if="!item.total_orders"
+                name="trash"
+                @click.stop="handleAction('delete', item)"
+              />
+              <span v-if="item.total_orders && item.status === 'past'"> -- </span>
             </div>
           </template>
 

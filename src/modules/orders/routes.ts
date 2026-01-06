@@ -5,6 +5,7 @@ const ordersRoutes: RouteRecordRaw[] = [
     path: "orders",
     name: "Orders",
     component: () => import("./views/index.vue"),
+    meta: { hideAppHeader: true },
   },
 ]
 

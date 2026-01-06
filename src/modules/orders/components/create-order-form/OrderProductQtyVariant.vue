@@ -7,7 +7,7 @@ import SelectField from "@components/form/SelectField.vue"
 import Icon from "@components/Icon.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import type { IProductCatalogue } from "@modules/inventory/types"
-import { computed, onMounted, ref } from "vue"
+import { computed, onMounted, ref, reactive } from "vue"
 import * as yup from "yup"
 import TextAreaField from "@components/form/TextAreaField.vue"
 
@@ -19,6 +19,8 @@ interface OrderItem {
     sku: string
     price: string
     stock: number
+    sellable_stock?: number
+    popup_quantity_taken?: number
     original_price?: number
   } | null
   quantity: number
@@ -33,6 +35,8 @@ interface VariantItem {
     sku: string
     price: string
     stock: number
+    sellable_stock?: number
+    popup_quantity_taken?: number
     original_price?: number
   }
   quantity: number
@@ -52,7 +56,10 @@ const emit = defineEmits<{
 
 const localItems = ref<OrderItem[]>([])
 const selectedVariants = ref<Map<string, VariantItem[]>>(new Map())
-const showNotes = ref<Map<string, boolean>>(new Map())
+const showNotes = reactive<Record<string, boolean>>({})
+
+// Toggle this to true if you want notes cleared when the notes panel is hidden
+const CLEAR_NOTE_ON_HIDE = false
 
 interface ValidationErrors {
   [variantUid: string]: {
@@ -105,13 +112,18 @@ onMounted(() => {
         product.variants.length === 1 &&
         product.variants[0].attributes.length === 0
       ) {
+        const src = product.variants[0]
+        const availableStock =
+          Number(src.sellable_stock ?? src.available_stock) - Number(src.popup_quantity_taken ?? 0)
         const defaultVariant = {
-          uid: product.variants[0].uid,
-          name: product.variants[0].name,
-          sku: product.variants[0].sku,
-          price: product.variants[0].price,
-          stock: product.variants[0].available_stock,
-          original_price: parseFloat(product.variants[0].price),
+          uid: src.uid,
+          name: src.name,
+          sku: src.sku,
+          price: src.price,
+          stock: Math.max(0, availableStock),
+          sellable_stock: Number(src.sellable_stock ?? src.available_stock),
+          popup_quantity_taken: Number(src.popup_quantity_taken ?? 0),
+          original_price: parseFloat(src.price),
         }
 
         selectedVariants.value.set(product.uid, [
@@ -181,13 +193,19 @@ const onVariantChange = (
       // Check if this variant already exists to preserve qty/price
       const existing = selectedVariants.value.get(product.uid)?.find((v) => v.variant.uid === uid)
 
+      const availableStock =
+        Number(selectedVariant.sellable_stock ?? selectedVariant.available_stock) -
+        Number(selectedVariant.popup_quantity_taken ?? 0)
+
       variantItems.push({
         variant: {
           uid: selectedVariant.uid,
           name: selectedVariant.name,
           sku: selectedVariant.sku,
           price: selectedVariant.price,
-          stock: selectedVariant.available_stock,
+          stock: Math.max(0, availableStock),
+          sellable_stock: Number(selectedVariant.sellable_stock ?? selectedVariant.available_stock),
+          popup_quantity_taken: Number(selectedVariant.popup_quantity_taken ?? 0),
           original_price: parseFloat(selectedVariant.price),
         },
         quantity: existing?.quantity || 1,
@@ -205,30 +223,36 @@ const removeItem = (index: number) => {
   if (variants) {
     variants.forEach((v) => delete validationErrors.value[v.variant.uid])
   }
-  showNotes.value.delete(product.uid)
+  delete showNotes[product.uid]
   localItems.value.splice(index, 1)
 }
 
 const toggleNotes = (productUid: string) => {
-  const currentValue = showNotes.value.get(productUid) || false
-  showNotes.value.set(productUid, !currentValue)
+  const currentValue = showNotes[productUid] || false
+  const newValue = !currentValue
+  showNotes[productUid] = newValue
+
+  // Optionally clear the note when user hides it
+  if (CLEAR_NOTE_ON_HIDE && currentValue && !newValue) {
+    const item = localItems.value.find((i) => i.product.uid === productUid)
+    if (item) item.notes = ""
+  }
 }
 
 const getActionItems = (item: OrderItem) => {
-  const notesVisible = showNotes.value.get(item.product.uid) || false
+  const notesVisible = showNotes[item.product.uid] || false
   return [
     {
       label: notesVisible ? "Hide Note" : "Show Note",
       icon: "note-text",
-      onClick: () => {
-        console.log("Toggling notes for", item.product.uid)
+      action: () => {
         toggleNotes(item.product.uid)
       },
     },
     {
       label: "Remove Item",
       icon: "trash",
-      onClick: () => {
+      action: () => {
         const index = localItems.value.findIndex((i) => i.product.uid === item.product.uid)
         if (index !== -1) removeItem(index)
       },
@@ -239,6 +263,9 @@ const getActionItems = (item: OrderItem) => {
 
 // Validate a single variant item
 const validateVariantItem = async (variantItem: VariantItem) => {
+  const maxAvailable =
+    Number(variantItem.variant.sellable_stock ?? variantItem.variant.stock) -
+    Number(variantItem.variant.popup_quantity_taken ?? 0)
   const schema = yup.object({
     quantity: yup
       .number()
@@ -247,7 +274,7 @@ const validateVariantItem = async (variantItem: VariantItem) => {
       .required("Quantity is required")
       .positive("Quantity must be greater than 0")
       .integer("Quantity must be a whole number")
-      .max(variantItem.variant.stock, `Only ${variantItem.variant.stock} available in stock`),
+      .max(maxAvailable, `Only ${maxAvailable} available in stock`),
     unit_price: yup
       .number()
       .transform((value, originalValue) => (originalValue === "" ? undefined : value))
@@ -406,7 +433,7 @@ const productsTotal = computed(() => {
           <Chip
             v-if="!needsVariantSelection(item.product)"
             color="success"
-            :label="`${item.variant?.stock} in Stock`"
+            :label="`${item.variant?.stock ?? 0} in Stock`"
             icon="box"
             class="text-xs"
           />
@@ -483,7 +510,7 @@ const productsTotal = computed(() => {
             </div>
           </div>
           <!-- Notes Section -->
-          <div v-if="showNotes.get(item.product.uid)" class="pt-2">
+          <div v-if="showNotes[item.product.uid]" class="pt-2">
             <TextAreaField
               v-model="item.notes"
               name="notes"

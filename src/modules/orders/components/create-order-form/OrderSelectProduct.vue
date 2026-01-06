@@ -4,9 +4,11 @@ import Chip from "@components/Chip.vue"
 import EmptyState from "@components/EmptyState.vue"
 import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
-import { useGetProductCatalogs } from "@modules/inventory/api"
+import { useGetProductCatalogsInfinite } from "@modules/inventory/api"
 import type { IProductCatalogue } from "@modules/inventory/types"
 import { computed, ref } from "vue"
+import AddNewProductModal from "./AddNewProductModal.vue"
+import { useInfinitePagination } from "@/utils/useInfinitePagination"
 
 const props = defineProps<{
   selectedProducts: IProductCatalogue[]
@@ -18,8 +20,19 @@ const emit = defineEmits<{
   "update:selectedProducts": [products: IProductCatalogue[]]
 }>()
 
-const { data: productsData, isFetching } = useGetProductCatalogs()
-const products = computed(() => productsData?.value?.results ?? [])
+const { data, isPending, fetchNextPage, hasNextPage, refetch } = useGetProductCatalogsInfinite(20)
+
+// Flatten all pages into a single products array
+const products = computed(() => {
+  if (!data.value?.pages) return []
+  return data.value.pages.flatMap((page) => page.results)
+})
+
+// Get total count from first page
+const totalCount = computed(() => data.value?.pages?.[0]?.count ?? 0)
+
+// Setup infinite scroll - scrollContainer is used as template ref
+const scrollContainer = useInfinitePagination(fetchNextPage, hasNextPage, 200).el
 
 // Filtered products based on search query
 const filteredProducts = computed(() => {
@@ -42,7 +55,7 @@ const isProductSelected = (productUid: string) => {
 
 // Toggle product selection
 const toggleProductSelection = (product: IProductCatalogue) => {
-  if (product.total_stock === 0) return // Don't allow selection of out-of-stock products
+  if (getAvailableProductQty(product) === 0) return // Don't allow selection of out-of-stock products
 
   const index = props.selectedProducts.findIndex((p) => p.uid === product.uid)
 
@@ -68,6 +81,35 @@ const handleNext = () => {
     emit("next")
   }
 }
+
+// Get available quantity for a product (sellable_stock - popup_quantity_taken across all variants)
+const getAvailableProductQty = (product: IProductCatalogue) => {
+  if (!product.variants || product.variants.length === 0) return 0
+
+  return product.variants.reduce((total, variant) => {
+    const sellableStock = Number(variant.sellable_stock ?? variant.available_stock ?? 0)
+    const popupQtyTaken = Number(variant.popup_quantity_taken ?? 0)
+    return total + Math.max(0, sellableStock - popupQtyTaken)
+  }, 0)
+}
+
+const showAdd = ref(false)
+
+// Handle successful product creation
+const handleProductCreated = async (productUid: string) => {
+  showAdd.value = false
+
+  // Refetch products
+  await refetch()
+
+  // Find and auto-select the newly created product
+  if (productUid) {
+    const newProduct = products.value.find((p) => p.uid === productUid)
+    if (newProduct && getAvailableProductQty(newProduct) > 0) {
+      toggleProductSelection(newProduct)
+    }
+  }
+}
 </script>
 
 <template>
@@ -79,7 +121,7 @@ const handleNext = () => {
 
     <div class="mb-8 flex flex-col gap-3">
       <h3 class="text-lg font-semibold">
-        All Products <Chip :label="`${productsData?.count || products.length}`" />
+        All Products <Chip :label="`${totalCount || products.length}`" />
       </h3>
       <div class="flex items-center gap-3">
         <TextField
@@ -89,11 +131,13 @@ const handleNext = () => {
           placeholder="Search by name"
           v-model="searchQuery"
         />
+        <AppButton icon="add" @click="showAdd = true" />
       </div>
     </div>
 
     <section
-      v-if="!isFetching && filteredProducts.length > 0"
+      ref="scrollContainer"
+      v-if="!isPending && filteredProducts.length > 0"
       class="grid grid-cols-2 gap-6 md:grid-cols-3"
     >
       <div
@@ -101,7 +145,7 @@ const handleNext = () => {
         :key="prod.uid"
         class="rounded-xl bg-white p-1.5 transition-all"
         :class="
-          prod.total_stock === 0
+          getAvailableProductQty(prod) === 0
             ? 'cursor-not-allowed opacity-60'
             : isProductSelected(prod.uid)
               ? 'ring-primary-600 cursor-pointer shadow-lg ring-2'
@@ -116,10 +160,10 @@ const handleNext = () => {
             alt=""
             class="h-full w-full rounded-xl object-cover"
           />
-          <Icon v-else name="box" class="h-20 w-20" />
+          <Icon v-else name="box" size="40" />
 
           <Chip
-            v-if="prod.total_stock === 0"
+            v-if="getAvailableProductQty(prod) === 0"
             label="Out of stock"
             size="sm"
             color="error"
@@ -142,7 +186,7 @@ const handleNext = () => {
             <!--  -->
             <span class="flex items-center gap-1">
               <Icon name="box" class="h-3 w-3" />
-              {{ prod.total_stock }}
+              {{ getAvailableProductQty(prod) }}
             </span>
           </div>
         </div>
@@ -150,13 +194,13 @@ const handleNext = () => {
     </section>
 
     <EmptyState
-      v-else-if="!isFetching && filteredProducts.length === 0"
+      v-else-if="!isPending && filteredProducts.length === 0"
       title="No Products Found"
       :description="searchQuery ? 'Try adjusting your search query' : 'Add products to get started'"
       class="!min-h-[500px] md:!bg-none"
     />
 
-    <div v-if="isFetching" class="flex items-center justify-center py-12">
+    <div v-if="isPending" class="flex items-center justify-center py-12">
       <Icon name="loader" size="64" class="!animate text-primary-600 !animate-spin" />
     </div>
 
@@ -177,4 +221,6 @@ const handleNext = () => {
       <AppButton label="Next" class="w-full" :disabled="!canProceed" @click="handleNext" />
     </div>
   </div>
+
+  <AddNewProductModal :open="showAdd" @close="showAdd = false" @success="handleProductCreated" />
 </template>

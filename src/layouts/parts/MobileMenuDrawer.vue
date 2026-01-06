@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { toast } from "@/composables/useToast"
 import { clipboardCopy } from "@/utils/others"
 import AppButton from "@components/AppButton.vue"
 import Chip from "@components/Chip.vue"
@@ -23,8 +24,16 @@ const quickActions = computed(() => {
   const allActions = [
     { label: "Customers", icon: "people", to: "/customers" },
     { label: "Popups", icon: "calendar-tick", to: "/popups", hqOnly: true },
-    { label: "Expenses", icon: "receipt-text", to: "/expenses" },
-    { label: "Reports", icon: "pie-chart", to: "/reports" },
+    {
+      label: "Expenses",
+      icon: "receipt-text",
+      action: () => toast.info("This module is coming soon!", { title: "Expenses" }),
+    },
+    {
+      label: "Reports",
+      icon: "pie-chart",
+      action: () => toast.info("This module is coming soon!", { title: "Reports" }),
+    },
     { label: "Discounts", icon: "tag", to: "#" },
     { label: "Support", icon: "life-buoy", to: "#" },
     { label: "Settings", icon: "setting", to: "/settings" },
@@ -79,8 +88,12 @@ const { setPlanUpgradeModal } = useSettingsStore()
             class="border-primary-200 text-primary-700 cursor-pointer rounded-xl border bg-white px-2 py-3 text-center"
             @click="
               () => {
-                $router.push(action.to)
-                $emit('close')
+                if (action.action) {
+                  action.action()
+                } else {
+                  $router.push(action.to)
+                  $emit('close')
+                }
               }
             "
           >

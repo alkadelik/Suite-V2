@@ -133,9 +133,10 @@ interface Props {
   product: IProductDetails
   productMetrics: Array<{
     label: string
-    value: number | string
+    value: number | string | { text: string; boldNumbers?: boolean }
     prev_value: number | string
     icon: string
+    chipText?: string | { text: string; boldNumbers?: boolean }
   }>
   loading?: boolean
 }

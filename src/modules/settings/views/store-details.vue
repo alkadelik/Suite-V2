@@ -5,8 +5,8 @@ import { onInvalidSubmit, slugify } from "@/utils/validations"
 import AppButton from "@components/AppButton.vue"
 import Avatar from "@components/Avatar.vue"
 import FormField from "@components/form/FormField.vue"
-import Icon from "@components/Icon.vue"
 import SectionHeader from "@components/SectionHeader.vue"
+import StorefrontNotLiveBanner from "@components/StorefrontNotLiveBanner.vue"
 import { useAuthStore } from "@modules/auth/store"
 import { CURRENCY_OPTIONS } from "@modules/shared/constants"
 import { useForm } from "vee-validate"
@@ -16,7 +16,6 @@ import * as yup from "yup"
 import { useGetStoreDetails, useGetStoreIndustries, useUpdateStoreDetails } from "../api"
 import { IStoreDetailsForm, IUpdateStoreDetailsPayload } from "../types"
 import AccountNumberSection from "../components/store-details/AccountNumberSection.vue"
-import { useGetLiveStatus } from "@modules/shared/api"
 import { formatPhoneNumber, isStaging } from "@/utils/others"
 
 const validSchema = yup.object({
@@ -24,8 +23,8 @@ const validSchema = yup.object({
   currency: yup.object().required("Currency is required"),
   store_email: yup.string().email("Invalid email").required("Store email is required"),
   store_phone: yup.string().required("Store phone is required"),
-  support_email: yup.string().email("Invalid email").required("Support email is required"),
-  support_phone: yup.string().required("Support phone is required"),
+  support_email: yup.string().email("Invalid email").nullable(),
+  support_phone: yup.string().nullable(),
   industry: yup.object().required("Industry is required"),
   instagram_handle: yup.string().nullable(),
   logo: yup.mixed().nullable(),
@@ -35,11 +34,6 @@ const { user } = useAuthStore()
 
 const { data: industries } = useGetStoreIndustries()
 const { data: storeDetails, refetch } = useGetStoreDetails(user?.store_uid || "")
-const { data: liveStatusData, isPending: isLoadingLiveStatus } = useGetLiveStatus(
-  user?.store_slug || "",
-)
-
-const isLive = computed(() => liveStatusData.value?.data?.is_live || false)
 
 const { mutate: updateStoreDetails } = useUpdateStoreDetails()
 
@@ -55,8 +49,15 @@ const onSubmitStoreDetails = handleStoreSubmit((formData) => {
   payload.append("store_email", formData.store_email)
 
   payload.append("store_phone", formatPhoneNumber(formData.store_phone))
-  payload.append("support_email", formData.support_email)
-  payload.append("support_phone", formatPhoneNumber(formData.support_phone))
+
+  if (formData.support_email) {
+    payload.append("support_email", formData.support_email)
+  }
+
+  if (formData.support_phone) {
+    payload.append("support_phone", formatPhoneNumber(formData.support_phone))
+  }
+
   payload.append("industry", formData.industry.value)
 
   if (formData.instagram_handle) {
@@ -126,28 +127,7 @@ const watchStoreNameForSlug = (storeName: string) => {
 
 <template>
   <div>
-    <div
-      v-if="!isLive && !isLoadingLiveStatus"
-      class="bg-primary-25 text-warning-700 border-warning-300 flex flex-col items-start gap-3 border-b px-6 py-3 md:flex-row md:items-center"
-    >
-      <span
-        class="border-primary-200 ring-primary-100 hidden size-8 items-center justify-center rounded-full border-2 p-0.5 ring-2 ring-offset-2 md:flex"
-      >
-        <Icon name="info-circle" size="20" />
-      </span>
-      <div class="flex flex-1 flex-col gap-1 text-sm md:flex-row">
-        <span class="font-medium">Your storefront isn't live yet! </span> Complete your bank
-        details, delivery options, and KYC to start selling online.
-      </div>
-      <AppButton
-        variant="text"
-        label="Complete Setup"
-        icon="arrow-right"
-        size="sm"
-        class="flex-row-reverse underline underline-offset-4"
-        @click="$router.push('/onboarding')"
-      />
-    </div>
+    <StorefrontNotLiveBanner />
 
     <section class="mt-5">
       <SectionHeader
@@ -206,7 +186,6 @@ const watchStoreNameForSlug = (storeName: string) => {
             name="support_email"
             label="Support Email"
             placeholder="e.g. john.doe@example.com"
-            required
           />
 
           <FormField
@@ -214,7 +193,6 @@ const watchStoreNameForSlug = (storeName: string) => {
             name="support_phone"
             label="Support Phone"
             placeholder="8012345678"
-            required
           />
 
           <FormField

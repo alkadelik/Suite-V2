@@ -1,4 +1,6 @@
 <template>
+  <PageHeader title="Inventory" :count="products?.data?.count" count-label="products" />
+
   <div class="p-4 pt-5 md:pt-4">
     <div class="hidden lg:block">
       <SectionHeader
@@ -10,7 +12,7 @@
 
     <!-- Page content - always visible -->
     <div class="hidden items-center justify-between md:flex">
-      <h4 class="!font-outfit text-core-700 mb-2 text-xl font-semibold">Your product stats</h4>
+      <!-- <h4 class="!font-outfit text-core-700 mb-2 text-xl font-semibold">Your product stats</h4> -->
     </div>
     <PageSummaryCards
       :items="productMetrics"
@@ -95,7 +97,7 @@
           description="Start adding products to manage your inventory."
           action-label="Add Product"
           action-icon="add"
-          @action="showProductFormDrawer = true"
+          @action="openAddProductDrawer"
         />
 
         <!-- DataTable: Show when loading OR when there are results OR when search/filters are active -->
@@ -277,6 +279,7 @@ import ProductCard from "../components/ProductCard.vue"
 import ManageStockModal from "../components/ManageStockModal.vue"
 import { formatPriceRange } from "@/utils/format-currency"
 import SectionHeader from "@components/SectionHeader.vue"
+import PageHeader from "@components/PageHeader.vue"
 import PageSummaryCards from "@components/PageSummaryCards.vue"
 import Tabs from "@components/Tabs.vue"
 import FilterDrawer from "../components/FilterDrawer.vue"
@@ -295,6 +298,7 @@ import { useSettingsStore } from "@modules/settings/store"
 import { useInventoryStore } from "../store"
 import { useRoute } from "vue-router"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
+import { usePremiumAccess } from "@/composables/usePremiumAccess"
 
 const page = ref(1)
 const itemsPerPage = ref(10)
@@ -314,6 +318,7 @@ const { data: categories } = useGetCategories()
 
 const settingsStore = useSettingsStore()
 const inventoryStore = useInventoryStore()
+const { checkPremiumAccess } = usePremiumAccess()
 
 // Update store when products data changes
 watch(
@@ -669,6 +674,9 @@ const handleToggleVisibility = () => {
 
 // Function to handle opening add product drawer
 const openAddProductDrawer = () => {
+  // Check premium access before opening drawer
+  if (!checkPremiumAccess()) return
+
   showProductFormDrawer.value = true
   if (route.query.create !== "true") {
     router.replace({ name: "Inventory", query: { create: "true" } })

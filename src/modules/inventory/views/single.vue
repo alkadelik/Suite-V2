@@ -1,38 +1,9 @@
 <template>
-  <div class="text-core-800 p-4 pb-8">
-    <div class="mb-4 flex items-center justify-between">
-      <button
-        @click="$router.back()"
-        class="flex items-center justify-between gap-2 text-sm font-medium text-gray-600 hover:text-gray-900"
-      >
-        <Icon name="arrow-left" class="h-8 w-8 text-gray-600" />
-      </button>
-      <div class="flex items-center gap-1">
-        <AppButton
-          v-if="isHQ"
-          label="Edit Images"
-          icon="edit"
-          variant="outlined"
-          color="alt"
-          class="!hidden bg-white md:!inline-flex"
-          @click="openImagesEditDrawer"
-        />
-        <DropdownMenu :items="actionItems" placement="bottom-end" :show-chevron="false">
-          <template #trigger>
-            <AppButton
-              :label="'Manage Product'"
-              icon="settings-02"
-              variant="outlined"
-              icon-placement="left"
-              class="!hidden md:!inline-flex"
-            />
-            <AppButton icon="dots-vertical" variant="outlined" class="md:!hidden" />
-          </template>
-        </DropdownMenu>
-      </div>
-    </div>
+  <div class="text-core-800 p-4 py-8">
+    <PageHeader title="Product Details" inner />
 
     <LoadingIcon v-if="isPending" class="mx-auto my-20" />
+
     <EmptyState
       v-else-if="!product && !isPending"
       class="my-20"
@@ -42,6 +13,7 @@
       action-icon="box-outline"
       @action="$router.push({ name: 'Inventory' })"
     />
+
     <div v-else>
       <div class="flex flex-col justify-between gap-3">
         <div class="flex items-center gap-2">
@@ -54,6 +26,32 @@
             size="20"
             class="flex-shrink-0 text-gray-500"
           />
+
+          <div class="flex-1" />
+
+          <div class="flex items-center gap-1">
+            <AppButton
+              v-if="isHQ"
+              label="Edit Images"
+              icon="edit"
+              variant="outlined"
+              color="alt"
+              class="!hidden bg-white lg:!inline-flex"
+              @click="openImagesEditDrawer"
+            />
+            <DropdownMenu :items="actionItems" placement="bottom-end" :show-chevron="false">
+              <template #trigger>
+                <AppButton
+                  :label="'Manage Product'"
+                  icon="settings-02"
+                  variant="outlined"
+                  icon-placement="left"
+                  class="!hidden lg:!inline-flex"
+                />
+                <AppButton icon="dots-vertical" variant="outlined" class="lg:!hidden" />
+              </template>
+            </DropdownMenu>
+          </div>
         </div>
         <div class="inline-flex flex-wrap gap-2">
           <Chip
@@ -209,6 +207,7 @@
 
 <script setup lang="ts">
 import Icon from "@components/Icon.vue"
+import PageHeader from "@components/PageHeader.vue"
 import { useGetProduct, useDeleteProduct, useUpdateProduct } from "../api"
 import { useRoute, useRouter } from "vue-router"
 import DropdownMenu from "@components/DropdownMenu.vue"
@@ -631,51 +630,65 @@ const isBestseller = computed(() => {
   return false
 })
 
-const productMetrics = computed(() => {
-  if (!product.value?.data) return []
+const productMetrics = computed(
+  (): Array<{
+    label: string
+    value: number | string | { text: string; boldNumbers?: boolean }
+    prev_value: number | string
+    icon: string
+    chipText?: string | { text: string; boldNumbers?: boolean }
+  }> => {
+    if (!product.value?.data) return []
 
-  const productData = product.value.data
-  const variants = productData.variants
+    const productData = product.value.data
+    const variants = productData.variants
 
-  // Calculate totals from variants
-  const totalSellableStock = variants.reduce((sum, v) => sum + (v.sellable_stock || 0), 0)
-  const totalReservedStock = variants.reduce((sum, v) => sum + (v.reserved_stock || 0), 0)
-  const totalAvailableStock = variants.reduce((sum, v) => sum + (v.available_stock || 0), 0)
+    // Calculate totals from variants
+    const totalSellableStock = variants.reduce((sum, v) => sum + (v.sellable_stock || 0), 0)
+    const totalReservedStock = variants.reduce((sum, v) => sum + (v.reserved_stock || 0), 0)
+    const totalAvailableStock = variants.reduce((sum, v) => sum + (v.available_stock || 0), 0)
 
-  return [
-    {
-      label: "Actual Inventory",
-      value: totalAvailableStock,
-      prev_value: 0,
-      icon: "shop",
-      chipText: undefined,
-    },
-    {
-      label: "Sellable Inventory",
-      value: totalSellableStock,
-      prev_value: 0,
-      icon: "shopping-cart",
-      chipText:
-        productData.popup_quantity_taken > 0
-          ? `${productData.popup_quantity_taken} in popups`
-          : undefined,
-    },
-    {
-      label: "Quantity Sold",
-      value: productData.quantity_sold || 0,
-      prev_value: 0,
-      icon: "box-time",
-      chipText: undefined,
-    },
-    {
-      label: "Reserved Inventory",
-      value: totalReservedStock,
-      prev_value: 0,
-      icon: "box-time",
-      chipText: undefined,
-    },
-  ]
-})
+    return [
+      {
+        label: "Actual Inventory",
+        value: totalAvailableStock,
+        prev_value: 0,
+        icon: "shop",
+        chipText: undefined,
+      },
+      {
+        label: "Sellable Inventory",
+        value: {
+          text: `${totalSellableStock} in main`,
+          boldNumbers: true,
+        },
+        prev_value: 0,
+        icon: "shopping-cart",
+        chipText:
+          productData.popup_quantity_taken > 0
+            ? {
+                text: `+${productData.popup_quantity_taken} in popups`,
+                boldNumbers: true,
+              }
+            : undefined,
+      },
+      {
+        label: "Quantity Sold",
+        value: productData.quantity_sold || 0,
+        prev_value: 0,
+        icon: "box-time",
+        chipText: undefined,
+      },
+      {
+        label: "Reserved Inventory",
+        value: totalReservedStock,
+        prev_value: 0,
+        icon: "box-time",
+        chipText: undefined,
+      },
+    ]
+  },
+)
 
 const handleDeleteProduct = () => {
   if (!product.value) return

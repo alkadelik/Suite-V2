@@ -5,6 +5,7 @@ import EmptyState from "@components/EmptyState.vue"
 import TextField from "@components/form/TextField.vue"
 import MetricsGrid from "@components/MetricsGrid.vue"
 import SectionHeader from "@components/SectionHeader.vue"
+import PageHeader from "@components/PageHeader.vue"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, ref, watch } from "vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
@@ -27,6 +28,7 @@ import { formatCurrency } from "@/utils/format-currency"
 import { useRoute } from "vue-router"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import ProductAvatar from "@components/ProductAvatar.vue"
+import { usePremiumAccess } from "@/composables/usePremiumAccess"
 
 const openCreate = ref(false)
 const openVoid = ref(false)
@@ -107,6 +109,15 @@ const computedParams = computed(() => {
 })
 
 const { data: orders, isPending, isFetching, refetch } = useGetOrders(computedParams)
+const { checkPremiumAccess } = usePremiumAccess()
+
+// Function to handle opening create order drawer
+const handleOpenCreate = () => {
+  // Check premium access before opening drawer
+  if (!checkPremiumAccess()) return
+
+  openCreate.value = true
+}
 
 const handleRefresh = () => {
   refetch()
@@ -123,21 +134,25 @@ const getActionItems = (item: TOrder) => [
     },
   },
   {
-    label: "Share invoice",
+    label: `Share ${item.payment_status === "paid" ? "receipt" : "invoice"}`,
     icon: "share",
     action: () => {
       selectedOrder.value = item
       openShare.value = true
     },
   },
-  {
-    label: "Update Payment",
-    icon: "money-add",
-    action: () => {
-      selectedOrder.value = item
-      openPayment.value = true
-    },
-  },
+  ...(item.payment_status !== "paid"
+    ? [
+        {
+          label: "Update Payment",
+          icon: "money-add",
+          action: () => {
+            selectedOrder.value = item
+            openPayment.value = true
+          },
+        },
+      ]
+    : []),
   ...(item.fulfilment_status === "unfulfilled"
     ? [
         {
@@ -224,49 +239,16 @@ watch(
   () => route.query.create,
   (newVal) => {
     if (newVal === "true") {
-      openCreate.value = true
+      handleOpenCreate()
     }
   },
   { immediate: true },
 )
-
-// const sampleOrders: TOrder[] = ORDER_COLUMNS.map((_, index) => ({
-//   uid: `order_${String(index + 1).padStart(3, "0")}`,
-//   order_ref: `ORD-${1001 + index}`,
-//   customer_name: index % 3 === 0 ? undefined : `Customer ${index + 1}`,
-//   customer_email: `customer${index + 1}@example.com`,
-//   customer_phone: `+234${String(8000000000 + index)}`,
-//   items: [
-//     {
-//       product_name: `Product ${index + 1}`,
-//       product_variant_name: `Variant ${index + 1}`,
-//       quantity: Math.floor(Math.random() * 5) + 1,
-//       unit_price: (Math.random() * 10000 + 1000).toFixed(2),
-//     },
-//     ...(index % 2 === 0
-//       ? [
-//           {
-//             product_name: `Product ${index + 2}`,
-//             product_variant_name: `Variant ${index + 2}`,
-//             quantity: Math.floor(Math.random() * 3) + 1,
-//             unit_price: (Math.random() * 5000 + 500).toFixed(2),
-//           },
-//         ]
-//       : []),
-//   ],
-//   total_amount: (Math.random() * 50000 + 5000).toFixed(2),
-//   amount_paid: index % 3 === 0 ? "0" : (Math.random() * 30000 + 2000).toFixed(2),
-//   outstanding_amount: (Math.random() * 20000).toFixed(2),
-//   fulfilment_status: index % 2 === 0 ? "fulfilled" : "unfulfilled",
-//   payment_status: index % 3 === 0 ? "unpaid" : index % 3 === 1 ? "paid" : "partially_paid",
-//   source: index % 4 === 0 ? "storefront" : "manual",
-//   created_at: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-// }))
-
-const sampleOrders: TOrder[] | null = []
 </script>
 
 <template>
+  <PageHeader title="Orders" :count="orders?.count" count-label="orders" />
+
   <div class="flex flex-col gap-6 p-6">
     <div class="hidden lg:block">
       <SectionHeader
@@ -276,19 +258,13 @@ const sampleOrders: TOrder[] | null = []
     </div>
 
     <EmptyState
-      v-if="
-        !orders?.results?.length &&
-        status === 'all' &&
-        !debouncedSearch &&
-        !isPending &&
-        !sampleOrders.length
-      "
+      v-if="!orders?.results?.length && status === 'all' && !debouncedSearch && !isPending"
       title="No Orders Yet"
       description="You haven't received any orders. Once you start receiving orders, they will appear here."
       action-label="Add an order"
       action-icon="add"
       :loading="isPending"
-      @action="openCreate = true"
+      @action="handleOpenCreate"
     />
 
     <section v-else>
@@ -328,14 +304,14 @@ const sampleOrders: TOrder[] | null = []
               size="sm"
               class="flex-shrink-0"
               :label="isMobile ? '' : 'Add Order'"
-              @click="openCreate = true"
+              @click="handleOpenCreate"
             />
           </div>
         </div>
 
         <DataTable
           :key="status"
-          :data="orders?.results ?? sampleOrders ?? []"
+          :data="orders?.results ?? []"
           :columns="
             ORDER_COLUMNS.filter((v) => (status === 'voided' ? v.accessor !== 'actions' : true))
           "
@@ -496,6 +472,7 @@ const sampleOrders: TOrder[] | null = []
       :open="openPayment"
       @close="openPayment = false"
       :order="selectedOrder"
+      @refresh="handleRefresh"
     />
   </div>
 </template>

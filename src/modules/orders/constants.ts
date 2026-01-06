@@ -75,8 +75,8 @@ export const ORDER_COLUMNS: TableColumn<TOrder>[] = [
   { header: "Fulfilled", accessor: "fulfilment_status" },
   {
     header: "Order Date",
-    accessor: "created_at",
-    cell: ({ value }) => getSmartDateLabel(value as string),
+    accessor: "order_date",
+    cell: ({ item }) => getSmartDateLabel(String(item.order_date || item.created_at || "")),
   },
   { header: "Actions", accessor: "actions" },
 ]

@@ -7,8 +7,6 @@ import emptyGridPng from "@/assets/images/empty-grid.png"
  * Props interface for the EmptyState component
  */
 interface Props {
-  /** Icon name to display */
-  // icon?: string
   /** Title text */
   title: string
   /** Optional description text */
@@ -72,14 +70,13 @@ const handleAction = () => {
     >
       <Icon name="loader" size="120" class="text-primary-600 animate-spin" v-if="props.loading" />
       <template v-else>
-        <!-- Icon -->
-        <!-- <Icon :name="icon" :size="80" class="mx-auto mb-4" /> -->
-
-        <img
-          src="@/assets/images/empty-store.svg?url"
-          alt="Empty State Illustration"
-          class="mx-auto mb-4"
-        />
+        <slot name="image">
+          <img
+            src="@/assets/images/empty-store.svg?url"
+            alt="Empty State Illustration"
+            class="mx-auto mb-4"
+          />
+        </slot>
 
         <!-- Title -->
         <h3 class="mb-2 text-base font-semibold">
