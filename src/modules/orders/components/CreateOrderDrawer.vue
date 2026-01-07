@@ -5,6 +5,7 @@ import { ref, computed } from "vue"
 import type { IProductCatalogue } from "@modules/inventory/types"
 import type { ICustomer } from "@modules/customers/types"
 import type { OrderPayload, OrderItemPayload } from "@modules/orders/types"
+import type { PopupInventoryVariant } from "@modules/popups/types"
 import OrderSelectCustomer from "./create-order-form/OrderSelectCustomer.vue"
 import OrderSelectProduct from "./create-order-form/OrderSelectProduct.vue"
 import OrderProductQtyVariant from "./create-order-form/OrderProductQtyVariant.vue"
@@ -78,6 +79,7 @@ const orderItems = ref<OrderItem[]>([])
 // Popup order items structure
 interface PopupOrderItem {
   product: PopupInventory
+  variant: PopupInventoryVariant
   quantity: number
   unit_price: number
   notes?: string
@@ -91,19 +93,17 @@ const reviewOrderItems = computed(() => {
     return popupOrderItems.value.map((item) => ({
       product: {
         uid: item.product.uid,
-        product_name: item.product.product_name,
-        total_stock: item.product.available_quantity,
-        image: item.product.product_image || null,
+        product_name: item.product.name,
+        total_stock: item.variant.available_quantity,
+        image: item.product.images?.[0]?.image || null,
       },
-      variant: item.product.variant_name
-        ? {
-            uid: item.product.variant,
-            name: item.product.variant_name,
-            sku: item.product.variant_sku,
-            price: item.product.event_price,
-            original_price: parseFloat(item.product.original_price),
-          }
-        : null,
+      variant: {
+        uid: item.variant.uid,
+        name: item.variant.name,
+        sku: item.variant.sku,
+        price: item.variant.event_price,
+        original_price: parseFloat(item.variant.original_price),
+      },
       quantity: item.quantity,
       unit_price: item.unit_price,
       notes: item.notes,
@@ -282,7 +282,7 @@ const onCreatePopupOrder = () => {
         : paymentInfo.value.payment_amount,
     payment_source: paymentInfo.value.payment_source?.value,
     items: popupOrderItems.value.map((item) => ({
-      popup_inventory: item.product.uid,
+      popup_inventory: item.variant.popup_inventory_uid,
       quantity: item.quantity,
       unit_price: item.unit_price,
       fulfilment_status: shippingInfo.value.fulfilment_status,

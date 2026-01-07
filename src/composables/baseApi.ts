@@ -87,7 +87,7 @@ baseApi.interceptors.response.use(
 export type TQueryArg = {
   url: MaybeRefOrGetter<string>
   params?: MaybeRefOrGetter<Record<string, string | number | boolean> | undefined>
-  enabled?: boolean
+  enabled?: MaybeRefOrGetter<boolean>
   key: MaybeRefOrGetter<string>
   selectData?: boolean
   refetchOnWindowFocus?: boolean
@@ -111,7 +111,7 @@ export const useApiQuery = <T>({
     },
     retry: false,
     refetchOnWindowFocus,
-    enabled,
+    enabled: enabled !== undefined ? computed(() => toValue(enabled)) : undefined,
     select: selectData
       ? (response: T) => {
           if (response && typeof response === "object" && "data" in response) {

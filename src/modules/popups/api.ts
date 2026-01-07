@@ -11,7 +11,7 @@ import {
 } from "./types"
 import { useMutation } from "@tanstack/vue-query"
 import { TOrderResponse } from "@modules/orders/types"
-import { ComputedRef, MaybeRefOrGetter } from "vue"
+import { ComputedRef, MaybeRefOrGetter, computed, toValue } from "vue"
 
 /** Create popup api request */
 export function useCreatePopup() {
@@ -40,17 +40,27 @@ export function useGetPopupEvents(params?: ComputedRef<Record<string, string>>) 
   })
 }
 
-export function useGetPopupEventById(id: string) {
+export function useGetPopupEventById(
+  id: MaybeRefOrGetter<string>,
+  enabled: MaybeRefOrGetter<boolean> = true,
+) {
   return useApiQuery<PopupEvent>({
-    url: `/popup-events/${id}`,
-    key: `popup-${id}`,
+    url: computed(() => `/popup-events/${toValue(id)}`),
+    key: computed(() => `popup-${toValue(id)}`),
     selectData: true,
+    enabled,
   })
 }
 
 export function useDeletePopupEvent() {
   return useMutation({
     mutationFn: (id: string) => baseApi.delete(`/popup-events/${id}/`),
+  })
+}
+
+export function useClosePopupEvent() {
+  return useMutation({
+    mutationFn: (id: string) => baseApi.post(`/popup-events/${id}/close/`),
   })
 }
 

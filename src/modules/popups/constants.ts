@@ -36,10 +36,14 @@ export const POPUP_INVENTORY_COLUMNS: TableColumn<PopupInventory>[] = [
   { header: "Name", accessor: "name" },
   {
     header: "Price",
-    accessor: "event_price",
-    cell: ({ value }) => formatCurrency(value as number),
+    accessor: "price",
+    cell: ({ item }) => getPopupPriceRange(item as PopupInventory),
   },
-  { header: "Stock Available", accessor: "available_quantity" },
+  {
+    header: "Stock Available",
+    accessor: "quantity",
+    cell: ({ item }) => getInventoryQty(item as PopupInventory) || 0,
+  },
   { header: "Status", accessor: "is_visible" },
   { header: "", accessor: "action" },
 ]
@@ -65,14 +69,41 @@ export const POPUP_ORDER_COLUMNS: TableColumn<TOrder>[] = [
 /**
  * This should be gotten from the backend instead - - ended, ongoing, upcoming, closed. NOTES!!!!!!!!!
  */
-export const getEventStatus = (event: { start_date?: string; end_date?: string } | null) => {
-  if (!event?.start_date || !event?.end_date) return "ended"
-  const now = new Date()
-  const startDate = new Date(event.start_date)
-  const endDate = new Date(event.end_date)
-  endDate.setHours(23, 59, 59, 999) // Set to end of day
+// export const getEventStatus = (event: { start_date?: string; end_date?: string } | null) => {
+//   if (!event?.start_date || !event?.end_date) return "ended"
+//   const now = new Date()
+//   const startDate = new Date(event.start_date)
+//   const endDate = new Date(event.end_date)
+//   endDate.setHours(23, 59, 59, 999) // Set to end of day
 
-  if (now < startDate) return "upcoming"
-  if (now >= startDate && now <= endDate) return "ongoing"
-  return "ended"
+//   if (now < startDate) return "upcoming"
+//   if (now >= startDate && now <= endDate) return "ongoing"
+//   return "ended"
+// }
+
+export const getInventoryQty = (item: PopupInventory) => {
+  const qty = item.variants?.reduce((acc, variant) => acc + variant.quantity, 0)
+  return qty || 0
+}
+
+export const getInventoryVisibility = (item: PopupInventory) => {
+  const allVisible = item.variants?.every((variant) => variant.is_visible)
+  const someVisible = item.variants?.some((variant) => variant.is_visible)
+  if (allVisible) return "Available"
+  if (someVisible) return "Partially Visible"
+  return "Unavailable"
+}
+
+export const getPopupPriceRange = (item: PopupInventory) => {
+  const prices = item.variants?.map((variant) => Number(variant.event_price)) || []
+
+  const minPrice = Math.min(...prices)
+  const maxPrice = Math.max(...prices)
+
+  const value =
+    minPrice === maxPrice
+      ? formatCurrency(minPrice)
+      : `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`
+
+  return value
 }

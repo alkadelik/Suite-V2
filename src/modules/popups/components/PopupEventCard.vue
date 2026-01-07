@@ -6,7 +6,6 @@ import { PopupEvent } from "../types"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import Avatar from "@components/Avatar.vue"
 import { computed } from "vue"
-import { getEventStatus } from "../constants"
 
 interface EventCardProps {
   /**  Additional custom classes */
@@ -33,7 +32,7 @@ const formatDate = (dateStr: string) => {
 
 const menuActions = computed(() => [
   { label: "View Event", icon: "eye", action: () => emit("click") },
-  ...(getEventStatus(props.event) !== "ended"
+  ...(props.event.status !== "past"
     ? [{ label: "Edit Event", icon: "edit", action: () => emit("edit") }]
     : []),
   ...(props.event.total_orders ? [{ divider: true }] : []),
@@ -90,16 +89,12 @@ const menuActions = computed(() => [
           </span>
         </p>
         <Chip
-          :label="getEventStatus(event)"
+          :label="event.status"
           size="sm"
           class="capitalize"
           show-dot
           :color="
-            getEventStatus(event) === 'upcoming'
-              ? 'primary'
-              : getEventStatus(event) === 'ongoing'
-                ? 'success'
-                : 'alt'
+            event.status === 'upcoming' ? 'primary' : event.status === 'active' ? 'success' : 'alt'
           "
         />
       </div>

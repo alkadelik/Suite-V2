@@ -19,6 +19,7 @@ import TextField from "@components/form/TextField.vue"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
+import { PopupEvent } from "@modules/popups/types"
 
 const searchQuery = ref("")
 const openCreate = ref(false)
@@ -29,7 +30,7 @@ const openMarkPaid = ref(false)
 const route = useRoute()
 const isMobile = useMediaQuery("(max-width: 768px)")
 
-const props = defineProps<{ isActive: boolean; startDate?: string }>()
+const props = defineProps<{ isActive: boolean; startDate?: string; popup: PopupEvent }>()
 const startDate = props.startDate
 
 const { data: popupOrders, refetch, isPending } = useGetPopupOrders(route.params.id as string)
@@ -76,8 +77,8 @@ const handleMarkAsPaid = () => {
     v-if="!popupOrders?.count"
     title="You haven't made any sales yet!"
     :description="emptyStateDescription"
-    :action-icon="hasStarted ? 'add' : undefined"
-    :action-label="hasStarted ? 'Add an order' : undefined"
+    :action-icon="hasStarted && popup?.status !== 'closed' ? 'add' : undefined"
+    :action-label="hasStarted && popup?.status !== 'closed' ? 'Add an order' : undefined"
     :loading="isPending"
     @action="hasStarted && (openCreate = true)"
   />
@@ -156,7 +157,7 @@ const handleMarkAsPaid = () => {
           </div>
         </template>
         <template #mobile="{ item }">
-          <OrderCard :order="item" />
+          <OrderCard :order="item" :show-actions="false" />
         </template>
       </DataTable>
     </div>

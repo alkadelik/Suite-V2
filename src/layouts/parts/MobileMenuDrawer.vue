@@ -6,6 +6,7 @@ import Chip from "@components/Chip.vue"
 import Drawer from "@components/Drawer.vue"
 import Icon from "@components/Icon.vue"
 import { useAuthStore } from "@modules/auth/store"
+import PlansModal from "@modules/settings/components/PlansModal.vue"
 import { useSettingsStore } from "@modules/settings/store"
 import { computed } from "vue"
 
@@ -24,11 +25,7 @@ const quickActions = computed(() => {
   const allActions = [
     { label: "Customers", icon: "people", to: "/customers" },
     { label: "Popups", icon: "calendar-tick", to: "/popups", hqOnly: true },
-    {
-      label: "Expenses",
-      icon: "receipt-text",
-      action: () => toast.info("This module is coming soon!", { title: "Expenses" }),
-    },
+    { label: "Expenses", icon: "receipt-text", to: "/expenses" },
     {
       label: "Reports",
       icon: "pie-chart",
