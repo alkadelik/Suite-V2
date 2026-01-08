@@ -18,6 +18,7 @@ import {
   IInventoryTransferRequestsApiResponse,
   IApproveRejectRequestPayload,
   IBulkVariantPayload,
+  IProductStats,
 } from "./types"
 
 /** Get categories api request */
@@ -110,6 +111,15 @@ export function useGetProducts(
     },
     retry: false,
     refetchOnWindowFocus: false,
+  })
+}
+
+/** Fetch order statistics */
+export function useGetProductDashboard() {
+  return useApiQuery<IProductStats>({
+    url: `/inventory/products/dashboard/`,
+    key: `products-dashboard`,
+    selectData: true,
   })
 }
 

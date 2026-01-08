@@ -3,11 +3,11 @@ import { PopupEvent } from "../types"
 import { useClosePopupEvent, useGetPopupEventById } from "../api"
 import { displayError } from "@/utils/error-handler"
 import Icon from "@components/Icon.vue"
-import Chip from "@components/Chip.vue"
 import { computed } from "vue"
 import { truncateCurrency } from "@/utils/format-currency"
 import { formatDate } from "../constants"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
+import StatCard from "@components/StatCard.vue"
 
 const props = withDefaults(
   defineProps<{ open: boolean; event: PopupEvent; hasFullDetails?: boolean }>(),
@@ -111,32 +111,9 @@ const handleClose = () => {
             <Icon name="loader" size="64" class="!animate text-primary-600 !animate-spin" />
           </div>
 
+          <!-- stats card -->
           <div v-else class="grid grid-cols-2 gap-4">
-            <!-- stats card -->
-            <div
-              v-for="stat in stats"
-              :key="stat.label"
-              class="border-primary-200 bg-primary-25 rounded-xl border p-4"
-            >
-              <!-- title -->
-              <div class="flex items-center gap-2">
-                <div
-                  class="bg-core-200 mb-2 flex size-10 items-center justify-center rounded-xl p-2"
-                >
-                  <Icon :name="stat.icon" size="28" />
-                </div>
-                <h3 class="!font-outfit text-base">{{ stat.label }}</h3>
-              </div>
-              <!-- value -->
-              <div class="flex items-center justify-between">
-                <p>
-                  <span class="text-xl font-semibold">{{ stat.value }}</span>
-                  <span v-if="stat.valueText" class="text-sm">{{ " " + stat.valueText }}</span>
-                </p>
-                <Chip v-if="stat.chip" :label="stat.chip" color="blue" />
-              </div>
-            </div>
-            <!--  -->
+            <StatCard v-for="stat in stats" variant="alt" :key="stat.label" :stat="stat" />
           </div>
         </div>
       </div>

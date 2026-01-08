@@ -586,3 +586,11 @@ export interface IProductCatalogue {
   total_stock: number
   created_at: string
 }
+
+export interface IProductStats {
+  total_products: number
+  total_variants: number
+  total_stock_value: number
+  low_stock_count: number
+  overstocked_count: number
+}

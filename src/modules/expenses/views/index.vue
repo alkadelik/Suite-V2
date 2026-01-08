@@ -11,7 +11,7 @@ import DropdownMenu from "@components/DropdownMenu.vue"
 import Chip from "@components/Chip.vue"
 import { TExpense } from "../types"
 import CreateExpenseDrawer from "../components/CreateExpenseDrawer.vue"
-import { useDeleteExpense, useGetExpenseDashboard, useGetExpenses } from "../api"
+import { useDeleteExpense, useEditExpense, useGetExpenseDashboard, useGetExpenses } from "../api"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
 import { EXPENSE_COLUMN, getExpenseStatusColor } from "../constants"
@@ -19,18 +19,21 @@ import { useRoute } from "vue-router"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
 import ExpenseCard from "../components/ExpenseCard.vue"
-import DeleteConfirmationModal from "@components/DeleteConfirmationModal.vue"
 import Icon from "@components/Icon.vue"
 import ExpenseDetailsDrawer from "../components/ExpenseDetailsDrawer.vue"
 import StatCard from "@components/StatCard.vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { formatCurrency, truncateCurrency } from "@/utils/format-currency"
+import ConfirmationModal from "@components/ConfirmationModal.vue"
 
 const openCreate = ref(false)
 const openDelete = ref(false)
+const openVoid = ref(false)
 const openDetail = ref(false)
 const selectedExpense = ref<TExpense | null>(null)
 
 const { data: expenseDashboard, refetch: refetchStats } = useGetExpenseDashboard()
+
+const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 
 const expenseMetrics = computed(() => {
   const stat = expenseDashboard?.value
@@ -42,29 +45,37 @@ const expenseMetrics = computed(() => {
   return [
     {
       label: "Total Expenses",
-      value: formatCurrency(stat?.current.total_amount) || 0,
-      icon: "user-octagon",
-      iconClass: "md:text-green-700 md:!bg-green-50",
+      value: isMobile.value
+        ? truncateCurrency(stat?.current.total_amount || 0)
+        : formatCurrency(stat?.current.total_amount || 0),
+      icon: "wallet-money",
+      iconClass: "md:text-green-700",
+      chip: isMobile.value ? `${stat?.current.expense_count} records` : undefined,
+      percentage: 12,
     },
+    ...(isMobile.value
+      ? []
+      : [
+          {
+            label: "No. of Transactions",
+            value: stat?.current.expense_count || 0,
+            prev_value: stat?.previous.expense_count || 0,
+            icon: "money-change",
+            iconClass: "md:text-bloom-700",
+            percentage: -2,
+          },
+        ]),
     {
-      label: "No. of Transactions",
-      value: stat?.current.expense_count || 0,
-      prev_value: stat?.previous.expense_count || 0,
-      icon: "user-octagon",
-      iconClass: "md:text-bloom-700 md:!bg-bloom-50",
-    },
-    {
-      label: "Biggest Expense Category",
+      label: isMobile.value ? "Biggest Category" : "Biggest Expense Category",
       chip: biggestExpenseCategory || "",
       chipColor: "purple",
-      icon: "user-circle-add",
-      iconClass: "md:text-bloom-700 md:!bg-bloom-50",
+      icon: "moneys-solid",
+      iconClass: "md:text-blue-700",
     },
   ]
 })
 
 const showFilter = ref(false)
-const isMobile = useMediaQuery("(max-width: 768px)")
 
 const page = ref(1)
 const itemsPerPage = ref(10)
@@ -106,18 +117,33 @@ const getActionItems = (item: TExpense) => [
   },
   { divider: true },
   {
-    label: "Delete expense",
-    icon: "trash",
-    class: "text-red-600 hover:bg-red-50",
-    iconClass: "text-red-600",
+    label: "Void expense",
+    icon: "close-circle",
+    class: "text-orange-600 hover:bg-orange-50",
+    iconClass: "text-orange-600",
     action: () => {
-      openDelete.value = true
+      openVoid.value = true
       selectedExpense.value = item
     },
   },
+  ...(item.entry_type === "manual"
+    ? [
+        {
+          label: "Delete expense",
+          icon: "trash",
+          class: "text-red-600 hover:bg-red-50",
+          iconClass: "text-red-600",
+          action: () => {
+            openDelete.value = true
+            selectedExpense.value = item
+          },
+        },
+      ]
+    : []),
 ]
 
 const { mutate: deleteExpense, isPending: isDeleting } = useDeleteExpense()
+const { mutate: voidExpense, isPending: isVoiding } = useEditExpense()
 
 const handleDelete = () => {
   deleteExpense(selectedExpense.value?.uid || "", {
@@ -129,6 +155,24 @@ const handleDelete = () => {
     },
     onError: displayError,
   })
+}
+
+const handleVoid = () => {
+  voidExpense(
+    {
+      id: selectedExpense.value?.uid || "",
+      payload: { status: "void" },
+    },
+    {
+      onSuccess: () => {
+        toast.success("Expense voided successfully")
+        openVoid.value = false
+        selectedExpense.value = null
+        handleRefresh()
+      },
+      onError: displayError,
+    },
+  )
 }
 
 const route = useRoute()
@@ -146,7 +190,7 @@ watch(
 </script>
 
 <template>
-  <div class="p-6">
+  <div class="p-6 px-3">
     <PageHeader title="Expenses" :count="expenses?.count" count-label="expenses" />
 
     <div class="flex flex-col gap-8">
@@ -172,23 +216,16 @@ watch(
         </template>
       </EmptyState>
 
-      <section v-else class="flex flex-col gap-8">
-        <!-- <MetricsGrid :items="expenseMetrics" /> -->
-
+      <section v-else class="flex flex-col gap-5 lg:gap-8">
         <div class="grid grid-cols-2 gap-4 md:grid-cols-3">
-          <StatCard
-            v-for="item in expenseMetrics"
-            :key="item.label"
-            :stat="item"
-            :same-view="false"
-          />
+          <StatCard v-for="item in expenseMetrics" :key="item.label" :stat="item" />
         </div>
 
         <div
           class="space-y-4 overflow-hidden rounded-xl border-gray-200 pt-3 md:border md:bg-white"
         >
           <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
-            <h3 class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
+            <h3 class="mb-2 hidden items-center gap-1 text-lg font-semibold md:mb-0 lg:flex">
               All Expenses
               <Chip v-if="expenses?.count" :label="expenses?.count" />
             </h3>
@@ -269,30 +306,19 @@ watch(
             </template>
 
             <template #mobile="{ item }">
-              <ExpenseCard
-                :expense="item"
-                @click="
-                  () => {
-                    selectedExpense = item
-                    openDetail = true
-                  }
-                "
-                @delete="
-                  () => {
-                    selectedExpense = item
-                    openDelete = true
-                  }
-                "
-                @edit="
-                  () => {
-                    selectedExpense = item
-                    openCreate = true
-                  }
-                "
-              />
+              <div class="border-t border-gray-200 pt-3">
+                <ExpenseCard
+                  :expense="item"
+                  @toggle="() => (selectedExpense = item)"
+                  @click="() => (openDetail = true)"
+                  @delete="() => (openDelete = true)"
+                  @void="() => (openVoid = true)"
+                  @edit="() => (openCreate = true)"
+                />
+              </div>
             </template>
             <template #cell:actions="{ item }">
-              <DropdownMenu :items="getActionItems(item)" />
+              <DropdownMenu v-if="item.status !== 'void'" :items="getActionItems(item)" />
             </template>
           </DataTable>
         </div>
@@ -320,20 +346,36 @@ watch(
       @refresh="handleRefresh"
     />
 
-    <DeleteConfirmationModal
-      :model-value="openDelete"
-      @update:model-value="() => (openDelete = false)"
-      :loading="isDeleting"
-      header="Delete Expense"
-      @delete="handleDelete"
-      action-label="Delete Expense"
+    <ConfirmationModal
+      :model-value="openDelete || openVoid"
+      @update:model-value="
+        () => {
+          openDelete = false
+          openVoid = false
+        }
+      "
+      :loading="isDeleting || isVoiding"
+      :header="openDelete ? 'Delete Expense' : 'Void Expense'"
+      @confirm="openDelete ? handleDelete() : handleVoid()"
+      :action-label="openDelete ? 'Delete Expense' : 'Void Expense'"
+      :variant="openDelete ? 'error' : 'warning'"
     >
       <template #paragraph>
         <p class="mb-4 text-sm text-gray-600">
-          Are you sure you want to delete this expense? This action cannot be undone.
+          <template v-if="openDelete">
+            Are you sure you want to delete this expense? This action cannot be undone.
+          </template>
+          <template v-else>
+            Are you sure you want to void this expense? This will mark the expense as voided.
+          </template>
         </p>
-        <ExpenseCard v-if="selectedExpense" :expense="selectedExpense" :show-actions="false" />
+        <ExpenseCard
+          v-if="selectedExpense"
+          :expense="selectedExpense"
+          class="rounded-2xl px-3"
+          :show-actions="false"
+        />
       </template>
-    </DeleteConfirmationModal>
+    </ConfirmationModal>
   </div>
 </template>

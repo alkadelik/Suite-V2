@@ -11,14 +11,9 @@
     </div>
 
     <!-- Page content - always visible -->
-    <div class="hidden items-center justify-between md:flex">
-      <!-- <h4 class="!font-outfit text-core-700 mb-2 text-xl font-semibold">Your product stats</h4> -->
+    <div class="grid grid-cols-2 gap-4 lg:grid-cols-3">
+      <StatCard v-for="item in productMetrics" :key="item.label" :stat="item" />
     </div>
-    <PageSummaryCards
-      :items="productMetrics"
-      default-icon="bag"
-      default-icon-class="text-success-500"
-    />
 
     <!-- Tabs for HQ users -->
     <div v-if="locationsCount > 1" class="mt-6 w-full md:w-1/2">
@@ -280,7 +275,6 @@ import ManageStockModal from "../components/ManageStockModal.vue"
 import { formatPriceRange } from "@/utils/format-currency"
 import SectionHeader from "@components/SectionHeader.vue"
 import PageHeader from "@components/PageHeader.vue"
-import PageSummaryCards from "@components/PageSummaryCards.vue"
 import Tabs from "@components/Tabs.vue"
 import FilterDrawer from "../components/FilterDrawer.vue"
 import {
@@ -289,6 +283,7 @@ import {
   useGetProduct,
   useGetCategories,
   useUpdateProduct,
+  // useGetProductDashboard,
 } from "../api"
 import ProductAvatar from "@components/ProductAvatar.vue"
 import EmptyState from "@components/EmptyState.vue"
@@ -299,6 +294,7 @@ import { useInventoryStore } from "../store"
 import { useRoute } from "vue-router"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
+import StatCard from "@components/StatCard.vue"
 
 const page = ref(1)
 const itemsPerPage = ref(10)
@@ -312,6 +308,7 @@ const combinedParams = computed(() => ({
 }))
 
 const { data: products, isFetching, refetch: refetchProducts } = useGetProducts(combinedParams)
+// const { data: productDashboard } = useGetProductDashboard()
 const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct()
 const { mutate: updateProduct, isPending: isUpdatingProduct } = useUpdateProduct()
 const { data: categories } = useGetCategories()
@@ -468,14 +465,16 @@ const productMetrics = computed(() => {
     {
       label: "In Stock",
       value: inStockProducts,
-      prev_value: 0,
       icon: "box-filled",
+      iconClass: "text-success-500",
+      percentage: 0,
     },
     {
       label: "Low Stock",
       value: outOfStockProducts + needsReorderProducts,
-      prev_value: 0,
       icon: "box-time",
+      iconClass: "text-warning-500",
+      percentage: 0,
     },
     // {
     //   label: "Needs Reorder",

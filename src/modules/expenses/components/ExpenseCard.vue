@@ -20,6 +20,7 @@ const props = withDefaults(
       iconClass?: string
       divider?: boolean
     }>
+    class?: string
   }>(),
   {
     expense: () => ({}) as TExpense,
@@ -27,7 +28,7 @@ const props = withDefaults(
   },
 )
 
-const emit = defineEmits(["click", "edit", "delete"])
+const emit = defineEmits(["click", "toggle", "edit", "delete", "void"])
 
 const menuItems = computed(() => {
   return props.customActions?.length
@@ -36,57 +37,68 @@ const menuItems = computed(() => {
         { label: "Edit expense", icon: "edit", action: () => emit("edit") },
         { divider: true },
         {
-          label: "Delete expense",
-          icon: "trash",
-          class: "text-red-600 hover:bg-red-50",
-          iconClass: "text-red-600",
-          action: () => emit("delete"),
+          label: "Void expense",
+          icon: "close-circle",
+          class: "text-orange-600 hover:bg-orange-50",
+          iconClass: "text-orange-600",
+          action: () => emit("void"),
         },
+        ...(props.expense.entry_type === "manual"
+          ? [
+              {
+                label: "Delete expense",
+                icon: "trash",
+                class: "text-red-600 hover:bg-red-50",
+                iconClass: "text-red-600",
+                action: () => emit("delete"),
+              },
+            ]
+          : []),
       ]
 })
 </script>
 
 <template>
-  <div
-    class="bg-core-25 border-core-300 mb-3 cursor-pointer rounded-xl border p-3"
-    @click="emit('click')"
-  >
+  <div :class="['bg-core-25 cursor-pointer px-1.5 py-2.5', props.class]" @click="emit('click')">
     <div>
-      <div class="flex items-start gap-3">
-        <div class="flex flex-1 items-start gap-2 truncate text-sm">
-          <span class="bg-core-200 flex size-12 items-center justify-center rounded-xl">
-            <Icon name="receipt-text" :size="24" />
-          </span>
+      <div class="flex items-center gap-3">
+        <span class="bg-core-200 flex size-12 items-center justify-center rounded-xl">
+          <Icon name="receipt-text" :size="24" />
+        </span>
 
-          <div class="flex-1 truncate">
+        <div class="flex flex-1 flex-col gap-2 truncate">
+          <div class="flex justify-between">
             <h4 class="truncate text-left text-sm font-semibold capitalize">
               {{ expense.name || "Unnamed Expense" }}
             </h4>
-            <div class="mt-1 flex items-center">
-              <Icon name="calendar" size="16" />
-              <span class="text-sm">{{ formatDate(expense.date) }}</span>
+
+            <div class="flex items-center justify-end gap-2">
+              <span class="text-error-600 text-sm font-semibold">
+                {{ formatCurrency(expense.amount) }}
+              </span>
+
+              <DropdownMenu
+                v-if="showActions && expense.status !== 'void'"
+                @toggle="emit('toggle')"
+                :items="menuItems"
+              />
             </div>
           </div>
-        </div>
-        <div class="flex items-start gap-2">
-          <span class="text-error-600 text-sm font-semibold">
-            {{ formatCurrency(expense.amount) }}
-          </span>
-          <div>
-            <DropdownMenu v-if="showActions" :items="menuItems" />
+          <div class="flex items-center gap-2 text-sm">
+            <!-- type -->
+            <Chip icon="tag" color="purple" :label="expense.category_name" />
+            <!-- status -->
+            <Chip
+              :color="getExpenseStatusColor(expense.status)"
+              :label="expense.status"
+              class="capitalize"
+              show-dot
+            />
+            <p class="ml-auto text-sm">
+              {{ formatDate(expense.date) }}
+            </p>
           </div>
         </div>
-      </div>
-      <div class="mt-3 flex flex-wrap items-center gap-2 text-sm">
-        <!-- type -->
-        <Chip icon="tag" color="purple" :label="expense.category_name" />
-        <!-- status -->
-        <Chip
-          :color="getExpenseStatusColor(expense.status)"
-          :label="expense.status"
-          class="capitalize"
-          show-dot
-        />
       </div>
     </div>
   </div>

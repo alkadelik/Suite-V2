@@ -3,7 +3,6 @@ import AppButton from "@components/AppButton.vue"
 import DataTable from "@components/DataTable.vue"
 import EmptyState from "@components/EmptyState.vue"
 import TextField from "@components/form/TextField.vue"
-import MetricsGrid from "@components/MetricsGrid.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import PageHeader from "@components/PageHeader.vue"
 import { useMediaQuery } from "@vueuse/core"
@@ -30,6 +29,7 @@ import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import ProductAvatar from "@components/ProductAvatar.vue"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
 import OrderDetailsDrawer from "../components/OrderDetailsDrawer.vue"
+import StatCard from "@components/StatCard.vue"
 
 const openCreate = ref(false)
 const openVoid = ref(false)
@@ -45,44 +45,36 @@ const status = ref(ORDER_STATUS_TAB[0].key)
 const { data: orderDashboard, refetch: refetchStats } = useGetOrderDashboard()
 
 const orderMetrics = computed(() => {
-  const { current, previous } = orderDashboard?.value || {}
+  const { current, change } = orderDashboard?.value || {}
 
   return [
     {
       label: "Orders",
       value: current?.order_count || 0,
-      prev_value: previous?.order_count || 0,
       icon: "user-octagon",
-      chartData: [0, 0, 0, 0, 0, 0, 0],
-      chartColor: "#D0F8AA",
       iconClass: "md:text-green-700",
+      percentage: change?.order_count_pct || 0,
     },
     {
       label: "Receivables",
       value: formatCurrency(current?.total_outstanding || 0),
-      prev_value: formatCurrency(previous?.total_outstanding || 0),
       icon: "user-octagon",
-      chartData: [0, 0, 0, 0, 0, 0, 0],
-      chartColor: "#D0F8AA",
       iconClass: "md:text-bloom-700",
+      percentage: change?.total_outstanding_pct || 0,
     },
     {
       label: "Volume",
       value: formatCurrency(current?.total_amount || 0),
-      prev_value: formatCurrency(previous?.total_amount || 0),
       icon: "user-circle-add",
-      chartData: [0, 0, 0, 0, 0, 0, 0],
-      chartColor: "#FECCD6",
       iconClass: "md:text-bloom-700",
+      percentage: change?.total_amount_pct || 0,
     },
     {
       label: "Fulfilled",
       value: current?.fulfilled_count || 0,
-      prev_value: previous?.fulfilled_count || 0,
       icon: "user-circle-add",
-      chartData: [0, 0, 0, 0, 0, 0, 0],
-      chartColor: "#FECCD6",
       iconClass: "md:text-bloom-700",
+      percentage: change?.fulfilled_count_pct || 0,
     },
   ]
 })
@@ -297,7 +289,9 @@ const handleAction = (action: string, order: TOrder) => {
     />
 
     <section v-else>
-      <MetricsGrid :items="orderMetrics" />
+      <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard v-for="item in orderMetrics" :key="item.label" :stat="item" />
+      </div>
 
       <div class="mt-8 mb-4">
         <Tabs v-model="status" :tabs="ORDER_STATUS_TAB" />

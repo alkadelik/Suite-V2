@@ -14,7 +14,7 @@ export type TExpense = {
   attachment_url: string
   entry_type: string
   entry_type_display: string
-  status: "paid" | "unpaid" | "pending"
+  status: "paid" | "unpaid" | "pending" | "void"
   status_display: string
   created_at: string
   updated_at: string
