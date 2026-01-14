@@ -1,6 +1,7 @@
 import { defineStore } from "pinia"
 import { ref, computed } from "vue"
 import type { IUser, IAuthTokens } from "./types"
+import * as Sentry from "@sentry/vue"
 
 export const useAuthStore = defineStore(
   "auth",
@@ -43,6 +44,7 @@ export const useAuthStore = defineStore(
       // clear local storage - auth, settings, etc.
       localStorage.removeItem("auth")
       localStorage.removeItem("settings")
+      Sentry.setUser(null)
 
       // redirect user back to previous page or login page
       if (redirect) {
