@@ -57,6 +57,7 @@ const routes: RouteRecordRaw[] = [
     children: [...settingsRoutes],
   },
 
+  { path: "/pay", component: () => import("@modules/landing/views/new-payment-link.vue") },
   { path: "/pay/:id", component: () => import("@modules/landing/views/payment-link.vue") },
 
   { path: "/dawn", component: () => import("@modules/landing/views/dawn.vue") },

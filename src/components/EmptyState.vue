@@ -89,14 +89,16 @@ const handleAction = () => {
         </p>
 
         <!-- Action Button -->
-        <AppButton
-          v-if="actionLabel"
-          :variant="actionVariant"
-          :color="actionColor"
-          :label="actionLabel"
-          :icon="actionIcon"
-          @click="handleAction"
-        />
+        <slot name="action">
+          <AppButton
+            v-if="actionLabel"
+            :variant="actionVariant"
+            :color="actionColor"
+            :label="actionLabel"
+            :icon="actionIcon"
+            @click="handleAction"
+          />
+        </slot>
       </template>
     </div>
   </div>
