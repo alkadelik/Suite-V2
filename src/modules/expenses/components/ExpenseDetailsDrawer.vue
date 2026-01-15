@@ -61,7 +61,7 @@ const isMobile = useMediaQuery("(max-width: 1028px)")
         </p>
         <p class="flex justify-between text-sm">
           <span class="text-core-600">Vendor</span>
-          <span class="font-medium">{{ expense.vendor || "-" }}</span>
+          <span class="font-medium">{{ expense.vendor_name || "-" }}</span>
         </p>
         <p class="flex justify-between text-sm">
           <span class="text-core-600">Date</span>

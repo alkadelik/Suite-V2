@@ -2,10 +2,19 @@
 import AppButton from "@components/AppButton.vue"
 import Drawer from "@components/Drawer.vue"
 import FormField from "@components/form/FormField.vue"
+import SelectField from "@components/form/SelectField.vue"
+import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
 import Modal from "@components/Modal.vue"
 import { useMediaQuery } from "@vueuse/core"
-import { useCreateExpense, useEditExpense, useGetExpenseCategories } from "../api"
+import { Field } from "vee-validate"
+import {
+  useCreateExpense,
+  useCreateExpenseVendor,
+  useEditExpense,
+  useGetExpenseCategories,
+  useGetExpenseVendors,
+} from "../api"
 import { useForm } from "vee-validate"
 import * as yup from "yup"
 import { watch, computed, ref } from "vue"
@@ -18,8 +27,12 @@ const props = defineProps<{ open: boolean; expense?: TExpense | null }>()
 const emit = defineEmits(["close", "refresh"])
 
 const { data: expCategories } = useGetExpenseCategories()
+const { data: expVendors } = useGetExpenseVendors()
+const { mutate: createExpenseVendor, isPending: isCreatingVendor } = useCreateExpenseVendor()
 
 const selectedCategory = ref<{ label: string; value: string }>({ label: "", value: "" })
+const showCreateVendorModal = ref(false)
+const newVendorName = ref("")
 
 const categoriesOptions = computed(() => {
   if (!expCategories.value?.results) return []
@@ -27,6 +40,15 @@ const categoriesOptions = computed(() => {
     label: cat.name,
     value: cat.uid,
   }))
+})
+
+const vendorOptions = computed(() => {
+  return (
+    expVendors.value?.data?.results?.map((vendor: { uid: string; name: string }) => ({
+      label: vendor.name,
+      value: vendor.uid,
+    })) || []
+  )
 })
 
 const subCategoriesOptions = computed(() => {
@@ -61,7 +83,7 @@ interface FormValues {
   amount: string
   category: { label: string; value: string }
   sub_category: { label: string; value: string }
-  vendor: string
+  vendor: { label: string; value: string }
   date: string
   notes: string
   receipt: File | null
@@ -96,7 +118,14 @@ const { handleSubmit, meta, resetForm, values, setFieldValue } = useForm<FormVal
             })
             .required("Sub-category is required")
         : yup.object().nullable().optional(),
-      vendor: yup.string().optional(),
+      vendor: yup
+        .object()
+        .shape({
+          label: yup.string().required(),
+          value: yup.string().required(),
+        })
+        .nullable()
+        .optional(),
       date: yup.string().required("Expense date is required"),
       notes: yup.string().optional(),
       receipt: yup.mixed().nullable().optional(),
@@ -107,7 +136,7 @@ const { handleSubmit, meta, resetForm, values, setFieldValue } = useForm<FormVal
     amount: "",
     category: { label: "", value: "" },
     sub_category: { label: "", value: "" },
-    vendor: "",
+    vendor: { label: "", value: "" },
     date: new Date().toISOString().split("T")[0],
     notes: "",
     receipt: null,
@@ -136,6 +165,32 @@ const { mutate: editExpense, isPending: isEditing } = useEditExpense()
 
 const isPending = computed(() => isCreating.value || isEditing.value)
 
+/**
+ * Create a new vendor
+ */
+const createVendor = () => {
+  if (!newVendorName.value.trim()) {
+    toast.error("Please enter a vendor name")
+    return
+  }
+
+  createExpenseVendor(
+    { name: newVendorName.value.trim() },
+    {
+      onSuccess: (response) => {
+        toast.success("Vendor created successfully!")
+        // Set the newly created vendor as selected
+        const vendorUid = response.data?.data as { uid: string; name: string }
+        setFieldValue("vendor", { label: vendorUid.name, value: vendorUid.uid })
+        // Close modal and reset
+        showCreateVendorModal.value = false
+        newVendorName.value = ""
+      },
+      onError: displayError,
+    },
+  )
+}
+
 const onSubmit = handleSubmit((values) => {
   if (isEditMode.value && props.expense) {
     // Edit mode
@@ -145,7 +200,7 @@ const onSubmit = handleSubmit((values) => {
     formData.append("category", values.category.value)
     formData.append("sub_category", values.sub_category?.value || "")
     formData.append("date", values.date)
-    formData.append("vendor", values.vendor || "")
+    formData.append("vendor", values.vendor.value || "")
     formData.append("notes", values.notes || "")
     if (values.receipt) {
       formData.append("receipt", values.receipt)
@@ -171,7 +226,7 @@ const onSubmit = handleSubmit((values) => {
     formData.append("category", values.category.value)
     formData.append("sub_category", values.sub_category?.value || "")
     formData.append("date", values.date)
-    formData.append("vendor", values.vendor || "")
+    formData.append("vendor", values.vendor.value || "")
     formData.append("notes", values.notes || "")
     if (values.receipt) {
       formData.append("receipt", values.receipt)
@@ -211,7 +266,9 @@ watch(
                   value: props.expense.sub_category,
                 }
               : { label: "", value: "" },
-            vendor: props.expense.vendor || "",
+            vendor: props.expense.vendor
+              ? { label: props.expense.vendor_name || "", value: props.expense.vendor }
+              : { label: "", value: "" },
             date: props.expense.date,
             notes: props.expense.notes || "",
             receipt: null,
@@ -288,7 +345,37 @@ watch(
       </div>
 
       <div>
-        <FormField type="text" name="vendor" label="Vendor" placeholder="Enter vendor name" />
+        <!-- Select Vendor with option to create -->
+        <Field v-slot="{ field, errors: fieldErrors }" name="vendor">
+          <SelectField
+            v-bind="field"
+            :model-value="field.value"
+            label="Vendor"
+            placeholder="Select vendor"
+            :options="vendorOptions"
+            value-key="value"
+            label-key="label"
+            :error="fieldErrors[0]"
+            @update:model-value="field.value = $event"
+          >
+            <template #prepend="{ close }">
+              <div
+                class="hover:bg-core-25 cursor-pointer border-b border-gray-200 px-4 py-2 text-sm transition-colors duration-150"
+                @click="
+                  () => {
+                    close()
+                    showCreateVendorModal = true
+                  }
+                "
+              >
+                <div class="flex items-center justify-between">
+                  <span class="text-primary-600 font-semibold">Add New Vendor</span>
+                  <Icon name="add" class="text-primary-600 h-4 w-4" />
+                </div>
+              </div>
+            </template>
+          </SelectField>
+        </Field>
       </div>
 
       <div>
@@ -335,4 +422,44 @@ watch(
       />
     </template>
   </component>
+
+  <!-- Create Vendor Modal -->
+  <Modal
+    :open="showCreateVendorModal"
+    title="Add New Vendor"
+    max-width="md"
+    @close="showCreateVendorModal = false"
+  >
+    <div class="space-y-4">
+      <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
+        <Icon name="profile-add" size="28" />
+      </div>
+      <p class="text-sm text-gray-600">Create a new vendor to use in your expenses</p>
+
+      <TextField
+        v-model="newVendorName"
+        label="Vendor Name"
+        placeholder="e.g. ABC Supplies"
+        required
+      />
+    </div>
+
+    <template #footer>
+      <div class="flex gap-3">
+        <AppButton
+          label="Cancel"
+          variant="outlined"
+          class="flex-1"
+          @click="showCreateVendorModal = false"
+        />
+        <AppButton
+          label="Add Vendor"
+          class="flex-1"
+          :loading="isCreatingVendor"
+          :disabled="isCreatingVendor || !newVendorName.trim()"
+          @click="createVendor"
+        />
+      </div>
+    </template>
+  </Modal>
 </template>
