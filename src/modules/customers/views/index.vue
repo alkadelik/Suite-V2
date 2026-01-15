@@ -306,11 +306,12 @@ const customerMetrics = computed(() => {
 
 // Row click handler
 const handleRowClick = (clickedCustomer: ICustomer) => {
-  customer.value = { ...clickedCustomer }
-  formMode.value = "view"
-  customerUid.value = clickedCustomer.uid
-  router.replace({ query: { uid: clickedCustomer.uid } })
-  showViewCustomerDrawer.value = true
+  // customer.value = { ...clickedCustomer }
+  // formMode.value = "view"
+  // customerUid.value = clickedCustomer.uid
+  // router.replace({ query: { uid: clickedCustomer.uid } })
+  // showViewCustomerDrawer.value = true
+  router.push(`/customers/${clickedCustomer.uid}`)
 }
 
 // Email dropdown items
@@ -392,11 +393,12 @@ const handleAction = (action: "archive" | "edit" | "view" | "delete", item: ICus
     customer.value = item
     showDeleteConfirmationModal.value = true
   } else if (action === "view") {
-    customer.value = item
-    formMode.value = "view"
-    customerUid.value = item.uid
-    router.replace({ query: { uid: item.uid } })
-    showViewCustomerDrawer.value = true
+    // customer.value = item
+    // formMode.value = "view"
+    // customerUid.value = item.uid
+    // router.replace({ query: { uid: item.uid } })
+    // showViewCustomerDrawer.value = true
+    router.push(`/customers/${item.uid}`)
   }
 }
 
