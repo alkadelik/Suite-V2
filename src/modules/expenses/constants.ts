@@ -33,3 +33,24 @@ export const getExpenseStatusColor = (status: string): TChipColor => {
       return "primary"
   }
 }
+
+export const EXPENSE_CATEGORY_ICON: Record<string, string> = {
+  "Cost of Goods Sold (COGS)": "box",
+  "Labor Costs": "people",
+  "Rent and Utilities": "box",
+  "Marketing and Advertising": "box",
+  "Sales Expenses": "box",
+  Insurance: "box",
+  "Office Supplies and Equipment": "box",
+  "Professional Fees and Services": "box",
+  "Travel and Entertainment": "box",
+  "Technology and IT Expenses": "box",
+  "Financial Expenses": "wallet-money",
+  "Research and Development (R&D)": "box",
+  "Depreciation and Amortization": "box",
+  Taxes: "receipt-text",
+  "Employee and Contractor Payments": "profile-circle",
+  "Miscellaneous Expenses": "box",
+  "Inventory Management and Storage": "box",
+  "Business Expansion Costs": "box",
+}

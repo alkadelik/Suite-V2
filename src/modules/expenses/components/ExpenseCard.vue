@@ -6,7 +6,7 @@ import Icon from "@components/Icon.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import type { TExpense } from "../types"
 import { formatDate } from "@/utils/formatDate"
-import { getExpenseStatusColor } from "../constants"
+import { EXPENSE_CATEGORY_ICON, getExpenseStatusColor } from "../constants"
 
 const props = withDefaults(
   defineProps<{
@@ -59,29 +59,36 @@ const menuItems = computed(() => {
 </script>
 
 <template>
-  <div :class="['bg-core-25 cursor-pointer px-1.5 py-2.5', props.class]" @click="emit('click')">
+  <div
+    :class="[
+      'cursor-pointer bg-transparent px-1.5 py-2.5',
+      { 'bg-gray-100! opacity-60 grayscale': expense.status === 'void' },
+      props.class,
+    ]"
+    @click="emit('click')"
+  >
     <div>
       <div class="flex items-center gap-3">
-        <span class="bg-core-200 flex size-12 items-center justify-center rounded-xl">
-          <Icon name="receipt-text" :size="24" />
+        <span class="bg-core-200 relative flex size-12 items-center justify-center rounded-xl">
+          <Icon :name="EXPENSE_CATEGORY_ICON[expense.category_name] || 'receipt-text'" :size="24" />
+
+          <Icon
+            v-if="expense.entry_type === 'auto'"
+            name="flash"
+            class="text-primary-600 absolute -right-1 -bottom-1"
+          />
         </span>
 
         <div class="flex flex-1 flex-col gap-2 truncate">
           <div class="flex justify-between">
             <h4 class="truncate text-left text-sm font-semibold capitalize">
-              {{ expense.name || "Unnamed Expense" }}
+              {{ expense.name || expense.category_name }}
             </h4>
 
             <div class="flex items-center justify-end gap-2">
               <span class="text-error-600 text-sm font-semibold">
                 {{ formatCurrency(expense.amount) }}
               </span>
-
-              <DropdownMenu
-                v-if="showActions && expense.status !== 'void'"
-                @toggle="emit('toggle')"
-                :items="menuItems"
-              />
             </div>
           </div>
           <div class="flex items-center gap-2 text-sm">
@@ -98,6 +105,15 @@ const menuItems = computed(() => {
               {{ formatDate(expense.date) }}
             </p>
           </div>
+        </div>
+
+        <div class="self-start">
+          <DropdownMenu
+            v-if="showActions && expense.status !== 'void'"
+            @toggle="emit('toggle')"
+            :items="menuItems"
+          />
+          <div class="w-4" v-if="expense.status === 'void'" />
         </div>
       </div>
     </div>
