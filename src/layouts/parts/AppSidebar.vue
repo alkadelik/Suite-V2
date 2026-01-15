@@ -53,7 +53,18 @@
 
     <!-- Navigation -->
     <section class="space-y-1 px-4 py-2">
-      <SidebarLink v-for="link in menuItems" :key="link.label" v-bind="link" />
+      <SidebarGroup
+        icon="shopping-cart"
+        label="Sales Suite"
+        :children="salesSuiteItems"
+        :default-expanded="true"
+      />
+
+      <SidebarGroup icon="chart-breakout-square" label="Marketing" :children="[]" />
+
+      <SidebarGroup icon="shop-outline" label="Production" :children="productionItems" />
+
+      <SidebarLink icon="receipt-text" label="Expenses" to="/expenses" />
     </section>
 
     <section class="mt-auto px-4 pb-4">
@@ -151,6 +162,7 @@ import { computed } from "vue"
 import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
 import SidebarLink from "./SidebarLink.vue"
+import SidebarGroup from "./SidebarGroup.vue"
 import LocationDropdown from "./LocationDropdown.vue"
 import { clipboardCopy } from "@/utils/others"
 import { useSettingsStore } from "@modules/settings/store"
@@ -158,7 +170,6 @@ import { useRouter } from "vue-router"
 
 defineProps<{
   mobileSidebarOpen: boolean
-  menuItems: Array<{ icon: string; label: string; to: string }>
   isLive: boolean
 }>()
 
@@ -168,6 +179,19 @@ const router = useRouter()
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
 const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
+
+// Sales Suite items
+const salesSuiteItems = computed(() => [
+  { icon: "box", label: "Orders", to: "/orders" },
+  { icon: "folder", label: "Inventory", to: "/inventory" },
+  { icon: "calendar-tick", label: "Popups", to: "/popups" },
+  { icon: "people", label: "Customers", to: "/customers" },
+])
+
+// Production items
+const productionItems = computed(() => [
+  // Add production-related items here when needed
+])
 
 const storeDetails = computed(() => useSettingsStore().storeDetails)
 

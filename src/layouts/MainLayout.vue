@@ -10,7 +10,6 @@
     <div class="flex h-[100dvh] overflow-hidden lg:h-screen">
       <!-- Sidebar -->
       <AppSidebar
-        :menu-items="MENU_ITEMS"
         :mobile-sidebar-open="mobileSidebarOpen"
         :isLive="isLive"
         @logout="logout = true"
