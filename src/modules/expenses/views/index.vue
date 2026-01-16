@@ -57,8 +57,8 @@ const expenseMetrics = computed(() => {
     },
     {
       label: isMobile.value ? "Biggest Category" : "Biggest Expense Category",
-      value: biggestExpenseCategory ? biggestExpenseCategory.category_name : "N/A",
-      chip: formatCurrency(biggestExpenseCategory?.total_amount || 0),
+      value: formatCurrency(biggestExpenseCategory?.total_amount || 0),
+      chip: biggestExpenseCategory ? biggestExpenseCategory.category_name : "N/A",
       chipColor: "blue",
       icon: "moneys-solid",
       iconClass: "md:text-blue-700",
@@ -182,7 +182,7 @@ watch(
 </script>
 
 <template>
-  <div class="p-6 px-3">
+  <div class="px-3 pb-6">
     <PageHeader title="Expenses" :count="expenses?.count" count-label="records" />
 
     <div class="flex flex-col gap-8">
@@ -311,6 +311,15 @@ watch(
             </template>
             <template #cell:category_name="{ item }">
               <Chip :label="item.category_name" color="purple" icon="tag" />
+            </template>
+            <template #cell:sub_category_name="{ item }">
+              <Chip
+                v-if="item.sub_category_name"
+                :label="item.sub_category_name"
+                color="pink"
+                icon="tag"
+              />
+              <span v-else>---</span>
             </template>
             <template #cell:status="{ item }">
               <Chip

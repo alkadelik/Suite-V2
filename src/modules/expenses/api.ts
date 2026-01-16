@@ -39,11 +39,13 @@ export function useGetExpenseDashboard() {
 }
 
 /** Fetch expense categories */
-export function useGetExpenseCategories() {
+export function useGetExpenseCategories(enabled?: MaybeRefOrGetter<boolean>) {
   return useApiQuery<TExpenseCategoryResponse>({
     url: `/expenses/categories/`,
     key: `expenses-categories`,
     selectData: true,
+    refetchOnWindowFocus: false,
+    enabled,
   })
 }
 

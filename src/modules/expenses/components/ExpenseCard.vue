@@ -61,7 +61,7 @@ const menuItems = computed(() => {
 <template>
   <div
     :class="[
-      'cursor-pointer bg-transparent px-1.5 py-2.5',
+      'cursor-pointer bg-transparent py-2.5',
       { 'bg-gray-100! opacity-60 grayscale': expense.status === 'void' },
       props.class,
     ]"
@@ -93,7 +93,13 @@ const menuItems = computed(() => {
           </div>
           <div class="flex items-center gap-2 text-sm">
             <!-- type -->
-            <Chip icon="tag" color="purple" :label="expense.category_name" />
+            <Chip
+              v-if="expense.sub_category_name"
+              icon="tag"
+              color="pink"
+              :label="expense.sub_category_name || ''"
+              class="truncate"
+            />
             <!-- status -->
             <Chip
               :color="getExpenseStatusColor(expense.status)"
@@ -101,7 +107,7 @@ const menuItems = computed(() => {
               class="capitalize"
               show-dot
             />
-            <p class="ml-auto text-sm">
+            <p class="ml-auto pl-4 text-sm">
               {{ formatDate(expense.date) }}
             </p>
           </div>

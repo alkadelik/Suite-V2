@@ -44,6 +44,9 @@ export const useAuthStore = defineStore(
       // clear local storage - auth, settings, etc.
       localStorage.removeItem("auth")
       localStorage.removeItem("settings")
+      localStorage.removeItem("production")
+      localStorage.removeItem("expenses")
+      // clear sentry user context
       Sentry.setUser(null)
 
       // redirect user back to previous page or login page
