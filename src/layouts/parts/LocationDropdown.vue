@@ -46,6 +46,7 @@ watch(
   (locs) => {
     setLocations(locs)
     if (!currentLocation.value?.uid) {
+      // Set HQ if available or first location as active by default
       const hqLocation = locs.find((loc) => loc.is_hq)
       setActiveLocation(hqLocation || locs[0])
     }
