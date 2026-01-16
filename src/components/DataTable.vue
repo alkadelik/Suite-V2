@@ -426,7 +426,7 @@ const getRowClasses = (row: T) => {
             <!-- default mobile card layout -->
             <div
               :class="[
-                'rounded-lg border border-gray-200',
+                'my-3 rounded-lg border border-gray-200',
                 { 'cursor-pointer hover:bg-gray-50': true },
                 getRowClasses(row.original as T),
               ]"

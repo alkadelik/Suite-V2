@@ -15,6 +15,7 @@ import {
   useGetExpenseCategories,
   useGetExpenseVendors,
 } from "../api"
+import { useExpenseStore } from "../store"
 import { useForm } from "vee-validate"
 import * as yup from "yup"
 import { watch, computed, ref } from "vue"
@@ -26,7 +27,32 @@ import { TExpense } from "../types"
 const props = defineProps<{ open: boolean; expense?: TExpense | null }>()
 const emit = defineEmits(["close", "refresh"])
 
-const { data: expCategories } = useGetExpenseCategories()
+const expenseStore = useExpenseStore()
+
+// Only fetch if we don't have cached categories
+const { data: apiCategories } = useGetExpenseCategories(
+  computed(() => !expenseStore.hasCategories()),
+)
+
+// Use cached categories or API data
+const expCategories = computed(() => {
+  if (expenseStore.categories && expenseStore.categories.length > 0) {
+    return expenseStore.categories
+  }
+  return apiCategories.value?.results || []
+})
+
+// Cache categories when API returns data
+watch(
+  () => apiCategories.value,
+  (data) => {
+    if (data?.results && data.results.length > 0) {
+      expenseStore.setCategories(data.results)
+    }
+  },
+  { immediate: true },
+)
+
 const { data: expVendors } = useGetExpenseVendors()
 const { mutate: createExpenseVendor, isPending: isCreatingVendor } = useCreateExpenseVendor()
 
@@ -35,8 +61,7 @@ const showCreateVendorModal = ref(false)
 const newVendorName = ref("")
 
 const categoriesOptions = computed(() => {
-  if (!expCategories.value?.results) return []
-  return expCategories.value.results.map((cat) => ({
+  return expCategories.value.map((cat) => ({
     label: cat.name,
     value: cat.uid,
   }))
@@ -52,11 +77,9 @@ const vendorOptions = computed(() => {
 })
 
 const subCategoriesOptions = computed(() => {
-  if (!expCategories.value?.results || !selectedCategory.value) return []
+  if (!expCategories.value || expCategories.value.length === 0 || !selectedCategory.value) return []
 
-  const category = expCategories.value.results.find(
-    (cat) => cat.uid === selectedCategory.value.value,
-  )
+  const category = expCategories.value.find((cat) => cat.uid === selectedCategory.value.value)
 
   if (!category?.sub_categories) return []
 
@@ -67,10 +90,9 @@ const subCategoriesOptions = computed(() => {
 })
 
 const hasSubCategories = computed(() => {
-  if (!expCategories.value?.results || !selectedCategory.value) return false
-  const category = expCategories.value.results.find(
-    (cat) => cat.uid === selectedCategory.value.value,
-  )
+  if (!expCategories.value || expCategories.value.length === 0 || !selectedCategory.value)
+    return false
+  const category = expCategories.value.find((cat) => cat.uid === selectedCategory.value.value)
   return (category?.sub_categories?.length ?? 0) > 0
 })
 
@@ -104,26 +126,17 @@ const { handleSubmit, meta, resetForm, values, setFieldValue } = useForm<FormVal
         .positive("Amount must be greater than 0"),
       category: yup
         .object()
-        .shape({
-          label: yup.string().required(),
-          value: yup.string().required(),
-        })
+        .shape({ label: yup.string().required(), value: yup.string().required() })
         .required("Expense category is required"),
       sub_category: hasSubCategories.value
         ? yup
             .object()
-            .shape({
-              label: yup.string().required(),
-              value: yup.string().required(),
-            })
+            .shape({ label: yup.string().required(), value: yup.string().required() })
             .required("Sub-category is required")
         : yup.object().nullable().optional(),
       vendor: yup
         .object()
-        .shape({
-          label: yup.string().required(),
-          value: yup.string().required(),
-        })
+        .shape({ label: yup.string(), value: yup.string() })
         .nullable()
         .optional(),
       date: yup.string().required("Expense date is required"),
@@ -327,6 +340,7 @@ watch(
           value-key="value"
           label-key="label"
           required
+          searchable
         />
       </div>
 
@@ -341,6 +355,7 @@ watch(
           value-key="value"
           label-key="label"
           :required="hasSubCategories"
+          searchable
         />
       </div>
 

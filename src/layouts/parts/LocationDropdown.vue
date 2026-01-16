@@ -46,7 +46,8 @@ watch(
   (locs) => {
     setLocations(locs)
     if (!currentLocation.value?.uid) {
-      setActiveLocation(locs[0])
+      const hqLocation = locs.find((loc) => loc.is_hq)
+      setActiveLocation(hqLocation || locs[0])
     }
   },
   { immediate: true },

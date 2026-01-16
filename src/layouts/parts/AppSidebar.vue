@@ -60,9 +60,14 @@
         :default-expanded="true"
       />
 
-      <SidebarGroup icon="chart-breakout-square" label="Marketing" :children="[]" />
+      <!-- <SidebarGroup icon="trend-up" label="Marketing" :children="[]" /> -->
 
-      <SidebarGroup icon="shop-outline" label="Production" :children="productionItems" />
+      <SidebarGroup
+        v-if="isStaging"
+        icon="building"
+        label="Production"
+        :children="productionItems"
+      />
 
       <SidebarLink icon="receipt-text" label="Expenses" to="/expenses" />
     </section>
@@ -164,9 +169,10 @@ import AppButton from "@components/AppButton.vue"
 import SidebarLink from "./SidebarLink.vue"
 import SidebarGroup from "./SidebarGroup.vue"
 import LocationDropdown from "./LocationDropdown.vue"
-import { clipboardCopy } from "@/utils/others"
+import { clipboardCopy, isStaging } from "@/utils/others"
 import { useSettingsStore } from "@modules/settings/store"
 import { useRouter } from "vue-router"
+import { useProductionStore } from "@modules/production/store"
 
 defineProps<{
   mobileSidebarOpen: boolean
@@ -189,9 +195,13 @@ const salesSuiteItems = computed(() => [
 ])
 
 // Production items
-const productionItems = computed(() => [
-  // Add production-related items here when needed
-])
+const productionItems = computed(() => {
+  const componentLabel = useProductionStore().componentLabel || "Raw Materials"
+  return [
+    { icon: "box", label: componentLabel, to: "/raw-materials" },
+    // Add production-related items here when needed
+  ]
+})
 
 const storeDetails = computed(() => useSettingsStore().storeDetails)
 

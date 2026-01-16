@@ -27,11 +27,7 @@ withDefaults(defineProps<Props>(), {
         <div class="flex items-center gap-2">
           <Icon v-if="inner" name="arrow-left" size="20" @click="$router.back()" />
           <h1 :class="inner ? 'text-lg font-semibold' : 'text-xl font-bold'">{{ title }}</h1>
-          <Chip
-            v-if="count && !inner"
-            :label="`${count} ${countLabel || title.toLowerCase()}`"
-            color="blue"
-          />
+          <Chip v-if="count && !inner" :label="`${count} ${countLabel || ''}`" color="blue" />
         </div>
       </div>
       <Chip v-if="showTutorial" icon="info-circle" label="Tutorial" />
