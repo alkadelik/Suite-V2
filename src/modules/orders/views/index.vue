@@ -42,7 +42,11 @@ const openDetails = ref(false)
 const selectedOrder = ref<TOrder | null>(null)
 const status = ref(ORDER_STATUS_TAB[0].key)
 
-const { data: orderDashboard, refetch: refetchStats } = useGetOrderDashboard()
+const {
+  data: orderDashboard,
+  isPending: isLoadingStats,
+  refetch: refetchStats,
+} = useGetOrderDashboard()
 
 const orderMetrics = computed(() => {
   const { current, change } = orderDashboard?.value || {}
@@ -290,7 +294,12 @@ const handleAction = (action: string, order: TOrder) => {
 
     <section v-else>
       <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard v-for="item in orderMetrics" :key="item.label" :stat="item" />
+        <StatCard
+          v-for="item in orderMetrics"
+          :key="item.label"
+          :stat="item"
+          :loading="isLoadingStats"
+        />
       </div>
 
       <div class="mt-8 mb-4">

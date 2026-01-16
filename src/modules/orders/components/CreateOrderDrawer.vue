@@ -5,7 +5,7 @@ import { ref, computed } from "vue"
 import type { IProductCatalogue } from "@modules/inventory/types"
 import type { ICustomer } from "@modules/customers/types"
 import type { OrderPayload, OrderItemPayload } from "@modules/orders/types"
-import type { PopupInventoryVariant } from "@modules/popups/types"
+import type { PopupInventoryVariant, PopupOrderPayload } from "@modules/popups/types"
 import OrderSelectCustomer from "./create-order-form/OrderSelectCustomer.vue"
 import OrderSelectProduct from "./create-order-form/OrderSelectProduct.vue"
 import OrderProductQtyVariant from "./create-order-form/OrderProductQtyVariant.vue"
@@ -198,26 +198,40 @@ const { mutate: createPopupOrder, isPending: isPopupOrderPending } = useCreatePo
 const isPending = computed(() => isRegularOrderPending.value || isPopupOrderPending.value)
 
 const onCreateOrder = () => {
-  if (isPopupOrder.value) {
-    onCreatePopupOrder()
-    return
-  }
+  // if (isPopupOrder.value) {
+  //   onCreatePopupOrder()
+  //   return
+  // }
+
   // Format payload according to OrderPayload interface
-  // source: "internal" || shippingInfo.value.order_channel,
-  const payload: OrderPayload = {
-    source: "internal",
-    customer:
-      selectedCustomer.value?.uid == anonymousCustomer?.uid
-        ? ""
-        : selectedCustomer.value?.uid || "",
+  const { fulfilment_method, delivery_method } = shippingInfo.value
+  const { uid, email, phone, full_name, first_name, last_name } = selectedCustomer.value || {}
+
+  const payload: OrderPayload | PopupOrderPayload = {
+    source: isPopupOrder.value ? "popup-internal" : "internal",
+    ...(isPopupOrder.value ? { popup_event: props.popupEventId } : {}),
+    ...(uid && uid !== anonymousCustomer.uid
+      ? {
+          customer: uid,
+          customer_name: full_name || `${first_name} ${last_name}`,
+          customer_email: email || "",
+          customer_phone: phone || "",
+        }
+      : { customer: "" }),
     total_amount: totalAmount.value,
-    delivery_fee: shippingInfo.value.delivery_fee,
-    fulfilment_method: shippingInfo.value.fulfilment_method,
-    delivery_address:
-      shippingInfo.value.delivery_method === "automatic" ? shippingInfo.value.delivery_address : "",
-    delivery_method: shippingInfo.value.delivery_method,
+    ...(fulfilment_method === "delivery"
+      ? {
+          delivery_fee: shippingInfo.value.delivery_fee,
+          delivery_method,
+          delivery_payment_option: shippingInfo.value.delivery_payment_option,
+          delivery_address:
+            delivery_method === "automatic" ? shippingInfo.value.delivery_address : "",
+        }
+      : {}),
+    fulfilment_method,
     courier:
-      shippingInfo.value.shipping_courier || shippingInfo.value.courier
+      fulfilment_method === "delivery" &&
+      (shippingInfo.value.shipping_courier || shippingInfo.value.courier)
         ? {
             courier_id: shippingInfo.value.courier?.toLowerCase(),
             courier_name: shippingInfo.value.courier,
@@ -245,54 +259,9 @@ const onCreateOrder = () => {
     fulfilment_status: shippingInfo.value.fulfilment_status,
     order_channel: shippingInfo.value.order_channel.value,
     order_date: shippingInfo.value.order_date,
-    delivery_payment_option: shippingInfo.value.delivery_payment_option,
   }
 
-  createOrder(payload, {
-    onSuccess: (res) => {
-      console.log("Order created:", res.data)
-      toast.success("Order created successfully!")
-      emit("refresh")
-      emit("close")
-      resetForm()
-    },
-    onError: displayError,
-  })
-}
-
-const onCreatePopupOrder = () => {
-  const payload = {
-    source: "popup-internal",
-    popup_event: props.popupEventId!,
-    customer_name: selectedCustomer.value?.full_name || "",
-    customer_email: selectedCustomer.value?.email || "",
-    customer_phone: selectedCustomer.value?.phone || "",
-    total_amount: totalAmount.value,
-    delivery_fee: shippingInfo.value.delivery_fee,
-    fulfilment_method: shippingInfo.value.fulfilment_method,
-    delivery_address:
-      shippingInfo.value.delivery_method === "automatic" ? shippingInfo.value.delivery_address : "",
-    delivery_method: shippingInfo.value.delivery_method,
-    courier: shippingInfo.value.courier,
-    coupon_code: paymentInfo.value.coupon_code || "",
-    payment_status: paymentInfo.value.payment_status,
-    payment_amount:
-      paymentInfo.value.payment_status === "paid"
-        ? totalAmount.value
-        : paymentInfo.value.payment_amount,
-    payment_source: paymentInfo.value.payment_source?.value,
-    items: popupOrderItems.value.map((item) => ({
-      popup_inventory: item.variant.popup_inventory_uid,
-      quantity: item.quantity,
-      unit_price: item.unit_price,
-      fulfilment_status: shippingInfo.value.fulfilment_status,
-      notes: item.notes,
-    })),
-    fulfilment_status: shippingInfo.value.fulfilment_status,
-    order_date: shippingInfo.value.order_date,
-  }
-
-  createPopupOrder(payload, {
+  const handler = {
     onSuccess: () => {
       toast.success("Order created successfully!")
       emit("refresh")
@@ -300,8 +269,63 @@ const onCreatePopupOrder = () => {
       resetForm()
     },
     onError: displayError,
-  })
+  }
+
+  if (isPopupOrder.value) {
+    createPopupOrder(payload as unknown as PopupOrderPayload, handler)
+  } else {
+    createOrder(payload, handler)
+  }
 }
+
+// const onCreatePopupOrder = () => {
+//   const { fulfilment_method, delivery_method } = shippingInfo.value
+
+//   const payload = {
+//     source: "popup-internal",
+//     popup_event: props.popupEventId!,
+
+//     total_amount: totalAmount.value,
+//     fulfilment_method,
+//     ...(fulfilment_method === "delivery"
+//       ? {
+//           delivery_fee: shippingInfo.value.delivery_fee,
+//           delivery_method,
+//           delivery_payment_option: shippingInfo.value.delivery_payment_option,
+//           delivery_address:
+//             delivery_method === "automatic" ? shippingInfo.value.delivery_address : "",
+//         }
+//       : {}),
+
+//     courier: shippingInfo.value.courier,
+//     coupon_code: paymentInfo.value.coupon_code || "",
+//     payment_status: paymentInfo.value.payment_status,
+//     payment_amount:
+//       paymentInfo.value.payment_status === "paid"
+//         ? totalAmount.value
+//         : paymentInfo.value.payment_amount,
+//     payment_source: paymentInfo.value.payment_source?.value,
+//     items: popupOrderItems.value.map((item) => ({
+//       popup_inventory: item.variant.popup_inventory_uid,
+//       quantity: item.quantity,
+//       unit_price: item.unit_price,
+//       fulfilment_status: shippingInfo.value.fulfilment_status,
+//       notes: item.notes,
+//     })),
+//     fulfilment_status: shippingInfo.value.fulfilment_status,
+//     order_date: shippingInfo.value.order_date,
+//   }
+
+//   createPopupOrder(payload, {
+//     onSuccess: () => {
+//       toast.success("Order created successfully!")
+//       emit("refresh")
+//       emit("close")
+//       resetForm()
+//     },
+//     onError: displayError,
+//   })
+// }
 
 const resetForm = () => {
   activeStep.value = 0

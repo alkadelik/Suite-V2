@@ -99,6 +99,8 @@
 
             <!-- Options List -->
             <div class="max-h-48 overflow-auto">
+              <slot name="prepend" :close="closeDropdown" />
+
               <template v-for="(opt, idx) in filteredOptions" :key="getOptionKey(opt, idx)">
                 <div
                   :class="[getOptionClasses(opt, idx)]"
@@ -144,8 +146,11 @@
                 </div>
                 <div v-if="hasOptionDivider(opt)" class="border-b border-gray-200" />
               </template>
+
+              <slot name="append" :close="closeDropdown" />
+
               <div
-                v-if="filteredOptions.length === 0"
+                v-if="filteredOptions.length === 0 && !$slots.prepend"
                 class="text-core-400 px-4 py-3 text-center text-sm"
               >
                 {{ noOptionsText }}

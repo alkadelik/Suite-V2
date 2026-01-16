@@ -18,6 +18,7 @@ import ordersRoutes from "@modules/orders/routes"
 import settingsRoutes from "@modules/settings/routes"
 import sharedRoutes from "@modules/shared/routes"
 import expensesRoutes from "@modules/expenses/routes"
+import productionRoutes from "@modules/production/routes"
 
 const routes: RouteRecordRaw[] = [
   // Public pages routes with LandingLayout
@@ -49,6 +50,7 @@ const routes: RouteRecordRaw[] = [
       ...popupsRoutes,
       ...sharedRoutes,
       ...expensesRoutes,
+      ...productionRoutes,
     ],
   },
   {

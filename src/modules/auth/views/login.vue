@@ -82,6 +82,7 @@ import AppButton from "@components/AppButton.vue"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
 import { computed, ref } from "vue"
+import * as Sentry from "@sentry/vue"
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -103,6 +104,9 @@ const onSubmit = (values: TLoginPayload) => {
         authStore.setTokens({ accessToken: access, refreshToken: refresh })
         authStore.setAuthUser({ ...user, email: values.email })
         toast.success("Your login was successful...")
+
+        // Set user context in Sentry
+        Sentry.setUser({ id: user.uid, email: values.email })
 
         // Check live status before redirecting
         const checkLiveStatusAndRedirect = async () => {

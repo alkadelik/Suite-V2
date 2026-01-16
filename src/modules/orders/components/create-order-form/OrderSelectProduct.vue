@@ -8,7 +8,7 @@ import { useGetProductCatalogsInfinite } from "@modules/inventory/api"
 import type { IProductCatalogue } from "@modules/inventory/types"
 import { computed, ref } from "vue"
 import AddNewProductModal from "./AddNewProductModal.vue"
-import { useInfinitePagination } from "@/utils/useInfinitePagination"
+import { useInfinitePagination } from "@/composables/useInfinitePagination"
 
 const props = defineProps<{
   selectedProducts: IProductCatalogue[]
