@@ -11,7 +11,7 @@ const props = defineProps<{
   <div :class="['border-warning-200 cursor-pointer rounded-xl border', props.class]">
     <div class="bg-warning-50 flex items-center gap-2.5 rounded-t-xl p-2">
       <span class="bg-warning-100 flex size-10 items-center justify-center rounded-xl">
-        <Icon :name="props.icon || 'box'" :size="24" class="text-primary-700" />
+        <Icon :name="props.icon || 'calendar2'" :size="24" class="text-primary-700" />
       </span>
       <h3 class="!font-outfit truncate font-medium">{{ title }}</h3>
       <span class="ml-auto" />

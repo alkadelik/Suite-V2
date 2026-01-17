@@ -23,7 +23,7 @@ import RMTableCard from "./RMTableCard.vue"
           <Chip :label="item.type" color="blue" />
         </template>
         <template #mobile="{ item }">
-          <RMTableCard :title="item.item" class="my-3">
+          <RMTableCard :title="item.item" icon="beaker" class="my-3">
             <template #body>
               <div>
                 <p class="text-sm font-medium">{{ item.quantity_per_batch }} {{ item.unit }}</p>
