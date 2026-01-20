@@ -231,7 +231,11 @@ export function useGetProduct(
     },
     retry: false,
     refetchOnWindowFocus: false,
-    enabled: options?.enabled ?? true,
+    enabled: () => {
+      const uidValue = toValue(uid)
+      const enabledValue = options?.enabled ? toValue(options.enabled) : true
+      return !!uidValue && enabledValue
+    },
   })
 }
 
