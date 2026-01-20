@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { formatCurrency } from "@/utils/format-currency"
-import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
 import { PopupEvent } from "../types"
 import DropdownMenu from "@components/DropdownMenu.vue"
-import Avatar from "@components/Avatar.vue"
 import { computed } from "vue"
 
 interface EventCardProps {
@@ -35,7 +33,7 @@ const menuActions = computed(() => [
   ...(props.event.status !== "past"
     ? [{ label: "Edit Event", icon: "edit", action: () => emit("edit") }]
     : []),
-  ...(props.event.total_orders ? [{ divider: true }] : []),
+  ...(!props.event.total_orders ? [{ divider: true }] : []),
   ...(!props.event.total_orders
     ? [
         {
@@ -80,23 +78,21 @@ const menuActions = computed(() => [
           <p class="text-sm font-medium">{{ formatDate(event.end_date) }}</p>
           <p class="text-core-600 text-xs">End Date</p>
         </div>
-        <div class="flex items-center gap-2 text-xs">
-          <div class="h-1.5 w-16 rounded-full bg-gray-200">
+        <div>
+          <div class="h-2 w-24 rounded-full bg-gray-200">
             <div
               class="bg-primary-600 h-1.5 rounded-full"
-              :style="`width: ${((event.items_sold_count || 0) / (event.products_count || 1)) * 100}%`"
+              :style="`width: ${((event?.items_sold_count || 0) / (event?.products_count || 1)) * 100}%`"
             ></div>
           </div>
-          <span class="flex flex-shrink-0 break-keep">
-            {{
-              `${parseInt(String(((item.items_sold_count || 0) / (item.products_count || 1)) * 100))}%`
-            }}
-          </span>
+          <p class="text-core-600 mt-1.5 text-xs">
+            {{ event?.items_sold_count || 0 }} / {{ event?.products_count || 0 }} items sold
+          </p>
         </div>
       </slot>
     </div>
   </div>
-  <div
+  <!-- <div
     class="bg-core-25 border-core-300 item-start flex cursor-pointer gap-4 rounded-2xl border px-4 py-4"
     :class="props.class"
     @click="emit('click')"
@@ -144,5 +140,5 @@ const menuActions = computed(() => [
         />
       </div>
     </div>
-  </div>
+  </div> -->
 </template>
