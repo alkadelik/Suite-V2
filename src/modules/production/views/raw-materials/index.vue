@@ -39,7 +39,7 @@ const computedParams = computed(() => {
 })
 
 const { data: rawMaterials, isPending, isFetching } = useGetRawMaterials(computedParams)
-const { data: stats } = useGetRawMaterialsStats()
+const { data: stats, isLoading: isLoadingStats } = useGetRawMaterialsStats()
 
 const materialStats = computed(() => [
   ...(isMobile.value
@@ -149,7 +149,12 @@ const onSelect = (option: { label: string; value: string }) => {
           </p>
         </div>
         <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatCard v-for="item in materialStats" :key="item.label" :stat="item" />
+          <StatCard
+            v-for="item in materialStats"
+            :key="item.label"
+            :stat="item"
+            :loading="isLoadingStats"
+          />
         </div>
 
         <div

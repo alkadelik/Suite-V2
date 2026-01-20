@@ -32,7 +32,11 @@ const openVoid = ref(false)
 const openDetail = ref(false)
 const selectedExpense = ref<TExpense | null>(null)
 
-const { data: expenseDashboard, refetch: refetchStats } = useGetExpenseDashboard()
+const {
+  data: expenseDashboard,
+  isLoading: isLoadingStats,
+  refetch: refetchStats,
+} = useGetExpenseDashboard()
 
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 
@@ -210,7 +214,12 @@ watch(
 
       <section v-else class="flex flex-col gap-5 lg:gap-8">
         <div v-if="!isMobile" class="grid-cols-4 gap-4 lg:grid">
-          <StatCard v-for="item in expenseMetrics" :key="item.label" :stat="item" />
+          <StatCard
+            v-for="item in expenseMetrics"
+            :key="item.label"
+            :stat="item"
+            :loading="isLoadingStats"
+          />
           <ExpenseStackedBarChart
             class="col-span-2"
             show-label

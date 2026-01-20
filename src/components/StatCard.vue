@@ -48,7 +48,7 @@ const chipColor = computed(() => (props.stat.chipColor as TChipColor) || "blue")
               variant === 'alt' ? 'bg-core-200 flex' : 'hidden bg-gray-100 lg:flex',
             ]"
           >
-            <div class="h-6 w-6 rounded bg-gray-300" />
+            <div class="h-6 w-6 rounded bg-gray-200" />
           </div>
           <span
             :class="variant === 'alt' ? 'hidden' : 'inline lg:hidden'"
@@ -56,14 +56,14 @@ const chipColor = computed(() => (props.stat.chipColor as TChipColor) || "blue")
           />
         </div>
         <!-- Label skeleton -->
-        <div class="h-4 w-24 rounded bg-gray-300 md:h-5 md:w-32" />
+        <div class="h-4 w-24 rounded bg-gray-200 md:h-5 md:w-32" />
       </div>
       <!-- Value skeleton -->
       <div
         class="flex items-center justify-between gap-6"
         :class="variant === 'alt' ? 'mt-2' : 'mt-4'"
       >
-        <div class="h-6 w-20 rounded bg-gray-300 md:h-7 md:w-24" />
+        <div class="h-6 w-20 rounded bg-gray-200 md:h-7 md:w-24" />
       </div>
     </div>
 
