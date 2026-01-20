@@ -193,17 +193,6 @@ watch(activeStep, (newStep, oldStep) => {
                     <p v-if="item.variant" class="text-core-500 text-xs">
                       {{ item.variant.name.split(" - ")[1] || item.variant.name }}
                     </p>
-
-                    <!-- Visibility + Active -->
-                    <!-- <p class="mt-0.5 text-xs">
-                      <span :class="item.is_visible ? 'text-green-600' : 'text-gray-400'">
-                        {{ item.is_visible ? "Visible" : "Hidden" }}
-                      </span>
-                      •
-                      <span :class="item.is_active ? 'text-green-600' : 'text-gray-400'">
-                        {{ item.is_active ? "Active" : "Inactive" }}
-                      </span>
-                    </p> -->
                   </div>
                 </div>
 
@@ -221,7 +210,7 @@ watch(activeStep, (newStep, oldStep) => {
                   </span> -->
 
                   <span class="ml-1 block text-sm font-medium">
-                    {{ formatCurrency(Number(item.quantity * item.unit_price)) }}
+                    {{ formatCurrency(Number(item.quantity * item.event_price)) }}
                   </span>
                 </div>
               </div>

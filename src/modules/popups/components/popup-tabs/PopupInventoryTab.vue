@@ -161,6 +161,21 @@ const closeConfirmationModal = () => {
   selectedProduct.value = null
 }
 
+const getItemQty = (item: PopupInventory) => {
+  return item.variants?.reduce((acc, variant) => acc + variant.available_quantity, 0) || 0
+}
+
+const getStockStatus = (item: PopupInventory) => {
+  const qty = getItemQty(item)
+  if (qty === 0) {
+    return { label: "Out of Stock", color: "error" as const }
+  } else if (qty < 5) {
+    return { label: `${qty} in Stock`, color: "warning" as const }
+  } else {
+    return { label: `${qty} in Stock`, color: "success" as const }
+  }
+}
+
 onMounted(() => {
   if (route.query.setup === "true") openAddProduct.value = true
 })
@@ -250,38 +265,41 @@ onMounted(() => {
 
         <!-- mobile view cell templates -->
         <template #mobile="{ item }">
-          <div
-            class="bg-core-25 border-core-300 w-full gap-2 overflow-hidden rounded-lg border p-2 md:gap-4"
-          >
-            <div class="flex items-start gap-2">
-              <div class="bg-core-100 flex size-10 items-center justify-center rounded-xl">
+          <div :class="['border-warning-200 cursor-pointer rounded-xl border']">
+            <div class="bg-warning-50 flex items-center gap-2.5 rounded-t-xl p-2">
+              <span class="bg-warning-100 flex size-10 items-center justify-center rounded-xl">
                 <img
                   v-if="item.images?.[0]?.image"
                   :src="item.images?.[0]?.image"
                   :alt="item.name"
                   class="h-full w-full rounded-xl object-cover"
+                  loading="lazy"
                 />
-                <Icon v-else name="shop-add" class="text-core-600" />
-              </div>
-
-              <div class="flex flex-1 flex-col gap-1">
-                <h4 class="truncate text-sm font-semibold">{{ item.name }}</h4>
-                <!-- price range -->
-                <div class="flex gap-3 text-sm">
-                  {{ getPopupPriceRange(item) }}
-                </div>
-              </div>
-
-              <div>
-                <DropdownMenu
-                  :items="getActionMenu(item)"
-                  size="sm"
-                  @action="(action: string) => handleAction(action, item)"
-                />
-              </div>
+                <Icon v-else name="shop-add" :size="24" class="text-primary-700" />
+              </span>
+              <h3 class="!font-outfit truncate text-sm font-medium">
+                {{ item.name }}
+              </h3>
+              <span class="ml-auto" />
+              <span class="text-base font-semibold">{{ getPopupPriceRange(item) }}</span>
+              <DropdownMenu
+                :items="getActionMenu(item)"
+                size="sm"
+                @action="(action: string) => handleAction(action, item)"
+              />
             </div>
-
-            <div class="mt-4 flex gap-1">
+            <div class="flex flex-wrap items-center gap-2 p-5 pb-3">
+              <Chip
+                icon="box"
+                :color="getStockStatus(item).color"
+                :label="getStockStatus(item).label"
+              />
+              <Chip
+                v-if="item.variants?.length > 1"
+                icon="shapes"
+                color="blue"
+                :label="`${item.variants.length} Variants`"
+              />
               <Chip
                 showDot
                 :label="getInventoryVisibility(item)"
