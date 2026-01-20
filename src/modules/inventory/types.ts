@@ -42,6 +42,7 @@ export type TProduct = {
   quantity_sold: number
   memo_count: number
   return_count: number
+  is_best_seller?: boolean
 }
 
 // Detailed product type (used in single product view/edit)

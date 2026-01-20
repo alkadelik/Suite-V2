@@ -1,5 +1,39 @@
 <template>
-  <div @click="$emit('click')" class="space-y-2 rounded-xl border border-gray-200 bg-white p-4">
+  <div
+    @click="$emit('click')"
+    :class="['border-warning-200 cursor-pointer rounded-xl border', props.class]"
+  >
+    <div class="bg-warning-50 flex items-center gap-2.5 rounded-t-xl p-2">
+      <span class="bg-warning-100 flex size-10 items-center justify-center rounded-xl">
+        <img
+          v-if="product.primary_image?.image"
+          :src="product.primary_image.image"
+          :alt="product.primary_image.alt_text || product.name"
+          class="h-full w-full rounded-xl object-cover"
+          loading="lazy"
+        />
+        <Icon name="shop-add" :size="24" class="text-primary-700" />
+      </span>
+      <h3 class="!font-outfit truncate text-sm font-medium">
+        {{ product.name }}
+      </h3>
+      <span class="ml-auto" />
+      <span class="text-base font-semibold">{{ formattedPrice }}</span>
+      <DropdownMenu :items="actionItems" />
+    </div>
+    <div class="flex flex-wrap items-center gap-2 p-5 pb-3">
+      <Chip icon="box" :color="stockStatus.color" :label="stockStatus.label" />
+      <Chip
+        v-if="product.variants_count > 1"
+        icon="shapes"
+        color="blue"
+        :label="`${product.variants_count} Variants`"
+      />
+      <Chip icon="tag" color="purple" :label="`${product.category || 'Uncategorized'}`" />
+      <Chip v-if="product.is_best_seller" icon="star" color="error" :label="`Best Seller`" />
+    </div>
+  </div>
+  <!-- <div @click="$emit('click')" class="space-y-2 rounded-xl border border-gray-200 bg-white p-4">
     <div class="flex items-start justify-between gap-2">
       <div class="flex min-w-0 flex-1 items-start gap-2">
         <div class="relative flex-shrink-0">
@@ -75,7 +109,7 @@
         size="sm"
       />
     </div>
-  </div>
+  </div> -->
 </template>
 
 <script setup lang="ts">
@@ -97,6 +131,8 @@ interface Props {
     iconClass?: string
     divider?: boolean
   }>
+  /* Custom CSS classes */
+  class?: string
 }
 
 const props = defineProps<Props>()
@@ -107,7 +143,7 @@ const stockStatus = computed(() => {
   } else if (props.product.needs_reorder) {
     return { label: "Low Stock", color: "warning" as const }
   } else {
-    return { label: "In Stock", color: "success" as const }
+    return { label: `${props.product.total_stock} in Stock`, color: "success" as const }
   }
 })
 
