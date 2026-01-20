@@ -126,6 +126,10 @@ const outstandingBalance = computed(() => {
                   : formatCurrency(+order.total_amount, { kobo: true })
               }}
             </span>
+            <DropdownMenu
+              v-if="showActions && order.fulfilment_status !== 'voided'"
+              :items="menuItems"
+            />
           </div>
           <div class="mb-1 flex items-center justify-between gap-2">
             <p class="text-core-600 flex items-center text-xs">
@@ -261,10 +265,6 @@ const outstandingBalance = computed(() => {
       <div>
         <div class="mb-2 flex justify-between">
           <h4 class="text-core-700 !font-outfit text-sm">Order state</h4>
-          <DropdownMenu
-            v-if="showActions && order.fulfilment_status !== 'voided'"
-            :items="menuItems"
-          />
         </div>
         <!-- footer chips -->
         <div class="flex justify-between gap-1">

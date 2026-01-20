@@ -12,7 +12,7 @@
           class="h-full w-full rounded-xl object-cover"
           loading="lazy"
         />
-        <Icon name="shop-add" :size="24" class="text-primary-700" />
+        <Icon v-else name="shop-add" :size="24" class="text-primary-700" />
       </span>
       <h3 class="!font-outfit truncate text-sm font-medium">
         {{ product.name }}
