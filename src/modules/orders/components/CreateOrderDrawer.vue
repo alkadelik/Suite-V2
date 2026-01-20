@@ -172,9 +172,9 @@ const paymentInfo = ref(getInitialPaymentInfo())
 // Computed totals
 const itemsCount = computed(() => {
   if (isPopupOrder.value) {
-    return popupOrderItems.value.reduce((sum, item) => sum + item.quantity, 0)
+    return popupOrderItems.value.reduce((sum, item) => sum + Number(item.quantity), 0)
   }
-  return orderItems.value.reduce((sum, item) => sum + item.quantity, 0)
+  return orderItems.value.reduce((sum, item) => sum + Number(item.quantity), 0)
 })
 
 const productsTotal = computed(() => {
