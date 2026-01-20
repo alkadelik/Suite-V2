@@ -41,7 +41,7 @@ const onRowClick = (batch: TBatch) => {
           <Chip :label="item.source" color="blue" />
         </template>
         <template #mobile="{ item }">
-          <RMTableCard :title="formatDate(new Date())" class="my-3">
+          <RMTableCard :title="formatDate(new Date())">
             <template #append>
               <Chip :label="item.source" color="blue" />
             </template>

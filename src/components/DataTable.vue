@@ -419,7 +419,7 @@ const getRowClasses = (row: T) => {
       </template>
 
       <!-- Mobile cards with loading opacity -->
-      <div v-if="data.length" :class="[{ 'opacity-50': loading }]">
+      <div v-if="data.length" :class="[{ 'opacity-50': loading }, 'flex flex-col gap-4']">
         <div v-for="row in table.getRowModel().rows" :key="row.id">
           <!-- Custom mobile card slot -->
           <slot name="mobile" :item="row.original">
@@ -478,7 +478,7 @@ const getRowClasses = (row: T) => {
     <!--  -->
     <div
       v-if="data.length && showPagination"
-      class="text-core-800 items-center justify-between gap-4 border-t border-gray-200 px-5 py-6"
+      class="text-core-800 items-center justify-between gap-4 border-gray-200 px-5 py-6 md:border-t"
       :class="`flex`"
     >
       <!-- Pagination buttons -->

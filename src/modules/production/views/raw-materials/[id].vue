@@ -102,7 +102,7 @@ const materialStats = computed(() => [
     </section>
 
     <section class="mt-8">
-      <Tabs :tabs="materialTabs" v-model="activeTab">
+      <Tabs :tabs="materialTabs" v-model="activeTab" header-class="mb-3 md:mb-0">
         <template #batches>
           <RMBatchesTable />
         </template>

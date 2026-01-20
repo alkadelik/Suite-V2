@@ -25,6 +25,8 @@ interface Props {
   variant?: "default" | "tonal" | "pills"
   /** Custom CSS classes for the container */
   class?: string | string[]
+  /** Custom CSS classes for the tab header */
+  headerClass?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -53,7 +55,7 @@ const headerClasses = computed(() => {
     tonal: "bg-core-50 rounded-lg p-1",
     pills: "bg-transparent rounded-full p-0.5 gap-1",
   }
-  return variants[props.variant]
+  return `${variants[props.variant]} ${props.headerClass}`
 })
 
 const getTabClasses = (tab: TabItem) => {

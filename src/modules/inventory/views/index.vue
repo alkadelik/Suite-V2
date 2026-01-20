@@ -40,9 +40,9 @@
               :model-value="search"
               @update:model-value="(val) => (search = val)"
               left-icon="search-lg"
-              size="md"
+              size="sm"
               class="flex-1"
-              placeholder="Search by product name or category"
+              placeholder="Search by name or category..."
             />
             <AppButton
               icon="filter-lines"

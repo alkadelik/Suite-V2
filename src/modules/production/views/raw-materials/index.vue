@@ -230,7 +230,6 @@ const onSelect = (option: { label: string; value: string }) => {
               <RawMaterialCard
                 :material="item"
                 @click="() => $router.push(`/raw-materials/${item.uid}`)"
-                class="mb-4"
               />
             </template>
             <template #cell:actions="{ item }">

@@ -315,7 +315,7 @@ const handleAction = (action: string, order: TOrder) => {
           <div class="flex items-center gap-2">
             <TextField
               left-icon="search-lg"
-              size="md"
+              size="sm"
               class="w-full md:min-w-64"
               placeholder="Search by customer or order ref"
               v-model="searchQuery"
