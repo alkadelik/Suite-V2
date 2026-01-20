@@ -152,6 +152,8 @@ import { formatError } from "@/utils/error-handler"
 import OrderDetailsDrawer from "@modules/orders/components/OrderDetailsDrawer.vue"
 import { TOrder } from "@modules/orders/types"
 import ProductAvatar from "@components/ProductAvatar.vue"
+import { isStaging } from "@/utils/others"
+import { toast } from "@/composables/useToast"
 
 const { user } = useAuthStore()
 const openModal = ref(false)
@@ -229,7 +231,8 @@ const quickActions = computed(() => {
       color: "bg-pink-50 text-pink-700",
       action: () => {
         if (!checkPremiumAccess()) return
-        router.push("/expenses?create=true")
+        if (isStaging) router.push("/expenses?create=true")
+        else toast.info("Expense feature is coming soon!")
       },
     },
   ]

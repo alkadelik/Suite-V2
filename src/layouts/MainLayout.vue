@@ -158,6 +158,8 @@ import MobileQuickActionsModal from "./parts/MobileQuickActionsModal.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import { useRouter, useRoute } from "vue-router"
 import { useGetLiveStatus } from "@modules/shared/api"
+import { isStaging } from "@/utils/others"
+import { toast } from "@/composables/useToast"
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
@@ -231,7 +233,10 @@ const actionMenuItems = computed(() => {
       icon: "receipt-add",
       class: "!bg-pink-50 !text-pink-700",
       iconClass: "!text-primary-700",
-      action: () => router.push("/expenses?create=true"),
+      action: () => {
+        if (isStaging) router.push("/expenses?create=true")
+        else toast.info("Expense feature is coming soon!")
+      },
     },
   ]
 

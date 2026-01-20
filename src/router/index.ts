@@ -19,6 +19,7 @@ import settingsRoutes from "@modules/settings/routes"
 import sharedRoutes from "@modules/shared/routes"
 import expensesRoutes from "@modules/expenses/routes"
 import productionRoutes from "@modules/production/routes"
+import { isStaging } from "@/utils/others"
 
 const routes: RouteRecordRaw[] = [
   // Public pages routes with LandingLayout
@@ -137,6 +138,15 @@ router.beforeEach((to, from, next) => {
     if (to.meta.requiresAuth) {
       return next({ path: "/login", query: { redirect: to.fullPath } })
     }
+  }
+
+  // prevent access to upcoming features for non-staging environments
+  const upcomingFeaturePaths = ["/expenses", "/raw-materials"]
+
+  if (!isStaging && upcomingFeaturePaths.includes(to.path)) {
+    const featureName = to.path.replace("/", "").toUpperCase()
+    toast.info(`The ${featureName} feature is coming soon!`)
+    return next({ path: "/dashboard" })
   }
 
   next()

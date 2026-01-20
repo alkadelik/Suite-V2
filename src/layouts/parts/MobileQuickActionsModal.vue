@@ -5,6 +5,8 @@ import Modal from "@components/Modal.vue"
 import { useRouter } from "vue-router"
 import { useSettingsStore } from "@modules/settings/store"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
+import { isStaging } from "@/utils/others"
+import { toast } from "@/composables/useToast"
 
 defineProps<{ open: boolean; onClose: () => void }>()
 
@@ -59,7 +61,8 @@ const quickActions = computed(() => {
       color: "bg-pink-50 text-pink-700 border-pink-200",
       action: () => {
         if (!checkPremiumAccess()) return
-        router.push("/expenses?create=true")
+        if (isStaging) router.push("/expenses?create=true")
+        else toast.info("Expense feature is coming soon!")
       },
     },
   ]
