@@ -198,16 +198,11 @@ const { mutate: createPopupOrder, isPending: isPopupOrderPending } = useCreatePo
 const isPending = computed(() => isRegularOrderPending.value || isPopupOrderPending.value)
 
 const onCreateOrder = () => {
-  // if (isPopupOrder.value) {
-  //   onCreatePopupOrder()
-  //   return
-  // }
-
   // Format payload according to OrderPayload interface
   const { fulfilment_method, delivery_method } = shippingInfo.value
   const { uid, email, phone, full_name, first_name, last_name } = selectedCustomer.value || {}
 
-  const payload: OrderPayload | PopupOrderPayload = {
+  const payload = {
     source: isPopupOrder.value ? "popup-internal" : "internal",
     ...(isPopupOrder.value ? { popup_event: props.popupEventId } : {}),
     ...(uid && uid !== anonymousCustomer.uid
@@ -246,16 +241,24 @@ const onCreateOrder = () => {
         ? totalAmount.value
         : paymentInfo.value.payment_amount,
     payment_source: paymentInfo.value.payment_source?.value,
-    items: orderItems.value.map(
-      (item): OrderItemPayload => ({
-        variant: item.variant?.uid || "",
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        fulfilment_status: shippingInfo.value.fulfilment_status,
-        qty_fulfilled: 0,
-        notes: item.notes,
-      }),
-    ),
+    items: isPopupOrder.value
+      ? popupOrderItems.value.map((item) => ({
+          popup_inventory: item.variant.popup_inventory_uid,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          fulfilment_status: shippingInfo.value.fulfilment_status,
+          notes: item.notes,
+        }))
+      : orderItems.value.map(
+          (item): OrderItemPayload => ({
+            variant: item.variant?.uid || "",
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            fulfilment_status: shippingInfo.value.fulfilment_status,
+            qty_fulfilled: 0,
+            notes: item.notes,
+          }),
+        ),
     fulfilment_status: shippingInfo.value.fulfilment_status,
     order_channel: shippingInfo.value.order_channel.value,
     order_date: shippingInfo.value.order_date,
@@ -272,60 +275,11 @@ const onCreateOrder = () => {
   }
 
   if (isPopupOrder.value) {
-    createPopupOrder(payload as unknown as PopupOrderPayload, handler)
+    createPopupOrder(payload as PopupOrderPayload, handler)
   } else {
-    createOrder(payload, handler)
+    createOrder(payload as OrderPayload, handler)
   }
 }
-
-// const onCreatePopupOrder = () => {
-//   const { fulfilment_method, delivery_method } = shippingInfo.value
-
-//   const payload = {
-//     source: "popup-internal",
-//     popup_event: props.popupEventId!,
-
-//     total_amount: totalAmount.value,
-//     fulfilment_method,
-//     ...(fulfilment_method === "delivery"
-//       ? {
-//           delivery_fee: shippingInfo.value.delivery_fee,
-//           delivery_method,
-//           delivery_payment_option: shippingInfo.value.delivery_payment_option,
-//           delivery_address:
-//             delivery_method === "automatic" ? shippingInfo.value.delivery_address : "",
-//         }
-//       : {}),
-
-//     courier: shippingInfo.value.courier,
-//     coupon_code: paymentInfo.value.coupon_code || "",
-//     payment_status: paymentInfo.value.payment_status,
-//     payment_amount:
-//       paymentInfo.value.payment_status === "paid"
-//         ? totalAmount.value
-//         : paymentInfo.value.payment_amount,
-//     payment_source: paymentInfo.value.payment_source?.value,
-//     items: popupOrderItems.value.map((item) => ({
-//       popup_inventory: item.variant.popup_inventory_uid,
-//       quantity: item.quantity,
-//       unit_price: item.unit_price,
-//       fulfilment_status: shippingInfo.value.fulfilment_status,
-//       notes: item.notes,
-//     })),
-//     fulfilment_status: shippingInfo.value.fulfilment_status,
-//     order_date: shippingInfo.value.order_date,
-//   }
-
-//   createPopupOrder(payload, {
-//     onSuccess: () => {
-//       toast.success("Order created successfully!")
-//       emit("refresh")
-//       emit("close")
-//       resetForm()
-//     },
-//     onError: displayError,
-//   })
-// }
 
 const resetForm = () => {
   activeStep.value = 0
