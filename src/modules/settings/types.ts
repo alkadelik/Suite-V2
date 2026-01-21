@@ -63,6 +63,8 @@ export interface IStoreDetails {
   industry: string
   industry_name: string
   delivery_enabled: boolean
+  manual_delivery_enabled?: boolean
+  express_delivery_enabled?: boolean
   created_at: string
   locations: TLocation[]
   store_email: string
@@ -74,6 +76,8 @@ export interface IStoreDetails {
   pickup_location?: string
   collect_vat?: boolean
   tax_collection_enabled?: boolean
+  tax_rate?: string
+  add_tax_to_product_price?: boolean
 }
 
 export interface IUpdateStoreDetailsPayload {
@@ -87,9 +91,12 @@ export interface IUpdateStoreDetailsPayload {
   support_phone?: string
   instagram_handle?: string
   delivery_enabled?: boolean
+  manual_delivery_enabled?: boolean
+  express_delivery_enabled?: boolean
   pickup_location?: string
   collect_vat?: boolean
   tax_collection_enabled?: boolean
+  add_tax_to_product_price?: boolean
 }
 
 export type TIndustry = {

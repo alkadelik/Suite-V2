@@ -44,6 +44,8 @@ export type TOrder = {
   store_name: string
   subtotal: string
   total_amount: number
+  tax_amount: string
+  tax_rate_used: string
   total_paid: number
   tracking_number: string
   user: string

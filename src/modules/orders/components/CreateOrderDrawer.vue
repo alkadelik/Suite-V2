@@ -23,12 +23,27 @@ import type { IShippingCourier } from "@modules/shared/types"
 import type { PopupInventory } from "@modules/popups/types"
 import { useMediaQuery } from "@vueuse/core"
 import Modal from "@components/Modal.vue"
+import { useGetStoreDetails } from "@modules/settings/api"
+import { useAuthStore } from "@modules/auth/store"
 
 const props = defineProps({
   open: { type: Boolean, required: true },
   popupEventId: { type: String, default: undefined },
 })
 const emit = defineEmits(["close", "refresh"])
+
+// Get store details for tax settings
+const storeUid = computed(() => useAuthStore().user?.store_uid || "")
+const { data: storeDetails } = useGetStoreDetails(storeUid.value)
+
+// Check if tax collection is enabled
+const isTaxEnabled = computed(() => storeDetails.value?.tax_collection_enabled || false)
+
+// VAT rate from store settings (default 7.5%)
+const VAT_RATE = computed(() => {
+  const rate = storeDetails.value?.tax_rate
+  return rate ? Number(rate) : 0.075
+})
 
 const isPopupOrder = computed(() => !!props.popupEventId)
 
@@ -188,8 +203,19 @@ const productsTotal = computed(() => {
   }, 0)
 })
 
+// VAT amount
+const vatAmount = computed(() => {
+  if (!isTaxEnabled.value) return 0
+  return Math.round(productsTotal.value * VAT_RATE.value * 100) / 100
+})
+
 const totalAmount = computed(() => {
-  return productsTotal.value + shippingInfo.value.delivery_fee - paymentInfo.value.discount_amount
+  return (
+    productsTotal.value +
+    vatAmount.value +
+    shippingInfo.value.delivery_fee -
+    paymentInfo.value.discount_amount
+  )
 })
 
 const { mutate: createOrder, isPending: isRegularOrderPending } = useCreateOrder()
@@ -358,6 +384,7 @@ const isMobile = useMediaQuery("(max-width: 1028px)")
           v-model:paymentInfo="paymentInfo"
           :productsTotal="productsTotal"
           :deliveryFee="shippingInfo.delivery_fee"
+          :vatAmount="vatAmount"
           :totalAmount="totalAmount"
           :itemsCount="itemsCount"
           @next="onNext"
@@ -373,6 +400,7 @@ const isMobile = useMediaQuery("(max-width: 1028px)")
           :paymentInfo="paymentInfo"
           :productsTotal="productsTotal"
           :deliveryFee="shippingInfo.delivery_fee"
+          :vatAmount="vatAmount"
           :totalAmount="totalAmount"
           :loading="isPending"
           @prev="onPrev"

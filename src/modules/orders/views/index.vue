@@ -12,7 +12,13 @@ import Chip from "@components/Chip.vue"
 import { TOrder } from "../types"
 import CreateOrderDrawer from "../components/CreateOrderDrawer.vue"
 import VoidDeleteOrder from "../components/VoidDeleteOrder.vue"
-import { useDeleteOrder, useGetOrderDashboard, useGetOrders, useVoidOrder } from "../api"
+import {
+  useDeleteOrder,
+  useGenerateReceipt,
+  useGetOrderDashboard,
+  useGetOrders,
+  useVoidOrder,
+} from "../api"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
 import { anonymousCustomer, ORDER_COLUMNS, ORDER_STATUS_TAB } from "../constants"
@@ -20,7 +26,6 @@ import { startCase } from "@/utils/format-strings"
 import OrderCard from "../components/OrderCard.vue"
 import FulfilOrderModal from "../components/FulfilOrderModal.vue"
 import OrderMemoDrawer from "../components/OrderMemoDrawer.vue"
-import ShareInvoiceReceipt from "../components/ShareInvoiceReceipt.vue"
 import OrderPaymentDrawer from "../components/OrderPaymentDrawer.vue"
 import Tabs from "@components/Tabs.vue"
 import { formatCurrency } from "@/utils/format-currency"
@@ -36,7 +41,6 @@ const openVoid = ref(false)
 const openDelete = ref(false)
 const openMemo = ref(false)
 const openFulfil = ref(false)
-const openShare = ref(false)
 const openPayment = ref(false)
 const openDetails = ref(false)
 const selectedOrder = ref<TOrder | null>(null)
@@ -131,14 +135,37 @@ const getActionItems = (item: TOrder) => [
       openMemo.value = true
     },
   },
-  {
-    label: `Share ${item.payment_status === "paid" ? "receipt" : "invoice"}`,
-    icon: "share",
-    action: () => {
-      selectedOrder.value = item
-      openShare.value = true
-    },
-  },
+  // Share receipt - only for partially paid or paid orders
+  ...(item.payment_status === "paid" || item.payment_status === "partially_paid"
+    ? [
+        {
+          label: "Share receipt",
+          icon: "share",
+          action: () => handleShareReceipt(item),
+        },
+      ]
+    : []),
+  // Share invoice - only for partially paid or unpaid orders
+  ...(item.payment_status === "unpaid" || item.payment_status === "partially_paid"
+    ? [
+        {
+          label: "Share invoice",
+          icon: "share",
+          action: handleShareInvoice,
+        },
+      ]
+    : []),
+  // Share payment link - only for partially paid or unpaid orders
+  ...(item.payment_status === "unpaid" || item.payment_status === "partially_paid"
+    ? [
+        {
+          label: "Share payment link",
+          icon: "share",
+          action: () => handleSharePaymentLink(item),
+        },
+      ]
+    : []),
+  // Update Payment - only for unpaid or partially paid orders
   ...(item.payment_status !== "paid"
     ? [
         {
@@ -204,6 +231,73 @@ const onCloseVoidDel = () => {
 
 const { mutate: voidOrder, isPending: isVoiding } = useVoidOrder()
 const { mutate: deleteOrder, isPending: isDeleting } = useDeleteOrder()
+const { mutate: generateReceipt } = useGenerateReceipt()
+
+// Get invoice link for an order
+const getInvoiceLink = (order: TOrder) => {
+  const isLocal = window.location.hostname === "localhost"
+  return isLocal
+    ? `http://localhost:8080/pay/${order.order_number}`
+    : `https://suite-v2.vercel.app/pay/${order.order_number}`
+}
+
+// Share payment link using Web Share API
+const handleSharePaymentLink = async (order: TOrder) => {
+  const link = getInvoiceLink(order)
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: `Payment Link for Order #${order.order_number}`,
+        text: `Complete your payment for order #${order.order_number}`,
+        url: link,
+      })
+    } catch {
+      // User cancelled or share failed, fallback to copy
+      navigator.clipboard.writeText(link).then(() => {
+        toast.info("Payment link copied to clipboard!")
+      })
+    }
+  } else {
+    // Fallback for browsers that don't support Web Share API
+    navigator.clipboard.writeText(link).then(() => {
+      toast.info("Payment link copied to clipboard!")
+    })
+  }
+}
+
+// Share receipt using Web Share API
+const handleShareReceipt = (order: TOrder) => {
+  generateReceipt(order.uid, {
+    onSuccess: (response) => {
+      const receiptUrl = response.data?.data.url as string | undefined
+      if (receiptUrl && navigator.share) {
+        navigator
+          .share({
+            title: `Receipt for Order #${order.order_number}`,
+            text: `Receipt for order #${order.order_number}`,
+            url: receiptUrl,
+          })
+          .catch(() => {
+            // User cancelled or share failed, fallback to copy
+            navigator.clipboard.writeText(receiptUrl).then(() => {
+              toast.info("Receipt link copied to clipboard!")
+            })
+          })
+      } else if (receiptUrl) {
+        // Fallback for browsers that don't support Web Share API
+        navigator.clipboard.writeText(receiptUrl).then(() => {
+          toast.info("Receipt link copied to clipboard!")
+        })
+      }
+    },
+    onError: displayError,
+  })
+}
+
+// Share invoice (coming soon)
+const handleShareInvoice = () => {
+  toast.info("Share invoice is coming soon!")
+}
 
 const handleVoidDelete = ({ action, reason }: { action: string; reason: string }) => {
   if (action === "void") {
@@ -252,8 +346,14 @@ const handleAction = (action: string, order: TOrder) => {
     case "view-memos":
       openMemo.value = true
       break
+    case "share-receipt":
+      handleShareReceipt(order)
+      break
     case "share-invoice":
-      openShare.value = true
+      handleShareInvoice()
+      break
+    case "share-payment-link":
+      handleSharePaymentLink(order)
       break
     case "update-payment":
       openPayment.value = true
@@ -268,6 +368,47 @@ const handleAction = (action: string, order: TOrder) => {
       openDelete.value = true
       break
   }
+}
+
+// Handlers for OrderDetailsDrawer actions
+const handleDetailsViewMemos = () => {
+  openDetails.value = false
+  openMemo.value = true
+}
+
+const handleDetailsShareReceipt = () => {
+  openDetails.value = false
+  if (selectedOrder.value) handleShareReceipt(selectedOrder.value)
+}
+
+const handleDetailsShareInvoice = () => {
+  openDetails.value = false
+  handleShareInvoice()
+}
+
+const handleDetailsSharePaymentLink = () => {
+  openDetails.value = false
+  if (selectedOrder.value) handleSharePaymentLink(selectedOrder.value)
+}
+
+const handleDetailsUpdatePayment = () => {
+  openDetails.value = false
+  openPayment.value = true
+}
+
+const handleDetailsFulfill = () => {
+  openDetails.value = false
+  openFulfil.value = true
+}
+
+const handleDetailsVoidOrder = () => {
+  openDetails.value = false
+  openVoid.value = true
+}
+
+const handleDetailsDeleteOrder = () => {
+  openDetails.value = false
+  openDelete.value = true
 }
 </script>
 
@@ -421,7 +562,9 @@ const handleAction = (action: string, order: TOrder) => {
               :order="item"
               @click="handleAction('click', item)"
               @view-memos="handleAction('view-memos', item)"
+              @share-receipt="handleAction('share-receipt', item)"
               @share-invoice="handleAction('share-invoice', item)"
+              @share-payment-link="handleAction('share-payment-link', item)"
               @update-payment="handleAction('update-payment', item)"
               @fulfill="handleAction('fulfill', item)"
               @void-order="handleAction('void-order', item)"
@@ -469,13 +612,6 @@ const handleAction = (action: string, order: TOrder) => {
       @close="openMemo = false"
     />
 
-    <ShareInvoiceReceipt
-      v-if="selectedOrder"
-      :open="openShare"
-      @close="openShare = false"
-      :order="selectedOrder"
-    />
-
     <OrderPaymentDrawer
       v-if="selectedOrder"
       :open="openPayment"
@@ -487,8 +623,16 @@ const handleAction = (action: string, order: TOrder) => {
     <OrderDetailsDrawer
       v-if="selectedOrder"
       :open="openDetails"
-      @close="openDetails = false"
       :order="selectedOrder"
+      @close="openDetails = false"
+      @view-memos="handleDetailsViewMemos"
+      @share-receipt="handleDetailsShareReceipt"
+      @share-invoice="handleDetailsShareInvoice"
+      @share-payment-link="handleDetailsSharePaymentLink"
+      @update-payment="handleDetailsUpdatePayment"
+      @fulfill="handleDetailsFulfill"
+      @void-order="handleDetailsVoidOrder"
+      @delete-order="handleDetailsDeleteOrder"
     />
   </div>
 </template>

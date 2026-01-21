@@ -11,6 +11,10 @@ import {
   ICouriersResponse,
   IShippingProfileResponse,
   ISettlementBank,
+  IDeliveryOption,
+  IDeliveryOptionsResponse,
+  TCreateDeliveryOptionPayload,
+  TUpdateDeliveryOptionPayload,
 } from "./types"
 import { IIndustriesApiResponse } from "./types"
 
@@ -170,7 +174,7 @@ export function useGetNotifications() {
 /** Mark all notifications as read */
 export function useMarkAllNotificationsRead() {
   return useMutation({
-    mutationFn: () => baseApi.post("/notifications/mark-as-read/"),
+    mutationFn: () => baseApi.post("/notifications/mark-all-read/"),
   })
 }
 
@@ -201,5 +205,81 @@ export function useGetShippingRates() {
         quantity: number
       }>
     }) => baseApi.post("/shipping/rates/", body),
+  })
+}
+
+/** Get manual delivery options */
+export function useGetManualDeliveryOptions() {
+  return useQuery({
+    queryKey: ["manualDeliveryOptions"],
+    queryFn: async () => {
+      const res = await baseApi.get<IDeliveryOptionsResponse>("/shipping/options/manual/")
+      return res.data.data
+    },
+    refetchOnWindowFocus: false,
+  })
+}
+
+/** Create manual delivery option */
+export function useCreateManualDeliveryOption() {
+  return useMutation({
+    mutationKey: ["createManualDeliveryOption"],
+    mutationFn: (body: TCreateDeliveryOptionPayload) =>
+      baseApi.post<{ data: IDeliveryOption }>("/shipping/options/manual/", body),
+  })
+}
+
+/** Update manual delivery option */
+export function useUpdateManualDeliveryOption() {
+  return useMutation({
+    mutationKey: ["updateManualDeliveryOption"],
+    mutationFn: ({ uid, body }: { uid: string; body: TUpdateDeliveryOptionPayload }) =>
+      baseApi.patch<{ data: IDeliveryOption }>(`/shipping/options/manual/${uid}/`, body),
+  })
+}
+
+/** Delete manual delivery option */
+export function useDeleteManualDeliveryOption() {
+  return useMutation({
+    mutationKey: ["deleteManualDeliveryOption"],
+    mutationFn: (uid: string) => baseApi.delete<void>(`/shipping/options/manual/${uid}/`),
+  })
+}
+
+/** Get express delivery options */
+export function useGetExpressDeliveryOptions() {
+  return useQuery({
+    queryKey: ["expressDeliveryOptions"],
+    queryFn: async () => {
+      const res = await baseApi.get<IDeliveryOptionsResponse>("/shipping/options/express/")
+      return res.data.data
+    },
+    refetchOnWindowFocus: false,
+  })
+}
+
+/** Create express delivery option */
+export function useCreateExpressDeliveryOption() {
+  return useMutation({
+    mutationKey: ["createExpressDeliveryOption"],
+    mutationFn: (body: TCreateDeliveryOptionPayload) =>
+      baseApi.post<{ data: IDeliveryOption }>("/shipping/options/express/", body),
+  })
+}
+
+/** Update express delivery option */
+export function useUpdateExpressDeliveryOption() {
+  return useMutation({
+    mutationKey: ["updateExpressDeliveryOption"],
+    mutationFn: ({ uid, body }: { uid: string; body: TUpdateDeliveryOptionPayload }) =>
+      baseApi.patch<{ data: IDeliveryOption }>(`/shipping/options/express/${uid}/`, body),
+  })
+}
+
+/** Delete express delivery option */
+export function useDeleteExpressDeliveryOption() {
+  return useMutation({
+    mutationKey: ["deleteExpressDeliveryOption"],
+    mutationFn: (uid: string) => baseApi.delete<void>(`/shipping/options/express/${uid}/`),
   })
 }

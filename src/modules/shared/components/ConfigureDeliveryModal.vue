@@ -25,9 +25,20 @@
 
         <div class="space-y-5 rounded-xl bg-white px-6 py-4">
           <!-- shipbubble -->
-          <div class="border-primary-600 cursor-pointer rounded-2xl border-2">
+          <div
+            class="cursor-pointer rounded-2xl border-2"
+            :class="
+              selectedDeliveryOption === 'shipbubble' ? 'border-primary-600' : 'border-gray-200'
+            "
+            @click="selectedDeliveryOption = 'shipbubble'"
+          >
             <header
-              class="border-primary-600 bg-primary-50 flex items-center justify-between rounded-t-2xl border-b-2 px-4 py-3"
+              class="flex items-center justify-between rounded-t-2xl border-b-2 px-4 py-3"
+              :class="
+                selectedDeliveryOption === 'shipbubble'
+                  ? 'border-primary-600 bg-primary-50'
+                  : 'border-gray-200'
+              "
             >
               <div class="flex items-center gap-3">
                 <div class="bg-primary-100 rounded-full p-1.5">
@@ -39,7 +50,12 @@
                 <h4 class="text-primary-800 text-lg font-medium md:text-xl">ShipBubble</h4>
               </div>
 
-              <Icon name="check-filled" size="24" class="text-primary-600" />
+              <Icon
+                v-if="selectedDeliveryOption === 'shipbubble'"
+                name="check-filled"
+                size="24"
+                class="text-primary-600"
+              />
             </header>
             <div class="p-4">
               <p class="mb-2 text-xs md:text-sm">
@@ -53,10 +69,19 @@
             </div>
           </div>
 
-          <!-- leyyow logistics -->
-          <div class="cursor-no-allowed rounded-2xl border-2 border-gray-200">
+          <!-- manual delivery -->
+          <div
+            class="cursor-pointer rounded-2xl border-2"
+            :class="selectedDeliveryOption === 'manual' ? 'border-primary-600' : 'border-gray-200'"
+            @click="selectedDeliveryOption = 'manual'"
+          >
             <header
-              class="flex items-center justify-between rounded-t-2xl border-b-2 border-gray-200 px-4 py-3"
+              class="flex items-center justify-between rounded-t-2xl border-b-2 px-4 py-3"
+              :class="
+                selectedDeliveryOption === 'manual'
+                  ? 'border-primary-600 bg-primary-50'
+                  : 'border-gray-200'
+              "
             >
               <div class="flex items-center gap-3">
                 <div class="bg-primary-100 rounded-full p-1.5">
@@ -65,21 +90,21 @@
                   </div>
                 </div>
 
-                <h4 class="text-primary-800 text-lg font-medium md:text-xl">Leyyow Logistics</h4>
+                <h4 class="text-primary-800 text-lg font-medium md:text-xl">Manual Delivery</h4>
               </div>
 
-              <Chip showDot label="Coming Soon" />
+              <Icon
+                v-if="selectedDeliveryOption === 'manual'"
+                name="check-filled"
+                size="24"
+                class="text-primary-600"
+              />
             </header>
             <div class="p-4">
-              <p class="mb-2 text-xs md:text-sm">
-                Deliver with Leyyow’s own logistics service. Simpler setup, competitive rates, and
-                full integration.
+              <p class="text-xs md:text-sm">
+                Manage the delivery of orders to your customers all by yourself. Ensure to only add
+                the areas your logistics covers.
               </p>
-              <Chip showDot label="Provided by" color="warning">
-                <template #append>
-                  <img src="/LYW.svg" class="h-3" alt="leyyow logo" />
-                </template>
-              </Chip>
             </div>
           </div>
 
@@ -114,6 +139,8 @@
       @submit-couriers="handleCouriersSubmit"
       @close="handleClose"
     />
+
+    <ManageManualDeliveryModal v-model="showManualDeliveryModal" @refresh="emit('refresh')" />
   </div>
 </template>
 
@@ -125,6 +152,7 @@ import WarningBox from "@components/WarningBox.vue"
 import Chip from "@components/Chip.vue"
 import { ref, reactive, onMounted, watch } from "vue"
 import ShipbubbleAccountSetup from "./ShipbubbleAccountSetup.vue"
+import ManageManualDeliveryModal from "./ManageManualDeliveryModal.vue"
 import { useAuthStore } from "@modules/auth/store"
 import { useRoute, useRouter } from "vue-router"
 import {
@@ -148,8 +176,10 @@ const router = useRouter()
 const { user } = useAuthStore()
 const shipBubbleStep = ref<number>(1)
 const showShipbubbleScreens = ref<boolean>(false)
+const showManualDeliveryModal = ref<boolean>(false)
 const isShippingProfileActive = ref<boolean>(false)
 const isMobile = useMediaQuery("(max-width: 768px)")
+const selectedDeliveryOption = ref<"shipbubble" | "manual">("shipbubble")
 
 const { data: shippingProfileData, isPending: isGettingShippingProfile } = useGetShippingProfile()
 const { data: storeDetails, isPending: isGettingStoreDetails } = useGetStoreDetails(
@@ -250,6 +280,14 @@ const handleCouriersSubmit = () => {
 }
 
 const handleContinue = () => {
+  if (selectedDeliveryOption.value === "manual") {
+    // Show the manual delivery modal
+    showManualDeliveryModal.value = true
+    emit("update:modelValue", false)
+    return
+  }
+
+  // ShipBubble flow
   // If user already has a shipping profile, skip step 1 and go directly to step 2
   if (shippingProfileData.value && shippingProfileData.value.uid) {
     shipBubbleStep.value = 2
