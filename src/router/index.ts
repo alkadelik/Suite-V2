@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router"
 import type { RouteRecordRaw } from "vue-router"
 import { useAuthStore } from "@modules/auth/store"
+import { useSettingsStore } from "@modules/settings/store"
 import { toast } from "@/composables/useToast"
 
 // Layout imports
@@ -126,6 +127,15 @@ router.beforeEach((to, from, next) => {
     if (isAuthPage && !to.path.includes("/confirm-email") && !to.path.includes("/create-store")) {
       toast.info("You already have an active session.")
       return next({ path: "/dashboard" })
+    }
+
+    // Onboarding page is HQ only - redirect non-HQ locations to dashboard
+    if (to.path === "/onboarding") {
+      const { activeLocation } = useSettingsStore()
+      if (activeLocation && !activeLocation.is_hq) {
+        toast.info("Onboarding is only available at the HQ location.")
+        return next({ path: "/dashboard" })
+      }
     }
   }
 

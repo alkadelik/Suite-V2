@@ -31,11 +31,13 @@ const props = withDefaults(
 const emit = defineEmits([
   "click",
   "view-memos",
+  "share-receipt",
   "share-invoice",
+  "share-payment-link",
   "update-payment",
+  "fulfill",
   "void-order",
   "delete-order",
-  "fulfill",
 ])
 
 const isFulfilled = computed(() => {
@@ -47,24 +49,38 @@ const isBuyerCreated = computed(() => {
 })
 
 const menuItems = computed(() => {
-  const showVoid =
-    (isFulfilled.value || props.order?.payment_status !== "unpaid") && !isBuyerCreated.value
-  const showDelete =
-    !isFulfilled.value && props.order?.payment_status === "unpaid" && !isBuyerCreated.value
+  const paymentStatus = props.order?.payment_status
+  const showVoid = (isFulfilled.value || paymentStatus !== "unpaid") && !isBuyerCreated.value
+  const showDelete = !isFulfilled.value && paymentStatus === "unpaid" && !isBuyerCreated.value
 
   return props.customActions?.length
     ? props.customActions
     : [
         { label: "View details", icon: "eye", action: () => emit("click") },
         { label: "View memos", icon: "note", action: () => emit("view-memos") },
-        {
-          label: `Share ${props.order.payment_status === "paid" ? "receipt" : "invoice"}`,
-          icon: "share",
-          action: () => emit("share-invoice"),
-        },
-        ...(props.order.payment_status !== "paid"
+        // Share receipt - only for partially paid or paid orders
+        ...(paymentStatus === "paid" || paymentStatus === "partially_paid"
+          ? [{ label: "Share receipt", icon: "share", action: () => emit("share-receipt") }]
+          : []),
+        // Share invoice - only for partially paid or unpaid orders
+        ...(paymentStatus === "unpaid" || paymentStatus === "partially_paid"
+          ? [{ label: "Share invoice", icon: "document", action: () => emit("share-invoice") }]
+          : []),
+        // Share payment link - only for partially paid or unpaid orders
+        ...(paymentStatus === "unpaid" || paymentStatus === "partially_paid"
+          ? [
+              {
+                label: "Share payment link",
+                icon: "link",
+                action: () => emit("share-payment-link"),
+              },
+            ]
+          : []),
+        // Update Payment - only for unpaid or partially paid orders
+        ...(paymentStatus !== "paid"
           ? [{ label: "Update Payment", icon: "money-add", action: () => emit("update-payment") }]
           : []),
+        // Fulfill order - only for unfulfilled orders
         ...(isFulfilled.value
           ? []
           : [{ label: "Fulfill Order", icon: "money-add", action: () => emit("fulfill") }]),
