@@ -8,7 +8,7 @@
       :label="hideLabel ? '' : label || startCase(name)"
       :options="optionsData || []"
       :placeholder="placeholder"
-      :required="required"
+      :required="isRequired"
       :disabled="isDisabled"
       :readonly="readonly"
       :error="fieldErrors[0]"
@@ -29,7 +29,7 @@
       :label="hideLabel ? '' : label || startCase(name)"
       :options="normalizedTagOptions"
       :placeholder="placeholder"
-      :required="required"
+      :required="isRequired"
       :disabled="isDisabled"
       :readonly="readonly"
       :error="fieldErrors[0]"
@@ -48,7 +48,7 @@
       v-bind="{ ...field, ...$attrs }"
       :label="hideLabel ? '' : label || startCase(name)"
       :placeholder="placeholder"
-      :required="required"
+      :required="isRequired"
       :disabled="isDisabled"
       :readonly="readonly"
       :error="fieldErrors[0]"
@@ -69,7 +69,7 @@
       v-bind="{ ...field, ...$attrs }"
       :model-value="field.value"
       :label="hideLabel ? '' : label || startCase(name)"
-      :required="required"
+      :required="isRequired"
       :disabled="isDisabled"
       :error="fieldErrors[0]"
       :hint="hintText"
@@ -86,7 +86,7 @@
       v-else-if="type === 'otp'"
       v-bind="{ ...field, ...$attrs }"
       :label="hideLabel ? '' : label || startCase(name)"
-      :required="required"
+      :required="isRequired"
       :disabled="isDisabled"
       :error="fieldErrors[0]"
       :hint="hintText"
@@ -104,7 +104,7 @@
       :model-value="field.value"
       :label="hideLabel ? '' : label || startCase(name)"
       :options="radioOptions || []"
-      :required="required"
+      :required="isRequired"
       :disabled="isDisabled"
       :readonly="readonly"
       :error="fieldErrors[0]"
@@ -121,7 +121,7 @@
       :type="type"
       :label="hideLabel ? '' : label || startCase(name)"
       :placeholder="placeholder"
-      :required="required"
+      :required="isRequired"
       :disabled="isDisabled"
       :readonly="readonly"
       :error="fieldErrors[0]"
@@ -364,7 +364,6 @@ const {
   type,
   label,
   placeholder,
-  required,
   readonly,
   variant,
   size,
@@ -391,6 +390,7 @@ const {
 const optionsData = computed(() => props.options ?? [])
 const hintText = computed(() => props.hint ?? "")
 const isDisabled = computed(() => props.disabled ?? false)
+const isRequired = computed(() => props.required ?? false)
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
 </script>

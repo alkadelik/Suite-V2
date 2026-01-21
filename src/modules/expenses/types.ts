@@ -10,11 +10,12 @@ export type TExpense = {
   sub_category: string | null
   sub_category_name: string | null
   vendor: string
+  vendor_name: string
   notes: string
   attachment_url: string
-  entry_type: string
+  entry_type: "manual" | "auto"
   entry_type_display: string
-  status: "paid" | "unpaid" | "pending"
+  status: "paid" | "unpaid" | "pending" | "void"
   status_display: string
   created_at: string
   updated_at: string

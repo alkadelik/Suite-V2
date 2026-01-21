@@ -69,7 +69,7 @@ export const ORDER_COLUMNS: TableColumn<TOrder>[] = [
   {
     header: "Amount",
     accessor: "total_amount",
-    cell: ({ value }) => formatCurrency(Number(value)),
+    cell: ({ value }) => formatCurrency(Number(value), { kobo: true }),
   },
   { header: "Status", accessor: "payment_status" },
   { header: "Fulfilled", accessor: "fulfilment_status" },

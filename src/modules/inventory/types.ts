@@ -42,6 +42,7 @@ export type TProduct = {
   quantity_sold: number
   memo_count: number
   return_count: number
+  is_best_seller?: boolean
 }
 
 // Detailed product type (used in single product view/edit)
@@ -585,4 +586,12 @@ export interface IProductCatalogue {
   images: { image: string; uid: string; is_primary: boolean }[]
   total_stock: number
   created_at: string
+}
+
+export interface IProductStats {
+  total_products: number
+  total_variants: number
+  total_stock_value: number
+  low_stock_count: number
+  overstocked_count: number
 }

@@ -11,60 +11,66 @@ import DropdownMenu from "@components/DropdownMenu.vue"
 import Chip from "@components/Chip.vue"
 import { TExpense } from "../types"
 import CreateExpenseDrawer from "../components/CreateExpenseDrawer.vue"
-import { useDeleteExpense, useGetExpenseDashboard, useGetExpenses } from "../api"
+import { useDeleteExpense, useEditExpense, useGetExpenseDashboard, useGetExpenses } from "../api"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
-import { EXPENSE_COLUMN, getExpenseStatusColor } from "../constants"
+import { EXPENSE_CATEGORY_ICON, EXPENSE_COLUMN, getExpenseStatusColor } from "../constants"
 import { useRoute } from "vue-router"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
 import ExpenseCard from "../components/ExpenseCard.vue"
-import DeleteConfirmationModal from "@components/DeleteConfirmationModal.vue"
 import Icon from "@components/Icon.vue"
 import ExpenseDetailsDrawer from "../components/ExpenseDetailsDrawer.vue"
 import StatCard from "@components/StatCard.vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { formatCurrency, truncateCurrency } from "@/utils/format-currency"
+import ConfirmationModal from "@components/ConfirmationModal.vue"
+import ExpenseStackedBarChart from "../components/ExpenseStackedBarChart.vue"
 
 const openCreate = ref(false)
 const openDelete = ref(false)
+const openVoid = ref(false)
 const openDetail = ref(false)
 const selectedExpense = ref<TExpense | null>(null)
 
-const { data: expenseDashboard, refetch: refetchStats } = useGetExpenseDashboard()
+const {
+  data: expenseDashboard,
+  isLoading: isLoadingStats,
+  refetch: refetchStats,
+} = useGetExpenseDashboard()
+
+const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 
 const expenseMetrics = computed(() => {
   const stat = expenseDashboard?.value
 
   const biggestExpenseCategory = stat?.category_breakdown.reduce((prev, current) =>
     current.total_amount > prev.total_amount ? current : prev,
-  )?.category_name
+  )
 
   return [
     {
       label: "Total Expenses",
-      value: formatCurrency(stat?.current.total_amount) || 0,
-      icon: "user-octagon",
-      iconClass: "md:text-green-700 md:!bg-green-50",
+      value: isMobile.value
+        ? truncateCurrency(stat?.current.total_amount || 0)
+        : formatCurrency(stat?.current.total_amount || 0),
+      icon: "wallet-money",
+      iconClass: "md:text-green-700",
+      percentage: stat?.change.total_amount_pct,
+      chip: `${stat?.current.expense_count || 0} records`,
+      chipColor: "primary",
     },
     {
-      label: "No. of Transactions",
-      value: stat?.current.expense_count || 0,
-      prev_value: stat?.previous.expense_count || 0,
-      icon: "user-octagon",
-      iconClass: "md:text-bloom-700 md:!bg-bloom-50",
-    },
-    {
-      label: "Biggest Expense Category",
-      chip: biggestExpenseCategory || "",
-      chipColor: "purple",
-      icon: "user-circle-add",
-      iconClass: "md:text-bloom-700 md:!bg-bloom-50",
+      label: isMobile.value ? "Biggest Category" : "Biggest Expense Category",
+      value: formatCurrency(biggestExpenseCategory?.total_amount || 0),
+      chip: biggestExpenseCategory ? biggestExpenseCategory.category_name : "N/A",
+      chipColor: "blue",
+      icon: "moneys-solid",
+      iconClass: "md:text-blue-700",
     },
   ]
 })
 
 const showFilter = ref(false)
-const isMobile = useMediaQuery("(max-width: 768px)")
 
 const page = ref(1)
 const itemsPerPage = ref(10)
@@ -87,6 +93,7 @@ const handleOpenCreate = () => {
   // Check premium access before opening drawer
   if (!checkPremiumAccess()) return
 
+  selectedExpense.value = null
   openCreate.value = true
 }
 
@@ -106,18 +113,33 @@ const getActionItems = (item: TExpense) => [
   },
   { divider: true },
   {
-    label: "Delete expense",
-    icon: "trash",
-    class: "text-red-600 hover:bg-red-50",
-    iconClass: "text-red-600",
+    label: "Void expense",
+    icon: "close-circle",
+    class: "text-orange-600 hover:bg-orange-50",
+    iconClass: "text-orange-600",
     action: () => {
-      openDelete.value = true
+      openVoid.value = true
       selectedExpense.value = item
     },
   },
+  ...(item.entry_type === "manual"
+    ? [
+        {
+          label: "Delete expense",
+          icon: "trash",
+          class: "text-red-600 hover:bg-red-50",
+          iconClass: "text-red-600",
+          action: () => {
+            openDelete.value = true
+            selectedExpense.value = item
+          },
+        },
+      ]
+    : []),
 ]
 
 const { mutate: deleteExpense, isPending: isDeleting } = useDeleteExpense()
+const { mutate: voidExpense, isPending: isVoiding } = useEditExpense()
 
 const handleDelete = () => {
   deleteExpense(selectedExpense.value?.uid || "", {
@@ -129,6 +151,24 @@ const handleDelete = () => {
     },
     onError: displayError,
   })
+}
+
+const handleVoid = () => {
+  voidExpense(
+    {
+      id: selectedExpense.value?.uid || "",
+      payload: { status: "void" },
+    },
+    {
+      onSuccess: () => {
+        toast.success("Expense voided successfully")
+        openVoid.value = false
+        selectedExpense.value = null
+        handleRefresh()
+      },
+      onError: displayError,
+    },
+  )
 }
 
 const route = useRoute()
@@ -146,8 +186,8 @@ watch(
 </script>
 
 <template>
-  <div class="p-6">
-    <PageHeader title="Expenses" :count="expenses?.count" count-label="expenses" />
+  <div class="px-3 pb-6">
+    <PageHeader title="Expenses" :count="expenses?.count" count-label="records" />
 
     <div class="flex flex-col gap-8">
       <div class="hidden lg:block">
@@ -172,15 +212,25 @@ watch(
         </template>
       </EmptyState>
 
-      <section v-else class="flex flex-col gap-8">
-        <!-- <MetricsGrid :items="expenseMetrics" /> -->
-
-        <div class="grid grid-cols-2 gap-4 md:grid-cols-3">
+      <section v-else class="flex flex-col gap-5 lg:gap-8">
+        <div v-if="!isMobile" class="grid-cols-4 gap-4 lg:grid">
           <StatCard
             v-for="item in expenseMetrics"
             :key="item.label"
             :stat="item"
-            :same-view="false"
+            :loading="isLoadingStats"
+          />
+          <ExpenseStackedBarChart
+            class="col-span-2"
+            show-label
+            :category_breakdown="expenseDashboard?.category_breakdown"
+          />
+        </div>
+
+        <div v-else>
+          <ExpenseStackedBarChart
+            :total-expense="expenseDashboard?.current.total_amount || 9000"
+            :category_breakdown="expenseDashboard?.category_breakdown"
           />
         </div>
 
@@ -188,7 +238,7 @@ watch(
           class="space-y-4 overflow-hidden rounded-xl border-gray-200 pt-3 md:border md:bg-white"
         >
           <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
-            <h3 class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
+            <h3 class="mb-2 hidden items-center gap-1 text-lg font-semibold md:mb-0 lg:flex">
               All Expenses
               <Chip v-if="expenses?.count" :label="expenses?.count" />
             </h3>
@@ -231,6 +281,9 @@ watch(
                 ? 'Try adjusting your filters or search query'
                 : `Your expenses will be automatically added as they come in. You can also add one manually to get started.`,
             }"
+            :row-class="
+              (row) => (row.status === 'void' ? 'opacity-70! bg-gray-100! grayscale!' : '')
+            "
             :show-pagination="true"
             :items-per-page="itemsPerPage"
             :total-items-count="expenses?.count || 0"
@@ -247,17 +300,35 @@ watch(
             <template #cell:name="{ item }">
               <div class="flex max-w-48 items-center gap-2 truncate">
                 <span
-                  class="bg-core-200 flex size-10 shrink-0 items-center justify-center rounded-xl"
+                  class="bg-core-200 relative flex size-10 shrink-0 items-center justify-center rounded-xl"
                 >
-                  <Icon name="receipt-text" :size="24" class="text-core-800" />
+                  <Icon
+                    :name="EXPENSE_CATEGORY_ICON[item.category_name] || 'receipt-text'"
+                    :size="24"
+                    class="text-core-800"
+                  />
+                  <Icon
+                    v-if="item.entry_type === 'auto'"
+                    name="flash"
+                    class="text-primary-600 absolute -right-1 -bottom-1"
+                  />
                 </span>
                 <h4 class="!font-outfit truncate text-left text-sm font-medium capitalize">
-                  {{ item.name }}
+                  {{ item.name || item.category_name }}
                 </h4>
               </div>
             </template>
             <template #cell:category_name="{ item }">
               <Chip :label="item.category_name" color="purple" icon="tag" />
+            </template>
+            <template #cell:sub_category_name="{ item }">
+              <Chip
+                v-if="item.sub_category_name"
+                :label="item.sub_category_name"
+                color="pink"
+                icon="tag"
+              />
+              <span v-else>---</span>
             </template>
             <template #cell:status="{ item }">
               <Chip
@@ -268,31 +339,20 @@ watch(
               />
             </template>
 
+            <!-- Expense action should be on -->
             <template #mobile="{ item }">
               <ExpenseCard
                 :expense="item"
-                @click="
-                  () => {
-                    selectedExpense = item
-                    openDetail = true
-                  }
-                "
-                @delete="
-                  () => {
-                    selectedExpense = item
-                    openDelete = true
-                  }
-                "
-                @edit="
-                  () => {
-                    selectedExpense = item
-                    openCreate = true
-                  }
-                "
+                class="border-t border-gray-200 py-4!"
+                @toggle="() => (selectedExpense = item)"
+                @click="() => (openDetail = true)"
+                @delete="() => (openDelete = true)"
+                @void="() => (openVoid = true)"
+                @edit="() => (openCreate = true)"
               />
             </template>
             <template #cell:actions="{ item }">
-              <DropdownMenu :items="getActionItems(item)" />
+              <DropdownMenu v-if="item.status !== 'void'" :items="getActionItems(item)" />
             </template>
           </DataTable>
         </div>
@@ -320,20 +380,36 @@ watch(
       @refresh="handleRefresh"
     />
 
-    <DeleteConfirmationModal
-      :model-value="openDelete"
-      @update:model-value="() => (openDelete = false)"
-      :loading="isDeleting"
-      header="Delete Expense"
-      @delete="handleDelete"
-      action-label="Delete Expense"
+    <ConfirmationModal
+      :model-value="openDelete || openVoid"
+      @update:model-value="
+        () => {
+          openDelete = false
+          openVoid = false
+        }
+      "
+      :loading="isDeleting || isVoiding"
+      :header="openDelete ? 'Delete Expense' : 'Void Expense'"
+      @confirm="openDelete ? handleDelete() : handleVoid()"
+      :action-label="openDelete ? 'Delete Expense' : 'Void Expense'"
+      :variant="openDelete ? 'error' : 'warning'"
     >
       <template #paragraph>
         <p class="mb-4 text-sm text-gray-600">
-          Are you sure you want to delete this expense? This action cannot be undone.
+          <template v-if="openDelete">
+            Are you sure you want to delete this expense? This action cannot be undone.
+          </template>
+          <template v-else>
+            Are you sure you want to void this expense? This will mark the expense as voided.
+          </template>
         </p>
-        <ExpenseCard v-if="selectedExpense" :expense="selectedExpense" :show-actions="false" />
+        <ExpenseCard
+          v-if="selectedExpense"
+          :expense="selectedExpense"
+          class="bg-core-25! rounded-2xl px-3"
+          :show-actions="false"
+        />
       </template>
-    </DeleteConfirmationModal>
+    </ConfirmationModal>
   </div>
 </template>

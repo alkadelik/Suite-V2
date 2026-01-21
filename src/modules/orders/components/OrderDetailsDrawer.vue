@@ -10,6 +10,7 @@ import { startCase } from "@/utils/format-strings"
 import Icon from "@components/Icon.vue"
 import { computed } from "vue"
 import { useSettingsStore } from "@modules/settings/store"
+import { clipboardCopy } from "@/utils/others"
 
 const props = defineProps<{ open: boolean; order: TOrder }>()
 const emit = defineEmits([
@@ -115,7 +116,7 @@ const menuItems = computed(() => {
   <component
     :is="isMobile ? Modal : Drawer"
     :open="open"
-    title="Order Details"
+    :title="`Order Details - #${order.order_number}`"
     max-width="2xl"
     variant="fullscreen"
     @close="emit('close')"
@@ -129,6 +130,15 @@ const menuItems = computed(() => {
       </div>
       <DropdownMenu v-if="order.fulfilment_status !== 'voided'" :items="menuItems" size="sm" />
     </div>
+    <p class="mb-4 flex items-center gap-1 text-sm">
+      Details of this order - #{{ order.order_number }}
+      <Icon
+        name="copy"
+        size="14"
+        class="text-primary-600 cursor-pointer hover:animate-bounce"
+        @click="clipboardCopy(order.order_number)"
+      />
+    </p>
 
     <div class="space-y-4">
       <!-- Order Items -->
@@ -187,11 +197,13 @@ const menuItems = computed(() => {
         </p>
         <p class="flex justify-between text-sm">
           <span class="text-core-600">Subtotal</span>
-          <span class="font-medium">{{ formatCurrency(productsTotal) }}</span>
+          <span class="font-medium">{{ formatCurrency(productsTotal, { kobo: true }) }}</span>
         </p>
         <p class="flex justify-between text-sm">
           <span class="text-core-600">Delivery Fee</span>
-          <span class="font-medium">{{ deliveryFee > 0 ? formatCurrency(deliveryFee) : "-" }}</span>
+          <span class="font-medium">{{
+            deliveryFee > 0 ? formatCurrency(deliveryFee, { kobo: true }) : "-"
+          }}</span>
         </p>
         <p
           v-if="order.tax_amount && Number(order.tax_amount) > 0"
@@ -212,7 +224,9 @@ const menuItems = computed(() => {
         <div class="border-core-200 my-2 border-t border-dashed"></div>
         <p class="flex justify-between text-lg font-semibold">
           <span>Total:</span>
-          <span class="text-primary-600">{{ formatCurrency(order.total_amount) }}</span>
+          <span class="text-primary-600">{{
+            formatCurrency(order.total_amount, { kobo: true })
+          }}</span>
         </p>
       </div>
 
@@ -234,13 +248,13 @@ const menuItems = computed(() => {
         </p>
         <p v-if="order.payment_status !== 'unpaid'" class="flex justify-between text-sm">
           <span class="text-core-600">Amount Paid</span>
-          <span class="font-medium">{{ formatCurrency(order.total_paid) }}</span>
+          <span class="font-medium">{{ formatCurrency(order.total_paid, { kobo: true }) }}</span>
         </p>
         <p v-if="order.outstanding_balance > 0" class="flex justify-between text-sm">
           <span class="text-core-600">Outstanding Balance</span>
-          <span class="font-medium text-red-600">{{
-            formatCurrency(order.outstanding_balance)
-          }}</span>
+          <span class="font-medium text-red-600">
+            {{ formatCurrency(order.outstanding_balance, { kobo: true }) }}
+          </span>
         </p>
       </div>
 
@@ -258,11 +272,13 @@ const menuItems = computed(() => {
           }}</span>
         </p>
         <p class="flex justify-between text-sm">
-          <span class="text-core-600">{{
-            order.fulfilment_status === "fulfilled"
-              ? "How was it delivered?"
-              : "How will it be delivered?"
-          }}</span>
+          <span class="text-core-600">
+            {{
+              order.fulfilment_status === "fulfilled"
+                ? "How was it delivered?"
+                : "How will it be delivered?"
+            }}
+          </span>
           <span class="font-medium">{{ startCase(order.fulfilment_method) }}</span>
         </p>
         <p
@@ -277,7 +293,7 @@ const menuItems = computed(() => {
           class="flex justify-between text-sm"
         >
           <span class="text-core-600">Courier</span>
-          <span class="font-medium">{{ order.courier }}</span>
+          <span class="font-medium">{{ order.courier_name }}</span>
         </p>
       </div>
     </div>

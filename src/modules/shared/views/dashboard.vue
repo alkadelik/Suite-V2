@@ -60,9 +60,21 @@
         "
       >
         <template #cell:items="{ item }">
-          <div class="max-w-[100px] truncate">
-            {{ item.items.map((v) => v.product_name).join(", ") }}
-          </div>
+          <ProductAvatar
+            :name="item.items?.[0].product_name"
+            :url="undefined"
+            :variants-count="item.items.length > 1 ? item.items.length : undefined"
+            :variants-count-text="`+ ${item.items.length - 1}`"
+            shape="rounded"
+            class="!gap-2 capitalize"
+            max-width="100px"
+          />
+        </template>
+        <template #cell:fulfilment_status="{ item }">
+          <Chip
+            :color="item.fulfilment_status === 'fulfilled' ? 'success' : 'primary'"
+            :label="item.fulfilment_status === 'fulfilled' ? 'Yes' : 'No'"
+          />
         </template>
         <!--  -->
         <template #cell:payment_status="{ item }">
@@ -80,10 +92,9 @@
         </template>
         <!--  -->
         <template #cell:customer_info="{ item }">
-          <Avatar
-            :extra-text="true"
-            :name="`${item.customer_name || anonymousCustomer.full_name}`"
-          />
+          <span>
+            {{ item.customer_name || anonymousCustomer.full_name }}
+          </span>
         </template>
         <template #mobile="{ item }">
           <OrderCard
@@ -137,10 +148,12 @@ import Chip from "@components/Chip.vue"
 import { anonymousCustomer, ORDER_COLUMNS } from "@modules/orders/constants"
 import DataTable from "@components/DataTable.vue"
 import OrderCard from "@modules/orders/components/OrderCard.vue"
-import Avatar from "@components/Avatar.vue"
 import { formatError } from "@/utils/error-handler"
 import OrderDetailsDrawer from "@modules/orders/components/OrderDetailsDrawer.vue"
 import { TOrder } from "@modules/orders/types"
+import ProductAvatar from "@components/ProductAvatar.vue"
+import { isStaging } from "@/utils/others"
+import { toast } from "@/composables/useToast"
 
 const { user } = useAuthStore()
 const openModal = ref(false)
@@ -218,7 +231,8 @@ const quickActions = computed(() => {
       color: "bg-pink-50 text-pink-700",
       action: () => {
         if (!checkPremiumAccess()) return
-        router.push("/expenses?create=true")
+        if (isStaging) router.push("/expenses?create=true")
+        else toast.info("Expense feature is coming soon!")
       },
     },
   ]

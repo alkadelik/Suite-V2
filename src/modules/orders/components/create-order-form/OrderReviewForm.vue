@@ -67,7 +67,7 @@ const customerName = computed(() => {
 })
 
 const itemsCount = computed(() => {
-  return props.orderItems.reduce((sum, item) => sum + item.quantity, 0)
+  return props.orderItems.reduce((sum, item) => sum + Number(item.quantity), 0)
 })
 </script>
 

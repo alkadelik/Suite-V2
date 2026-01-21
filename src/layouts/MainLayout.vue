@@ -10,7 +10,6 @@
     <div class="flex h-[100dvh] overflow-hidden lg:h-screen">
       <!-- Sidebar -->
       <AppSidebar
-        :menu-items="MENU_ITEMS"
         :mobile-sidebar-open="mobileSidebarOpen"
         :isLive="isLive"
         @logout="logout = true"
@@ -173,6 +172,8 @@ import {
   useMarkNotificationAsRead,
 } from "@modules/shared/api"
 import type { INotification } from "@modules/shared/types"
+import { isStaging } from "@/utils/others"
+import { toast } from "@/composables/useToast"
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
@@ -292,7 +293,10 @@ const actionMenuItems = computed(() => {
       icon: "receipt-add",
       class: "!bg-pink-50 !text-pink-700",
       iconClass: "!text-primary-700",
-      action: () => router.push("/expenses?create=true"),
+      action: () => {
+        if (isStaging) router.push("/expenses?create=true")
+        else toast.info("Expense feature is coming soon!")
+      },
     },
   ]
 

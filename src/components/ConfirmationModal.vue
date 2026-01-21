@@ -47,11 +47,14 @@ import AppButton from "@components/AppButton.vue"
 import Icon from "@components/Icon.vue"
 
 export interface ConfirmationModalProps {
+  /** Whether the modal is open */
   modelValue: boolean
+  /** Header text for the modal */
   header: string
+  /** Paragraph text for the modal */
   paragraph?: string
+  /** Loading state for the action button */
   loading: boolean
-
   /**
    * The modal variant affecting colors and styling
    * - warning: Yellow/orange color scheme for warnings (default)

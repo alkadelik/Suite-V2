@@ -1,6 +1,7 @@
-import baseApi, { TApiPromise } from "@/composables/baseApi"
+import baseApi, { TApiPromise, useApiQuery } from "@/composables/baseApi"
 import { useMutation, useQuery } from "@tanstack/vue-query"
 import type { Ref } from "vue"
+import { computed } from "vue"
 import type {
   ICustomerFormPayload,
   ICustomersApiResponse,
@@ -59,6 +60,16 @@ export function useGetCustomer(uid: Ref<string> | string, enabled = true) {
     },
     retry: false,
     refetchOnWindowFocus: false,
+  })
+}
+
+export function useGetSingleCustomer(uid: Ref<string> | string) {
+  const uidValue = computed(() => (typeof uid === "string" ? uid : uid.value))
+  return useApiQuery<ICustomerDetail>({
+    url: computed(() => `/customers/${uidValue.value}/`),
+    key: computed(() => `customer-${uidValue.value}`),
+    enabled: computed(() => !!uidValue.value && uidValue.value.trim() !== ""),
+    selectData: true,
   })
 }
 

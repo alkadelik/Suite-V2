@@ -5,6 +5,7 @@ import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from "ax
 import { toast } from "./useToast"
 import { useSettingsStore } from "@modules/settings/store"
 import { toValue, MaybeRefOrGetter, computed } from "vue"
+import * as Sentry from "@sentry/vue"
 
 const baseURL = import.meta.env.VITE_API_BASE_URL as string
 
@@ -78,6 +79,9 @@ baseApi.interceptors.response.use(
       setPlanUpgradeModal(true)
       return Promise.reject(error)
     }
+
+    // Capture error with Sentry
+    Sentry.captureException(error, { tags: { section: "API" } })
 
     // For all other errors, just return the error
     return Promise.reject(error)

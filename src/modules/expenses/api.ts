@@ -6,7 +6,7 @@ import {
   TExpenseCategoryResponse,
   TExpenseResponse,
 } from "./types"
-import baseApi, { TApiPromise, useApiQuery } from "@/composables/baseApi"
+import baseApi, { TApiPromise, TPaginatedResponse, useApiQuery } from "@/composables/baseApi"
 import { MaybeRefOrGetter } from "vue"
 
 /** Create expense api request */
@@ -38,12 +38,29 @@ export function useGetExpenseDashboard() {
   })
 }
 
-/** Fetch expense statistics */
-export function useGetExpenseCategories() {
+/** Fetch expense categories */
+export function useGetExpenseCategories(enabled?: MaybeRefOrGetter<boolean>) {
   return useApiQuery<TExpenseCategoryResponse>({
     url: `/expenses/categories/`,
     key: `expenses-categories`,
     selectData: true,
+    refetchOnWindowFocus: false,
+    enabled,
+  })
+}
+
+/** Fetch expense vendor */
+export function useGetExpenseVendors() {
+  return useApiQuery<TPaginatedResponse<{ uid: string; name: string }>>({
+    url: `/expenses/vendors/`,
+    key: `expenses-vendors`,
+  })
+}
+
+/** Create expense vendor api request */
+export function useCreateExpenseVendor() {
+  return useMutation({
+    mutationFn: (payload: { name: string }) => baseApi.post(`/expenses/vendors/`, payload),
   })
 }
 

@@ -20,6 +20,7 @@ export type TOrder = {
   order_number: string
   coupon: string | null
   courier: string
+  courier_name?: string
   created_at: string
   order_date: string
   customer: string
@@ -50,6 +51,11 @@ export type TOrder = {
   user: string
   user_name: string
   is_voided: boolean
+
+  // Needed
+  store_email?: string
+  store_phone?: string
+  store_logo?: string
 }
 
 export type TOrderChannel = {
@@ -79,19 +85,23 @@ export type TOrderPaymentStatus = {
 export interface OrderPayload {
   source: string
   customer: string
+  popup_event?: string
+  customer_name?: string
+  customer_email?: string
+  customer_phone?: string
   total_amount: string | number
-  delivery_fee: string | number
   fulfilment_method: "pickup" | "delivery"
   fulfilment_status: "unfulfilled" | "fulfilled" | "partially_fulfilled" | "voided"
-  delivery_address: string
-  delivery_method: "manual" | "automatic"
+  delivery_fee?: string | number
+  delivery_address?: string
+  delivery_method?: "manual" | "automatic"
+  delivery_payment_option?: string
   courier: IShippingCourier | string
   coupon_code: string | null
   payment_status: "unpaid" | "paid" | "partially_paid"
   payment_amount: string | number
   payment_source?: string
   items: OrderItemPayload[]
-  delivery_payment_option: string
   order_channel: string
   order_date?: string
 }
