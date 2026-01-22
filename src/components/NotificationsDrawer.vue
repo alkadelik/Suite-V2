@@ -4,7 +4,7 @@
       :open="open"
       :title="`Notifications (${unreadCount})`"
       position="right"
-      :max-width="isMobile ? 'full' : 'md'"
+      :max-width="isMobile ? 'full' : '2xl'"
       @close="emit('close')"
       :handle-padding="false"
     >
@@ -33,7 +33,7 @@
         </div>
 
         <!-- Empty State -->
-        <div v-else class="flex flex-col items-center justify-center p-8 text-center">
+        <div v-else class="flex flex-col justify-center p-8 text-center">
           <EmptyState
             icon="bell"
             title="No notifications yet"

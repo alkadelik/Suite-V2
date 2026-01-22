@@ -47,7 +47,12 @@
 
     <!-- Home & Get Started -->
     <div class="space-y-1 px-4 py-2">
-      <SidebarLink v-if="!isLive" icon="candle" label="Get Started" to="/onboarding" />
+      <SidebarLink
+        v-if="!isLive && activeLocation?.is_hq"
+        icon="candle"
+        label="Get Started"
+        to="/onboarding"
+      />
       <SidebarLink icon="house" label="Home" to="/dashboard" />
     </div>
 
@@ -204,6 +209,8 @@ const productionItems = computed(() => {
 })
 
 const storeDetails = computed(() => useSettingsStore().storeDetails)
+
+const activeLocation = computed(() => useSettingsStore().activeLocation)
 
 // Subscription derived state
 const subscription = computed(() => useAuthStore().user?.subscription)

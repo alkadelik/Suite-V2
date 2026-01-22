@@ -198,7 +198,7 @@ const quickActions = computed(() => {
       hqOnly: true,
     },
     {
-      label: "Record a sale",
+      label: "Add Order",
       icon: "bag",
       color: "bg-green-50 text-green-700",
       action: () => {

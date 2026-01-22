@@ -128,12 +128,21 @@
     @confirm="confirmLocationSwitch"
     @cancel="cancelLocationSwitch"
   />
+
+  <!-- System notification modal -->
+  <NotificationModal
+    :open="showNotification"
+    :notifications="generalNotifications"
+    @dismiss="dismissNotification"
+    @close="closeAllNotifications"
+  />
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
 import AppButton from "@components/AppButton.vue"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
+import NotificationModal from "@components/NotificationModal.vue"
 import SidebarLink from "./parts/SidebarLink.vue"
 import { useMediaQuery } from "@vueuse/core"
 import LogoutModal from "@components/core/LogoutModal.vue"
@@ -157,7 +166,12 @@ import { useLocationSwitch } from "@/composables/useLocationSwitch"
 import MobileQuickActionsModal from "./parts/MobileQuickActionsModal.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import { useRouter, useRoute } from "vue-router"
-import { useGetLiveStatus } from "@modules/shared/api"
+import {
+  useGetLiveStatus,
+  useGetNotifications,
+  useMarkNotificationAsRead,
+} from "@modules/shared/api"
+import type { INotification } from "@modules/shared/types"
 import { isStaging } from "@/utils/others"
 import { toast } from "@/composables/useToast"
 
@@ -167,6 +181,52 @@ const mobileSidebarOpen = ref(false)
 const logout = ref(false)
 const openMore = ref(false)
 const openActions = ref(false)
+const showNotification = ref(false)
+
+// Fetch notifications from API
+const { data: notificationsData, refetch: refetchNotifications } = useGetNotifications()
+const { mutate: markAsRead } = useMarkNotificationAsRead()
+
+// Filter for unread "general" type notifications
+const generalNotifications = computed<INotification[]>(() => {
+  if (!notificationsData.value?.notifications) return []
+  return notificationsData.value.notifications.filter((n) => n.type === "general" && !n.is_read)
+})
+
+// Show notification modal when there are unread general notifications
+watch(
+  generalNotifications,
+  (notifications) => {
+    if (notifications.length > 0) {
+      showNotification.value = true
+    }
+  },
+  { immediate: true },
+)
+
+// Dismiss a single notification (mark as read)
+const dismissNotification = (uid: string) => {
+  markAsRead(uid, {
+    onSuccess: () => {
+      refetchNotifications()
+      // Close modal if no more notifications
+      if (generalNotifications.value.length <= 1) {
+        showNotification.value = false
+      }
+    },
+  })
+}
+
+// Close all notifications (mark all as read)
+const closeAllNotifications = () => {
+  // Mark each notification as read
+  generalNotifications.value.forEach((n) => {
+    markAsRead(n.uid)
+  })
+  showNotification.value = false
+  // Refetch after a short delay to allow all mutations to complete
+  setTimeout(() => void refetchNotifications(), 500)
+}
 
 const { confirmSwitch, pendingLocation, confirmLocationSwitch, cancelLocationSwitch } =
   useLocationSwitch()
@@ -207,7 +267,7 @@ const actionMenuItems = computed(() => {
       hqOnly: true,
     },
     {
-      label: "Record a sale",
+      label: "Add Order",
       icon: "bag",
       class: "!bg-green-50 !text-green-700 mb-1",
       iconClass: "!text-green-700",

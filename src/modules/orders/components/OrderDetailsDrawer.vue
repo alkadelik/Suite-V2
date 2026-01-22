@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Drawer from "@components/Drawer.vue"
 import Modal from "@components/Modal.vue"
+import DropdownMenu from "@components/DropdownMenu.vue"
 import { useMediaQuery } from "@vueuse/core"
 import { TOrder } from "../types"
 import { formatCurrency } from "@/utils/format-currency"
@@ -8,10 +9,22 @@ import { formatDate } from "@/utils/formatDate"
 import { startCase } from "@/utils/format-strings"
 import Icon from "@components/Icon.vue"
 import { computed } from "vue"
+import { useSettingsStore } from "@modules/settings/store"
 import { clipboardCopy } from "@/utils/others"
 
 const props = defineProps<{ open: boolean; order: TOrder }>()
-const emit = defineEmits(["close", "refresh"])
+const emit = defineEmits([
+  "close",
+  "refresh",
+  "view-memos",
+  "share-receipt",
+  "share-invoice",
+  "share-payment-link",
+  "update-payment",
+  "fulfill",
+  "void-order",
+  "delete-order",
+])
 
 const isMobile = useMediaQuery("(max-width: 1028px)")
 
@@ -30,6 +43,73 @@ const productsTotal = computed(() => {
 const deliveryFee = computed(() => {
   return Number(props.order.delivery_fee)
 })
+
+// Get store's default VAT rate as fallback
+const storeVatRate = computed(() => {
+  const rate = useSettingsStore().storeDetails?.tax_rate
+  return rate ? `${Number(rate) * 100}%` : "7.5%"
+})
+
+const isFulfilled = computed(() => {
+  return props.order?.fulfilment_status === "fulfilled"
+})
+
+const isBuyerCreated = computed(() => {
+  return props.order?.source?.includes("storefront")
+})
+
+const menuItems = computed(() => {
+  const paymentStatus = props.order?.payment_status
+  const showVoid = (isFulfilled.value || paymentStatus !== "unpaid") && !isBuyerCreated.value
+  const showDelete = !isFulfilled.value && paymentStatus === "unpaid" && !isBuyerCreated.value
+
+  return [
+    { label: "View memos", icon: "note", action: () => emit("view-memos") },
+    // Share receipt - only for partially paid or paid orders
+    ...(paymentStatus === "paid" || paymentStatus === "partially_paid"
+      ? [{ label: "Share receipt", icon: "share", action: () => emit("share-receipt") }]
+      : []),
+    // Share invoice - only for partially paid or unpaid orders
+    ...(paymentStatus === "unpaid" || paymentStatus === "partially_paid"
+      ? [{ label: "Share invoice", icon: "share", action: () => emit("share-invoice") }]
+      : []),
+    // Share payment link - only for partially paid or unpaid orders
+    ...(paymentStatus === "unpaid" || paymentStatus === "partially_paid"
+      ? [{ label: "Share payment link", icon: "share", action: () => emit("share-payment-link") }]
+      : []),
+    // Update Payment - only for unpaid or partially paid orders
+    ...(paymentStatus !== "paid"
+      ? [{ label: "Update Payment", icon: "money-add", action: () => emit("update-payment") }]
+      : []),
+    // Fulfill order - only for unfulfilled orders
+    ...(isFulfilled.value
+      ? []
+      : [{ label: "Fulfill Order", icon: "money-add", action: () => emit("fulfill") }]),
+    ...(showVoid || showDelete ? [{ divider: true }] : []),
+    ...(showVoid
+      ? [
+          {
+            label: "Void Order",
+            icon: "trash",
+            class: "text-red-600 hover:bg-red-50",
+            iconClass: "text-red-600",
+            action: () => emit("void-order"),
+          },
+        ]
+      : []),
+    ...(showDelete
+      ? [
+          {
+            label: "Delete Order",
+            icon: "trash",
+            class: "text-red-600 hover:bg-red-50",
+            iconClass: "text-red-600",
+            action: () => emit("delete-order"),
+          },
+        ]
+      : []),
+  ]
+})
 </script>
 
 <template>
@@ -41,8 +121,14 @@ const deliveryFee = computed(() => {
     variant="fullscreen"
     @close="emit('close')"
   >
-    <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
-      <Icon name="shop-add" size="28" />
+    <div class="mb-4 flex items-start justify-between">
+      <div>
+        <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
+          <Icon name="shop-add" size="28" />
+        </div>
+        <p class="text-sm">Details of this order.</p>
+      </div>
+      <DropdownMenu v-if="order.fulfilment_status !== 'voided'" :items="menuItems" size="sm" />
     </div>
     <p class="mb-4 flex items-center gap-1 text-sm">
       Details of this order - #{{ order.order_number }}
@@ -118,6 +204,15 @@ const deliveryFee = computed(() => {
           <span class="font-medium">{{
             deliveryFee > 0 ? formatCurrency(deliveryFee, { kobo: true }) : "-"
           }}</span>
+        </p>
+        <p
+          v-if="order.tax_amount && Number(order.tax_amount) > 0"
+          class="flex justify-between text-sm"
+        >
+          <span class="text-core-600"
+            >VAT ({{ order.tax_rate_used ? `${+order.tax_rate_used * 100}%` : storeVatRate }})</span
+          >
+          <span class="font-medium">{{ formatCurrency(Number(order.tax_amount)) }}</span>
         </p>
         <p
           v-if="Number(order.discount_amount) > 0"

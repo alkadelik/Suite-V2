@@ -54,12 +54,25 @@
 
     <!-- Single Variant View (when only one variant) -->
     <div v-if="isSingleVariant" class="space-y-6">
-      <!-- Price Section -->
+      <!-- Cost Price Section -->
+      <TextField
+        v-if="!props.hidePrice"
+        :model-value="singleVariantForm.cost_price"
+        @update:model-value="updateSingleVariantField('cost_price', removeLeadingZeros($event))"
+        label="Cost Price"
+        placeholder=""
+        type="number"
+        step="0.01"
+        min="0"
+        required
+      />
+
+      <!-- Selling Price Section -->
       <TextField
         v-if="!props.hidePrice"
         :model-value="singleVariantForm.price"
         @update:model-value="updateSingleVariantField('price', removeLeadingZeros($event))"
-        label="Price"
+        label="Selling Price"
         placeholder=""
         type="number"
         step="0.01"
@@ -82,43 +95,35 @@
     </div>
 
     <!-- Multiple Variants View (when more than one variant) -->
-    <div v-else class="space-y-4 rounded-lg border border-gray-200">
-      <!-- Header -->
-      <div class="flex items-center justify-between bg-gray-50 p-4">
-        <div class="flex-1">
-          <h3 class="text-sm font-medium text-gray-900">Variant</h3>
-        </div>
-        <div v-if="!props.hideStock" class="w-32 text-center">
-          <h3 class="text-sm font-medium text-gray-900">Quantity</h3>
-        </div>
-        <div v-if="!props.hidePrice" class="w-32 text-center">
-          <h3 class="text-sm font-medium text-gray-900">Price</h3>
-        </div>
-      </div>
-
-      <!-- Variant Rows -->
-      <div class="bg-white">
-        <div
-          v-for="(variant, index) in variants"
-          :key="`variant-${index}`"
-          class="flex items-center gap-4 border-b border-gray-200 p-4"
-        >
-          <!-- Variant Name with Chips -->
-          <div class="flex-1">
-            <div class="flex flex-wrap gap-2">
-              <Chip
-                v-for="(attributeValue, attrIndex) in getVariantDisplayValues(variant)"
-                :key="`attr-${attrIndex}`"
-                :label="attributeValue"
-                size="sm"
-              />
-            </div>
+    <div v-else class="space-y-4">
+      <!-- Variant Cards -->
+      <div
+        v-for="(variant, index) in variants"
+        :key="`variant-${index}`"
+        class="overflow-hidden rounded-lg border border-gray-200 bg-white"
+      >
+        <!-- Top Section - Variant Chips -->
+        <div class="p-4">
+          <div class="flex flex-wrap gap-2">
+            <Chip
+              v-for="(attributeValue, attrIndex) in getVariantDisplayValues(variant)"
+              :key="`attr-${attrIndex}`"
+              :label="attributeValue"
+              size="sm"
+            />
           </div>
+        </div>
 
-          <!-- Quantity Input -->
-          <div v-if="!props.hideStock" class="w-32">
+        <!-- Divider -->
+        <div class="border-t border-gray-200"></div>
+
+        <!-- Bottom Section - Input Fields -->
+        <div class="grid grid-cols-3 gap-4 p-4">
+          <!-- Quantity -->
+          <div v-if="!props.hideStock">
             <TextField
               :model-value="variant.opening_stock"
+              label="Quantity"
               placeholder=""
               type="number"
               min="0"
@@ -130,10 +135,28 @@
             />
           </div>
 
-          <!-- Price Input -->
-          <div v-if="!props.hidePrice" class="w-32">
+          <!-- Cost Price -->
+          <div v-if="!props.hidePrice">
+            <TextField
+              :model-value="variant.cost_price"
+              label="Cost Price"
+              placeholder=""
+              type="number"
+              step="0.01"
+              min="0"
+              size="sm"
+              @update:model-value="
+                updateVariantField(index, 'cost_price', removeLeadingZeros($event))
+              "
+              @blur="handleCostPriceBlur(index, $event)"
+            />
+          </div>
+
+          <!-- Selling Price -->
+          <div v-if="!props.hidePrice">
             <TextField
               :model-value="variant.price"
+              label="Selling Price"
               placeholder=""
               type="number"
               step="0.01"
@@ -482,6 +505,32 @@ const handleStockBlur = (currentIndex: number, event: Event) => {
         variant.opening_stock.trim() === "")
     ) {
       variant.opening_stock = value
+      hasChanges = true
+    }
+  })
+
+  if (hasChanges) {
+    emit("update:modelValue", updatedVariants)
+  }
+}
+
+// Handle cost price blur - auto-fill other variants if they're empty
+const handleCostPriceBlur = (currentIndex: number, event: Event) => {
+  const target = event.target as HTMLInputElement
+  const value = target.value.trim()
+
+  if (!value || value === "0") return
+
+  // Check if other variants have empty or zero cost price values
+  const updatedVariants = [...props.modelValue]
+  let hasChanges = false
+
+  updatedVariants.forEach((variant, index) => {
+    if (
+      index !== currentIndex &&
+      (!variant.cost_price || variant.cost_price === "0" || variant.cost_price.trim() === "")
+    ) {
+      variant.cost_price = value
       hasChanges = true
     }
   })

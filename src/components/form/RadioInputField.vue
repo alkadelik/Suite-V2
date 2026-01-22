@@ -23,22 +23,24 @@
         <label
           :for="`${label}-${String(option.value)}`"
           :class="[
-            'flex w-full items-start gap-3 rounded-xl border px-4 py-3 transition-all',
+            'flex w-full items-center gap-3 rounded-xl border px-4 py-3 transition-all',
             disabled || option.disabled
               ? 'cursor-not-allowed bg-gray-100 opacity-50'
               : 'cursor-pointer',
             !disabled && !option.disabled && modelValue === option.value
               ? 'border-primary-700 bg-primary-25'
-              : 'border-gray-400',
+              : variant === 'white'
+                ? 'border-gray-200 bg-white'
+                : 'border-gray-400 bg-gray-50',
             !disabled && !option.disabled && modelValue !== option.value
-              ? 'bg-gray-50 hover:border-gray-500'
+              ? 'hover:border-gray-500'
               : '',
           ]"
         >
           <!-- Radio indicator -->
           <div
             :class="[
-              'mt-1 flex size-4 shrink-0 items-center justify-center rounded-full border',
+              'flex size-4 shrink-0 items-center justify-center rounded-full border',
               modelValue === option.value
                 ? 'border-primary-700 bg-transparent'
                 : 'border-gray-300 bg-white',
@@ -49,7 +51,7 @@
 
           <!-- Radio content -->
           <slot name="content" :option="option">
-            <div class="flex flex-1 flex-col gap-1.5">
+            <div class="flex flex-1 flex-col gap-2.5">
               <h6 class="text-sm font-medium text-gray-700">
                 {{ option.label }}
               </h6>
@@ -90,6 +92,8 @@ interface RadioInputFieldProps {
   hint?: string
   size?: "sm" | "md" | "lg"
   orientation?: "vertical" | "horizontal"
+  /** Background style for inactive options: "default" (gray-50) or "white" */
+  variant?: "default" | "white"
 }
 
 const props = withDefaults(defineProps<RadioInputFieldProps>(), {
@@ -98,6 +102,7 @@ const props = withDefaults(defineProps<RadioInputFieldProps>(), {
   readonly: false,
   size: "md",
   orientation: "horizontal",
+  variant: "default",
 })
 
 const emit = defineEmits<{

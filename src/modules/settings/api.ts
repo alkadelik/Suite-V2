@@ -72,6 +72,12 @@ export function useGetLocations() {
   })
 }
 
+/** Fetch locations for login redirect flow (non-reactive, imperative call) */
+export async function fetchLocationsForLogin(): Promise<TLocation[]> {
+  const res = await baseApi.get<{ data: { results: TLocation[] } }>("/stores/locations/")
+  return res.data.data.results
+}
+
 /** Delete a store location by ID */
 export function useDeleteLocation() {
   return useMutation({

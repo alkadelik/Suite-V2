@@ -19,6 +19,7 @@ interface PaymentInfo {
 const props = defineProps<{
   productsTotal: number
   deliveryFee: number
+  vatAmount: number
   totalAmount: number
   itemsCount: number
 }>()
@@ -136,6 +137,10 @@ const isMobile = useMediaQuery("(max-width: 768px)")
         <p class="flex justify-between text-sm">
           <span class="text-core-600">Delivery Fee</span>
           <span class="font-medium">{{ deliveryFee > 0 ? formatCurrency(deliveryFee) : "-" }}</span>
+        </p>
+        <p v-if="vatAmount > 0" class="flex justify-between text-sm">
+          <span class="text-core-600">VAT (7.5%)</span>
+          <span class="font-medium">{{ formatCurrency(vatAmount) }}</span>
         </p>
         <p
           v-if="paymentInfo.discount_amount > 0"
