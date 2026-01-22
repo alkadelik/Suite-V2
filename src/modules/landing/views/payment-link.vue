@@ -181,11 +181,11 @@ const isEmpty = computed(() => !orderData.value?.uid || isPending.value)
         Thank you for shopping at {{ startCase(order.store_name) }}!
       </h3>
 
-      <section class="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:gap-6">
+      <section class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 lg:gap-6">
         <!-- order status, shipping and items -->
         <div class="lg:col-span-2">
           <!-- order status -->
-          <div class="grid grid-cols-2 gap-6 text-sm lg:grid-cols-3 lg:text-base">
+          <div class="grid grid-cols-2 gap-6 text-sm md:grid-cols-3 lg:text-base">
             <div>
               <h5 class="text-core-600 mb-1">Order ID</h5>
               <p class="font-medium">{{ order.order_number }}</p>
@@ -214,7 +214,7 @@ const isEmpty = computed(() => !orderData.value?.uid || isPending.value)
           <!-- shipping details -->
           <div
             v-if="order.fulfilment_method === 'delivery'"
-            class="mt-6 grid grid-cols-2 gap-6 border-t border-gray-200 pt-6 lg:grid-cols-3"
+            class="mt-6 grid grid-cols-2 gap-6 border-t border-gray-200 pt-6 md:grid-cols-3"
           >
             <div>
               <h5 class="text-core-600 mb-1">Shipped to</h5>
@@ -226,7 +226,7 @@ const isEmpty = computed(() => !orderData.value?.uid || isPending.value)
               <p class="font-medium">{{ formatDate(order.created_at) }}</p>
             </div>
             <!--  -->
-            <div class="col-span-2 lg:col-span-1">
+            <div class="col-span-2 md:col-span-1">
               <h5 class="text-core-600 mb-1">Delivery provider</h5>
               <p class="font-medium">{{ order.courier_name || "Unknown Courier" }}</p>
               <Chip
