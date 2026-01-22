@@ -18,7 +18,7 @@
     </slot>
 
     <div
-      class="border-error-300 bg-error-25 text-error-700 my-3 flex flex-col items-center gap-3 rounded-lg border p-3 sm:flex-row sm:items-start"
+      class="border-error-300 bg-error-25 text-error-700 my-3 flex flex-row items-center gap-3 rounded-lg border p-3 sm:flex-row sm:items-start"
       :class="{ 'items-center sm:!items-center': !$slots.warning }"
     >
       <div class="border-error-100 flex-shrink-0 rounded-full border-2 p-0.5">

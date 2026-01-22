@@ -245,6 +245,8 @@ const removeItem = (index: number) => {
   if (variants) {
     variants.forEach((v) => delete validationErrors.value[v.variant.uid])
   }
+  // Remove the product's variants from selectedVariants Map
+  selectedVariants.value.delete(product.uid)
   localItems.value.splice(index, 1)
 }
 
@@ -306,6 +308,77 @@ watch(
   selectedVariants,
   async () => {
     await validateAllItems()
+  },
+  { deep: true },
+)
+
+// Watch for changes in selectedProducts to sync localItems
+watch(
+  () => props.selectedProducts,
+  (newProducts) => {
+    // Remove items that are no longer in selectedProducts
+    localItems.value = localItems.value.filter((item) =>
+      newProducts.some((p) => p.uid === item.product.uid),
+    )
+
+    // Clean up selectedVariants for removed products
+    const productUids = new Set(newProducts.map((p) => p.uid))
+    for (const uid of selectedVariants.value.keys()) {
+      if (!productUids.has(uid)) {
+        selectedVariants.value.delete(uid)
+      }
+    }
+
+    // Add new products that aren't in localItems yet
+    for (const product of newProducts) {
+      if (!localItems.value.some((item) => item.product.uid === product.uid)) {
+        // Auto-select variant if there's only one and no attributes
+        if (
+          product.variants &&
+          product.variants.length === 1 &&
+          product.variants[0].attributes.length === 0
+        ) {
+          const src = product.variants[0]
+          const availableStock =
+            Number(src.sellable_stock ?? src.available_stock) -
+            Number(src.popup_quantity_taken ?? 0)
+          const defaultVariant = {
+            uid: src.uid,
+            name: src.name,
+            sku: src.sku,
+            price: src.price,
+            stock: Math.max(0, availableStock),
+            sellable_stock: Number(src.sellable_stock ?? src.available_stock),
+            popup_quantity_taken: Number(src.popup_quantity_taken ?? 0),
+            original_price: parseFloat(src.price),
+          }
+
+          selectedVariants.value.set(product.uid, [
+            {
+              variant: defaultVariant,
+              quantity: 1,
+              unit_price: parseFloat(defaultVariant.price),
+            },
+          ])
+
+          localItems.value.push({
+            product,
+            variant: defaultVariant,
+            quantity: 1,
+            unit_price: parseFloat(defaultVariant.price),
+            notes: "",
+          })
+        } else {
+          localItems.value.push({
+            product,
+            variant: null,
+            quantity: 1,
+            unit_price: 0,
+            notes: "",
+          })
+        }
+      }
+    }
   },
   { deep: true },
 )

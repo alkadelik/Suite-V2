@@ -5,8 +5,8 @@
   <!-- Drawer -->
   <aside :class="drawerClasses" @click.stop tabindex="-1" role="dialog" aria-modal="true">
     <!-- Header -->
-    <div v-if="showHeader" class="flex items-center justify-between border-b border-gray-200 p-5">
-      <slot name="header">
+    <slot name="header">
+      <div v-if="showHeader" class="flex items-center justify-between border-b border-gray-200 p-5">
         <h2 v-if="title" class="m-0 text-lg font-semibold text-gray-800">{{ title }}</h2>
         <span v-else></span>
         <button
@@ -16,8 +16,8 @@
         >
           <Icon name="close-circle" size="20" />
         </button>
-      </slot>
-    </div>
+      </div>
+    </slot>
 
     <!-- Body -->
     <div

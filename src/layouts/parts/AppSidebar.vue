@@ -78,7 +78,16 @@
     </section>
 
     <section class="mt-auto px-4 pb-4">
-      <SidebarLink icon="life-buoy" label="Support" to="/support" />
+      <SidebarLink
+        icon="life-buoy"
+        label="Support"
+        @click="
+          () => {
+            console.log('opening support modal')
+            useSharedStore().openSupportModal()
+          }
+        "
+      />
 
       <!-- Subscription view -->
       <div class="relative mt-20">
@@ -178,6 +187,7 @@ import { clipboardCopy, isStaging } from "@/utils/others"
 import { useSettingsStore } from "@modules/settings/store"
 import { useRouter } from "vue-router"
 import { useProductionStore } from "@modules/production/store"
+import { useSharedStore } from "@modules/shared/store"
 
 defineProps<{
   mobileSidebarOpen: boolean

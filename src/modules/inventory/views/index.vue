@@ -61,6 +61,7 @@
               class="md:hidden"
             />
             <AppButton
+              v-if="isHQ"
               icon="add"
               size="sm"
               label="Add Product"
@@ -68,6 +69,7 @@
               class="!hidden md:!inline-flex"
             />
             <AppButton
+              v-if="isHQ"
               icon="add"
               size="sm"
               label=""
@@ -90,8 +92,8 @@
           icon="box"
           title="No products found"
           description="Start adding products to manage your inventory."
-          action-label="Add Product"
-          action-icon="add"
+          :action-label="isHQ ? 'Add Product' : undefined"
+          :action-icon="isHQ ? 'add' : undefined"
           @action="openAddProductDrawer"
         />
 
