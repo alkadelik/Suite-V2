@@ -28,7 +28,7 @@
     </div>
 
     <!-- Footer -->
-    <div v-if="$slots.footer" class="border-t border-gray-200 p-5">
+    <div v-if="$slots.footer" class="border-t border-gray-200 p-4 md:p-6">
       <slot name="footer" />
     </div>
   </aside>

@@ -33,7 +33,9 @@ const overviewInfo = computed(() => {
 })
 
 const handleRegister = () => {
-  if (popupEvt.value?.is_registered) return
+  if (popupEvt.value?.is_registered) {
+    return toast.info("You have already registered for this event.")
+  }
   //
   if (Number(popupEvt.value?.participant_fee) === 0) {
     openConfirmation.value = true
