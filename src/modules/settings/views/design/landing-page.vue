@@ -21,7 +21,22 @@
       <AppButton :loading="isPending" label="Publish Page" class="w-full" @click="publishPage" />
     </div>
 
-    <div class="flex flex-col gap-6 md:flex-row">
+    <!-- Skeleton Loader -->
+    <div v-if="isLandingPageDataLoading" class="flex flex-col gap-6 md:flex-row">
+      <!-- Left Sidebar Skeleton -->
+      <aside class="hidden w-2/5 flex-shrink-0 md:block">
+        <div class="space-y-2">
+          <div v-for="i in 6" :key="i" class="h-14 animate-pulse rounded-lg bg-gray-200"></div>
+        </div>
+      </aside>
+      <!-- Right Content Skeleton -->
+      <div class="flex-1 space-y-4">
+        <div class="h-64 animate-pulse rounded-lg bg-gray-200"></div>
+        <div class="h-48 animate-pulse rounded-lg bg-gray-200"></div>
+      </div>
+    </div>
+
+    <div v-else class="flex flex-col gap-6 md:flex-row">
       <!-- Left Sidebar - Desktop -->
       <aside class="hidden w-2/5 flex-shrink-0 md:block">
         <div class="space-y-2">
@@ -288,10 +303,10 @@
     <ConfirmationModal
       v-model="showHideConfirmation"
       variant="warning"
-      :header="`${sectionToHideVisibility ? 'Unhide' : 'Hide'} ${sectionToHideLabel} Section`"
-      :paragraph="`Are you sure you want to ${sectionToHideVisibility ? 'unhide' : 'hide'} the '${sectionToHideLabel}' section from your landing page? This action can be reversed later.`"
-      info-message="You can unhide this section later from the settings."
-      :action-label="sectionToHideVisibility ? 'Unhide Section' : 'Hide Section'"
+      :header="`${sectionToHideVisibility ? 'Hide' : 'Unhide'} ${sectionToHideLabel} Section`"
+      :paragraph="`Are you sure you want to ${sectionToHideVisibility ? 'hide' : 'unhide'} the '${sectionToHideLabel}' section on your landing page?.`"
+      :info-message="`You can ${sectionToHideVisibility ? 'unhide' : 'hide'} this section later from the settings.`"
+      :action-label="sectionToHideVisibility ? 'Hide Section' : 'Unhide Section'"
       :loading="isHiding"
       @confirm="confirmHideSection"
     />
@@ -319,7 +334,11 @@ import { displayError } from "@/utils/error-handler"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
 
 const { mutate: updateLandingPageItemsOrder, isPending } = useUpdateStorefrontSectionsOrder()
-const { data: landingPageData, refetch } = useGetStorefrontSections()
+const {
+  data: landingPageData,
+  isPending: isLandingPageDataLoading,
+  refetch,
+} = useGetStorefrontSections()
 
 const openVersionHistory = inject<() => void>("openVersionHistory")
 
@@ -373,7 +392,82 @@ const newsletterSignupSection = computed(() => {
   )
 })
 
+// Validation function to check if a section has required properties
+const validateSectionRequiredFields = (
+  sectionId: string,
+): { isValid: boolean; missing: string[] } => {
+  const missing: string[] = []
+
+  switch (sectionId) {
+    case "hero":
+      // Hero has fallbacks for title and image, so it's always valid
+      return { isValid: true, missing: [] }
+
+    case "featured_products":
+      // Featured products section doesn't have specific required fields in the section data
+      // It depends on products being available which is handled in the template
+      return { isValid: true, missing: [] }
+
+    case "about":
+      if (!aboutSection.value) return { isValid: false, missing: ["section data"] }
+      if (!aboutSection.value.title) missing.push("Headline")
+      if (!aboutSection.value.content) missing.push("Description")
+      if (!aboutSection.value.image) missing.push("Image")
+      return { isValid: missing.length === 0, missing }
+
+    case "cta_block_1":
+      if (!ctaBlock1Section.value) return { isValid: false, missing: ["section data"] }
+      if (!ctaBlock1Section.value.title) missing.push("Headline")
+      if (!ctaBlock1Section.value.content) missing.push("Body Text")
+      if (!ctaBlock1Section.value.image) missing.push("Image")
+      return { isValid: missing.length === 0, missing }
+
+    case "cta_block_2":
+      if (!ctaBlock2Section.value) return { isValid: false, missing: ["section data"] }
+      if (!ctaBlock2Section.value.title) missing.push("Headline")
+      if (!ctaBlock2Section.value.content) missing.push("Body Text")
+      if (!ctaBlock2Section.value.image) missing.push("Image")
+      return { isValid: missing.length === 0, missing }
+
+    case "testimonials":
+      if (!testimonialsSection.value) return { isValid: false, missing: ["section data"] }
+      if (
+        !testimonialsSection.value.testimonials ||
+        testimonialsSection.value.testimonials.length === 0
+      ) {
+        missing.push("At least one testimonial")
+      }
+      return { isValid: missing.length === 0, missing }
+
+    case "newsletter_signup":
+      if (!newsletterSignupSection.value) return { isValid: false, missing: ["section data"] }
+      if (!newsletterSignupSection.value.title) missing.push("Headline")
+      if (!newsletterSignupSection.value.subtitle) missing.push("Email Capture Field")
+      if (!newsletterSignupSection.value.content) missing.push("Body Text")
+      return { isValid: missing.length === 0, missing }
+
+    default:
+      return { isValid: true, missing: [] }
+  }
+}
+
 const hideSection = (id: string): void => {
+  const sectionToHide = draggableItems.value.find((item) => item.id === id)
+  if (!sectionToHide) return
+
+  // If trying to unhide (make visible), validate required fields
+  if (!sectionToHide.is_visible) {
+    const validation = validateSectionRequiredFields(id)
+    if (!validation.isValid) {
+      const missingFields = validation.missing.join(", ")
+      toast.error(
+        `Cannot unhide section. Missing required fields: ${missingFields}. Please add these fields before making the section visible.`,
+        { duration: 5000 },
+      )
+      return
+    }
+  }
+
   sectionToHideId.value = id
   showHideConfirmation.value = true
 }
