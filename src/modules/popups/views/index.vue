@@ -11,6 +11,7 @@ import Tabs from "@components/Tabs.vue"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, ref, watch } from "vue"
 import { POPUP_COLUMN } from "../constants"
+import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import { PopupEvent } from "../types"
 import PopupEventCard from "../components/PopupEventCard.vue"
 import CreatePopupEventModal from "../components/CreatePopupEventModal.vue"
@@ -34,6 +35,7 @@ const TABS = [
 
 const status = ref(TABS[0].key)
 const searchQuery = ref("")
+const debouncedSearch = useDebouncedRef(searchQuery, 750)
 const openCreate = ref(false)
 const openDelete = ref(false)
 const showFilter = ref(false)
@@ -55,7 +57,7 @@ const handleAction = (action: string, item: PopupEvent) => {
 const computedFilters = computed(() => {
   const filters: Record<string, string> = {}
   if (status.value && status.value !== "all") filters.status = status.value
-  if (searchQuery.value) filters.search = searchQuery.value
+  if (debouncedSearch.value) filters.search = debouncedSearch.value
   return filters
 })
 const { data: popupEvents, isPending, isFetching, refetch } = useGetPopupEvents(computedFilters)
@@ -201,7 +203,7 @@ const getMenuAction = (item: PopupEvent) => {
     </div>
 
     <EmptyState
-      v-if="!popupEvents?.count && !status"
+      v-if="!popupEvents?.count && !status && !searchQuery && !debouncedSearch"
       title="You don't have any popup yet!"
       description="Create a popup event."
       action-label="Create a popup event"
@@ -257,6 +259,13 @@ const getMenuAction = (item: PopupEvent) => {
           :show-pagination="true"
           fix-last-column
           :loading="isPending || isFetching"
+          :empty-state="{
+            title: 'No Popup Found',
+            description:
+              searchQuery || status
+                ? 'Try adjusting your filters or search query'
+                : 'You don\'t have any popup yet. Create a popup event to get started.',
+          }"
           @row-click="(item) => $router.push(`/popups/${item.uid}`)"
         >
           <template #cell:items_sold_count="{ item }">
