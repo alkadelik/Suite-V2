@@ -8,10 +8,8 @@
       :variant="isMobile ? 'fullscreen' : 'centered'"
       :handle-padding="false"
     >
-      <LoadingIcon
-        v-if="isGettingShippingProfile || isGettingStoreDetails"
-        icon-class="text-black h-6 w-6"
-      />
+      <ConfigureDeliverySkeleton v-if="isGettingShippingProfile || isGettingStoreDetails" />
+
       <div v-else class="space-y-4 px-4 py-4 md:space-y-8 md:px-6">
         <div class="space-y-4">
           <div class="flex size-10 items-center justify-center rounded-xl bg-neutral-50 p-2">
@@ -161,9 +159,9 @@ import {
   useSetupShippingProfile,
 } from "@/modules/shared/api"
 import { useUpdateStoreDetails, useGetStoreDetails } from "@/modules/settings/api"
-import LoadingIcon from "@components/LoadingIcon.vue"
 import type { ICourier } from "@/modules/shared/types"
 import { useMediaQuery } from "@vueuse/core"
+import ConfigureDeliverySkeleton from "./skeletons/ConfigureDeliverySkeleton.vue"
 
 defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{

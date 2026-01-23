@@ -5,6 +5,7 @@ import RadioInputField from "@components/form/RadioInputField.vue"
 import Icon from "@components/Icon.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import Chip from "@components/Chip.vue"
+import TaxesSkeleton from "../components/skeletons/TaxesSkeleton.vue"
 import { useAuthStore } from "@modules/auth/store"
 import { useSettingsStore } from "@modules/settings/store"
 import { useGetStoreDetails, useUpdateStoreDetails } from "@modules/settings/api"
@@ -35,7 +36,11 @@ const handleUpgradeClick = () => {
 }
 
 const storeUid = computed(() => authStore.user?.store_uid || "")
-const { data: storeDetails, refetch: refetchStoreDetails } = useGetStoreDetails(storeUid.value)
+const {
+  data: storeDetails,
+  refetch: refetchStoreDetails,
+  isPending: isLoading,
+} = useGetStoreDetails(storeUid.value)
 const { mutate: updateStore, isPending: isUpdating } = useUpdateStoreDetails()
 
 watch(
@@ -57,14 +62,16 @@ watch(
 // VAT display options for RadioInputField
 const vatDisplayOptions = [
   {
-    label: "VAT will be calculated based on your existing prices.",
-    description: "Prices will stay the same for your customers.",
-    value: false,
+    label: "Include the VAT in product selling price",
+    description:
+      "The VAT fee will be added to the selling price(s) you have attached to your products.",
+    value: true,
   },
   {
-    label: "VAT will be added to your existing prices.",
-    description: "Prices will increase for your customers.",
-    value: true,
+    label: "Show the VAT at the checkout point",
+    description:
+      "The VAT fee will be displayed to users at the point of checking out on the storefront.",
+    value: false,
   },
 ]
 
@@ -102,7 +109,8 @@ const handleSave = () => {
 </script>
 
 <template>
-  <div>
+  <TaxesSkeleton v-if="isLoading" />
+  <div v-else>
     <section>
       <SectionHeader title="Taxes" size="sm" subtitle="Enable/Disable taxes on all orders.">
         <template #action>
@@ -158,7 +166,7 @@ const handleSave = () => {
             label="Manage how VAT is Shown"
             :options="vatDisplayOptions"
             :disabled="!hasBloomAccess"
-            orientation="vertical"
+            orientation="horizontal"
             variant="white"
           />
         </div>

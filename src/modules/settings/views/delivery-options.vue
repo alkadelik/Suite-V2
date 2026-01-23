@@ -3,6 +3,7 @@ import AppButton from "@components/AppButton.vue"
 import Switch from "@components/form/Switch.vue"
 import Icon from "@components/Icon.vue"
 import SectionHeader from "@components/SectionHeader.vue"
+import DeliveryOptionsSkeleton from "../components/skeletons/DeliveryOptionsSkeleton.vue"
 import { useAuthStore } from "@modules/auth/store"
 import {
   useGetLiveStatus,
@@ -47,12 +48,22 @@ const currentDeliveryView = ref<"automatic" | "manual">("automatic")
 const storeSlug = computed(() => useAuthStore().user?.store_slug || "")
 const storeUid = computed(() => useAuthStore().user?.store_uid || "")
 
-const { data: liveStatus, refetch: refetchLiveStatus } = useGetLiveStatus(storeSlug.value)
-const { data: storeDetails, refetch: refetchStoreDetails } = useGetStoreDetails(storeUid.value)
+const {
+  data: liveStatus,
+  refetch: refetchLiveStatus,
+  isPending: isLoadingLiveStatus,
+} = useGetLiveStatus(storeSlug.value)
+const {
+  data: storeDetails,
+  refetch: refetchStoreDetails,
+  isPending: isLoadingStore,
+} = useGetStoreDetails(storeUid.value)
 const { mutate: updateStore, isPending: isUpdating } = useUpdateStoreDetails()
 const { data: manualDeliveryOptions, refetch: refetchManualOptions } = useGetManualDeliveryOptions()
 const { data: expressDeliveryOptions, refetch: refetchExpressOptions } =
   useGetExpressDeliveryOptions()
+
+const isLoading = computed(() => isLoadingLiveStatus.value || isLoadingStore.value)
 
 const computedLiveStatusDelivery = computed(
   () => liveStatus.value?.data?.criteria?.delivery_options?.details || null,
@@ -311,7 +322,8 @@ const handleRefresh = () => {
 </script>
 
 <template>
-  <div>
+  <DeliveryOptionsSkeleton v-if="isLoading" />
+  <div v-else>
     <section>
       <SectionHeader
         title="Delivery Options"

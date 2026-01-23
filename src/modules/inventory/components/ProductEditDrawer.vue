@@ -9,7 +9,7 @@
     <IconHeader icon-name="shop-add" :title="getHeaderTitle" :subtext="getHeaderText" />
 
     <!-- Loading state for fetching product -->
-    <LoadingIcon v-if="isLoadingProduct || props.loading" class="min-h-[400px]" />
+    <ProductEditSkeleton v-if="isLoadingProduct || props.loading" />
 
     <form v-else id="product-edit-form" @submit.prevent="handleSubmit" class="min-h-full">
       <div>
@@ -180,8 +180,8 @@ import {
 import baseApi from "@/composables/baseApi"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
-import LoadingIcon from "@components/LoadingIcon.vue"
 import { useQueryClient } from "@tanstack/vue-query"
+import ProductEditSkeleton from "./skeletons/ProductEditSkeleton.vue"
 
 // Import composables
 import { useProductFormState } from "../composables/useProductFormState"
@@ -281,6 +281,9 @@ const removedImageIds = ref<string[]>([])
 // Track if variant images were uploaded (to force refetch on reopen)
 const variantImagesWereUploaded = ref(false)
 
+// Track the expected product UID to prevent race conditions when rapidly switching products
+const expectedProductUid = ref<string | null>(null)
+
 const { step, previousStep } = useProductDrawerUtilities().useStepManagement({
   hasVariants,
   editMode: props.editMode,
@@ -353,6 +356,9 @@ watch(
   () => [props.modelValue, props.product] as const,
   ([isOpen, product]) => {
     if (isOpen && product?.uid) {
+      // Set the expected product UID for race condition prevention
+      expectedProductUid.value = product.uid
+
       // Drawer is opening - always invalidate to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ["products", product.uid] })
       productUidToFetch.value = product.uid
@@ -368,6 +374,9 @@ watch(
       removedImageIds.value = []
       // Note: Don't reset variantDetailsWithUids or form state here
       // to avoid flashing single-variant view while refetching
+    } else if (!isOpen) {
+      // Drawer is closing - clear expected product UID
+      expectedProductUid.value = null
     }
   },
   { immediate: true },
@@ -423,6 +432,14 @@ watch(
     if (data?.data) {
       const product = data.data
 
+      // Guard against race conditions: verify this is the product we're expecting
+      if (expectedProductUid.value && product.uid !== expectedProductUid.value) {
+        console.warn(
+          `Ignoring stale product data. Expected: ${expectedProductUid.value}, Got: ${product.uid}`,
+        )
+        return
+      }
+
       // Populate existing image IDs
       if (product.images && product.images.length > 0) {
         const sortedImages = product.images
@@ -446,6 +463,9 @@ watch(
           if (variant.attributes && variant.attributes.length > 0) {
             const key = generateVariantKey(variant.attributes)
             originalVariantUids.value.set(key, variant.uid)
+          } else {
+            // Track single variant (no attributes) with a special key
+            originalVariantUids.value.set("__single_variant__", variant.uid)
           }
         })
         console.log(
@@ -901,6 +921,12 @@ const handleSubmit = async () => {
             if (uid) {
               toDelete.push(uid)
             }
+          } else {
+            // Handle single variant deletion using the special key
+            const uid = originalVariantUids.value.get("__single_variant__")
+            if (uid) {
+              toDelete.push(uid)
+            }
           }
         })
 
@@ -909,8 +935,8 @@ const handleSubmit = async () => {
 
         variants.value.forEach((variant) => {
           if (!variant.attributes || variant.attributes.length === 0) {
-            // Single variant case - check if it existed before
-            const existingUid = originalVariantUids.value.values().next().value
+            // Single variant case - check if it existed before using the special key
+            const existingUid = originalVariantUids.value.get("__single_variant__")
             if (!existingUid) {
               // New variant - no existing UID
               toAdd.push(variant)

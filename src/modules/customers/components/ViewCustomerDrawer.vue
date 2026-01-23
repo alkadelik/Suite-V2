@@ -6,9 +6,7 @@
     max-width="xl"
     @close="emit('update:modelValue', false)"
   >
-    <div v-if="loading && !customer" class="flex items-center justify-center py-12">
-      <LoadingIcon size="lg" />
-    </div>
+    <CustomerDetailsSkeleton v-if="loading && !customer" />
 
     <div v-else class="flex flex-col gap-5">
       <CustomerCard
@@ -144,8 +142,8 @@ import { formatCurrency } from "@/utils/format-currency"
 import SummaryCard from "@/components/SummaryCards.vue"
 import Chip from "@components/Chip.vue"
 import { formatDate } from "../utils/dateFormatter"
-import LoadingIcon from "@components/LoadingIcon.vue"
 import OrderCard from "@/modules/orders/components/OrderCard.vue"
+import CustomerDetailsSkeleton from "./skeletons/CustomerDetailsSkeleton.vue"
 
 interface Props {
   modelValue: boolean

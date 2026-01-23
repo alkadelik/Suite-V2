@@ -8,9 +8,10 @@ import Icon from "@components/Icon.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import { useGetStoreThemes, useUpdateActiveTheme } from "@modules/settings/api"
 import { IStoreTheme } from "@modules/settings/types"
+import ThemesSkeleton from "../../components/skeletons/ThemesSkeleton.vue"
 import { ref, inject } from "vue"
 
-const { data: themes, refetch } = useGetStoreThemes()
+const { data: themes, refetch, isPending: isLoading } = useGetStoreThemes()
 const { mutate: updateActiveTheme, isPending } = useUpdateActiveTheme()
 
 const openPreview = (themeName: string) => {
@@ -41,7 +42,8 @@ const onUpdateTheme = () => {
 </script>
 
 <template>
-  <section>
+  <ThemesSkeleton v-if="isLoading" />
+  <section v-else>
     <div class="mb-4 flex items-center gap-6 border-b border-gray-200 pb-4">
       <SectionHeader
         class="flex-1"

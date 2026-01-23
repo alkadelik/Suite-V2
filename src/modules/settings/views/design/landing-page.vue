@@ -1,5 +1,6 @@
 <template>
-  <section>
+  <LandingPageSkeleton v-if="isLoading" />
+  <section v-else>
     <div class="mb-4 flex items-center gap-6 border-b border-gray-200 pb-4">
       <SectionHeader title="Landing Page" size="sm" subtitle="Configure your landing page" />
       <AppButton
@@ -317,9 +318,10 @@ import { useGetStorefrontSections, useUpdateStorefrontSectionsOrder } from "@mod
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
+import LandingPageSkeleton from "../../components/skeletons/LandingPageSkeleton.vue"
 
 const { mutate: updateLandingPageItemsOrder, isPending } = useUpdateStorefrontSectionsOrder()
-const { data: landingPageData, refetch } = useGetStorefrontSections()
+const { data: landingPageData, refetch, isPending: isLoading } = useGetStorefrontSections()
 
 const openVersionHistory = inject<() => void>("openVersionHistory")
 

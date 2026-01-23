@@ -125,25 +125,54 @@ export function useVariantValidation(options: IVariantValidationOptions) {
   })
 
   /**
+   * Helper: Validate a numeric string is a valid positive number
+   */
+  const isValidPositiveNumber = (value: string): boolean => {
+    if (!value || value.trim() === "") return false
+    const num = parseFloat(value)
+    return !isNaN(num) && isFinite(num) && num > 0
+  }
+
+  /**
+   * Helper: Validate a numeric string is a valid non-negative number
+   */
+  const isValidNonNegativeNumber = (value: string): boolean => {
+    if (!value || value.trim() === "") return false
+    const num = parseFloat(value)
+    return !isNaN(num) && isFinite(num) && num >= 0
+  }
+
+  /**
    * Validate a single variant for required fields
    * Price, stock, and dimensions must be filled and valid
+   * Cost price must not exceed selling price
    */
   const isVariantValid = (variant: IProductVariant): boolean => {
-    return (
-      variant &&
-      variant.price.trim() !== "" &&
-      parseFloat(variant.price) > 0 &&
-      variant.opening_stock.trim() !== "" &&
-      parseInt(variant.opening_stock) >= 0 &&
-      variant.height.trim() !== "" &&
-      parseFloat(variant.height) > 0 &&
-      variant.length.trim() !== "" &&
-      parseFloat(variant.length) > 0 &&
-      variant.width.trim() !== "" &&
-      parseFloat(variant.width) > 0 &&
-      variant.weight.trim() !== "" &&
-      parseFloat(variant.weight) > 0
-    )
+    if (!variant) return false
+
+    // Validate selling price
+    if (!isValidPositiveNumber(variant.price)) return false
+
+    // Validate cost price (if provided, must be valid and not exceed selling price)
+    if (variant.cost_price && variant.cost_price.trim() !== "") {
+      if (!isValidNonNegativeNumber(variant.cost_price)) return false
+      const costPrice = parseFloat(variant.cost_price)
+      const sellingPrice = parseFloat(variant.price)
+      if (costPrice > sellingPrice) return false
+    }
+
+    // Validate stock (non-negative integer)
+    if (!variant.opening_stock || variant.opening_stock.trim() === "") return false
+    const stock = parseInt(variant.opening_stock, 10)
+    if (isNaN(stock) || stock < 0) return false
+
+    // Validate dimensions
+    if (!isValidPositiveNumber(variant.height)) return false
+    if (!isValidPositiveNumber(variant.length)) return false
+    if (!isValidPositiveNumber(variant.width)) return false
+    if (!isValidPositiveNumber(variant.weight)) return false
+
+    return true
   }
 
   /**

@@ -16,7 +16,7 @@
       :class="['flex-shrink-0', loading ? 'animate-spin' : '']"
     />
     <slot>
-      <span v-if="loadingText || label">{{ loadingText || label }}</span>
+      <span v-if="loadingText || label" class="truncate">{{ loadingText || label }}</span>
     </slot>
     <Icon
       v-if="(icon || loading) && iconPlacement === 'right'"
@@ -156,6 +156,8 @@ const buttonClasses = computed(() => {
     ...(props.variant !== "text" ? ["focus:ring-2", "focus:ring-offset-1"] : []),
     "disabled:cursor-not-allowed",
     "disabled:opacity-50",
+    "min-w-0",
+    "max-w-full",
   ]
 
   // Size classes

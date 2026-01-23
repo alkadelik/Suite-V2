@@ -58,8 +58,12 @@ export function useGetAccountKyc() {
 
 /** Create a new store location */
 export function useCreateLocation() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (payload: TLocationFormData) => baseApi.post("/stores/locations/", payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["store-locations"] })
+    },
   })
 }
 
@@ -87,9 +91,13 @@ export function useDeleteLocation() {
 
 /** Update a store location by ID */
 export function useUpdateLocation() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: Partial<TLocation> }) =>
       baseApi.patch(`/stores/locations/${id}/`, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["store-locations"] })
+    },
   })
 }
 
