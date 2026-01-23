@@ -34,16 +34,16 @@ const props = withDefaults(
 
       <img src="/images/logos/leyyow-icon.svg?url" class="absolute right-1 bottom-1 h-8 w-8" />
     </div>
-    <div class="flex-1 space-y-1 p-2 md:space-y-2 md:p-3">
+    <div class="min-w-0 flex-1 space-y-1 p-2 md:space-y-2 md:p-3">
       <h3 class="mb-4 truncate text-sm font-semibold capitalize md:text-base">
         {{ event.name }}
       </h3>
       <p class="flex items-center gap-2 text-xs md:text-sm">
-        <Icon name="calendar" class="text-primary-600 !h-4 !w-4 md:!h-5 md:!w-5" />
+        <Icon name="calendar" class="text-primary-600 !h-4 !w-4 flex-shrink-0 md:!h-5 md:!w-5" />
         {{ formatDate(event.start_date) }} - {{ formatDate(event.end_date) }}
       </p>
-      <p class="flex items-center gap-2 truncate text-xs md:text-sm">
-        <Icon name="location" class="text-primary-600 !h-4 !w-4 md:!h-5 md:!w-5" />
+      <p class="flex min-w-0 items-center gap-2 text-xs md:text-sm">
+        <Icon name="location" class="text-primary-600 !h-4 !w-4 flex-shrink-0 md:!h-5 md:!w-5" />
         <span class="truncate">
           {{ event.location }}
         </span>
