@@ -2,7 +2,7 @@
   <div class="text-core-800 p-4 py-8">
     <PageHeader title="Product Details" inner />
 
-    <LoadingIcon v-if="isPending" class="mx-auto my-20" />
+    <ProductDetailsSkeleton v-if="isPending" />
 
     <EmptyState
       v-else-if="!product && !isPending"
@@ -214,8 +214,8 @@ import DropdownMenu from "@components/DropdownMenu.vue"
 import { ref, computed, watch, onMounted } from "vue"
 import Chip from "@components/Chip.vue"
 import Tabs from "@components/Tabs.vue"
-import LoadingIcon from "@components/LoadingIcon.vue"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
+import ProductDetailsSkeleton from "../components/skeletons/ProductDetailsSkeleton.vue"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 import { useQueryClient } from "@tanstack/vue-query"

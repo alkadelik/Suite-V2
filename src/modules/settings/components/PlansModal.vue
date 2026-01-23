@@ -16,107 +16,101 @@
       <Tabs variant="pills" :tabs="tabs" v-model="activeTab" class="w-full md:w-1/2" />
     </div>
 
-    <!-- Loading State -->
-    <div v-if="isPending" class="flex items-center justify-center py-20">
-      <LoadingIcon size="lg" />
+    <!-- Loading Skeleton -->
+    <div
+      v-if="isPending"
+      class="flex w-full flex-col space-y-6 rounded-2xl border border-gray-200 bg-white p-4 lg:flex-row lg:space-y-0 lg:space-x-6"
+    >
+      <!-- Left side skeleton -->
+      <div
+        class="flex flex-1 flex-col justify-between gap-10 rounded-2xl border border-gray-200 bg-gray-50 p-5"
+      >
+        <div>
+          <div class="mb-3 flex flex-col items-start gap-4">
+            <!-- Icon skeleton -->
+            <div class="size-12 animate-pulse rounded-full bg-gray-200"></div>
+            <!-- Chip skeleton -->
+            <div class="h-6 w-20 animate-pulse rounded-full bg-gray-200"></div>
+          </div>
+          <!-- Description skeleton -->
+          <div class="mt-4 space-y-2">
+            <div class="h-4 w-full animate-pulse rounded bg-gray-200"></div>
+            <div class="h-4 w-3/4 animate-pulse rounded bg-gray-200"></div>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-8">
+          <!-- Price skeleton -->
+          <div class="h-8 w-32 animate-pulse rounded bg-gray-200"></div>
+          <!-- Button skeleton -->
+          <div class="h-12 w-full animate-pulse rounded-lg bg-gray-200"></div>
+        </div>
+      </div>
+
+      <!-- Right side skeleton (features) -->
+      <div class="flex h-full flex-1 flex-col justify-center p-6">
+        <!-- Features title skeleton -->
+        <div class="h-6 w-24 animate-pulse rounded bg-gray-200"></div>
+        <!-- Feature items skeleton -->
+        <ul class="mt-4 space-y-3">
+          <li v-for="i in 6" :key="i" class="flex items-center gap-3">
+            <div class="size-5 flex-shrink-0 animate-pulse rounded bg-gray-200"></div>
+            <div
+              class="h-4 animate-pulse rounded bg-gray-200"
+              :style="{ width: `${60 + Math.random() * 30}%` }"
+            ></div>
+          </li>
+        </ul>
+      </div>
     </div>
 
     <!-- Plans Display -->
-    <div v-else class="text-core-700 mb-4 flex flex-col gap-3 md:flex-row">
+    <div
+      v-else-if="bloomPlan"
+      class="flex w-full flex-col space-y-6 rounded-2xl border border-gray-200 bg-white p-4 lg:flex-row lg:space-y-0 lg:space-x-6"
+    >
       <div
-        v-for="plan in processedPlans"
-        :key="plan.uid"
-        class="flex flex-1 flex-col rounded-xl border border-gray-200"
-        :class="{
-          'bg-primary-50 border-primary-600': plan.highlighted,
-          'border-gray-400': plan.active && !plan.highlighted,
-        }"
+        class="flex flex-1 flex-col justify-between gap-10 rounded-2xl border border-gray-200 bg-gray-50 p-5"
       >
-        <!-- Header Section - Fixed Height -->
-        <div class="mb-3 flex min-h-[40px] items-center justify-between p-4 pb-0">
-          <div class="bg-primary-100 rounded-full p-1.5">
-            <div class="bg-primary-200 rounded-full p-2">
-              <Icon name="layers-three-01" size="16" class="text-primary-600" />
+        <div>
+          <div class="mb-3 flex flex-col items-start gap-4">
+            <div class="bg-primary-50 flex size-12 items-center justify-center rounded-full">
+              <div class="bg-primary-100 flex size-9 items-center justify-center rounded-full">
+                <Icon name="layers-three-01" size="16" class="text-primary-600" />
+              </div>
             </div>
+
+            <Chip color="success" label="🪴 Bloom" />
           </div>
 
-          <Chip v-if="plan.chipText" :label="plan.chipText" />
+          <p class="text-core-700 mt-4">{{ bloomPlan.description }}</p>
         </div>
 
-        <!-- Plan Info Section - Fixed Height -->
-        <div class="mb-4 min-h-[80px] px-4">
-          <Chip
-            :label="plan.name"
-            :color="getPlanColor(plan.name)"
-            class="mb-2 text-sm font-medium"
-          />
-          <p class="text-xs md:text-sm">{{ plan.description }}</p>
-        </div>
-
-        <!-- Price Section - Fixed Height -->
-        <div
-          class="mb-4 flex min-h-[80px] items-end border-b border-gray-200 px-4 pb-4"
-          :class="{
-            'border-primary-600': plan.highlighted,
-            'border-gray-400': plan.active && !plan.highlighted,
-          }"
-        >
-          <h4 class="text-2xl font-bold">
-            {{ formatCurrency(plan.currentPrice) }}
-            <span class="text-xs font-normal md:text-sm">
-              /{{ activeTab === "monthly" ? "month" : "year" }}
-            </span>
-          </h4>
-        </div>
-
-        <!-- Features Section - Flexible Height -->
-        <div
-          class="flex flex-grow flex-col gap-2 border-b border-gray-200 px-4 pb-3"
-          :class="{
-            'border-primary-600': plan.highlighted,
-            'border-gray-400': plan.active && !plan.highlighted,
-          }"
-        >
-          <div
-            v-for="(feature, index) in plan.features"
-            :key="feature"
-            class="flex gap-1"
-            :class="{ hidden: !expandPlans && index >= 4 }"
-          >
-            <Icon name="check" class="text-core-600 mt-0.5 flex-shrink-0" />
-            <p class="text-xs md:text-sm">{{ feature }}</p>
-          </div>
-
-          <!-- See More Button - Centered -->
-          <div v-if="plan.features.length > 4 && !expandPlans" class="mt-1 flex justify-center">
-            <button
-              @click="expandPlans = true"
-              class="text-primary-700 hover:text-primary-800 flex items-center gap-1 text-xs font-semibold transition-colors md:text-sm"
+        <div class="flex flex-col gap-8">
+          <h2 class="text-2xl font-semibold text-gray-900">
+            {{ formatCurrency(bloomPlan.currentPrice, { kobo: false }) }}
+            <span class="text-sm font-normal text-gray-500"
+              >/{{ activeTab === "monthly" ? "month" : "year" }}</span
             >
-              <span>See more</span>
-              <Icon name="arrow-down" size="20" class="text-primary-700" />
-            </button>
-          </div>
-        </div>
-
-        <!-- Button Section - Fixed Height -->
-        <div class="flex min-h-[60px] items-center px-4 pt-4 pb-4">
+          </h2>
           <AppButton
-            :label="
-              plan.active
-                ? 'Current Plan'
-                : isTrialMode
-                  ? 'Subscribe'
-                  : plan.planOrder < (processedPlans.find((p) => p.active)?.planOrder ?? 0)
-                    ? 'Downgrade'
-                    : 'Upgrade'
-            "
-            :disabled="plan.active || loadingPlanId === plan.uid"
-            :loading="loadingPlanId === plan.uid && isInitializing"
-            class="w-full"
-            @click="handlePlanAction(plan)"
+            :label="isSubscribedToBloom ? 'Subscribed' : 'Upgrade'"
+            size="lg"
+            :disabled="isSubscribedToBloom || isInitializing"
+            :loading="loadingPlanId === bloomPlan.uid"
+            @click="handlePlanAction(bloomPlan)"
           />
         </div>
+      </div>
+
+      <div class="flex h-full flex-1 flex-col justify-center p-6">
+        <h4 class="!font-outfit text-lg font-semibold text-gray-900">Features</h4>
+        <ul class="mt-4 space-y-3">
+          <li v-for="feature in planFeatures.Bloom" :key="feature" class="flex items-start gap-3">
+            <Icon name="check" size="20" class="mt-1 flex-shrink-0 text-gray-400" />
+            <span class="text-gray-700">{{ feature }}</span>
+          </li>
+        </ul>
       </div>
     </div>
   </Modal>
@@ -128,12 +122,10 @@ import Chip from "@components/Chip.vue"
 import IconHeader from "@components/IconHeader.vue"
 import Tabs from "@components/Tabs.vue"
 import { ref, computed, watch } from "vue"
-import { getPlanColor } from "../utils"
 import { formatCurrency } from "@/utils/format-currency"
 import Icon from "@/components/Icon.vue"
 import AppButton from "@/components/AppButton.vue"
 import { useGetPlans, useInitializeSubscription } from "../api"
-import LoadingIcon from "@components/LoadingIcon.vue"
 import { displayError } from "@/utils/error-handler"
 import { useAuthStore } from "@modules/auth/store"
 import { useMediaQuery } from "@vueuse/core"
@@ -154,18 +146,13 @@ const loadingPlanId = ref<string | null>(null)
 
 const user = computed(() => authStore.user)
 
-// Get current plan from user subscription
-// If user is on trial, return null so no plan is marked as active (allows upgrading to any plan)
-const currentPlan = computed(() => {
+// Check if user is already subscribed to Bloom
+const isSubscribedToBloom = computed(() => {
   const subscription = user.value?.subscription
-  if (!subscription || !subscription.is_active) return null
-  if (subscription.trial_mode) return null // Trial users can upgrade to any plan
-  return subscription.plan_name || null
+  if (!subscription || !subscription.is_active) return false
+  if (subscription.trial_mode) return false
+  return subscription.plan_name?.toLowerCase() === "bloom"
 })
-const isTrialMode = computed(() => user.value?.subscription?.trial_mode || false)
-
-// Track expanded state for each plan
-const expandPlans = ref<boolean>(false)
 
 const tabs = ref([
   {
@@ -290,7 +277,9 @@ const processedPlans = computed((): ProcessedPlan[] => {
       priceMonthly: planGroup.monthly?.price || 0,
       priceYearly: planGroup.yearly?.price || 0,
       features: planFeatures.value[planGroup.name as keyof typeof planFeatures.value] || [],
-      active: currentPlan.value === planGroup.name,
+      active:
+        user.value?.subscription?.plan_name === planGroup.name &&
+        !user.value?.subscription?.trial_mode,
       highlighted: planGroup.name === "Bloom",
       chipText: planGroup.name === "Bloom" ? "Leyyow's Choice" : null,
       planOrder,
@@ -308,6 +297,11 @@ const processedPlans = computed((): ProcessedPlan[] => {
 
   // Sort by plan order
   return plans.sort((a, b) => a.planOrder - b.planOrder)
+})
+
+// Get only the Bloom plan
+const bloomPlan = computed((): ProcessedPlan | null => {
+  return processedPlans.value.find((plan) => plan.name === "Bloom") || null
 })
 
 // Handle plan upgrade/downgrade action

@@ -1,5 +1,6 @@
 <template>
-  <section>
+  <ThemeSettingsSkeleton v-if="isLoading" />
+  <section v-else>
     <div class="mb-4 flex items-center gap-6 border-b border-gray-200 pb-4">
       <SectionHeader title="Theme Settings" size="sm" subtitle="Customize your theme settings" />
       <AppButton
@@ -184,6 +185,7 @@ import { toast } from "@/composables/useToast"
 import { useGetThemeSettings, useUpdateThemeSettings } from "@modules/settings/api"
 import type { IThemeSettings } from "@modules/settings/types"
 import { displayError } from "@/utils/error-handler"
+import ThemeSettingsSkeleton from "../../components/skeletons/ThemeSettingsSkeleton.vue"
 
 interface DesignItem {
   id: string
@@ -263,7 +265,7 @@ const setPaletteFromColorScheme = (colorScheme: {
 }
 
 // API hooks
-const { data: themeSettings, refetch } = useGetThemeSettings()
+const { data: themeSettings, refetch, isPending: isLoading } = useGetThemeSettings()
 const { mutate: updateThemeSettings, isPending: isPublishing } = useUpdateThemeSettings()
 
 const toggleSection = (id: string): void => {

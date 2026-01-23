@@ -1,5 +1,13 @@
 <template>
-  <Modal :open="open" max-width="xl" title="Manage Stock" @close="emit('close')">
+  <component
+    :is="isMobile ? Drawer : Modal"
+    :open="open"
+    :max-width="isMobile ? 'full' : 'xl'"
+    :position="isMobile ? 'bottom' : undefined"
+    :full-height="isMobile"
+    title="Manage Stock"
+    @close="emit('close')"
+  >
     <div class="space-y-4">
       <!-- Action Selector -->
       <FormField
@@ -195,14 +203,16 @@
         :disabled="!meta.valid || !canSubmit"
       />
     </template>
-  </Modal>
+  </component>
 </template>
 
 <script setup lang="ts">
 import { computed, watch } from "vue"
 import { useForm } from "vee-validate"
+import { useMediaQuery } from "@vueuse/core"
 import * as yup from "yup"
 import Modal from "@components/Modal.vue"
+import Drawer from "@components/Drawer.vue"
 import AppButton from "@components/AppButton.vue"
 import FormField from "@components/form/FormField.vue"
 import Chip from "@components/Chip.vue"
@@ -238,6 +248,7 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
+const isMobile = useMediaQuery("(max-width: 768px)")
 const settingsStore = useSettingsStore()
 
 const { mutate: addStock, isPending: isAdding } = useAddStock()

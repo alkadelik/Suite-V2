@@ -132,7 +132,7 @@ const productDetailsRef = ref<{
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
 // API mutations
-const { mutate: createProduct, isPending: isCreating } = useCreateProduct()
+const { mutateAsync: createProductAsync, isPending: isCreating } = useCreateProduct()
 const { mutate: createAttribute, isPending: isCreatingAttribute } = useCreateAttribute()
 const { mutate: createAttributeValues, isPending: isCreatingAttributeValues } =
   useCreateAttributeValues()
@@ -253,108 +253,108 @@ const handleSubmit = async () => {
       })),
     }
 
-    const handleProductSuccess = (response: unknown) => {
-      toast.success("Product created successfully")
-      step.value = 1
-      hasVariants.value = false
-
+    const handleProductSuccess = async (response: unknown) => {
       // Extract product UID from response
       const productUid = variantProcessor.extractUid(response)
 
       if (productUid && form.images.length > 0) {
-        // Handle image upload asynchronously
-        ;(async () => {
-          try {
-            console.log(`Uploading ${form.images.length} images for product: ${productUid}`)
+        try {
+          console.log(`Uploading ${form.images.length} images for product: ${productUid}`)
 
-            // Step 1: Upload product images (indices 0-4)
-            const productImages = form.images
-              .slice(0, 5)
-              .map((image, index) => ({ image, index }))
-              .filter(({ image }) => image && image instanceof File)
+          // Step 1: Upload product images (indices 0-4)
+          const productImages = form.images
+            .slice(0, 5)
+            .map((image, index) => ({ image, index }))
+            .filter(({ image }) => image && image instanceof File)
 
-            if (productImages.length > 0) {
-              for (const { image, index } of productImages) {
-                await new Promise<void>((resolve, reject) => {
-                  addProductImages(
-                    {
-                      product: productUid,
-                      image: image as File,
-                      is_primary: index === 0,
-                      sort_order: index + 1,
+          if (productImages.length > 0) {
+            for (const { image, index } of productImages) {
+              await new Promise<void>((resolve, reject) => {
+                addProductImages(
+                  {
+                    product: productUid,
+                    image: image as File,
+                    is_primary: index === 0,
+                    sort_order: index + 1,
+                  },
+                  {
+                    onSuccess: () => {
+                      console.log(`Product image ${index + 1} uploaded successfully`)
+                      resolve()
                     },
-                    {
-                      onSuccess: () => {
-                        console.log(`Product image ${index + 1} uploaded successfully`)
-                        resolve()
-                      },
-                      onError: (error: unknown) => {
-                        console.error(`Failed to upload product image ${index + 1}:`, error)
-                        reject(new Error(String(error)))
-                      },
+                    onError: (error: unknown) => {
+                      console.error(`Failed to upload product image ${index + 1}:`, error)
+                      reject(new Error(String(error)))
                     },
-                  )
-                })
-              }
-              console.log(`Uploaded ${productImages.length} product images`)
+                  },
+                )
+              })
             }
-
-            // Step 2: Check if there are variant images to upload (indices 5+)
-            const variantImageFiles = form.images.slice(5)
-            const hasVariantImages = variantImageFiles.some((img) => img && img instanceof File)
-
-            if (hasVariantImages && variants.value.length > 0) {
-              // Fetch fresh product data to get variant UIDs
-              console.log("Fetching product data to get variant UIDs for image upload...")
-              const { data: freshProductData } = await baseApi.get<IGetProductResponse>(
-                `/inventory/products/${productUid}/`,
-              )
-
-              if (freshProductData?.data?.variants) {
-                const fetchedVariants = freshProductData.data.variants
-                let variantImagesUploaded = 0
-
-                // Upload variant images
-                for (let i = 0; i < fetchedVariants.length; i++) {
-                  const variantImageIndex = 5 + i
-                  const variantImage = form.images[variantImageIndex]
-                  const variant = fetchedVariants[i]
-
-                  if (variantImage && variantImage instanceof File && variant?.uid) {
-                    await updateVariantImage({
-                      variantUid: variant.uid,
-                      image: variantImage,
-                    })
-                    variantImagesUploaded++
-                    console.log(
-                      `Variant image ${i + 1} uploaded successfully for variant: ${variant.name}`,
-                    )
-                  }
-                }
-
-                if (variantImagesUploaded > 0) {
-                  console.log(`Uploaded ${variantImagesUploaded} variant images`)
-                }
-              }
-            }
-
-            toast.success("All images uploaded successfully")
-          } catch (error) {
-            console.error("Failed to upload some images:", error)
-            toast.error("Product created but some images failed to upload")
+            console.log(`Uploaded ${productImages.length} product images`)
           }
-        })()
+
+          // Step 2: Check if there are variant images to upload (indices 5+)
+          const variantImageFiles = form.images.slice(5)
+          const hasVariantImages = variantImageFiles.some((img) => img && img instanceof File)
+
+          if (hasVariantImages && variants.value.length > 0) {
+            // Fetch fresh product data to get variant UIDs
+            console.log("Fetching product data to get variant UIDs for image upload...")
+            const { data: freshProductData } = await baseApi.get<IGetProductResponse>(
+              `/inventory/products/${productUid}/`,
+            )
+
+            if (freshProductData?.data?.variants) {
+              const fetchedVariants = freshProductData.data.variants
+              let variantImagesUploaded = 0
+
+              // Upload variant images
+              for (let i = 0; i < fetchedVariants.length; i++) {
+                const variantImageIndex = 5 + i
+                const variantImage = form.images[variantImageIndex]
+                const variant = fetchedVariants[i]
+
+                if (variantImage && variantImage instanceof File && variant?.uid) {
+                  await updateVariantImage({
+                    variantUid: variant.uid,
+                    image: variantImage,
+                  })
+                  variantImagesUploaded++
+                  console.log(
+                    `Variant image ${i + 1} uploaded successfully for variant: ${variant.name}`,
+                  )
+                }
+              }
+
+              if (variantImagesUploaded > 0) {
+                console.log(`Uploaded ${variantImagesUploaded} variant images`)
+              }
+            }
+          }
+
+          toast.success("Product created successfully")
+        } catch (error) {
+          console.error("Failed to upload some images:", error)
+          toast.error("Product created but some images failed to upload")
+        }
+      } else {
+        toast.success("Product created successfully")
       }
 
+      // Reset form state only after all uploads complete
+      step.value = 1
+      hasVariants.value = false
       resetFormState()
       emit("update:modelValue", false)
       emit("refresh")
     }
 
-    createProduct(payload, {
-      onSuccess: handleProductSuccess,
-      onError: displayError,
-    })
+    try {
+      const response = await createProductAsync(payload)
+      await handleProductSuccess(response)
+    } catch (error) {
+      displayError(error)
+    }
   } else {
     // Handle step progression with variant processing
     if (step.value === 2 && hasVariants.value) {

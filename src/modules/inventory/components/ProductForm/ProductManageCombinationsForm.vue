@@ -1,5 +1,31 @@
 <template>
   <div class="space-y-6">
+    <!-- Deleted Variants Warning (only in edit mode with multiple variants) -->
+    <div v-if="!isSingleVariant && hasDeletedVariants" class="space-y-3">
+      <InfoBox
+        variant="error"
+        title="Deleted Variants"
+        message="The following variants will be deleted from this product."
+      />
+
+      <!-- Deleted Variants Display -->
+      <div class="flex flex-col gap-3">
+        <div
+          v-for="(deletedVariant, index) in props.deletedVariants"
+          :key="`deleted-${index}`"
+          class="flex flex-wrap gap-2 rounded-lg bg-white p-4"
+        >
+          <Chip
+            v-for="(attributeValue, attrIndex) in getVariantDisplayValues(deletedVariant)"
+            :key="`deleted-attr-${attrIndex}`"
+            :label="attributeValue"
+            color="error"
+            size="sm"
+          />
+        </div>
+      </div>
+    </div>
+
     <!-- Weight Section (hidden when Weight attribute is in variants - auto-populated, or when hideWeight prop is true) -->
     <div v-if="!hasWeightAttributeInVariants && !props.hideWeight" class="space-y-4">
       <SelectField
@@ -167,32 +193,6 @@
               @blur="handlePriceBlur(index, $event)"
             />
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Deleted Variants Warning (only in edit mode with multiple variants) -->
-    <div v-if="!isSingleVariant && hasDeletedVariants" class="space-y-3">
-      <InfoBox
-        variant="error"
-        title="Deleted Variants"
-        message="The following variants will be deleted from this product."
-      />
-
-      <!-- Deleted Variants Display -->
-      <div class="flex flex-col gap-3">
-        <div
-          v-for="(deletedVariant, index) in props.deletedVariants"
-          :key="`deleted-${index}`"
-          class="flex flex-wrap gap-2 rounded-lg bg-white p-4"
-        >
-          <Chip
-            v-for="(attributeValue, attrIndex) in getVariantDisplayValues(deletedVariant)"
-            :key="`deleted-attr-${attrIndex}`"
-            :label="attributeValue"
-            color="error"
-            size="sm"
-          />
         </div>
       </div>
     </div>

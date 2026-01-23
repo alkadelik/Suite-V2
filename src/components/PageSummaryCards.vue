@@ -109,7 +109,7 @@ const getItemSpanClass = (index: number) => {
         </h4>
 
         <!-- Value section -->
-        <div class="flex items-center justify-between gap-2">
+        <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div class="flex items-center gap-2">
             <!-- Desktop icon beside value -->
             <span
@@ -138,8 +138,8 @@ const getItemSpanClass = (index: number) => {
             </p>
           </div>
 
-          <!-- Blue chip opposite the numbers -->
-          <Chip v-if="item.chipText" color="blue" size="sm">
+          <!-- Blue chip - below value on mobile, opposite the numbers on desktop -->
+          <Chip v-if="item.chipText" color="blue" size="sm" class="w-fit">
             <template v-if="typeof item.chipText === 'object' && item.chipText.boldNumbers">
               <span v-html="formatChipText(item.chipText.text)"></span>
             </template>
