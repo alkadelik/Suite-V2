@@ -1,5 +1,6 @@
 <template>
-  <section>
+  <LandingPageSkeleton v-if="isLoading" />
+  <section v-else>
     <div class="mb-4 flex items-center gap-6 border-b border-gray-200 pb-4">
       <SectionHeader title="Landing Page" size="sm" subtitle="Configure your landing page" />
       <AppButton
@@ -22,7 +23,7 @@
     </div>
 
     <!-- Skeleton Loader -->
-    <div v-if="isLandingPageDataLoading" class="flex flex-col gap-6 md:flex-row">
+    <div v-if="isLoading" class="flex flex-col gap-6 md:flex-row">
       <!-- Left Sidebar Skeleton -->
       <aside class="hidden w-2/5 flex-shrink-0 md:block">
         <div class="space-y-2">
@@ -332,13 +333,10 @@ import { useGetStorefrontSections, useUpdateStorefrontSectionsOrder } from "@mod
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
+import LandingPageSkeleton from "../../components/skeletons/LandingPageSkeleton.vue"
 
 const { mutate: updateLandingPageItemsOrder, isPending } = useUpdateStorefrontSectionsOrder()
-const {
-  data: landingPageData,
-  isPending: isLandingPageDataLoading,
-  refetch,
-} = useGetStorefrontSections()
+const { data: landingPageData, refetch, isPending: isLoading } = useGetStorefrontSections()
 
 const openVersionHistory = inject<() => void>("openVersionHistory")
 

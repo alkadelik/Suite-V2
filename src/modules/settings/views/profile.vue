@@ -3,6 +3,7 @@ import AppButton from "@components/AppButton.vue"
 import AppForm from "@components/form/AppForm.vue"
 import FormField from "@components/form/FormField.vue"
 import SectionHeader from "@components/SectionHeader.vue"
+import ProfileSkeleton from "../components/skeletons/ProfileSkeleton.vue"
 import { useAuthStore } from "@modules/auth/store"
 import { computed, watch } from "vue"
 import * as yup from "yup"
@@ -11,8 +12,10 @@ import { toast } from "@/composables/useToast"
 import { IkycInfo, IUser } from "@modules/auth/types"
 import { displayError } from "@/utils/error-handler"
 
-const { data: profile, refetch } = useGetProfile()
-const { data: kycData } = useGetAccountKyc()
+const { data: profile, refetch, isPending: isLoadingProfile } = useGetProfile()
+const { data: kycData, isPending: isLoadingKyc } = useGetAccountKyc()
+
+const isLoading = computed(() => isLoadingProfile.value || isLoadingKyc.value)
 const { updateAuthUser, user } = useAuthStore()
 const { mutate: updateProfile, isPending: isUpdating } = useUpdateProfile()
 const { mutate: updateKyc, isPending: isKycUpdating } = useUpdateAccountKyc()
@@ -116,7 +119,8 @@ watch(
 </script>
 
 <template>
-  <div>
+  <ProfileSkeleton v-if="isLoading" />
+  <div v-else>
     <section>
       <SectionHeader
         title="Personal Info"

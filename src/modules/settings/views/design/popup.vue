@@ -10,6 +10,7 @@ import { onInvalidSubmit } from "@/utils/validations"
 import { useGetPopupSettings, useUpdatePopupSettings } from "@modules/settings/api"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
+import PopupSkeleton from "../../components/skeletons/PopupSkeleton.vue"
 
 const enablePopup = ref(false)
 const openVersionHistory = inject<() => void>("openVersionHistory")
@@ -40,7 +41,7 @@ const popupSchema = yup.object({
 const { handleSubmit, setValues, meta } = useForm({ validationSchema: popupSchema })
 
 const { mutate: updatePopupSettings, isPending } = useUpdatePopupSettings()
-const { data: popupSettings, refetch } = useGetPopupSettings()
+const { data: popupSettings, refetch, isPending: isLoading } = useGetPopupSettings()
 
 watch(
   () => popupSettings.value,
@@ -87,7 +88,8 @@ const applyPopupSettings = () => {
 </script>
 
 <template>
-  <section>
+  <PopupSkeleton v-if="isLoading" />
+  <section v-else>
     <div class="mb-4 flex items-center gap-6 border-b border-gray-200 pb-4">
       <SectionHeader
         title="Popup Modal"

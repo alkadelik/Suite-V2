@@ -60,6 +60,8 @@ interface Props {
   showHeader?: boolean
   /** Whether to apply padding to the drawer body (default: true) */
   handlePadding?: boolean
+  /** Whether to use full height for top/bottom positioned drawers (default: false) */
+  fullHeight?: boolean
 }
 
 /**
@@ -122,13 +124,15 @@ const drawerClasses = computed(() => {
       break
     case "top":
       baseClasses.push(
-        "top-0 left-0 right-0 max-h-[80dvh]",
+        props.fullHeight ? "top-0 left-0 right-0 h-[100dvh]" : "top-0 left-0 right-0 max-h-[80dvh]",
         props.open ? "translate-y-0" : "-translate-y-full",
       )
       break
     case "bottom":
       baseClasses.push(
-        "bottom-0 left-0 right-0 max-h-[80vh]",
+        props.fullHeight
+          ? "bottom-0 left-0 right-0 h-[100dvh]"
+          : "bottom-0 left-0 right-0 max-h-[80vh]",
         props.open ? "translate-y-0" : "translate-y-full",
       )
       break

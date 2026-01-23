@@ -8,9 +8,10 @@ import Icon from "@components/Icon.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import { useGetStoreThemes, useUpdateActiveTheme } from "@modules/settings/api"
 import { IStoreTheme } from "@modules/settings/types"
+import ThemesSkeleton from "../../components/skeletons/ThemesSkeleton.vue"
 import { ref, inject } from "vue"
 
-const { data: themes, isPending: isThemesLoading, refetch } = useGetStoreThemes()
+const { data: themes, refetch, isPending: isLoading } = useGetStoreThemes()
 const { mutate: updateActiveTheme, isPending } = useUpdateActiveTheme()
 
 const openPreview = (themeName: string) => {
@@ -41,7 +42,8 @@ const onUpdateTheme = () => {
 </script>
 
 <template>
-  <section>
+  <ThemesSkeleton v-if="isLoading" />
+  <section v-else>
     <div class="mb-4 flex items-center gap-6 border-b border-gray-200 pb-4">
       <SectionHeader
         class="flex-1"
@@ -55,7 +57,7 @@ const onUpdateTheme = () => {
     </div>
 
     <!-- Skeleton Loader -->
-    <div v-if="isThemesLoading" class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+    <div v-if="isLoading" class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
       <div v-for="i in 5" :key="i" class="rounded-xl border border-gray-200">
         <div class="h-60 animate-pulse rounded-t-xl bg-gray-200"></div>
         <div class="space-y-3 rounded-b-xl p-4">

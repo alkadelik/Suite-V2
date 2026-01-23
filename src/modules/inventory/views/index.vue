@@ -91,7 +91,11 @@
           "
           icon="box"
           title="No products found"
-          description="Start adding products to manage your inventory."
+          :description="
+            isHQ
+              ? 'Start adding products to manage your inventory.'
+              : 'No products are available at this location.'
+          "
           :action-label="isHQ ? 'Add Product' : undefined"
           :action-icon="isHQ ? 'add' : undefined"
           @action="openAddProductDrawer"
@@ -534,85 +538,102 @@ const openManageStockModal = (item: TProduct) => {
   showManageStockModal.value = true
 }
 
-const getActionItems = (item: TProduct) => [
-  {
-    id: "view",
-    label: "View Product",
-    icon: "eye-outline",
-    action: () => handleAction("view", item),
-  },
-  {
-    id: "duplicate",
-    label: "Duplicate Product",
-    icon: "copy",
-    action: () => handleAction("duplicate", item),
-  },
-  {
-    divider: true,
-  },
-  {
-    id: "edit-basic",
-    label: "Edit Basic Details",
-    icon: "edit",
-    action: () => openProductEditDrawer(item),
-  },
-  {
-    id: "edit-images",
-    label: "Edit Images",
-    icon: "edit",
-    action: () => openImagesEditDrawer(item),
-  },
-  {
-    id: "edit-price",
-    label: "Edit Price & Weight",
-    icon: "edit",
-    action: () => openPriceWeightEdit(item),
-  },
-  ...(item.variants_count > 1
-    ? [
-        {
-          id: "manage-variants",
-          label: "Manage Variants",
-          icon: "edit",
-          action: () => openVariantsManage(item),
+const getActionItems = (item: TProduct) => {
+  // Child locations can only view products and manage stock
+  if (!isHQ.value) {
+    return [
+      {
+        id: "view",
+        label: "View Product",
+        icon: "eye-outline",
+        action: () => handleAction("view", item),
+      },
+      {
+        id: "manage-stock",
+        label: "Manage Stock",
+        icon: "edit",
+        action: () => openManageStockModal(item),
+      },
+    ]
+  }
+
+  // HQ has full access to all actions
+  return [
+    {
+      id: "view",
+      label: "View Product",
+      icon: "eye-outline",
+      action: () => handleAction("view", item),
+    },
+    {
+      id: "duplicate",
+      label: "Duplicate Product",
+      icon: "copy",
+      action: () => handleAction("duplicate", item),
+    },
+    {
+      divider: true,
+    },
+    {
+      id: "edit-basic",
+      label: "Edit Basic Details",
+      icon: "edit",
+      action: () => openProductEditDrawer(item),
+    },
+    {
+      id: "edit-images",
+      label: "Edit Images",
+      icon: "edit",
+      action: () => openImagesEditDrawer(item),
+    },
+    {
+      id: "edit-price",
+      label: "Edit Price & Weight",
+      icon: "edit",
+      action: () => openPriceWeightEdit(item),
+    },
+    ...(item.variants_count > 1
+      ? [
+          {
+            id: "manage-variants",
+            label: "Manage Variants",
+            icon: "edit",
+            action: () => openVariantsManage(item),
+          },
+        ]
+      : []),
+    {
+      id: "manage-stock",
+      label: "Manage Stock",
+      icon: "edit",
+      action: () => openManageStockModal(item),
+    },
+    {
+      divider: true,
+    },
+    item.is_active
+      ? {
+          id: "hide",
+          label: "Hide Product",
+          icon: "eye-slash-outline",
+          action: () => handleAction("hide", item),
+        }
+      : {
+          id: "unhide",
+          label: "Unhide Product",
+          icon: "eye-outline",
+          action: () => handleAction("unhide", item),
         },
-      ]
-    : []),
-  {
-    id: "manage-stock",
-    label: "Manage Stock",
-    icon: "edit",
-    action: () => openManageStockModal(item),
-  },
-  {
-    divider: true,
-  },
-  ...(isHQ.value
-    ? [
-        item.is_active
-          ? {
-              id: "hide",
-              label: "Hide Product",
-              icon: "eye-slash-outline",
-              action: () => handleAction("hide", item),
-            }
-          : {
-              id: "unhide",
-              label: "Unhide Product",
-              icon: "eye-outline",
-              action: () => handleAction("unhide", item),
-            },
-      ]
-    : []),
-  {
-    id: "delete",
-    label: "Delete Product",
-    icon: "trash",
-    class: "text-red-600 hover:bg-red-50",
-    iconClass: "text-red-600",
-    action: () => handleAction("delete", item),
-  },
-]
+    {
+      id: "delete",
+      label: "Delete Product",
+      icon: "trash",
+      class: "text-red-600 hover:bg-red-50",
+      iconClass: "text-red-600",
+      action: () => handleAction("delete", item),
+    },
+  ]
+}
 
 const handleAction = (
   action: "duplicate" | "view" | "delete" | "activate" | "deactivate" | "hide" | "unhide",
