@@ -166,7 +166,7 @@ const handleNext = () => {
 
     <div class="h-32" />
 
-    <div class="border-core-200 fixed right-0 bottom-0 left-0 border-t bg-white p-6">
+    <div class="border-core-200 fixed right-0 bottom-0 left-0 border-t bg-white p-4 md:p-6">
       <div v-if="selectedProducts.length > 0" class="mb-3 flex items-center justify-between">
         <p class="text-sm text-gray-600">
           {{ selectedProducts.length }} product{{ selectedProducts.length > 1 ? "s" : "" }} selected
@@ -178,7 +178,7 @@ const handleNext = () => {
           Clear all
         </button>
       </div>
-      <AppButton label="Next" class="w-full" :disabled="!canProceed" @click="handleNext" />
+      <AppButton label="Nextss" class="w-full" :disabled="!canProceed" @click="handleNext" />
     </div>
   </div>
 </template>

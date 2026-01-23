@@ -115,7 +115,9 @@ const handleNext = () => {
 
     <div class="h-24" />
 
-    <div class="border-core-200 fixed right-0 bottom-0 left-0 flex gap-3 border-t bg-white p-6">
+    <div
+      class="border-core-200 fixed right-0 bottom-0 left-0 flex gap-3 border-t bg-white p-4 md:p-6"
+    >
       <AppButton label="Back" color="alt" class="w-1/3" icon="arrow-left" @click="emit('prev')" />
       <AppButton label="Next" class="w-2/3" :disabled="!canProceed" @click="handleNext" />
     </div>

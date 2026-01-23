@@ -9,13 +9,17 @@ import { computed, ref } from "vue"
 import { useRegisterForEventful, useValidateEventfulDiscountCode } from "../api"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
+import { useRouter } from "vue-router"
 
 const props = defineProps<{ open: boolean; event: EventfulPopup }>()
 
 const emit = defineEmits<{ (e: "close"): void }>()
 
+const router = useRouter()
+
 const discountCode = ref("")
 const discountValue = ref(0)
+const isDiscountApplied = ref(false)
 
 const totalAmount = computed(() => {
   const fee = Number(props.event?.participant_fee) || 0
@@ -33,10 +37,18 @@ const handleValidate = () => {
         toast.success("Discount code applied successfully.")
         const discount = res.data.data
         discountValue.value = discount.discount_amount
+        isDiscountApplied.value = true
       },
       onError: displayError,
     },
   )
+}
+
+const handleRemoveDiscount = () => {
+  discountCode.value = ""
+  discountValue.value = 0
+  isDiscountApplied.value = false
+  toast.success("Discount code removed.")
 }
 
 const handleRegister = () => {
@@ -47,7 +59,15 @@ const handleRegister = () => {
     },
     {
       onSuccess: (res) => {
-        console.log("Registration Response:", res)
+        if (!totalAmount.value || totalAmount.value <= 0) {
+          toast.success("Registration successful. Event has been added to your popup list.", {
+            title: "Event Registration",
+          })
+          emit("close")
+          router.go(0)
+          return
+        }
+
         const paymentLink = res.data?.data?.payment?.payment_link
         // open link in  res.data.payment.payment_link in new tab if exists
         if (paymentLink) {
@@ -70,13 +90,28 @@ const handleRegister = () => {
     <template #footer>
       <div>
         <form @submit.prevent="handleValidate" class="mb-4 flex gap-2">
-          <TextField placeholder="Enter coupon code" class="w-full" v-model="discountCode" />
+          <TextField
+            placeholder="Enter coupon code"
+            class="w-full"
+            v-model="discountCode"
+            :disabled="isDiscountApplied"
+          />
           <AppButton
+            v-if="!isDiscountApplied"
             label="Apply Code"
             :loading="isValidating"
             variant="outlined"
             class="flex-shrink-0"
             type="submit"
+            :disabled="!discountCode.trim()"
+          />
+          <AppButton
+            v-else
+            label="Remove"
+            variant="outlined"
+            class="flex-shrink-0"
+            type="button"
+            @click="handleRemoveDiscount"
           />
         </form>
 
