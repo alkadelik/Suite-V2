@@ -98,7 +98,7 @@ export function usePartiallyFulfill() {
       body,
     }: {
       id: string
-      body: { items: { uid: string; quantity: number }[] }
+      body: { items: { variant: string; qty: number }[] }
     }) => baseApi.post(`/orders/${id}/fulfill/`, body),
   })
 }

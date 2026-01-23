@@ -265,6 +265,7 @@ export function useUpdateStorefrontSectionsOrder() {
       baseApi.patch(`/storefront/sections/update-section-positions/`, body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["version-history"] })
+      queryClient.invalidateQueries({ queryKey: ["storefront-sections"] })
     },
   })
 }

@@ -449,7 +449,7 @@ const handleDetailsDeleteOrder = () => {
 
       <div class="space-y-4 overflow-hidden rounded-xl border-gray-200 pt-3 md:border md:bg-white">
         <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
-          <h3 class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
+          <h3 v-if="!isMobile" class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
             {{ ORDER_STATUS_TAB.find((tab) => tab.key === status)?.title }} Orders
             <Chip v-if="orders?.count" :label="orders?.count" />
           </h3>
@@ -458,7 +458,7 @@ const handleDetailsDeleteOrder = () => {
               left-icon="search-lg"
               size="sm"
               class="w-full md:min-w-64"
-              placeholder="Search by customer or order ref"
+              placeholder="Search by customer or order ID"
               v-model="searchQuery"
             />
 

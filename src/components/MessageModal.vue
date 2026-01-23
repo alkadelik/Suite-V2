@@ -119,7 +119,7 @@ const modalClasses = computed(() => {
   if (props.variant === "fullscreen") {
     baseClasses.push("w-full h-full")
   } else {
-    baseClasses.push("w-full")
+    baseClasses.push("w-[calc(100%-24px)]")
 
     // Max width handling
     const maxWidthMap: Record<string, string> = {

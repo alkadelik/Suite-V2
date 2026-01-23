@@ -31,8 +31,8 @@
             class="bg-base-background"
             :class="[
               bodyClasses,
-              props.bodyClass,
               props.handlePadding !== false ? 'px-6 py-4' : '',
+              props.bodyClass,
               $slots.footer ? '' : 'rounded-b-2xl',
             ]"
           >

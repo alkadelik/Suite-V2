@@ -11,6 +11,7 @@ import Icon from "@components/Icon.vue"
 import { computed } from "vue"
 import { useSettingsStore } from "@modules/settings/store"
 import { clipboardCopy } from "@/utils/others"
+import AppButton from "@components/AppButton.vue"
 
 const props = defineProps<{ open: boolean; order: TOrder }>()
 const emit = defineEmits([
@@ -116,29 +117,38 @@ const menuItems = computed(() => {
   <component
     :is="isMobile ? Modal : Drawer"
     :open="open"
-    :title="`Order Details - #${order.order_number}`"
     max-width="2xl"
     variant="fullscreen"
     @close="emit('close')"
   >
-    <div class="mb-4 flex items-start justify-between">
-      <div>
-        <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
-          <Icon name="shop-add" size="28" />
-        </div>
-        <p class="text-sm">Details of this order.</p>
+    <template #header>
+      <div class="flex items-center justify-between px-6 py-4">
+        <h2 class="text-core-800 text-lg font-semibold">
+          Order #{{ order.order_number }}
+          <Icon
+            name="copy"
+            size="14"
+            class="text-primary-600 ml-2 cursor-pointer hover:animate-bounce"
+            @click="clipboardCopy(order.order_number)"
+          />
+        </h2>
+        <button
+          type="button"
+          @click="emit('close')"
+          class="text-core-800 hover:text-core-600 transition-colors"
+        >
+          <Icon name="close-circle" size="20" />
+        </button>
       </div>
-      <DropdownMenu v-if="order.fulfilment_status !== 'voided'" :items="menuItems" size="sm" />
+    </template>
+
+    <div class="mb-4 flex justify-end">
+      <DropdownMenu v-if="order.fulfilment_status !== 'voided'" :items="menuItems" size="sm">
+        <template #trigger>
+          <AppButton icon="settings-02" label="Manage Order" variant="outlined" size="sm" />
+        </template>
+      </DropdownMenu>
     </div>
-    <p class="mb-4 flex items-center gap-1 text-sm">
-      Details of this order - #{{ order.order_number }}
-      <Icon
-        name="copy"
-        size="14"
-        class="text-primary-600 cursor-pointer hover:animate-bounce"
-        @click="clipboardCopy(order.order_number)"
-      />
-    </p>
 
     <div class="space-y-4">
       <!-- Order Items -->
@@ -176,14 +186,14 @@ const menuItems = computed(() => {
       <!-- Customer Details -->
       <div class="border-core-300 bg-core-25 my-6 space-y-3 rounded-xl border p-4">
         <p class="text-sm font-medium">{{ customerName }}</p>
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-1">
-            <Icon name="sms" class="text-core-600 h-4 w-4" />
-            <span class="text-sm font-medium">{{ order.customer_email || "N/A" }}</span>
+        <div class="flex flex-col gap-2">
+          <div class="flex min-w-0 items-center gap-1">
+            <Icon name="sms" class="text-core-600 h-4 w-4 shrink-0" />
+            <span class="truncate text-sm font-medium">{{ order.customer_email || "N/A" }}</span>
           </div>
-          <div class="flex items-center gap-1">
-            <Icon name="call" class="text-core-600 h-4 w-4" />
-            <span class="text-sm font-medium">{{ order.customer_phone || "N/A" }}</span>
+          <div class="flex min-w-0 items-center gap-1">
+            <Icon name="call" class="text-core-600 h-4 w-4 shrink-0" />
+            <span class="truncate text-sm font-medium">{{ order.customer_phone || "N/A" }}</span>
           </div>
         </div>
       </div>

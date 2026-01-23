@@ -56,7 +56,23 @@ const onUpdateTheme = () => {
       </div>
     </div>
 
-    <div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+    <!-- Skeleton Loader -->
+    <div v-if="isLoading" class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+      <div v-for="i in 5" :key="i" class="rounded-xl border border-gray-200">
+        <div class="h-60 animate-pulse rounded-t-xl bg-gray-200"></div>
+        <div class="space-y-3 rounded-b-xl p-4">
+          <div class="h-6 w-3/4 animate-pulse rounded bg-gray-200"></div>
+          <div class="h-4 w-full animate-pulse rounded bg-gray-200"></div>
+          <div class="h-4 w-5/6 animate-pulse rounded bg-gray-200"></div>
+          <div class="mt-4 flex justify-end gap-3">
+            <div class="h-10 w-24 animate-pulse rounded bg-gray-200"></div>
+            <div class="h-10 w-24 animate-pulse rounded bg-gray-200"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-else class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
       <div
         v-for="theme in themes?.results"
         :key="theme.name"
