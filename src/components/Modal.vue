@@ -33,7 +33,7 @@
               bodyClasses,
               props.handlePadding !== false ? 'px-6 py-4' : '',
               props.bodyClass,
-              $slots.footer ? '' : 'rounded-b-2xl',
+              $slots.footer ? 'pb-24 md:pb-24' : 'rounded-b-2xl',
             ]"
           >
             <slot />
@@ -43,7 +43,8 @@
           <div
             v-if="$slots.footer"
             :class="[
-              'border-core-200 sticky right-0 bottom-0 left-0 rounded-b-xl border-t bg-white p-6',
+              'border-core-200 right-0 bottom-0 left-0 rounded-b-xl border-t bg-white p-4 md:p-6',
+              props.variant === 'fullscreen' ? 'fixed' : 'sticky',
             ]"
           >
             <slot name="footer" />
@@ -134,7 +135,7 @@ const modalClasses = computed(() => {
 
   // Width and max-width classes
   if (props.variant === "fullscreen") {
-    baseClasses.push("w-full h-full")
+    baseClasses.push("w-full h-[100dvh]")
   } else {
     baseClasses.push("w-full max-h-[95dvh]")
 

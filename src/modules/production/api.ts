@@ -43,7 +43,7 @@ export function useGetRawMaterials(
   params?: MaybeRefOrGetter<Record<string, string | number | boolean> | undefined>,
 ) {
   return useApiQuery<TPaginatedResponse<TRawMaterial>["data"]>({
-    url: "/production/raw-materials/",
+    url: "/raw-materials/",
     params,
     key: "raw-materials",
     selectData: true,
@@ -53,7 +53,7 @@ export function useGetRawMaterials(
 /** Fetch raw materials statistics */
 export function useGetRawMaterialsStats() {
   return useApiQuery<RawMaterialStats>({
-    url: `/production/raw-materials/stats/`,
+    url: `/raw-materials/dashboard/`,
     key: `raw-materials-stats`,
     selectData: true,
   })
@@ -62,7 +62,7 @@ export function useGetRawMaterialsStats() {
 /** Fetch single raw material by ID */
 export function useGetSingleRawMaterial(id: string) {
   return useApiQuery<TApiPromise<TRawMaterial>>({
-    url: `/production/raw-materials/${id}/`,
+    url: `/raw-materials/${id}/`,
     key: `raw-materials/${id}`,
     selectData: true,
   })

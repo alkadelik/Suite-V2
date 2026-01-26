@@ -525,7 +525,9 @@ const productsTotal = computed(() => {
 
     <div class="h-40" />
 
-    <div class="border-core-200 fixed right-0 bottom-0 left-0 space-y-2 border-t bg-white p-6">
+    <div
+      class="border-core-200 fixed right-0 bottom-0 left-0 space-y-2 border-t bg-white p-4 md:p-6"
+    >
       <div class="flex items-center justify-between">
         <p class="text-sm text-gray-600">Total Items count:</p>
         <span class="text-sm font-medium">{{ totalItemsCount }}</span>
