@@ -148,7 +148,7 @@ import Modal from "@/components/Modal.vue"
 import Icon from "@components/Icon.vue"
 import WarningBox from "@components/WarningBox.vue"
 import Chip from "@components/Chip.vue"
-import { ref, reactive, onMounted, watch } from "vue"
+import { ref, reactive, onMounted, watch, computed } from "vue"
 import ShipbubbleAccountSetup from "./ShipbubbleAccountSetup.vue"
 import ManageManualDeliveryModal from "./ManageManualDeliveryModal.vue"
 import { useAuthStore } from "@modules/auth/store"
@@ -162,6 +162,7 @@ import { useUpdateStoreDetails, useGetStoreDetails } from "@/modules/settings/ap
 import type { ICourier } from "@/modules/shared/types"
 import { useMediaQuery } from "@vueuse/core"
 import ConfigureDeliverySkeleton from "./skeletons/ConfigureDeliverySkeleton.vue"
+import { toast } from "@/composables/useToast"
 
 defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{
@@ -197,6 +198,10 @@ const shipbubbleAuthForm = reactive({
 })
 const courierOptions = ref<string[]>([])
 
+const isEditMode = computed(() => {
+  return route.query.edit === "true"
+})
+
 // Helper function to normalize phone number to +234 format
 const normalizePhoneNumber = (phone: string): string => {
   if (!phone) return ""
@@ -228,16 +233,26 @@ const handleSetupShippingProfile = () => {
     email: shipbubbleAuthForm.email,
     password: shipbubbleAuthForm.password,
     phone: normalizePhoneNumber(shipbubbleAuthForm.phone),
-    preferred_couriers: [],
+    ...(isEditMode.value ? {} : { preferred_couriers: [] }),
   }
-  setupShippingProfile(payload, {
-    onSuccess: () => {
-      isShippingProfileActive.value = true
-      shipBubbleStep.value = 2
-    },
-  })
 
-  console.log(payload)
+  if (isEditMode.value) {
+    updateShippingProfile(payload, {
+      onSuccess: () => {
+        toast.success("Shipping profile updated successfully")
+        //  redirect back based on &redirect=${encodeURIComponent(route.path)}
+        const redirectPath = (route.query.redirect as string) || route.path.split("?")[0]
+        router.push(redirectPath)
+      },
+    })
+  } else {
+    setupShippingProfile(payload, {
+      onSuccess: () => {
+        isShippingProfileActive.value = true
+        shipBubbleStep.value = 2
+      },
+    })
+  }
 }
 
 const handleCouriersSubmit = () => {

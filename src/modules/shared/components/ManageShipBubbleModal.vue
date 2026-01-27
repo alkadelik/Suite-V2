@@ -28,7 +28,9 @@
         <AppButton
           label="Edit Details"
           @click="
-            $router.push(`/onboarding?shipbubble=true&redirect=${encodeURIComponent(route.path)}`)
+            $router.push(
+              `/onboarding?shipbubble=true&edit=true&redirect=${encodeURIComponent(route.path)}`,
+            )
           "
         />
       </div>
@@ -45,7 +47,7 @@
           label="Edit Couriers"
           @click="
             $router.push(
-              `/onboarding?shipbubble=true&step=2&redirect=${encodeURIComponent(route.path)}`,
+              `/onboarding?shipbubble=true&edit=true&step=2&redirect=${encodeURIComponent(route.path)}`,
             )
           "
         />
