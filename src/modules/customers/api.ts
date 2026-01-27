@@ -1,4 +1,4 @@
-import baseApi, { TApiPromise, useApiQuery } from "@/composables/baseApi"
+import baseApi, { TApiPromise, TPaginatedResponse, useApiQuery } from "@/composables/baseApi"
 import { useMutation, useQuery } from "@tanstack/vue-query"
 import type { Ref } from "vue"
 import { computed } from "vue"
@@ -77,5 +77,26 @@ export function useGetSingleCustomer(uid: Ref<string> | string) {
 export function useExportCustomers() {
   return useMutation({
     mutationFn: (payload: IExportPayload) => baseApi.post("/customers/export/", payload),
+  })
+}
+
+/** Create customer address api request */
+export function useCreateCustomerAddress() {
+  return useMutation({
+    mutationFn: ({ customer, ...others }: { customer: string; address: string }) =>
+      baseApi.post(`/customers/${customer}/addresses/`, { ...others }),
+  })
+}
+
+/** get customer address api request */
+export function useGetCustomerAddresses(customerUid: Ref<string> | string) {
+  const customerUidValue = computed(() =>
+    typeof customerUid === "string" ? customerUid : customerUid.value,
+  )
+  return useApiQuery<TPaginatedResponse<{ uid: string; address: string }>["data"]>({
+    url: computed(() => `/customers/${customerUidValue.value}/addresses/`),
+    key: computed(() => `customer-${customerUidValue.value}-addresses`),
+    enabled: computed(() => !!customerUidValue.value && customerUidValue.value.trim() !== ""),
+    selectData: true,
   })
 }

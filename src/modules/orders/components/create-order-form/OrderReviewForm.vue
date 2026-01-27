@@ -6,6 +6,7 @@ import AppButton from "@components/AppButton.vue"
 import Icon from "@components/Icon.vue"
 import type { ICustomer } from "@modules/customers/types"
 import { computed } from "vue"
+import { IShippingCourier } from "@modules/shared/types"
 
 interface OrderItem {
   product: { uid: string; product_name: string; total_stock: number; image?: string | null }
@@ -24,14 +25,17 @@ interface OrderItem {
 interface ShippingInfo {
   fulfilment_method: "pickup" | "delivery"
   fulfilment_status: "fulfilled" | "unfulfilled"
-  delivery_address: string
-  delivery_method: "manual" | "automatic"
-  courier: string
+  delivery_address: string | { label: string; value: string }
+  delivery_type: "standard" | "express"
+  delivery_method: "manual" | "shipbubble" | "custom"
+  courier: string | IShippingCourier
   delivery_fee: number
   order_date: string
   order_channel: { label: string; value: string }
   has_shipping: boolean
   delivery_payment_option: string
+  express_delivery_option?: string
+  manual_delivery_option?: string
 }
 
 interface PaymentInfo {
@@ -68,6 +72,42 @@ const customerName = computed(() => {
 
 const itemsCount = computed(() => {
   return props.orderItems.reduce((sum, item) => sum + Number(item.quantity), 0)
+})
+
+const deliveryTypeLabel = computed(() => {
+  if (props.shippingInfo.fulfilment_method !== "delivery") return null
+
+  const type = startCase(props.shippingInfo.delivery_type)
+
+  // Express delivery doesn't have a method, it's just express
+  if (props.shippingInfo.delivery_type === "express") {
+    return type
+  }
+
+  // Standard delivery has methods
+  let method = ""
+  if (props.shippingInfo.delivery_method === "manual") {
+    method = "Manual"
+  } else if (props.shippingInfo.delivery_method === "shipbubble") {
+    method = "Shipbubble"
+  } else if (props.shippingInfo.delivery_method === "custom") {
+    method = "Custom"
+  }
+
+  return method ? `${type} - ${method}` : type
+})
+
+const deliveryPaymentLabel = computed(() => {
+  if (props.shippingInfo.fulfilment_method !== "delivery") return null
+
+  if (props.shippingInfo.delivery_payment_option === "merchant_pays_full") {
+    return "Merchant pays full delivery fee"
+  } else if (props.shippingInfo.delivery_payment_option === "customer_pays_courier") {
+    return "Customer pays courier directly"
+  } else if (props.shippingInfo.delivery_payment_option === "free_shipping") {
+    return "Free shipping"
+  }
+  return startCase(props.shippingInfo.delivery_payment_option)
 })
 </script>
 
@@ -205,6 +245,10 @@ const itemsCount = computed(() => {
           <span class="font-medium">{{ formatDate(shippingInfo.order_date) }}</span>
         </p>
         <p class="flex justify-between text-sm">
+          <span class="text-core-600">Order Channel</span>
+          <span class="font-medium">{{ shippingInfo.order_channel.label }}</span>
+        </p>
+        <p class="flex justify-between text-sm">
           <span class="text-core-600">Has this product been delivered?</span>
           <span class="font-medium">{{
             shippingInfo.fulfilment_status === "fulfilled" ? "Yes" : "No"
@@ -218,20 +262,43 @@ const itemsCount = computed(() => {
           }}</span>
           <span class="font-medium">{{ startCase(shippingInfo.fulfilment_method) }}</span>
         </p>
-        <p
-          v-if="shippingInfo.fulfilment_method === 'delivery' && shippingInfo.delivery_address"
-          class="flex justify-between text-sm"
-        >
-          <span class="text-core-600">Delivery Address</span>
-          <span class="font-medium">{{ shippingInfo.delivery_address }}</span>
-        </p>
-        <p
-          v-if="shippingInfo.fulfilment_method === 'delivery' && shippingInfo.courier"
-          class="flex justify-between text-sm"
-        >
-          <span class="text-core-600">Courier</span>
-          <span class="font-medium">{{ shippingInfo.courier }}</span>
-        </p>
+        <template v-if="shippingInfo.fulfilment_method === 'delivery'">
+          <p class="flex justify-between text-sm">
+            <span class="text-core-600">{{
+              shippingInfo.fulfilment_status === "fulfilled"
+                ? "Who paid for delivery?"
+                : "Who will pay for delivery?"
+            }}</span>
+            <span class="font-medium">{{ deliveryPaymentLabel }}</span>
+          </p>
+          <p v-if="deliveryTypeLabel" class="flex justify-between text-sm">
+            <span class="text-core-600">Delivery Type</span>
+            <span class="font-medium">{{ deliveryTypeLabel }}</span>
+          </p>
+          <p v-if="shippingInfo.delivery_address" class="flex justify-between text-sm">
+            <span class="text-core-600">Delivery Address</span>
+            <span class="max-w-[60%] text-right font-medium">
+              {{
+                typeof shippingInfo.delivery_address === "string"
+                  ? shippingInfo.delivery_address
+                  : shippingInfo.delivery_address?.label
+              }}
+            </span>
+          </p>
+          <p
+            v-if="
+              shippingInfo.courier &&
+              (shippingInfo.delivery_type === 'standard' ||
+                shippingInfo.delivery_payment_option === 'customer_pays_courier')
+            "
+            class="flex justify-between text-sm"
+          >
+            <span class="text-core-600">Courier</span>
+            <span class="font-medium">
+              {{ (shippingInfo.courier as IShippingCourier)?.courier_name || shippingInfo.courier }}
+            </span>
+          </p>
+        </template>
       </div>
     </div>
 

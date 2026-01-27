@@ -296,14 +296,14 @@ const menuItems = computed(() => {
           class="flex justify-between text-sm"
         >
           <span class="text-core-600">Delivery Address</span>
-          <span class="font-medium">{{ order.delivery_address }}</span>
+          <span class="font-medium">{{ order.customer_address }}</span>
         </p>
         <p
           v-if="order.fulfilment_method === 'delivery' && order.courier"
           class="flex justify-between text-sm"
         >
           <span class="text-core-600">Courier</span>
-          <span class="font-medium">{{ order.courier_name }}</span>
+          <span class="font-medium">{{ order.courier_name || "-" }}</span>
         </p>
       </div>
     </div>

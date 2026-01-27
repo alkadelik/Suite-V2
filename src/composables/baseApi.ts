@@ -29,12 +29,30 @@ baseApi.interceptors.request.use((config) => {
   return config
 })
 
+// Singleton promise to prevent multiple simultaneous refresh attempts
+let refreshTokenPromise: Promise<string> | null = null
+
 const refreshToken = async (): Promise<string> => {
-  const { refreshToken, setTokens } = useAuthStore()
-  const { data } = await baseApi.post("/token/refresh/", { refresh: refreshToken }, { baseURL })
-  const { access, refresh } = data?.data as { access: string; refresh: string }
-  setTokens({ accessToken: access, refreshToken: refresh })
-  return access
+  // If a refresh is already in progress, return that promise
+  if (refreshTokenPromise) {
+    return refreshTokenPromise
+  }
+
+  // Create a new refresh promise
+  refreshTokenPromise = (async () => {
+    try {
+      const { refreshToken, setTokens } = useAuthStore()
+      const { data } = await baseApi.post("/token/refresh/", { refresh: refreshToken }, { baseURL })
+      const { access, refresh } = data?.data as { access: string; refresh: string }
+      setTokens({ accessToken: access, refreshToken: refresh })
+      return access
+    } finally {
+      // Clear the promise when done (success or failure)
+      refreshTokenPromise = null
+    }
+  })()
+
+  return refreshTokenPromise
 }
 
 baseApi.interceptors.response.use(

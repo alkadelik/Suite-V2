@@ -27,9 +27,10 @@ export type TOrder = {
   customer_email: string
   customer_phone: string
   customer_name?: string
+  customer_address: string
   delivery_address: string | null
   delivery_fee: string
-  delivery_method: "manual" | "automatic"
+  delivery_method: "manual" | "shipbubble" | "custom"
   discount_amount: string
   fulfilment_method: "pickup" | "delivery"
   fulfilment_status: "unfulfilled" | "fulfilled" | "partially_fulfilled" | "voided"
@@ -51,6 +52,8 @@ export type TOrder = {
   user: string
   user_name: string
   is_voided: boolean
+
+  manual_delivery_type?: "standard" | "express"
 
   // Needed
   store_email?: string
