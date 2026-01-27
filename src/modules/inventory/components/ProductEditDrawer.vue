@@ -56,6 +56,7 @@
             :hide-price="true"
             :hide-weight="true"
             :deleted-variants="deletedVariants"
+            :use-table-layout="productOriginallyHadVariants"
           />
 
           <!-- Step 3 for variants mode: Product Images -->
@@ -281,8 +282,14 @@ const removedImageIds = ref<string[]>([])
 // Track if variant images were uploaded (to force refetch on reopen)
 const variantImagesWereUploaded = ref(false)
 
+// Track if existing images were reordered (to know if we need to update sort_order/is_primary)
+const imagesWereReordered = ref(false)
+
 // Track the expected product UID to prevent race conditions when rapidly switching products
 const expectedProductUid = ref<string | null>(null)
+
+// Track if the product originally had variants (for button label in variants edit mode)
+const productOriginallyHadVariants = ref(false)
 
 const { step, previousStep } = useProductDrawerUtilities().useStepManagement({
   hasVariants,
@@ -295,6 +302,7 @@ const { getHeaderTitle, getHeaderText, getSubmitButtonLabel } =
     hasVariants,
     editMode: props.editMode,
     mode: "edit",
+    productOriginallyHadVariants,
   })
 
 const variantConfigHelpers = useVariantConfiguration(
@@ -372,6 +380,8 @@ watch(
       originalVariantUids.value.clear()
       // Reset removed image IDs
       removedImageIds.value = []
+      // Reset images reordered flag
+      imagesWereReordered.value = false
       // Note: Don't reset variantDetailsWithUids or form state here
       // to avoid flashing single-variant view while refetching
     } else if (!isOpen) {
@@ -407,6 +417,7 @@ watch(
         newExistingIds[0] = newExistingIds[newPrimaryIndex]
         newExistingIds[newPrimaryIndex] = tempId
         existingImageIds.value = newExistingIds
+        imagesWereReordered.value = true
         console.log("Swapped image UIDs for primary change")
       }
     }
@@ -454,6 +465,10 @@ watch(
       } else {
         existingImageIds.value = Array(5).fill(null)
       }
+
+      // Track if product originally had multiple variants (for button label in variants edit mode)
+      productOriginallyHadVariants.value =
+        product.is_variable && product.variants && product.variants.length > 1
 
       // Populate original variant UIDs map and store full variant details
       if (product.variants && product.variants.length > 0) {
@@ -774,43 +789,21 @@ const handleSubmit = async () => {
         console.log(`Deleted ${removedImageIds.value.length} images`)
       }
 
-      // Step 2: Handle primary image changes and sort order updates
-      // Check if position 0 (primary) has an existing image that needs to be marked as primary
-      const primaryImage = form.images[0]
-      const primaryImageId = existingImageIds.value[0]
+      // Step 2 & 3: Only update existing images if they were reordered or images were deleted
+      let primaryImageUpdated = false
+      if (imagesWereReordered.value || removedImageIds.value.length > 0) {
+        // Step 2: Handle primary image changes
+        const primaryImage = form.images[0]
+        const primaryImageId = existingImageIds.value[0]
 
-      if (primaryImage && typeof primaryImage === "string" && primaryImageId) {
-        // This is an existing image at primary position
-        // We need to ensure it's marked as primary (in case it was swapped)
-        await new Promise<void>((resolve, reject) => {
-          updateProductImage(
-            {
-              uid: primaryImageId,
-              is_primary: true,
-              sort_order: 1,
-            },
-            {
-              onSuccess: () => resolve(),
-              onError: (error: unknown) => reject(new Error(String(error))),
-            },
-          )
-        })
-        console.log("Updated primary image")
-      }
-
-      // Step 3: Update sort order for all other existing images
-      for (let i = 1; i < form.images.length; i++) {
-        const image = form.images[i]
-        const imageId = existingImageIds.value[i]
-
-        // Only update if it's an existing image (string URL with ID)
-        if (image && typeof image === "string" && imageId) {
+        if (primaryImage && typeof primaryImage === "string" && primaryImageId) {
+          // This is an existing image at primary position that was swapped
           await new Promise<void>((resolve, reject) => {
             updateProductImage(
               {
-                uid: imageId,
-                is_primary: false,
-                sort_order: i + 1,
+                uid: primaryImageId,
+                is_primary: true,
+                sort_order: 1,
               },
               {
                 onSuccess: () => resolve(),
@@ -818,6 +811,31 @@ const handleSubmit = async () => {
               },
             )
           })
+          primaryImageUpdated = true
+          console.log("Updated primary image")
+        }
+
+        // Step 3: Update sort order for all other existing images
+        for (let i = 1; i < form.images.length; i++) {
+          const image = form.images[i]
+          const imageId = existingImageIds.value[i]
+
+          // Only update if it's an existing image (string URL with ID)
+          if (image && typeof image === "string" && imageId) {
+            await new Promise<void>((resolve, reject) => {
+              updateProductImage(
+                {
+                  uid: imageId,
+                  is_primary: false,
+                  sort_order: i + 1,
+                },
+                {
+                  onSuccess: () => resolve(),
+                  onError: (error: unknown) => reject(new Error(String(error))),
+                },
+              )
+            })
+          }
         }
       }
 
@@ -876,7 +894,7 @@ const handleSubmit = async () => {
         removedImageIds.value.length +
         newImages.length +
         variantImagesUploaded.length +
-        (primaryImage && typeof primaryImage === "string" ? 1 : 0)
+        (primaryImageUpdated ? 1 : 0)
 
       if (totalChanges > 0) {
         toast.success(

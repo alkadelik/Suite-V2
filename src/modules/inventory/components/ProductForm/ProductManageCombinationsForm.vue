@@ -120,7 +120,93 @@
       />
     </div>
 
-    <!-- Multiple Variants View (when more than one variant) -->
+    <!-- Multiple Variants View - Table Layout (for editing existing variants) -->
+    <div v-else-if="props.useTableLayout" class="space-y-4 rounded-lg border border-gray-200">
+      <!-- Header -->
+      <div class="flex items-center justify-between bg-gray-50 p-4">
+        <div class="flex-1">
+          <h3 class="text-sm font-medium text-gray-900">Variant</h3>
+        </div>
+        <div v-if="!props.hideStock" class="w-24 text-center">
+          <h3 class="text-sm font-medium text-gray-900">Quantity</h3>
+        </div>
+        <div v-if="!props.hidePrice" class="w-24 text-center">
+          <h3 class="text-sm font-medium text-gray-900">Cost Price</h3>
+        </div>
+        <div v-if="!props.hidePrice" class="w-24 text-center">
+          <h3 class="text-sm font-medium text-gray-900">Selling Price</h3>
+        </div>
+      </div>
+
+      <!-- Variant Rows -->
+      <div class="bg-white">
+        <div
+          v-for="(variant, index) in variants"
+          :key="`variant-${index}`"
+          class="flex items-center gap-4 border-b border-gray-200 p-4"
+        >
+          <!-- Variant Name with Chips -->
+          <div class="flex-1">
+            <div class="flex flex-wrap gap-2">
+              <Chip
+                v-for="(attributeValue, attrIndex) in getVariantDisplayValues(variant)"
+                :key="`attr-${attrIndex}`"
+                :label="attributeValue"
+                size="sm"
+              />
+            </div>
+          </div>
+
+          <!-- Quantity Input -->
+          <div v-if="!props.hideStock" class="w-24">
+            <TextField
+              :model-value="variant.opening_stock"
+              placeholder=""
+              type="number"
+              min="0"
+              size="sm"
+              @update:model-value="
+                updateVariantField(index, 'opening_stock', removeLeadingZeros($event))
+              "
+              @blur="handleStockBlur(index, $event)"
+            />
+          </div>
+
+          <!-- Cost Price Input -->
+          <div v-if="!props.hidePrice" class="w-24">
+            <TextField
+              :model-value="variant.cost_price"
+              placeholder=""
+              type="number"
+              step="0.01"
+              min="0"
+              size="sm"
+              @update:model-value="
+                updateVariantField(index, 'cost_price', removeLeadingZeros($event))
+              "
+              @blur="handleCostPriceBlur(index, $event)"
+            />
+          </div>
+
+          <!-- Selling Price Input -->
+          <div v-if="!props.hidePrice" class="w-24">
+            <TextField
+              :model-value="variant.price"
+              placeholder=""
+              type="number"
+              step="0.01"
+              min="0"
+              size="sm"
+              :disabled="props.disablePrice"
+              @update:model-value="updateVariantField(index, 'price', removeLeadingZeros($event))"
+              @blur="handlePriceBlur(index, $event)"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Multiple Variants View - Card Layout (default for creating new variants) -->
     <div v-else class="space-y-4">
       <!-- Variant Cards -->
       <div
@@ -225,6 +311,8 @@ interface Props {
   hideWeight?: boolean
   /** Deleted variants to display (only in edit mode) - no UIDs, just attributes */
   deletedVariants?: IProductVariant[]
+  /** Use table layout instead of card layout (for editing existing variants) */
+  useTableLayout?: boolean
 }
 
 interface Emits {
