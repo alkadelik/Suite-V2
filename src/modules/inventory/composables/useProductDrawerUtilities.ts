@@ -22,6 +22,8 @@ interface IHeaderOptions {
   editMode?: string
   /** Mode: 'create' or 'edit' */
   mode: "create" | "edit"
+  /** Whether the product originally had variants (for edit mode) */
+  productOriginallyHadVariants?: Ref<boolean>
 }
 
 /**
@@ -135,7 +137,7 @@ export function useProductDrawerUtilities() {
    * Dynamic header generation
    */
   const useDrawerHeaders = (options: IHeaderOptions) => {
-    const { step, hasVariants, editMode, mode } = options
+    const { step, hasVariants, editMode, mode, productOriginallyHadVariants } = options
 
     /**
      * Get dynamic header title based on current step
@@ -209,7 +211,9 @@ export function useProductDrawerUtilities() {
       // Variants edit mode (only 2 steps)
       if (editMode === "variants") {
         if (step.value === 1) {
-          return "Next (Price)"
+          // If product originally had variants, just show "Next" (not adding new pricing)
+          // Otherwise show "Next (Price)" since user needs to set prices for new variants
+          return productOriginallyHadVariants?.value ? "Next" : "Next (Price)"
         }
       }
 

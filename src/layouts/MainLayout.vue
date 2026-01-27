@@ -11,7 +11,6 @@
       <!-- Sidebar -->
       <AppSidebar
         :mobile-sidebar-open="mobileSidebarOpen"
-        :isLive="isLive"
         @logout="logout = true"
         @upgrade="setPlanUpgradeModal(true)"
       />
