@@ -151,7 +151,7 @@ router.beforeEach((to, from, next) => {
   }
 
   // prevent access to upcoming features for non-staging environments
-  const upcomingFeaturePaths = ["/expenses", "/raw-materials"]
+  const upcomingFeaturePaths = ["/raw-materials"]
 
   if (!isStaging && upcomingFeaturePaths.includes(to.path)) {
     const featureName = to.path.replace("/", "").toUpperCase()

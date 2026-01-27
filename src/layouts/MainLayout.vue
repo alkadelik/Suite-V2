@@ -172,9 +172,6 @@ import {
   useMarkNotificationAsRead,
 } from "@modules/shared/api"
 import type { INotification } from "@modules/shared/types"
-import { isStaging } from "@/utils/others"
-import { toast } from "@/composables/useToast"
-
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
 const mobileSidebarOpen = ref(false)
@@ -294,8 +291,7 @@ const actionMenuItems = computed(() => {
       class: "!bg-pink-50 !text-pink-700",
       iconClass: "!text-primary-700",
       action: () => {
-        if (isStaging) router.push("/expenses?create=true")
-        else toast.info("Expense feature is coming soon!")
+        router.push("/expenses?create=true")
       },
     },
   ]
