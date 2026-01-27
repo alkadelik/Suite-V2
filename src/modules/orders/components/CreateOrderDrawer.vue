@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Drawer from "@components/Drawer.vue"
 import StepperWizard from "@components/StepperWizard.vue"
-import { ref, computed } from "vue"
+import { ref, computed, onMounted } from "vue"
 import type { IProductCatalogue } from "@modules/inventory/types"
 import type { ICustomer } from "@modules/customers/types"
 import type { OrderPayload, OrderItemPayload } from "@modules/orders/types"
@@ -26,6 +26,7 @@ import { useMediaQuery } from "@vueuse/core"
 import Modal from "@components/Modal.vue"
 import { useGetStoreDetails } from "@modules/settings/api"
 import { useAuthStore } from "@modules/auth/store"
+import { handlePayStackPayment, loadPaystackScript } from "../utilities"
 
 const props = defineProps({
   open: { type: Boolean, required: true },
@@ -256,6 +257,7 @@ const onCreateOrder = () => {
 
     if (delivery_type === "express") {
       // Express delivery: only send express_delivery_option (UID)
+      deliveryFields.delivery_method = "manual"
       deliveryFields.manual_delivery_option = shippingInfo.value.express_delivery_option
       // Backend will use the UID to get delivery fee and location details
     } else if (delivery_type === "standard") {
@@ -293,15 +295,15 @@ const onCreateOrder = () => {
           customer_phone: phone || "",
         }
       : { customer: "" }),
-    total_amount: totalAmount.value,
+    total_amount: Number(totalAmount.value).toFixed(2),
     ...deliveryFields,
     fulfilment_method,
     coupon_code: paymentInfo.value.coupon_code || "",
     payment_status: paymentInfo.value.payment_status,
     payment_amount:
       paymentInfo.value.payment_status === "paid"
-        ? totalAmount.value
-        : paymentInfo.value.payment_amount,
+        ? Number(totalAmount.value).toFixed(2)
+        : Number(paymentInfo.value.payment_amount).toFixed(2),
     payment_source: paymentInfo.value.payment_source?.value,
     items: isPopupOrder.value
       ? popupOrderItems.value.map((item) => ({
@@ -336,10 +338,39 @@ const onCreateOrder = () => {
     onError: displayError,
   }
 
-  if (isPopupOrder.value) {
-    createPopupOrder(payload as unknown as PopupOrderPayload, handler)
+  if (delivery_method === "shipbubble") {
+    const payData = {
+      shipping_price: Number(shippingInfo.value.delivery_fee || 500),
+      customer_name:
+        selectedCustomer.value?.full_name ||
+        `${selectedCustomer.value?.first_name || ""} ${selectedCustomer.value?.last_name || ""}`.trim() ||
+        "Customer",
+      customer_email:
+        shippingInfo.value.customer_email ||
+        selectedCustomer.value?.email ||
+        "theo.testing@mailsac.com",
+      shipping_address:
+        typeof shippingInfo.value.delivery_address === "string"
+          ? shippingInfo.value.delivery_address
+          : (shippingInfo.value.delivery_address as { label: string; value: string }).label,
+    }
+
+    handlePayStackPayment(payData, (payResponse) => {
+      // money paid... time to create order
+      console.log("Payment successful:", payResponse)
+      const reference = payResponse.reference
+      if (isPopupOrder.value) {
+        createPopupOrder({ ...payload, reference } as unknown as PopupOrderPayload, handler)
+      } else {
+        createOrder({ ...payload, reference } as OrderPayload, handler)
+      }
+    })
   } else {
-    createOrder(payload as OrderPayload, handler)
+    if (isPopupOrder.value) {
+      createPopupOrder(payload as unknown as PopupOrderPayload, handler)
+    } else {
+      createOrder(payload as OrderPayload, handler)
+    }
   }
 }
 
@@ -355,6 +386,11 @@ const resetForm = () => {
 }
 
 const isMobile = useMediaQuery("(max-width: 1028px)")
+
+// load paystack script on mounted
+onMounted(() => {
+  loadPaystackScript()
+})
 </script>
 
 <template>

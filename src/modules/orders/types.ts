@@ -107,6 +107,7 @@ export interface OrderPayload {
   items: OrderItemPayload[]
   order_channel: string
   order_date?: string
+  reference?: string
 }
 
 export interface OrderItemPayload {

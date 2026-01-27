@@ -475,8 +475,11 @@ const handleUpdateCourier = (courierId: string) => {
   const courier = shipBubbleRates.value.couriers?.find((c) => c.courier_id === courierId)
   if (courier) {
     const fee = courier.total_amount || courier.total || 0
-    updateField("delivery_fee", fee)
-    updateField("courier", courier)
+    emit("update:shippingInfo", {
+      ...props.shippingInfo,
+      courier,
+      delivery_fee: fee,
+    })
   }
 }
 

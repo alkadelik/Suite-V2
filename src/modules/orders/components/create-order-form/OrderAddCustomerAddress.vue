@@ -48,7 +48,7 @@ const createAddress = () => {
 
   createCustomerAddress(payload, {
     onSuccess: (res) => {
-      const data = res.data as { uid: string; address: string }
+      const data = res.data.data as { uid: string; address: string }
       toast.success("Address added successfully!")
       emit("success", { label: data.address, value: data.uid })
       handleClose()
