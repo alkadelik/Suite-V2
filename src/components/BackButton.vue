@@ -9,7 +9,7 @@
       type="button"
     >
       <Icon :name="icon || 'chevron-left'" size="20" />
-      {{ label || "Back to Dashboard" }}
+      {{ label || "Back" }}
     </button>
   </div>
 </template>

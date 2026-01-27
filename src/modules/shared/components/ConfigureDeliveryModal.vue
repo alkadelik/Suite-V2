@@ -8,10 +8,8 @@
       :variant="isMobile ? 'fullscreen' : 'centered'"
       :handle-padding="false"
     >
-      <LoadingIcon
-        v-if="isGettingShippingProfile || isGettingStoreDetails"
-        icon-class="text-black h-6 w-6"
-      />
+      <ConfigureDeliverySkeleton v-if="isGettingShippingProfile || isGettingStoreDetails" />
+
       <div v-else class="space-y-4 px-4 py-4 md:space-y-8 md:px-6">
         <div class="space-y-4">
           <div class="flex size-10 items-center justify-center rounded-xl bg-neutral-50 p-2">
@@ -25,9 +23,20 @@
 
         <div class="space-y-5 rounded-xl bg-white px-6 py-4">
           <!-- shipbubble -->
-          <div class="border-primary-600 cursor-pointer rounded-2xl border-2">
+          <div
+            class="cursor-pointer rounded-2xl border-2"
+            :class="
+              selectedDeliveryOption === 'shipbubble' ? 'border-primary-600' : 'border-gray-200'
+            "
+            @click="selectedDeliveryOption = 'shipbubble'"
+          >
             <header
-              class="border-primary-600 bg-primary-50 flex items-center justify-between rounded-t-2xl border-b-2 px-4 py-3"
+              class="flex items-center justify-between rounded-t-2xl border-b-2 px-4 py-3"
+              :class="
+                selectedDeliveryOption === 'shipbubble'
+                  ? 'border-primary-600 bg-primary-50'
+                  : 'border-gray-200'
+              "
             >
               <div class="flex items-center gap-3">
                 <div class="bg-primary-100 rounded-full p-1.5">
@@ -39,7 +48,12 @@
                 <h4 class="text-primary-800 text-lg font-medium md:text-xl">ShipBubble</h4>
               </div>
 
-              <Icon name="check-filled" size="24" class="text-primary-600" />
+              <Icon
+                v-if="selectedDeliveryOption === 'shipbubble'"
+                name="check-filled"
+                size="24"
+                class="text-primary-600"
+              />
             </header>
             <div class="p-4">
               <p class="mb-2 text-xs md:text-sm">
@@ -53,10 +67,19 @@
             </div>
           </div>
 
-          <!-- leyyow logistics -->
-          <div class="cursor-no-allowed rounded-2xl border-2 border-gray-200">
+          <!-- manual delivery -->
+          <div
+            class="cursor-pointer rounded-2xl border-2"
+            :class="selectedDeliveryOption === 'manual' ? 'border-primary-600' : 'border-gray-200'"
+            @click="selectedDeliveryOption = 'manual'"
+          >
             <header
-              class="flex items-center justify-between rounded-t-2xl border-b-2 border-gray-200 px-4 py-3"
+              class="flex items-center justify-between rounded-t-2xl border-b-2 px-4 py-3"
+              :class="
+                selectedDeliveryOption === 'manual'
+                  ? 'border-primary-600 bg-primary-50'
+                  : 'border-gray-200'
+              "
             >
               <div class="flex items-center gap-3">
                 <div class="bg-primary-100 rounded-full p-1.5">
@@ -65,21 +88,21 @@
                   </div>
                 </div>
 
-                <h4 class="text-primary-800 text-lg font-medium md:text-xl">Leyyow Logistics</h4>
+                <h4 class="text-primary-800 text-lg font-medium md:text-xl">Manual Delivery</h4>
               </div>
 
-              <Chip showDot label="Coming Soon" />
+              <Icon
+                v-if="selectedDeliveryOption === 'manual'"
+                name="check-filled"
+                size="24"
+                class="text-primary-600"
+              />
             </header>
             <div class="p-4">
-              <p class="mb-2 text-xs md:text-sm">
-                Deliver with Leyyow’s own logistics service. Simpler setup, competitive rates, and
-                full integration.
+              <p class="text-xs md:text-sm">
+                Manage the delivery of orders to your customers all by yourself. Ensure to only add
+                the areas your logistics covers.
               </p>
-              <Chip showDot label="Provided by" color="warning">
-                <template #append>
-                  <img src="/LYW.svg" class="h-3" alt="leyyow logo" />
-                </template>
-              </Chip>
             </div>
           </div>
 
@@ -114,6 +137,8 @@
       @submit-couriers="handleCouriersSubmit"
       @close="handleClose"
     />
+
+    <ManageManualDeliveryModal v-model="showManualDeliveryModal" @refresh="emit('refresh')" />
   </div>
 </template>
 
@@ -123,8 +148,9 @@ import Modal from "@/components/Modal.vue"
 import Icon from "@components/Icon.vue"
 import WarningBox from "@components/WarningBox.vue"
 import Chip from "@components/Chip.vue"
-import { ref, reactive, onMounted, watch } from "vue"
+import { ref, reactive, onMounted, watch, computed } from "vue"
 import ShipbubbleAccountSetup from "./ShipbubbleAccountSetup.vue"
+import ManageManualDeliveryModal from "./ManageManualDeliveryModal.vue"
 import { useAuthStore } from "@modules/auth/store"
 import { useRoute, useRouter } from "vue-router"
 import {
@@ -133,9 +159,10 @@ import {
   useSetupShippingProfile,
 } from "@/modules/shared/api"
 import { useUpdateStoreDetails, useGetStoreDetails } from "@/modules/settings/api"
-import LoadingIcon from "@components/LoadingIcon.vue"
 import type { ICourier } from "@/modules/shared/types"
 import { useMediaQuery } from "@vueuse/core"
+import ConfigureDeliverySkeleton from "./skeletons/ConfigureDeliverySkeleton.vue"
+import { toast } from "@/composables/useToast"
 
 defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{
@@ -148,8 +175,10 @@ const router = useRouter()
 const { user } = useAuthStore()
 const shipBubbleStep = ref<number>(1)
 const showShipbubbleScreens = ref<boolean>(false)
+const showManualDeliveryModal = ref<boolean>(false)
 const isShippingProfileActive = ref<boolean>(false)
 const isMobile = useMediaQuery("(max-width: 768px)")
+const selectedDeliveryOption = ref<"shipbubble" | "manual">("shipbubble")
 
 const { data: shippingProfileData, isPending: isGettingShippingProfile } = useGetShippingProfile()
 const { data: storeDetails, isPending: isGettingStoreDetails } = useGetStoreDetails(
@@ -168,6 +197,10 @@ const shipbubbleAuthForm = reactive({
   phone: user?.store?.phone1 || user?.store?.phone || "",
 })
 const courierOptions = ref<string[]>([])
+
+const isEditMode = computed(() => {
+  return route.query.edit === "true"
+})
 
 // Helper function to normalize phone number to +234 format
 const normalizePhoneNumber = (phone: string): string => {
@@ -200,16 +233,26 @@ const handleSetupShippingProfile = () => {
     email: shipbubbleAuthForm.email,
     password: shipbubbleAuthForm.password,
     phone: normalizePhoneNumber(shipbubbleAuthForm.phone),
-    preferred_couriers: [],
+    ...(isEditMode.value ? {} : { preferred_couriers: [] }),
   }
-  setupShippingProfile(payload, {
-    onSuccess: () => {
-      isShippingProfileActive.value = true
-      shipBubbleStep.value = 2
-    },
-  })
 
-  console.log(payload)
+  if (isEditMode.value) {
+    updateShippingProfile(payload, {
+      onSuccess: () => {
+        toast.success("Shipping profile updated successfully")
+        //  redirect back based on &redirect=${encodeURIComponent(route.path)}
+        const redirectPath = (route.query.redirect as string) || route.path.split("?")[0]
+        router.push(redirectPath)
+      },
+    })
+  } else {
+    setupShippingProfile(payload, {
+      onSuccess: () => {
+        isShippingProfileActive.value = true
+        shipBubbleStep.value = 2
+      },
+    })
+  }
 }
 
 const handleCouriersSubmit = () => {
@@ -250,6 +293,14 @@ const handleCouriersSubmit = () => {
 }
 
 const handleContinue = () => {
+  if (selectedDeliveryOption.value === "manual") {
+    // Show the manual delivery modal
+    showManualDeliveryModal.value = true
+    emit("update:modelValue", false)
+    return
+  }
+
+  // ShipBubble flow
   // If user already has a shipping profile, skip step 1 and go directly to step 2
   if (shippingProfileData.value && shippingProfileData.value.uid) {
     shipBubbleStep.value = 2

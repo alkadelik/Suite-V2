@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router"
 import type { RouteRecordRaw } from "vue-router"
 import { useAuthStore } from "@modules/auth/store"
+import { useSettingsStore } from "@modules/settings/store"
 import { toast } from "@/composables/useToast"
 
 // Layout imports
@@ -17,6 +18,9 @@ import popupsRoutes from "@modules/popups/routes"
 import ordersRoutes from "@modules/orders/routes"
 import settingsRoutes from "@modules/settings/routes"
 import sharedRoutes from "@modules/shared/routes"
+import expensesRoutes from "@modules/expenses/routes"
+import productionRoutes from "@modules/production/routes"
+import { isStaging } from "@/utils/others"
 
 const routes: RouteRecordRaw[] = [
   // Public pages routes with LandingLayout
@@ -47,6 +51,8 @@ const routes: RouteRecordRaw[] = [
       ...ordersRoutes,
       ...popupsRoutes,
       ...sharedRoutes,
+      ...expensesRoutes,
+      ...productionRoutes,
     ],
   },
   {
@@ -125,6 +131,15 @@ router.beforeEach((to, from, next) => {
       toast.info("You already have an active session.")
       return next({ path: "/dashboard" })
     }
+
+    // Onboarding page is HQ only - redirect non-HQ locations to dashboard
+    if (to.path === "/onboarding") {
+      const { activeLocation } = useSettingsStore()
+      if (activeLocation && !activeLocation.is_hq) {
+        toast.info("Onboarding is only available at the HQ location.")
+        return next({ path: "/dashboard" })
+      }
+    }
   }
 
   // Handle unauthenticated users
@@ -133,6 +148,15 @@ router.beforeEach((to, from, next) => {
     if (to.meta.requiresAuth) {
       return next({ path: "/login", query: { redirect: to.fullPath } })
     }
+  }
+
+  // prevent access to upcoming features for non-staging environments
+  const upcomingFeaturePaths = ["/raw-materials"]
+
+  if (!isStaging && upcomingFeaturePaths.includes(to.path)) {
+    const featureName = to.path.replace("/", "").toUpperCase()
+    toast.info(`The ${featureName} feature is coming soon!`)
+    return next({ path: "/dashboard" })
   }
 
   next()

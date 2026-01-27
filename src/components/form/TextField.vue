@@ -259,8 +259,6 @@ const handleInput = (event: Event) => {
     }
   }
 
-  console.log("Emitting value:", value)
-
   emit("update:modelValue", value)
 }
 
@@ -269,8 +267,6 @@ const togglePasswordVisibility = () => {
 }
 
 const incrementValue = () => {
-  console.log("Current modelValue:", props.modelValue, "Type:", typeof props.modelValue)
-
   let currentValue = 0
   if (typeof props.modelValue === "number") {
     currentValue = props.modelValue
@@ -279,13 +275,10 @@ const incrementValue = () => {
   }
 
   const newValue = currentValue + 1
-  console.log("New value:", newValue)
   emit("update:modelValue", String(newValue))
 }
 
 const decrementValue = () => {
-  console.log("Current modelValue:", props.modelValue, "Type:", typeof props.modelValue)
-
   let currentValue = 0
   if (typeof props.modelValue === "number") {
     currentValue = props.modelValue
@@ -294,7 +287,6 @@ const decrementValue = () => {
   }
 
   const newValue = Math.max(0, currentValue - 1) // Prevent negative values
-  console.log("New value:", newValue)
   emit("update:modelValue", String(newValue))
 }
 

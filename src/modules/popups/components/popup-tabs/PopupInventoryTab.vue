@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { formatCurrency } from "@/utils/format-currency"
 import Chip from "@components/Chip.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import EmptyState from "@components/EmptyState.vue"
@@ -9,7 +8,11 @@ import {
   useGetPopupInventory,
   useUpdatePopupProduct,
 } from "@modules/popups/api"
-import { POPUP_INVENTORY_COLUMNS } from "@modules/popups/constants"
+import {
+  getInventoryVisibility,
+  getPopupPriceRange,
+  POPUP_INVENTORY_COLUMNS,
+} from "@modules/popups/constants"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, onMounted, ref } from "vue"
 import { useRoute } from "vue-router"
@@ -19,18 +22,23 @@ import AppButton from "@components/AppButton.vue"
 import TextField from "@components/form/TextField.vue"
 import DataTable from "@components/DataTable.vue"
 import ProductAvatar from "@components/ProductAvatar.vue"
-import { PopupInventory } from "@modules/popups/types"
+import { PopupEvent, PopupInventory } from "@modules/popups/types"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
+import PopupProductAvailabilityModal from "../PopupProductAvailabilityModal.vue"
 
 const searchQuery = ref("")
 const openAddProduct = ref(false)
 // const showFilter = ref(false)
 const selectedProduct = ref<PopupInventory | null>(null)
 const openManageProduct = ref(false)
+const openManageAvailability = ref(false)
 const showConfirmationModal = ref(false)
 const confirmationAction = ref<"enable" | "disable" | "remove" | null>(null)
+
+const props = defineProps<{ popup: PopupEvent }>()
+const isClosed = computed(() => props.popup.status === "closed")
 
 const route = useRoute()
 const isMobile = useMediaQuery("(max-width: 768px)")
@@ -38,6 +46,7 @@ const isMobile = useMediaQuery("(max-width: 768px)")
 const {
   data: popupInventory,
   isPending,
+  isFetching,
   refetch,
 } = useGetPopupInventory(route.params.id as string, searchQuery.value)
 const { mutate: updatePopupProduct, isPending: isUpdating } = useUpdatePopupProduct()
@@ -47,21 +56,16 @@ const isEmpty = computed(() => !popupInventory.value?.length)
 
 // Get all existing variant SKUs in the popup inventory
 const existingVariantSkus = computed(() => {
-  return popupInventory.value?.map((item) => item.variant_sku) || []
+  return popupInventory.value?.flatMap((item) => item.variants?.map((v) => v.sku) || []) || []
 })
 
 const getActionMenu = (item: PopupInventory) => [
-  { label: "Manage Product", icon: "eye", action: () => handleAction("Manage Product", item) },
+  { label: "Manage Product", icon: "edit", action: () => handleAction("Manage Product", item) },
   { divider: true },
   {
-    label: item.is_visible ? "Disable Availability" : "Enable Availability",
-    icon: item.is_visible ? "eye-slash" : "eye",
-    class: item.is_visible
-      ? "text-orange-600 hover:bg-orange-50"
-      : "text-green-600 hover:bg-green-50",
-    iconClass: item.is_visible ? "text-orange-600" : "text-green-600",
-    action: () =>
-      handleAction(item.is_visible ? "Disable Availability" : "Enable Availability", item),
+    label: "Manage Availability",
+    icon: "eye",
+    action: () => handleAction("Manage Availability", item),
   },
   { divider: true },
   {
@@ -77,6 +81,8 @@ const handleAction = (action: string, item: PopupInventory) => {
   selectedProduct.value = item
   if (action === "Manage Product") {
     openManageProduct.value = true
+  } else if (action === "Manage Availability") {
+    openManageAvailability.value = true
   } else if (action === "Enable Availability") {
     confirmationAction.value = "enable"
     showConfirmationModal.value = true
@@ -88,9 +94,13 @@ const handleAction = (action: string, item: PopupInventory) => {
     showConfirmationModal.value = true
   }
 }
-
 const closeManageModal = () => {
   openManageProduct.value = false
+  selectedProduct.value = null
+}
+
+const closeAvailabilityModal = () => {
+  openManageAvailability.value = false
   selectedProduct.value = null
 }
 
@@ -151,6 +161,21 @@ const closeConfirmationModal = () => {
   selectedProduct.value = null
 }
 
+const getItemQty = (item: PopupInventory) => {
+  return item.variants?.reduce((acc, variant) => acc + variant.available_quantity, 0) || 0
+}
+
+const getStockStatus = (item: PopupInventory) => {
+  const qty = getItemQty(item)
+  if (qty === 0) {
+    return { label: "Out of Stock", color: "error" as const }
+  } else if (qty < 5) {
+    return { label: `${qty} in Stock`, color: "warning" as const }
+  } else {
+    return { label: `${qty} in Stock`, color: "success" as const }
+  }
+}
+
 onMounted(() => {
   if (route.query.setup === "true") openAddProduct.value = true
 })
@@ -162,14 +187,9 @@ onMounted(() => {
     title="No products yet!"
     description="Once you add products to this popup’s inventory, they will appear here."
     action-icon="add"
-    action-label="Add Product"
+    :action-label="isClosed ? undefined : 'Add Product'"
     class="!min-h-[40vh]"
-    @action="
-      () => {
-        console.log('Add product')
-        openAddProduct = true
-      }
-    "
+    @action="!isClosed && (openAddProduct = true)"
   />
 
   <section v-else>
@@ -183,7 +203,7 @@ onMounted(() => {
         <div class="flex items-center gap-2">
           <TextField
             left-icon="search-lg"
-            size="md"
+            size="sm"
             class="w-full md:min-w-64"
             placeholder="Search by name"
             v-model="searchQuery"
@@ -202,45 +222,39 @@ onMounted(() => {
       <DataTable
         :data="popupInventory || []"
         :columns="POPUP_INVENTORY_COLUMNS"
-        :loading="isPending"
+        :loading="isPending || isFetching"
         :show-pagination="false"
       >
         <template #cell:name="{ item }">
           <ProductAvatar
-            :name="item.variant_name || item.product_name"
-            :url="undefined"
-            :variants-count="undefined"
+            :name="item.name"
+            shape="rounded"
+            :url="item.images?.[0]?.image"
+            :variants-count="item.variants?.length"
           />
-        </template>
-
-        <template #cell:category="{ value }">
-          <Chip :label="String(value) || 'Uncategorized'" icon="tag" color="purple" size="sm" />
         </template>
 
         <template #cell:total_stock="{ value }">
           <span class="text-sm font-semibold">{{ value }}</span>
         </template>
 
-        <template #cell:is_visible="{ value }">
+        <template #cell:is_visible="{ item }">
           <Chip
             showDot
-            :label="value ? 'Available' : 'Unavailable'"
-            :color="value ? 'success' : 'error'"
+            :label="getInventoryVisibility(item)"
+            :color="
+              getInventoryVisibility(item) === 'Available'
+                ? 'success'
+                : getInventoryVisibility(item) === 'Unavailable'
+                  ? 'error'
+                  : 'primary'
+            "
             size="sm"
           />
         </template>
 
-        <template #cell:price="{ value }">
-          <span class="text-core-600 text-sm">{{ value ? formatCurrency(+value) : "-" }}</span>
-        </template>
-
         <template #cell:action="{ item }">
           <div class="flex items-center gap-2">
-            <!-- <Icon
-              name="edit"
-              @click.stop="handleAction('manage', item)"
-              class="hidden cursor-pointer hover:text-gray-600 md:inline-block"
-            /> -->
             <DropdownMenu
               :items="getActionMenu(item)"
               size="sm"
@@ -251,36 +265,51 @@ onMounted(() => {
 
         <!-- mobile view cell templates -->
         <template #mobile="{ item }">
-          <div
-            class="bg-core-25 border-core-300 w-full gap-2 overflow-hidden rounded-lg border p-2 md:gap-4"
-          >
-            <div class="flex items-start gap-2">
-              <div class="bg-core-100 flex size-10 items-center justify-center rounded-xl p-2">
-                <Icon name="shop-add" class="text-core-600" />
-              </div>
-
-              <div class="flex flex-1 flex-col gap-1">
-                <h4 class="truncate text-sm font-semibold">{{ item.product_name }}</h4>
-                <!-- price range -->
-                <div class="flex gap-3 text-sm">
-                  {{ formatCurrency(Number(item.event_price)) }}
-                </div>
-              </div>
-
-              <div>
-                <DropdownMenu
-                  :items="getActionMenu(item)"
-                  size="sm"
-                  @action="(action: string) => handleAction(action, item)"
+          <div :class="['border-warning-200 cursor-pointer rounded-xl border']">
+            <div class="bg-warning-50 flex items-center gap-2.5 rounded-t-xl p-2">
+              <span class="bg-warning-100 flex size-10 items-center justify-center rounded-xl">
+                <img
+                  v-if="item.images?.[0]?.image"
+                  :src="item.images?.[0]?.image"
+                  :alt="item.name"
+                  class="h-full w-full rounded-xl object-cover"
+                  loading="lazy"
                 />
-              </div>
+                <Icon v-else name="shop-add" :size="24" class="text-primary-700" />
+              </span>
+              <h3 class="!font-outfit truncate text-sm font-medium">
+                {{ item.name }}
+              </h3>
+              <span class="ml-auto" />
+              <span class="text-base font-semibold">{{ getPopupPriceRange(item) }}</span>
+              <DropdownMenu
+                :items="getActionMenu(item)"
+                size="sm"
+                @action="(action: string) => handleAction(action, item)"
+              />
             </div>
-
-            <div class="mt-4 flex gap-1">
+            <div class="flex flex-wrap items-center gap-2 p-5 pb-3">
+              <Chip
+                icon="box"
+                :color="getStockStatus(item).color"
+                :label="getStockStatus(item).label"
+              />
+              <Chip
+                v-if="item.variants?.length > 1"
+                icon="shapes"
+                color="blue"
+                :label="`${item.variants.length} Variants`"
+              />
               <Chip
                 showDot
-                :label="item.is_visible ? 'Available' : 'Unavailable'"
-                :color="item.is_visible ? 'success' : 'error'"
+                :label="getInventoryVisibility(item)"
+                :color="
+                  getInventoryVisibility(item) === 'Available'
+                    ? 'success'
+                    : getInventoryVisibility(item) === 'Unavailable'
+                      ? 'error'
+                      : 'primary'
+                "
                 size="sm"
               />
             </div>
@@ -307,22 +336,24 @@ onMounted(() => {
     @refresh="refetch"
   />
 
+  <!-- Manage Product Availability -->
+  <PopupProductAvailabilityModal
+    :open="openManageAvailability"
+    :selected-product="selectedProduct"
+    @close="closeAvailabilityModal"
+    @refresh="refetch"
+  />
+
   <!-- Confirmation Modal for Toggle Availability and Remove Product -->
   <ConfirmationModal
     v-model="showConfirmationModal"
-    :header="
-      confirmationAction === 'enable'
-        ? 'Enable Product Availability'
-        : confirmationAction === 'disable'
-          ? 'Disable Product Availability'
-          : 'Remove Product'
-    "
+    header="Remove Product"
     :paragraph="
       confirmationAction === 'enable'
-        ? `Are you sure you want to enable availability for '${selectedProduct?.product_name}'? Customers will be able to see and purchase this product.`
+        ? `Are you sure you want to enable availability for '${selectedProduct?.name}'? Customers will be able to see and purchase this product.`
         : confirmationAction === 'disable'
-          ? `Are you sure you want to disable availability for '${selectedProduct?.product_name}'? This product will no longer be visible to customers.`
-          : `Are you sure you want to remove '${selectedProduct?.product_name}' from this popup event? This action cannot be undone.`
+          ? `Are you sure you want to disable availability for '${selectedProduct?.name}'? This product will no longer be visible to customers.`
+          : `Are you sure you want to remove '${selectedProduct?.name}' from this popup event? This action cannot be undone.`
     "
     :info-message="
       confirmationAction === 'remove'

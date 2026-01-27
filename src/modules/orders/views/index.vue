@@ -3,7 +3,6 @@ import AppButton from "@components/AppButton.vue"
 import DataTable from "@components/DataTable.vue"
 import EmptyState from "@components/EmptyState.vue"
 import TextField from "@components/form/TextField.vue"
-import MetricsGrid from "@components/MetricsGrid.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import PageHeader from "@components/PageHeader.vue"
 import { useMediaQuery } from "@vueuse/core"
@@ -13,7 +12,13 @@ import Chip from "@components/Chip.vue"
 import { TOrder } from "../types"
 import CreateOrderDrawer from "../components/CreateOrderDrawer.vue"
 import VoidDeleteOrder from "../components/VoidDeleteOrder.vue"
-import { useDeleteOrder, useGetOrderDashboard, useGetOrders, useVoidOrder } from "../api"
+import {
+  useDeleteOrder,
+  useGenerateReceipt,
+  useGetOrderDashboard,
+  useGetOrders,
+  useVoidOrder,
+} from "../api"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
 import { anonymousCustomer, ORDER_COLUMNS, ORDER_STATUS_TAB } from "../constants"
@@ -21,7 +26,6 @@ import { startCase } from "@/utils/format-strings"
 import OrderCard from "../components/OrderCard.vue"
 import FulfilOrderModal from "../components/FulfilOrderModal.vue"
 import OrderMemoDrawer from "../components/OrderMemoDrawer.vue"
-import ShareInvoiceReceipt from "../components/ShareInvoiceReceipt.vue"
 import OrderPaymentDrawer from "../components/OrderPaymentDrawer.vue"
 import Tabs from "@components/Tabs.vue"
 import { formatCurrency } from "@/utils/format-currency"
@@ -29,58 +33,56 @@ import { useRoute } from "vue-router"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import ProductAvatar from "@components/ProductAvatar.vue"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
+import OrderDetailsDrawer from "../components/OrderDetailsDrawer.vue"
+import StatCard from "@components/StatCard.vue"
 
 const openCreate = ref(false)
 const openVoid = ref(false)
 const openDelete = ref(false)
 const openMemo = ref(false)
 const openFulfil = ref(false)
-const openShare = ref(false)
 const openPayment = ref(false)
+const openDetails = ref(false)
 const selectedOrder = ref<TOrder | null>(null)
 const status = ref(ORDER_STATUS_TAB[0].key)
 
-const { data: orderDashboard, refetch: refetchStats } = useGetOrderDashboard()
+const {
+  data: orderDashboard,
+  isPending: isLoadingStats,
+  refetch: refetchStats,
+} = useGetOrderDashboard()
 
 const orderMetrics = computed(() => {
-  const { current, previous } = orderDashboard?.value || {}
+  const { current, change } = orderDashboard?.value || {}
 
   return [
     {
       label: "Orders",
       value: current?.order_count || 0,
-      prev_value: previous?.order_count || 0,
       icon: "user-octagon",
-      chartData: [0, 0, 0, 0, 0, 0, 0],
-      chartColor: "#D0F8AA",
       iconClass: "md:text-green-700",
+      percentage: change?.order_count_pct || 0,
     },
     {
       label: "Receivables",
       value: formatCurrency(current?.total_outstanding || 0),
-      prev_value: formatCurrency(previous?.total_outstanding || 0),
       icon: "user-octagon",
-      chartData: [0, 0, 0, 0, 0, 0, 0],
-      chartColor: "#D0F8AA",
       iconClass: "md:text-bloom-700",
+      percentage: change?.total_outstanding_pct || 0,
     },
     {
       label: "Volume",
       value: formatCurrency(current?.total_amount || 0),
-      prev_value: formatCurrency(previous?.total_amount || 0),
       icon: "user-circle-add",
-      chartData: [0, 0, 0, 0, 0, 0, 0],
-      chartColor: "#FECCD6",
       iconClass: "md:text-bloom-700",
+      percentage: change?.total_amount_pct || 0,
     },
     {
       label: "Fulfilled",
       value: current?.fulfilled_count || 0,
-      prev_value: previous?.fulfilled_count || 0,
       icon: "user-circle-add",
-      chartData: [0, 0, 0, 0, 0, 0, 0],
-      chartColor: "#FECCD6",
       iconClass: "md:text-bloom-700",
+      percentage: change?.fulfilled_count_pct || 0,
     },
   ]
 })
@@ -133,14 +135,37 @@ const getActionItems = (item: TOrder) => [
       openMemo.value = true
     },
   },
-  {
-    label: `Share ${item.payment_status === "paid" ? "receipt" : "invoice"}`,
-    icon: "share",
-    action: () => {
-      selectedOrder.value = item
-      openShare.value = true
-    },
-  },
+  // Share receipt - only for partially paid or paid orders
+  ...(item.payment_status === "paid" || item.payment_status === "partially_paid"
+    ? [
+        {
+          label: "Share receipt",
+          icon: "share",
+          action: () => handleShareReceipt(item),
+        },
+      ]
+    : []),
+  // Share invoice - only for partially paid or unpaid orders
+  ...(item.payment_status === "unpaid" || item.payment_status === "partially_paid"
+    ? [
+        {
+          label: "Share invoice",
+          icon: "share",
+          action: handleShareInvoice,
+        },
+      ]
+    : []),
+  // Share payment link - only for partially paid or unpaid orders
+  ...(item.payment_status === "unpaid" || item.payment_status === "partially_paid"
+    ? [
+        {
+          label: "Share payment link",
+          icon: "share",
+          action: () => handleSharePaymentLink(item),
+        },
+      ]
+    : []),
+  // Update Payment - only for unpaid or partially paid orders
   ...(item.payment_status !== "paid"
     ? [
         {
@@ -206,6 +231,73 @@ const onCloseVoidDel = () => {
 
 const { mutate: voidOrder, isPending: isVoiding } = useVoidOrder()
 const { mutate: deleteOrder, isPending: isDeleting } = useDeleteOrder()
+const { mutate: generateReceipt } = useGenerateReceipt()
+
+// Get invoice link for an order
+const getInvoiceLink = (order: TOrder) => {
+  const isLocal = window.location.hostname === "localhost"
+  return isLocal
+    ? `http://localhost:8080/pay/${order.order_number}`
+    : `https://suite-v2.vercel.app/pay/${order.order_number}`
+}
+
+// Share payment link using Web Share API
+const handleSharePaymentLink = async (order: TOrder) => {
+  const link = getInvoiceLink(order)
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: `Payment Link for Order #${order.order_number}`,
+        text: `Complete your payment for order #${order.order_number}`,
+        url: link,
+      })
+    } catch {
+      // User cancelled or share failed, fallback to copy
+      navigator.clipboard.writeText(link).then(() => {
+        toast.info("Payment link copied to clipboard!")
+      })
+    }
+  } else {
+    // Fallback for browsers that don't support Web Share API
+    navigator.clipboard.writeText(link).then(() => {
+      toast.info("Payment link copied to clipboard!")
+    })
+  }
+}
+
+// Share receipt using Web Share API
+const handleShareReceipt = (order: TOrder) => {
+  generateReceipt(order.uid, {
+    onSuccess: (response) => {
+      const receiptUrl = response.data?.data.url as string | undefined
+      if (receiptUrl && navigator.share) {
+        navigator
+          .share({
+            title: `Receipt for Order #${order.order_number}`,
+            text: `Receipt for order #${order.order_number}`,
+            url: receiptUrl,
+          })
+          .catch(() => {
+            // User cancelled or share failed, fallback to copy
+            navigator.clipboard.writeText(receiptUrl).then(() => {
+              toast.info("Receipt link copied to clipboard!")
+            })
+          })
+      } else if (receiptUrl) {
+        // Fallback for browsers that don't support Web Share API
+        navigator.clipboard.writeText(receiptUrl).then(() => {
+          toast.info("Receipt link copied to clipboard!")
+        })
+      }
+    },
+    onError: displayError,
+  })
+}
+
+// Share invoice (coming soon)
+const handleShareInvoice = () => {
+  toast.info("Share invoice is coming soon!")
+}
 
 const handleVoidDelete = ({ action, reason }: { action: string; reason: string }) => {
   if (action === "void") {
@@ -244,6 +336,80 @@ watch(
   },
   { immediate: true },
 )
+
+const handleAction = (action: string, order: TOrder) => {
+  selectedOrder.value = order
+  switch (action) {
+    case "click":
+      openDetails.value = true
+      break
+    case "view-memos":
+      openMemo.value = true
+      break
+    case "share-receipt":
+      handleShareReceipt(order)
+      break
+    case "share-invoice":
+      handleShareInvoice()
+      break
+    case "share-payment-link":
+      handleSharePaymentLink(order)
+      break
+    case "update-payment":
+      openPayment.value = true
+      break
+    case "fulfill":
+      openFulfil.value = true
+      break
+    case "void-order":
+      openVoid.value = true
+      break
+    case "delete-order":
+      openDelete.value = true
+      break
+  }
+}
+
+// Handlers for OrderDetailsDrawer actions
+const handleDetailsViewMemos = () => {
+  openDetails.value = false
+  openMemo.value = true
+}
+
+const handleDetailsShareReceipt = () => {
+  openDetails.value = false
+  if (selectedOrder.value) handleShareReceipt(selectedOrder.value)
+}
+
+const handleDetailsShareInvoice = () => {
+  openDetails.value = false
+  handleShareInvoice()
+}
+
+const handleDetailsSharePaymentLink = () => {
+  openDetails.value = false
+  if (selectedOrder.value) handleSharePaymentLink(selectedOrder.value)
+}
+
+const handleDetailsUpdatePayment = () => {
+  openDetails.value = false
+  openPayment.value = true
+}
+
+const handleDetailsFulfill = () => {
+  openDetails.value = false
+  openFulfil.value = true
+}
+
+const handleDetailsVoidOrder = () => {
+  openDetails.value = false
+  openVoid.value = true
+}
+
+const handleDetailsDeleteOrder = () => {
+  openDetails.value = false
+  openDelete.value = true
+}
 </script>
 
 <template>
@@ -268,7 +434,14 @@ watch(
     />
 
     <section v-else>
-      <MetricsGrid :items="orderMetrics" />
+      <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard
+          v-for="item in orderMetrics"
+          :key="item.label"
+          :stat="item"
+          :loading="isLoadingStats"
+        />
+      </div>
 
       <div class="mt-8 mb-4">
         <Tabs v-model="status" :tabs="ORDER_STATUS_TAB" />
@@ -276,16 +449,16 @@ watch(
 
       <div class="space-y-4 overflow-hidden rounded-xl border-gray-200 pt-3 md:border md:bg-white">
         <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
-          <h3 class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
+          <h3 v-if="!isMobile" class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
             {{ ORDER_STATUS_TAB.find((tab) => tab.key === status)?.title }} Orders
             <Chip v-if="orders?.count" :label="orders?.count" />
           </h3>
           <div class="flex items-center gap-2">
             <TextField
               left-icon="search-lg"
-              size="md"
+              size="sm"
               class="w-full md:min-w-64"
-              placeholder="Search by customer or order ref"
+              placeholder="Search by customer or order ID"
               v-model="searchQuery"
             />
 
@@ -331,6 +504,12 @@ watch(
           :total-page-count="Math.ceil((orders?.count || 0) / itemsPerPage) || 1"
           :server-pagination="true"
           @pagination-change="(d) => (page = d.currentPage)"
+          @row-click="
+            (row) => {
+              selectedOrder = row
+              openDetails = true
+            }
+          "
         >
           <template #cell:items="{ item }">
             <ProductAvatar
@@ -381,42 +560,15 @@ watch(
           <template #mobile="{ item }">
             <OrderCard
               :order="item"
-              @view-memos="
-                () => {
-                  selectedOrder = item
-                  openMemo = true
-                }
-              "
-              @share-invoice="
-                () => {
-                  selectedOrder = item
-                  openShare = true
-                }
-              "
-              @update-payment="
-                () => {
-                  selectedOrder = item
-                  openPayment = true
-                }
-              "
-              @fulfill="
-                () => {
-                  selectedOrder = item
-                  openFulfil = true
-                }
-              "
-              @void-order="
-                () => {
-                  selectedOrder = item
-                  openVoid = true
-                }
-              "
-              @delete-order="
-                () => {
-                  selectedOrder = item
-                  openDelete = true
-                }
-              "
+              @click="handleAction('click', item)"
+              @view-memos="handleAction('view-memos', item)"
+              @share-receipt="handleAction('share-receipt', item)"
+              @share-invoice="handleAction('share-invoice', item)"
+              @share-payment-link="handleAction('share-payment-link', item)"
+              @update-payment="handleAction('update-payment', item)"
+              @fulfill="handleAction('fulfill', item)"
+              @void-order="handleAction('void-order', item)"
+              @delete-order="handleAction('delete-order', item)"
             />
           </template>
         </DataTable>
@@ -460,19 +612,27 @@ watch(
       @close="openMemo = false"
     />
 
-    <ShareInvoiceReceipt
-      v-if="selectedOrder"
-      :open="openShare"
-      @close="openShare = false"
-      :order="selectedOrder"
-    />
-
     <OrderPaymentDrawer
       v-if="selectedOrder"
       :open="openPayment"
       @close="openPayment = false"
       :order="selectedOrder"
       @refresh="handleRefresh"
+    />
+
+    <OrderDetailsDrawer
+      v-if="selectedOrder"
+      :open="openDetails"
+      :order="selectedOrder"
+      @close="openDetails = false"
+      @view-memos="handleDetailsViewMemos"
+      @share-receipt="handleDetailsShareReceipt"
+      @share-invoice="handleDetailsShareInvoice"
+      @share-payment-link="handleDetailsSharePaymentLink"
+      @update-payment="handleDetailsUpdatePayment"
+      @fulfill="handleDetailsFulfill"
+      @void-order="handleDetailsVoidOrder"
+      @delete-order="handleDetailsDeleteOrder"
     />
   </div>
 </template>

@@ -80,6 +80,7 @@ export interface ICustomersApiResponse {
       total_customers: number
       active_customers: number
     }
+    count: number
   }
   message?: string
   error?: boolean
@@ -133,6 +134,7 @@ export interface ICustomerOrder {
   fulfilment_status_display: string
   delivery_fee: string
   created_at: string
+  order_date: string
   items: ICustomerOrderItem[]
   // Additional fields for compatibility with OrderCard
   user_name?: string

@@ -5,6 +5,7 @@ import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from "ax
 import { toast } from "./useToast"
 import { useSettingsStore } from "@modules/settings/store"
 import { toValue, MaybeRefOrGetter, computed } from "vue"
+import * as Sentry from "@sentry/vue"
 
 const baseURL = import.meta.env.VITE_API_BASE_URL as string
 
@@ -28,12 +29,30 @@ baseApi.interceptors.request.use((config) => {
   return config
 })
 
+// Singleton promise to prevent multiple simultaneous refresh attempts
+let refreshTokenPromise: Promise<string> | null = null
+
 const refreshToken = async (): Promise<string> => {
-  const { refreshToken, setTokens } = useAuthStore()
-  const { data } = await baseApi.post("/token/refresh/", { refresh: refreshToken }, { baseURL })
-  const { access, refresh } = data?.data as { access: string; refresh: string }
-  setTokens({ accessToken: access, refreshToken: refresh })
-  return access
+  // If a refresh is already in progress, return that promise
+  if (refreshTokenPromise) {
+    return refreshTokenPromise
+  }
+
+  // Create a new refresh promise
+  refreshTokenPromise = (async () => {
+    try {
+      const { refreshToken, setTokens } = useAuthStore()
+      const { data } = await baseApi.post("/token/refresh/", { refresh: refreshToken }, { baseURL })
+      const { access, refresh } = data?.data as { access: string; refresh: string }
+      setTokens({ accessToken: access, refreshToken: refresh })
+      return access
+    } finally {
+      // Clear the promise when done (success or failure)
+      refreshTokenPromise = null
+    }
+  })()
+
+  return refreshTokenPromise
 }
 
 baseApi.interceptors.response.use(
@@ -79,6 +98,9 @@ baseApi.interceptors.response.use(
       return Promise.reject(error)
     }
 
+    // Capture error with Sentry
+    Sentry.captureException(error, { tags: { section: "API" } })
+
     // For all other errors, just return the error
     return Promise.reject(error)
   },
@@ -87,7 +109,7 @@ baseApi.interceptors.response.use(
 export type TQueryArg = {
   url: MaybeRefOrGetter<string>
   params?: MaybeRefOrGetter<Record<string, string | number | boolean> | undefined>
-  enabled?: boolean
+  enabled?: MaybeRefOrGetter<boolean>
   key: MaybeRefOrGetter<string>
   selectData?: boolean
   refetchOnWindowFocus?: boolean
@@ -111,7 +133,7 @@ export const useApiQuery = <T>({
     },
     retry: false,
     refetchOnWindowFocus,
-    enabled,
+    enabled: enabled !== undefined ? computed(() => toValue(enabled)) : undefined,
     select: selectData
       ? (response: T) => {
           if (response && typeof response === "object" && "data" in response) {

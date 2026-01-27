@@ -25,6 +25,8 @@ export interface TableColumn<T = Record<string, unknown>> {
   maxWidth?: string
 }
 
+export type RowClass<T = Record<string, unknown>> = string | ((row: T) => string)
+
 interface PaginationChangeParams {
   currentPage: number
   itemsPerPage: number
@@ -78,6 +80,8 @@ interface Props {
   fixFirstColumn?: boolean
   /** Fix the last column during horizontal scroll */
   fixLastColumn?: boolean
+  /** CSS class(es) to apply to each row - can be a string or function that receives row data */
+  rowClass?: RowClass<T>
 }
 
 // Define emits
@@ -95,10 +99,6 @@ interface Emits {
 interface DataTableSlots<T> {
   /** Custom mobile card rendering */
   mobile?: (props: { item: T }) => VNode[]
-  /** Custom mobile actions rendering
-   * @deprecated Use `cell:<column-accessor>` slots instead
-   */
-  "mobile-actions"?: (props: { item: T }) => VNode[]
   /** Dynamic cell slots for custom cell rendering */
   [name: `cell:${string}`]: (props: {
     value: string | number | boolean | null | undefined | Record<string, unknown>
@@ -312,6 +312,12 @@ const getFixedColumnClasses = (position: "left" | "right" | null) => {
   }
   return `${baseClasses} right-0 shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.1)]`
 }
+
+// Helper function to compute row classes
+const getRowClasses = (row: T) => {
+  if (!props.rowClass) return ""
+  return typeof props.rowClass === "function" ? props.rowClass(row) : props.rowClass
+}
 </script>
 
 <template>
@@ -352,7 +358,7 @@ const getFixedColumnClasses = (position: "left" | "right" | null) => {
           <tr
             v-for="row in table.getRowModel().rows"
             :key="row.id"
-            :class="['text-core-700 border-t border-gray-200']"
+            :class="['text-core-700 border-t border-gray-200', getRowClasses(row.original as T)]"
             @click="handleRowClick(row.original as T)"
           >
             <td
@@ -413,15 +419,16 @@ const getFixedColumnClasses = (position: "left" | "right" | null) => {
       </template>
 
       <!-- Mobile cards with loading opacity -->
-      <div v-if="data.length" :class="{ 'opacity-50': loading }">
-        <div v-for="row in table.getRowModel().rows" :key="row.id" class="mb-4">
+      <div v-if="data.length" :class="[{ 'opacity-50': loading }, 'flex flex-col gap-4']">
+        <div v-for="row in table.getRowModel().rows" :key="row.id">
           <!-- Custom mobile card slot -->
           <slot name="mobile" :item="row.original">
             <!-- default mobile card layout -->
             <div
               :class="[
-                'rounded-lg border border-gray-200',
+                'my-3 rounded-lg border border-gray-200',
                 { 'cursor-pointer hover:bg-gray-50': true },
+                getRowClasses(row.original as T),
               ]"
               @click="handleRowClick(row.original as T)"
             >
@@ -471,7 +478,7 @@ const getFixedColumnClasses = (position: "left" | "right" | null) => {
     <!--  -->
     <div
       v-if="data.length && showPagination"
-      class="text-core-800 items-center justify-between gap-4 border-t border-gray-200 px-5 py-6"
+      class="text-core-800 items-center justify-between gap-4 border-gray-200 px-5 py-6 md:border-t"
       :class="`flex`"
     >
       <!-- Pagination buttons -->

@@ -10,9 +10,7 @@
     <div class="flex h-[100dvh] overflow-hidden lg:h-screen">
       <!-- Sidebar -->
       <AppSidebar
-        :sales-suites="SALES_SUITES"
         :mobile-sidebar-open="mobileSidebarOpen"
-        :isLive="isLive"
         @logout="logout = true"
         @upgrade="setPlanUpgradeModal(true)"
       />
@@ -49,7 +47,7 @@
           <div class="flex items-center justify-around px-2 py-2">
             <SidebarLink icon="house" label="Home" to="/dashboard" @click="openMore = false" />
             <SidebarLink
-              v-for="link in SALES_SUITES.slice(0, 1)"
+              v-for="link in MENU_ITEMS.slice(0, 1)"
               :key="link.label"
               v-bind="link"
               @click="openMore = false"
@@ -66,7 +64,7 @@
               "
             />
             <SidebarLink
-              v-for="link in SALES_SUITES.slice(1, 2)"
+              v-for="link in MENU_ITEMS.slice(1, 2)"
               :key="link.label"
               v-bind="link"
               @click="openMore = false"
@@ -129,12 +127,21 @@
     @confirm="confirmLocationSwitch"
     @cancel="cancelLocationSwitch"
   />
+
+  <!-- System notification modal -->
+  <NotificationModal
+    :open="showNotification"
+    :notifications="generalNotifications"
+    @dismiss="dismissNotification"
+    @close="closeAllNotifications"
+  />
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
 import AppButton from "@components/AppButton.vue"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
+import NotificationModal from "@components/NotificationModal.vue"
 import SidebarLink from "./parts/SidebarLink.vue"
 import { useMediaQuery } from "@vueuse/core"
 import LogoutModal from "@components/core/LogoutModal.vue"
@@ -157,16 +164,65 @@ import StorefrontNotLiveBanner from "@components/StorefrontNotLiveBanner.vue"
 import { useLocationSwitch } from "@/composables/useLocationSwitch"
 import MobileQuickActionsModal from "./parts/MobileQuickActionsModal.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
-import { toast } from "@/composables/useToast"
 import { useRouter, useRoute } from "vue-router"
-import { useGetLiveStatus } from "@modules/shared/api"
-
+import {
+  useGetLiveStatus,
+  useGetNotifications,
+  useMarkNotificationAsRead,
+} from "@modules/shared/api"
+import type { INotification } from "@modules/shared/types"
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
 const mobileSidebarOpen = ref(false)
 const logout = ref(false)
 const openMore = ref(false)
 const openActions = ref(false)
+const showNotification = ref(false)
+
+// Fetch notifications from API
+const { data: notificationsData, refetch: refetchNotifications } = useGetNotifications()
+const { mutate: markAsRead } = useMarkNotificationAsRead()
+
+// Filter for unread "general" type notifications
+const generalNotifications = computed<INotification[]>(() => {
+  if (!notificationsData.value?.notifications) return []
+  return notificationsData.value.notifications.filter((n) => n.type === "general" && !n.is_read)
+})
+
+// Show notification modal when there are unread general notifications
+watch(
+  generalNotifications,
+  (notifications) => {
+    if (notifications.length > 0) {
+      showNotification.value = true
+    }
+  },
+  { immediate: true },
+)
+
+// Dismiss a single notification (mark as read)
+const dismissNotification = (uid: string) => {
+  markAsRead(uid, {
+    onSuccess: () => {
+      refetchNotifications()
+      // Close modal if no more notifications
+      if (generalNotifications.value.length <= 1) {
+        showNotification.value = false
+      }
+    },
+  })
+}
+
+// Close all notifications (mark all as read)
+const closeAllNotifications = () => {
+  // Mark each notification as read
+  generalNotifications.value.forEach((n) => {
+    markAsRead(n.uid)
+  })
+  showNotification.value = false
+  // Refetch after a short delay to allow all mutations to complete
+  setTimeout(() => void refetchNotifications(), 500)
+}
 
 const { confirmSwitch, pendingLocation, confirmLocationSwitch, cancelLocationSwitch } =
   useLocationSwitch()
@@ -184,12 +240,13 @@ const showAppHeader = computed(() => {
 
 const isInner = computed(() => !!route.params.id)
 
-const SALES_SUITES = computed(() => {
+const MENU_ITEMS = computed(() => {
   const allSuites = [
     { icon: "box", label: "Orders", to: "/orders" },
     { icon: "folder", label: "Inventory", to: "/inventory" },
     { icon: "calendar-tick", label: "Popups", to: "/popups", hqOnly: true },
     { icon: "people", label: "Customers", to: "/customers" },
+    { icon: "receipt-text", label: "Expenses", to: "/expenses" },
   ]
 
   return allSuites.filter((suite) => !suite.hqOnly || isHQ.value)
@@ -206,7 +263,7 @@ const actionMenuItems = computed(() => {
       hqOnly: true,
     },
     {
-      label: "Record a sale",
+      label: "Add Order",
       icon: "bag",
       class: "!bg-green-50 !text-green-700 mb-1",
       iconClass: "!text-green-700",
@@ -233,7 +290,7 @@ const actionMenuItems = computed(() => {
       class: "!bg-pink-50 !text-pink-700",
       iconClass: "!text-primary-700",
       action: () => {
-        toast.info("Expense module is coming soon!")
+        router.push("/expenses?create=true")
       },
     },
   ]

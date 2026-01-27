@@ -8,7 +8,7 @@ import { useGetProductCatalogsInfinite } from "@modules/inventory/api"
 import type { IProductCatalogue } from "@modules/inventory/types"
 import { computed, ref } from "vue"
 import AddNewProductModal from "./AddNewProductModal.vue"
-import { useInfinitePagination } from "@/utils/useInfinitePagination"
+import { useInfinitePagination } from "@/composables/useInfinitePagination"
 
 const props = defineProps<{
   selectedProducts: IProductCatalogue[]
@@ -206,7 +206,7 @@ const handleProductCreated = async (productUid: string) => {
 
     <div class="h-32" />
 
-    <div class="border-core-200 fixed right-0 bottom-0 left-0 border-t bg-white p-6">
+    <div class="border-core-200 fixed right-0 bottom-0 left-0 border-t bg-white p-4 md:p-6">
       <div v-if="selectedProducts.length > 0" class="mb-3 flex items-center justify-between">
         <p class="text-sm text-gray-600">
           {{ selectedProducts.length }} product{{ selectedProducts.length > 1 ? "s" : "" }} selected

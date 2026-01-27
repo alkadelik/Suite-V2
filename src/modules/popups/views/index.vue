@@ -5,13 +5,13 @@ import Chip from "@components/Chip.vue"
 import DataTable from "@components/DataTable.vue"
 import EmptyState from "@components/EmptyState.vue"
 import TextField from "@components/form/TextField.vue"
-import Icon from "@components/Icon.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import PageHeader from "@components/PageHeader.vue"
 import Tabs from "@components/Tabs.vue"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, ref, watch } from "vue"
 import { POPUP_COLUMN } from "../constants"
+import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import { PopupEvent } from "../types"
 import PopupEventCard from "../components/PopupEventCard.vue"
 import CreatePopupEventModal from "../components/CreatePopupEventModal.vue"
@@ -23,21 +23,25 @@ import DeletePopupEvent from "../components/DeletePopupEvent.vue"
 import { useRoute } from "vue-router"
 import PopupCreatedSuccessModal from "../components/PopupCreatedSuccessModal.vue"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
+import ClosePopupModal from "../components/ClosePopupModal.vue"
+import DropdownMenu from "@components/DropdownMenu.vue"
 
 const TABS = [
   { title: "All", key: "" },
-  { title: "Ongoing", key: "ongoing" },
+  { title: "Ongoing", key: "active" },
   { title: "Upcoming", key: "upcoming" },
   { title: "Past", key: "past" },
 ]
 
 const status = ref(TABS[0].key)
 const searchQuery = ref("")
+const debouncedSearch = useDebouncedRef(searchQuery, 750)
 const openCreate = ref(false)
 const openDelete = ref(false)
 const showFilter = ref(false)
 const activeSlide = ref(0)
 const openSuccess = ref(false)
+const openClose = ref(false)
 
 const selectedPopup = ref<PopupEvent | null>(null)
 
@@ -47,12 +51,13 @@ const handleAction = (action: string, item: PopupEvent) => {
   selectedPopup.value = item
   if (action === "edit") openCreate.value = true
   if (action === "delete") openDelete.value = true
+  if (action === "close") openClose.value = true
 }
 
 const computedFilters = computed(() => {
   const filters: Record<string, string> = {}
   if (status.value && status.value !== "all") filters.status = status.value
-  if (searchQuery.value) filters.search = searchQuery.value
+  if (debouncedSearch.value) filters.search = debouncedSearch.value
   return filters
 })
 const { data: popupEvents, isPending, isFetching, refetch } = useGetPopupEvents(computedFilters)
@@ -81,6 +86,39 @@ watch(
   },
   { immediate: true },
 )
+
+const getMenuAction = (item: PopupEvent) => {
+  const actions = []
+  if (item.status !== "past") {
+    actions.push({
+      label: "Edit Event",
+      icon: "edit",
+      action: () => handleAction("edit", item),
+    })
+  }
+  if (!item.total_orders && !["past", "closed"].includes(item.status)) {
+    actions.push({ divider: true })
+  }
+  if (item.status !== "closed") {
+    actions.push({
+      label: "Close Event",
+      icon: "close-circle",
+      iconClass: "text-red-500",
+      class: "text-red-500",
+      action: () => handleAction("close", item),
+    })
+  }
+  if (!item.total_orders) {
+    actions.push({
+      label: "Delete Event",
+      icon: "trash",
+      iconClass: "text-red-500",
+      class: "text-red-500",
+      action: () => handleAction("delete", item),
+    })
+  }
+  return actions
+}
 </script>
 
 <template>
@@ -165,13 +203,14 @@ watch(
     </div>
 
     <EmptyState
-      v-if="!popupEvents?.count && !status"
+      v-if="!popupEvents?.count && !status && !searchQuery && !debouncedSearch"
       title="You don't have any popup yet!"
       description="Create a popup event."
       action-label="Create a popup event"
       action-icon="add"
       @action="handleOpenCreate"
       :loading="isPending || isFetching"
+      class="mt-6"
     />
 
     <section v-else class="mt-6">
@@ -188,7 +227,7 @@ watch(
           <div class="flex items-center gap-2">
             <TextField
               left-icon="search-lg"
-              size="md"
+              size="sm"
               class="w-full md:min-w-64"
               placeholder="Search by name"
               v-model="searchQuery"
@@ -220,6 +259,13 @@ watch(
           :show-pagination="true"
           fix-last-column
           :loading="isPending || isFetching"
+          :empty-state="{
+            title: 'No Popup Found',
+            description:
+              searchQuery || status
+                ? 'Try adjusting your filters or search query'
+                : 'You don\'t have any popup yet. Create a popup event to get started.',
+          }"
           @row-click="(item) => $router.push(`/popups/${item.uid}`)"
         >
           <template #cell:items_sold_count="{ item }">
@@ -243,7 +289,15 @@ watch(
               size="sm"
               class="capitalize"
               show-dot
-              :color="value === 'upcoming' ? 'primary' : value === 'ongoing' ? 'success' : 'alt'"
+              :color="
+                value === 'upcoming'
+                  ? 'primary'
+                  : value === 'active'
+                    ? 'success'
+                    : value === 'closed'
+                      ? 'error'
+                      : 'alt'
+              "
             />
           </template>
           <template #cell:name="{ item }">
@@ -260,19 +314,8 @@ watch(
             </div>
           </template>
           <template #cell:action="{ item }">
-            <div class="flex justify-end gap-3">
-              <Icon
-                v-if="item.status !== 'past'"
-                name="edit"
-                @click.stop="handleAction('edit', item)"
-              />
-              <Icon
-                v-if="!item.total_orders"
-                name="trash"
-                @click.stop="handleAction('delete', item)"
-              />
-              <span v-if="item.total_orders && item.status === 'past'"> -- </span>
-            </div>
+            <DropdownMenu v-if="item.status !== 'closed'" :items="getMenuAction(item)" />
+            <span v-else>--</span>
           </template>
 
           <template #mobile="{ item }">
@@ -281,6 +324,7 @@ watch(
               @click="() => $router.push(`/popups/${item.uid}`)"
               @edit="() => handleAction('edit', item)"
               @delete="() => handleAction('delete', item)"
+              @close="() => handleAction('close', item)"
             />
           </template>
         </DataTable>
@@ -329,6 +373,15 @@ watch(
           openSuccess = false
         }
       "
+    />
+
+    <ClosePopupModal
+      v-if="selectedPopup"
+      :open="openClose"
+      @close="openClose = false"
+      :event="selectedPopup"
+      @refresh="refetch"
+      :has-full-details="false"
     />
   </div>
 </template>

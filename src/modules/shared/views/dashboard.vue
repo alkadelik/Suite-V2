@@ -52,11 +52,29 @@
           title: 'You don’t have any sales data yet!',
           description: `Once you start adding products and recording orders, your performance will show up here.`,
         }"
+        @row-click="
+          (row) => {
+            selectedOrder = row
+            openDetails = true
+          }
+        "
       >
         <template #cell:items="{ item }">
-          <div class="max-w-[100px] truncate">
-            {{ item.items.map((v) => v.product_name).join(", ") }}
-          </div>
+          <ProductAvatar
+            :name="item.items?.[0].product_name"
+            :url="undefined"
+            :variants-count="item.items.length > 1 ? item.items.length : undefined"
+            :variants-count-text="`+ ${item.items.length - 1}`"
+            shape="rounded"
+            class="!gap-2 capitalize"
+            max-width="100px"
+          />
+        </template>
+        <template #cell:fulfilment_status="{ item }">
+          <Chip
+            :color="item.fulfilment_status === 'fulfilled' ? 'success' : 'primary'"
+            :label="item.fulfilment_status === 'fulfilled' ? 'Yes' : 'No'"
+          />
         </template>
         <!--  -->
         <template #cell:payment_status="{ item }">
@@ -74,13 +92,21 @@
         </template>
         <!--  -->
         <template #cell:customer_info="{ item }">
-          <Avatar
-            :extra-text="true"
-            :name="`${item.customer_name || anonymousCustomer.full_name}`"
-          />
+          <span>
+            {{ item.customer_name || anonymousCustomer.full_name }}
+          </span>
         </template>
         <template #mobile="{ item }">
-          <OrderCard :order="item" :show-actions="false" />
+          <OrderCard
+            :order="item"
+            @click="
+              () => {
+                selectedOrder = item
+                openDetails = true
+              }
+            "
+            :show-actions="false"
+          />
         </template>
       </DataTable>
     </div>
@@ -95,6 +121,13 @@
 
     <!--  -->
     <WelcomeToTeamModal v-model="openModal" />
+
+    <OrderDetailsDrawer
+      v-if="selectedOrder"
+      :open="openDetails"
+      @close="openDetails = false"
+      :order="selectedOrder"
+    />
   </div>
 </template>
 
@@ -107,7 +140,6 @@ import { computed, ref, watch } from "vue"
 import Icon from "@components/Icon.vue"
 import EmptyState from "@components/EmptyState.vue"
 import { useMediaQuery } from "@vueuse/core"
-import { toast } from "@/composables/useToast"
 import { useRouter } from "vue-router"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
 import { useGetOrders } from "@modules/orders/api"
@@ -116,8 +148,10 @@ import Chip from "@components/Chip.vue"
 import { anonymousCustomer, ORDER_COLUMNS } from "@modules/orders/constants"
 import DataTable from "@components/DataTable.vue"
 import OrderCard from "@modules/orders/components/OrderCard.vue"
-import Avatar from "@components/Avatar.vue"
 import { formatError } from "@/utils/error-handler"
+import OrderDetailsDrawer from "@modules/orders/components/OrderDetailsDrawer.vue"
+import { TOrder } from "@modules/orders/types"
+import ProductAvatar from "@components/ProductAvatar.vue"
 
 const { user } = useAuthStore()
 const openModal = ref(false)
@@ -125,6 +159,8 @@ const router = useRouter()
 const { checkPremiumAccess } = usePremiumAccess()
 
 const isMobile = useMediaQuery("(max-width: 768px)")
+const openDetails = ref(false)
+const selectedOrder = ref<TOrder | null>(null)
 
 const greetings = computed(() => {
   const hour = new Date().getHours()
@@ -160,7 +196,7 @@ const quickActions = computed(() => {
       hqOnly: true,
     },
     {
-      label: "Record a sale",
+      label: "Add Order",
       icon: "bag",
       color: "bg-green-50 text-green-700",
       action: () => {
@@ -192,7 +228,8 @@ const quickActions = computed(() => {
       icon: "receipt-add",
       color: "bg-pink-50 text-pink-700",
       action: () => {
-        toast.info("Expense module is coming soon!")
+        if (!checkPremiumAccess()) return
+        router.push("/expenses?create=true")
       },
     },
   ]

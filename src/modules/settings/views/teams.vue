@@ -23,7 +23,7 @@
         <div class="flex items-center gap-2">
           <TextField
             left-icon="search-lg"
-            size="md"
+            size="sm"
             class="flex-1"
             placeholder="Search by member name or email"
             v-model="searchQuery"
@@ -133,64 +133,60 @@
 
         <!-- mobile view cell templates -->
         <template #mobile="{ item }">
-          <div class="space-y-2">
+          <div
+            class="bg-core-25 border-core-300 mb-3 flex cursor-pointer items-start gap-2 rounded-xl border p-3"
+          >
             <div class="flex items-start gap-2">
               <Avatar :name="getFullName(item)" class="items-start" />
             </div>
-            <div class="ms-12 -mt-4 space-y-1">
-              <div class="flex flex-col items-start justify-center gap-2">
-                <div class="flex items-center gap-1">
-                  <Chip
-                    :label="item.roles && item.roles.length > 0 ? item.roles[0].name : 'No Role'"
-                    :color="
-                      getRoleColor(item.roles && item.roles.length > 0 ? item.roles[0].uid : '')
-                    "
-                    variant="outlined"
-                    size="sm"
-                  />
-                  <Chip
-                    v-if="item.roles && item.roles.length > 1"
-                    :label="`+${item.roles.length - 1}`"
-                    size="sm"
-                    color="alt"
-                    class="ml-1"
-                  />
-                </div>
 
-                <!-- Locations if available -->
-                <div
-                  v-if="item.assigned_locations && item.assigned_locations.length > 0"
-                  class="flex items-center gap-1"
-                >
-                  <span class="text-xs text-gray-500">
-                    {{ item.assigned_locations[0].name }}
-                  </span>
-                  <Chip
-                    v-if="item.assigned_locations.length > 1"
-                    :label="`+${item.assigned_locations.length - 1}`"
-                    size="sm"
-                    class="ml-1"
-                  />
-                </div>
+            <div class="flex flex-1 flex-col items-start justify-center gap-2">
+              <h3 class="font-medium">{{ getFullName(item) }}</h3>
+              <div class="flex items-center gap-1">
+                <Chip
+                  :label="item.roles && item.roles.length > 0 ? item.roles[0].name : 'No Role'"
+                  :color="
+                    getRoleColor(item.roles && item.roles.length > 0 ? item.roles[0].uid : '')
+                  "
+                  variant="outlined"
+                  size="sm"
+                />
+                <Chip
+                  v-if="item.roles && item.roles.length > 1"
+                  :label="`+${item.roles.length - 1}`"
+                  size="sm"
+                  color="alt"
+                  class="ml-1"
+                />
+              </div>
+
+              <!-- Locations if available -->
+              <div
+                v-if="item.assigned_locations && item.assigned_locations.length > 0"
+                class="flex items-center gap-1"
+              >
+                <span class="text-xs text-gray-500">
+                  {{ item.assigned_locations[0].name }}
+                </span>
+                <Chip
+                  v-if="item.assigned_locations.length > 1"
+                  :label="`+${item.assigned_locations.length - 1}`"
+                  size="sm"
+                  class="ml-1"
+                />
               </div>
             </div>
-          </div>
-        </template>
 
-        <template #mobile-actions="{ item }">
-          <div v-if="canPerformActions(item)" class="flex items-center gap-2">
-            <DropdownMenu
-              :items="getActionItems(item)"
-              placement="bottom-end"
-              :show-chevron="false"
-              size="sm"
-              trigger-class="!p-1 !min-h-6 !w-6 hover:bg-gray-100 !border-0"
-              @click.stop
-            >
-              <template #trigger>
-                <Icon name="dots-vertical" />
-              </template>
-            </DropdownMenu>
+            <div v-if="canPerformActions(item)" class="flex items-center gap-2">
+              <DropdownMenu
+                :items="getActionItems(item)"
+                placement="bottom-end"
+                :show-chevron="false"
+                size="sm"
+                trigger-class="!p-1 !min-h-6 !w-6 hover:bg-gray-100 !border-0"
+                @click.stop
+              />
+            </div>
           </div>
         </template>
       </DataTable>
@@ -203,15 +199,6 @@
       @close="showEditMemberModal = false"
       :member="member"
       @refresh="refetch"
-    />
-    <ConfirmationModal
-      v-model="showDeleteConfirmationModal"
-      @close="showDeleteConfirmationModal = false"
-      header="Delete Member"
-      paragraph="Are you sure you want to delete this member?"
-      variant="error"
-      :loading="isPending"
-      @delete="handleDeleteMember"
     />
     <ConfirmationModal
       v-model="showSuspendMemberModal"
@@ -234,7 +221,7 @@ import { TEAMS_COLUMN } from "../constants"
 import { TTeam } from "../types"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
-import { ref, computed, watch } from "vue"
+import { ref, computed } from "vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import Avatar from "@components/Avatar.vue"
 import TextField from "@components/form/TextField.vue"
@@ -251,7 +238,6 @@ import EmptyState from "@components/EmptyState.vue"
 // Component state
 const showInvitationModal = ref(false)
 const showEditMemberModal = ref(false)
-const showDeleteConfirmationModal = ref(false)
 const showSuspendMemberModal = ref(false)
 const member = ref<TTeam | null>(null)
 const searchQuery = ref("")
@@ -301,46 +287,15 @@ const getActionItems = (item: TTeam) => [
     icon: "pause",
     action: () => handleAction("suspend", item),
   },
-  {
-    divider: true,
-  },
-  {
-    id: "delete",
-    label: "Delete Member",
-    icon: "trash",
-    class: "text-red-600 hover:bg-red-50",
-    iconClass: "text-red-600",
-    action: () => handleAction("delete", item),
-  },
 ]
 
 // Handle various actions
-const handleAction = (action: "edit" | "suspend" | "delete", item: TTeam) => {
+const handleAction = (action: "edit" | "suspend", item: TTeam) => {
   member.value = item
   if (action === "edit") {
     showEditMemberModal.value = true
-  } else if (action === "delete") {
-    showDeleteConfirmationModal.value = true
   } else if (action === "suspend") {
     showSuspendMemberModal.value = true
-  }
-}
-
-// Handle member deletion
-const handleDeleteMember = async () => {
-  if (!member.value) return
-
-  try {
-    // Add your delete member API call here
-    // const deleteMutation = useDeleteMember(member.value.uid)
-    // await deleteMutation.mutateAsync()
-    toast.success("Member deleted successfully")
-    showDeleteConfirmationModal.value = false
-    member.value = null
-    await refetch() // Refetch the team members list
-  } catch (error) {
-    console.error("Error deleting member:", error)
-    toast.error("Failed to delete member")
   }
 }
 
@@ -362,15 +317,4 @@ const handleSuspendMember = () => {
     },
   )
 }
-
-// Watch for data changes and log them
-watch(
-  () => storeMembersData.value,
-  (newData) => {
-    if (newData) {
-      console.log("Fetched team members:", newData.data.results)
-    }
-  },
-  { immediate: true },
-)
 </script>

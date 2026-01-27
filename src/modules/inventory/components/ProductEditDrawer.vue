@@ -9,7 +9,7 @@
     <IconHeader icon-name="shop-add" :title="getHeaderTitle" :subtext="getHeaderText" />
 
     <!-- Loading state for fetching product -->
-    <LoadingIcon v-if="isLoadingProduct || props.loading" class="min-h-[400px]" />
+    <ProductEditSkeleton v-if="isLoadingProduct || props.loading" />
 
     <form v-else id="product-edit-form" @submit.prevent="handleSubmit" class="min-h-full">
       <div>
@@ -56,6 +56,7 @@
             :hide-price="true"
             :hide-weight="true"
             :deleted-variants="deletedVariants"
+            :use-table-layout="productOriginallyHadVariants"
           />
 
           <!-- Step 3 for variants mode: Product Images -->
@@ -180,8 +181,8 @@ import {
 import baseApi from "@/composables/baseApi"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
-import LoadingIcon from "@components/LoadingIcon.vue"
 import { useQueryClient } from "@tanstack/vue-query"
+import ProductEditSkeleton from "./skeletons/ProductEditSkeleton.vue"
 
 // Import composables
 import { useProductFormState } from "../composables/useProductFormState"
@@ -281,6 +282,15 @@ const removedImageIds = ref<string[]>([])
 // Track if variant images were uploaded (to force refetch on reopen)
 const variantImagesWereUploaded = ref(false)
 
+// Track if existing images were reordered (to know if we need to update sort_order/is_primary)
+const imagesWereReordered = ref(false)
+
+// Track the expected product UID to prevent race conditions when rapidly switching products
+const expectedProductUid = ref<string | null>(null)
+
+// Track if the product originally had variants (for button label in variants edit mode)
+const productOriginallyHadVariants = ref(false)
+
 const { step, previousStep } = useProductDrawerUtilities().useStepManagement({
   hasVariants,
   editMode: props.editMode,
@@ -292,6 +302,7 @@ const { getHeaderTitle, getHeaderText, getSubmitButtonLabel } =
     hasVariants,
     editMode: props.editMode,
     mode: "edit",
+    productOriginallyHadVariants,
   })
 
 const variantConfigHelpers = useVariantConfiguration(
@@ -353,6 +364,9 @@ watch(
   () => [props.modelValue, props.product] as const,
   ([isOpen, product]) => {
     if (isOpen && product?.uid) {
+      // Set the expected product UID for race condition prevention
+      expectedProductUid.value = product.uid
+
       // Drawer is opening - always invalidate to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ["products", product.uid] })
       productUidToFetch.value = product.uid
@@ -366,8 +380,13 @@ watch(
       originalVariantUids.value.clear()
       // Reset removed image IDs
       removedImageIds.value = []
+      // Reset images reordered flag
+      imagesWereReordered.value = false
       // Note: Don't reset variantDetailsWithUids or form state here
       // to avoid flashing single-variant view while refetching
+    } else if (!isOpen) {
+      // Drawer is closing - clear expected product UID
+      expectedProductUid.value = null
     }
   },
   { immediate: true },
@@ -398,6 +417,7 @@ watch(
         newExistingIds[0] = newExistingIds[newPrimaryIndex]
         newExistingIds[newPrimaryIndex] = tempId
         existingImageIds.value = newExistingIds
+        imagesWereReordered.value = true
         console.log("Swapped image UIDs for primary change")
       }
     }
@@ -423,6 +443,14 @@ watch(
     if (data?.data) {
       const product = data.data
 
+      // Guard against race conditions: verify this is the product we're expecting
+      if (expectedProductUid.value && product.uid !== expectedProductUid.value) {
+        console.warn(
+          `Ignoring stale product data. Expected: ${expectedProductUid.value}, Got: ${product.uid}`,
+        )
+        return
+      }
+
       // Populate existing image IDs
       if (product.images && product.images.length > 0) {
         const sortedImages = product.images
@@ -438,6 +466,10 @@ watch(
         existingImageIds.value = Array(5).fill(null)
       }
 
+      // Track if product originally had multiple variants (for button label in variants edit mode)
+      productOriginallyHadVariants.value =
+        product.is_variable && product.variants && product.variants.length > 1
+
       // Populate original variant UIDs map and store full variant details
       if (product.variants && product.variants.length > 0) {
         originalVariantUids.value.clear()
@@ -446,6 +478,9 @@ watch(
           if (variant.attributes && variant.attributes.length > 0) {
             const key = generateVariantKey(variant.attributes)
             originalVariantUids.value.set(key, variant.uid)
+          } else {
+            // Track single variant (no attributes) with a special key
+            originalVariantUids.value.set("__single_variant__", variant.uid)
           }
         })
         console.log(
@@ -754,43 +789,21 @@ const handleSubmit = async () => {
         console.log(`Deleted ${removedImageIds.value.length} images`)
       }
 
-      // Step 2: Handle primary image changes and sort order updates
-      // Check if position 0 (primary) has an existing image that needs to be marked as primary
-      const primaryImage = form.images[0]
-      const primaryImageId = existingImageIds.value[0]
+      // Step 2 & 3: Only update existing images if they were reordered or images were deleted
+      let primaryImageUpdated = false
+      if (imagesWereReordered.value || removedImageIds.value.length > 0) {
+        // Step 2: Handle primary image changes
+        const primaryImage = form.images[0]
+        const primaryImageId = existingImageIds.value[0]
 
-      if (primaryImage && typeof primaryImage === "string" && primaryImageId) {
-        // This is an existing image at primary position
-        // We need to ensure it's marked as primary (in case it was swapped)
-        await new Promise<void>((resolve, reject) => {
-          updateProductImage(
-            {
-              uid: primaryImageId,
-              is_primary: true,
-              sort_order: 1,
-            },
-            {
-              onSuccess: () => resolve(),
-              onError: (error: unknown) => reject(new Error(String(error))),
-            },
-          )
-        })
-        console.log("Updated primary image")
-      }
-
-      // Step 3: Update sort order for all other existing images
-      for (let i = 1; i < form.images.length; i++) {
-        const image = form.images[i]
-        const imageId = existingImageIds.value[i]
-
-        // Only update if it's an existing image (string URL with ID)
-        if (image && typeof image === "string" && imageId) {
+        if (primaryImage && typeof primaryImage === "string" && primaryImageId) {
+          // This is an existing image at primary position that was swapped
           await new Promise<void>((resolve, reject) => {
             updateProductImage(
               {
-                uid: imageId,
-                is_primary: false,
-                sort_order: i + 1,
+                uid: primaryImageId,
+                is_primary: true,
+                sort_order: 1,
               },
               {
                 onSuccess: () => resolve(),
@@ -798,6 +811,31 @@ const handleSubmit = async () => {
               },
             )
           })
+          primaryImageUpdated = true
+          console.log("Updated primary image")
+        }
+
+        // Step 3: Update sort order for all other existing images
+        for (let i = 1; i < form.images.length; i++) {
+          const image = form.images[i]
+          const imageId = existingImageIds.value[i]
+
+          // Only update if it's an existing image (string URL with ID)
+          if (image && typeof image === "string" && imageId) {
+            await new Promise<void>((resolve, reject) => {
+              updateProductImage(
+                {
+                  uid: imageId,
+                  is_primary: false,
+                  sort_order: i + 1,
+                },
+                {
+                  onSuccess: () => resolve(),
+                  onError: (error: unknown) => reject(new Error(String(error))),
+                },
+              )
+            })
+          }
         }
       }
 
@@ -856,7 +894,7 @@ const handleSubmit = async () => {
         removedImageIds.value.length +
         newImages.length +
         variantImagesUploaded.length +
-        (primaryImage && typeof primaryImage === "string" ? 1 : 0)
+        (primaryImageUpdated ? 1 : 0)
 
       if (totalChanges > 0) {
         toast.success(
@@ -901,6 +939,12 @@ const handleSubmit = async () => {
             if (uid) {
               toDelete.push(uid)
             }
+          } else {
+            // Handle single variant deletion using the special key
+            const uid = originalVariantUids.value.get("__single_variant__")
+            if (uid) {
+              toDelete.push(uid)
+            }
           }
         })
 
@@ -909,8 +953,8 @@ const handleSubmit = async () => {
 
         variants.value.forEach((variant) => {
           if (!variant.attributes || variant.attributes.length === 0) {
-            // Single variant case - check if it existed before
-            const existingUid = originalVariantUids.value.values().next().value
+            // Single variant case - check if it existed before using the special key
+            const existingUid = originalVariantUids.value.get("__single_variant__")
             if (!existingUid) {
               // New variant - no existing UID
               toAdd.push(variant)

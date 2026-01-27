@@ -6,6 +6,8 @@ import AppButton from "@components/AppButton.vue"
 import Icon from "@components/Icon.vue"
 import type { ICustomer } from "@modules/customers/types"
 import { computed } from "vue"
+import { IShippingCourier } from "@modules/shared/types"
+import { DELIVERY_PAYMENT_OPTION } from "@modules/orders/constants"
 
 interface OrderItem {
   product: { uid: string; product_name: string; total_stock: number; image?: string | null }
@@ -24,14 +26,17 @@ interface OrderItem {
 interface ShippingInfo {
   fulfilment_method: "pickup" | "delivery"
   fulfilment_status: "fulfilled" | "unfulfilled"
-  delivery_address: string
-  delivery_method: "manual" | "automatic"
-  courier: string
+  delivery_address: string | { label: string; value: string }
+  delivery_type: "standard" | "express"
+  delivery_method: "manual" | "shipbubble" | "custom"
+  courier: string | IShippingCourier
   delivery_fee: number
   order_date: string
   order_channel: { label: string; value: string }
   has_shipping: boolean
   delivery_payment_option: string
+  express_delivery_option?: string
+  manual_delivery_option?: string
 }
 
 interface PaymentInfo {
@@ -49,6 +54,7 @@ const props = defineProps<{
   paymentInfo: PaymentInfo
   productsTotal: number
   deliveryFee: number
+  vatAmount: number
   totalAmount: number
   loading: boolean
 }>()
@@ -66,7 +72,38 @@ const customerName = computed(() => {
 })
 
 const itemsCount = computed(() => {
-  return props.orderItems.reduce((sum, item) => sum + item.quantity, 0)
+  return props.orderItems.reduce((sum, item) => sum + Number(item.quantity), 0)
+})
+
+const deliveryTypeLabel = computed(() => {
+  if (props.shippingInfo.fulfilment_method !== "delivery") return null
+
+  const type = startCase(props.shippingInfo.delivery_type)
+
+  // Express delivery doesn't have a method, it's just express
+  if (props.shippingInfo.delivery_type === "express") {
+    return type
+  }
+
+  // Standard delivery has methods
+  let method = ""
+  if (props.shippingInfo.delivery_method === "manual") {
+    method = "Manual"
+  } else if (props.shippingInfo.delivery_method === "shipbubble") {
+    method = "Shipbubble"
+  } else if (props.shippingInfo.delivery_method === "custom") {
+    method = "Custom"
+  }
+
+  return method ? `${type} - ${method}` : type
+})
+
+const deliveryPaymentLabel = computed(() => {
+  if (props.shippingInfo.fulfilment_method !== "delivery") return null
+  const option = DELIVERY_PAYMENT_OPTION.find(
+    (opt) => opt.value === props.shippingInfo.delivery_payment_option,
+  )
+  return option ? option.label : "N/A"
 })
 </script>
 
@@ -76,6 +113,24 @@ const itemsCount = computed(() => {
       <Icon name="shop-add" size="28" />
     </div>
     <p class="mb-4 text-sm">Double-check everything before confirming this order.</p>
+
+    <div
+      v-if="shippingInfo.delivery_method === 'shipbubble'"
+      class="bg-primary-25 text-warning-700 border-warning-300 my-6 flex items-center gap-3 rounded-xl border px-3 py-3 md:px-6"
+    >
+      <span
+        class="border-primary-200 ring-primary-100 flex size-8 flex-shrink-0 items-center justify-center rounded-full border-2 ring-2 ring-offset-2"
+      >
+        <Icon name="info-circle" size="20" />
+      </span>
+      <div class="text-sm">
+        <p class="font-medium">Heads Up!</p>
+        <p>
+          The delivery for this order will be handled by ShipBubble, not Leyyow. Once you proceed, a
+          secure payment window will open for you to pay the delivery fee.
+        </p>
+      </div>
+    </div>
 
     <div class="space-y-4">
       <!-- Order Items -->
@@ -146,23 +201,31 @@ const itemsCount = computed(() => {
         </p>
         <p class="flex justify-between text-sm">
           <span class="text-core-600">Subtotal</span>
-          <span class="font-medium">{{ formatCurrency(productsTotal) }}</span>
+          <span class="font-medium">{{ formatCurrency(productsTotal, { kobo: true }) }}</span>
         </p>
         <p class="flex justify-between text-sm">
           <span class="text-core-600">Delivery Fee</span>
-          <span class="font-medium">{{ deliveryFee > 0 ? formatCurrency(deliveryFee) : "-" }}</span>
+          <span class="font-medium">{{
+            deliveryFee > 0 ? formatCurrency(deliveryFee, { kobo: true }) : "-"
+          }}</span>
+        </p>
+        <p v-if="vatAmount > 0" class="flex justify-between text-sm">
+          <span class="text-core-600">VAT (7.5%)</span>
+          <span class="font-medium">{{ formatCurrency(vatAmount, { kobo: true }) }}</span>
         </p>
         <p
           v-if="paymentInfo.discount_amount > 0"
           class="flex justify-between text-sm text-green-600"
         >
           <span>Discount</span>
-          <span class="font-medium">-{{ formatCurrency(paymentInfo.discount_amount) }}</span>
+          <span class="font-medium"
+            >-{{ formatCurrency(paymentInfo.discount_amount, { kobo: true }) }}</span
+          >
         </p>
         <div class="border-core-200 my-2 border-t border-dashed"></div>
         <p class="flex justify-between text-lg font-semibold">
           <span>Total:</span>
-          <span class="text-primary-600">{{ formatCurrency(totalAmount) }}</span>
+          <span class="text-primary-600">{{ formatCurrency(totalAmount, { kobo: true }) }}</span>
         </p>
       </div>
 
@@ -188,7 +251,9 @@ const itemsCount = computed(() => {
         </p>
         <p v-if="paymentInfo.payment_status !== 'unpaid'" class="flex justify-between text-sm">
           <span class="text-core-600">Amount Paid</span>
-          <span class="font-medium">{{ formatCurrency(paymentInfo.payment_amount) }}</span>
+          <span class="font-medium">{{
+            formatCurrency(paymentInfo.payment_amount, { kobo: true })
+          }}</span>
         </p>
       </div>
 
@@ -198,6 +263,10 @@ const itemsCount = computed(() => {
         <p class="flex justify-between text-sm">
           <span class="text-core-600">Order Date</span>
           <span class="font-medium">{{ formatDate(shippingInfo.order_date) }}</span>
+        </p>
+        <p class="flex justify-between text-sm">
+          <span class="text-core-600">Order Channel</span>
+          <span class="font-medium">{{ shippingInfo.order_channel.label }}</span>
         </p>
         <p class="flex justify-between text-sm">
           <span class="text-core-600">Has this product been delivered?</span>
@@ -213,26 +282,51 @@ const itemsCount = computed(() => {
           }}</span>
           <span class="font-medium">{{ startCase(shippingInfo.fulfilment_method) }}</span>
         </p>
-        <p
-          v-if="shippingInfo.fulfilment_method === 'delivery' && shippingInfo.delivery_address"
-          class="flex justify-between text-sm"
-        >
-          <span class="text-core-600">Delivery Address</span>
-          <span class="font-medium">{{ shippingInfo.delivery_address }}</span>
-        </p>
-        <p
-          v-if="shippingInfo.fulfilment_method === 'delivery' && shippingInfo.courier"
-          class="flex justify-between text-sm"
-        >
-          <span class="text-core-600">Courier</span>
-          <span class="font-medium">{{ shippingInfo.courier }}</span>
-        </p>
+        <template v-if="shippingInfo.fulfilment_method === 'delivery'">
+          <p class="flex justify-between text-sm">
+            <span class="text-core-600">{{
+              shippingInfo.fulfilment_status === "fulfilled"
+                ? "Who paid for delivery?"
+                : "Who will pay for delivery?"
+            }}</span>
+            <span class="font-medium">{{ deliveryPaymentLabel }}</span>
+          </p>
+          <p v-if="deliveryTypeLabel" class="flex justify-between text-sm">
+            <span class="text-core-600">Delivery Type</span>
+            <span class="font-medium">{{ deliveryTypeLabel }}</span>
+          </p>
+          <p v-if="shippingInfo.delivery_address" class="flex justify-between text-sm">
+            <span class="text-core-600">Delivery Address</span>
+            <span class="max-w-[60%] text-right font-medium">
+              {{
+                typeof shippingInfo.delivery_address === "string"
+                  ? shippingInfo.delivery_address
+                  : shippingInfo.delivery_address?.label
+              }}
+            </span>
+          </p>
+          <p
+            v-if="
+              shippingInfo.courier &&
+              (shippingInfo.delivery_type === 'standard' ||
+                shippingInfo.delivery_payment_option === 'customer_pays_courier')
+            "
+            class="flex justify-between text-sm"
+          >
+            <span class="text-core-600">Courier</span>
+            <span class="font-medium">
+              {{ (shippingInfo.courier as IShippingCourier)?.courier_name || shippingInfo.courier }}
+            </span>
+          </p>
+        </template>
       </div>
     </div>
 
     <div class="h-24" />
 
-    <div class="border-core-200 fixed right-0 bottom-0 left-0 flex gap-3 border-t bg-white p-6">
+    <div
+      class="border-core-200 fixed right-0 bottom-0 left-0 flex gap-3 border-t bg-white p-4 md:p-6"
+    >
       <AppButton label="Back" color="alt" class="w-1/3" icon="arrow-left" @click="emit('prev')" />
       <AppButton label="Create Order" class="w-2/3" :loading="loading" @click="emit('submit')" />
     </div>

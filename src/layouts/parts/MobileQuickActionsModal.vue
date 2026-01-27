@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from "vue"
-import { toast } from "@/composables/useToast"
 import Icon from "@components/Icon.vue"
 import Modal from "@components/Modal.vue"
 import { useRouter } from "vue-router"
@@ -27,7 +26,7 @@ const quickActions = computed(() => {
       hqOnly: true,
     },
     {
-      label: "Record a sale",
+      label: "Add Order",
       icon: "bag",
       color: "bg-green-50 text-green-700 border-green-200",
       action: () => {
@@ -59,7 +58,8 @@ const quickActions = computed(() => {
       icon: "receipt-add",
       color: "bg-pink-50 text-pink-700 border-pink-200",
       action: () => {
-        toast.info("Expense module is coming soon!")
+        if (!checkPremiumAccess()) return
+        router.push("/expenses?create=true")
       },
     },
   ]

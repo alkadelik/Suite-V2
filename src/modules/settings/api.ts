@@ -58,8 +58,12 @@ export function useGetAccountKyc() {
 
 /** Create a new store location */
 export function useCreateLocation() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (payload: TLocationFormData) => baseApi.post("/stores/locations/", payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["store-locations"] })
+    },
   })
 }
 
@@ -72,6 +76,12 @@ export function useGetLocations() {
   })
 }
 
+/** Fetch locations for login redirect flow (non-reactive, imperative call) */
+export async function fetchLocationsForLogin(): Promise<TLocation[]> {
+  const res = await baseApi.get<{ data: { results: TLocation[] } }>("/stores/locations/")
+  return res.data.data.results
+}
+
 /** Delete a store location by ID */
 export function useDeleteLocation() {
   return useMutation({
@@ -81,9 +91,13 @@ export function useDeleteLocation() {
 
 /** Update a store location by ID */
 export function useUpdateLocation() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: Partial<TLocation> }) =>
       baseApi.patch(`/stores/locations/${id}/`, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["store-locations"] })
+    },
   })
 }
 
@@ -251,6 +265,7 @@ export function useUpdateStorefrontSectionsOrder() {
       baseApi.patch(`/storefront/sections/update-section-positions/`, body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["version-history"] })
+      queryClient.invalidateQueries({ queryKey: ["storefront-sections"] })
     },
   })
 }

@@ -11,14 +11,9 @@
     </div>
 
     <!-- Page content - always visible -->
-    <div class="hidden items-center justify-between md:flex">
-      <!-- <h4 class="!font-outfit text-core-700 mb-2 text-xl font-semibold">Your product stats</h4> -->
+    <div class="grid grid-cols-2 gap-4 lg:grid-cols-3">
+      <StatCard v-for="item in productMetrics" :key="item.label" :stat="item" />
     </div>
-    <PageSummaryCards
-      :items="productMetrics"
-      default-icon="bag"
-      default-icon-class="text-success-500"
-    />
 
     <!-- Tabs for HQ users -->
     <div v-if="locationsCount > 1" class="mt-6 w-full md:w-1/2">
@@ -45,9 +40,9 @@
               :model-value="search"
               @update:model-value="(val) => (search = val)"
               left-icon="search-lg"
-              size="md"
+              size="sm"
               class="flex-1"
-              placeholder="Search by product name or category"
+              placeholder="Search by name or category..."
             />
             <AppButton
               icon="filter-lines"
@@ -66,6 +61,7 @@
               class="md:hidden"
             />
             <AppButton
+              v-if="isHQ"
               icon="add"
               size="sm"
               label="Add Product"
@@ -73,6 +69,7 @@
               class="!hidden md:!inline-flex"
             />
             <AppButton
+              v-if="isHQ"
               icon="add"
               size="sm"
               label=""
@@ -94,9 +91,13 @@
           "
           icon="box"
           title="No products found"
-          description="Start adding products to manage your inventory."
-          action-label="Add Product"
-          action-icon="add"
+          :description="
+            isHQ
+              ? 'Start adding products to manage your inventory.'
+              : 'No products are available at this location.'
+          "
+          :action-label="isHQ ? 'Add Product' : undefined"
+          :action-icon="isHQ ? 'add' : undefined"
           @action="openAddProductDrawer"
         />
 
@@ -280,7 +281,6 @@ import ManageStockModal from "../components/ManageStockModal.vue"
 import { formatPriceRange } from "@/utils/format-currency"
 import SectionHeader from "@components/SectionHeader.vue"
 import PageHeader from "@components/PageHeader.vue"
-import PageSummaryCards from "@components/PageSummaryCards.vue"
 import Tabs from "@components/Tabs.vue"
 import FilterDrawer from "../components/FilterDrawer.vue"
 import {
@@ -289,6 +289,7 @@ import {
   useGetProduct,
   useGetCategories,
   useUpdateProduct,
+  // useGetProductDashboard,
 } from "../api"
 import ProductAvatar from "@components/ProductAvatar.vue"
 import EmptyState from "@components/EmptyState.vue"
@@ -299,6 +300,7 @@ import { useInventoryStore } from "../store"
 import { useRoute } from "vue-router"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
+import StatCard from "@components/StatCard.vue"
 
 const page = ref(1)
 const itemsPerPage = ref(10)
@@ -312,6 +314,7 @@ const combinedParams = computed(() => ({
 }))
 
 const { data: products, isFetching, refetch: refetchProducts } = useGetProducts(combinedParams)
+// const { data: productDashboard } = useGetProductDashboard()
 const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct()
 const { mutate: updateProduct, isPending: isUpdatingProduct } = useUpdateProduct()
 const { data: categories } = useGetCategories()
@@ -468,14 +471,16 @@ const productMetrics = computed(() => {
     {
       label: "In Stock",
       value: inStockProducts,
-      prev_value: 0,
       icon: "box-filled",
+      iconClass: "text-success-500",
+      percentage: 0,
     },
     {
       label: "Low Stock",
       value: outOfStockProducts + needsReorderProducts,
-      prev_value: 0,
       icon: "box-time",
+      iconClass: "text-warning-500",
+      percentage: 0,
     },
     // {
     //   label: "Needs Reorder",
@@ -533,85 +538,102 @@ const openManageStockModal = (item: TProduct) => {
   showManageStockModal.value = true
 }
 
-const getActionItems = (item: TProduct) => [
-  {
-    id: "view",
-    label: "View Product",
-    icon: "eye-outline",
-    action: () => handleAction("view", item),
-  },
-  {
-    id: "duplicate",
-    label: "Duplicate Product",
-    icon: "copy",
-    action: () => handleAction("duplicate", item),
-  },
-  {
-    divider: true,
-  },
-  {
-    id: "edit-basic",
-    label: "Edit Basic Details",
-    icon: "edit",
-    action: () => openProductEditDrawer(item),
-  },
-  {
-    id: "edit-images",
-    label: "Edit Images",
-    icon: "edit",
-    action: () => openImagesEditDrawer(item),
-  },
-  {
-    id: "edit-price",
-    label: "Edit Price & Weight",
-    icon: "edit",
-    action: () => openPriceWeightEdit(item),
-  },
-  ...(item.variants_count > 1
-    ? [
-        {
-          id: "manage-variants",
-          label: "Manage Variants",
-          icon: "edit",
-          action: () => openVariantsManage(item),
+const getActionItems = (item: TProduct) => {
+  // Child locations can only view products and manage stock
+  if (!isHQ.value) {
+    return [
+      {
+        id: "view",
+        label: "View Product",
+        icon: "eye-outline",
+        action: () => handleAction("view", item),
+      },
+      {
+        id: "manage-stock",
+        label: "Manage Stock",
+        icon: "edit",
+        action: () => openManageStockModal(item),
+      },
+    ]
+  }
+
+  // HQ has full access to all actions
+  return [
+    {
+      id: "view",
+      label: "View Product",
+      icon: "eye-outline",
+      action: () => handleAction("view", item),
+    },
+    {
+      id: "duplicate",
+      label: "Duplicate Product",
+      icon: "copy",
+      action: () => handleAction("duplicate", item),
+    },
+    {
+      divider: true,
+    },
+    {
+      id: "edit-basic",
+      label: "Edit Basic Details",
+      icon: "edit",
+      action: () => openProductEditDrawer(item),
+    },
+    {
+      id: "edit-images",
+      label: "Edit Images",
+      icon: "edit",
+      action: () => openImagesEditDrawer(item),
+    },
+    {
+      id: "edit-price",
+      label: "Edit Price & Weight",
+      icon: "edit",
+      action: () => openPriceWeightEdit(item),
+    },
+    ...(item.variants_count > 1
+      ? [
+          {
+            id: "manage-variants",
+            label: "Manage Variants",
+            icon: "edit",
+            action: () => openVariantsManage(item),
+          },
+        ]
+      : []),
+    {
+      id: "manage-stock",
+      label: "Manage Stock",
+      icon: "edit",
+      action: () => openManageStockModal(item),
+    },
+    {
+      divider: true,
+    },
+    item.is_active
+      ? {
+          id: "hide",
+          label: "Hide Product",
+          icon: "eye-slash-outline",
+          action: () => handleAction("hide", item),
+        }
+      : {
+          id: "unhide",
+          label: "Unhide Product",
+          icon: "eye-outline",
+          action: () => handleAction("unhide", item),
         },
-      ]
-    : []),
-  {
-    id: "manage-stock",
-    label: "Manage Stock",
-    icon: "edit",
-    action: () => openManageStockModal(item),
-  },
-  {
-    divider: true,
-  },
-  ...(isHQ.value
-    ? [
-        item.is_active
-          ? {
-              id: "hide",
-              label: "Hide Product",
-              icon: "eye-slash-outline",
-              action: () => handleAction("hide", item),
-            }
-          : {
-              id: "unhide",
-              label: "Unhide Product",
-              icon: "eye-outline",
-              action: () => handleAction("unhide", item),
-            },
-      ]
-    : []),
-  {
-    id: "delete",
-    label: "Delete Product",
-    icon: "trash",
-    class: "text-red-600 hover:bg-red-50",
-    iconClass: "text-red-600",
-    action: () => handleAction("delete", item),
-  },
-]
+    {
+      id: "delete",
+      label: "Delete Product",
+      icon: "trash",
+      class: "text-red-600 hover:bg-red-50",
+      iconClass: "text-red-600",
+      action: () => handleAction("delete", item),
+    },
+  ]
+}
 
 const handleAction = (
   action: "duplicate" | "view" | "delete" | "activate" | "deactivate" | "hide" | "unhide",

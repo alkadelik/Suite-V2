@@ -47,17 +47,47 @@
 
     <!-- Home & Get Started -->
     <div class="space-y-1 px-4 py-2">
-      <SidebarLink v-if="!isLive" icon="candle" label="Get Started" to="/onboarding" />
+      <SidebarLink
+        v-if="!setupComplete && activeLocation?.is_hq"
+        icon="candle"
+        label="Get Started"
+        to="/onboarding"
+      />
       <SidebarLink icon="house" label="Home" to="/dashboard" />
     </div>
 
     <!-- Navigation -->
     <section class="space-y-1 px-4 py-2">
-      <SidebarLink v-for="link in salesSuites" :key="link.label" v-bind="link" />
+      <SidebarGroup
+        icon="shopping-cart"
+        label="Sales Suite"
+        :children="salesSuiteItems"
+        :default-expanded="true"
+      />
+
+      <!-- <SidebarGroup icon="trend-up" label="Marketing" :children="[]" /> -->
+
+      <SidebarGroup
+        v-if="isStaging"
+        icon="building"
+        label="Production"
+        :children="productionItems"
+      />
+
+      <SidebarLink icon="receipt-text" label="Expenses" to="/expenses" />
     </section>
 
     <section class="mt-auto px-4 pb-4">
-      <SidebarLink icon="life-buoy" label="Support" to="/support" />
+      <SidebarLink
+        icon="life-buoy"
+        label="Support"
+        @click="
+          () => {
+            console.log('opening support modal')
+            useSharedStore().openSupportModal()
+          }
+        "
+      />
 
       <!-- Subscription view -->
       <div class="relative mt-20">
@@ -151,15 +181,16 @@ import { computed } from "vue"
 import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
 import SidebarLink from "./SidebarLink.vue"
+import SidebarGroup from "./SidebarGroup.vue"
 import LocationDropdown from "./LocationDropdown.vue"
-import { clipboardCopy } from "@/utils/others"
+import { clipboardCopy, isStaging } from "@/utils/others"
 import { useSettingsStore } from "@modules/settings/store"
 import { useRouter } from "vue-router"
+import { useProductionStore } from "@modules/production/store"
+import { useSharedStore } from "@modules/shared/store"
 
 defineProps<{
   mobileSidebarOpen: boolean
-  salesSuites: Array<{ icon: string; label: string; to: string }>
-  isLive: boolean
 }>()
 
 defineEmits<{ logout: [value: boolean]; upgrade: [] }>()
@@ -169,7 +200,29 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
 
 const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
 
+// Sales Suite items
+const salesSuiteItems = computed(() => [
+  { icon: "box", label: "Orders", to: "/orders" },
+  { icon: "folder", label: "Inventory", to: "/inventory" },
+  { icon: "calendar-tick", label: "Popups", to: "/popups" },
+  { icon: "people", label: "Customers", to: "/customers" },
+])
+
+// Production items
+const productionItems = computed(() => {
+  const componentLabel = useProductionStore().componentLabel || "Raw Materials"
+  return [
+    { icon: "box", label: componentLabel, to: "/raw-materials" },
+    // Add production-related items here when needed
+  ]
+})
+
 const storeDetails = computed(() => useSettingsStore().storeDetails)
+
+const activeLocation = computed(() => useSettingsStore().activeLocation)
+
+// Check if setup requirements are complete (regardless of subscription status)
+const setupComplete = computed(() => useSettingsStore().liveStatus?.completion_percentage === 100)
 
 // Subscription derived state
 const subscription = computed(() => useAuthStore().user?.subscription)

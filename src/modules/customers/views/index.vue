@@ -10,7 +10,9 @@
       />
     </div>
 
-    <MetricsGrid :items="customerMetrics" />
+    <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <StatCard v-for="item in customerMetrics" :key="item.label" :stat="item" />
+    </div>
 
     <EmptyState
       v-if="!isLoading && customers.length === 0"
@@ -29,7 +31,7 @@
         <div class="flex items-center gap-2">
           <TextField
             left-icon="search-lg"
-            size="md"
+            size="sm"
             class="flex-1"
             placeholder="Search by customer name or email"
             v-model="searchQuery"
@@ -70,11 +72,16 @@
       </div>
 
       <DataTable
-        :data="filteredCustomers"
+        :data="customers ?? []"
         :columns="CUSTOMER_COLUMNS"
         :loading="isLoading"
-        :show-pagination="false"
         :enable-row-selection="true"
+        :show-pagination="true"
+        :items-per-page="itemsPerPage"
+        :total-items-count="customersData?.data?.count || 0"
+        :total-page-count="Math.ceil((customersData?.data?.count || 0) / itemsPerPage) || 1"
+        :server-pagination="true"
+        @pagination-change="(d) => (page = d.currentPage)"
         @row-click="handleRowClick"
       >
         <template #cell:name="{ item }">
@@ -218,7 +225,6 @@ import ConfirmationModal from "@components/ConfirmationModal.vue"
 import CustomerFormDrawer from "../components/CustomerFormDrawer.vue"
 import ExportCustomerModal from "../components/ExportCustomerModal.vue"
 import ViewCustomerDrawer from "../components/ViewCustomerDrawer.vue"
-import MetricsGrid from "@components/MetricsGrid.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import PageHeader from "@components/PageHeader.vue"
 import { useGetCustomers, useDeleteCustomer, useGetCustomer } from "../api"
@@ -226,19 +232,12 @@ import { displayError } from "@/utils/error-handler"
 import EmptyState from "@components/EmptyState.vue"
 import { useRoute, useRouter } from "vue-router"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
+import StatCard from "@components/StatCard.vue"
+import { useDebouncedRef } from "@/composables/useDebouncedRef"
 
 // Router
 const route = useRoute()
 const router = useRouter()
-
-// API calls
-const { data: customersData, isLoading, refetch } = useGetCustomers()
-const { mutate: deleteCustomer, isPending: isDeleting } = useDeleteCustomer()
-const { checkPremiumAccess } = usePremiumAccess()
-
-// Get individual customer data when customerUid is set
-const customerUid = ref<string>("")
-const { data: customerData } = useGetCustomer(customerUid, true)
 
 // Component state
 const formMode = ref<TCustomerFormMode>("add")
@@ -248,6 +247,24 @@ const showViewCustomerDrawer = ref(false)
 const showExportCustomerModal = ref(false)
 const customer = ref<ICustomer | null>(null)
 const searchQuery = ref("")
+const debouncedSearch = useDebouncedRef(searchQuery, 750)
+const page = ref(1)
+const itemsPerPage = ref(20)
+const computedParams = computed(() => {
+  const params: Record<string, string> = {}
+  if (debouncedSearch.value) params.search = debouncedSearch.value
+  params.offset = ((page.value - 1) * itemsPerPage.value).toString()
+  params.limit = itemsPerPage.value.toString()
+  return params
+})
+// API calls
+const { data: customersData, isLoading, refetch } = useGetCustomers(computedParams)
+const { mutate: deleteCustomer, isPending: isDeleting } = useDeleteCustomer()
+const { checkPremiumAccess } = usePremiumAccess()
+
+// Get individual customer data when customerUid is set
+const customerUid = ref<string>("")
+const { data: customerData } = useGetCustomer(customerUid, true)
 
 // Computed properties
 const customers = computed(() => {
@@ -256,37 +273,20 @@ const customers = computed(() => {
   return customersData.value.data.results
 })
 
-const filteredCustomers = computed<ICustomer[]>(() => {
-  if (!searchQuery.value) return customers.value
-
-  const query = searchQuery.value.toLowerCase()
-  return customers.value.filter(
-    (customer: ICustomer) =>
-      customer.full_name?.toLowerCase().includes(query) ||
-      customer.email?.toLowerCase().includes(query),
-  )
-})
-
 const customerMetrics = computed(() => {
   const stats = customersData.value?.data?.stats
   if (!stats) {
     return [
       {
         label: "Total Customers",
-        value: "0",
-        prev_value: "0",
+        value: 0,
         icon: "user-octagon",
-        chartData: [10, 12, 8, 14, 15, 9, 0],
-        chartColor: "#D0F8AA",
         iconClass: "md:text-green-700",
       },
       {
         label: "Active Customers",
-        value: "0",
-        prev_value: "0",
+        value: 0,
         icon: "user-circle-add",
-        chartData: [10, 12, 8, 14, 15, 9, 0],
-        chartColor: "#FECCD6",
         iconClass: "md:text-bloom-700",
       },
     ]
@@ -296,19 +296,13 @@ const customerMetrics = computed(() => {
     {
       label: "Total Customers",
       value: String(stats.total_customers),
-      prev_value: String(Math.max(0, stats.total_customers - 5)), // Mock previous value
       icon: "user-octagon",
-      chartData: [10, 12, 8, 14, 15, 9, stats.total_customers],
-      chartColor: "#D0F8AA",
       iconClass: "md:text-green-700",
     },
     {
       label: "Active Customers",
       value: String(stats.active_customers),
-      prev_value: String(Math.max(0, stats.active_customers - 2)), // Mock previous value
       icon: "user-circle-add",
-      chartData: [5, 6, 5, 7, 8, 6, stats.active_customers],
-      chartColor: "#FECCD6",
       iconClass: "md:text-bloom-700",
     },
   ]
@@ -316,11 +310,12 @@ const customerMetrics = computed(() => {
 
 // Row click handler
 const handleRowClick = (clickedCustomer: ICustomer) => {
-  customer.value = { ...clickedCustomer }
-  formMode.value = "view"
-  customerUid.value = clickedCustomer.uid
-  router.replace({ query: { uid: clickedCustomer.uid } })
-  showViewCustomerDrawer.value = true
+  // customer.value = { ...clickedCustomer }
+  // formMode.value = "view"
+  // customerUid.value = clickedCustomer.uid
+  // router.replace({ query: { uid: clickedCustomer.uid } })
+  // showViewCustomerDrawer.value = true
+  router.push(`/customers/${clickedCustomer.uid}`)
 }
 
 // Email dropdown items
@@ -402,11 +397,12 @@ const handleAction = (action: "archive" | "edit" | "view" | "delete", item: ICus
     customer.value = item
     showDeleteConfirmationModal.value = true
   } else if (action === "view") {
-    customer.value = item
-    formMode.value = "view"
-    customerUid.value = item.uid
-    router.replace({ query: { uid: item.uid } })
-    showViewCustomerDrawer.value = true
+    // customer.value = item
+    // formMode.value = "view"
+    // customerUid.value = item.uid
+    // router.replace({ query: { uid: item.uid } })
+    // showViewCustomerDrawer.value = true
+    router.push(`/customers/${item.uid}`)
   }
 }
 

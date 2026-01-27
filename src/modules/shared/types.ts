@@ -21,6 +21,8 @@ export interface ILiveStatusCriteria {
       delivery_enabled: boolean
       shipping_account: boolean
       pickup_location: boolean
+      manual_delivery_enabled: boolean
+      express_delivery_enabled: boolean
     }
   }
   products: {
@@ -89,7 +91,7 @@ export type TSetupShippingPayload = {
   email: string
   password: string
   phone: string
-  preferred_couriers: string[]
+  preferred_couriers?: string[]
 }
 
 export type TUpdateShippingPayload = {
@@ -235,4 +237,31 @@ export interface IShippingRatesResponse {
       couriers: IShippingCourier[]
     }
   }
+}
+
+// Manual/Express Delivery Option Types
+export type TDeliveryOptionType = "manual" | "express"
+
+export interface IDeliveryOption {
+  uid: string
+  location: string
+  amount: string
+  delivery_type: TDeliveryOptionType
+  created_at: string
+}
+
+export interface IDeliveryOptionsResponse {
+  error: string | null
+  message: string
+  data: IDeliveryOption[]
+}
+
+export type TCreateDeliveryOptionPayload = {
+  location: string
+  amount: string
+}
+
+export type TUpdateDeliveryOptionPayload = {
+  location?: string
+  amount?: string
 }

@@ -1,4 +1,4 @@
-import { ref, reactive, watch } from "vue"
+import { ref, reactive, watch, onScopeDispose } from "vue"
 import type { IProductVariant } from "../types"
 
 /**
@@ -29,15 +29,15 @@ export interface IVariantConfiguration {
  * Composable for managing product form state
  *
  * Architectural decisions:
- * - Centralized state management for product form data
+ * - Instance-scoped state: each call creates isolated state
  * - Reactive state with explicit typing for type safety
  * - Automatic variant initialization based on hasVariants flag
- * - Proper cleanup and reset functionality
+ * - Proper cleanup on scope disposal
  *
  * @returns Form state, variants, configuration, and control methods
  */
 export function useProductFormState() {
-  // Form state - reactive for nested property updates
+  // Form state - reactive for nested property updates (instance-scoped)
   const form = reactive<IProductForm>({
     name: "",
     description: "",
@@ -48,7 +48,7 @@ export function useProductFormState() {
     requires_approval: false,
   })
 
-  // Variant state
+  // Variant state (instance-scoped)
   const hasVariants = ref<boolean>(false)
   const variants = ref<IProductVariant[]>([])
   const variantConfiguration = ref<IVariantConfiguration[]>([
@@ -63,7 +63,7 @@ export function useProductFormState() {
    * Initialize default variant when hasVariants is toggled
    * Prevents empty variant state that would fail validation
    */
-  watch(hasVariants, (newValue) => {
+  const stopVariantsWatcher = watch(hasVariants, (newValue) => {
     if (!newValue && variants.value.length === 0) {
       // Initialize single variant for products without variants
       variants.value = [
@@ -96,6 +96,24 @@ export function useProductFormState() {
       // Clear variants when switching back to variants mode
       variants.value = []
     }
+  })
+
+  // Cleanup when the component scope is disposed
+  onScopeDispose(() => {
+    stopVariantsWatcher()
+    // Reset state to prevent memory leaks and stale data
+    Object.assign(form, {
+      name: "",
+      description: "",
+      category: null,
+      images: [],
+      story: "",
+      brand: "",
+      requires_approval: false,
+    })
+    hasVariants.value = false
+    variants.value = []
+    variantConfiguration.value = []
   })
 
   /**

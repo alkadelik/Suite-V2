@@ -1,7 +1,11 @@
 <script setup>
 import Icon from "@components/Icon.vue"
 
-defineProps({ items: { type: Array, default: () => [] }, loading: Boolean })
+const props = defineProps({
+  items: { type: Array, default: () => [] },
+  loading: Boolean,
+  class: String,
+})
 </script>
 
 <template>
@@ -10,8 +14,12 @@ defineProps({ items: { type: Array, default: () => [] }, loading: Boolean })
       <!-- <LoadingIcon class="!py-2" /> -->
       <p>loading...</p>
     </div>
-    <div v-else class="grid grid-cols-2 gap-4">
-      <div v-for="(item, i) in items" :key="i" class="rounded-lg bg-white px-3.5 py-3">
+    <div v-else :class="['grid grid-cols-2 gap-4', props.class]">
+      <div
+        v-for="(item, i) in items"
+        :key="i"
+        class="rounded-lg border border-gray-100 bg-white px-3.5 py-3"
+      >
         <div class="inline-flex flex-col gap-1">
           <span class="flex h-6 w-6 items-center justify-center rounded-md bg-white">
             <Icon :name="item.icon" class="text-primary-600" />

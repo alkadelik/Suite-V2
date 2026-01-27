@@ -29,7 +29,6 @@ const isOpen = computed({
 })
 
 const onLogout = () => {
-  console.log("Logging out...")
   store.logout()
   emit("close")
 }

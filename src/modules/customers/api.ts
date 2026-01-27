@@ -1,6 +1,7 @@
-import baseApi, { TApiPromise } from "@/composables/baseApi"
+import baseApi, { TApiPromise, TPaginatedResponse, useApiQuery } from "@/composables/baseApi"
 import { useMutation, useQuery } from "@tanstack/vue-query"
-import type { Ref } from "vue"
+import type { MaybeRefOrGetter, Ref } from "vue"
+import { computed } from "vue"
 import type {
   ICustomerFormPayload,
   ICustomersApiResponse,
@@ -32,16 +33,27 @@ export function useDeleteCustomer() {
   })
 }
 
+// export function useGetCustomers() {
+//   return useQuery<ICustomersApiResponse>({
+//     queryKey: ["customers"],
+//     queryFn: async () => {
+//       const { data } = await baseApi.get<ICustomersApiResponse>("/customers/")
+//       return data
+//     },
+//     retry: false,
+//     refetchOnWindowFocus: false,
+//   })
+// }
+
 /** Get customers api request */
-export function useGetCustomers() {
-  return useQuery<ICustomersApiResponse>({
-    queryKey: ["customers"],
-    queryFn: async () => {
-      const { data } = await baseApi.get<ICustomersApiResponse>("/customers/")
-      return data
-    },
-    retry: false,
-    refetchOnWindowFocus: false,
+export function useGetCustomers(
+  params?: MaybeRefOrGetter<Record<string, string | number | boolean> | undefined>,
+) {
+  return useApiQuery<ICustomersApiResponse>({
+    url: "/customers/",
+    params,
+    key: "customers",
+    // selectData: true,
   })
 }
 
@@ -62,9 +74,40 @@ export function useGetCustomer(uid: Ref<string> | string, enabled = true) {
   })
 }
 
+export function useGetSingleCustomer(uid: Ref<string> | string) {
+  const uidValue = computed(() => (typeof uid === "string" ? uid : uid.value))
+  return useApiQuery<ICustomerDetail>({
+    url: computed(() => `/customers/${uidValue.value}/`),
+    key: computed(() => `customer-${uidValue.value}`),
+    enabled: computed(() => !!uidValue.value && uidValue.value.trim() !== ""),
+    selectData: true,
+  })
+}
+
 /** Export customers api request */
 export function useExportCustomers() {
   return useMutation({
     mutationFn: (payload: IExportPayload) => baseApi.post("/customers/export/", payload),
+  })
+}
+
+/** Create customer address api request */
+export function useCreateCustomerAddress() {
+  return useMutation({
+    mutationFn: ({ customer, ...others }: { customer: string; address: string }) =>
+      baseApi.post(`/customers/${customer}/addresses/`, { ...others }),
+  })
+}
+
+/** get customer address api request */
+export function useGetCustomerAddresses(customerUid: Ref<string> | string) {
+  const customerUidValue = computed(() =>
+    typeof customerUid === "string" ? customerUid : customerUid.value,
+  )
+  return useApiQuery<TPaginatedResponse<{ uid: string; address: string }>["data"]>({
+    url: computed(() => `/customers/${customerUidValue.value}/addresses/`),
+    key: computed(() => `customer-${customerUidValue.value}-addresses`),
+    enabled: computed(() => !!customerUidValue.value && customerUidValue.value.trim() !== ""),
+    selectData: true,
   })
 }

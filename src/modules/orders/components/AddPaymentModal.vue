@@ -11,7 +11,7 @@ import { TOrder } from "../types"
 import { formatCurrency } from "@/utils/format-currency"
 import * as yup from "yup"
 
-const props = defineProps<{ open: boolean; order: TOrder }>()
+const props = defineProps<{ open: boolean; order: TOrder; outstanding: number }>()
 
 const emit = defineEmits<{ close: []; refresh: [] }>()
 
@@ -20,12 +20,12 @@ const PAYMENT_METHODS = [
   { label: "Bank Transfer", value: "transfer" },
 ]
 
-const outstandingAmount = computed(() => props.order.total_amount - props.order.total_paid)
+const outstandingAmount = computed(() => props.outstanding)
 
 interface FormValues {
   amount: string
   date: string
-  source: string
+  source: { label: string; value: string }
 }
 
 const { handleSubmit, meta, resetForm } = useForm<FormValues>({
@@ -42,13 +42,16 @@ const { handleSubmit, meta, resetForm } = useForm<FormValues>({
           `Amount cannot exceed outstanding balance of ${formatCurrency(outstandingAmount.value)}`,
         ),
       date: yup.string().required("Date is required"),
-      source: yup.string().required("Payment source is required"),
+      source: yup.object().shape({
+        label: yup.string().required("Payment source is required"),
+        value: yup.string().required("Payment source is required"),
+      }),
     }),
   ),
   initialValues: {
     amount: "",
     date: new Date().toISOString().split("T")[0],
-    source: PAYMENT_METHODS[0].value,
+    source: PAYMENT_METHODS[0],
   },
 })
 
@@ -56,7 +59,7 @@ const { mutate: addPayment, isPending } = useAddUpdateOrderPayment()
 
 const onSubmit = handleSubmit((values) => {
   addPayment(
-    { id: props.order.uid, body: values },
+    { id: props.order.uid, body: { ...values, source: values.source.value } },
     {
       onSuccess: () => {
         toast.success("Payment added successfully!")

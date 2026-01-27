@@ -25,7 +25,11 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
+      host: true,
       port: Number(process.env.VITE_PORT) || 8080,
+    },
+    build: {
+      sourcemap: true,
     },
   }
 })

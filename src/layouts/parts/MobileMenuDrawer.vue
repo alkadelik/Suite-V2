@@ -6,7 +6,9 @@ import Chip from "@components/Chip.vue"
 import Drawer from "@components/Drawer.vue"
 import Icon from "@components/Icon.vue"
 import { useAuthStore } from "@modules/auth/store"
+import PlansModal from "@modules/settings/components/PlansModal.vue"
 import { useSettingsStore } from "@modules/settings/store"
+import { useSharedStore } from "@modules/shared/store"
 import { computed } from "vue"
 
 defineProps<{ open: boolean }>()
@@ -24,18 +26,25 @@ const quickActions = computed(() => {
   const allActions = [
     { label: "Customers", icon: "people", to: "/customers" },
     { label: "Popups", icon: "calendar-tick", to: "/popups", hqOnly: true },
-    {
-      label: "Expenses",
-      icon: "receipt-text",
-      action: () => toast.info("This module is coming soon!", { title: "Expenses" }),
-    },
+    { label: "Expenses", icon: "receipt-text", to: "/expenses" },
     {
       label: "Reports",
       icon: "pie-chart",
       action: () => toast.info("This module is coming soon!", { title: "Reports" }),
     },
-    { label: "Discounts", icon: "tag", to: "#" },
-    { label: "Support", icon: "life-buoy", to: "#" },
+    {
+      label: "Discounts",
+      icon: "tag",
+      action: () => toast.info("This module is coming soon!", { title: "Discounts" }),
+    },
+    {
+      label: "Support",
+      icon: "life-buoy",
+      action: () => {
+        emit("close")
+        useSharedStore().openSupportModal()
+      },
+    },
     { label: "Settings", icon: "setting", to: "/settings" },
   ]
 

@@ -86,6 +86,8 @@
         </div>
       </div>
 
+      <div class="py-10 lg:hidden" />
+
       <div
         class="fixed right-0 bottom-0 left-0 w-full space-y-3 border-t border-gray-200 bg-white px-4 py-4 md:px-6"
       >
@@ -102,7 +104,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue"
+import { ref, computed, watch } from "vue"
 import * as yup from "yup"
 import { toast } from "@/composables/useToast"
 import Drawer from "@components/Drawer.vue"
@@ -160,10 +162,6 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<Emits>()
-
-onMounted(() => {
-  console.log("CustomerFormDrawer mounted with props:", props)
-})
 
 const { user } = useAuthStore()
 
@@ -246,7 +244,7 @@ const onSubmit = (values: FormValues) => {
     first_name: values.first_name.trim(),
     last_name: values.last_name.trim(),
     email: values.email.trim().toLowerCase(),
-    phone: formatPhoneNumber(values.phone.trim()),
+    phone: values.phone.trim() ? formatPhoneNumber(values.phone.trim()) : "",
     address: values.address.trim() || undefined,
     state: values.state.trim() || undefined,
     city: values.city.trim() || undefined,
@@ -255,7 +253,12 @@ const onSubmit = (values: FormValues) => {
     location: user?.assigned_locations[0].uid || "",
   }
 
-  console.log(`${props.mode === "add" ? "Adding" : "Updating"} customer:`, payload)
+  // remove empty strings from payload
+  Object.keys(payload).forEach((key) => {
+    if (payload[key as keyof ICustomerFormPayload] === "") {
+      delete payload[key as keyof ICustomerFormPayload]
+    }
+  })
 
   if (props.mode === "add") {
     createCustomer(payload, {

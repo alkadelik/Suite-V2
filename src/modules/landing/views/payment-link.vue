@@ -1,11 +1,16 @@
 <script setup lang="ts">
-import { formatCurrency } from "@/utils/format-currency"
-import AppButton from "@components/AppButton.vue"
-import EmptyState from "@components/EmptyState.vue"
-import { formatDate } from "@modules/customers/utils/dateFormatter"
-import { useGetPublicOrderById, useInitializeOrderPayment } from "@modules/orders/api"
-import { useRoute } from "vue-router"
 import { displayError } from "@/utils/error-handler"
+import { formatCurrency } from "@/utils/format-currency"
+import { startCase } from "@/utils/format-strings"
+import { formatDate } from "@/utils/formatDate"
+import AppButton from "@components/AppButton.vue"
+import Chip from "@components/Chip.vue"
+import EmptyState from "@components/EmptyState.vue"
+import { useGetPublicOrderById, useInitializeOrderPayment } from "@modules/orders/api"
+import { anonymousCustomer } from "@modules/orders/constants"
+import { TOrder } from "@modules/orders/types"
+import { computed } from "vue"
+import { useRoute } from "vue-router"
 
 const route = useRoute()
 const { data: orderData, isPending } = useGetPublicOrderById(route.params.id as string)
@@ -26,234 +31,343 @@ const handlePayNow = () => {
     onError: displayError,
   })
 }
+
+const order = computed(() => orderData.value || ({} as TOrder))
+
+const orderSummary = computed(() => {
+  if (!order.value?.items) return {}
+
+  const subtotal = order.value.items.reduce((acc, item) => {
+    return acc + Number(item.unit_price) * item.quantity
+  }, 0)
+
+  return {
+    "Total Items": order.value.items.length,
+    Subtotal: formatCurrency(subtotal, { kobo: true }),
+    // Discount: formatCurrency(Number(order.value.discount_amount)),
+    Shipping: +order.value.delivery_fee
+      ? formatCurrency(Number(order.value.delivery_fee), { kobo: true })
+      : "-",
+    divider1: true,
+    "Total Amount": formatCurrency(Number(order.value.total_amount), { kobo: true }),
+    "Last Payment": formatCurrency(Number(order.value.total_paid), { kobo: true }),
+    ...(Number(order.value.outstanding_balance) > 0
+      ? {
+          divider2: true,
+          "Amount Due": formatCurrency(Number(order.value.outstanding_balance), { kobo: true }),
+        }
+      : {}),
+  }
+})
+
+const isEmpty = computed(() => !orderData.value?.uid || isPending.value)
 </script>
 
 <template>
-  <div class="text-core-700 min-h-[100dvh] pb-12">
-    <header class="border-core-200 sticky top-0 z-50 border-b bg-white p-4">
-      <nav class="mx-auto flex max-w-screen-lg items-center justify-between">
-        <RouterLink to="/">
-          <img src="/LYW.svg" alt="Leyyow Logo" class="h-6" />
-        </RouterLink>
-        <RouterLink to="/signup" class="text-primary-600 text-sm font-semibold underline">
-          Create payment links
-        </RouterLink>
+  <div class="pb-8 lg:pb-20">
+    <header
+      class="border-core-100 border-b bg-[url(@/assets/images/background-pattern.png)] bg-cover bg-center bg-no-repeat"
+    >
+      <nav
+        :class="[
+          'mx-auto max-w-7xl px-4 py-6 lg:px-12 lg:py-10',
+          'flex items-center justify-between',
+        ]"
+      >
+        <a href="https://leyyow.com" target="_blank" rel="noopener noreferrer">
+          <img src="/images/logos/leyyow-logo-2.svg?url" alt="Leyyow logo" class="h-7" />
+        </a>
+
+        <a
+          href="https://suite.leyyow.com/signup"
+          class="text-primary-700 text-sm font-semibold lg:text-base"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Create a live invoice
+        </a>
       </nav>
     </header>
 
-    <div class="p-4 lg:p-0">
-      <div class="mx-auto my-6 max-w-screen-lg">
-        <h2 class="font-serif text-xl font-semibold md:text-2xl">Order Details</h2>
-        <p class="text-sm md:text-base">
-          Take a quick look at your order, then hit 'Pay' when you're ready.
-        </p>
-      </div>
+    <EmptyState
+      v-if="isEmpty"
+      title="We couldn't find that order."
+      :description="`If you're trying to pay for an order, please check the link or contact the merchant if you think this is a mistake.`"
+      :loading="isPending"
+    >
+      <template #image>
+        <img src="@/assets/images/empty-order.svg?url" class="mx-auto mb-4" />
+      </template>
+      <template #action>
+        <div class="flex justify-center gap-6">
+          <AppButton variant="outlined" icon="sms" label="Send an email" />
+          <AppButton variant="outlined" icon="call" label="Call" />
+        </div>
+      </template>
+    </EmptyState>
 
-      <EmptyState
-        v-if="!orderData?.uid || isPending"
-        title="No Matching Order Found"
-        :loading="isPending"
-      />
-
-      <div v-else class="font-outfit mx-auto grid max-w-screen-lg gap-16 pb-8 md:grid-cols-2">
-        <section>
-          <!-- Order Summary -->
-          <div class="border-core-300 rounded-lg border bg-[#fbfbfb] p-3">
-            <div class="border-b border-dashed border-[#c4dbd5] text-sm">
-              <div class="flex justify-between py-3">
-                <span>Order channel:</span>
-                <span class="font-semibold"> #{{ orderData?.order_number }}</span>
-              </div>
-              <div class="flex justify-between py-3">
-                <span>Order date:</span>
-                <span class="font-semibold">{{ formatDate(orderData?.created_at) }}</span>
-              </div>
-            </div>
-
-            <!-- Product Items -->
-            <div class="mt-4 space-y-3">
-              <!-- Product 1 -->
-              <div v-for="item in orderData?.items" :key="item.uid" class="flex gap-2.5">
-                <img
-                  src="https://res.cloudinary.com/dwwxvzind/image/upload/v1757112704/Icon_Box_keqfxr.png"
-                  alt="Product 1"
-                  class="h-[52px] w-[52px] rounded"
-                />
-                <div class="flex-1 text-[13px]">
-                  <p class="m-0">
-                    {{ item.product_name }}
-                    <span class="text-primary-700">(x{{ item.quantity }})</span>
-                  </p>
-                  <p class="text-core-600 m-0">{{ item.variant_name }}</p>
-                </div>
-                <div class="text-right text-[13px]">
-                  <!-- <span class="text-core-400 mr-1 line-through">₦15,750</span>  -->
-                  {{ formatCurrency(Number(item.total_price)) }}
-                </div>
-              </div>
-            </div>
+    <main v-else class="mx-auto max-w-7xl px-4 py-6 lg:px-12 lg:py-10">
+      <section class="space-y-5">
+        <div class="flex items-end justify-between">
+          <!-- store logo -->
+          <div class="inline-flex">
+            <img
+              v-if="order.store_logo"
+              :src="order.store_logo"
+              class="h-12 rounded-lg object-contain"
+            />
+            <h1 v-else class="font-oswald! text-2xl font-bold uppercase">{{ order.store_name }}</h1>
           </div>
-
-          <div class="border-core-300 mt-5 rounded-lg border bg-[#fbfbfb] p-3">
-            <div class="text-sm">
-              <div class="flex justify-between py-3">
-                <span>Subtotal ({{ orderData?.items.length }} items):</span>
-                <span class="font-semibold">
-                  <span v-if="orderData?.discount_amount" class="text-core-400 mr-1 line-through">
-                    {{ formatCurrency(Number(orderData?.discount_amount)) }}
-                  </span>
-                  {{ formatCurrency(Number(orderData?.total_amount)) }}
-                </span>
-              </div>
-              <div class="flex justify-between py-3">
-                <span>Shipping:</span>
-                <span class="font-semibold">
-                  {{ formatCurrency(Number(orderData?.delivery_fee), { kobo: true }) }}</span
-                >
-              </div>
-              <div class="border-b border-dashed border-[#c4dbd5]"></div>
-              <div class="flex justify-between pt-3 text-base">
-                <span class="font-semibold">Total:</span>
-                <span class="font-semibold">
-                  {{
-                    formatCurrency(
-                      Number(orderData?.total_amount) + Number(orderData?.delivery_fee),
-                      { kobo: true },
-                    )
-                  }}
-                </span>
-              </div>
-            </div>
+          <!-- store contact -->
+          <div
+            class="bg-warning-25 text-warning-700 border-warning-300 rounded-lg border p-4 text-sm"
+            :class="{ 'hidden lg:block': true }"
+          >
+            <span class="font-semibold">Need help?</span> Contact
+            <span class="font-semibold capitalize">{{ order.store_name }}</span>
+            <span v-if="order.store_phone"> at </span>
+            <a v-if="order.store_phone" :href="`tel:${order.store_phone}`" class="font-semibold">
+              {{ order.store_phone }}
+            </a>
           </div>
+        </div>
 
-          <div class="border-core-300 mt-5 rounded-lg border bg-[#fbfbfb] p-3">
-            <div class="mb-3 text-base font-semibold">Merchant details</div>
-            <div class="text-sm">
-              <div class="flex justify-between py-3">
-                <span>{{ orderData?.store_name }}</span>
-              </div>
-              <!-- <div class="flex justify-between py-3 text-sm">
-              <a href="mailto:merchant@fashionhub.com">merchant@fashionhub.com</a>
-              <a href="tel:+1234567890">+1234567890</a>
-            </div> -->
-            </div>
-            <div class="border-b border-dashed border-[#c4dbd5]"></div>
-            <div class="mt-3 mb-3 text-base font-semibold">Customer details</div>
-            <div class="text-sm">
-              <div class="flex justify-between py-3">
-                <span>{{ orderData?.customer_name }}</span>
-              </div>
-              <div
-                v-if="orderData?.customer_email || orderData?.customer_phone"
-                class="flex justify-between py-3 text-sm"
-              >
-                <a v-if="orderData?.customer_email" :href="`mailto:${orderData?.customer_email}`">
-                  {{ orderData?.customer_email }}
-                </a>
-                <a v-if="orderData?.customer_phone" :href="`tel:${orderData?.customer_phone}`">
-                  {{ orderData?.customer_phone }}
-                </a>
-              </div>
-            </div>
-          </div>
-
-          <!-- Shipping Summary -->
-          <div v-if="false" class="border-core-300 my-5 rounded-lg border bg-[#fbfbfb] p-3">
-            <div class="mb-3 text-base font-semibold">Shipping Summary</div>
-            <div class="flex justify-between py-1.5 text-sm">
-              <span>Company:</span>
-              <span class="font-medium">GOKADA</span>
-            </div>
-            <div class="flex justify-between py-1.5 text-sm">
-              <span>Tracking Link:</span>
-              <span class="font-medium">
-                <a href="/#" class="text-warning-700">(Click here →)</a>
-              </span>
-            </div>
-            <div
-              class="bg-warning-50 border-warning-200 mt-2 border-t border-b py-2 text-center text-[13px]"
+        <!-- invoice merchant and customer details -->
+        <div
+          :class="[
+            'bg-[url(@/assets/images/background-pattern.png)] bg-contain bg-center bg-repeat',
+            'bg-base-background grid grid-cols-2 gap-4 rounded-xl border border-gray-300',
+            'px-4 py-6 text-gray-700 lg:p-10',
+          ]"
+        >
+          <!-- merchant details -->
+          <div class="text-xs lg:text-base">
+            <Chip show-dot label="Invoice" radius="md" size="md" />
+            <h2 class="mt-4 text-sm font-semibold text-gray-900 capitalize lg:text-xl">
+              {{ order.store_name }}
+            </h2>
+            <a
+              v-if="order.store_email"
+              :href="`mailto:${order.store_email}`"
+              class="my-1 block truncate"
             >
-              Shipping is provided by
-              <img
-                src="https://res.cloudinary.com/do2uxmtsx/image/upload/v1752203568/shipbubble_vgrkbu.png"
-                alt="Shipbubble"
-                class="inline h-5 align-middle"
+              {{ order.store_email }}
+            </a>
+            <a v-if="order.store_phone" :href="`tel:${order.store_phone}`" class="block">
+              {{ order.store_phone }}
+            </a>
+          </div>
+          <!-- customer details -->
+          <div class="pt-7 text-right text-xs lg:text-base">
+            <span>Sold to:</span>
+            <h2 class="text-sm font-semibold text-gray-900 capitalize lg:text-base">
+              {{ order.customer_name || anonymousCustomer.full_name }}
+            </h2>
+            <a
+              v-if="order.customer_email"
+              :href="`mailto:${order.customer_email}`"
+              class="my-1 block truncate"
+            >
+              {{ order.customer_email }}
+            </a>
+            <a v-if="order.customer_phone" :href="`tel:${order.customer_phone}`" class="block">
+              {{ order.customer_phone }}
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <h3 class="my-8 text-lg font-bold text-gray-900 lg:text-xl">
+        Thank you for shopping at {{ startCase(order.store_name) }}!
+      </h3>
+
+      <section class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+        <!-- order status, shipping and items -->
+        <div class="lg:col-span-2">
+          <!-- order status -->
+          <div class="grid grid-cols-2 gap-6 text-sm md:grid-cols-3 lg:text-base">
+            <div>
+              <h5 class="text-core-600 mb-1">Order ID</h5>
+              <p class="font-medium">{{ order.order_number }}</p>
+            </div>
+            <!--  -->
+            <div>
+              <h5 class="text-core-600 mb-1">Order date</h5>
+              <p class="font-medium">{{ formatDate(order.order_date || order.created_at) }}</p>
+            </div>
+            <!--  -->
+            <div>
+              <h5 class="text-core-600 mb-1">Payment status</h5>
+              <Chip
+                :icon="order.payment_status === 'paid' ? 'card-tick' : 'card-pos'"
+                :label="startCase(order.payment_status)"
+                :color="
+                  order.payment_status === 'paid'
+                    ? 'success'
+                    : order.payment_status === 'partially_paid'
+                      ? 'warning'
+                      : 'error'
+                "
               />
             </div>
-            <div class="pt-3 text-xs">
-              For help with your delivery, please reach out to Shipbubble at
-              <a href="mailto:email@shipbubble.com" class="text-warning-700">email@shipbubble.com</a
-              >. Leyyow does not handle delivery directly.
+          </div>
+          <!-- shipping details -->
+          <div
+            v-if="order.fulfilment_method === 'delivery'"
+            class="mt-6 grid grid-cols-2 gap-6 border-t border-gray-200 pt-6 md:grid-cols-3"
+          >
+            <div>
+              <h5 class="text-core-600 mb-1">Shipped to</h5>
+              <p class="font-medium">{{ order.delivery_address }}</p>
+            </div>
+            <!--  -->
+            <div>
+              <h5 class="text-core-600 mb-1">Delivery date</h5>
+              <p class="font-medium">{{ formatDate(order.created_at) }}</p>
+            </div>
+            <!--  -->
+            <div class="col-span-2 md:col-span-1">
+              <h5 class="text-core-600 mb-1">Delivery provider</h5>
+              <p class="font-medium">{{ order.courier_name || "Unknown Courier" }}</p>
+              <Chip
+                v-if="order.delivery_method === 'shipbubble'"
+                color="blue"
+                show-dot
+                class="mt-1 py-4! text-xs"
+              >
+                Shipping is provided by
+                <img
+                  src="/images/shipbubble-logo.png"
+                  alt="Shipbubble logo"
+                  class="ml-1 inline object-contain"
+                />
+              </Chip>
             </div>
           </div>
-        </section>
 
-        <section>
-          <!-- Payment Details -->
-          <div class="border-core-300 rounded-lg border bg-[#fbfbfb] p-3">
-            <div class="mb-3 text-base font-semibold">Payment Details</div>
-            <div class="text-sm">
-              <div class="flex justify-between py-3">
-                <span>Payment Status:</span>
+          <!-- order items -->
+          <table class="text-core-700 mt-10 hidden w-full lg:table">
+            <thead>
+              <tr class="border-b border-gray-200 bg-gray-50 text-left text-sm">
+                <th class="px-4 py-3 font-medium">#</th>
+                <th class="px-4 py-3 font-medium">Item</th>
+                <th class="px-4 py-3 font-medium">Price</th>
+                <th class="px-4 py-3 font-medium">Quantity</th>
+                <th class="px-4 py-3 font-medium">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(item, index) in order.items"
+                :key="index"
+                class="border-b border-gray-200 text-sm"
+              >
+                <td class="px-4 py-6">{{ index + 1 }}</td>
+                <td class="px-4 py-6">{{ item.product_name }}</td>
+                <td class="px-4 py-6">{{ formatCurrency(item.unit_price, { kobo: true }) }}</td>
+                <td class="px-4 py-6">{{ item.quantity }}</td>
+                <td class="px-4 py-6">
+                  {{ formatCurrency(Number(item.unit_price) * item.quantity, { kobo: true }) }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <!-- mobile order items -->
+          <div class="mt-8 space-y-4 border-y border-gray-200 py-6 lg:hidden">
+            <div v-for="(item, index) in order.items" :key="index" class="">
+              <div class="flex items-center justify-between">
+                <h4 class="font-medium">
+                  {{ item.product_name }}
+                  <span class="text-primary-700">(x{{ item.quantity }})</span>
+                </h4>
+                <span class="font-medium">
+                  {{ formatCurrency(Number(item.unit_price) * item.quantity, { kobo: true }) }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- order summary -->
+        <div
+          :class="[
+            'bg-primary-50 flex flex-col gap-6 bg-no-repeat px-6 py-10',
+            'bg-[url(@/assets/images/wavy.svg),url(@/assets/images/wavy-reverse.svg)] bg-[position:top_left,bottom_left]',
+          ]"
+        >
+          <h4 class="text-xl font-semibold text-gray-900">Order Summary</h4>
+          <div class="space-y-3">
+            <div
+              v-for="[key, value] in Object.entries(orderSummary)"
+              :key="key"
+              class="flex items-center justify-between gap-4"
+            >
+              <div
+                v-if="key.includes('divider')"
+                class="border-core-300 w-full border border-dashed"
+              />
+              <template v-else>
                 <span
-                  class="rounded-3xl border px-2.5 py-1.5 text-sm capitalize"
-                  :class="[
-                    {
-                      'text-success-700 border-success-200 bg-success-50':
-                        orderData?.payment_status === 'paid',
-                    },
-                    {
-                      'text-error-700 border-error-200 bg-error-50':
-                        orderData?.payment_status === 'unpaid',
-                    },
-                  ]"
+                  :class="
+                    key.includes('Amount')
+                      ? 'text-core-800 font-semibold'
+                      : 'text-core-600 font-medium'
+                  "
                 >
-                  {{ orderData?.payment_status }}
+                  {{ key }}
                 </span>
-              </div>
-              <div class="flex justify-between py-3">
-                <span>Amount Paid:</span>
-                <span class="font-semibold">
-                  {{ formatCurrency(Number(orderData?.total_paid), { kobo: true }) }}
+                <span :class="key.includes('Amount') ? 'font-semibold' : 'font-medium'">
+                  {{ value }}
                 </span>
-              </div>
-              <div class="flex justify-between py-3">
-                <span>Balance due:</span>
-                <span class="font-semibold">
-                  {{ formatCurrency(Number(orderData?.outstanding_balance), { kobo: true }) }}
-                </span>
-              </div>
+              </template>
             </div>
           </div>
-
-          <div v-if="orderData?.payment_status !== 'paid'">
-            <p class="mt-4 mb-2 text-sm">To complete your order, click below</p>
-            <AppButton
-              :label="`Pay Now (${formatCurrency(orderData?.outstanding_balance, { kobo: true })})`"
-              :loading="isInitializing"
-              class="w-full"
-              @click="handlePayNow"
-            />
+          <AppButton
+            v-if="order?.payment_status !== 'paid'"
+            :label="`Pay Now (${formatCurrency(order?.outstanding_balance, { kobo: true })})`"
+            class="mt-auto w-full"
+            :loading="isInitializing"
+            size="lg"
+            @click="handlePayNow"
+          />
+          <div
+            v-else
+            class="bg-success-50 text-success-700 border-success-300 mt-auto flex items-center justify-center rounded-lg border px-4 py-3 text-center"
+          >
+            <span class="font-semibold">Payment Complete</span>
           </div>
+        </div>
+      </section>
+    </main>
 
-          <div class="bg-warning-50 border-primary-300 text-primary-600 mt-4 rounded-xl border p-4">
-            <span class="text-sm font-medium">Note:</span>
-            <p class="text-sm">
-              Need help with anything merchant-related? Feel free to reach out at
-              <a href="tel:+2348082826122" class="font-medium">+234 8082826122</a>.
-            </p>
-          </div>
-        </section>
-      </div>
-
-      <footer
-        class="mx-auto flex max-w-screen-lg flex-col items-center gap-2 rounded-lg bg-black px-10 py-8"
+    <footer class="mx-auto max-w-7xl px-4 lg:px-12">
+      <div
+        class="flex flex-col items-center gap-2 rounded-lg bg-[#282021] bg-[url(@/assets/images/background-glow.svg)] bg-center bg-no-repeat px-4 py-6 lg:px-10 lg:py-8"
       >
-        <p class="text-white">Create your own links and collect payments for free with</p>
-        <img src="/images/logos/leyyow-logo-2.svg?url" alt="bg-image" class="h-6" />
+        <p class="text-core-50 text-sm lg:text-base">
+          Create your own links and collect payments for free with
+        </p>
+        <img src="/images/logos/leyyow-logo-2.svg?url" alt="bg-image" class="mb-2 h-6" />
 
-        <a href="https://leyyow.com" class="text-white underline">Start Now</a>
-      </footer>
-    </div>
+        <a
+          href="https://suite.leyyow.com/signup"
+          class="text-sm text-white underline underline-offset-4 lg:text-base"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Start Now</a
+        >
+      </div>
+    </footer>
   </div>
 </template>
+
+<style scoped>
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-outfit) !important;
+}
+</style>

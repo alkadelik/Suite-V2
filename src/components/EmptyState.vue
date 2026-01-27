@@ -56,7 +56,7 @@ const handleAction = () => {
 <template>
   <div
     :class="[
-      'flex min-h-[70vh] flex-col items-center justify-center md:rounded-3xl md:bg-white md:shadow-xs',
+      'flex min-h-[80vh] flex-col items-center justify-center md:rounded-3xl md:bg-white md:shadow-xs',
       'text-core-800 px-6 py-8 text-center',
       props.class,
     ]"
@@ -89,14 +89,16 @@ const handleAction = () => {
         </p>
 
         <!-- Action Button -->
-        <AppButton
-          v-if="actionLabel"
-          :variant="actionVariant"
-          :color="actionColor"
-          :label="actionLabel"
-          :icon="actionIcon"
-          @click="handleAction"
-        />
+        <slot name="action">
+          <AppButton
+            v-if="actionLabel"
+            :variant="actionVariant"
+            :color="actionColor"
+            :label="actionLabel"
+            :icon="actionIcon"
+            @click="handleAction"
+          />
+        </slot>
       </template>
     </div>
   </div>

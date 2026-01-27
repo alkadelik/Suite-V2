@@ -72,9 +72,11 @@ import { useLogin } from "../api"
 import * as yup from "yup"
 import { displayError } from "@/utils/error-handler"
 import { useAuthStore } from "../store"
+import { useSettingsStore } from "@modules/settings/store"
 import { TLoginPayload } from "../types"
 import { toast } from "@/composables/useToast"
 import { fetchLiveStatusForLogin } from "@modules/shared/api"
+import { fetchLocationsForLogin } from "@modules/settings/api"
 import AppForm from "@components/form/AppForm.vue"
 import FormField from "@components/form/FormField.vue"
 import SectionHeader from "@components/SectionHeader.vue"
@@ -82,6 +84,7 @@ import AppButton from "@components/AppButton.vue"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
 import { computed, ref } from "vue"
+import * as Sentry from "@sentry/vue"
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -104,6 +107,9 @@ const onSubmit = (values: TLoginPayload) => {
         authStore.setAuthUser({ ...user, email: values.email })
         toast.success("Your login was successful...")
 
+        // Set user context in Sentry
+        Sentry.setUser({ id: user.uid, email: values.email })
+
         // Check live status before redirecting
         const checkLiveStatusAndRedirect = async () => {
           if (user.store_slug) {
@@ -111,7 +117,21 @@ const onSubmit = (values: TLoginPayload) => {
             try {
               const liveStatus = await fetchLiveStatusForLogin(user.store_slug)
               if (!liveStatus.data?.is_live) {
-                router.push("/onboarding")
+                try {
+                  const locations = await fetchLocationsForLogin()
+                  const hqLocation = locations.find((loc) => loc.is_hq)
+                  if (hqLocation) {
+                    const settingsStore = useSettingsStore()
+                    settingsStore.setActiveLocation(hqLocation)
+                    settingsStore.setLocations(locations)
+                    router.push("/onboarding")
+                    return
+                  }
+                } catch {
+                  // If fetching locations fails, go to dashboard
+                }
+                // Fallback to dashboard if no HQ found or fetch failed
+                router.push("/dashboard")
                 return
               }
             } catch {

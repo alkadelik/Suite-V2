@@ -98,7 +98,7 @@ export function usePartiallyFulfill() {
       body,
     }: {
       id: string
-      body: { items: { uid: string; quantity: number }[] }
+      body: { items: { variant: string; qty: number }[] }
     }) => baseApi.post(`/orders/${id}/fulfill/`, body),
   })
 }
@@ -137,5 +137,13 @@ export function useInitializeOrderPayment() {
   return useMutation({
     mutationFn: (uid: string) =>
       baseApi.post<{ data: { payment_link: string } }>(`/billings/orders/${uid}/initialize/`),
+  })
+}
+
+/** Generate order receipt - returns a URL for sharing */
+export function useGenerateReceipt() {
+  return useMutation({
+    mutationFn: (id: string) =>
+      baseApi.post<{ data: { url: string } }>(`/orders/${id}/generate-receipt/`),
   })
 }
