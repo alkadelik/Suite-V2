@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Drawer from "@components/Drawer.vue"
 import StepperWizard from "@components/StepperWizard.vue"
-import { ref, computed } from "vue"
+import { ref, computed, onMounted } from "vue"
 import type { IProductCatalogue } from "@modules/inventory/types"
 import type { ICustomer } from "@modules/customers/types"
 import type { OrderPayload, OrderItemPayload } from "@modules/orders/types"
@@ -11,6 +11,7 @@ import OrderSelectProduct from "./create-order-form/OrderSelectProduct.vue"
 import OrderProductQtyVariant from "./create-order-form/OrderProductQtyVariant.vue"
 import OrderReviewForm from "./create-order-form/OrderReviewForm.vue"
 import OrderShippingInfoForm from "./create-order-form/OrderShippingInfoForm.vue"
+import OrderAddCustomerAddress from "./create-order-form/OrderAddCustomerAddress.vue"
 import OrderPaymentForm from "./create-order-form/OrderPaymentForm.vue"
 import PopupOrderSelectProduct from "@modules/popups/components/popup-order-form/PopupOrderSelectProduct.vue"
 import PopupOrderProductQty from "@modules/popups/components/popup-order-form/PopupOrderProductQty.vue"
@@ -25,6 +26,7 @@ import { useMediaQuery } from "@vueuse/core"
 import Modal from "@components/Modal.vue"
 import { useGetStoreDetails } from "@modules/settings/api"
 import { useAuthStore } from "@modules/auth/store"
+import { handlePayStackPayment, loadPaystackScript } from "../utilities"
 
 const props = defineProps({
   open: { type: Boolean, required: true },
@@ -155,9 +157,10 @@ const getInitialShippingInfo = () => ({
   fulfilment_status: isPopupOrder.value
     ? "fulfilled"
     : ("unfulfilled" as "unfulfilled" | "fulfilled"),
-  delivery_address: "",
-  delivery_method: "manual" as "manual" | "automatic",
-  courier: "",
+  delivery_address: "" as string | { label: string; value: string },
+  delivery_type: "" as "standard" | "express",
+  delivery_method: "" as "manual" | "shipbubble" | "custom",
+  courier: "" as string | IShippingCourier,
   delivery_fee: 0,
   order_date: new Date().toISOString().split("T")[0],
   order_channel: isPopupOrder.value
@@ -169,9 +172,21 @@ const getInitialShippingInfo = () => ({
   shipping_rate_token: "",
   customer_email: "",
   customer_phone: "",
+  express_delivery_option: "",
+  manual_delivery_option: "",
 })
 
 const shippingInfo = ref(getInitialShippingInfo())
+
+// Add address modal state
+const showAddAddressModal = ref(false)
+
+const handleAddressSuccess = (address: { label: string; value: string }) => {
+  shippingInfo.value.delivery_address = address
+  showAddAddressModal.value = false
+  // Optionally refresh customer data
+  emit("refresh")
+}
 
 // Step 5: Payment info
 const getInitialPaymentInfo = () => ({
@@ -212,9 +227,9 @@ const vatAmount = computed(() => {
 const totalAmount = computed(() => {
   return (
     productsTotal.value +
-    vatAmount.value +
-    shippingInfo.value.delivery_fee -
-    paymentInfo.value.discount_amount
+    Number(vatAmount.value) +
+    Number(shippingInfo.value.delivery_fee) -
+    Number(paymentInfo.value.discount_amount)
   )
 })
 
@@ -225,8 +240,49 @@ const isPending = computed(() => isRegularOrderPending.value || isPopupOrderPend
 
 const onCreateOrder = () => {
   // Format payload according to OrderPayload interface
-  const { fulfilment_method, delivery_method } = shippingInfo.value
+  const { fulfilment_method, delivery_type, delivery_method } = shippingInfo.value
   const { uid, email, phone, full_name, first_name, last_name } = selectedCustomer.value || {}
+
+  // Prepare delivery-specific fields based on delivery type and method
+  const deliveryFields: Record<string, unknown> = {}
+
+  if (fulfilment_method === "delivery") {
+    // deliveryFields.delivery_type = delivery_type
+    deliveryFields.delivery_payment_option = shippingInfo.value.delivery_payment_option
+    deliveryFields.delivery_address =
+      typeof shippingInfo.value.delivery_address === "string"
+        ? shippingInfo.value.delivery_address
+        : shippingInfo.value.delivery_address.value
+    deliveryFields.delivery_method = delivery_method
+
+    if (delivery_type === "express") {
+      // Express delivery: only send express_delivery_option (UID)
+      deliveryFields.delivery_method = "manual"
+      deliveryFields.manual_delivery_option = shippingInfo.value.express_delivery_option
+      // Backend will use the UID to get delivery fee and location details
+    } else if (delivery_type === "standard") {
+      if (delivery_method === "manual") {
+        // Manual delivery: only send manual_delivery_option (UID)
+        deliveryFields.manual_delivery_option = shippingInfo.value.manual_delivery_option
+        // Backend will use the UID to get delivery fee and location details
+      } else if (delivery_method === "shipbubble") {
+        deliveryFields.rate = shippingInfo.value.shipping_rate_token
+        deliveryFields.courier = shippingInfo.value.courier
+        delete deliveryFields.delivery_address
+      } else if (delivery_method === "custom") {
+        // Custom delivery: send courier name and delivery_fee
+        deliveryFields.delivery_fee = shippingInfo.value.delivery_fee
+        deliveryFields.courier = shippingInfo.value.courier
+          ? {
+              courier_id: shippingInfo.value.courier,
+              courier_name: shippingInfo.value.courier,
+              votes: 0,
+              ratings: 0,
+            }
+          : ""
+      }
+    }
+  }
 
   const payload = {
     source: isPopupOrder.value ? "popup-internal" : "internal",
@@ -239,33 +295,15 @@ const onCreateOrder = () => {
           customer_phone: phone || "",
         }
       : { customer: "" }),
-    total_amount: totalAmount.value,
-    ...(fulfilment_method === "delivery"
-      ? {
-          delivery_fee: shippingInfo.value.delivery_fee,
-          delivery_method,
-          delivery_payment_option: shippingInfo.value.delivery_payment_option,
-          delivery_address:
-            delivery_method === "automatic" ? shippingInfo.value.delivery_address : "",
-        }
-      : {}),
+    total_amount: Number(totalAmount.value).toFixed(2),
+    ...deliveryFields,
     fulfilment_method,
-    courier:
-      fulfilment_method === "delivery" &&
-      (shippingInfo.value.shipping_courier || shippingInfo.value.courier)
-        ? {
-            courier_id: shippingInfo.value.courier?.toLowerCase(),
-            courier_name: shippingInfo.value.courier,
-            votes: 0,
-            ratings: 0,
-          }
-        : "",
     coupon_code: paymentInfo.value.coupon_code || "",
     payment_status: paymentInfo.value.payment_status,
     payment_amount:
       paymentInfo.value.payment_status === "paid"
-        ? totalAmount.value
-        : paymentInfo.value.payment_amount,
+        ? Number(totalAmount.value).toFixed(2)
+        : Number(paymentInfo.value.payment_amount).toFixed(2),
     payment_source: paymentInfo.value.payment_source?.value,
     items: isPopupOrder.value
       ? popupOrderItems.value.map((item) => ({
@@ -300,10 +338,55 @@ const onCreateOrder = () => {
     onError: displayError,
   }
 
-  if (isPopupOrder.value) {
-    createPopupOrder(payload as PopupOrderPayload, handler)
+  if (delivery_method === "shipbubble") {
+    const payData = {
+      shipping_price: (Number(shippingInfo.value.delivery_fee || 0) * 100).toFixed(2), // convert to kobo
+      customer_name:
+        selectedCustomer.value?.full_name ||
+        `${selectedCustomer.value?.first_name || ""} ${selectedCustomer.value?.last_name || ""}`.trim() ||
+        "Customer",
+      customer_email:
+        shippingInfo.value.customer_email ||
+        selectedCustomer.value?.email ||
+        "theo.testing@mailsac.com",
+      shipping_address:
+        typeof shippingInfo.value.delivery_address === "string"
+          ? shippingInfo.value.delivery_address
+          : (shippingInfo.value.delivery_address as { label: string; value: string }).label,
+    }
+
+    console.log("Initiating PayStack payment with data:", payData)
+
+    handlePayStackPayment(payData, (payResponse) => {
+      // money paid... time to create order
+      console.log("Payment successful:", payResponse)
+      const reference = payResponse.reference
+      if (isPopupOrder.value) {
+        createPopupOrder(
+          {
+            ...payload,
+            reference,
+            delivery_fee: Number(shippingInfo.value.delivery_fee).toFixed(2),
+          } as unknown as PopupOrderPayload,
+          handler,
+        )
+      } else {
+        createOrder(
+          {
+            ...payload,
+            reference,
+            delivery_fee: Number(shippingInfo.value.delivery_fee).toFixed(2),
+          } as OrderPayload,
+          handler,
+        )
+      }
+    })
   } else {
-    createOrder(payload as OrderPayload, handler)
+    if (isPopupOrder.value) {
+      createPopupOrder(payload as unknown as PopupOrderPayload, handler)
+    } else {
+      createOrder(payload as OrderPayload, handler)
+    }
   }
 }
 
@@ -319,6 +402,11 @@ const resetForm = () => {
 }
 
 const isMobile = useMediaQuery("(max-width: 1028px)")
+
+// load paystack script on mounted
+onMounted(() => {
+  loadPaystackScript()
+})
 </script>
 
 <template>
@@ -347,15 +435,17 @@ const isMobile = useMediaQuery("(max-width: 1028px)")
         <!-- Step 1: Select Variants & Quantities -->
         <PopupOrderProductQty
           v-if="step === 1 && isPopupOrder"
+          :key="`popup-${selectedPopupProducts.map((p) => p.uid).join('-')}`"
           v-model:orderItems="popupOrderItems"
-          :selectedProducts="selectedPopupProducts"
+          v-model:selectedProducts="selectedPopupProducts"
           @next="onNext"
           @prev="onPrev"
         />
         <OrderProductQtyVariant
           v-else-if="step === 1"
+          :key="`order-${selectedProducts.map((p) => p.uid).join('-')}`"
           v-model:orderItems="orderItems"
-          :selectedProducts="selectedProducts"
+          v-model:selectedProducts="selectedProducts"
           @next="onNext"
           @prev="onPrev"
         />
@@ -371,11 +461,12 @@ const isMobile = useMediaQuery("(max-width: 1028px)")
         <!-- Step 3: Shipping Info -->
         <OrderShippingInfoForm
           v-if="step === 3"
-          v-model:shippingInfo="shippingInfo"
+          v-model:shipping-info="shippingInfo"
           :customer="selectedCustomer"
           :orderItems="isPopupOrder ? (popupOrderItems as any) : orderItems"
           @next="onNext"
           @prev="onPrev"
+          @openAddAddress="showAddAddressModal = true"
         />
 
         <!-- Step 4: Payment Info -->
@@ -409,4 +500,17 @@ const isMobile = useMediaQuery("(max-width: 1028px)")
       </template>
     </StepperWizard>
   </component>
+
+  <!-- Add Customer Address Modal (outside drawer to avoid nesting) -->
+  <OrderAddCustomerAddress
+    :open="showAddAddressModal"
+    :customer-uid="selectedCustomer?.uid || ''"
+    :customer-name="
+      selectedCustomer?.full_name ||
+      selectedCustomer?.first_name + ' ' + selectedCustomer?.last_name ||
+      'Customer'
+    "
+    @close="showAddAddressModal = false"
+    @success="handleAddressSuccess"
+  />
 </template>

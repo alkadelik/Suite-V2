@@ -10,7 +10,7 @@ import { computed, watch, onMounted } from "vue"
 
 interface PaymentInfo {
   payment_status: "unpaid" | "paid" | "partially_paid"
-  payment_amount: number
+  payment_amount: number | string
   payment_source?: { label: string; value: string }
   coupon_code: string | null
   discount_amount: number
@@ -37,7 +37,7 @@ onMounted(() => {
   if (paymentInfo.value.payment_status === "paid") {
     paymentInfo.value = {
       ...paymentInfo.value,
-      payment_amount: props.totalAmount,
+      payment_amount: Number(props.totalAmount).toFixed(2),
     }
   }
 })
@@ -50,7 +50,7 @@ watch(
       // Auto-fill with total amount for paid status
       paymentInfo.value = {
         ...paymentInfo.value,
-        payment_amount: props.totalAmount,
+        payment_amount: Number(props.totalAmount).toFixed(2),
       }
     } else if (newStatus === "partially_paid" || newStatus === "unpaid") {
       // Reset to 0 for partial payment or unpaid
@@ -78,8 +78,8 @@ watch(
 const canProceed = computed(() => {
   if (paymentInfo.value.payment_status === "partially_paid") {
     return (
-      paymentInfo.value.payment_amount > 0 &&
-      paymentInfo.value.payment_amount < props.totalAmount &&
+      Number(paymentInfo.value.payment_amount) > 0 &&
+      Number(paymentInfo.value.payment_amount) < props.totalAmount &&
       !!paymentInfo.value.payment_source
     )
   }
@@ -132,27 +132,31 @@ const isMobile = useMediaQuery("(max-width: 768px)")
         </p>
         <p class="flex justify-between text-sm">
           <span class="text-core-600">Total products amount</span>
-          <span class="font-medium">{{ formatCurrency(productsTotal) }}</span>
+          <span class="font-medium">{{ formatCurrency(productsTotal, { kobo: true }) }}</span>
         </p>
         <p class="flex justify-between text-sm">
           <span class="text-core-600">Delivery Fee</span>
-          <span class="font-medium">{{ deliveryFee > 0 ? formatCurrency(deliveryFee) : "-" }}</span>
+          <span class="font-medium">{{
+            deliveryFee > 0 ? formatCurrency(deliveryFee, { kobo: true }) : "-"
+          }}</span>
         </p>
         <p v-if="vatAmount > 0" class="flex justify-between text-sm">
           <span class="text-core-600">VAT (7.5%)</span>
-          <span class="font-medium">{{ formatCurrency(vatAmount) }}</span>
+          <span class="font-medium">{{ formatCurrency(vatAmount, { kobo: true }) }}</span>
         </p>
         <p
           v-if="paymentInfo.discount_amount > 0"
           class="flex justify-between text-sm text-green-600"
         >
           <span>Discount</span>
-          <span class="font-medium">-{{ formatCurrency(paymentInfo.discount_amount) }}</span>
+          <span class="font-medium"
+            >-{{ formatCurrency(paymentInfo.discount_amount, { kobo: true }) }}</span
+          >
         </p>
         <div class="border-core-200 my-2 border-t border-dashed"></div>
         <p class="flex justify-between text-lg font-semibold">
           <span>Total:</span>
-          <span class="text-primary-600">{{ formatCurrency(totalAmount) }}</span>
+          <span class="text-primary-600">{{ formatCurrency(totalAmount, { kobo: true }) }}</span>
         </p>
       </div>
 

@@ -230,7 +230,7 @@ const isEmpty = computed(() => !orderData.value?.uid || isPending.value)
               <h5 class="text-core-600 mb-1">Delivery provider</h5>
               <p class="font-medium">{{ order.courier_name || "Unknown Courier" }}</p>
               <Chip
-                v-if="order.delivery_method === 'automatic'"
+                v-if="order.delivery_method === 'shipbubble'"
                 color="blue"
                 show-dot
                 class="mt-1 py-4! text-xs"

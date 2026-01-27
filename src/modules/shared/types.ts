@@ -21,6 +21,8 @@ export interface ILiveStatusCriteria {
       delivery_enabled: boolean
       shipping_account: boolean
       pickup_location: boolean
+      manual_delivery_enabled: boolean
+      express_delivery_enabled: boolean
     }
   }
   products: {

@@ -7,7 +7,7 @@ import SelectField from "@components/form/SelectField.vue"
 import Icon from "@components/Icon.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import type { IProductCatalogue } from "@modules/inventory/types"
-import { computed, onMounted, ref, reactive } from "vue"
+import { computed, onMounted, ref, reactive, watch } from "vue"
 import * as yup from "yup"
 import TextAreaField from "@components/form/TextAreaField.vue"
 
@@ -52,6 +52,7 @@ const emit = defineEmits<{
   next: []
   prev: []
   "update:orderItems": [items: OrderItem[]]
+  "update:selectedProducts": [products: IProductCatalogue[]]
 }>()
 
 const localItems = ref<OrderItem[]>([])
@@ -154,6 +155,68 @@ onMounted(() => {
   }
 })
 
+// Watch for new products added in step 0
+watch(
+  () => props.selectedProducts.length,
+  () => {
+    // Get current product UIDs in localItems
+    const currentProductUids = new Set(localItems.value.map((item) => item.product.uid))
+
+    // Find products that are in selectedProducts but not in localItems
+    const newProductsToAdd = props.selectedProducts.filter(
+      (product) => !currentProductUids.has(product.uid),
+    )
+
+    // Add new products to localItems
+    for (const product of newProductsToAdd) {
+      // Auto-select variant if there's only one and no attributes
+      if (
+        product.variants &&
+        product.variants.length === 1 &&
+        product.variants[0].attributes.length === 0
+      ) {
+        const src = product.variants[0]
+        const availableStock =
+          Number(src.sellable_stock ?? src.available_stock) - Number(src.popup_quantity_taken ?? 0)
+        const defaultVariant = {
+          uid: src.uid,
+          name: src.name,
+          sku: src.sku,
+          price: src.price,
+          stock: Math.max(0, availableStock),
+          sellable_stock: Number(src.sellable_stock ?? src.available_stock),
+          popup_quantity_taken: Number(src.popup_quantity_taken ?? 0),
+          original_price: parseFloat(src.price),
+        }
+
+        selectedVariants.value.set(product.uid, [
+          {
+            variant: defaultVariant,
+            quantity: 1,
+            unit_price: parseFloat(defaultVariant.price),
+          },
+        ])
+
+        localItems.value.push({
+          product,
+          variant: defaultVariant,
+          quantity: 1,
+          unit_price: parseFloat(defaultVariant.price),
+          notes: "",
+        })
+      } else {
+        localItems.value.push({
+          product,
+          variant: null,
+          quantity: 1,
+          unit_price: 0,
+          notes: "",
+        })
+      }
+    }
+  },
+)
+
 // Get currently selected variant UIDs for a product
 const getSelectedVariantValues = (product: IProductCatalogue) => {
   const variants = selectedVariants.value.get(product.uid)
@@ -225,6 +288,29 @@ const removeItem = (index: number) => {
   }
   delete showNotes[product.uid]
   localItems.value.splice(index, 1)
+  selectedVariants.value.delete(product.uid)
+
+  // Immediately sync back to parent
+  const remainingProducts = localItems.value.map((item) => item.product)
+  emit("update:selectedProducts", remainingProducts)
+
+  // Update orderItems in parent
+  const orderItems: OrderItem[] = []
+  for (const item of localItems.value) {
+    const variants = selectedVariants.value.get(item.product.uid)
+    if (variants && variants.length > 0) {
+      for (const variantItem of variants) {
+        orderItems.push({
+          product: item.product,
+          variant: variantItem.variant,
+          quantity: variantItem.quantity,
+          unit_price: variantItem.unit_price,
+          notes: item.notes,
+        })
+      }
+    }
+  }
+  emit("update:orderItems", orderItems)
 }
 
 const toggleNotes = (productUid: string) => {

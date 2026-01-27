@@ -92,6 +92,13 @@ const menuItems = computed(() => {
             </div>
           </div>
           <div class="flex items-center gap-2 text-sm">
+            <!-- status -->
+            <Chip
+              :color="getExpenseStatusColor(expense.status)"
+              :label="expense.status"
+              class="!w-full max-w-max capitalize"
+              show-dot
+            />
             <!-- type -->
             <Chip
               v-if="expense.sub_category_name"
@@ -100,14 +107,8 @@ const menuItems = computed(() => {
               :label="expense.sub_category_name || ''"
               class="truncate"
             />
-            <!-- status -->
-            <Chip
-              :color="getExpenseStatusColor(expense.status)"
-              :label="expense.status"
-              class="capitalize"
-              show-dot
-            />
-            <p class="ml-auto pl-4 text-sm">
+            <!-- date -->
+            <p class="ml-auto pl-4 text-xs font-medium">
               {{ formatDate(expense.date) }}
             </p>
           </div>
