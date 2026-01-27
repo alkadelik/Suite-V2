@@ -142,12 +142,28 @@ const menuItems = computed(() => {
       </div>
     </template>
 
-    <div class="mb-4 flex justify-end">
-      <DropdownMenu v-if="order.fulfilment_status !== 'voided'" :items="menuItems" size="sm">
+    <div v-if="order.fulfilment_status !== 'voided'" class="mb-4 flex justify-end">
+      <DropdownMenu :items="menuItems" size="sm">
         <template #trigger>
           <AppButton icon="settings-02" label="Manage Order" variant="outlined" size="sm" />
         </template>
       </DropdownMenu>
+    </div>
+
+    <div
+      v-else
+      class="bg-error-25 text-error-700 border-error-300 mb-4 flex items-center gap-3 rounded-xl border px-3 py-3"
+    >
+      <span
+        class="border-error-200 ring-error-100 flex size-6 flex-shrink-0 items-center justify-center rounded-full border-2 ring-2 ring-offset-2"
+      >
+        <Icon name="info-circle" size="16" />
+      </span>
+      <div class="text-sm">
+        <p>
+          This is order has been voided and all its items are no longer available for fulfillment.
+        </p>
+      </div>
     </div>
 
     <div class="space-y-4">

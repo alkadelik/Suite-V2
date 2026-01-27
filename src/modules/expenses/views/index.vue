@@ -56,8 +56,8 @@ const expenseMetrics = computed(() => {
       icon: "wallet-money",
       iconClass: "md:text-green-700",
       percentage: stat?.change.total_amount_pct,
-      chip: `${stat?.current.expense_count || 0} records`,
-      chipColor: "primary",
+      // chip: `${stat?.current.expense_count || 0} records`,
+      // chipColor: "primary",
     },
     {
       label: isMobile.value ? "Biggest Category" : "Biggest Expense Category",
