@@ -74,7 +74,7 @@
         :children="productionItems"
       />
 
-      <SidebarLink v-if="isStaging" icon="receipt-text" label="Expenses" to="/expenses" />
+      <SidebarLink icon="receipt-text" label="Expenses" to="/expenses" />
     </section>
 
     <section class="mt-auto px-4 pb-4">
