@@ -8,7 +8,7 @@ import Icon from "@components/Icon.vue"
 import TextAreaField from "@components/form/TextAreaField.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import { PopupInventory, PopupInventoryVariant } from "@modules/popups/types"
-import { computed, onMounted, ref, reactive } from "vue"
+import { computed, onMounted, ref, reactive, watch } from "vue"
 import * as yup from "yup"
 
 interface PopupOrderItem {
@@ -41,6 +41,7 @@ const emit = defineEmits<{
   next: []
   prev: []
   "update:orderItems": [items: PopupOrderItem[]]
+  "update:selectedProducts": [products: PopupInventory[]]
 }>()
 
 const localItems = ref<{ product: PopupInventory; notes?: string }[]>([])
@@ -114,6 +115,43 @@ onMounted(() => {
   }
 })
 
+// Watch for new products added in step 0
+watch(
+  () => props.selectedProducts.length,
+  () => {
+    // Get current product UIDs in localItems
+    const currentProductUids = new Set(localItems.value.map((item) => item.product.uid))
+
+    // Find products that are in selectedProducts but not in localItems
+    const newProductsToAdd = props.selectedProducts.filter(
+      (product) => !currentProductUids.has(product.uid),
+    )
+
+    // Add new products to localItems
+    for (const product of newProductsToAdd) {
+      // Auto-select variant if there's only one
+      if (product.variants && product.variants.length === 1) {
+        const variant = product.variants[0]
+        selectedVariants.value.set(product.uid, [
+          {
+            variant,
+            quantity: 1,
+            unit_price: parseFloat(variant.event_price),
+          },
+        ])
+      } else {
+        // For products with multiple variants, start with empty selection
+        selectedVariants.value.set(product.uid, [])
+      }
+
+      localItems.value.push({
+        product,
+        notes: "",
+      })
+    }
+  },
+)
+
 // Get currently selected variant UIDs for a product
 const getSelectedVariantValues = (product: PopupInventory) => {
   const variants = selectedVariants.value.get(product.uid)
@@ -173,6 +211,28 @@ const removeItem = (index: number) => {
   delete showNotes[item.product.uid]
   selectedVariants.value.delete(item.product.uid)
   localItems.value.splice(index, 1)
+
+  // Immediately sync back to parent
+  const remainingProducts = localItems.value.map((item) => item.product)
+  emit("update:selectedProducts", remainingProducts)
+
+  // Update orderItems in parent
+  const orderItems: PopupOrderItem[] = []
+  for (const item of localItems.value) {
+    const variants = selectedVariants.value.get(item.product.uid)
+    if (variants && variants.length > 0) {
+      for (const variantItem of variants) {
+        orderItems.push({
+          product: item.product,
+          variant: variantItem.variant,
+          quantity: variantItem.quantity,
+          unit_price: variantItem.unit_price,
+          notes: item.notes,
+        })
+      }
+    }
+  }
+  emit("update:orderItems", orderItems)
 }
 
 const toggleNotes = (productUid: string) => {
@@ -479,7 +539,9 @@ const productsTotal = computed(() => {
 
     <div class="h-40" />
 
-    <div class="border-core-200 fixed right-0 bottom-0 left-0 space-y-2 border-t bg-white p-6">
+    <div
+      class="border-core-200 fixed right-0 bottom-0 left-0 space-y-2 border-t bg-white p-4 md:p-6"
+    >
       <div class="flex items-center justify-between">
         <p class="text-sm text-gray-600">Total Items count:</p>
         <span class="text-sm font-medium">{{ totalItemsCount }}</span>

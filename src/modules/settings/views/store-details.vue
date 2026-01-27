@@ -7,6 +7,7 @@ import Avatar from "@components/Avatar.vue"
 import FormField from "@components/form/FormField.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import StorefrontNotLiveBanner from "@components/StorefrontNotLiveBanner.vue"
+import StoreDetailsSkeleton from "../components/skeletons/StoreDetailsSkeleton.vue"
 import { useAuthStore } from "@modules/auth/store"
 import { CURRENCY_OPTIONS } from "@modules/shared/constants"
 import { useForm } from "vee-validate"
@@ -32,8 +33,14 @@ const validSchema = yup.object({
 
 const { user } = useAuthStore()
 
-const { data: industries } = useGetStoreIndustries()
-const { data: storeDetails, refetch } = useGetStoreDetails(user?.store_uid || "")
+const { data: industries, isPending: isLoadingIndustries } = useGetStoreIndustries()
+const {
+  data: storeDetails,
+  refetch,
+  isPending: isLoadingDetails,
+} = useGetStoreDetails(user?.store_uid || "")
+
+const isLoading = computed(() => isLoadingIndustries.value || isLoadingDetails.value)
 
 const { mutate: updateStoreDetails } = useUpdateStoreDetails()
 
@@ -126,7 +133,8 @@ const watchStoreNameForSlug = (storeName: string) => {
 </script>
 
 <template>
-  <div>
+  <StoreDetailsSkeleton v-if="isLoading" />
+  <div v-else>
     <StorefrontNotLiveBanner />
 
     <section class="mt-5">

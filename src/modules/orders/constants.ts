@@ -83,11 +83,11 @@ export const ORDER_COLUMNS: TableColumn<TOrder>[] = [
 
 export const ORDER_STATUS_TAB = [
   { title: "All", key: "all" },
-  { title: "Paid", key: "paid" },
   { title: "Unpaid", key: "unpaid" },
-  { title: "Voided", key: "voided" },
   // { title: "Shipments", key: "shipments" },
-  { title: "Fulfilled", key: "fulfilled" },
   { title: "Ongoing", key: "unfulfilled" },
+  { title: "Paid", key: "paid" },
+  { title: "Fulfilled", key: "fulfilled" },
+  { title: "Voided", key: "voided" },
   { title: "Returned", key: "returned" },
 ]

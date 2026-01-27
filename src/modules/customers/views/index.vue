@@ -72,11 +72,16 @@
       </div>
 
       <DataTable
-        :data="filteredCustomers"
+        :data="customers ?? []"
         :columns="CUSTOMER_COLUMNS"
         :loading="isLoading"
-        :show-pagination="false"
         :enable-row-selection="true"
+        :show-pagination="true"
+        :items-per-page="itemsPerPage"
+        :total-items-count="customersData?.data?.count || 0"
+        :total-page-count="Math.ceil((customersData?.data?.count || 0) / itemsPerPage) || 1"
+        :server-pagination="true"
+        @pagination-change="(d) => (page = d.currentPage)"
         @row-click="handleRowClick"
       >
         <template #cell:name="{ item }">
@@ -228,19 +233,11 @@ import EmptyState from "@components/EmptyState.vue"
 import { useRoute, useRouter } from "vue-router"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
 import StatCard from "@components/StatCard.vue"
+import { useDebouncedRef } from "@/composables/useDebouncedRef"
 
 // Router
 const route = useRoute()
 const router = useRouter()
-
-// API calls
-const { data: customersData, isLoading, refetch } = useGetCustomers()
-const { mutate: deleteCustomer, isPending: isDeleting } = useDeleteCustomer()
-const { checkPremiumAccess } = usePremiumAccess()
-
-// Get individual customer data when customerUid is set
-const customerUid = ref<string>("")
-const { data: customerData } = useGetCustomer(customerUid, true)
 
 // Component state
 const formMode = ref<TCustomerFormMode>("add")
@@ -250,23 +247,30 @@ const showViewCustomerDrawer = ref(false)
 const showExportCustomerModal = ref(false)
 const customer = ref<ICustomer | null>(null)
 const searchQuery = ref("")
+const debouncedSearch = useDebouncedRef(searchQuery, 750)
+const page = ref(1)
+const itemsPerPage = ref(20)
+const computedParams = computed(() => {
+  const params: Record<string, string> = {}
+  if (debouncedSearch.value) params.search = debouncedSearch.value
+  params.offset = ((page.value - 1) * itemsPerPage.value).toString()
+  params.limit = itemsPerPage.value.toString()
+  return params
+})
+// API calls
+const { data: customersData, isLoading, refetch } = useGetCustomers(computedParams)
+const { mutate: deleteCustomer, isPending: isDeleting } = useDeleteCustomer()
+const { checkPremiumAccess } = usePremiumAccess()
+
+// Get individual customer data when customerUid is set
+const customerUid = ref<string>("")
+const { data: customerData } = useGetCustomer(customerUid, true)
 
 // Computed properties
 const customers = computed(() => {
   if (!customersData.value?.data?.results) return []
 
   return customersData.value.data.results
-})
-
-const filteredCustomers = computed<ICustomer[]>(() => {
-  if (!searchQuery.value) return customers.value
-
-  const query = searchQuery.value.toLowerCase()
-  return customers.value.filter(
-    (customer: ICustomer) =>
-      customer.full_name?.toLowerCase().includes(query) ||
-      customer.email?.toLowerCase().includes(query),
-  )
 })
 
 const customerMetrics = computed(() => {

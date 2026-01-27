@@ -27,9 +27,10 @@ export type TOrder = {
   customer_email: string
   customer_phone: string
   customer_name?: string
+  customer_address: string
   delivery_address: string | null
   delivery_fee: string
-  delivery_method: "manual" | "automatic"
+  delivery_method: "manual" | "shipbubble" | "custom"
   discount_amount: string
   fulfilment_method: "pickup" | "delivery"
   fulfilment_status: "unfulfilled" | "fulfilled" | "partially_fulfilled" | "voided"
@@ -44,11 +45,15 @@ export type TOrder = {
   store_name: string
   subtotal: string
   total_amount: number
+  tax_amount: string
+  tax_rate_used: string
   total_paid: number
   tracking_number: string
   user: string
   user_name: string
   is_voided: boolean
+
+  manual_delivery_type?: "standard" | "express"
 
   // Needed
   store_email?: string
@@ -102,6 +107,7 @@ export interface OrderPayload {
   items: OrderItemPayload[]
   order_channel: string
   order_date?: string
+  reference?: string
 }
 
 export interface OrderItemPayload {

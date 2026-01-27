@@ -1,6 +1,7 @@
 <template>
   <div class="h-full w-full py-5 md:flex md:justify-center">
-    <LoadingIcon v-if="isLoading" class="mx-auto my-20" />
+    <OnboardingSkeleton v-if="isLoading" />
+
     <div v-else class="text-center md:w-3xl">
       <div class="mb-4 flex flex-col gap-2 p-3">
         <h1 class="text-2xl font-bold md:text-3xl">Welcome to Leyyow 🎉</h1>
@@ -86,14 +87,14 @@ import Chip from "@/components/Chip.vue"
 import AppButton from "@components/AppButton.vue"
 import Switch from "@components/form/Switch.vue"
 import Icon from "@components/Icon.vue"
-import LoadingIcon from "@components/LoadingIcon.vue"
 import { ref, computed } from "vue"
 import { useRouter } from "vue-router"
 import BankAccountModal from "../components/BankAccountModal.vue"
 import SetPickupModal from "../components/ConfigurePickupModal.vue"
 import VerifyIdentityModal from "../components/VerifyIdentityModal.vue"
 import ConfigureDeliveryModal from "../components/ConfigureDeliveryModal.vue"
-import { useGetLiveStatus } from "../api"
+import OnboardingSkeleton from "../components/skeletons/OnboardingSkeleton.vue"
+import { useGetLiveStatus, useGetManualDeliveryOptions } from "../api"
 import { useAuthStore } from "@modules/auth/store"
 import { useGetCustomers } from "@modules/customers/api"
 import { useGetOrders } from "@modules/orders/api"
@@ -127,6 +128,10 @@ const { data: ordersData, isPending: isLoadingOrders } = useGetOrders(
   ref({ page: 1, page_size: 1 }),
 )
 const hasOrders = computed(() => (ordersData.value?.count || 0) > 0)
+
+// Check if manual delivery options exist
+const { data: manualDeliveryOptions } = useGetManualDeliveryOptions()
+const hasManualDeliveries = computed(() => (manualDeliveryOptions.value?.length ?? 0) > 0)
 
 // Combined loading state
 const isLoading = computed(
@@ -194,7 +199,8 @@ const tasks = computed(() => {
     {
       id: 4,
       title: "Allow Delivery?",
-      completed: criteria?.delivery_options?.details?.delivery_enabled || false,
+      completed:
+        criteria?.delivery_options?.details?.delivery_enabled || hasManualDeliveries.value || false,
       subtext: "Offer delivery to your customers.",
       isButton: false,
       buttonLabel: "",

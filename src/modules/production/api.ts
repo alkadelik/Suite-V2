@@ -6,15 +6,15 @@ import { useMutation } from "@tanstack/vue-query"
 /** Fetch suppliers */
 export function useGetSuppliers() {
   return useApiQuery<TPaginatedResponse<{ uid: string; name: string }>>({
-    url: `/production/suppliers/`,
-    key: `production-suppliers`,
+    url: `/raw-materials/suppliers/`,
+    key: `raw-materials-suppliers`,
   })
 }
 
 /** Create supplier api request */
 export function useCreateSupplier() {
   return useMutation({
-    mutationFn: (payload: { name: string }) => baseApi.post(`/production/suppliers/`, payload),
+    mutationFn: (payload: { name: string }) => baseApi.post(`/raw-materials/suppliers/`, payload),
   })
 }
 
@@ -22,7 +22,7 @@ export function useCreateSupplier() {
 export function useCreateRawMaterial() {
   return useMutation({
     mutationFn: (body: FormData) =>
-      baseApi.post("/production/raw-materials/", body, {
+      baseApi.post("/raw-materials/", body, {
         headers: { "Content-Type": "multipart/form-data" },
       }),
   })
@@ -32,7 +32,7 @@ export function useCreateRawMaterial() {
 export function useEditRawMaterial() {
   return useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: FormData }) =>
-      baseApi.patch(`/production/raw-materials/${id}/`, payload, {
+      baseApi.patch(`/raw-materials/${id}/`, payload, {
         headers: { "Content-Type": "multipart/form-data" },
       }),
   })
@@ -43,7 +43,7 @@ export function useGetRawMaterials(
   params?: MaybeRefOrGetter<Record<string, string | number | boolean> | undefined>,
 ) {
   return useApiQuery<TPaginatedResponse<TRawMaterial>["data"]>({
-    url: "/production/raw-materials/",
+    url: "/raw-materials/",
     params,
     key: "raw-materials",
     selectData: true,
@@ -53,7 +53,7 @@ export function useGetRawMaterials(
 /** Fetch raw materials statistics */
 export function useGetRawMaterialsStats() {
   return useApiQuery<RawMaterialStats>({
-    url: `/production/raw-materials/stats/`,
+    url: `/raw-materials/dashboard/`,
     key: `raw-materials-stats`,
     selectData: true,
   })
@@ -62,7 +62,7 @@ export function useGetRawMaterialsStats() {
 /** Fetch single raw material by ID */
 export function useGetSingleRawMaterial(id: string) {
   return useApiQuery<TApiPromise<TRawMaterial>>({
-    url: `/production/raw-materials/${id}/`,
+    url: `/raw-materials/${id}/`,
     key: `raw-materials/${id}`,
     selectData: true,
   })

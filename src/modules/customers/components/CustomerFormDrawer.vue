@@ -86,6 +86,8 @@
         </div>
       </div>
 
+      <div class="py-10 lg:hidden" />
+
       <div
         class="fixed right-0 bottom-0 left-0 w-full space-y-3 border-t border-gray-200 bg-white px-4 py-4 md:px-6"
       >

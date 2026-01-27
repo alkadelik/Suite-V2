@@ -69,7 +69,7 @@ const sourceOptions = [
 interface FormValues {
   name: string
   unit: { label: string; value: string }
-  quantity: string
+  qty_in_stock: string
   source: { label: string; value: string }
   supplier: { label: string; value: string }[]
   expiry_date: string
@@ -88,12 +88,12 @@ const { handleSubmit, meta, resetForm, values, setFieldValue } = useForm<FormVal
         .object()
         .shape({ label: yup.string().required(), value: yup.string().required() })
         .required("Unit of measurement is required"),
-      quantity: yup
+      qty_in_stock: yup
         .number()
         .transform((value, originalValue) => (originalValue === "" ? undefined : value))
-        .typeError("Quantity must be a number")
-        .required("Quantity in stock is required")
-        .min(0, "Quantity cannot be negative"),
+        .typeError("qty_in_stock must be a number")
+        .required("qty_in_stock in stock is required")
+        .min(0, "qty_in_stock cannot be negative"),
       source: yup
         .object()
         .shape({ label: yup.string().required(), value: yup.string().required() })
@@ -114,7 +114,7 @@ const { handleSubmit, meta, resetForm, values, setFieldValue } = useForm<FormVal
   initialValues: {
     name: "",
     unit: { label: "", value: "" },
-    quantity: "",
+    qty_in_stock: "",
     source: { label: "", value: "" },
     supplier: [],
     expiry_date: "",
@@ -160,7 +160,7 @@ const onSubmit = handleSubmit((values) => {
   const formData = new FormData()
   formData.append("name", values.name)
   formData.append("unit", values.unit.value)
-  formData.append("quantity", values.quantity)
+  formData.append("qty_in_stock", values.qty_in_stock)
   formData.append("source", values.source.value)
   if (values.supplier && values.supplier.length > 0) {
     values.supplier.forEach((supplier) => {
@@ -203,7 +203,7 @@ watch(
           values: {
             name: props.material.name,
             unit: { label: props.material.unit, value: props.material.unit },
-            quantity: props.material.stock.toString(),
+            qty_in_stock: props.material.stock.toString(),
             source: sourceOption,
             supplier: [], // This would need to come from API if available
             expiry_date: props.material.expiration_date || "",
@@ -219,7 +219,7 @@ watch(
 )
 
 const canProceedToStep2 = computed(() => {
-  return values.name && values.unit && values.quantity && values.source?.value
+  return values.name && values.unit && values.qty_in_stock && values.source?.value
 })
 
 const goToNextStep = () => {
@@ -276,7 +276,7 @@ const goToPrevStep = () => {
             <div>
               <FormField
                 type="number"
-                name="quantity"
+                name="qty_in_stock"
                 label="Qty in Stock"
                 placeholder="e.g. 25"
                 required

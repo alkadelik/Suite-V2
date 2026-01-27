@@ -47,7 +47,12 @@
 
     <!-- Home & Get Started -->
     <div class="space-y-1 px-4 py-2">
-      <SidebarLink v-if="!isLive" icon="candle" label="Get Started" to="/onboarding" />
+      <SidebarLink
+        v-if="!isLive && activeLocation?.is_hq"
+        icon="candle"
+        label="Get Started"
+        to="/onboarding"
+      />
       <SidebarLink icon="house" label="Home" to="/dashboard" />
     </div>
 
@@ -73,7 +78,16 @@
     </section>
 
     <section class="mt-auto px-4 pb-4">
-      <SidebarLink icon="life-buoy" label="Support" to="/support" />
+      <SidebarLink
+        icon="life-buoy"
+        label="Support"
+        @click="
+          () => {
+            console.log('opening support modal')
+            useSharedStore().openSupportModal()
+          }
+        "
+      />
 
       <!-- Subscription view -->
       <div class="relative mt-20">
@@ -173,6 +187,7 @@ import { clipboardCopy, isStaging } from "@/utils/others"
 import { useSettingsStore } from "@modules/settings/store"
 import { useRouter } from "vue-router"
 import { useProductionStore } from "@modules/production/store"
+import { useSharedStore } from "@modules/shared/store"
 
 defineProps<{
   mobileSidebarOpen: boolean
@@ -204,6 +219,8 @@ const productionItems = computed(() => {
 })
 
 const storeDetails = computed(() => useSettingsStore().storeDetails)
+
+const activeLocation = computed(() => useSettingsStore().activeLocation)
 
 // Subscription derived state
 const subscription = computed(() => useAuthStore().user?.subscription)

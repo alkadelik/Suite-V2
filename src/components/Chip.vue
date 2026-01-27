@@ -100,6 +100,8 @@ const chipClasses = computed(() => {
     "transition-all",
     "duration-200",
     "ease-in-out",
+    "max-w-full",
+    "overflow-hidden",
   ]
 
   // Size classes

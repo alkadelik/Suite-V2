@@ -80,6 +80,7 @@ export interface ICustomersApiResponse {
       total_customers: number
       active_customers: number
     }
+    count: number
   }
   message?: string
   error?: boolean

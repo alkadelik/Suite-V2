@@ -5,8 +5,8 @@
   <!-- Drawer -->
   <aside :class="drawerClasses" @click.stop tabindex="-1" role="dialog" aria-modal="true">
     <!-- Header -->
-    <div v-if="showHeader" class="flex items-center justify-between border-b border-gray-200 p-5">
-      <slot name="header">
+    <slot name="header">
+      <div v-if="showHeader" class="flex items-center justify-between border-b border-gray-200 p-5">
         <h2 v-if="title" class="m-0 text-lg font-semibold text-gray-800">{{ title }}</h2>
         <span v-else></span>
         <button
@@ -16,8 +16,8 @@
         >
           <Icon name="close-circle" size="20" />
         </button>
-      </slot>
-    </div>
+      </div>
+    </slot>
 
     <!-- Body -->
     <div
@@ -28,7 +28,7 @@
     </div>
 
     <!-- Footer -->
-    <div v-if="$slots.footer" class="border-t border-gray-200 p-5">
+    <div v-if="$slots.footer" class="border-t border-gray-200 p-4 md:p-6">
       <slot name="footer" />
     </div>
   </aside>
@@ -60,6 +60,8 @@ interface Props {
   showHeader?: boolean
   /** Whether to apply padding to the drawer body (default: true) */
   handlePadding?: boolean
+  /** Whether to use full height for top/bottom positioned drawers (default: false) */
+  fullHeight?: boolean
 }
 
 /**
@@ -122,13 +124,15 @@ const drawerClasses = computed(() => {
       break
     case "top":
       baseClasses.push(
-        "top-0 left-0 right-0 max-h-[80dvh]",
+        props.fullHeight ? "top-0 left-0 right-0 h-[100dvh]" : "top-0 left-0 right-0 max-h-[80dvh]",
         props.open ? "translate-y-0" : "-translate-y-full",
       )
       break
     case "bottom":
       baseClasses.push(
-        "bottom-0 left-0 right-0 max-h-[80vh]",
+        props.fullHeight
+          ? "bottom-0 left-0 right-0 h-[100dvh]"
+          : "bottom-0 left-0 right-0 max-h-[80vh]",
         props.open ? "translate-y-0" : "translate-y-full",
       )
       break

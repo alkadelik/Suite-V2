@@ -12,8 +12,27 @@
       class="mb-6"
     />
 
-    <div v-if="isLoading" class="flex items-center justify-center py-12">
-      <LoadingIcon size="lg" />
+    <div v-if="isLoading" class="space-y-6">
+      <div v-for="g in 2" :key="g">
+        <div class="mb-4 h-6 w-20 animate-pulse rounded bg-gray-200"></div>
+        <div class="relative">
+          <div
+            class="absolute top-0 left-4 h-full w-0.5 bg-gray-200"
+            style="height: calc(100% - 2rem)"
+          ></div>
+          <div class="space-y-6">
+            <div v-for="i in 3" :key="i" class="relative flex gap-3">
+              <div
+                class="z-10 flex h-8 w-8 flex-shrink-0 animate-pulse items-center justify-center rounded-full bg-gray-200"
+              ></div>
+              <div class="flex flex-col gap-1">
+                <div class="h-4 w-40 animate-pulse rounded bg-gray-200"></div>
+                <div class="h-3 w-28 animate-pulse rounded bg-gray-200"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div v-else-if="groupedHistory.length === 0" class="py-12 text-center">
@@ -55,7 +74,6 @@ import Drawer from "@components/Drawer.vue"
 import IconHeader from "@components/IconHeader.vue"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
-import LoadingIcon from "@components/LoadingIcon.vue"
 import { useGetVersionHistory } from "@modules/settings/api"
 import type { IVersionHistory } from "@modules/settings/types"
 

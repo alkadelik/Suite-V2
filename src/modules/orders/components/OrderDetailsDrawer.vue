@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Drawer from "@components/Drawer.vue"
 import Modal from "@components/Modal.vue"
+import DropdownMenu from "@components/DropdownMenu.vue"
 import { useMediaQuery } from "@vueuse/core"
 import { TOrder } from "../types"
 import { formatCurrency } from "@/utils/format-currency"
@@ -8,10 +9,23 @@ import { formatDate } from "@/utils/formatDate"
 import { startCase } from "@/utils/format-strings"
 import Icon from "@components/Icon.vue"
 import { computed } from "vue"
+import { useSettingsStore } from "@modules/settings/store"
 import { clipboardCopy } from "@/utils/others"
+import AppButton from "@components/AppButton.vue"
 
 const props = defineProps<{ open: boolean; order: TOrder }>()
-const emit = defineEmits(["close", "refresh"])
+const emit = defineEmits([
+  "close",
+  "refresh",
+  "view-memos",
+  "share-receipt",
+  "share-invoice",
+  "share-payment-link",
+  "update-payment",
+  "fulfill",
+  "void-order",
+  "delete-order",
+])
 
 const isMobile = useMediaQuery("(max-width: 1028px)")
 
@@ -30,29 +44,127 @@ const productsTotal = computed(() => {
 const deliveryFee = computed(() => {
   return Number(props.order.delivery_fee)
 })
+
+// Get store's default VAT rate as fallback
+const storeVatRate = computed(() => {
+  const rate = useSettingsStore().storeDetails?.tax_rate
+  return rate ? `${Number(rate) * 100}%` : "7.5%"
+})
+
+const isFulfilled = computed(() => {
+  return props.order?.fulfilment_status === "fulfilled"
+})
+
+const isBuyerCreated = computed(() => {
+  return props.order?.source?.includes("storefront")
+})
+
+const menuItems = computed(() => {
+  const paymentStatus = props.order?.payment_status
+  const showVoid = (isFulfilled.value || paymentStatus !== "unpaid") && !isBuyerCreated.value
+  const showDelete = !isFulfilled.value && paymentStatus === "unpaid" && !isBuyerCreated.value
+
+  return [
+    { label: "View memos", icon: "note", action: () => emit("view-memos") },
+    // Share receipt - only for partially paid or paid orders
+    ...(paymentStatus === "paid" || paymentStatus === "partially_paid"
+      ? [{ label: "Share receipt", icon: "share", action: () => emit("share-receipt") }]
+      : []),
+    // Share invoice - only for partially paid or unpaid orders
+    ...(paymentStatus === "unpaid" || paymentStatus === "partially_paid"
+      ? [{ label: "Share invoice", icon: "share", action: () => emit("share-invoice") }]
+      : []),
+    // Share payment link - only for partially paid or unpaid orders
+    ...(paymentStatus === "unpaid" || paymentStatus === "partially_paid"
+      ? [{ label: "Share payment link", icon: "share", action: () => emit("share-payment-link") }]
+      : []),
+    // Update Payment - only for unpaid or partially paid orders
+    ...(paymentStatus !== "paid"
+      ? [{ label: "Update Payment", icon: "money-add", action: () => emit("update-payment") }]
+      : []),
+    // Fulfill order - only for unfulfilled orders
+    ...(isFulfilled.value
+      ? []
+      : [{ label: "Fulfill Order", icon: "money-add", action: () => emit("fulfill") }]),
+    ...(showVoid || showDelete ? [{ divider: true }] : []),
+    ...(showVoid
+      ? [
+          {
+            label: "Void Order",
+            icon: "trash",
+            class: "text-red-600 hover:bg-red-50",
+            iconClass: "text-red-600",
+            action: () => emit("void-order"),
+          },
+        ]
+      : []),
+    ...(showDelete
+      ? [
+          {
+            label: "Delete Order",
+            icon: "trash",
+            class: "text-red-600 hover:bg-red-50",
+            iconClass: "text-red-600",
+            action: () => emit("delete-order"),
+          },
+        ]
+      : []),
+  ]
+})
 </script>
 
 <template>
   <component
     :is="isMobile ? Modal : Drawer"
     :open="open"
-    :title="`Order Details - #${order.order_number}`"
     max-width="2xl"
     variant="fullscreen"
     @close="emit('close')"
   >
-    <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
-      <Icon name="shop-add" size="28" />
+    <template #header>
+      <div class="flex items-center justify-between px-6 py-4">
+        <h2 class="text-core-800 text-lg font-semibold">
+          Order #{{ order.order_number }}
+          <Icon
+            name="copy"
+            size="14"
+            class="text-primary-600 ml-2 cursor-pointer hover:animate-bounce"
+            @click="clipboardCopy(order.order_number)"
+          />
+        </h2>
+        <button
+          type="button"
+          @click="emit('close')"
+          class="text-core-800 hover:text-core-600 transition-colors"
+        >
+          <Icon name="close-circle" size="20" />
+        </button>
+      </div>
+    </template>
+
+    <div v-if="order.fulfilment_status !== 'voided'" class="mb-4 flex justify-end">
+      <DropdownMenu :items="menuItems" size="sm">
+        <template #trigger>
+          <AppButton icon="settings-02" label="Manage Order" variant="outlined" size="sm" />
+        </template>
+      </DropdownMenu>
     </div>
-    <p class="mb-4 flex items-center gap-1 text-sm">
-      Details of this order - #{{ order.order_number }}
-      <Icon
-        name="copy"
-        size="14"
-        class="text-primary-600 cursor-pointer hover:animate-bounce"
-        @click="clipboardCopy(order.order_number)"
-      />
-    </p>
+
+    <div
+      v-else
+      class="bg-error-25 text-error-700 border-error-300 mb-4 flex items-center gap-3 rounded-xl border px-3 py-3"
+    >
+      <span
+        class="border-error-200 ring-error-100 flex size-6 flex-shrink-0 items-center justify-center rounded-full border-2 ring-2 ring-offset-2"
+      >
+        <Icon name="info-circle" size="16" />
+      </span>
+      <div class="text-sm">
+        <p>
+          This is order has been voided and all its items are no longer available for fulfillment.
+        </p>
+      </div>
+    </div>
 
     <div class="space-y-4">
       <!-- Order Items -->
@@ -90,14 +202,14 @@ const deliveryFee = computed(() => {
       <!-- Customer Details -->
       <div class="border-core-300 bg-core-25 my-6 space-y-3 rounded-xl border p-4">
         <p class="text-sm font-medium">{{ customerName }}</p>
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-1">
-            <Icon name="sms" class="text-core-600 h-4 w-4" />
-            <span class="text-sm font-medium">{{ order.customer_email || "N/A" }}</span>
+        <div class="flex flex-col gap-2">
+          <div class="flex min-w-0 items-center gap-1">
+            <Icon name="sms" class="text-core-600 h-4 w-4 shrink-0" />
+            <span class="truncate text-sm font-medium">{{ order.customer_email || "N/A" }}</span>
           </div>
-          <div class="flex items-center gap-1">
-            <Icon name="call" class="text-core-600 h-4 w-4" />
-            <span class="text-sm font-medium">{{ order.customer_phone || "N/A" }}</span>
+          <div class="flex min-w-0 items-center gap-1">
+            <Icon name="call" class="text-core-600 h-4 w-4 shrink-0" />
+            <span class="truncate text-sm font-medium">{{ order.customer_phone || "N/A" }}</span>
           </div>
         </div>
       </div>
@@ -118,6 +230,15 @@ const deliveryFee = computed(() => {
           <span class="font-medium">{{
             deliveryFee > 0 ? formatCurrency(deliveryFee, { kobo: true }) : "-"
           }}</span>
+        </p>
+        <p
+          v-if="order.tax_amount && Number(order.tax_amount) > 0"
+          class="flex justify-between text-sm"
+        >
+          <span class="text-core-600"
+            >VAT ({{ order.tax_rate_used ? `${+order.tax_rate_used * 100}%` : storeVatRate }})</span
+          >
+          <span class="font-medium">{{ formatCurrency(Number(order.tax_amount)) }}</span>
         </p>
         <p
           v-if="Number(order.discount_amount) > 0"
@@ -191,14 +312,14 @@ const deliveryFee = computed(() => {
           class="flex justify-between text-sm"
         >
           <span class="text-core-600">Delivery Address</span>
-          <span class="font-medium">{{ order.delivery_address }}</span>
+          <span class="font-medium">{{ order.customer_address }}</span>
         </p>
         <p
           v-if="order.fulfilment_method === 'delivery' && order.courier"
           class="flex justify-between text-sm"
         >
           <span class="text-core-600">Courier</span>
-          <span class="font-medium">{{ order.courier_name }}</span>
+          <span class="font-medium">{{ order.courier_name || "-" }}</span>
         </p>
       </div>
     </div>

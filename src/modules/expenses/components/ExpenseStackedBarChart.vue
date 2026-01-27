@@ -18,15 +18,7 @@ const colorPalette = [
 ]
 
 const categoryBreakDown = computed(() => {
-  const data =
-    props.category_breakdown ||
-    [
-      { category_name: "Travel", total_amount: 4000, expense_count: 2 },
-      { category_name: "Meals", total_amount: 2500, expense_count: 3 },
-      { category_name: "Supplies", total_amount: 1500, expense_count: 1 },
-      { category_name: "Software", total_amount: 1000, expense_count: 1 },
-      { category_name: "Other", total_amount: 5000, expense_count: 1 },
-    ].slice(0, colorPalette.length) // limit to color palette length
+  const data = props.category_breakdown ?? []
 
   const total = props.totalExpense || data.reduce((acc: number, curr) => acc + curr.total_amount, 0)
 
