@@ -10,7 +10,7 @@ import { computed, watch, onMounted } from "vue"
 
 interface PaymentInfo {
   payment_status: "unpaid" | "paid" | "partially_paid"
-  payment_amount: number
+  payment_amount: number | string
   payment_source?: { label: string; value: string }
   coupon_code: string | null
   discount_amount: number
@@ -37,7 +37,7 @@ onMounted(() => {
   if (paymentInfo.value.payment_status === "paid") {
     paymentInfo.value = {
       ...paymentInfo.value,
-      payment_amount: props.totalAmount,
+      payment_amount: Number(props.totalAmount).toFixed(2),
     }
   }
 })
@@ -50,7 +50,7 @@ watch(
       // Auto-fill with total amount for paid status
       paymentInfo.value = {
         ...paymentInfo.value,
-        payment_amount: props.totalAmount,
+        payment_amount: Number(props.totalAmount).toFixed(2),
       }
     } else if (newStatus === "partially_paid" || newStatus === "unpaid") {
       // Reset to 0 for partial payment or unpaid
@@ -78,8 +78,8 @@ watch(
 const canProceed = computed(() => {
   if (paymentInfo.value.payment_status === "partially_paid") {
     return (
-      paymentInfo.value.payment_amount > 0 &&
-      paymentInfo.value.payment_amount < props.totalAmount &&
+      Number(paymentInfo.value.payment_amount) > 0 &&
+      Number(paymentInfo.value.payment_amount) < props.totalAmount &&
       !!paymentInfo.value.payment_source
     )
   }

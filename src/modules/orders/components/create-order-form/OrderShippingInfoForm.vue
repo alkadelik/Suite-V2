@@ -139,11 +139,7 @@ const MANUAL_DELIVERY_LOCATIONS = computed(
 )
 
 const updateField = (field: keyof ShippingInfo, value: unknown) => {
-  const updatedInfo = {
-    ...props.shippingInfo,
-    [field]: value,
-  }
-  console.log("Emitting updated shippingInfo:", updatedInfo)
+  const updatedInfo = { ...props.shippingInfo, [field]: value }
   emit("update:shippingInfo", updatedInfo)
 }
 

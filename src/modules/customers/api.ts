@@ -1,6 +1,6 @@
 import baseApi, { TApiPromise, TPaginatedResponse, useApiQuery } from "@/composables/baseApi"
 import { useMutation, useQuery } from "@tanstack/vue-query"
-import type { Ref } from "vue"
+import type { MaybeRefOrGetter, Ref } from "vue"
 import { computed } from "vue"
 import type {
   ICustomerFormPayload,
@@ -33,16 +33,27 @@ export function useDeleteCustomer() {
   })
 }
 
+// export function useGetCustomers() {
+//   return useQuery<ICustomersApiResponse>({
+//     queryKey: ["customers"],
+//     queryFn: async () => {
+//       const { data } = await baseApi.get<ICustomersApiResponse>("/customers/")
+//       return data
+//     },
+//     retry: false,
+//     refetchOnWindowFocus: false,
+//   })
+// }
+
 /** Get customers api request */
-export function useGetCustomers() {
-  return useQuery<ICustomersApiResponse>({
-    queryKey: ["customers"],
-    queryFn: async () => {
-      const { data } = await baseApi.get<ICustomersApiResponse>("/customers/")
-      return data
-    },
-    retry: false,
-    refetchOnWindowFocus: false,
+export function useGetCustomers(
+  params?: MaybeRefOrGetter<Record<string, string | number | boolean> | undefined>,
+) {
+  return useApiQuery<ICustomersApiResponse>({
+    url: "/customers/",
+    params,
+    key: "customers",
+    // selectData: true,
   })
 }
 

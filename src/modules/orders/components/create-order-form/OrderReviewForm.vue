@@ -7,6 +7,7 @@ import Icon from "@components/Icon.vue"
 import type { ICustomer } from "@modules/customers/types"
 import { computed } from "vue"
 import { IShippingCourier } from "@modules/shared/types"
+import { DELIVERY_PAYMENT_OPTION } from "@modules/orders/constants"
 
 interface OrderItem {
   product: { uid: string; product_name: string; total_stock: number; image?: string | null }
@@ -99,15 +100,10 @@ const deliveryTypeLabel = computed(() => {
 
 const deliveryPaymentLabel = computed(() => {
   if (props.shippingInfo.fulfilment_method !== "delivery") return null
-
-  if (props.shippingInfo.delivery_payment_option === "merchant_pays_full") {
-    return "Merchant pays full delivery fee"
-  } else if (props.shippingInfo.delivery_payment_option === "customer_pays_courier") {
-    return "Customer pays courier directly"
-  } else if (props.shippingInfo.delivery_payment_option === "free_shipping") {
-    return "Free shipping"
-  }
-  return startCase(props.shippingInfo.delivery_payment_option)
+  const option = DELIVERY_PAYMENT_OPTION.find(
+    (opt) => opt.value === props.shippingInfo.delivery_payment_option,
+  )
+  return option ? option.label : "N/A"
 })
 </script>
 
@@ -117,6 +113,24 @@ const deliveryPaymentLabel = computed(() => {
       <Icon name="shop-add" size="28" />
     </div>
     <p class="mb-4 text-sm">Double-check everything before confirming this order.</p>
+
+    <div
+      v-if="shippingInfo.delivery_method === 'shipbubble'"
+      class="bg-primary-25 text-warning-700 border-warning-300 my-6 flex items-center gap-3 rounded-xl border px-3 py-3 md:px-6"
+    >
+      <span
+        class="border-primary-200 ring-primary-100 flex size-8 flex-shrink-0 items-center justify-center rounded-full border-2 ring-2 ring-offset-2"
+      >
+        <Icon name="info-circle" size="20" />
+      </span>
+      <div class="text-sm">
+        <p class="font-medium">Heads Up!</p>
+        <p>
+          The delivery for this order will be handled by ShipBubble, not Leyyow. Once you proceed, a
+          secure payment window will open for you to pay the delivery fee.
+        </p>
+      </div>
+    </div>
 
     <div class="space-y-4">
       <!-- Order Items -->
@@ -237,7 +251,9 @@ const deliveryPaymentLabel = computed(() => {
         </p>
         <p v-if="paymentInfo.payment_status !== 'unpaid'" class="flex justify-between text-sm">
           <span class="text-core-600">Amount Paid</span>
-          <span class="font-medium">{{ formatCurrency(paymentInfo.payment_amount) }}</span>
+          <span class="font-medium">{{
+            formatCurrency(paymentInfo.payment_amount, { kobo: true })
+          }}</span>
         </p>
       </div>
 

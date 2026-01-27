@@ -20,7 +20,7 @@ export const createOrderRef = (storeId: number, cartItemCount: number, refType =
 interface PayStackShippingInfo {
   customer_name: string
   customer_email: string
-  shipping_price: number
+  shipping_price: string
   shipping_address: string
 }
 
@@ -50,7 +50,7 @@ export const handlePayStackPayment = (
   const handler = window.PaystackPop.setup({
     key: apiKey,
     email: shippingInfo?.customer_email,
-    amount: shippingInfo?.shipping_price * 100, // Convert to kobo
+    amount: shippingInfo?.shipping_price,
     currency: "NGN",
     metadata: {
       custom_fields: [

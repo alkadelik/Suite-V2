@@ -9,6 +9,7 @@ import CustomerCard from "@modules/customers/components/CustomerCard.vue"
 import { anonymousCustomer } from "@modules/orders/constants"
 import type { ICustomer } from "@modules/customers/types"
 import { computed, ref } from "vue"
+import { useDebouncedRef } from "@/composables/useDebouncedRef"
 
 const props = defineProps<{
   selectedCustomer: ICustomer | null
@@ -22,24 +23,18 @@ const emit = defineEmits<{
 
 const openAdd = ref(false)
 const searchQuery = ref("")
-
-const { data: customersData, isFetching, refetch } = useGetCustomers()
-const customers = computed(() => customersData?.value?.data?.results ?? [])
-
-const filteredCustomers = computed(() => {
-  if (!searchQuery.value.trim()) {
-    return customers.value
-  }
-
-  const query = searchQuery.value.toLowerCase().trim()
-  return customers.value.filter(
-    (customer: ICustomer) =>
-      customer.first_name?.toLowerCase().includes(query) ||
-      customer.last_name?.toLowerCase().includes(query) ||
-      customer.email?.toLowerCase().includes(query) ||
-      customer.phone?.toLowerCase().includes(query),
-  )
+const debouncedSearch = useDebouncedRef(searchQuery, 750)
+const page = ref(1)
+const itemsPerPage = ref(50)
+const computedParams = computed(() => {
+  const params: Record<string, string> = {}
+  if (debouncedSearch.value) params.search = debouncedSearch.value
+  params.offset = ((page.value - 1) * itemsPerPage.value).toString()
+  params.limit = itemsPerPage.value.toString()
+  return params
 })
+const { data: customersData, isFetching, refetch } = useGetCustomers(computedParams)
+const customers = computed(() => customersData?.value?.data?.results ?? [])
 
 const selectCustomer = (customer: ICustomer) => {
   emit("update:selectedCustomer", customer)
@@ -69,7 +64,7 @@ const handleNext = () => {
     <div class="mb-8 flex flex-col gap-3">
       <h3 class="text-lg font-semibold">
         All Customers
-        <Chip v-if="filteredCustomers.length" :label="String(filteredCustomers.length)" />
+        <Chip v-if="customersData?.data?.count" :label="String(customersData?.data?.count)" />
       </h3>
       <div class="flex items-center gap-3">
         <TextField
@@ -97,7 +92,7 @@ const handleNext = () => {
         <CustomerCard :customer="anonymousCustomer" />
       </div>
       <div
-        v-for="customer in filteredCustomers"
+        v-for="customer in customers"
         :key="customer.uid"
         class="cursor-pointer rounded-xl transition-all"
         :class="

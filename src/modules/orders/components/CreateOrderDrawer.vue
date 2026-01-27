@@ -340,7 +340,7 @@ const onCreateOrder = () => {
 
   if (delivery_method === "shipbubble") {
     const payData = {
-      shipping_price: Number(shippingInfo.value.delivery_fee || 500),
+      shipping_price: (Number(shippingInfo.value.delivery_fee || 0) * 100).toFixed(2), // convert to kobo
       customer_name:
         selectedCustomer.value?.full_name ||
         `${selectedCustomer.value?.first_name || ""} ${selectedCustomer.value?.last_name || ""}`.trim() ||
@@ -355,14 +355,30 @@ const onCreateOrder = () => {
           : (shippingInfo.value.delivery_address as { label: string; value: string }).label,
     }
 
+    console.log("Initiating PayStack payment with data:", payData)
+
     handlePayStackPayment(payData, (payResponse) => {
       // money paid... time to create order
       console.log("Payment successful:", payResponse)
       const reference = payResponse.reference
       if (isPopupOrder.value) {
-        createPopupOrder({ ...payload, reference } as unknown as PopupOrderPayload, handler)
+        createPopupOrder(
+          {
+            ...payload,
+            reference,
+            delivery_fee: Number(shippingInfo.value.delivery_fee).toFixed(2),
+          } as unknown as PopupOrderPayload,
+          handler,
+        )
       } else {
-        createOrder({ ...payload, reference } as OrderPayload, handler)
+        createOrder(
+          {
+            ...payload,
+            reference,
+            delivery_fee: Number(shippingInfo.value.delivery_fee).toFixed(2),
+          } as OrderPayload,
+          handler,
+        )
       }
     })
   } else {
