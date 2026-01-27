@@ -80,14 +80,14 @@ export const handlePayStackPayment = (
 export const loadPaystackScript = () => {
   return new Promise((resolve, reject) => {
     if (window.PaystackPop) {
-      resolve()
+      resolve(undefined)
       return
     }
 
     const script = document.createElement("script")
     script.src = "https://js.paystack.co/v1/inline.js"
     script.async = true
-    script.onload = () => resolve()
+    script.onload = () => resolve(undefined)
     script.onerror = () => reject(new Error("Failed to load Paystack script"))
 
     document.head.appendChild(script)
