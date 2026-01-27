@@ -180,7 +180,11 @@ const isShippingProfileActive = ref<boolean>(false)
 const isMobile = useMediaQuery("(max-width: 768px)")
 const selectedDeliveryOption = ref<"shipbubble" | "manual">("shipbubble")
 
-const { data: shippingProfileData, isPending: isGettingShippingProfile } = useGetShippingProfile()
+const {
+  data: shippingProfileData,
+  refetch,
+  isPending: isGettingShippingProfile,
+} = useGetShippingProfile()
 const { data: storeDetails, isPending: isGettingStoreDetails } = useGetStoreDetails(
   user?.store_uid || "",
 )
@@ -240,6 +244,7 @@ const handleSetupShippingProfile = () => {
     updateShippingProfile(payload, {
       onSuccess: () => {
         toast.success("Shipping profile updated successfully")
+        refetch()
         //  redirect back based on &redirect=${encodeURIComponent(route.path)}
         const redirectPath = (route.query.redirect as string) || route.path.split("?")[0]
         router.push(redirectPath)
@@ -404,6 +409,7 @@ watch(
 watch(
   () => shippingProfileData.value,
   (profileData) => {
+    console.log("Prefilling from shipping profile data:", profileData)
     if (profileData) {
       // Prefill from existing shipping profile if available
       shipbubbleAuthForm.business_name = profileData.store_name || shipbubbleAuthForm.business_name
@@ -411,7 +417,7 @@ watch(
       shipbubbleAuthForm.address = profileData.store_address || shipbubbleAuthForm.address
     }
   },
-  { immediate: true },
+  { immediate: true, deep: true },
 )
 
 // Update form when user data becomes available (fallback)
