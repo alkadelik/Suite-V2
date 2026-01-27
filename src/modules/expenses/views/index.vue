@@ -229,7 +229,7 @@ watch(
 
         <div v-else>
           <ExpenseStackedBarChart
-            :total-expense="expenseDashboard?.current.total_amount || 9000"
+            :total-expense="expenseDashboard?.current.total_amount || 0"
             :category_breakdown="expenseDashboard?.category_breakdown"
           />
         </div>
