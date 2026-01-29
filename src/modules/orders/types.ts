@@ -52,8 +52,12 @@ export type TOrder = {
   user: string
   user_name: string
   is_voided: boolean
-
   manual_delivery_type?: "standard" | "express"
+  shipping_details?: {
+    shipbubble_order_id: string
+    tracking_url: string
+    tracking_number?: string
+  }
 
   // Needed
   store_email?: string

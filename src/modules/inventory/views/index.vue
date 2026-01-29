@@ -158,7 +158,7 @@
           <template #cell:action="{ item }">
             <div class="flex items-center gap-2">
               <Icon
-                name="copy-01"
+                name="copy"
                 @click.stop="handleAction('duplicate', item)"
                 class="hidden cursor-pointer hover:text-gray-600 md:inline-block"
               />

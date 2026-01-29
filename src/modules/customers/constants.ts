@@ -1,5 +1,6 @@
 import { ICustomer } from "./types"
 import { TableColumn } from "@components/DataTable.vue"
+import { formatDate } from "./utils/dateFormatter"
 
 export const CUSTOMER_COLUMNS: TableColumn<ICustomer>[] = [
   { header: "Name", accessor: "name" },
@@ -22,6 +23,11 @@ export const CUSTOMER_COLUMNS: TableColumn<ICustomer>[] = [
     header: "Total Orders",
     accessor: "total_orders",
     class: "pl-8",
+  },
+  {
+    header: "Date Created",
+    accessor: "created_at",
+    cell: ({ value }) => formatDate(value as string),
   },
   { header: "", accessor: "action" },
 ]
