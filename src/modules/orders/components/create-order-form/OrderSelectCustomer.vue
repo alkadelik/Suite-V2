@@ -66,15 +66,14 @@ const handleNext = () => {
         All Customers
         <Chip v-if="customersData?.data?.count" :label="String(customersData?.data?.count)" />
       </h3>
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-3 rounded-xl bg-white p-2">
         <TextField
           left-icon="search-lg"
           size="md"
           class="w-full"
-          placeholder="Search by name, email or phone"
+          placeholder="Find a customer by name, email or phone"
           v-model="searchQuery"
         />
-        <AppButton icon="filter-lines" variant="outlined" color="alt" class="flex-shrink-0" />
         <AppButton icon="add" class="flex-shrink-0" @click="openAdd = true" />
       </div>
     </div>

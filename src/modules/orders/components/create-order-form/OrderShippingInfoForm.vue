@@ -7,7 +7,6 @@ import RadioInputField from "@components/form/RadioInputField.vue"
 import GooglePlacesAutocomplete from "@components/GooglePlacesAutocomplete.vue"
 import Icon from "@components/Icon.vue"
 import Chip from "@components/Chip.vue"
-import LoadingIcon from "@components/LoadingIcon.vue"
 import EmptyState from "@components/EmptyState.vue"
 import type { ICustomer } from "@modules/customers/types"
 import type { IShippingCourier } from "@modules/shared/types"
@@ -67,6 +66,8 @@ const emit = defineEmits<{
   "update:shippingInfo": [info: ShippingInfo]
   openAddAddress: []
 }>()
+
+const ratesFetched = ref(false)
 
 const deliveryDetails = computed(
   () => useSettingsStore().liveStatus?.criteria?.delivery_options?.details,
@@ -428,6 +429,7 @@ const fetchShippingRates = async () => {
     },
     {
       onSuccess: (res) => {
+        ratesFetched.value = true
         if (res?.data?.data?.couriers?.length) {
           shipBubbleRates.value = res.data.data
           updateField("shipping_rate_token", res.data.data.request_token)
@@ -845,7 +847,16 @@ const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
                   class="mt-6"
                 >
                   <p class="text-core-600 mb-2 text-xs">Select your preferred courier</p>
-                  <LoadingIcon v-if="isGettingRates" icon-class="text-black h-6 w-6" />
+                  <!-- Loading -->
+                  <div
+                    v-if="isGettingRates"
+                    class="flex flex-col items-center justify-center gap-6 bg-gray-100 p-4 text-center"
+                  >
+                    <Icon name="loader" size="24" class="animate-spin text-gray-900" />
+                    <p class="max-w-md text-sm font-medium text-gray-600">
+                      Loading... Please wait. Available couriers will appear shortly.
+                    </p>
+                  </div>
 
                   <RadioInputField
                     v-if="!isGettingRates && courierOptions.length > 0"
@@ -934,8 +945,27 @@ const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
                   </RadioInputField>
                 </div>
 
+                <!-- Empty State when no shipping courier was found -->
                 <div
-                  class="border-error-500 bg-error-500/10 border-y p-2 text-center text-xs text-black"
+                  v-if="
+                    !(shipBubbleRates.couriers?.length || shippingInfo.courier) &&
+                    !isGettingRates &&
+                    ratesFetched
+                  "
+                  class="flex flex-col items-center justify-center gap-3 bg-gray-100 p-4 text-center md:gap-6"
+                >
+                  <Icon name="truck-fast" size="24" />
+                  <h4 class="!font-outif text-sm font-semibold text-gray-900">
+                    Shipping Unavailable
+                  </h4>
+                  <p class="text-sm text-gray-600">
+                    None of your preferred couriers deliver to this address. Please try another
+                    address.
+                  </p>
+                </div>
+
+                <div
+                  class="border-error-500 bg-error-500/10 mt-4 border-y p-2 text-center text-xs text-black"
                 >
                   Provided by
                   <img
