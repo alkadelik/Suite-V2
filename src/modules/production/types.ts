@@ -61,3 +61,15 @@ export type TLinkedRecipe = {
   quantity_per_batch: number
   unit: string
 }
+
+export interface ICreateMaterialPayload {
+  name: string
+  unit: string
+  qty_in_stock: string
+  default_cost: string
+  is_sub_assembly: boolean
+  suppliers?: string[]
+  expiry_date?: string
+  reorder_threshold?: string
+  notes?: string
+}

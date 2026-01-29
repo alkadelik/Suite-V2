@@ -97,6 +97,7 @@ export interface IUpdateStoreDetailsPayload {
   collect_vat?: boolean
   tax_collection_enabled?: boolean
   add_tax_to_product_price?: boolean
+  raw_materials?: string
 }
 
 export type TIndustry = {

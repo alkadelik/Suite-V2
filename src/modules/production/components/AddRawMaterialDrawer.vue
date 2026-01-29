@@ -70,11 +70,12 @@ interface FormValues {
   name: string
   unit: { label: string; value: string }
   qty_in_stock: string
+  default_cost: string
   source: { label: string; value: string }
-  supplier: { label: string; value: string }[]
-  expiry_date: string
-  reorder_threshold: string
-  notes: string
+  suppliers: { label: string; value: string }[]
+  expiry_date?: string
+  reorder_threshold?: string
+  notes?: string
 }
 
 const { handleSubmit, meta, resetForm, values, setFieldValue } = useForm<FormValues>({
@@ -91,14 +92,26 @@ const { handleSubmit, meta, resetForm, values, setFieldValue } = useForm<FormVal
       qty_in_stock: yup
         .number()
         .transform((value, originalValue) => (originalValue === "" ? undefined : value))
-        .typeError("qty_in_stock must be a number")
-        .required("qty_in_stock in stock is required")
-        .min(0, "qty_in_stock cannot be negative"),
+        .typeError("Qty in stock must be a number")
+        .required("Qty in stock is required")
+        .min(0, "Qty in stock cannot be negative"),
+      default_cost: yup
+        .number()
+        .transform((value, originalValue) => (originalValue === "" ? undefined : value))
+        .typeError("Default purchase price must be a number")
+        .when("source", {
+          is: (source: { value: string }) => source?.value === "supplier",
+          then: (schema) =>
+            schema
+              .required("Default purchase price is required")
+              .min(0, "Default purchase price cannot be negative"),
+          otherwise: (schema) => schema.optional().nullable(),
+        }),
       source: yup
         .object()
         .shape({ label: yup.string().required(), value: yup.string().required() })
         .required("Source of material is required"),
-      supplier: yup.array().when("source", {
+      suppliers: yup.array().when("source", {
         is: (source: { value: string }) => source?.value === "supplier",
         then: (schema) =>
           schema
@@ -115,8 +128,9 @@ const { handleSubmit, meta, resetForm, values, setFieldValue } = useForm<FormVal
     name: "",
     unit: { label: "", value: "" },
     qty_in_stock: "",
+    default_cost: "",
     source: { label: "", value: "" },
-    supplier: [],
+    suppliers: [],
     expiry_date: "",
     reorder_threshold: "",
     notes: "",
@@ -142,8 +156,8 @@ const createNewSupplier = () => {
         toast.success("Supplier created successfully!")
         // Set the newly created supplier as selected
         const supplierUid = response.data?.data as { uid: string; name: string }
-        const currentSuppliers = values.supplier || []
-        setFieldValue("supplier", [
+        const currentSuppliers = values.suppliers || []
+        setFieldValue("suppliers", [
           ...currentSuppliers,
           { label: supplierUid.name, value: supplierUid.uid },
         ])
@@ -157,19 +171,18 @@ const createNewSupplier = () => {
 }
 
 const onSubmit = handleSubmit((values) => {
-  const formData = new FormData()
-  formData.append("name", values.name)
-  formData.append("unit", values.unit.value)
-  formData.append("qty_in_stock", values.qty_in_stock)
-  formData.append("source", values.source.value)
-  if (values.supplier && values.supplier.length > 0) {
-    values.supplier.forEach((supplier) => {
-      formData.append("suppliers", supplier.value)
-    })
+  const payload = {
+    name: values.name,
+    unit: values.unit.value,
+    default_cost: values.default_cost,
+    qty_in_stock: values.qty_in_stock,
+    is_sub_assembly: values.source.value === "manufacture",
+    ...(values.source.value === "supplier" ? { default_cost: values.default_cost } : {}),
+    ...(values.suppliers.length ? { suppliers: values.suppliers.map((x) => x.value) } : {}),
+    ...(values.expiry_date ? { expiry_date: values.expiry_date } : {}),
+    ...(values.reorder_threshold ? { reorder_threshold: values.reorder_threshold } : {}),
+    ...(values.notes ? { notes: values.notes } : {}),
   }
-  if (values.expiry_date) formData.append("expiry_date", values.expiry_date)
-  if (values.reorder_threshold) formData.append("reorder_threshold", values.reorder_threshold)
-  if (values.notes) formData.append("notes", values.notes)
 
   const onSuccess = () => {
     toast.success(`Material ${isEditMode.value ? "updated" : "added"} successfully!`)
@@ -179,12 +192,9 @@ const onSubmit = handleSubmit((values) => {
   }
 
   if (isEditMode.value && props.material) {
-    editMaterial(
-      { id: props.material.uid, payload: formData },
-      { onSuccess, onError: displayError },
-    )
+    editMaterial({ id: props.material.uid, payload }, { onSuccess, onError: displayError })
   } else {
-    createMaterial(formData, { onSuccess, onError: displayError })
+    createMaterial(payload, { onSuccess, onError: displayError })
   }
 }, onInvalidSubmit)
 
@@ -205,7 +215,7 @@ watch(
             unit: { label: props.material.unit, value: props.material.unit },
             qty_in_stock: props.material.stock.toString(),
             source: sourceOption,
-            supplier: [], // This would need to come from API if available
+            suppliers: [], // This would need to come from API if available
             expiry_date: props.material.expiration_date || "",
             reorder_threshold: "",
             notes: "",
@@ -219,7 +229,13 @@ watch(
 )
 
 const canProceedToStep2 = computed(() => {
-  return values.name && values.unit && values.qty_in_stock && values.source?.value
+  return (
+    values.name &&
+    values.unit &&
+    values.qty_in_stock &&
+    ((values.source?.value === "supplier" && values.default_cost) ||
+      values.source?.value === "manufacture")
+  )
 })
 
 const goToNextStep = () => {
@@ -277,7 +293,7 @@ const goToPrevStep = () => {
               <FormField
                 type="number"
                 name="qty_in_stock"
-                label="Qty in Stock"
+                label="Quantity in Stock"
                 placeholder="e.g. 25"
                 required
               />
@@ -309,6 +325,16 @@ const goToPrevStep = () => {
                 <p>This will be the name displayed in the inventory</p>
               </div>
             </div>
+
+            <div v-else>
+              <FormField
+                type="number"
+                name="default_cost"
+                label="Default Purchase price"
+                placeholder="e.g. 25"
+                required
+              />
+            </div>
           </form>
         </div>
 
@@ -324,11 +350,11 @@ const goToPrevStep = () => {
           <div class="mt-6 space-y-4">
             <!-- Select suppliers with option to create -->
             <div v-if="values.source.value === 'supplier'">
-              <Field v-slot="{ field, errors: fieldErrors }" name="supplier">
+              <Field v-slot="{ field, errors: fieldErrors }" name="suppliers">
                 <SelectField
                   v-bind="field"
                   :model-value="field.value"
-                  label="Supplier"
+                  label="Suppliers"
                   placeholder="Select suppliers"
                   :options="supplierOptions"
                   value-key="value"
@@ -450,6 +476,7 @@ const goToPrevStep = () => {
           label="Add Supplier"
           class="flex-1"
           :loading="isCreatingSupplier"
+          loading-text="Adding..."
           :disabled="isCreatingSupplier || !newSupplierName.trim()"
           @click="createNewSupplier"
         />
