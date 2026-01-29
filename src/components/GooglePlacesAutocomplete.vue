@@ -11,10 +11,9 @@
         type="text"
         :placeholder="placeholder"
         :class="[
-          'bg-brand-50 w-full rounded-lg border border-[#D7D5D5]',
+          'border-core-50 bg bg-core-25 disabled:bg-core-200 placeholder-core-300 w-full overflow-hidden rounded-xl border',
+          'focus:border-primary-300 focus:ring-primary-300 focus:ring-1 focus:outline-none',
           dense ? 'h-10 px-3 py-1.5' : 'h-12 px-4 py-2.5',
-          'text-brand-600 placeholder:text-brand-300 text-sm placeholder:font-light',
-          'focus:border-brand-500 focus:ring-brand-500/10 focus:ring focus:outline-none disabled:bg-gray-200 disabled:opacity-80',
           error ? 'border-red-500' : '',
         ]"
         :required="required"
@@ -32,7 +31,7 @@
       <div
         v-if="suggestions.length && !hasSelectedSuggestion"
         :class="[
-          'absolute z-[1000] max-h-56 w-full overflow-auto rounded-lg bg-white py-1 shadow-md ring-1 ring-black/10 focus:outline-none',
+          'absolute z-[4000] max-h-56 w-full overflow-auto rounded-lg bg-white py-1 shadow-md ring-1 ring-black/10 focus:outline-none',
           dense ? 'text-xs' : 'text-sm',
           props.direction === 'up' ? 'bottom-full mb-1' : 'top-full mt-1',
         ]"
