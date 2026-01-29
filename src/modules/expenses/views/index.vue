@@ -14,7 +14,12 @@ import CreateExpenseDrawer from "../components/CreateExpenseDrawer.vue"
 import { useDeleteExpense, useEditExpense, useGetExpenseDashboard, useGetExpenses } from "../api"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
-import { EXPENSE_CATEGORY_ICON, EXPENSE_COLUMN, getExpenseStatusColor } from "../constants"
+import {
+  EXPENSE_CATEGORY_ICON,
+  EXPENSE_COLUMN,
+  getExpenseStatusColor,
+  isTaxLikeSubcategory,
+} from "../constants"
 import { useRoute } from "vue-router"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
@@ -103,15 +108,19 @@ const handleRefresh = () => {
 }
 
 const getActionItems = (item: TExpense) => [
-  {
-    label: "Edit expense",
-    icon: "edit",
-    action: () => {
-      openCreate.value = true
-      selectedExpense.value = item
-    },
-  },
-  { divider: true },
+  ...(item.entry_type === "auto"
+    ? []
+    : [
+        {
+          label: "Edit expense",
+          icon: "edit",
+          action: () => {
+            openCreate.value = true
+            selectedExpense.value = item
+          },
+        },
+        { divider: true },
+      ]),
   {
     label: "Void expense",
     icon: "close-circle",
@@ -313,7 +322,20 @@ watch(
                     class="text-primary-600 absolute -right-1 -bottom-1"
                   />
                 </span>
-                <h4 class="!font-outfit truncate text-left text-sm font-medium capitalize">
+
+                <h4
+                  v-if="
+                    item.linked_order_number &&
+                    item.sub_category_name &&
+                    isTaxLikeSubcategory(item.sub_category_name)
+                  "
+                  class="!font-outfit truncate text-left text-sm font-medium capitalize"
+                >
+                  <span>{{ isTaxLikeSubcategory(item.sub_category_name) }}</span>
+                  <span> ({{ item.linked_order_number }}) </span>
+                </h4>
+
+                <h4 v-else class="!font-outfit truncate text-left text-sm font-medium capitalize">
                   {{ item.name || item.category_name }}
                 </h4>
               </div>
