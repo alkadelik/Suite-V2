@@ -50,3 +50,10 @@ export const EXPORT_PERIOD_OPTIONS = [
   { label: "Last 90 days", value: "last_90_days" },
   { label: "Custom", value: "custom" },
 ]
+
+export const orderSourceMap: Record<string, string> = {
+  internal: "Internal",
+  storefront: "Storefront",
+  popup_storefront: "Popup",
+  popup_internal: "Popup Internal",
+}

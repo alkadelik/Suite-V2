@@ -18,6 +18,7 @@ import { startCase } from "@/utils/format-strings"
 import ProductAvatar from "@components/ProductAvatar.vue"
 import { getSmartDateLabel } from "@/utils/formatDate"
 import { TOrder } from "@modules/orders/types"
+import { orderSourceMap } from "../constants"
 
 const route = useRoute()
 const router = useRouter()
@@ -81,7 +82,7 @@ const enrichedOrders = computed(() => {
     customer_name: customer.value?.full_name,
     fulfilment_method: "pickup" as const, // Default to pickup if not specified
     subtotal: order.total_amount, // Use total_amount as subtotal if not provided
-    source: order.source === "internal" ? "internal" : "external", // Map source values
+    source: orderSourceMap[order.source] || order.source, // Map source values
   }))
 })
 

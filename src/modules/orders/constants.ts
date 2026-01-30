@@ -91,3 +91,10 @@ export const ORDER_STATUS_TAB = [
   { title: "Voided", key: "voided" },
   { title: "Returned", key: "returned" },
 ]
+
+export const orderSourceMap: Record<string, string> = {
+  internal: "Internal",
+  storefront: "Storefront",
+  popup_storefront: "Popup",
+  popup_internal: "Popup Internal",
+}

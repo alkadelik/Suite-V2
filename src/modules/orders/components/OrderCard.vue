@@ -3,7 +3,7 @@ import { computed, ref } from "vue"
 import Chip from "@/components/Chip.vue"
 import { getSmartDateLabel } from "@/utils/formatDate"
 import { formatCurrency, truncateCurrency } from "@/utils/format-currency"
-import { anonymousCustomer, ORDER_PAYMENT_STATUS } from "../constants"
+import { anonymousCustomer, ORDER_PAYMENT_STATUS, orderSourceMap } from "../constants"
 import { pluralize } from "@/utils/pluralize"
 import Icon from "@components/Icon.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
@@ -321,7 +321,7 @@ const outstandingBalance = computed(() => {
               dense
               variant="outlined"
               :icon="order.source === 'internal' ? 'clipboard-text' : 'global'"
-              :label="order.source === 'internal' ? 'Internal' : 'External'"
+              :label="orderSourceMap[order.source] || order.source"
             />
           </div>
         </div>
