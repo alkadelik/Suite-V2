@@ -281,7 +281,7 @@ const onCreateOrder = () => {
   }
 
   const payload = {
-    source: isPopupOrder.value ? "popup-internal" : "internal",
+    source: isPopupOrder.value ? "popup_internal" : "internal",
     ...(isPopupOrder.value ? { popup_event: props.popupEventId } : {}),
     ...(uid && uid !== anonymousCustomer.uid
       ? {
@@ -301,24 +301,28 @@ const onCreateOrder = () => {
         ? Number(totalAmount.value).toFixed(2)
         : Number(paymentInfo.value.payment_amount).toFixed(2),
     payment_source: paymentInfo.value.payment_source?.value,
-    items: isPopupOrder.value
-      ? popupOrderItems.value.map((item) => ({
-          popup_inventory: item.variant.popup_inventory_uid,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          fulfilment_status: shippingInfo.value.fulfilment_status,
-          notes: item.notes,
-        }))
-      : orderItems.value.map(
-          (item): OrderItemPayload => ({
-            variant: item.variant?.uid || "",
+    ...(isPopupOrder.value
+      ? {
+          popup_items: popupOrderItems.value.map((item) => ({
+            popup_inventory: item.variant.popup_inventory_uid,
             quantity: item.quantity,
             unit_price: item.unit_price,
             fulfilment_status: shippingInfo.value.fulfilment_status,
-            qty_fulfilled: 0,
             notes: item.notes,
-          }),
-        ),
+          })),
+        }
+      : {
+          items: orderItems.value.map(
+            (item): OrderItemPayload => ({
+              variant: item.variant?.uid || "",
+              quantity: item.quantity,
+              unit_price: item.unit_price,
+              fulfilment_status: shippingInfo.value.fulfilment_status,
+              qty_fulfilled: 0,
+              notes: item.notes,
+            }),
+          ),
+        }),
     fulfilment_status: shippingInfo.value.fulfilment_status,
     order_channel: shippingInfo.value.order_channel.value,
     order_date: shippingInfo.value.order_date,
@@ -341,17 +345,12 @@ const onCreateOrder = () => {
         selectedCustomer.value?.full_name ||
         `${selectedCustomer.value?.first_name || ""} ${selectedCustomer.value?.last_name || ""}`.trim() ||
         "Customer",
-      customer_email:
-        shippingInfo.value.customer_email ||
-        selectedCustomer.value?.email ||
-        "theo.testing@mailsac.com",
+      customer_email: shippingInfo.value.customer_email || selectedCustomer.value?.email || "",
       shipping_address:
         typeof shippingInfo.value.delivery_address === "string"
           ? shippingInfo.value.delivery_address
           : (shippingInfo.value.delivery_address as { label: string; value: string }).label,
     }
-
-    console.log("Initiating PayStack payment with data:", payData)
 
     handlePayStackPayment(payData, (payResponse) => {
       // money paid... time to create order
