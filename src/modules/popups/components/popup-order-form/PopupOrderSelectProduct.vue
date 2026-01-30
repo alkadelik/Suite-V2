@@ -178,7 +178,7 @@ const handleNext = () => {
           Clear all
         </button>
       </div>
-      <AppButton label="Nextss" class="w-full" :disabled="!canProceed" @click="handleNext" />
+      <AppButton label="Next" class="w-full" :disabled="!canProceed" @click="handleNext" />
     </div>
   </div>
 </template>
