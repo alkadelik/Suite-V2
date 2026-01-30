@@ -40,7 +40,9 @@
 
         <!-- Bottom navigation for mobile -->
         <nav
-          v-if="isMobile && !showAppHeader && !isInner"
+          v-if="
+            (isMobile && !showAppHeader && !isInner) || (isMobile && $route.path === '/dashboard')
+          "
           class="fixed right-0 bottom-0 left-0 max-h-16 border-t border-gray-200 bg-white"
           :class="openMore || openActions ? 'z-[1500]' : 'z-30'"
         >
