@@ -129,7 +129,6 @@ const handleMarkAsPaid = () => {
         :columns="POPUP_ORDER_COLUMNS"
         :loading="isPending"
         :show-pagination="true"
-        :enable-row-selection="true"
       >
         <template #cell:items="{ item }">
           <div class="max-w-[100px] truncate">

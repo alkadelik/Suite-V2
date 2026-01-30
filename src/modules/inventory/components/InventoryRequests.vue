@@ -35,7 +35,6 @@
       :columns="requestColumns"
       :data="requestsData?.data.results || []"
       :loading="isLoading"
-      :enable-row-selection="true"
       :server-pagination="true"
       :show-pagination="true"
       :current-page="currentPage"

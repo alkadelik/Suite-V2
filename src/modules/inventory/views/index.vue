@@ -112,7 +112,6 @@
           :total-items-count="products?.data?.count || 0"
           :total-page-count="Math.ceil((products?.data?.count || 0) / itemsPerPage) || 1"
           :server-pagination="true"
-          :enable-row-selection="true"
           @row-click="handleRowClick"
           @pagination-change="(d) => (page = d.currentPage)"
         >
@@ -157,11 +156,6 @@
 
           <template #cell:action="{ item }">
             <div class="flex items-center gap-2">
-              <Icon
-                name="copy"
-                @click.stop="handleAction('duplicate', item)"
-                class="hidden cursor-pointer hover:text-gray-600 md:inline-block"
-              />
               <DropdownMenu
                 :items="getActionItems(item)"
                 placement="bottom-end"

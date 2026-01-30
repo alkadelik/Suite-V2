@@ -75,7 +75,6 @@
         :data="customers ?? []"
         :columns="CUSTOMER_COLUMNS"
         :loading="isLoading"
-        :enable-row-selection="true"
         :show-pagination="true"
         :items-per-page="itemsPerPage"
         :total-items-count="customersData?.data?.count || 0"
