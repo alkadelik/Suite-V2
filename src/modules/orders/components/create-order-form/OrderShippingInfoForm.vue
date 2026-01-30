@@ -83,29 +83,6 @@ const FULFILMENT_STATUS = [
   { label: "No", value: "unfulfilled" },
 ]
 
-const DELIVERY_METHOD_OPTIONS = computed(() =>
-  [
-    { label: "Manual", value: "manual", description: "Select your delivery location" },
-    { label: "Shipbubble", value: "shipbubble", description: "" },
-    { label: "Custom", value: "custom", description: "GIG, Bolt, Gokada, etc" },
-  ].filter((x) => {
-    const { shipping_account, delivery_enabled, manual_delivery_enabled } =
-      deliveryDetails.value || {}
-    if (x.value === "shipbubble") {
-      return shipping_account && delivery_enabled
-    }
-    if (x.value === "manual") {
-      return manual_delivery_enabled && !delivery_enabled
-    }
-    return true
-  }),
-)
-
-const DELIVERY_TYPE_OPTIONS = [
-  { label: "Express", value: "express" },
-  { label: "Standard", value: "standard" },
-]
-
 const { data: expressOptions } = useGetExpressDeliveryOptions()
 const { data: manualOptions } = useGetManualDeliveryOptions()
 const { data: customerAddresses } = useGetCustomerAddresses(
@@ -137,6 +114,39 @@ const MANUAL_DELIVERY_LOCATIONS = computed(
       value: v.uid,
       description: formatCurrency(v.amount, { kobo: true }),
     })) ?? [],
+)
+
+const DELIVERY_METHOD_OPTIONS = computed(() =>
+  [
+    { label: "Manual", value: "manual", description: "Select your delivery location" },
+    { label: "Shipbubble", value: "shipbubble", description: "" },
+    { label: "Custom", value: "custom", description: "GIG, Bolt, Gokada, etc" },
+  ].filter((x) => {
+    const { shipping_account, delivery_enabled, manual_delivery_enabled } =
+      deliveryDetails.value || {}
+    if (x.value === "shipbubble") {
+      return shipping_account && delivery_enabled
+    }
+    if (x.value === "manual") {
+      return (
+        manual_delivery_enabled && !delivery_enabled && MANUAL_DELIVERY_LOCATIONS.value.length > 0
+      )
+    }
+    return true
+  }),
+)
+
+const DELIVERY_TYPE_OPTIONS = computed(() =>
+  [
+    { label: "Express", value: "express" },
+    { label: "Standard", value: "standard" },
+  ].filter((x) => {
+    const { express_delivery_enabled } = deliveryDetails.value || {}
+    if (x.value === "express") {
+      return express_delivery_enabled && EXPRESS_DELIVERY_LOCATIONS.value.length > 0
+    }
+    return true
+  }),
 )
 
 const updateField = (field: keyof ShippingInfo, value: unknown) => {
