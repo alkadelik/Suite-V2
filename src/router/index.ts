@@ -132,12 +132,24 @@ router.beforeEach((to, from, next) => {
       return next({ path: "/dashboard" })
     }
 
-    // Onboarding page is HQ only - redirect non-HQ locations to dashboard
-    if (to.path === "/onboarding") {
+    const hQOnlyPages = ["/popups", "/onboarding"]
+    // Restrict HQ-only pages to HQ users
+    if (hQOnlyPages.includes(to.path)) {
       const { activeLocation } = useSettingsStore()
       if (activeLocation && !activeLocation.is_hq) {
-        toast.info("Onboarding is only available at the HQ location.")
+        toast.info("This module is only available at the HQ location.")
         return next({ path: "/dashboard" })
+      }
+    }
+
+    // Restrict settings pages for non-HQ locations
+    const branchAllowedPages = ["/settings/profile", "/settings/password"]
+    if (to.path.startsWith("/settings") && to.path !== "/settings") {
+      const { activeLocation } = useSettingsStore()
+      if (activeLocation && !activeLocation.is_hq && !branchAllowedPages.includes(to.path)) {
+        const pathName = to.path.split("/settings/")[1].replace("-", " ")?.toUpperCase()
+        toast.info(`${pathName} is only available at the HQ location.`)
+        return next({ path: "/settings/profile" })
       }
     }
   }

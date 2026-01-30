@@ -81,9 +81,9 @@
       <SidebarLink
         icon="life-buoy"
         label="Support"
+        class="w-full"
         @click="
           () => {
-            console.log('opening support modal')
             useSharedStore().openSupportModal()
           }
         "
@@ -201,12 +201,17 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
 const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
 
 // Sales Suite items
-const salesSuiteItems = computed(() => [
-  { icon: "box", label: "Orders", to: "/orders" },
-  { icon: "folder", label: "Inventory", to: "/inventory" },
-  { icon: "calendar-tick", label: "Popups", to: "/popups" },
-  { icon: "people", label: "Customers", to: "/customers" },
-])
+const salesSuiteItems = computed(() =>
+  [
+    { icon: "box", label: "Orders", to: "/orders" },
+    { icon: "folder", label: "Inventory", to: "/inventory" },
+    { icon: "calendar-tick", label: "Popups", to: "/popups" },
+    { icon: "people", label: "Customers", to: "/customers" },
+  ].filter((item) => {
+    if (item.label === "Popups") return activeLocation.value?.is_hq
+    return true
+  }),
+)
 
 // Production items
 const productionItems = computed(() => {

@@ -17,33 +17,34 @@ onMounted(() => {
   }
 })
 
-interface SettingsLink {
-  label: string
-  path: string
-  icon: string
-  subLinks?: SettingsLink[]
-}
-
-const settingsLinks: SettingsLink[] = [
-  { label: "Profile", path: "/settings/profile", icon: "profile-circle" },
-  { label: "Store Details", path: "/settings/store-details", icon: "shop-outline" },
-  { label: "Password", path: "/settings/password", icon: "key" },
-  { label: "Teams", path: "/settings/teams", icon: "people" },
-  { label: "Plans & Billing", path: "/settings/billing", icon: "star-fast" },
-  { label: "Locations", path: "/settings/locations", icon: "map" },
-  {
-    label: "Design",
-    path: "/settings/design",
-    icon: "designtools",
-    subLinks: [
-      { label: "Themes", path: "/settings/design/themes", icon: "shapes-02" },
-      { label: "Theme Settings", path: "/settings/design/theme-settings", icon: "shapes-01" },
-      { label: "Landing Page", path: "/settings/design/landing-page", icon: "message-text" },
-      { label: "Pop Up", path: "/settings/design/popup", icon: "information" },
-    ],
-  },
-  { label: "Delivery Options", path: "/settings/delivery-options", icon: "truck-fast-outline" },
-]
+const settingsLinks = computed(() =>
+  [
+    { label: "Profile", path: "/settings/profile", icon: "profile-circle" },
+    { label: "Store Details", path: "/settings/store-details", icon: "shop-outline" },
+    { label: "Password", path: "/settings/password", icon: "key" },
+    { label: "Teams", path: "/settings/teams", icon: "people" },
+    { label: "Plans & Billing", path: "/settings/billing", icon: "star-fast" },
+    { label: "Locations", path: "/settings/locations", icon: "map" },
+    {
+      label: "Design",
+      path: "/settings/design",
+      icon: "designtools",
+      subLinks: [
+        { label: "Themes", path: "/settings/design/themes", icon: "shapes-02" },
+        { label: "Theme Settings", path: "/settings/design/theme-settings", icon: "shapes-01" },
+        { label: "Landing Page", path: "/settings/design/landing-page", icon: "message-text" },
+        { label: "Pop Up", path: "/settings/design/popup", icon: "information" },
+      ],
+    },
+    { label: "Delivery Options", path: "/settings/delivery-options", icon: "truck-fast-outline" },
+  ].filter((link) => {
+    const { activeLocation } = useSettingsStore()
+    if (!activeLocation?.is_hq) {
+      return ["Profile", "Password"].includes(link.label)
+    }
+    return true
+  }),
+)
 
 const expandedLink = ref<string | null>(null)
 
