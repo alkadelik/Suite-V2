@@ -89,11 +89,10 @@ const onSubmit = (values: FormValues) => {
 
   createCustomer(payload as ICustomerFormPayload, {
     onSuccess: (res) => {
-      console.log("Customer created successfully:", res.data)
       toast.success("Customer added successfully!")
       emit("refresh")
       emit("close")
-      emit("submit", res.data)
+      emit("submit", res.data.data)
     },
     onError: displayError,
   })
