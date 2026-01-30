@@ -345,17 +345,12 @@ const onCreateOrder = () => {
         selectedCustomer.value?.full_name ||
         `${selectedCustomer.value?.first_name || ""} ${selectedCustomer.value?.last_name || ""}`.trim() ||
         "Customer",
-      customer_email:
-        shippingInfo.value.customer_email ||
-        selectedCustomer.value?.email ||
-        "theo.testing@mailsac.com",
+      customer_email: shippingInfo.value.customer_email || selectedCustomer.value?.email || "",
       shipping_address:
         typeof shippingInfo.value.delivery_address === "string"
           ? shippingInfo.value.delivery_address
           : (shippingInfo.value.delivery_address as { label: string; value: string }).label,
     }
-
-    console.log("Initiating PayStack payment with data:", payData)
 
     handlePayStackPayment(payData, (payResponse) => {
       // money paid... time to create order
