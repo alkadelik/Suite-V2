@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Drawer from "@components/Drawer.vue"
 import StepperWizard from "@components/StepperWizard.vue"
-import { ref, computed, onMounted } from "vue"
+import { ref, computed, onMounted, watch } from "vue"
 import type { IProductCatalogue } from "@modules/inventory/types"
 import type { ICustomer } from "@modules/customers/types"
 import type { OrderPayload, OrderItemPayload } from "@modules/orders/types"
@@ -24,9 +24,8 @@ import type { IShippingCourier } from "@modules/shared/types"
 import type { PopupInventory } from "@modules/popups/types"
 import { useMediaQuery } from "@vueuse/core"
 import Modal from "@components/Modal.vue"
-import { useGetStoreDetails } from "@modules/settings/api"
-import { useAuthStore } from "@modules/auth/store"
 import { handlePayStackPayment, loadPaystackScript } from "../utilities"
+import { useSettingsStore } from "@modules/settings/store"
 
 const props = defineProps({
   open: { type: Boolean, required: true },
@@ -34,9 +33,7 @@ const props = defineProps({
 })
 const emit = defineEmits(["close", "refresh"])
 
-// Get store details for tax settings
-const storeUid = computed(() => useAuthStore().user?.store_uid || "")
-const { data: storeDetails } = useGetStoreDetails(storeUid.value)
+const storeDetails = computed(() => useSettingsStore().storeDetails)
 
 // Check if tax collection is enabled
 const isTaxEnabled = computed(() => storeDetails.value?.tax_collection_enabled || false)
@@ -50,16 +47,6 @@ const VAT_RATE = computed(() => {
 const isPopupOrder = computed(() => !!props.popupEventId)
 
 const steps = computed(() => {
-  if (isPopupOrder.value) {
-    return [
-      "Add Products",
-      "Set Quantities",
-      "Customer Details",
-      "Shipping Info",
-      "Payment",
-      "Review & Confirm",
-    ]
-  }
   return [
     "Add Products",
     "Select Variants & Qty",
@@ -407,6 +394,14 @@ const isMobile = useMediaQuery("(max-width: 1028px)")
 onMounted(() => {
   loadPaystackScript()
 })
+
+// reset form when drawer is closed
+watch(
+  () => props.open,
+  (val) => {
+    if (!val) resetForm()
+  },
+)
 </script>
 
 <template>

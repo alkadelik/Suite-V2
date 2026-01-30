@@ -19,6 +19,7 @@ export type TExpense = {
   status_display: string
   created_at: string
   updated_at: string
+  linked_order_number?: string
 }
 
 export type TExpenseResponse = {

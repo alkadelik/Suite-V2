@@ -6,7 +6,9 @@ import { useMediaQuery } from "@vueuse/core"
 import { TExpense } from "../types"
 import Chip from "@components/Chip.vue"
 import { formatDate } from "@/utils/formatDate"
-import { getExpenseStatusColor } from "../constants"
+import { getExpenseStatusColor, isTaxLikeSubcategory } from "../constants"
+import Icon from "@components/Icon.vue"
+import { clipboardCopy } from "@/utils/others"
 
 defineProps<{ open: boolean; expense: TExpense }>()
 const emit = defineEmits(["close", "refresh"])
@@ -37,12 +39,22 @@ const isMobile = useMediaQuery("(max-width: 1028px)")
       </div>
       <div class="border-core-300 bg-core-25 my-6 space-y-3 rounded-xl border p-4">
         <p class="flex justify-between text-sm">
-          <span class="text-core-600">Amount</span>
-          <span class="font-medium">{{ formatCurrency(Number(expense.amount)) }}</span>
-        </p>
-        <p class="flex justify-between text-sm">
-          <span class="text-core-600">Expense</span>
-          <span class="font-medium">{{ expense.name || "-" }}</span>
+          <span class="text-core-600"
+            >Expense
+            <Chip v-if="expense.linked_order_number" color="blue" label="Order" class="ml-1" />
+          </span>
+          <span v-if="isTaxLikeSubcategory(expense.sub_category_name)" class="font-medium">
+            {{ expense.linked_order_number }}
+            <Icon
+              name="copy"
+              size="20"
+              class="text-primary-600 ml-2 cursor-pointer"
+              @click="clipboardCopy(expense.linked_order_number || '')"
+            />
+          </span>
+          <span v-else>
+            {{ expense.name || "-" }}
+          </span>
         </p>
         <p class="flex justify-between text-sm">
           <span class="text-core-600">Category</span>

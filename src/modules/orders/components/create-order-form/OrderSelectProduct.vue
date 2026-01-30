@@ -123,12 +123,12 @@ const handleProductCreated = async (productUid: string) => {
       <h3 class="text-lg font-semibold">
         All Products <Chip :label="`${totalCount || products.length}`" />
       </h3>
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-3 rounded-xl bg-white p-2">
         <TextField
           left-icon="search-lg"
           size="md"
           class="w-full"
-          placeholder="Search by name"
+          placeholder="Find a product by name"
           v-model="searchQuery"
         />
         <AppButton icon="add" @click="showAdd = true" />

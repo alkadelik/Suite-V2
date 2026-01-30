@@ -210,6 +210,7 @@ onMounted(() => {
           />
 
           <AppButton
+            v-if="!isClosed"
             icon="add"
             size="sm"
             class="flex-shrink-0"
@@ -256,6 +257,7 @@ onMounted(() => {
         <template #cell:action="{ item }">
           <div class="flex items-center gap-2">
             <DropdownMenu
+              v-if="!isClosed"
               :items="getActionMenu(item)"
               size="sm"
               @action="(action: string) => handleAction(action, item)"
@@ -283,6 +285,7 @@ onMounted(() => {
               <span class="ml-auto" />
               <span class="text-base font-semibold">{{ getPopupPriceRange(item) }}</span>
               <DropdownMenu
+                v-if="!isClosed"
                 :items="getActionMenu(item)"
                 size="sm"
                 @action="(action: string) => handleAction(action, item)"

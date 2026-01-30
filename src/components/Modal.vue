@@ -32,8 +32,8 @@
             :class="[
               bodyClasses,
               props.handlePadding !== false ? 'px-6 py-4' : '',
-              props.bodyClass,
               $slots.footer ? 'pb-24 md:pb-24' : 'rounded-b-2xl',
+              props.bodyClass,
             ]"
           >
             <slot />

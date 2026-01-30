@@ -6,7 +6,7 @@ import Icon from "@components/Icon.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import type { TExpense } from "../types"
 import { formatDate } from "@/utils/formatDate"
-import { EXPENSE_CATEGORY_ICON, getExpenseStatusColor } from "../constants"
+import { EXPENSE_CATEGORY_ICON, getExpenseStatusColor, isTaxLikeSubcategory } from "../constants"
 
 const props = withDefaults(
   defineProps<{
@@ -34,8 +34,16 @@ const menuItems = computed(() => {
   return props.customActions?.length
     ? props.customActions
     : [
-        { label: "Edit expense", icon: "edit", action: () => emit("edit") },
-        { divider: true },
+        ...(props.expense.entry_type === "auto"
+          ? []
+          : [
+              {
+                label: "Edit expense",
+                icon: "edit",
+                action: () => emit("edit"),
+              },
+              { divider: true },
+            ]),
         {
           label: "Void expense",
           icon: "close-circle",
@@ -81,7 +89,19 @@ const menuItems = computed(() => {
 
         <div class="flex flex-1 flex-col gap-2 truncate">
           <div class="flex justify-between">
-            <h4 class="truncate text-left text-sm font-semibold capitalize">
+            <h4
+              v-if="
+                expense.linked_order_number &&
+                expense.sub_category_name &&
+                isTaxLikeSubcategory(expense.sub_category_name)
+              "
+              class="truncate text-left text-sm font-semibold capitalize"
+            >
+              <span>{{ isTaxLikeSubcategory(expense.sub_category_name) }}</span>
+              <span> ({{ expense.linked_order_number }}) </span>
+            </h4>
+
+            <h4 v-else class="truncate text-left text-sm font-semibold capitalize">
               {{ expense.name || expense.category_name }}
             </h4>
 

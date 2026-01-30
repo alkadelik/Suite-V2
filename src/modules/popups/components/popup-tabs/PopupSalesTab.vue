@@ -33,6 +33,8 @@ const isMobile = useMediaQuery("(max-width: 768px)")
 const props = defineProps<{ isActive: boolean; startDate?: string; popup: PopupEvent }>()
 const startDate = props.startDate
 
+const isClosed = computed(() => props.popup.status === "closed")
+
 const { data: popupOrders, refetch, isPending } = useGetPopupOrders(route.params.id as string)
 
 const hasStarted = computed(() => {
@@ -77,10 +79,10 @@ const handleMarkAsPaid = () => {
     v-if="!popupOrders?.count"
     title="You haven't made any sales yet!"
     :description="emptyStateDescription"
-    :action-icon="hasStarted && popup?.status !== 'closed' ? 'add' : undefined"
-    :action-label="hasStarted && popup?.status !== 'closed' ? 'Add an order' : undefined"
+    :action-icon="hasStarted && !isClosed ? 'add' : undefined"
+    :action-label="hasStarted && !isClosed ? 'Add an order' : undefined"
     :loading="isPending"
-    @action="hasStarted && (openCreate = true)"
+    @action="hasStarted && !isClosed && (openCreate = true)"
   />
 
   <section v-else>
@@ -111,6 +113,7 @@ const handleMarkAsPaid = () => {
           />
 
           <AppButton
+            v-if="hasStarted && !isClosed"
             icon="add"
             size="sm"
             class="flex-shrink-0"

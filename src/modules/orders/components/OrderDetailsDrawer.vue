@@ -321,6 +321,27 @@ const menuItems = computed(() => {
           <span class="text-core-600">Courier</span>
           <span class="font-medium">{{ order.courier_name || "-" }}</span>
         </p>
+        <div
+          v-if="order.shipping_details?.tracking_url"
+          class="flex items-center justify-between gap-6 text-sm"
+        >
+          <span class="text-core-600 flex-shrink-0">Tracking Link</span>
+          <div class="flex items-center gap-2 truncate">
+            <a
+              :href="order.shipping_details?.tracking_url"
+              target="_blank"
+              class="text-primary-600 max-w-sm truncate font-medium underline underline-offset-2"
+            >
+              {{ order.shipping_details?.tracking_url }}
+            </a>
+            <Icon
+              name="copy"
+              size="28"
+              class="text-primary-600 cursor-pointer"
+              @click="clipboardCopy(order.shipping_details?.tracking_url)"
+            />
+          </div>
+        </div>
       </div>
     </div>
   </component>
