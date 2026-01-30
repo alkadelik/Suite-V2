@@ -41,7 +41,6 @@ export const ORDER_PAYMENT_METHODS: TOrderPaymentMethod[] = [
   { label: "Cash", value: "cash", icon: "Moneys" },
   { label: "POS", value: "pos", icon: "CardPos" },
   { label: "Transfer", value: "transfer", icon: "MoneyChange" },
-  { label: "Other", value: "other", icon: "WalletMoney" },
 ]
 
 export const ORDER_PAYMENT_STATUS: TOrderPaymentStatus[] = [

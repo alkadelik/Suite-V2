@@ -147,3 +147,10 @@ export function useGenerateReceipt() {
       baseApi.post<{ data: { url: string } }>(`/orders/${id}/generate-receipt/`),
   })
 }
+
+/** Mark order as paid */
+export function useMarkOrderAsPaid() {
+  return useMutation({
+    mutationFn: (orderId: string) => baseApi.post(`/orders/${orderId}/mark-paid/`),
+  })
+}

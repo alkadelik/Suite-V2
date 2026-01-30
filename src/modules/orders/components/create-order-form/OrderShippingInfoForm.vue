@@ -533,12 +533,17 @@ watch(
   () => props.customer,
   (val) => {
     if (val && val.uid !== anonymousCustomer.uid) {
-      if (val.email && !props.shippingInfo.customer_email) {
+      // Always sync email and phone from selected customer
+      if (val.email) {
         updateField("customer_email", val.email)
       }
-      if (val.phone && !props.shippingInfo.customer_phone) {
+      if (val.phone) {
         updateField("customer_phone", val.phone)
       }
+    } else {
+      // Clear fields if no customer or anonymous customer
+      updateField("customer_email", "")
+      updateField("customer_phone", "")
     }
   },
   { immediate: true },

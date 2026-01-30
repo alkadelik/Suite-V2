@@ -50,36 +50,22 @@ export const POPUP_INVENTORY_COLUMNS: TableColumn<PopupInventory>[] = [
 
 export const POPUP_ORDER_COLUMNS: TableColumn<TOrder>[] = [
   { header: "Order ID", accessor: "order_number" },
+  { header: "Items", accessor: "items" },
   { header: "Customer", accessor: "customer_info", class: "max-w-[200px]" },
   {
     header: "Amount",
     accessor: "total_amount",
-    cell: ({ value }) => formatCurrency(Number(value)),
+    cell: ({ value }) => formatCurrency(Number(value), { kobo: true }),
   },
-  { header: "Order", accessor: "items" },
   { header: "Status", accessor: "payment_status" },
+  { header: "Fulfilled", accessor: "fulfilment_status" },
   {
     header: "Order Date",
-    accessor: "created_at",
-    cell: ({ value }) => getSmartDateLabel(value as string),
+    accessor: "order_date",
+    cell: ({ item }) => getSmartDateLabel(String(item.order_date || item.created_at || "")),
   },
   { header: "Actions", accessor: "actions" },
 ]
-
-/**
- * This should be gotten from the backend instead - - ended, ongoing, upcoming, closed. NOTES!!!!!!!!!
- */
-// export const getEventStatus = (event: { start_date?: string; end_date?: string } | null) => {
-//   if (!event?.start_date || !event?.end_date) return "ended"
-//   const now = new Date()
-//   const startDate = new Date(event.start_date)
-//   const endDate = new Date(event.end_date)
-//   endDate.setHours(23, 59, 59, 999) // Set to end of day
-
-//   if (now < startDate) return "upcoming"
-//   if (now >= startDate && now <= endDate) return "ongoing"
-//   return "ended"
-// }
 
 export const getInventoryQty = (item: PopupInventory) => {
   const qty = item.variants?.reduce((acc, variant) => acc + variant.quantity, 0)

@@ -12,11 +12,13 @@ import Chip from "@components/Chip.vue"
 import { TOrder } from "../types"
 import CreateOrderDrawer from "../components/CreateOrderDrawer.vue"
 import VoidDeleteOrder from "../components/VoidDeleteOrder.vue"
+import ConfirmationModal from "@components/ConfirmationModal.vue"
 import {
   useDeleteOrder,
   useGenerateReceipt,
   useGetOrderDashboard,
   useGetOrders,
+  useMarkOrderAsPaid,
   useVoidOrder,
 } from "../api"
 import { displayError } from "@/utils/error-handler"
@@ -43,6 +45,7 @@ const openMemo = ref(false)
 const openFulfil = ref(false)
 const openPayment = ref(false)
 const openDetails = ref(false)
+const openMarkPaid = ref(false)
 const selectedOrder = ref<TOrder | null>(null)
 const status = ref(ORDER_STATUS_TAB[0].key)
 
@@ -135,6 +138,19 @@ const getActionItems = (item: TOrder) => [
       openMemo.value = true
     },
   },
+  // Mark as Paid - only for unpaid or partially paid orders
+  ...(item.payment_status !== "paid"
+    ? [
+        {
+          label: "Mark as Paid",
+          icon: "money-add",
+          action: () => {
+            selectedOrder.value = item
+            openMarkPaid.value = true
+          },
+        },
+      ]
+    : []),
   // Share receipt - only for partially paid or paid orders
   ...(item.payment_status === "paid" || item.payment_status === "partially_paid"
     ? [
@@ -232,6 +248,7 @@ const onCloseVoidDel = () => {
 const { mutate: voidOrder, isPending: isVoiding } = useVoidOrder()
 const { mutate: deleteOrder, isPending: isDeleting } = useDeleteOrder()
 const { mutate: generateReceipt } = useGenerateReceipt()
+const { mutate: markAsPaid, isPending: isMarkingPaid } = useMarkOrderAsPaid()
 
 // Get invoice link for an order
 const getInvoiceLink = (order: TOrder) => {
@@ -324,6 +341,17 @@ const handleVoidDelete = ({ action, reason }: { action: string; reason: string }
   }
 }
 
+const handleMarkAsPaid = () => {
+  markAsPaid(selectedOrder.value?.uid || "", {
+    onSuccess: () => {
+      toast.success("Order marked as paid successfully")
+      openMarkPaid.value = false
+      handleRefresh()
+    },
+    onError: displayError,
+  })
+}
+
 const route = useRoute()
 
 // Watch for route query to open create modal/drawer
@@ -345,6 +373,9 @@ const handleAction = (action: string, order: TOrder) => {
       break
     case "view-memos":
       openMemo.value = true
+      break
+    case "mark-as-paid":
+      openMarkPaid.value = true
       break
     case "share-receipt":
       handleShareReceipt(order)
@@ -409,6 +440,11 @@ const handleDetailsVoidOrder = () => {
 const handleDetailsDeleteOrder = () => {
   openDetails.value = false
   openDelete.value = true
+}
+
+const handleDetailsMarkAsPaid = () => {
+  openDetails.value = false
+  openMarkPaid.value = true
 }
 </script>
 
@@ -562,6 +598,7 @@ const handleDetailsDeleteOrder = () => {
               :order="item"
               @click="handleAction('click', item)"
               @view-memos="handleAction('view-memos', item)"
+              @mark-as-paid="handleAction('mark-as-paid', item)"
               @share-receipt="handleAction('share-receipt', item)"
               @share-invoice="handleAction('share-invoice', item)"
               @share-payment-link="handleAction('share-payment-link', item)"
@@ -584,6 +621,17 @@ const handleDetailsDeleteOrder = () => {
       :order="selectedOrder"
       @close="onCloseVoidDel"
       @action="handleVoidDelete"
+    />
+
+    <ConfirmationModal
+      v-if="selectedOrder"
+      v-model="openMarkPaid"
+      header="Mark Order as Paid"
+      :paragraph="`Are you sure you want to mark order #${selectedOrder.order_number} as fully paid? This will update the payment status to 'Paid'.`"
+      action-label="Mark as Paid"
+      variant="success"
+      :loading="isMarkingPaid"
+      @confirm="handleMarkAsPaid"
     />
 
     <CreateOrderDrawer
@@ -626,6 +674,7 @@ const handleDetailsDeleteOrder = () => {
       :order="selectedOrder"
       @close="openDetails = false"
       @view-memos="handleDetailsViewMemos"
+      @mark-as-paid="handleDetailsMarkAsPaid"
       @share-receipt="handleDetailsShareReceipt"
       @share-invoice="handleDetailsShareInvoice"
       @share-payment-link="handleDetailsSharePaymentLink"

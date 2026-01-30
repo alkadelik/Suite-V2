@@ -31,6 +31,7 @@ const props = withDefaults(
 const emit = defineEmits([
   "click",
   "view-memos",
+  "mark-as-paid",
   "share-receipt",
   "share-invoice",
   "share-payment-link",
@@ -58,6 +59,10 @@ const menuItems = computed(() => {
     : [
         { label: "View details", icon: "eye", action: () => emit("click") },
         { label: "View memos", icon: "note", action: () => emit("view-memos") },
+        // Mark as Paid - only for unpaid or partially paid orders
+        ...(paymentStatus !== "paid"
+          ? [{ label: "Mark as Paid", icon: "money-add", action: () => emit("mark-as-paid") }]
+          : []),
         // Share receipt - only for partially paid or paid orders
         ...(paymentStatus === "paid" || paymentStatus === "partially_paid"
           ? [{ label: "Share receipt", icon: "share", action: () => emit("share-receipt") }]

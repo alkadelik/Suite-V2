@@ -5,7 +5,7 @@ import { ref, computed, onMounted, watch } from "vue"
 import type { IProductCatalogue } from "@modules/inventory/types"
 import type { ICustomer } from "@modules/customers/types"
 import type { OrderPayload, OrderItemPayload } from "@modules/orders/types"
-import type { PopupInventoryVariant, PopupOrderPayload } from "@modules/popups/types"
+import type { PopupInventoryVariant } from "@modules/popups/types"
 import OrderSelectCustomer from "./create-order-form/OrderSelectCustomer.vue"
 import OrderSelectProduct from "./create-order-form/OrderSelectProduct.vue"
 import OrderProductQtyVariant from "./create-order-form/OrderProductQtyVariant.vue"
@@ -18,7 +18,6 @@ import PopupOrderProductQty from "@modules/popups/components/popup-order-form/Po
 import { anonymousCustomer, ORDER_CHANNELS, DELIVERY_PAYMENT_OPTION } from "../constants"
 import { displayError } from "@/utils/error-handler"
 import { useCreateOrder } from "../api"
-import { useCreatePopupOrder } from "@modules/popups/api"
 import { toast } from "@/composables/useToast"
 import type { IShippingCourier } from "@modules/shared/types"
 import type { PopupInventory } from "@modules/popups/types"
@@ -221,9 +220,8 @@ const totalAmount = computed(() => {
 })
 
 const { mutate: createOrder, isPending: isRegularOrderPending } = useCreateOrder()
-const { mutate: createPopupOrder, isPending: isPopupOrderPending } = useCreatePopupOrder()
 
-const isPending = computed(() => isRegularOrderPending.value || isPopupOrderPending.value)
+const isPending = computed(() => isRegularOrderPending.value)
 
 const onCreateOrder = () => {
   // Format payload according to OrderPayload interface
@@ -267,6 +265,17 @@ const onCreateOrder = () => {
               ratings: 0,
             }
           : ""
+      }
+    }
+
+    // Handle customer pays courier directly
+    if (shippingInfo.value.delivery_payment_option === "customer_pays_courier") {
+      deliveryFields.delivery_method = "custom"
+      deliveryFields.courier = {
+        courier_id: "unknown-courier",
+        courier_name: "Unknown Courier",
+        votes: 0,
+        ratings: 0,
       }
     }
   }
@@ -348,32 +357,18 @@ const onCreateOrder = () => {
       // money paid... time to create order
       console.log("Payment successful:", payResponse)
       const reference = payResponse.reference
-      if (isPopupOrder.value) {
-        createPopupOrder(
-          {
-            ...payload,
-            reference,
-            delivery_fee: Number(shippingInfo.value.delivery_fee).toFixed(2),
-          } as unknown as PopupOrderPayload,
-          handler,
-        )
-      } else {
-        createOrder(
-          {
-            ...payload,
-            reference,
-            delivery_fee: Number(shippingInfo.value.delivery_fee).toFixed(2),
-          } as OrderPayload,
-          handler,
-        )
-      }
+
+      createOrder(
+        {
+          ...payload,
+          reference,
+          delivery_fee: Number(shippingInfo.value.delivery_fee).toFixed(2),
+        } as OrderPayload,
+        handler,
+      )
     })
   } else {
-    if (isPopupOrder.value) {
-      createPopupOrder(payload as unknown as PopupOrderPayload, handler)
-    } else {
-      createOrder(payload as OrderPayload, handler)
-    }
+    createOrder(payload as OrderPayload, handler)
   }
 }
 
@@ -394,6 +389,27 @@ const isMobile = useMediaQuery("(max-width: 1028px)")
 onMounted(() => {
   loadPaystackScript()
 })
+
+// Sync customer email and phone to shippingInfo whenever customer changes
+watch(
+  () => selectedCustomer.value,
+  (customer) => {
+    if (customer && customer.uid !== anonymousCustomer.uid) {
+      // Update shipping info with customer email and phone
+      if (customer.email) {
+        shippingInfo.value.customer_email = customer.email
+      }
+      if (customer.phone) {
+        shippingInfo.value.customer_phone = customer.phone
+      }
+    } else {
+      // Clear customer details if no customer or anonymous
+      shippingInfo.value.customer_email = ""
+      shippingInfo.value.customer_phone = ""
+    }
+  },
+  { immediate: true },
+)
 
 // reset form when drawer is closed
 watch(

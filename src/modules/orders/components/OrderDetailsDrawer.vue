@@ -13,11 +13,23 @@ import { useSettingsStore } from "@modules/settings/store"
 import { clipboardCopy } from "@/utils/others"
 import AppButton from "@components/AppButton.vue"
 
-const props = defineProps<{ open: boolean; order: TOrder }>()
+const props = defineProps<{
+  open: boolean
+  order: TOrder
+  customActions?: Array<{
+    label?: string
+    icon?: string
+    action?: () => void
+    class?: string
+    iconClass?: string
+    divider?: boolean
+  }>
+}>()
 const emit = defineEmits([
   "close",
   "refresh",
   "view-memos",
+  "mark-as-paid",
   "share-receipt",
   "share-invoice",
   "share-payment-link",
@@ -60,12 +72,20 @@ const isBuyerCreated = computed(() => {
 })
 
 const menuItems = computed(() => {
+  if (props.customActions && props.customActions.length > 0) {
+    return props.customActions
+  }
+
   const paymentStatus = props.order?.payment_status
   const showVoid = (isFulfilled.value || paymentStatus !== "unpaid") && !isBuyerCreated.value
   const showDelete = !isFulfilled.value && paymentStatus === "unpaid" && !isBuyerCreated.value
 
   return [
     { label: "View memos", icon: "note", action: () => emit("view-memos") },
+    // Mark as Paid - only for unpaid or partially paid orders
+    ...(paymentStatus !== "paid"
+      ? [{ label: "Mark as Paid", icon: "money-add", action: () => emit("mark-as-paid") }]
+      : []),
     // Share receipt - only for partially paid or paid orders
     ...(paymentStatus === "paid" || paymentStatus === "partially_paid"
       ? [{ label: "Share receipt", icon: "share", action: () => emit("share-receipt") }]
