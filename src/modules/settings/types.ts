@@ -202,6 +202,7 @@ export interface IThemeSettings {
   facebook_url: string
   x_url: string
   tiktok_url: string
+  size_chart_url: string
 }
 
 export type SectionType =

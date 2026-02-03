@@ -77,15 +77,8 @@
           </div>
         </template>
 
-        <template #cell:firstName="{ item }">
-          <!-- Mobile: Avatar without extra text -->
-          <div class="md:hidden">
-            <Avatar class="items-start" :name="getFullName(item)" />
-          </div>
-          <!-- Desktop/Tablet: Avatar with extra text -->
-          <div class="hidden md:block">
-            <Avatar :name="getFullName(item)" :extra-text="item.email" />
-          </div>
+        <template #cell:first_name="{ item }">
+          <Avatar :name="getFullName(item)" :extra-text="item.email" />
         </template>
 
         <template #cell:status="{ item }">

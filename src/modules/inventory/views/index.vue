@@ -213,10 +213,8 @@
     <!-- drawers  -->
     <ProductFormDrawer
       v-if="showProductFormDrawer"
-      ref="productFormDrawerRef"
       v-model="showProductFormDrawer"
       @refresh="refetchProducts"
-      @add-category="showAddCategoryModal = true"
     />
     <ProductEditDrawer
       v-if="showProductEditDrawer"
@@ -235,7 +233,11 @@
     />
 
     <!-- Modals -->
-    <AddCategoryModal v-model="showAddCategoryModal" @success="handleCategoryCreated" />
+    <AddCategoryModal
+      v-model="showAddCategoryModal"
+      :teleport="true"
+      @success="handleCategoryCreated"
+    />
     <ReceiveRequestModal
       v-model="showReceiveRequestModal"
       :open="showReceiveRequestModal"
@@ -367,9 +369,6 @@ const activeFilters = ref<{
   status: null,
   subCategory: null,
 })
-const productFormDrawerRef = ref<{
-  setCategoryFromModal: (category: { label: string; value: string }) => void
-} | null>(null)
 const productEditDrawerRef = ref<{
   setCategoryFromModal: (category: { label: string; value: string }) => void
 } | null>(null)
@@ -702,10 +701,8 @@ const openAddProductDrawer = () => {
 const handleCategoryCreated = (category: { label: string; value: string }) => {
   showAddCategoryModal.value = false
 
-  // Determine which drawer is currently open and set its category
-  if (showProductFormDrawer.value && productFormDrawerRef.value) {
-    productFormDrawerRef.value.setCategoryFromModal(category)
-  } else if (showProductEditDrawer.value && productEditDrawerRef.value) {
+  // Only handle ProductEditDrawer category updates here
+  if (showProductEditDrawer.value && productEditDrawerRef.value) {
     productEditDrawerRef.value.setCategoryFromModal(category)
   }
 }

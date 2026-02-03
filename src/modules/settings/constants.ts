@@ -46,6 +46,7 @@ export const LOCATIONS: TLocation[] = [
 
 export const TEAMS_COLUMN: TableColumn<TTeam>[] = [
   { header: "Name", accessor: "first_name" },
+  // { header: "Email", accessor: "email" },
   {
     header: "Locations",
     accessor: "locations",
