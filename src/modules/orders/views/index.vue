@@ -37,6 +37,7 @@ import ProductAvatar from "@components/ProductAvatar.vue"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
 import OrderDetailsDrawer from "../components/OrderDetailsDrawer.vue"
 import StatCard from "@components/StatCard.vue"
+import OrderShipmentTab from "../components/OrderShipmentTab.vue"
 
 const openCreate = ref(false)
 const openVoid = ref(false)
@@ -483,7 +484,11 @@ const handleDetailsMarkAsPaid = () => {
         <Tabs v-model="status" :tabs="ORDER_STATUS_TAB" />
       </div>
 
-      <div class="space-y-4 overflow-hidden rounded-xl border-gray-200 pt-3 md:border md:bg-white">
+      <!-- Order statuses excluding shipment -->
+      <div
+        v-if="status !== 'shipments'"
+        class="space-y-4 overflow-hidden rounded-xl border-gray-200 pt-3 md:border md:bg-white"
+      >
         <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
           <h3 v-if="!isMobile" class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
             {{ ORDER_STATUS_TAB.find((tab) => tab.key === status)?.title }} Orders
@@ -610,6 +615,9 @@ const handleDetailsMarkAsPaid = () => {
           </template>
         </DataTable>
       </div>
+
+      <!-- order shipment tab -->
+      <OrderShipmentTab v-if="status === 'shipments'" />
     </section>
 
     <!--  -->
