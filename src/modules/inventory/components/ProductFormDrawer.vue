@@ -90,6 +90,7 @@ import {
 import baseApi from "@/composables/baseApi"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
+import { htmlToMarkdown } from "@/utils/html-to-markdown"
 
 // Import composables
 import { useProductFormState } from "../composables/useProductFormState"
@@ -214,7 +215,7 @@ const handleSubmit = async () => {
     // Format product data according to API schema
     const payload: IProductFormPayload = {
       name: form.name,
-      description: form.description,
+      description: htmlToMarkdown(form.description),
       story: form.story || "",
       category: form.category?.value as string,
       brand: form.brand || "",

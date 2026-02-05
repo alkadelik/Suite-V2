@@ -65,7 +65,7 @@
         :default-expanded="true"
       />
 
-      <!-- <SidebarGroup icon="trend-up" label="Marketing" :children="[]" /> -->
+      <SidebarGroup icon="trend-up" label="Marketing" :children="marketingItems" />
 
       <SidebarGroup
         v-if="isStaging"
@@ -207,6 +207,9 @@ const salesSuiteItems = computed(() => [
   { icon: "calendar-tick", label: "Popups", to: "/popups" },
   { icon: "people", label: "Customers", to: "/customers" },
 ])
+
+// Marketing items
+const marketingItems = computed(() => [{ icon: "sms", label: "Email List", to: "/email-list" }])
 
 // Production items
 const productionItems = computed(() => {

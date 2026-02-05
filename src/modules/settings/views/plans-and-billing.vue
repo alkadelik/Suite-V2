@@ -9,85 +9,52 @@
     </div>
 
     <!-- plan details  -->
-    <div class="flex flex-col gap-3 md:flex-row">
-      <!-- current plan  -->
-      <div class="cursor-no-allowed flex-1 rounded-2xl border-2 border-gray-200">
-        <header
-          class="flex items-center justify-between rounded-t-2xl border-b-2 border-gray-200 px-4 py-3"
-        >
-          <div class="flex items-center gap-3">
-            <div class="bg-primary-100 rounded-full p-1.5">
-              <div class="bg-primary-200 rounded-full p-2">
-                <Icon name="layers-three-01" size="16" class="text-primary-600" />
-              </div>
+    <div class="rounded-2xl border border-gray-200">
+      <header class="flex items-center justify-between px-3 py-2.5 md:px-4 md:py-3">
+        <div class="flex items-center gap-2 md:gap-3">
+          <div
+            class="bg-primary-100 flex size-10 items-center justify-center rounded-full md:size-12"
+          >
+            <div class="bg-primary-200 flex size-8 items-center justify-center rounded-full">
+              <Icon name="layers-three-01" size="16" class="text-primary-600" />
             </div>
-
-            <h4 class="text-primary-800 text-lg font-medium md:text-xl">Current Plan</h4>
           </div>
 
-          <Chip showDot color="blue" label="Active" />
-        </header>
-        <div class="flex items-center justify-between p-4">
-          <div class="flex flex-col items-start gap-5">
-            <Chip
-              :color="basePlanName === 'N/A' ? 'alt' : getPlanColor(basePlanName)"
-              :label="currentPlan"
-            />
+          <h4 class="text-core-800 text-sm font-medium md:text-lg">Current Plan</h4>
 
-            <p class="text-core-800 text-xs md:text-sm">
-              {{
-                basePlanName === "Bud" && budPlanPrice !== null
-                  ? `${formatCurrency(budPlanPrice)} / ${currentSubscription?.plan_frequency || "month"}`
-                  : currentSubscription?.plan_price
-                    ? `${formatCurrency(Number(currentSubscription.plan_price))} / ${currentSubscription.plan_frequency}`
-                    : "N/A"
-              }}
-            </p>
-          </div>
-          <AppButton
-            v-if="basePlanName === 'N/A' || basePlanName === 'Bud'"
-            label="Upgrade Plan"
-            icon="arrow-right"
-            icon-placement="right"
-            @click="showPlansModal = true"
-          />
-          <AppButton
-            v-else
-            label="Manage Plan"
-            icon="arrow-right"
-            icon-placement="right"
-            @click="showPlansModal = true"
-          />
+          <Chip color="indigo" :label="currentPlanChipLabel" size="sm" />
         </div>
-      </div>
 
-      <!-- next payment -->
-      <div class="cursor-no-allowed flex flex-1 flex-col rounded-2xl border-2 border-gray-200">
-        <header
-          class="flex items-center justify-between rounded-t-2xl border-b-2 border-gray-200 px-4 py-3"
-        >
-          <div class="flex items-center gap-3">
-            <div class="bg-primary-100 rounded-full p-1.5">
-              <div class="bg-primary-200 rounded-full p-2">
-                <Icon name="layers-three-01" size="16" class="text-primary-600" />
-              </div>
-            </div>
+        <Chip
+          showDot
+          :color="currentSubscription?.is_cancelled ? 'cancelled' : 'blue'"
+          :label="currentSubscription?.is_cancelled ? 'Cancelled' : 'Active'"
+          size="sm"
+        />
+      </header>
 
-            <h4 class="text-primary-800 text-lg font-medium md:text-xl">Next Payment</h4>
-          </div>
-        </header>
-        <div class="flex flex-1 items-center justify-between gap-3 p-4">
-          <p class="text-core-700 text-lg font-semibold">
-            {{ nextPaymentDate || "N/A" }}
+      <hr class="border-gray-200" />
+
+      <div class="flex flex-col gap-3 px-4 py-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p class="text-core-800 text-base">
+            <span class="text-xl font-bold">{{ planPriceDisplay }}</span>
+            <span v-if="planFrequencyDisplay" class="text-core-500 font-normal"
+              >/{{ planFrequencyDisplay }}</span
+            >
           </p>
-          <AppButton
-            v-if="nextPaymentDate && currentPlan !== 'N/A'"
-            label="Cancel Subscription"
-            variant="outlined"
-            class="!border-gray-300 bg-transparent !text-gray-700 hover:!bg-gray-50"
-            @click="showCancelModal = true"
-          />
+          <p v-if="nextPaymentDate" class="text-core-500 mt-1 text-xs md:text-sm">
+            Next Payment: {{ nextPaymentDate }}
+          </p>
         </div>
+
+        <AppButton
+          v-if="nextPaymentDate && currentPlan !== 'N/A' && !currentSubscription?.is_cancelled"
+          label="Cancel Subscription"
+          variant="outlined"
+          class="!border-gray-300 bg-transparent !text-gray-700 hover:!bg-gray-50"
+          @click="showCancelModal = true"
+        />
       </div>
     </div>
 
@@ -169,6 +136,14 @@
       @confirm="handleCancelSubscription"
       @view-plans="handleViewPlans"
     />
+
+    <!-- Cancellation Success Modal -->
+    <SuccessModal
+      v-model="showSuccessModal"
+      title="Subscription cancelled!"
+      subtitle="Your subscription has been cancelled successfully!"
+      button-text="Awesome!"
+    />
   </div>
 </template>
 
@@ -184,15 +159,16 @@ import type { TSubscription } from "../types"
 import { SUBSCRIPTION_COLUMN } from "../constants"
 import PlansModal from "../components/PlansModal.vue"
 import CancelSubscriptionModal from "../components/CancelSubscriptionModal.vue"
+import SuccessModal from "@/components/SuccessModal.vue"
 import { getPlanColor } from "../utils"
 import { TChipColor } from "@modules/shared/types"
 import { useGetSubscriptionHistory, useGetPlans, useCancelSubscription } from "../api"
 import { useAuthStore } from "@modules/auth/store"
-import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 
 const showPlansModal = ref(false)
 const showCancelModal = ref(false)
+const showSuccessModal = ref(false)
 const authStore = useAuthStore()
 
 // Get current subscription from user store
@@ -226,6 +202,40 @@ const currentPlan = computed(() => {
 // Get base plan name without trial suffix for comparisons
 const basePlanName = computed(() => {
   return currentSubscription.value?.plan_name || "N/A"
+})
+
+// Format frequency for display: "monthly" -> "month", "annually" -> "year"
+const frequencyDisplayMap: Record<string, string> = {
+  monthly: "month",
+  annually: "year",
+  yearly: "year",
+}
+
+// Chip label showing plan name + frequency (e.g. "Bloom - Yearly")
+const currentPlanChipLabel = computed(() => {
+  if (currentPlan.value === "N/A") return "N/A"
+  const freq = currentSubscription.value?.plan_frequency
+  if (!freq) return currentPlan.value
+  const freqLabel = freq.charAt(0).toUpperCase() + freq.slice(1)
+  return `${currentPlan.value} - ${freqLabel}`
+})
+
+// Price amount only (bold part)
+const planPriceDisplay = computed(() => {
+  if (basePlanName.value === "Bud" && budPlanPrice.value !== null) {
+    return formatCurrency(budPlanPrice.value)
+  }
+  if (currentSubscription.value?.plan_price) {
+    return formatCurrency(Number(currentSubscription.value.plan_price))
+  }
+  return "N/A"
+})
+
+// Frequency label (non-bold part)
+const planFrequencyDisplay = computed(() => {
+  if (planPriceDisplay.value === "N/A") return ""
+  const freq = currentSubscription.value?.plan_frequency || "month"
+  return frequencyDisplayMap[freq] || freq
 })
 
 // Calculate next payment date
@@ -299,8 +309,8 @@ const handleAction = (action: string, item: TSubscription) => {
 const handleCancelSubscription = () => {
   cancelSubscription(undefined, {
     onSuccess: () => {
-      toast.success("Subscription cancelled successfully")
       showCancelModal.value = false
+      showSuccessModal.value = true
     },
     onError: displayError,
   })

@@ -145,6 +145,8 @@ export type TChipColor =
   | "blue"
   | "purple"
   | "pink"
+  | "indigo"
+  | "cancelled"
   | undefined
 
 export interface INotification {

@@ -64,6 +64,13 @@
     <!--  -->
     <PlansModal :model-value="showPlans" @update:model-value="(val) => setPlanUpgradeModal(val)" />
 
+    <AddLocationModal
+      :open="showAddLocationModal"
+      :location="locationForEdit"
+      @close="setAddLocationModal(false)"
+      @refresh="handleLocationRefresh"
+    />
+
     <LogoutModal :open="logout" @close="logout = false" />
   </div>
 </template>
@@ -75,6 +82,7 @@ import { useRoute } from "vue-router"
 import { useSettingsStore } from "../store"
 import { computed, ref, watch } from "vue"
 import PlansModal from "../components/PlansModal.vue"
+import AddLocationModal from "../components/AddLocationModal.vue"
 import { useGetLiveStatus, useGetRoles } from "@modules/shared/api"
 import { updateStoreRoleOptions } from "@modules/shared/constants"
 import { clipboardCopy } from "@/utils/others"
@@ -114,7 +122,15 @@ const LINKS = [
   { label: "Delivery Options", path: "/settings/delivery-options" },
 ]
 
-const { setPlanUpgradeModal } = useSettingsStore()
+const { setPlanUpgradeModal, setAddLocationModal, setLocationForEdit } = useSettingsStore()
 const showPlans = computed(() => useSettingsStore().showPlanUpgradeModal)
+const showAddLocationModal = computed(() => useSettingsStore().showAddLocationModal)
+const locationForEdit = computed(() => useSettingsStore().locationForEdit)
 const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
+
+// Handle location refresh after adding/updating location
+const handleLocationRefresh = () => {
+  setAddLocationModal(false)
+  setLocationForEdit(null)
+}
 </script>

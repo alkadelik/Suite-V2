@@ -74,6 +74,7 @@ const activeStep = ref(0)
 // Step 1: Selected products
 const selectedProducts = ref<IProductCatalogue[]>([])
 const selectedPopupProducts = ref<PopupInventory[]>([])
+const productViewMode = ref<"grid" | "list">("grid")
 
 // Step 2: Product variants with quantities and prices
 interface OrderItem {
@@ -399,6 +400,7 @@ const resetForm = () => {
   selectedCustomer.value = null
   shippingInfo.value = getInitialShippingInfo()
   paymentInfo.value = getInitialPaymentInfo()
+  productViewMode.value = "grid"
 }
 
 const isMobile = useMediaQuery("(max-width: 1028px)")
@@ -424,11 +426,13 @@ onMounted(() => {
         <PopupOrderSelectProduct
           v-if="step === 0 && isPopupOrder"
           v-model:selectedProducts="selectedPopupProducts"
+          v-model:viewMode="productViewMode"
           @next="onNext"
         />
         <OrderSelectProduct
           v-else-if="step === 0"
           v-model:selectedProducts="selectedProducts"
+          v-model:viewMode="productViewMode"
           @next="onNext"
         />
 

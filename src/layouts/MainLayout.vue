@@ -186,10 +186,12 @@ const showNotification = ref(false)
 const { data: notificationsData, refetch: refetchNotifications } = useGetNotifications()
 const { mutate: markAsRead } = useMarkNotificationAsRead()
 
-// Filter for unread "general" type notifications
+// Filter for unread "general" or "system" type notifications
 const generalNotifications = computed<INotification[]>(() => {
   if (!notificationsData.value?.notifications) return []
-  return notificationsData.value.notifications.filter((n) => n.type === "general" && !n.is_read)
+  return notificationsData.value.notifications.filter(
+    (n) => (n.type === "general" || n.type === "system") && !n.is_read,
+  )
 })
 
 // Show notification modal when there are unread general notifications

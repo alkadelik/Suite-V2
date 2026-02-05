@@ -335,7 +335,7 @@ const handleRefresh = () => {
         <div class="grid gap-10 p-4 md:p-6">
           <!-- Pickup Section -->
           <div>
-            <h3 class="mb-3 text-xl font-semibold">Pickup</h3>
+            <!-- <h3 class="mb-3 text-xl font-semibold">Pickup</h3> -->
             <div class="flex items-start gap-3 md:items-center md:gap-6">
               <span
                 class="flex h-8 w-8 items-center justify-center rounded-xl bg-gray-200 md:h-10 md:w-10"
@@ -381,7 +381,7 @@ const handleRefresh = () => {
 
           <!-- Standard Delivery Section -->
           <div>
-            <h3 class="mb-3 text-xl font-semibold">Standard Delivery</h3>
+            <h3 class="text-md !font-outfit mb-3 font-semibold">Standard Delivery</h3>
 
             <!-- Case 1: No shipping account AND no manual deliveries - Show setup prompt -->
             <div
@@ -550,7 +550,7 @@ const handleRefresh = () => {
 
           <!-- Express Delivery Section -->
           <div>
-            <h3 class="mb-3 text-xl font-semibold">Express Delivery</h3>
+            <!-- <h3 class="mb-3 text-xl font-semibold">Express Delivery</h3> -->
 
             <!-- Show only if has shipping account -->
             <template v-if="showDeliveryOptions">

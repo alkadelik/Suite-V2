@@ -14,12 +14,7 @@
         size="sm"
         :variant="isMobile ? 'outlined' : 'filled'"
         label="Add new location"
-        @click="
-          () => {
-            settingsStore.setLocationForEdit(null)
-            settingsStore.setAddLocationModal(true)
-          }
-        "
+        @click="handleAddLocation"
       />
     </div>
 
@@ -123,11 +118,31 @@ import { useMediaQuery } from "@vueuse/core"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import { useRoute } from "vue-router"
 import { useSettingsStore } from "../store"
+import { useAuthStore } from "@modules/auth/store"
 
+const authStore = useAuthStore()
 const openArchive = ref(false)
 const selectedLocation = ref<TLocation | null>(null)
 const isMobile = useMediaQuery("(max-width: 768px)")
 const settingsStore = useSettingsStore()
+
+// Check if user has access to create locations (Bloom plan or higher with active subscription)
+const hasBloomAccess = computed(() => {
+  const subscription = authStore.user?.subscription
+  if (!subscription?.is_active && !subscription?.trial_mode) return false
+  const planName = subscription?.plan_name?.toLowerCase()
+  return planName === "bloom" || planName === "burst"
+})
+
+// Handle add location click - check for Bloom plan access
+const handleAddLocation = () => {
+  if (!hasBloomAccess.value) {
+    settingsStore.setPlanUpgradeModal(true)
+    return
+  }
+  settingsStore.setLocationForEdit(null)
+  settingsStore.setAddLocationModal(true)
+}
 
 const { data: locations, isPending, error, refetch } = useGetLocations()
 watch(error, displayError)
@@ -190,8 +205,7 @@ const route = useRoute()
 
 onMounted(() => {
   if (route.query.create === "true") {
-    settingsStore.setLocationForEdit(null)
-    settingsStore.setAddLocationModal(true)
+    handleAddLocation()
   }
 })
 </script>

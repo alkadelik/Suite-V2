@@ -29,6 +29,8 @@
             v-for="notification in notifications"
             :key="notification.uid"
             :notification="notification"
+            @click="handleNotificationClick"
+            @action="handleNotificationAction"
           />
         </div>
 
@@ -66,6 +68,8 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   close: []
   "mark-all-read": []
+  "mark-read": [uid: string]
+  navigate: [notification: INotification]
 }>()
 
 // Check if mobile
@@ -75,4 +79,17 @@ const isMobile = useMediaQuery("(max-width: 768px)")
 const unreadCount = computed(() => {
   return props.notifications.filter((n) => !n.is_read).length
 })
+
+const handleNotificationClick = (notification: INotification) => {
+  if (!notification.is_read) {
+    emit("mark-read", notification.uid)
+  }
+}
+
+const handleNotificationAction = (notification: INotification) => {
+  if (!notification.is_read) {
+    emit("mark-read", notification.uid)
+  }
+  emit("navigate", notification)
+}
 </script>
