@@ -37,6 +37,7 @@ const activeStep = ref(0)
 
 // Step 1: Selected products
 const selectedProducts = ref<IProductCatalogue[]>([])
+const boothProductViewMode = ref<"grid" | "list">("grid")
 
 // Step 2: Product variants with quantities and prices
 interface BoothItem {
@@ -76,6 +77,7 @@ const resetForm = () => {
   activeStep.value = 0
   selectedProducts.value = []
   orderItems.value = []
+  boothProductViewMode.value = "grid"
 }
 
 const handleClose = () => {
@@ -131,6 +133,7 @@ watch(activeStep, (newStep, oldStep) => {
         <BoothSelectProduct
           v-if="step === 0"
           v-model:selectedProducts="selectedProducts"
+          v-model:viewMode="boothProductViewMode"
           :existingVariantSkus="props.existingVariantSkus"
           @next="onNext"
         />

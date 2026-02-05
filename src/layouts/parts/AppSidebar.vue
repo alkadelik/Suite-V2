@@ -66,7 +66,7 @@
         @toggle="expandedGroup = expandedGroup === 'sales-suite' ? null : 'sales-suite'"
       />
 
-      <!-- <SidebarGroup icon="trend-up" label="Marketing" :children="[]" /> -->
+      <SidebarGroup icon="trend-up" label="Marketing" :children="marketingItems" />
 
       <SidebarGroup
         v-if="isStaging"
@@ -218,6 +218,9 @@ const salesSuiteItems = computed(() =>
     return true
   }),
 )
+
+// Marketing items
+const marketingItems = computed(() => [{ icon: "sms", label: "Email List", to: "/email-list" }])
 
 // Production items
 const productionItems = computed(() => {

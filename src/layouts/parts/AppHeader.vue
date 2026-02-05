@@ -56,6 +56,8 @@
       :notifications="notifications"
       @close="showNotifications = false"
       @mark-all-read="handleMarkAllRead"
+      @mark-read="handleMarkRead"
+      @navigate="handleNotificationNavigate"
     />
   </header>
 </template>
@@ -68,7 +70,12 @@ import Avatar from "@components/Avatar.vue"
 import Icon from "@components/Icon.vue"
 import Chip from "@components/Chip.vue"
 import NotificationsDrawer from "@/components/NotificationsDrawer.vue"
-import { useGetNotifications, useMarkAllNotificationsRead } from "@/modules/shared/api"
+import {
+  useGetNotifications,
+  useMarkAllNotificationsRead,
+  useMarkNotificationAsRead,
+} from "@/modules/shared/api"
+import type { INotification } from "@/modules/shared/types"
 import { useNotificationsWebSocket } from "@/composables/useNotificationsWebSocket"
 import LocationDropdown from "./LocationDropdown.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
@@ -88,6 +95,7 @@ const queryClient = useQueryClient()
 // Fetch notifications from API
 const { data: notificationsResponse } = useGetNotifications()
 const { mutate: markAllRead } = useMarkAllNotificationsRead()
+const { mutate: markRead } = useMarkNotificationAsRead()
 const user = computed(() => useAuthStore().user)
 
 // Initialize WebSocket connection for real-time notifications
@@ -114,6 +122,40 @@ const handleMarkAllRead = () => {
 }
 
 const router = useRouter()
+
+const handleMarkRead = (uid: string) => {
+  markRead(uid, {
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] })
+    },
+  })
+}
+
+const handleNotificationNavigate = (notification: INotification) => {
+  showNotifications.value = false
+
+  const extras = (notification.extras || {}) as Record<string, string>
+
+  switch (notification.type) {
+    case "order":
+      router.push({ path: "/orders", query: { order_id: extras.order_id } })
+      break
+    case "event":
+      if (extras.popup_event_id) {
+        const eventPath = `/popups/${extras.popup_event_id}`
+        // Force re-mount if already on a popup detail page
+        if (router.currentRoute.value.path.startsWith("/popups/")) {
+          router.replace("/popups").then(() => router.push(eventPath))
+        } else {
+          router.push(eventPath)
+        }
+      }
+      break
+    case "billing":
+      router.push("/settings/billing")
+      break
+  }
+}
 
 const profileMenuItems = [
   {

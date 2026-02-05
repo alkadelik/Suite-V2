@@ -43,8 +43,13 @@
         </div>
         <div>
           <p class="text-core-600 mb-1 text-xs font-semibold md:text-sm">Description</p>
-          <p class="text-core-800 text-xs font-semibold md:text-sm">
-            {{ product.description || "No description available for this product." }}
+          <div
+            v-if="product.description"
+            class="product-description text-core-800 text-xs md:text-sm"
+            v-html="markdownToHtml(product.description)"
+          />
+          <p v-else class="text-core-800 text-xs font-semibold md:text-sm">
+            No description available for this product.
           </p>
         </div>
       </div>
@@ -122,6 +127,7 @@
 import { computed } from "vue"
 import PageSummaryCards from "@components/PageSummaryCards.vue"
 import { formatCurrency } from "@/utils/format-currency"
+import { markdownToHtml } from "@/utils/html-to-markdown"
 import type { IProductDetails, IProductVariantDetails } from "../types"
 import Icon from "@components/Icon.vue"
 import Chip from "@components/Chip.vue"
@@ -189,3 +195,20 @@ const hasVaryingWeights = computed(() => {
   return uniqueWeights.length > 1
 })
 </script>
+
+<style>
+.product-description ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+}
+.product-description ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+}
+.product-description li {
+  margin-bottom: 0.25rem;
+}
+.product-description p {
+  margin-bottom: 0.25rem;
+}
+</style>
