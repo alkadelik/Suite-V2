@@ -110,17 +110,25 @@ watch(
   { immediate: true },
 )
 
-const LINKS = [
-  { label: "Profile", path: "/settings/profile" },
-  { label: "Store Details", path: "/settings/store-details" },
-  { label: "Password", path: "/settings/password" },
-  { label: "Teams", path: "/settings/teams" },
-  { label: "Plans & Billing", path: "/settings/billing" },
-  { label: "Locations", path: "/settings/locations" },
-  { label: "Taxes", path: "/settings/taxes" },
-  { label: "Storefront Design", path: "/settings/design" },
-  { label: "Delivery Options", path: "/settings/delivery-options" },
-]
+const LINKS = computed(() =>
+  [
+    { label: "Profile", path: "/settings/profile" },
+    { label: "Store Details", path: "/settings/store-details" },
+    { label: "Password", path: "/settings/password" },
+    { label: "Teams", path: "/settings/teams" },
+    { label: "Plans & Billing", path: "/settings/billing" },
+    { label: "Locations", path: "/settings/locations" },
+    { label: "Taxes", path: "/settings/taxes" },
+    { label: "Storefront Design", path: "/settings/design" },
+    { label: "Delivery Options", path: "/settings/delivery-options" },
+  ].filter((link) => {
+    const { activeLocation } = useSettingsStore()
+    if (!activeLocation?.is_hq) {
+      return ["Profile", "Password"].includes(link.label)
+    }
+    return true
+  }),
+)
 
 const { setPlanUpgradeModal, setAddLocationModal, setLocationForEdit } = useSettingsStore()
 const showPlans = computed(() => useSettingsStore().showPlanUpgradeModal)

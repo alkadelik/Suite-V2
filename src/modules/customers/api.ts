@@ -13,7 +13,7 @@ import type {
 /** Create customer api request */
 export function useCreateCustomer() {
   return useMutation({
-    mutationFn: (body: ICustomerFormPayload): TApiPromise<TCustomer> =>
+    mutationFn: (body: ICustomerFormPayload): TApiPromise<{ data: TCustomer }> =>
       baseApi.post("/customers/", body),
   })
 }

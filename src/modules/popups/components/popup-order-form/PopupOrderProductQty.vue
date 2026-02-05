@@ -10,6 +10,7 @@ import DropdownMenu from "@components/DropdownMenu.vue"
 import { PopupInventory, PopupInventoryVariant } from "@modules/popups/types"
 import { computed, onMounted, ref, reactive, watch } from "vue"
 import * as yup from "yup"
+import { useMediaQuery } from "@vueuse/core"
 
 interface PopupOrderItem {
   product: PopupInventory
@@ -395,6 +396,8 @@ const productsTotal = computed(() => {
   }
   return total
 })
+
+const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 </script>
 
 <template>
@@ -461,6 +464,7 @@ const productsTotal = computed(() => {
             multiple
             required
             :searchable="true"
+            :placement="isMobile ? 'top' : 'auto'"
           />
 
           <!-- Quantity and Price for each selected variant -->

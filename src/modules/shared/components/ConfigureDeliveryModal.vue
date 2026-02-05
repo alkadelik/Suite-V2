@@ -163,6 +163,7 @@ import { useUpdateStoreDetails, useGetStoreDetails } from "@/modules/settings/ap
 import type { ICourier } from "@/modules/shared/types"
 import { useMediaQuery } from "@vueuse/core"
 import ConfigureDeliverySkeleton from "./skeletons/ConfigureDeliverySkeleton.vue"
+import { toast } from "@/composables/useToast"
 
 defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{
@@ -206,6 +207,10 @@ const shipbubbleAuthForm = reactive({
   phone: user?.store?.phone1 || user?.store?.phone || "",
 })
 const courierOptions = ref<string[]>([])
+
+const isEditMode = computed(() => {
+  return route.query.edit === "true"
+})
 
 // Helper function to normalize phone number to +234 format
 const normalizePhoneNumber = (phone: string): string => {
@@ -427,6 +432,7 @@ watch(
 watch(
   () => shippingProfileData.value,
   (profileData) => {
+    console.log("Prefilling from shipping profile data:", profileData)
     if (profileData) {
       // In edit mode or when profile exists, always use shipping profile data
       // These take precedence over store details
@@ -441,7 +447,7 @@ watch(
       }
     }
   },
-  { immediate: true },
+  { immediate: true, deep: true },
 )
 
 // Update form when user data becomes available (fallback)

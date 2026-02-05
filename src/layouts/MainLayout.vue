@@ -19,9 +19,9 @@
       <div
         :class="[
           'flex h-full flex-1 flex-col overflow-hidden transition-all duration-200',
-          'pb-16 lg:pb-2',
           showAppHeader || isInner ? 'pt-14' : 'pt-20',
           sidebarPadding,
+          isMobile && !showAppHeader && isInner ? 'pb-0' : 'pb-16 lg:pb-2',
         ]"
       >
         <!-- Topbar -->
@@ -40,7 +40,9 @@
 
         <!-- Bottom navigation for mobile -->
         <nav
-          v-if="isMobile"
+          v-if="
+            (isMobile && !showAppHeader && !isInner) || (isMobile && $route.path === '/dashboard')
+          "
           class="fixed right-0 bottom-0 left-0 max-h-16 border-t border-gray-200 bg-white"
           :class="openMore || openActions ? 'z-[1500]' : 'z-30'"
         >
@@ -171,9 +173,6 @@ import {
   useMarkNotificationAsRead,
 } from "@modules/shared/api"
 import type { INotification } from "@modules/shared/types"
-import { isStaging } from "@/utils/others"
-import { toast } from "@/composables/useToast"
-
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
 const mobileSidebarOpen = ref(false)
@@ -295,8 +294,7 @@ const actionMenuItems = computed(() => {
       class: "!bg-pink-50 !text-pink-700",
       iconClass: "!text-primary-700",
       action: () => {
-        if (isStaging) router.push("/expenses?create=true")
-        else toast.info("Expense feature is coming soon!")
+        router.push("/expenses?create=true")
       },
     },
   ]

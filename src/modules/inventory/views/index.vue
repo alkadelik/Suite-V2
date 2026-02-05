@@ -112,7 +112,6 @@
           :total-items-count="products?.data?.count || 0"
           :total-page-count="Math.ceil((products?.data?.count || 0) / itemsPerPage) || 1"
           :server-pagination="true"
-          :enable-row-selection="true"
           @row-click="handleRowClick"
           @pagination-change="(d) => (page = d.currentPage)"
         >
@@ -157,11 +156,6 @@
 
           <template #cell:action="{ item }">
             <div class="flex items-center gap-2">
-              <Icon
-                name="copy-01"
-                @click.stop="handleAction('duplicate', item)"
-                class="hidden cursor-pointer hover:text-gray-600 md:inline-block"
-              />
               <DropdownMenu
                 :items="getActionItems(item)"
                 placement="bottom-end"
@@ -219,10 +213,8 @@
     <!-- drawers  -->
     <ProductFormDrawer
       v-if="showProductFormDrawer"
-      ref="productFormDrawerRef"
       v-model="showProductFormDrawer"
       @refresh="refetchProducts"
-      @add-category="showAddCategoryModal = true"
     />
     <ProductEditDrawer
       v-if="showProductEditDrawer"
@@ -241,7 +233,11 @@
     />
 
     <!-- Modals -->
-    <AddCategoryModal v-model="showAddCategoryModal" @success="handleCategoryCreated" />
+    <AddCategoryModal
+      v-model="showAddCategoryModal"
+      :teleport="true"
+      @success="handleCategoryCreated"
+    />
     <ReceiveRequestModal
       v-model="showReceiveRequestModal"
       :open="showReceiveRequestModal"
@@ -373,9 +369,6 @@ const activeFilters = ref<{
   status: null,
   subCategory: null,
 })
-const productFormDrawerRef = ref<{
-  setCategoryFromModal: (category: { label: string; value: string }) => void
-} | null>(null)
 const productEditDrawerRef = ref<{
   setCategoryFromModal: (category: { label: string; value: string }) => void
 } | null>(null)
@@ -712,10 +705,8 @@ const openAddProductDrawer = () => {
 const handleCategoryCreated = (category: { label: string; value: string }) => {
   showAddCategoryModal.value = false
 
-  // Determine which drawer is currently open and set its category
-  if (showProductFormDrawer.value && productFormDrawerRef.value) {
-    productFormDrawerRef.value.setCategoryFromModal(category)
-  } else if (showProductEditDrawer.value && productEditDrawerRef.value) {
+  // Only handle ProductEditDrawer category updates here
+  if (showProductEditDrawer.value && productEditDrawerRef.value) {
     productEditDrawerRef.value.setCategoryFromModal(category)
   }
 }

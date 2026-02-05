@@ -41,7 +41,6 @@ export const ORDER_PAYMENT_METHODS: TOrderPaymentMethod[] = [
   { label: "Cash", value: "cash", icon: "Moneys" },
   { label: "POS", value: "pos", icon: "CardPos" },
   { label: "Transfer", value: "transfer", icon: "MoneyChange" },
-  { label: "Other", value: "other", icon: "WalletMoney" },
 ]
 
 export const ORDER_PAYMENT_STATUS: TOrderPaymentStatus[] = [
@@ -91,3 +90,10 @@ export const ORDER_STATUS_TAB = [
   { title: "Voided", key: "voided" },
   { title: "Returned", key: "returned" },
 ]
+
+export const orderSourceMap: Record<string, string> = {
+  internal: "Internal",
+  storefront: "Storefront",
+  popup_storefront: "Popup",
+  popup_internal: "Popup Internal",
+}

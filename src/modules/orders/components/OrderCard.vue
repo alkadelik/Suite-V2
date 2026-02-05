@@ -3,7 +3,7 @@ import { computed, ref } from "vue"
 import Chip from "@/components/Chip.vue"
 import { getSmartDateLabel } from "@/utils/formatDate"
 import { formatCurrency, truncateCurrency } from "@/utils/format-currency"
-import { anonymousCustomer, ORDER_PAYMENT_STATUS } from "../constants"
+import { anonymousCustomer, ORDER_PAYMENT_STATUS, orderSourceMap } from "../constants"
 import { pluralize } from "@/utils/pluralize"
 import Icon from "@components/Icon.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
@@ -31,6 +31,7 @@ const props = withDefaults(
 const emit = defineEmits([
   "click",
   "view-memos",
+  "mark-as-paid",
   "share-receipt",
   "share-invoice",
   "share-payment-link",
@@ -58,6 +59,10 @@ const menuItems = computed(() => {
     : [
         { label: "View details", icon: "eye", action: () => emit("click") },
         { label: "View memos", icon: "note", action: () => emit("view-memos") },
+        // Mark as Paid - only for unpaid or partially paid orders
+        ...(paymentStatus !== "paid"
+          ? [{ label: "Mark as Paid", icon: "money-add", action: () => emit("mark-as-paid") }]
+          : []),
         // Share receipt - only for partially paid or paid orders
         ...(paymentStatus === "paid" || paymentStatus === "partially_paid"
           ? [{ label: "Share receipt", icon: "share", action: () => emit("share-receipt") }]
@@ -321,7 +326,7 @@ const outstandingBalance = computed(() => {
               dense
               variant="outlined"
               :icon="order.source === 'internal' ? 'clipboard-text' : 'global'"
-              :label="order.source === 'internal' ? 'Internal' : 'External'"
+              :label="orderSourceMap[order.source] || order.source"
             />
           </div>
         </div>

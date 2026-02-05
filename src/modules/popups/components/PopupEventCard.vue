@@ -4,6 +4,7 @@ import Icon from "@components/Icon.vue"
 import { PopupEvent } from "../types"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import { computed } from "vue"
+import Chip from "@components/Chip.vue"
 
 interface EventCardProps {
   /**  Additional custom classes */
@@ -66,7 +67,8 @@ const menuActions = computed(() => [
           Number(event.participation_fee) ? formatCurrency(event.participation_fee || 0) : "Free"
         }}
       </span>
-      <DropdownMenu :items="menuActions" />
+      <DropdownMenu v-if="event.status !== 'closed'" :items="menuActions" />
+      <span v-else class="px-2" />
     </div>
     <div class="flex items-center justify-between p-5 pb-3">
       <slot name="body">
@@ -78,7 +80,8 @@ const menuActions = computed(() => [
           <p class="text-sm font-medium">{{ formatDate(event.end_date) }}</p>
           <p class="text-core-600 text-xs">End Date</p>
         </div>
-        <div>
+
+        <div v-if="event?.items_sold_count && event.status !== 'closed'">
           <div class="h-2 w-24 rounded-full bg-gray-200">
             <div
               class="bg-primary-600 h-1.5 rounded-full"
@@ -89,56 +92,23 @@ const menuActions = computed(() => [
             {{ event?.items_sold_count || 0 }} / {{ event?.products_count || 0 }} items sold
           </p>
         </div>
-      </slot>
-    </div>
-  </div>
-  <!-- <div
-    class="bg-core-25 border-core-300 item-start flex cursor-pointer gap-4 rounded-2xl border px-4 py-4"
-    :class="props.class"
-    @click="emit('click')"
-  >
-    <div>
-      <Avatar :name="event.name" />
-    </div>
-    <div class="flex-1">
-      <div class="mb-2 flex items-center justify-between gap-2">
-        <div class="flex flex-1 items-center gap-1.5">
-          <h3 class="max-w-xs truncate text-base font-semibold">
-            {{ event.organizer_event_name || event.name }}
-          </h3>
-          <Chip v-if="event.organizer_event_name" label="Eventful" class="flex-shrink-0" />
-        </div>
-
-        <DropdownMenu v-if="showActions" :items="menuActions" />
-      </div>
-      <div class="space-y-1.5">
-        <p class="flex items-center gap-2 text-sm">
-          <Icon name="calendar" size="20" class="text-primary-600" />
-          <span>
-            {{ formatDate(event?.start_date || "") }} -
-            {{ formatDate(event?.end_date || "") }}
-          </span>
-        </p>
-        <p class="flex items-center gap-2 text-sm">
-          <Icon name="dollar-circle" size="20" class="text-primary-600" />
-          <span>
-            {{
-              Number(event.participation_fee)
-                ? formatCurrency(event.participation_fee || 0)
-                : "Free"
-            }}
-          </span>
-        </p>
         <Chip
+          v-else
           :label="event.status"
           size="sm"
           class="capitalize"
           show-dot
           :color="
-            event.status === 'upcoming' ? 'primary' : event.status === 'active' ? 'success' : 'alt'
+            event.status === 'upcoming'
+              ? 'primary'
+              : event.status === 'active'
+                ? 'success'
+                : event.status === 'closed'
+                  ? 'error'
+                  : 'alt'
           "
         />
-      </div>
+      </slot>
     </div>
-  </div> -->
+  </div>
 </template>

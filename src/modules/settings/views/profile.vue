@@ -11,6 +11,7 @@ import { useGetAccountKyc, useGetProfile, useUpdateAccountKyc, useUpdateProfile 
 import { toast } from "@/composables/useToast"
 import { IkycInfo, IUser } from "@modules/auth/types"
 import { displayError } from "@/utils/error-handler"
+import { useSettingsStore } from "../store"
 
 const { data: profile, refetch, isPending: isLoadingProfile } = useGetProfile()
 const { data: kycData, isPending: isLoadingKyc } = useGetAccountKyc()
@@ -166,7 +167,7 @@ watch(
       </AppForm>
     </section>
 
-    <section class="mt-10">
+    <section v-if="useSettingsStore().activeLocation?.is_hq" class="mt-10">
       <SectionHeader
         title="KYC"
         size="sm"

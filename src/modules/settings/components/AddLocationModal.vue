@@ -4,12 +4,23 @@
     max-width="xl"
     :variant="isMobile ? 'bottom-nav' : 'centered'"
     :title="title"
+    body-class="!pb-12"
     @close="emit('close')"
   >
-    <div class="space-y-4">
+    <div class="mt-8 space-y-8">
       <FormField name="name" label="Location Name" required :disabled="location?.is_hq" />
 
-      <FormField name="address" type="text" required label="Location Address" />
+      <GooglePlacesAutocomplete
+        name="address"
+        label="Location Address"
+        placeholder="Enter a keyword to get suggestions"
+        :modelValue="values.address"
+        @update:modelValue="setFieldValue('address', $event)"
+        @selected="(item: any) => setFieldValue('address', item.description)"
+        required
+        direction="up"
+        :error="errors.address"
+      />
     </div>
 
     <template #footer>
@@ -36,6 +47,8 @@ import { toast } from "@/composables/useToast"
 import { TLocation, TLocationFormData } from "../types"
 import { computed, watch } from "vue"
 import { useMediaQuery } from "@vueuse/core"
+import GooglePlacesAutocomplete from "@components/GooglePlacesAutocomplete.vue"
+import { onInvalidSubmit } from "@/utils/validations"
 
 type Props = {
   open: boolean
@@ -50,12 +63,14 @@ const isMobile = useMediaQuery("(max-width: 768px)")
 const { mutate: createFn, isPending } = useCreateLocation()
 const { mutate: updateFn, isPending: isUpdating } = useUpdateLocation()
 
-const { handleSubmit, meta, setValues } = useForm<TLocationFormData>({
-  validationSchema: yup.object({
-    name: yup.string().required(),
-    address: yup.string().required(),
-  }),
-})
+const { handleSubmit, meta, setValues, values, errors, setFieldValue } = useForm<TLocationFormData>(
+  {
+    validationSchema: yup.object({
+      name: yup.string().required("Location name is required"),
+      address: yup.string().required("Address is required"),
+    }),
+  },
+)
 
 watch(
   () => props.location,
@@ -77,5 +92,5 @@ const onSubmit = handleSubmit((values) => {
   } else {
     createFn(values, { onSuccess, onError: displayError })
   }
-})
+}, onInvalidSubmit)
 </script>

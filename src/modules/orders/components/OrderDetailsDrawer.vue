@@ -13,11 +13,23 @@ import { useSettingsStore } from "@modules/settings/store"
 import { clipboardCopy } from "@/utils/others"
 import AppButton from "@components/AppButton.vue"
 
-const props = defineProps<{ open: boolean; order: TOrder }>()
+const props = defineProps<{
+  open: boolean
+  order: TOrder
+  customActions?: Array<{
+    label?: string
+    icon?: string
+    action?: () => void
+    class?: string
+    iconClass?: string
+    divider?: boolean
+  }>
+}>()
 const emit = defineEmits([
   "close",
   "refresh",
   "view-memos",
+  "mark-as-paid",
   "share-receipt",
   "share-invoice",
   "share-payment-link",
@@ -60,12 +72,20 @@ const isBuyerCreated = computed(() => {
 })
 
 const menuItems = computed(() => {
+  if (props.customActions && props.customActions.length > 0) {
+    return props.customActions
+  }
+
   const paymentStatus = props.order?.payment_status
   const showVoid = (isFulfilled.value || paymentStatus !== "unpaid") && !isBuyerCreated.value
   const showDelete = !isFulfilled.value && paymentStatus === "unpaid" && !isBuyerCreated.value
 
   return [
     { label: "View memos", icon: "note", action: () => emit("view-memos") },
+    // Mark as Paid - only for unpaid or partially paid orders
+    ...(paymentStatus !== "paid"
+      ? [{ label: "Mark as Paid", icon: "money-add", action: () => emit("mark-as-paid") }]
+      : []),
     // Share receipt - only for partially paid or paid orders
     ...(paymentStatus === "paid" || paymentStatus === "partially_paid"
       ? [{ label: "Share receipt", icon: "share", action: () => emit("share-receipt") }]
@@ -321,6 +341,27 @@ const menuItems = computed(() => {
           <span class="text-core-600">Courier</span>
           <span class="font-medium">{{ order.courier_name || "-" }}</span>
         </p>
+        <div
+          v-if="order.shipping_details?.tracking_url"
+          class="flex items-center justify-between gap-6 text-sm"
+        >
+          <span class="text-core-600 flex-shrink-0">Tracking Link</span>
+          <div class="flex items-center gap-2 truncate">
+            <a
+              :href="order.shipping_details?.tracking_url"
+              target="_blank"
+              class="text-primary-600 max-w-sm truncate font-medium underline underline-offset-2"
+            >
+              {{ order.shipping_details?.tracking_url }}
+            </a>
+            <Icon
+              name="copy"
+              size="28"
+              class="text-primary-600 cursor-pointer"
+              @click="clipboardCopy(order.shipping_details?.tracking_url)"
+            />
+          </div>
+        </div>
       </div>
     </div>
   </component>

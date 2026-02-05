@@ -35,7 +35,6 @@
       :columns="variantColumns"
       :loading="loading"
       :show-pagination="false"
-      :enable-row-selection="true"
     >
       <template #cell:image="{ item }">
         <ProductAvatar :url="item.image || undefined" size="sm" shape="rounded" />

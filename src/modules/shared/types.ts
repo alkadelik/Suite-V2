@@ -91,7 +91,7 @@ export type TSetupShippingPayload = {
   email: string
   password: string
   phone: string
-  preferred_couriers: string[]
+  preferred_couriers?: string[]
 }
 
 export type TUpdateShippingPayload = {

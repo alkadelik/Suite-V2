@@ -52,8 +52,6 @@ const {
 const { mutate: updatePopupProduct, isPending: isUpdating } = useUpdatePopupProduct()
 const { mutate: deletePopupProducts, isPending: isDeleting } = useDeletePopupProducts()
 
-const isEmpty = computed(() => !popupInventory.value?.length)
-
 // Get all existing variant SKUs in the popup inventory
 const existingVariantSkus = computed(() => {
   return popupInventory.value?.flatMap((item) => item.variants?.map((v) => v.sku) || []) || []
@@ -183,10 +181,11 @@ onMounted(() => {
 
 <template>
   <EmptyState
-    v-if="isEmpty"
+    v-if="!popupInventory?.length || isPending"
     title="No products yet!"
     description="Once you add products to this popup’s inventory, they will appear here."
     action-icon="add"
+    :loading="isPending"
     :action-label="isClosed ? undefined : 'Add Product'"
     class="!min-h-[40vh]"
     @action="!isClosed && (openAddProduct = true)"
@@ -194,7 +193,7 @@ onMounted(() => {
 
   <section v-else>
     <div
-      class="mt-4 space-y-4 overflow-hidden rounded-xl border-gray-200 pt-3 pb-8 md:border md:bg-white"
+      class="mt-4 space-y-4 overflow-hidden rounded-xl border-gray-200 pt-3 md:border md:bg-white"
     >
       <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
         <h3 class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
@@ -210,6 +209,7 @@ onMounted(() => {
           />
 
           <AppButton
+            v-if="!isClosed"
             icon="add"
             size="sm"
             class="flex-shrink-0"
@@ -222,7 +222,7 @@ onMounted(() => {
       <DataTable
         :data="popupInventory || []"
         :columns="POPUP_INVENTORY_COLUMNS"
-        :loading="isPending || isFetching"
+        :loading="isFetching"
         :show-pagination="false"
       >
         <template #cell:name="{ item }">
@@ -230,7 +230,7 @@ onMounted(() => {
             :name="item.name"
             shape="rounded"
             :url="item.images?.[0]?.image"
-            :variants-count="item.variants?.length"
+            :variants-count="item.variants?.length > 1 ? item.variants?.length : undefined"
           />
         </template>
 
@@ -256,6 +256,7 @@ onMounted(() => {
         <template #cell:action="{ item }">
           <div class="flex items-center gap-2">
             <DropdownMenu
+              v-if="!isClosed"
               :items="getActionMenu(item)"
               size="sm"
               @action="(action: string) => handleAction(action, item)"
@@ -283,6 +284,7 @@ onMounted(() => {
               <span class="ml-auto" />
               <span class="text-base font-semibold">{{ getPopupPriceRange(item) }}</span>
               <DropdownMenu
+                v-if="!isClosed"
                 :items="getActionMenu(item)"
                 size="sm"
                 @action="(action: string) => handleAction(action, item)"

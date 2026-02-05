@@ -10,6 +10,7 @@ import type { IProductCatalogue } from "@modules/inventory/types"
 import { computed, onMounted, ref, reactive, watch } from "vue"
 import * as yup from "yup"
 import TextAreaField from "@components/form/TextAreaField.vue"
+import { useMediaQuery } from "@vueuse/core"
 
 interface OrderItem {
   product: IProductCatalogue
@@ -487,6 +488,8 @@ const productsTotal = computed(() => {
   }
   return total
 })
+
+const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 </script>
 
 <template>
@@ -551,6 +554,7 @@ const productsTotal = computed(() => {
             multiple
             required
             :searchable="true"
+            :placement="isMobile ? 'top' : 'auto'"
           />
 
           <!-- Quantity and Price for each selected variant -->

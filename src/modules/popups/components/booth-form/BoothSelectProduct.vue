@@ -7,6 +7,7 @@ import Icon from "@components/Icon.vue"
 import ProductSelectionItem from "@components/ProductSelectionItem.vue"
 import { useGetProductCatalogs } from "@modules/inventory/api"
 import type { IProductCatalogue } from "@modules/inventory/types"
+import AddNewProductModal from "@modules/orders/components/create-order-form/AddNewProductModal.vue"
 import { computed, ref } from "vue"
 
 const props = withDefaults(
@@ -33,7 +34,7 @@ const currentViewMode = computed({
   set: (value) => emit("update:viewMode", value),
 })
 
-const { data: productsData, isFetching } = useGetProductCatalogs()
+const { data: productsData, refetch, isFetching } = useGetProductCatalogs()
 const products = computed(() => productsData?.value?.results ?? [])
 
 // Filtered products based on search query
@@ -109,6 +110,21 @@ const getAvailableProductQty = (product: IProductCatalogue) => {
     return total + Math.max(0, sellableStock - popupQtyTaken)
   }, 0)
 }
+
+const showAdd = ref(false)
+
+const handleProductCreated = async (productUid: string) => {
+  showAdd.value = false
+  // Refetch products
+  await refetch()
+  // Find and auto-select the newly created product
+  if (productUid) {
+    const newProduct = products.value.find((p) => p.uid === productUid)
+    if (newProduct && getAvailableProductQty(newProduct) > 0) {
+      toggleProductSelection(newProduct)
+    }
+  }
+}
 </script>
 
 <template>
@@ -122,12 +138,12 @@ const getAvailableProductQty = (product: IProductCatalogue) => {
       <h3 class="text-lg font-semibold">
         All Products <Chip :label="`${productsData?.count || products.length}`" />
       </h3>
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-3 rounded-xl bg-white p-2">
         <TextField
           left-icon="search-lg"
           size="md"
           class="w-full"
-          placeholder="Search by name"
+          placeholder="Find product by name"
           v-model="searchQuery"
         />
         <AppButton
@@ -135,6 +151,7 @@ const getAvailableProductQty = (product: IProductCatalogue) => {
           variant="outlined"
           @click="currentViewMode = currentViewMode === 'grid' ? 'list' : 'grid'"
         />
+        <AppButton icon="add" class="flex-shrink-0" @click="showAdd = true" />
       </div>
     </div>
 
@@ -239,4 +256,6 @@ const getAvailableProductQty = (product: IProductCatalogue) => {
       <AppButton label="Next" class="w-full" :disabled="!canProceed" @click="handleNext" />
     </div>
   </div>
+
+  <AddNewProductModal :open="showAdd" @close="showAdd = false" @success="handleProductCreated" />
 </template>

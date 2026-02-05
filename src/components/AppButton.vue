@@ -16,7 +16,9 @@
       :class="['flex-shrink-0', loading ? 'animate-spin' : '']"
     />
     <slot>
-      <span v-if="loadingText || label" class="truncate">{{ loadingText || label }}</span>
+      <span v-if="loadingText || label" class="truncate">
+        {{ loading && loadingText ? loadingText : label }}
+      </span>
     </slot>
     <Icon
       v-if="(icon || loading) && iconPlacement === 'right'"

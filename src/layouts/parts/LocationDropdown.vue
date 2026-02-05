@@ -10,27 +10,29 @@ import { useSettingsStore } from "@modules/settings/store"
 import { useLocationSwitch } from "@/composables/useLocationSwitch"
 import { computed, watch } from "vue"
 
-const { data: locations } = useGetLocations()
 const settingsStore = useSettingsStore()
-const { setLocations, setActiveLocation } = settingsStore
+const { setLocations } = settingsStore
 const { requestLocationSwitch } = useLocationSwitch()
+const user = computed(() => useAuthStore().user)
+const isStoreOwner = computed(() => user.value?.roles.some((role) => role.type === "owner"))
 
-const locationItems = computed(
-  () =>
-    locations.value?.results?.map((loc) => ({
-      ...loc,
-      id: loc.uid,
-      label: loc.name,
-      active: loc.uid === currentLocation.value?.uid,
-    })) || [],
+const { data: locationsData } = useGetLocations(isStoreOwner.value)
+
+const locationItems = computed(() =>
+  (settingsStore.locations || []).map((loc) => ({
+    ...loc,
+    id: loc.uid,
+    label: loc.name,
+    active: loc.uid === settingsStore.activeLocation?.uid,
+  })),
 )
 const currentLocation = computed(() => useSettingsStore().activeLocation)
 
-const user = computed(() => useAuthStore().user)
-const { data: storeDetails } = useGetStoreDetails(user.value?.store_uid || "")
+const { data: storeData } = useGetStoreDetails(user.value?.store_uid || "")
+const storeDetails = computed(() => settingsStore.storeDetails)
 
 watch(
-  storeDetails,
+  storeData,
   (details) => {
     if (details) {
       useSettingsStore().setStoreDetails(details)
@@ -42,20 +44,25 @@ watch(
 const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
 
 watch(
-  locationItems,
+  locationsData,
   (locs) => {
-    setLocations(locs)
-    if (!currentLocation.value?.uid) {
-      // Set HQ if available or first location as active by default
-      const hqLocation = locs.find((loc) => loc.is_hq)
-      setActiveLocation(hqLocation || locs[0])
+    if (locs?.results?.length) {
+      const locations = locs.results.map((loc) => ({
+        ...loc,
+        uid: loc.uid,
+        id: loc.uid,
+        label: loc.name,
+        active: loc.uid === settingsStore.activeLocation?.uid,
+      }))
+
+      setLocations(locations)
     }
   },
   { immediate: true },
 )
 
 const onLocationSelect = (id: string) => {
-  const selectedLocation = locationItems.value.find((loc) => loc.id === id) || null
+  const selectedLocation = locationItems.value.find((loc) => loc.uid === id) || null
   if (selectedLocation && selectedLocation.uid !== currentLocation.value?.uid) {
     requestLocationSwitch(selectedLocation)
   }
@@ -118,7 +125,7 @@ const onLocationSelect = (id: string) => {
         </div>
       </template>
 
-      <template #footer>
+      <template v-if="isStoreOwner" #footer>
         <AppButton
           variant="text"
           label="Add New Location"

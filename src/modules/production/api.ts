@@ -1,4 +1,4 @@
-import { RawMaterialStats, TRawMaterial } from "./types"
+import { ICreateMaterialPayload, RawMaterialStats, TRawMaterial } from "./types"
 import baseApi, { TApiPromise, TPaginatedResponse, useApiQuery } from "@/composables/baseApi"
 import { MaybeRefOrGetter } from "vue"
 import { useMutation } from "@tanstack/vue-query"
@@ -21,20 +21,15 @@ export function useCreateSupplier() {
 /** Create raw material api request */
 export function useCreateRawMaterial() {
   return useMutation({
-    mutationFn: (body: FormData) =>
-      baseApi.post("/raw-materials/", body, {
-        headers: { "Content-Type": "multipart/form-data" },
-      }),
+    mutationFn: (body: ICreateMaterialPayload) => baseApi.post("/raw-materials/", body),
   })
 }
 
 /** Edit raw material api request */
 export function useEditRawMaterial() {
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: FormData }) =>
-      baseApi.patch(`/raw-materials/${id}/`, payload, {
-        headers: { "Content-Type": "multipart/form-data" },
-      }),
+    mutationFn: ({ id, payload }: { id: string; payload: Partial<ICreateMaterialPayload> }) =>
+      baseApi.patch(`/raw-materials/${id}/`, payload),
   })
 }
 

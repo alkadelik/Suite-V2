@@ -21,7 +21,7 @@
           :has-variants="hasVariants"
           :disable-variants-toggle="true"
           @update:has-variants="hasVariants = $event"
-          @add-category="emit('add-category')"
+          @add-category="showAddCategoryModal = true"
         />
 
         <!-- Variant Details Mode - Edit price and dimensions for one variant -->
@@ -74,7 +74,7 @@
             :has-variants="hasVariants"
             :disable-variants-toggle="true"
             @update:has-variants="hasVariants = $event"
-            @add-category="emit('add-category')"
+            @add-category="showAddCategoryModal = true"
           />
 
           <!-- Step 2: Variants Configuration (only if hasVariants is true) -->
@@ -147,6 +147,12 @@
         </div>
       </div>
     </template>
+
+    <AddCategoryModal
+      v-model="showAddCategoryModal"
+      :teleport="false"
+      @success="handleCategoryCreated"
+    />
   </Drawer>
 </template>
 
@@ -167,6 +173,7 @@ import ProductDetailsForm from "./ProductForm/ProductDetailsForm.vue"
 import ProductManageCombinationsForm from "./ProductForm/ProductManageCombinationsForm.vue"
 import ProductImagesForm from "./ProductForm/ProductImagesForm.vue"
 import ProductVariantsForm from "./ProductForm/ProductVariantsForm.vue"
+import AddCategoryModal from "./AddCategoryModal.vue"
 import {
   useUpdateProduct,
   useUpdateVariant,
@@ -238,6 +245,8 @@ const queryClient = useQueryClient()
 const productDetailsRef = ref<{
   setCategory: (category: { label: string; value: string }) => void
 } | null>(null)
+
+const showAddCategoryModal = ref(false)
 
 // API mutations
 const { mutate: updateProduct, isPending: isUpdating } = useUpdateProduct()
@@ -1246,6 +1255,18 @@ const handleBack = () => {
   }
 
   previousStep()
+}
+
+/**
+ * Handle category creation from AddCategoryModal
+ * Sets the category in the ProductDetailsForm
+ */
+const handleCategoryCreated = (category: { label: string; value: string }) => {
+  showAddCategoryModal.value = false
+
+  if (productDetailsRef.value) {
+    productDetailsRef.value.setCategory(category)
+  }
 }
 
 /**

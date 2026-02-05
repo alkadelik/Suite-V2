@@ -175,56 +175,51 @@ const onSubmit = () => {
 </script>
 
 <template>
-  <Teleport to="body">
-    <Modal title="Add Product" :open="open" @close="emit('close')">
-      <form @submit.prevent="onSubmit">
-        <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
-          <Icon name="box" size="28" />
-        </div>
-        <p class="mb-4 text-sm">Add a new product</p>
+  <!-- <Teleport to="body"> -->
+  <Modal title="Add Product" :open="open" @close="emit('close')">
+    <form @submit.prevent="onSubmit">
+      <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
+        <Icon name="box" size="28" />
+      </div>
+      <p class="mb-4 text-sm">Add a new product</p>
 
-        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-          <FormField
-            type="text"
-            name="name"
-            label="Product Name"
-            placeholder="e.g. iPhone 15 Pro"
-          />
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <FormField type="text" name="name" label="Product Name" placeholder="e.g. iPhone 15 Pro" />
 
+        <FormField
+          type="select"
+          name="category"
+          label="Category"
+          placeholder="Select category"
+          :options="categoryOptions"
+        />
+
+        <FormField type="text" name="price" label="Price" placeholder="e.g. 1000" />
+
+        <FormField type="text" name="total_stock" label="Available Stock" placeholder="e.g. 50" />
+
+        <div class="sm:col-span-2">
           <FormField
             type="select"
-            name="category"
-            label="Category"
-            placeholder="Select category"
-            :options="categoryOptions"
+            name="weight"
+            label="Product Weight"
+            placeholder="Select weight range"
+            :options="dimensionOptions"
+            placement="top"
           />
-
-          <FormField type="text" name="price" label="Price" placeholder="e.g. 1000" />
-
-          <FormField type="text" name="total_stock" label="Available Stock" placeholder="e.g. 50" />
-
-          <div class="sm:col-span-2">
-            <FormField
-              type="select"
-              name="weight"
-              label="Product Weight"
-              placeholder="Select weight range"
-              :options="dimensionOptions"
-              placement="top"
-            />
-          </div>
         </div>
-      </form>
+      </div>
+    </form>
 
-      <template #footer>
-        <AppButton
-          label="Add Product"
-          class="w-full"
-          :loading="isPending"
-          :disabled="isPending"
-          @click="onSubmit"
-        />
-      </template>
-    </Modal>
-  </Teleport>
+    <template #footer>
+      <AppButton
+        label="Add Product"
+        class="w-full"
+        :loading="isPending"
+        :disabled="isPending"
+        @click="onSubmit"
+      />
+    </template>
+  </Modal>
+  <!-- </Teleport> -->
 </template>
