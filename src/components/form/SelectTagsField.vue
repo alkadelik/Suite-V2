@@ -291,6 +291,8 @@ const getChipClasses = (item: OptionWithClass): string => {
       blue: "bg-blue-600 text-white",
       purple: "bg-purple-600 text-white",
       pink: "bg-pink-600 text-white",
+      indigo: "bg-indigo-600 text-white",
+      cancelled: "bg-gray-400 text-white",
     },
     outlined: {
       primary: "bg-primary-50 text-primary-700 border border-primary-200",
@@ -301,6 +303,8 @@ const getChipClasses = (item: OptionWithClass): string => {
       blue: "bg-blue-50 text-blue-700 border border-blue-200",
       purple: "bg-purple-50 text-purple-700 border border-purple-200",
       pink: "bg-pink-50 text-pink-700 border border-pink-200",
+      indigo: "bg-indigo-50 text-indigo-700 border border-indigo-200",
+      cancelled: "bg-gray-50 text-gray-500 border border-gray-200",
     },
   }
 
