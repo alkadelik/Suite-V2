@@ -92,9 +92,21 @@ const getVariantOptions = (product: IProductCatalogue) => {
 // Initialize local items when component mounts or products change
 onMounted(() => {
   if (props.orderItems.length > 0) {
-    localItems.value = [...props.orderItems]
-    // Initialize selectedVariants from orderItems
+    // Group orderItems by product UID to avoid duplicate cards
+    // (orderItems contains one entry per variant, but we need one card per product)
+    const productMap = new Map<string, OrderItem>()
     for (const item of props.orderItems) {
+      if (!productMap.has(item.product.uid)) {
+        // Use the first item for this product as the base
+        productMap.set(item.product.uid, {
+          product: item.product,
+          variant: item.variant,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          notes: item.notes,
+        })
+      }
+      // Always populate selectedVariants with all variants
       if (item.variant) {
         const existing = selectedVariants.value.get(item.product.uid) || []
         existing.push({
@@ -105,6 +117,7 @@ onMounted(() => {
         selectedVariants.value.set(item.product.uid, existing)
       }
     }
+    localItems.value = Array.from(productMap.values())
   } else {
     // Create initial items from selected products
     localItems.value = props.selectedProducts.map((product) => {

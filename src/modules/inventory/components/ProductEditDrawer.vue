@@ -30,6 +30,7 @@
           v-model="variants"
           :product-name="form.name"
           :hide-stock="true"
+          :disable-cost-price="true"
         />
 
         <!-- Images Edit Mode - Edit product images only -->
@@ -88,6 +89,7 @@
             v-model="variants"
             :product-name="form.name"
             :deleted-variants="deletedVariants"
+            :disable-cost-price="true"
           />
 
           <!-- Step 3/4: Product Images -->
@@ -188,6 +190,7 @@ import {
 import baseApi from "@/composables/baseApi"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
+import { htmlToMarkdown, markdownToHtml } from "@/utils/html-to-markdown"
 import { useQueryClient } from "@tanstack/vue-query"
 import ProductEditSkeleton from "./skeletons/ProductEditSkeleton.vue"
 
@@ -519,7 +522,7 @@ watch(
 
       populateFormState({
         name: product.name || "",
-        description: product.description || "",
+        description: markdownToHtml(product.description || ""),
         story: product.story || "",
         brand: product.brand || "",
         requires_approval: product.requires_approval || false,
@@ -679,7 +682,7 @@ const handleSubmit = async () => {
   if (props.editMode === "product-details") {
     const payload: IProductDetailsUpdatePayload = {
       name: form.name,
-      description: form.description,
+      description: htmlToMarkdown(form.description),
       story: form.story || "",
       category: form.category?.value as string,
       brand: form.brand || "",
@@ -1061,7 +1064,7 @@ const handleSubmit = async () => {
     // Handle Full Edit Mode (original logic)
     const payload: IProductFormPayload = {
       name: form.name,
-      description: form.description,
+      description: htmlToMarkdown(form.description),
       story: form.story || "",
       category: form.category?.value as string,
       brand: form.brand || "",

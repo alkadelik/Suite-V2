@@ -137,7 +137,7 @@
             <Chip :label="String(value) || 'Uncategorized'" icon="tag" color="purple" size="sm" />
           </template>
 
-          <template #cell:total_stock="{ value }">
+          <template #cell:sellable_stock="{ value }">
             <span class="text-sm font-semibold">{{ value }}</span>
           </template>
 
@@ -409,6 +409,10 @@ watch(
           uid: details.data.uid,
           name: details.data.name,
           total_stock: details.data.total_stock,
+          sellable_stock: details.data.variants.reduce(
+            (sum, v) => sum + (v.sellable_stock || 0),
+            0,
+          ),
           needs_reorder: details.data.needs_reorder,
           variants_count: details.data.variants.length,
           is_active: details.data.is_active,
@@ -450,8 +454,8 @@ const handleRowClick = (clickedProduct: TProduct) => {
 const productMetrics = computed(() => {
   const productResults = products.value?.data?.results || []
   // const totalProducts = products.value?.data?.count || 0
-  const inStockProducts = productResults.filter((p: TProduct) => p.total_stock > 0).length
-  const outOfStockProducts = productResults.filter((p: TProduct) => p.total_stock === 0).length
+  const inStockProducts = productResults.filter((p: TProduct) => p.sellable_stock > 0).length
+  const outOfStockProducts = productResults.filter((p: TProduct) => p.sellable_stock === 0).length
   const needsReorderProducts = productResults.filter((p: TProduct) => p.needs_reorder).length
 
   return [
@@ -485,7 +489,7 @@ const productMetrics = computed(() => {
 })
 
 const getStockStatus = (item: TProduct) => {
-  if (item.total_stock === 0) {
+  if (item.sellable_stock === 0) {
     return { label: "Out of Stock", color: "error" as const }
   } else if (item.needs_reorder) {
     return { label: "Low Stock", color: "warning" as const }
@@ -799,7 +803,7 @@ const filteredProducts = computed(() => {
 
     // Status filter
     if (activeFilters.value.status !== null) {
-      const isInStock = product.total_stock > 0
+      const isInStock = product.sellable_stock > 0
       if (activeFilters.value.status === "in_stock" && !isInStock) {
         return false
       }

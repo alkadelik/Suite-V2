@@ -40,13 +40,23 @@
               class="mb-2 block h-8 md:hidden"
             />
 
-            <div class="mb-2 rounded-full bg-black/10 p-2 text-sm font-semibold">
+            <div v-if="!isEditMode" class="mb-2 rounded-full bg-black/10 p-2 text-sm font-semibold">
               Step {{ currentStep }} / 2
             </div>
 
-            <h3 v-if="currentStep === 1" class="text-2xl font-bold">Create Shipping Account</h3>
+            <h3 v-if="currentStep === 1" class="text-2xl font-bold">
+              {{ isEditMode ? "Edit Shipping Account" : "Create Shipping Account" }}
+            </h3>
             <h3 v-else class="text-2xl font-bold">Select Preferred Couriers</h3>
-            <p class="text-sm">Please Select your preferred delivery provider.</p>
+            <p class="text-sm">
+              {{
+                currentStep === 1
+                  ? isEditMode
+                    ? "Update your shipping account details."
+                    : "Please fill in your shipping details."
+                  : "Please Select your preferred delivery provider."
+              }}
+            </p>
           </div>
 
           <!-- step 1 -->
@@ -56,8 +66,8 @@
             @submit.prevent="handleAuthSubmit"
           >
             <div>
-              <label for="phone" class="text-sm font-semibold">Phone Number</label
-              ><span class="text-red-500">*</span>
+              <label for="phone" class="text-sm font-semibold">Phone Number</label>
+              <span v-if="!isEditMode" class="text-red-500">*</span>
               <input
                 v-model="authForm.phone"
                 type="text"
@@ -67,28 +77,29 @@
               />
             </div>
             <div>
-              <label for="address" class="text-sm font-semibold">Store Address</label
-              ><span class="text-red-500">*</span>
+              <label for="address" class="text-sm font-semibold">Store Address</label>
+              <span v-if="!isEditMode" class="text-red-500">*</span>
               <GooglePlacesAutoComplete
                 v-model="authForm.address"
                 direction="up"
                 class="!bg-white"
               />
             </div>
-            <div>
-              <label for="password" class="text-sm font-semibold">Password</label
-              ><span class="text-red-500">*</span>
+            <!-- Password field only shown in create mode -->
+            <div v-if="!isEditMode">
+              <label for="password" class="text-sm font-semibold">Password</label>
+              <span class="text-red-500">*</span>
               <input
                 v-model="authForm.password"
                 type="password"
                 name="password"
-                placeholder="e.g solesnshades, smile socks"
+                placeholder="Enter a password"
                 class="w-full rounded-md border border-[#D7D5D5] px-2 py-3 text-sm placeholder:text-sm placeholder:text-black/60 focus:border-black/60 focus:outline-none"
               />
             </div>
             <div>
-              <label for="business_name" class="text-sm font-semibold">Business Name</label
-              ><span class="text-red-500">*</span>
+              <label for="business_name" class="text-sm font-semibold">Business Name</label>
+              <span v-if="!isEditMode" class="text-red-500">*</span>
               <input
                 v-model="authForm.business_name"
                 type="text"
@@ -99,20 +110,20 @@
             </div>
 
             <div>
-              <label for="email" class="text-sm font-semibold">Business Email</label
-              ><span class="text-red-500">*</span>
+              <label for="email" class="text-sm font-semibold">Business Email</label>
+              <span v-if="!isEditMode" class="text-red-500">*</span>
               <input
                 v-model="authForm.email"
                 type="text"
                 name="email"
-                placeholder="e.g solesnshades, smile socks"
+                placeholder="e.g email@example.com"
                 class="w-full rounded-md border border-[#D7D5D5] px-2 py-3 text-sm placeholder:text-sm placeholder:text-black/60 focus:border-black/60 focus:outline-none"
               />
             </div>
 
             <div class="bottom-0 bg-white py-4">
               <AppButton
-                label="Next"
+                :label="isEditMode ? 'Save Changes' : 'Next'"
                 type="submit"
                 :disabled="!authFormIsValid"
                 :loading="loading"
@@ -309,6 +320,8 @@ interface Props {
   currentStep?: number
   loading?: boolean
   hasNoShippingProfile?: boolean
+  /** Mode: 'create' for new shipping account, 'edit' for updating existing account */
+  mode?: "create" | "edit"
 }
 
 const emit = defineEmits([
@@ -331,24 +344,37 @@ const props = withDefaults(defineProps<Props>(), {
   currentStep: 1,
   loading: false,
   hasNoShippingProfile: false,
+  mode: "create",
 })
 
 const searchQuery = ref("")
 const { data: shippingOptions, isPending: isGettingCouriers } = useGetCouriers()
+
+// Check if we're in edit mode
+const isEditMode = computed(() => props.mode === "edit")
 
 const authForm = computed({
   get: () => props.authForm,
   set: (val) => emit("update:authForm", val),
 })
 
-const authFormIsValid = computed(
-  () =>
+// In edit mode, form is always valid (all fields are optional)
+// In create mode, all fields are required
+const authFormIsValid = computed(() => {
+  if (isEditMode.value) {
+    // In edit mode, form is valid as long as at least one field has a value
+    // or if nothing has changed (user can just click Next to proceed)
+    return true
+  }
+  // In create mode, all fields are required
+  return (
     authForm.value.business_name !== "" &&
     authForm.value.email !== "" &&
     authForm.value.password !== "" &&
     authForm.value.address !== "" &&
-    authForm.value.phone !== "",
-)
+    authForm.value.phone !== ""
+  )
+})
 
 const handleAuthSubmit = () => {
   emit("submitAuthForm")
