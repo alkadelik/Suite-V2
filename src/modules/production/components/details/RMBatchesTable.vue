@@ -5,11 +5,14 @@ import Chip from "@components/Chip.vue"
 import DataTable from "@components/DataTable.vue"
 import Drawer from "@components/Drawer.vue"
 import Modal from "@components/Modal.vue"
-import { BATCHES_COLUMN, MOCK_BATCHES } from "@modules/production/constants"
-import { TBatch } from "@modules/production/types"
+import { BATCHES_COLUMN } from "@modules/production/constants"
+import { TBatch, TRawMaterial } from "@modules/production/types"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, ref } from "vue"
 import RMTableCard from "./RMTableCard.vue"
+import { startCase } from "@/utils/format-strings"
+
+const props = defineProps<{ batches: TBatch[]; material: TRawMaterial }>()
 
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 
@@ -26,7 +29,7 @@ const onRowClick = (batch: TBatch) => {
   <div>
     <div class="space-y-4 overflow-hidden rounded-xl border-gray-200 md:border md:bg-white">
       <DataTable
-        :data="MOCK_BATCHES ?? []"
+        :data="props.batches ?? []"
         :columns="BATCHES_COLUMN"
         :loading="false"
         :enable-row-selection="false"
@@ -37,25 +40,41 @@ const onRowClick = (batch: TBatch) => {
         :show-pagination="false"
         @row-click="onRowClick"
       >
+        <template #cell:quantity_added="{ item }">
+          {{ Number(item.quantity).toLocaleString() }} {{ props.material?.unit }}
+        </template>
+        <template #cell:quantity_left="{ item }">
+          {{ Number(item.remaining_quantity).toLocaleString() }} {{ props.material?.unit }}
+        </template>
+        <template #cell:unit_cost="{ item }">
+          {{ formatCurrency(Number(item.unit_cost)) }} / {{ props.material?.unit }}
+        </template>
         <template #cell:source="{ item }">
-          <Chip :label="item.source" color="blue" />
+          <Chip v-if="item.source_type" :label="startCase(item.source_type)" color="blue" />
+          <span v-else>N/A</span>
         </template>
         <template #mobile="{ item }">
-          <RMTableCard :title="formatDate(new Date())">
+          <RMTableCard :title="formatDate(new Date(item.date_added))">
             <template #append>
-              <Chip :label="item.source" color="blue" />
+              <Chip v-if="item.source_type" :label="startCase(item.source_type)" color="blue" />
             </template>
             <template #body>
               <div>
-                <p class="text-sm font-medium">35</p>
+                <p class="text-sm font-medium">
+                  {{ Number(item.quantity).toLocaleString() }} {{ props.material?.unit }}
+                </p>
                 <p class="text-core-600 text-xs">Qty. Added</p>
               </div>
               <div>
-                <p class="text-sm font-medium">{{ formatCurrency(4800) }} / kg</p>
+                <p class="text-sm font-medium">
+                  {{ Number(item.remaining_quantity).toLocaleString() }} {{ props.material?.unit }}
+                </p>
                 <p class="text-core-600 text-xs">Remaining</p>
               </div>
               <div>
-                <p class="text-sm font-medium">{{ formatCurrency(4800) }} / kg</p>
+                <p class="text-sm font-medium">
+                  {{ formatCurrency(Number(item.unit_cost)) }} / {{ props.material?.unit }}
+                </p>
                 <p class="text-core-600 text-xs">Unit Cost</p>
               </div>
             </template>
