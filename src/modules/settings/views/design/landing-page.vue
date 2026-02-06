@@ -73,6 +73,7 @@
             handle=".drag-handle"
             @end="onDragEnd"
             class="space-y-2"
+            :disabled="!REORDERING_ENABLED"
           >
             <template #item="{ element: item }">
               <button
@@ -84,10 +85,12 @@
                     'text-core-700 border-gray-200 hover:border-gray-300 hover:bg-gray-50':
                       activeSection !== item.id,
                   },
+                  REORDERING_ENABLED ? 'pr-4' : 'px-4',
                 ]"
                 @click="activeSection = item.id"
               >
                 <div
+                  v-if="REORDERING_ENABLED"
                   class="drag-handle flex h-full w-6 cursor-grab items-center justify-center rounded-l-lg active:cursor-grabbing"
                   :class="activeSection === item.id ? 'bg-primary-100' : 'bg-gray-200'"
                 >
@@ -152,18 +155,21 @@
           handle=".mobile-drag-handle"
           @end="onDragEnd"
           class="flex flex-col gap-3"
+          :disabled="!REORDERING_ENABLED"
         >
           <template #item="{ element: item, index }">
             <div :class="{ 'mb-10': index === draggableItems.length - 1 }">
               <button
                 type="button"
                 :class="[
-                  'flex h-14 w-full items-center gap-3 rounded-lg border border-gray-200 pr-4 text-sm font-medium transition-colors',
+                  'flex h-14 w-full items-center gap-3 rounded-lg border border-gray-200 text-sm font-medium transition-colors',
                   { 'rounded-b-none': expandedSection === item.id },
+                  REORDERING_ENABLED ? 'pr-4' : 'px-4',
                 ]"
                 @click="toggleSection(item.id)"
               >
                 <div
+                  v-if="REORDERING_ENABLED"
                   class="mobile-drag-handle flex h-full w-6 cursor-grab items-center justify-center rounded-l-lg active:cursor-grabbing"
                   :class="[
                     activeSection === item.id ? 'bg-primary-100' : 'bg-gray-200',
@@ -335,6 +341,8 @@ import { displayError } from "@/utils/error-handler"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
 import LandingPageSkeleton from "../../components/skeletons/LandingPageSkeleton.vue"
 
+const REORDERING_ENABLED = false
+
 const { mutate: updateLandingPageItemsOrder, isPending } = useUpdateStorefrontSectionsOrder()
 const { data: landingPageData, refetch, isPending: isLoading } = useGetStorefrontSections()
 
@@ -425,6 +433,13 @@ const validateSectionRequiredFields = (
       if (!ctaBlock2Section.value.title) missing.push("Headline")
       if (!ctaBlock2Section.value.content) missing.push("Body Text")
       if (!ctaBlock2Section.value.image) missing.push("Image")
+      return { isValid: missing.length === 0, missing }
+
+    case "cta_block_3":
+      if (!ctaBlock3Section.value) return { isValid: false, missing: ["section data"] }
+      if (!ctaBlock3Section.value.title) missing.push("Headline")
+      if (!ctaBlock3Section.value.content) missing.push("Body Text")
+      if (!ctaBlock3Section.value.image) missing.push("Image")
       return { isValid: missing.length === 0, missing }
 
     case "testimonials":
@@ -569,7 +584,26 @@ watch(
         .sort((a, b) => a.order - b.order)
 
       // Separate hero from draggable items
-      draggableItems.value = allDesignItems.value.filter((item) => item.id !== "hero")
+      let filteredItems = allDesignItems.value.filter((item) => item.id !== "hero")
+
+      // If reordering is disabled, enforce a fixed display order for backward compatibility
+      if (!REORDERING_ENABLED) {
+        const fixedOrder = [
+          "featured_products",
+          "about",
+          "cta_block_1",
+          "cta_block_2",
+          "cta_block_3",
+          "testimonials",
+          "newsletter_signup",
+        ]
+
+        filteredItems = fixedOrder
+          .map((sectionId) => filteredItems.find((item) => item.id === sectionId))
+          .filter((item): item is DesignItem => item !== undefined)
+      }
+
+      draggableItems.value = filteredItems
     }
   },
   { immediate: true },
