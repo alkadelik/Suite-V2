@@ -163,7 +163,6 @@ import { useUpdateStoreDetails, useGetStoreDetails } from "@/modules/settings/ap
 import type { ICourier } from "@/modules/shared/types"
 import { useMediaQuery } from "@vueuse/core"
 import ConfigureDeliverySkeleton from "./skeletons/ConfigureDeliverySkeleton.vue"
-import { toast } from "@/composables/useToast"
 
 defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{
@@ -207,10 +206,6 @@ const shipbubbleAuthForm = reactive({
   phone: user?.store?.phone1 || user?.store?.phone || "",
 })
 const courierOptions = ref<string[]>([])
-
-const isEditMode = computed(() => {
-  return route.query.edit === "true"
-})
 
 // Helper function to normalize phone number to +234 format
 const normalizePhoneNumber = (phone: string): string => {
