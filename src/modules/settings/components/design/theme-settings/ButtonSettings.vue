@@ -24,9 +24,12 @@
           type="button"
           :class="[
             'flex flex-col overflow-hidden rounded-lg border transition-colors',
+            selectedStyle === style.id
+              ? 'border-primary-700 bg-primary-50'
+              : 'border-gray-200 hover:border-gray-300',
             {
               'border-primary-700 bg-primary-50': selectedStyle === style.id,
-              'border-gray-200 hover:border-gray-300': selectedStyle !== style.id,
+              'border-gray-300 bg-gray-200 hover:border-gray-300': selectedStyle !== style.id,
             },
           ]"
           @click="selectedStyle = style.id"
@@ -52,7 +55,7 @@
               'border-t px-4 py-3',
               {
                 'border-primary-700': selectedStyle === style.id,
-                'border-gray-200': selectedStyle !== style.id,
+                'border-gray-300': selectedStyle !== style.id,
               },
             ]"
           >

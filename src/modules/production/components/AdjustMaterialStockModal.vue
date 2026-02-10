@@ -105,7 +105,7 @@ const { mutate: adjustStock, isPending: isAdjusting } = useAdjustMaterialStock()
 
 // Get available reasons based on adjustment type
 const availableReasons = computed(() => {
-  if (!values.adjustmentType?.value) return []
+  if (!adjustmentType.value) return []
   return adjustmentType.value === "add" ? reasonOptions.add : reasonOptions.remove
 })
 
@@ -170,7 +170,7 @@ watch(adjustmentType, () => {
       <!-- Material Header -->
 
       <div
-        class="bg-warning-50 border-warning-200 flex justify-between rounded-xl border p-5 text-sm"
+        class="bg-warning-50 border-warning-200 flex flex-wrap justify-between gap-x-8 gap-y-2 rounded-xl border p-5 text-sm"
       >
         <p>
           <span class="font-semibold">Material:</span>
@@ -194,7 +194,7 @@ watch(adjustmentType, () => {
             <button
               type="button"
               @click="decrementQuantity"
-              class="transition-opacity hover:opacity-70"
+              class="cursor-pointer transition-opacity hover:opacity-70"
             >
               <Icon name="minus" size="20" class="text-primary-600" />
             </button>
@@ -213,7 +213,7 @@ watch(adjustmentType, () => {
             <button
               type="button"
               @click="incrementQuantity"
-              class="transition-opacity hover:opacity-70"
+              class="cursor-pointer transition-opacity hover:opacity-70"
             >
               <Icon name="add" size="20" class="text-primary-600" />
             </button>

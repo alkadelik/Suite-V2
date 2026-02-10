@@ -10,12 +10,12 @@
         class="ml-auto"
         @click="openVersionHistory?.()"
       />
-      <AppButton
+      <!-- <AppButton
         :loading="isPending"
         label="Publish Page"
         class="!hidden md:!inline-flex"
         @click="publishPage"
-      />
+      /> -->
     </div>
     <!-- mobile -->
     <div class="fixed bottom-0 left-0 z-10 w-full border-t border-gray-200 bg-white p-4 md:hidden">

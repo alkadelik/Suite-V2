@@ -252,6 +252,16 @@ export interface ThemeSection {
   position: number
   created_at: string
   updated_at: string
+  //
+  hero_slides?: {
+    uid: string
+    image?: string
+    video?: string
+    title: string
+    subtitle: string
+    cta_text: string
+    cta_link: string
+  }[]
 }
 
 export interface IVersionHistory {
