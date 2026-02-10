@@ -148,6 +148,14 @@ export function useGenerateReceipt() {
   })
 }
 
+/** Generate order invoice - returns a URL for sharing */
+export function useGenerateInvoice() {
+  return useMutation({
+    mutationFn: (id: string) =>
+      baseApi.post<{ data: { url: string } }>(`/orders/${id}/generate-invoice/`),
+  })
+}
+
 /** Mark order as paid */
 export function useMarkOrderAsPaid() {
   return useMutation({

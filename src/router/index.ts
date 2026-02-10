@@ -144,6 +144,14 @@ router.beforeEach((to, from, next) => {
       }
     }
 
+    // Redirect away from onboarding if setup is complete
+    if (to.path === "/onboarding") {
+      const { liveStatus } = useSettingsStore()
+      if (liveStatus?.completion_percentage === 100) {
+        return next({ path: "/dashboard" })
+      }
+    }
+
     // Restrict settings pages for non-HQ locations
     const branchAllowedPages = ["/settings/profile", "/settings/password"]
     if (to.path.startsWith("/settings") && to.path !== "/settings") {
