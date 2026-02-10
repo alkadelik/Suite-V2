@@ -31,6 +31,7 @@ export type TProduct = {
   uid: string
   name: string
   total_stock: number
+  sellable_stock: number
   needs_reorder: boolean
   variants_count: number
   is_active: boolean

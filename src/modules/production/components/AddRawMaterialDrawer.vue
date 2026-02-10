@@ -35,6 +35,33 @@ const activeStep = ref(0)
 const showAddSupplier = ref(false)
 const newSupplierName = ref("")
 
+// unit management
+const showAddUnit = ref(false)
+const newUnitName = ref("")
+const createNewUnit = () => {
+  if (!newUnitName.value.trim()) {
+    toast.error("Please enter a unit name")
+    return
+  }
+
+  // Create the new unit object
+  const newUnit = {
+    label: newUnitName.value.trim(),
+    value: newUnitName.value.trim().toLowerCase().replace(/\s+/g, "_"),
+  }
+
+  // Add the new unit to the unitOptions array
+  unitOptions.value.push(newUnit)
+
+  // Set the newly created unit as selected
+  setFieldValue("unit", newUnit)
+
+  // Show success message and close modal
+  toast.success(`Unit "${newUnitName.value.trim()}" added successfully!`)
+  showAddUnit.value = false
+  newUnitName.value = ""
+}
+
 const { data: suppliers } = useGetSuppliers()
 const { mutate: createSupplier, isPending: isCreatingSupplier } = useCreateSupplier()
 
@@ -48,7 +75,7 @@ const supplierOptions = computed(() => {
 })
 
 // Unit options
-const unitOptions = [
+const unitOptions = ref([
   { label: "Kilograms (kg)", value: "kg" },
   { label: "Grams (g)", value: "g" },
   { label: "Liters (L)", value: "L" },
@@ -58,7 +85,7 @@ const unitOptions = [
   { label: "Sheets", value: "sheets" },
   { label: "Bags", value: "bags" },
   { label: "Boxes", value: "boxes" },
-]
+])
 
 // Source of material options
 const sourceOptions = [
@@ -279,6 +306,7 @@ const goToPrevStep = () => {
             />
 
             <div>
+              <!-- Add custom -- add unit -->
               <FormField
                 type="select"
                 name="unit"
@@ -286,7 +314,25 @@ const goToPrevStep = () => {
                 placeholder="e.g. kg"
                 required
                 :options="unitOptions"
-              />
+                :searchable="true"
+              >
+                <template #prepend="{ close }">
+                  <div
+                    class="hover:bg-core-25 cursor-pointer border-b border-gray-200 px-4 py-2 text-sm transition-colors duration-150"
+                    @click="
+                      () => {
+                        close()
+                        showAddUnit = true
+                      }
+                    "
+                  >
+                    <div class="flex items-center justify-between">
+                      <span class="text-primary-600 font-semibold">Add New Unit</span>
+                      <Icon name="add" class="text-primary-600 h-4 w-4" />
+                    </div>
+                  </div>
+                </template>
+              </FormField>
             </div>
 
             <div>
@@ -441,46 +487,75 @@ const goToPrevStep = () => {
         />
       </div>
     </template>
+
+    <!-- Create Supplier Modal -->
+    <Modal
+      :open="showAddSupplier"
+      title="Add New Supplier"
+      max-width="md"
+      @close="showAddSupplier = false"
+    >
+      <div class="space-y-4">
+        <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
+          <Icon name="profile-add" size="28" />
+        </div>
+        <p class="text-sm text-gray-600">Create a new supplier for your raw materials</p>
+
+        <TextField
+          v-model="newSupplierName"
+          label="Supplier Name"
+          placeholder="e.g. ABC Supplies"
+          required
+        />
+      </div>
+
+      <template #footer>
+        <div class="flex gap-3">
+          <AppButton
+            label="Cancel"
+            variant="outlined"
+            class="flex-1"
+            @click="showAddSupplier = false"
+          />
+          <AppButton
+            label="Add Supplier"
+            class="flex-1"
+            :loading="isCreatingSupplier"
+            loading-text="Adding..."
+            :disabled="isCreatingSupplier || !newSupplierName.trim()"
+            @click="createNewSupplier"
+          />
+        </div>
+      </template>
+    </Modal>
+
+    <!-- Create new Unit Modal -->
+    <Modal :open="showAddUnit" title="Add New Unit" max-width="md" @close="showAddUnit = false">
+      <div class="space-y-4">
+        <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
+          <Icon name="profile-add" size="28" />
+        </div>
+        <p class="text-sm text-gray-600">Create a new unit for your raw materials</p>
+
+        <TextField v-model="newUnitName" label="Unit Name" placeholder="e.g. Kilogram" required />
+      </div>
+
+      <template #footer>
+        <div class="flex gap-3">
+          <AppButton
+            label="Cancel"
+            variant="outlined"
+            class="flex-1"
+            @click="showAddUnit = false"
+          />
+          <AppButton
+            label="Add Unit"
+            class="flex-1"
+            :disabled="!newUnitName.trim()"
+            @click="createNewUnit"
+          />
+        </div>
+      </template>
+    </Modal>
   </component>
-
-  <!-- Create Supplier Modal -->
-  <Modal
-    :open="showAddSupplier"
-    title="Add New Supplier"
-    max-width="md"
-    @close="showAddSupplier = false"
-  >
-    <div class="space-y-4">
-      <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
-        <Icon name="profile-add" size="28" />
-      </div>
-      <p class="text-sm text-gray-600">Create a new supplier for your raw materials</p>
-
-      <TextField
-        v-model="newSupplierName"
-        label="Supplier Name"
-        placeholder="e.g. ABC Supplies"
-        required
-      />
-    </div>
-
-    <template #footer>
-      <div class="flex gap-3">
-        <AppButton
-          label="Cancel"
-          variant="outlined"
-          class="flex-1"
-          @click="showAddSupplier = false"
-        />
-        <AppButton
-          label="Add Supplier"
-          class="flex-1"
-          :loading="isCreatingSupplier"
-          loading-text="Adding..."
-          :disabled="isCreatingSupplier || !newSupplierName.trim()"
-          @click="createNewSupplier"
-        />
-      </div>
-    </template>
-  </Modal>
 </template>

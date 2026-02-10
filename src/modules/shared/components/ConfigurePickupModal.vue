@@ -2,7 +2,7 @@
   <Modal
     :open="modelValue"
     title="Set Up Pickup"
-    max-width="xl"
+    max-width="3xl"
     @close="emit('update:modelValue', false)"
     variant="bottom-nav"
     :handle-padding="false"
@@ -14,7 +14,7 @@
         </div>
 
         <p class="text-xs md:text-sm">
-          Choose the location where customers can pick up their orders.
+          Choose the location where customers can pick up their orders and pickup time.
         </p>
       </div>
 
@@ -25,15 +25,77 @@
           type="select"
           placeholder="Enter a keyword to get suggestions"
           v-model="pickup_location"
-          direction="up"
+          direction="down"
           required
         />
+
+        <hr class="border-gray-200" />
+
+        <!-- Pickup Times Section -->
+        <div class="space-y-4">
+          <h3 class="text-core-800 text-base font-semibold">Select Pickup Times</h3>
+
+          <!-- Weekdays Row -->
+          <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <p class="text-core-700 text-sm font-medium">Weekdays ( Mon - Fri)</p>
+            <div class="flex items-center gap-3">
+              <div
+                class="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-2.5 md:min-w-[180px]"
+              >
+                <span class="text-core-400 text-sm">From</span>
+                <input
+                  type="time"
+                  v-model="weekdayFrom"
+                  class="text-core-800 flex-1 border-none bg-transparent text-sm font-medium focus:outline-none"
+                />
+              </div>
+              <div
+                class="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-2.5 md:min-w-[180px]"
+              >
+                <span class="text-core-400 text-sm">To</span>
+                <input
+                  type="time"
+                  v-model="weekdayTo"
+                  class="text-core-800 flex-1 border-none bg-transparent text-sm font-medium focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Weekends Row -->
+          <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <p class="text-core-700 text-sm font-medium">Weekends (Sat - Sun)</p>
+            <div class="flex items-center gap-3">
+              <div
+                class="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-2.5 md:min-w-[180px]"
+              >
+                <span class="text-core-400 text-sm">From</span>
+                <input
+                  type="time"
+                  v-model="weekendFrom"
+                  class="text-core-800 flex-1 border-none bg-transparent text-sm font-medium focus:outline-none"
+                />
+              </div>
+              <div
+                class="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-2.5 md:min-w-[180px]"
+              >
+                <span class="text-core-400 text-sm">To</span>
+                <input
+                  type="time"
+                  v-model="weekendTo"
+                  class="text-core-800 flex-1 border-none bg-transparent text-sm font-medium focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="flex justify-end">
           <AppButton
             type="submit"
-            label="Save Address"
+            label="Save Settings"
             :loading="isPending"
-            :disabled="isPending"
+            :disabled="isPending || !pickup_location"
             class="w-full md:w-40"
             @click="onSubmit"
           />
@@ -44,17 +106,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue"
+import { ref, watch } from "vue"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 import AppButton from "@/components/AppButton.vue"
 import Modal from "@/components/Modal.vue"
 import Icon from "@components/Icon.vue"
 import GooglePlacesAutocomplete from "@components/GooglePlacesAutocomplete.vue"
-import { useUpdateStoreDetails } from "@modules/settings/api"
+import { useUpdateStoreDetails, useGetStoreDetails } from "@modules/settings/api"
 import { useAuthStore } from "@modules/auth/store"
 
-defineProps<{ modelValue: boolean }>()
+const props = defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{
   "update:modelValue": [value: boolean]
   refresh: []
@@ -64,18 +126,45 @@ const authStore = useAuthStore()
 const storeUid = authStore.user?.store_uid || ""
 
 const { mutate: updateStore, isPending } = useUpdateStoreDetails()
+const { data: storeDetails } = useGetStoreDetails(storeUid)
+
 const pickup_location = ref("")
+
+// Pickup time refs with default values
+const weekdayFrom = ref("09:00")
+const weekdayTo = ref("17:00")
+const weekendFrom = ref("09:00")
+const weekendTo = ref("17:00")
+
+// Prefill data when modal opens or store details load
+watch(
+  [() => props.modelValue, storeDetails],
+  ([isOpen, details]) => {
+    if (isOpen && details) {
+      pickup_location.value = details.pickup_location || ""
+      weekdayFrom.value = details.pickup_weekday_start_time || "09:00"
+      weekdayTo.value = details.pickup_weekday_end_time || "17:00"
+      weekendFrom.value = details.pickup_weekend_start_time || "09:00"
+      weekendTo.value = details.pickup_weekend_end_time || "17:00"
+    }
+  },
+  { immediate: true },
+)
 
 const onSubmit = () => {
   const payload = {
     pickup_location: pickup_location.value,
+    pickup_weekday_start_time: weekdayFrom.value,
+    pickup_weekday_end_time: weekdayTo.value,
+    pickup_weekend_start_time: weekendFrom.value,
+    pickup_weekend_end_time: weekendTo.value,
   }
 
   updateStore(
     { id: storeUid, body: payload },
     {
       onSuccess: () => {
-        toast.success("Pickup location details saved!")
+        toast.success("Pickup settings saved!")
         emit("update:modelValue", false)
         emit("refresh")
       },

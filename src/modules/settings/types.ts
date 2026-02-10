@@ -74,6 +74,10 @@ export interface IStoreDetails {
   instagram_handle: string
   currency: string
   pickup_location?: string
+  pickup_weekday_start_time?: string
+  pickup_weekday_end_time?: string
+  pickup_weekend_start_time?: string
+  pickup_weekend_end_time?: string
   collect_vat?: boolean
   tax_collection_enabled?: boolean
   tax_rate?: string
@@ -94,6 +98,10 @@ export interface IUpdateStoreDetailsPayload {
   manual_delivery_enabled?: boolean
   express_delivery_enabled?: boolean
   pickup_location?: string
+  pickup_weekday_start_time?: string
+  pickup_weekday_end_time?: string
+  pickup_weekend_start_time?: string
+  pickup_weekend_end_time?: string
   collect_vat?: boolean
   tax_collection_enabled?: boolean
   add_tax_to_product_price?: boolean
@@ -202,6 +210,7 @@ export interface IThemeSettings {
   facebook_url: string
   x_url: string
   tiktok_url: string
+  size_chart_url: string
 }
 
 export type SectionType =

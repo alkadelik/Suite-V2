@@ -5,6 +5,7 @@
     variant="centered"
     max-width="md"
     body-class="!p-0"
+    :teleport="teleport"
     @close="handleClose"
   >
     <AppForm
@@ -70,6 +71,8 @@ interface Emits {
 defineProps<{
   /** Whether the modal is open */
   modelValue: boolean
+  /** Whether to teleport modal to body (default: true) */
+  teleport?: boolean
 }>()
 
 const emit = defineEmits<Emits>()

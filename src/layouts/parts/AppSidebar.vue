@@ -62,16 +62,19 @@
         icon="shopping-cart"
         label="Sales Suite"
         :children="salesSuiteItems"
-        :default-expanded="true"
+        :is-expanded="expandedGroup === 'sales-suite'"
+        @toggle="expandedGroup = expandedGroup === 'sales-suite' ? null : 'sales-suite'"
       />
 
-      <!-- <SidebarGroup icon="trend-up" label="Marketing" :children="[]" /> -->
+      <SidebarGroup icon="trend-up" label="Marketing" :children="marketingItems" />
 
       <SidebarGroup
         v-if="isStaging"
         icon="building"
         label="Production"
         :children="productionItems"
+        :is-expanded="expandedGroup === 'production'"
+        @toggle="expandedGroup = expandedGroup === 'production' ? null : 'production'"
       />
 
       <SidebarLink icon="receipt-text" label="Expenses" to="/expenses" />
@@ -177,7 +180,7 @@
 <script setup lang="ts">
 import { useAuthStore } from "@modules/auth/store"
 import { useMediaQuery } from "@vueuse/core"
-import { computed } from "vue"
+import { computed, ref } from "vue"
 import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
 import SidebarLink from "./SidebarLink.vue"
@@ -198,6 +201,9 @@ defineEmits<{ logout: [value: boolean]; upgrade: [] }>()
 const router = useRouter()
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
+// Track which sidebar group is expanded
+const expandedGroup = ref<string | null>("sales-suite")
+
 const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
 
 // Sales Suite items
@@ -212,6 +218,9 @@ const salesSuiteItems = computed(() =>
     return true
   }),
 )
+
+// Marketing items
+const marketingItems = computed(() => [{ icon: "sms", label: "Email List", to: "/email-list" }])
 
 // Production items
 const productionItems = computed(() => {

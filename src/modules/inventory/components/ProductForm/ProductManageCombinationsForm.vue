@@ -91,6 +91,7 @@
         step="0.01"
         min="0"
         required
+        :disabled="props.disableCostPrice"
       />
 
       <!-- Selling Price Section -->
@@ -181,6 +182,7 @@
               step="0.01"
               min="0"
               size="sm"
+              :disabled="props.disableCostPrice"
               @update:model-value="
                 updateVariantField(index, 'cost_price', removeLeadingZeros($event))
               "
@@ -257,6 +259,7 @@
               step="0.01"
               min="0"
               size="sm"
+              :disabled="props.disableCostPrice"
               @update:model-value="
                 updateVariantField(index, 'cost_price', removeLeadingZeros($event))
               "
@@ -291,7 +294,7 @@ import TextField from "@/components/form/TextField.vue"
 import SelectField from "@/components/form/SelectField.vue"
 import Chip from "@/components/Chip.vue"
 import InfoBox from "@/components/InfoBox.vue"
-import { PRODUCT_DIMENSIONS, WEIGHT_ATTRIBUTE_UID } from "../../constants"
+import { PRODUCT_DIMENSIONS, WEIGHT_ATTRIBUTE_UIDS } from "../../constants"
 import { IProductDimension } from "@modules/inventory/types"
 import { IProductVariant, IProductVariantDetails } from "../../types"
 import { useWeightBasedDimensions } from "../../composables/useWeightBasedDimensions"
@@ -305,6 +308,8 @@ interface Props {
   hideStock?: boolean
   /** Disable the price field (for variants edit mode) */
   disablePrice?: boolean
+  /** Disable the cost price field (for edit mode - keep it prefilled but not editable) */
+  disableCostPrice?: boolean
   /** Hide the price field entirely (for variants edit mode) */
   hidePrice?: boolean
   /** Hide the weight section (for variants edit mode) */
@@ -399,7 +404,7 @@ const variants = computed(() => props.modelValue || [])
 const hasWeightAttributeInVariants = computed(() => {
   if (!props.modelValue || props.modelValue.length === 0) return false
 
-  const hasWeight = hasWeightAttribute(props.modelValue, WEIGHT_ATTRIBUTE_UID)
+  const hasWeight = hasWeightAttribute(props.modelValue, WEIGHT_ATTRIBUTE_UIDS)
   return hasWeight
 })
 

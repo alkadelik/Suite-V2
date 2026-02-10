@@ -436,45 +436,45 @@ watch(
         @click="onSubmit"
       />
     </template>
+
+    <!-- Create Vendor Modal -->
+    <Modal
+      :open="showCreateVendorModal"
+      title="Add New Vendor"
+      max-width="md"
+      @close="showCreateVendorModal = false"
+    >
+      <div class="space-y-4">
+        <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
+          <Icon name="profile-add" size="28" />
+        </div>
+        <p class="text-sm text-gray-600">Create a new vendor to use in your expenses</p>
+
+        <TextField
+          v-model="newVendorName"
+          label="Vendor Name"
+          placeholder="e.g. ABC Supplies"
+          required
+        />
+      </div>
+
+      <template #footer>
+        <div class="flex gap-3">
+          <AppButton
+            label="Cancel"
+            variant="outlined"
+            class="flex-1"
+            @click="showCreateVendorModal = false"
+          />
+          <AppButton
+            label="Add Vendor"
+            class="flex-1"
+            :loading="isCreatingVendor"
+            :disabled="isCreatingVendor || !newVendorName.trim()"
+            @click="createVendor"
+          />
+        </div>
+      </template>
+    </Modal>
   </component>
-
-  <!-- Create Vendor Modal -->
-  <Modal
-    :open="showCreateVendorModal"
-    title="Add New Vendor"
-    max-width="md"
-    @close="showCreateVendorModal = false"
-  >
-    <div class="space-y-4">
-      <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
-        <Icon name="profile-add" size="28" />
-      </div>
-      <p class="text-sm text-gray-600">Create a new vendor to use in your expenses</p>
-
-      <TextField
-        v-model="newVendorName"
-        label="Vendor Name"
-        placeholder="e.g. ABC Supplies"
-        required
-      />
-    </div>
-
-    <template #footer>
-      <div class="flex gap-3">
-        <AppButton
-          label="Cancel"
-          variant="outlined"
-          class="flex-1"
-          @click="showCreateVendorModal = false"
-        />
-        <AppButton
-          label="Add Vendor"
-          class="flex-1"
-          :loading="isCreatingVendor"
-          :disabled="isCreatingVendor || !newVendorName.trim()"
-          @click="createVendor"
-        />
-      </div>
-    </template>
-  </Modal>
 </template>
