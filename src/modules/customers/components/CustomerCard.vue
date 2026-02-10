@@ -10,13 +10,13 @@
         :aria-label="`${customer.full_name?.split(' ')[0]} ${customer.full_name?.split(' ')[1]} avatar`"
         class="bg-bloom-300 flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold shadow-sm"
       >
-        {{ getInitials(customer?.full_name || "") }}
+        {{ getInitials(customer?.full_name || "Guest") }}
       </span>
 
       <!-- Customer details on the right -->
       <div class="flex-1">
         <h2 class="text-core-700 mb-2 text-base font-semibold">
-          {{ customer.full_name }}
+          {{ customer.full_name || "Guest" }}
         </h2>
         <div class="flex flex-wrap items-center gap-3">
           <div class="flex items-center gap-1">

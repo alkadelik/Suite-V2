@@ -18,11 +18,10 @@
       @update:modelValue="handleCategorySelect"
     />
 
-    <TextAreaField
+    <RichTextEditor
       v-model="form.description"
       label="Description"
       placeholder="Enter product description"
-      :rows="4"
       hint="Your customers will see this description when they view this product."
     />
 
@@ -46,7 +45,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue"
 import TextField from "@/components/form/TextField.vue"
-import TextAreaField from "@/components/form/TextAreaField.vue"
+import RichTextEditor from "@/components/form/RichTextEditor.vue"
 import SelectField from "@/components/form/SelectField.vue"
 import Switch from "@components/form/Switch.vue"
 import { useGetCategories } from "@modules/inventory/api"

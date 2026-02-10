@@ -15,7 +15,7 @@
     </div>
 
     <EmptyState
-      v-if="!isLoading && customers.length === 0"
+      v-if="!isLoading && customers.length === 0 && !debouncedSearch"
       title="No customers found"
       description="Add your first customer to start managing them."
       action-label="Add Customer"
@@ -75,7 +75,6 @@
         :data="customers ?? []"
         :columns="CUSTOMER_COLUMNS"
         :loading="isLoading"
-        :enable-row-selection="true"
         :show-pagination="true"
         :items-per-page="itemsPerPage"
         :total-items-count="customersData?.data?.count || 0"

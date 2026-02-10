@@ -180,14 +180,14 @@ const deliveryPaymentLabel = computed(() => {
       <!-- Customer Details -->
       <div class="border-core-300 bg-core-25 my-6 space-y-3 rounded-xl border p-4">
         <p class="text-sm font-medium">{{ customerName }}</p>
-        <div class="flex items-center justify-between">
+        <div class="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
           <div class="flex items-center gap-1">
-            <Icon name="sms" class="text-core-600 h-4 w-4" />
-            <span class="text-sm font-medium">{{ customer?.email || "N/A" }}</span>
+            <Icon name="sms" size="16" class="text-core-600 flex-shrink-0" />
+            <span class="truncate text-sm font-medium">{{ customer?.email || "N/A" }}</span>
           </div>
           <div class="flex items-center gap-1">
-            <Icon name="call" class="text-core-600 h-4 w-4" />
-            <span class="text-sm font-medium">{{ customer?.phone || "N/A" }}</span>
+            <Icon name="call" size="16" class="text-core-600 flex-shrink-0" />
+            <span class="truncate text-sm font-medium">{{ customer?.phone || "N/A" }}</span>
           </div>
         </div>
       </div>

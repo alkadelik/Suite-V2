@@ -133,6 +133,7 @@
       class="z-50"
       :current-step="shipBubbleStep"
       :loading="isSettingUpShipping || isUpdatingShippingProfile"
+      :mode="shipbubbleMode"
       @submit-auth-form="handleSetupShippingProfile"
       @submit-couriers="handleCouriersSubmit"
       @close="handleClose"
@@ -162,7 +163,6 @@ import { useUpdateStoreDetails, useGetStoreDetails } from "@/modules/settings/ap
 import type { ICourier } from "@/modules/shared/types"
 import { useMediaQuery } from "@vueuse/core"
 import ConfigureDeliverySkeleton from "./skeletons/ConfigureDeliverySkeleton.vue"
-import { toast } from "@/composables/useToast"
 
 defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{
@@ -180,7 +180,16 @@ const isShippingProfileActive = ref<boolean>(false)
 const isMobile = useMediaQuery("(max-width: 768px)")
 const selectedDeliveryOption = ref<"shipbubble" | "manual">("shipbubble")
 
-const { data: shippingProfileData, isPending: isGettingShippingProfile } = useGetShippingProfile()
+// Determine mode from route query param
+const shipbubbleMode = computed<"create" | "edit">(() => {
+  return route.query.mode === "edit" ? "edit" : "create"
+})
+
+const {
+  data: shippingProfileData,
+  isPending: isGettingShippingProfile,
+  refetch: refetchShippingProfile,
+} = useGetShippingProfile()
 const { data: storeDetails, isPending: isGettingStoreDetails } = useGetStoreDetails(
   user?.store_uid || "",
 )
@@ -197,10 +206,6 @@ const shipbubbleAuthForm = reactive({
   phone: user?.store?.phone1 || user?.store?.phone || "",
 })
 const courierOptions = ref<string[]>([])
-
-const isEditMode = computed(() => {
-  return route.query.edit === "true"
-})
 
 // Helper function to normalize phone number to +234 format
 const normalizePhoneNumber = (phone: string): string => {
@@ -227,25 +232,33 @@ const normalizePhoneNumber = (phone: string): string => {
 }
 
 const handleSetupShippingProfile = () => {
-  const payload = {
-    store_name: shipbubbleAuthForm.business_name,
-    store_address: shipbubbleAuthForm.address,
-    email: shipbubbleAuthForm.email,
-    password: shipbubbleAuthForm.password,
-    phone: normalizePhoneNumber(shipbubbleAuthForm.phone),
-    ...(isEditMode.value ? {} : { preferred_couriers: [] }),
-  }
+  if (shipbubbleMode.value === "edit") {
+    const updatePayload: Record<string, string> = {}
+    if (shipbubbleAuthForm.business_name)
+      updatePayload.store_name = shipbubbleAuthForm.business_name
+    if (shipbubbleAuthForm.address) updatePayload.store_address = shipbubbleAuthForm.address
+    if (shipbubbleAuthForm.email) updatePayload.email = shipbubbleAuthForm.email
+    if (shipbubbleAuthForm.phone)
+      updatePayload.phone = normalizePhoneNumber(shipbubbleAuthForm.phone)
 
-  if (isEditMode.value) {
-    updateShippingProfile(payload, {
+    updateShippingProfile(updatePayload, {
       onSuccess: () => {
-        toast.success("Shipping profile updated successfully")
-        //  redirect back based on &redirect=${encodeURIComponent(route.path)}
-        const redirectPath = (route.query.redirect as string) || route.path.split("?")[0]
-        router.push(redirectPath)
+        isShippingProfileActive.value = true
+        refetchShippingProfile()
+        emit("refresh")
+        handleClose()
       },
     })
   } else {
+    // In create mode, all fields are required
+    const payload = {
+      store_name: shipbubbleAuthForm.business_name,
+      store_address: shipbubbleAuthForm.address,
+      email: shipbubbleAuthForm.email,
+      password: shipbubbleAuthForm.password,
+      phone: normalizePhoneNumber(shipbubbleAuthForm.phone),
+      preferred_couriers: [],
+    }
     setupShippingProfile(payload, {
       onSuccess: () => {
         isShippingProfileActive.value = true
@@ -288,8 +301,6 @@ const handleCouriersSubmit = () => {
       )
     },
   })
-
-  console.log(payload)
 }
 
 const handleContinue = () => {
@@ -319,7 +330,7 @@ const handleClose = () => {
 }
 
 // --- Sync showShipbubbleScreens and step with route query ---
-onMounted(() => {
+onMounted(async () => {
   const shipbubbleParam = route.query.shipbubble
   const stepParam = route.query.step
   showShipbubbleScreens.value = shipbubbleParam === "true"
@@ -329,16 +340,23 @@ onMounted(() => {
       shipBubbleStep.value = parsedStep
     }
   }
+
+  // In edit mode, refetch shipping profile to ensure we have the latest data
+  if (route.query.mode === "edit") {
+    await refetchShippingProfile()
+  }
 })
 
 watch(showShipbubbleScreens, (val) => {
-  router.replace({
-    query: {
-      ...route.query,
-      shipbubble: val ? "true" : undefined,
-      step: val ? String(shipBubbleStep.value) : undefined,
-    },
-  })
+  if (val) {
+    router.replace({
+      query: {
+        ...route.query,
+        shipbubble: "true",
+        step: String(shipBubbleStep.value),
+      },
+    })
+  }
 })
 
 watch(
@@ -383,10 +401,14 @@ watch(
   { immediate: true },
 )
 
-// Update form when store details are fetched
+// Update form when store details are fetched (only used in create mode as fallback)
 watch(
   () => storeDetails.value,
   (details) => {
+    // In edit mode, prioritize shipping profile data over store details
+    if (shipbubbleMode.value === "edit" && shippingProfileData.value) {
+      return
+    }
     if (details) {
       shipbubbleAuthForm.business_name = details.name || ""
       shipbubbleAuthForm.email = details.store_email || user?.email || ""
@@ -401,17 +423,26 @@ watch(
 )
 
 // Update form when shipping profile data is available (for existing profiles)
+// This watch has priority over store details
 watch(
   () => shippingProfileData.value,
   (profileData) => {
+    console.log("Prefilling from shipping profile data:", profileData)
     if (profileData) {
-      // Prefill from existing shipping profile if available
-      shipbubbleAuthForm.business_name = profileData.store_name || shipbubbleAuthForm.business_name
-      shipbubbleAuthForm.email = profileData.email || shipbubbleAuthForm.email
-      shipbubbleAuthForm.address = profileData.store_address || shipbubbleAuthForm.address
+      // In edit mode or when profile exists, always use shipping profile data
+      // These take precedence over store details
+      if (profileData.store_name) {
+        shipbubbleAuthForm.business_name = profileData.store_name
+      }
+      if (profileData.email) {
+        shipbubbleAuthForm.email = profileData.email
+      }
+      if (profileData.store_address) {
+        shipbubbleAuthForm.address = profileData.store_address
+      }
     }
   },
-  { immediate: true },
+  { immediate: true, deep: true },
 )
 
 // Update form when user data becomes available (fallback)

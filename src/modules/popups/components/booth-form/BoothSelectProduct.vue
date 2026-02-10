@@ -4,22 +4,37 @@ import Chip from "@components/Chip.vue"
 import EmptyState from "@components/EmptyState.vue"
 import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
+import ProductSelectionItem from "@components/ProductSelectionItem.vue"
 import { useGetProductCatalogs } from "@modules/inventory/api"
 import type { IProductCatalogue } from "@modules/inventory/types"
+import AddNewProductModal from "@modules/orders/components/create-order-form/AddNewProductModal.vue"
 import { computed, ref } from "vue"
 
-const props = defineProps<{
-  selectedProducts: IProductCatalogue[]
-  existingVariantSkus?: string[]
-}>()
+const props = withDefaults(
+  defineProps<{
+    selectedProducts: IProductCatalogue[]
+    existingVariantSkus?: string[]
+    viewMode?: "grid" | "list"
+  }>(),
+  {
+    viewMode: "grid",
+  },
+)
 
 const searchQuery = ref("")
 const emit = defineEmits<{
   next: []
   "update:selectedProducts": [products: IProductCatalogue[]]
+  "update:viewMode": [mode: "grid" | "list"]
 }>()
 
-const { data: productsData, isFetching } = useGetProductCatalogs()
+// Use computed to sync with parent's viewMode
+const currentViewMode = computed({
+  get: () => props.viewMode,
+  set: (value) => emit("update:viewMode", value),
+})
+
+const { data: productsData, refetch, isFetching } = useGetProductCatalogs()
 const products = computed(() => productsData?.value?.results ?? [])
 
 // Filtered products based on search query
@@ -95,6 +110,21 @@ const getAvailableProductQty = (product: IProductCatalogue) => {
     return total + Math.max(0, sellableStock - popupQtyTaken)
   }, 0)
 }
+
+const showAdd = ref(false)
+
+const handleProductCreated = async (productUid: string) => {
+  showAdd.value = false
+  // Refetch products
+  await refetch()
+  // Find and auto-select the newly created product
+  if (productUid) {
+    const newProduct = products.value.find((p) => p.uid === productUid)
+    if (newProduct && getAvailableProductQty(newProduct) > 0) {
+      toggleProductSelection(newProduct)
+    }
+  }
+}
 </script>
 
 <template>
@@ -108,88 +138,94 @@ const getAvailableProductQty = (product: IProductCatalogue) => {
       <h3 class="text-lg font-semibold">
         All Products <Chip :label="`${productsData?.count || products.length}`" />
       </h3>
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-3 rounded-xl bg-white p-2">
         <TextField
           left-icon="search-lg"
           size="md"
           class="w-full"
-          placeholder="Search by name"
+          placeholder="Find product by name"
           v-model="searchQuery"
         />
-        <AppButton icon="filter-lines" variant="outlined" color="alt" class="flex-shrink-0" />
-        <AppButton icon="add" class="flex-shrink-0" />
+        <AppButton
+          :icon="currentViewMode === 'grid' ? 'list' : 'grid'"
+          variant="outlined"
+          @click="currentViewMode = currentViewMode === 'grid' ? 'list' : 'grid'"
+        />
+        <AppButton icon="add" class="flex-shrink-0" @click="showAdd = true" />
       </div>
     </div>
 
+    <!-- Products List -->
     <section
       v-if="!isFetching && filteredProducts.length > 0"
-      class="grid grid-cols-2 gap-6 md:grid-cols-3"
+      :class="
+        currentViewMode === 'grid' ? 'grid grid-cols-2 gap-6 md:grid-cols-3' : 'flex flex-col gap-3'
+      "
     >
-      <div
+      <ProductSelectionItem
         v-for="prod in filteredProducts"
         :key="prod.uid"
-        class="rounded-xl bg-white p-1.5 transition-all"
-        :class="
-          getAvailableProductQty(prod) === 0 || isProductFullyInPopup(prod)
-            ? 'cursor-not-allowed opacity-50'
-            : isProductSelected(prod.uid)
-              ? 'ring-primary-600 cursor-pointer shadow-lg ring-2'
-              : 'cursor-pointer hover:shadow-lg'
-        "
+        :image-url="prod.images?.[0]?.image"
+        :name="prod.name"
+        :selected="isProductSelected(prod.uid)"
+        :disabled="getAvailableProductQty(prod) === 0 || isProductFullyInPopup(prod)"
+        :view-mode="currentViewMode"
         @click="toggleProductSelection(prod)"
       >
-        <div class="relative flex h-[88px] items-center justify-center rounded-xl bg-gray-200">
-          <img
-            v-if="prod.images?.length"
-            :src="prod.images[0]?.image"
-            alt=""
-            class="h-full w-full rounded-xl object-cover"
-          />
-          <Icon v-else name="box" class="h-20 w-20" />
-
+        <template #badge>
           <Chip
             v-if="getAvailableProductQty(prod) === 0"
             label="Out of stock"
             size="sm"
             color="error"
-            class="absolute top-2 right-2 !rounded-lg"
+            :class="
+              currentViewMode === 'grid' ? 'absolute top-2 right-2 !rounded-lg' : 'flex-shrink-0'
+            "
           />
           <Chip
             v-else-if="isProductFullyInPopup(prod)"
             label="Fully added"
             size="sm"
             color="success"
-            class="absolute top-2 right-2 !rounded-lg"
+            :class="
+              currentViewMode === 'grid' ? 'absolute top-2 right-2 !rounded-lg' : 'flex-shrink-0'
+            "
           />
           <Chip
             v-else-if="hasPartiallySelectedVariants(prod)"
             label="Some added"
             size="sm"
             color="warning"
-            class="absolute top-2 right-2 !rounded-lg"
+            :class="
+              currentViewMode === 'grid' ? 'absolute top-2 right-2 !rounded-lg' : 'flex-shrink-0'
+            "
           />
           <input
             v-else
             type="checkbox"
             :checked="isProductSelected(prod.uid)"
-            class="accent-primary-600 pointer-events-none absolute top-2 right-2 h-4 w-4 rounded border-gray-300 bg-white"
+            :class="
+              currentViewMode === 'grid'
+                ? 'accent-primary-600 pointer-events-none absolute top-2 right-2 h-4 w-4 rounded border-gray-300 bg-white'
+                : 'accent-primary-600 pointer-events-none h-4 w-4 flex-shrink-0 rounded border-gray-300'
+            "
           />
-        </div>
-        <div class="space-y-1 p-1 py-2">
-          <h4 class="text-xs font-medium">{{ prod.name }}</h4>
-          <div class="flex justify-between gap-2 text-xs">
-            <span class="text-primary-600 flex items-center gap-1">
-              <Icon name="box" class="h-3 w-3" />
-              {{ prod.variants?.length }} var.
-            </span>
-            <!--  -->
-            <span class="flex items-center gap-1">
-              <Icon name="box" class="h-3 w-3" />
-              {{ getAvailableProductQty(prod) }}
-            </span>
-          </div>
-        </div>
-      </div>
+        </template>
+
+        <template #primaryInfo>
+          <span class="text-primary-600 flex items-center gap-1">
+            <Icon name="box" class="h-3 w-3" />
+            {{ prod.variants?.length }} var.
+          </span>
+        </template>
+
+        <template #secondaryInfo>
+          <span class="flex items-center gap-1">
+            <Icon name="box" class="h-3 w-3" />
+            {{ getAvailableProductQty(prod) }}{{ currentViewMode === "list" ? " in stock" : "" }}
+          </span>
+        </template>
+      </ProductSelectionItem>
     </section>
 
     <EmptyState
@@ -220,4 +256,6 @@ const getAvailableProductQty = (product: IProductCatalogue) => {
       <AppButton label="Next" class="w-full" :disabled="!canProceed" @click="handleNext" />
     </div>
   </div>
+
+  <AddNewProductModal :open="showAdd" @close="showAdd = false" @success="handleProductCreated" />
 </template>

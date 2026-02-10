@@ -112,7 +112,6 @@
           :total-items-count="products?.data?.count || 0"
           :total-page-count="Math.ceil((products?.data?.count || 0) / itemsPerPage) || 1"
           :server-pagination="true"
-          :enable-row-selection="true"
           @row-click="handleRowClick"
           @pagination-change="(d) => (page = d.currentPage)"
         >
@@ -138,7 +137,7 @@
             <Chip :label="String(value) || 'Uncategorized'" icon="tag" color="purple" size="sm" />
           </template>
 
-          <template #cell:total_stock="{ value }">
+          <template #cell:sellable_stock="{ value }">
             <span class="text-sm font-semibold">{{ value }}</span>
           </template>
 
@@ -157,11 +156,6 @@
 
           <template #cell:action="{ item }">
             <div class="flex items-center gap-2">
-              <Icon
-                name="copy-01"
-                @click.stop="handleAction('duplicate', item)"
-                class="hidden cursor-pointer hover:text-gray-600 md:inline-block"
-              />
               <DropdownMenu
                 :items="getActionItems(item)"
                 placement="bottom-end"
@@ -219,10 +213,8 @@
     <!-- drawers  -->
     <ProductFormDrawer
       v-if="showProductFormDrawer"
-      ref="productFormDrawerRef"
       v-model="showProductFormDrawer"
       @refresh="refetchProducts"
-      @add-category="showAddCategoryModal = true"
     />
     <ProductEditDrawer
       v-if="showProductEditDrawer"
@@ -241,7 +233,11 @@
     />
 
     <!-- Modals -->
-    <AddCategoryModal v-model="showAddCategoryModal" @success="handleCategoryCreated" />
+    <AddCategoryModal
+      v-model="showAddCategoryModal"
+      :teleport="true"
+      @success="handleCategoryCreated"
+    />
     <ReceiveRequestModal
       v-model="showReceiveRequestModal"
       :open="showReceiveRequestModal"
@@ -373,9 +369,6 @@ const activeFilters = ref<{
   status: null,
   subCategory: null,
 })
-const productFormDrawerRef = ref<{
-  setCategoryFromModal: (category: { label: string; value: string }) => void
-} | null>(null)
 const productEditDrawerRef = ref<{
   setCategoryFromModal: (category: { label: string; value: string }) => void
 } | null>(null)
@@ -416,6 +409,10 @@ watch(
           uid: details.data.uid,
           name: details.data.name,
           total_stock: details.data.total_stock,
+          sellable_stock: details.data.variants.reduce(
+            (sum, v) => sum + (v.sellable_stock || 0),
+            0,
+          ),
           needs_reorder: details.data.needs_reorder,
           variants_count: details.data.variants.length,
           is_active: details.data.is_active,
@@ -457,8 +454,8 @@ const handleRowClick = (clickedProduct: TProduct) => {
 const productMetrics = computed(() => {
   const productResults = products.value?.data?.results || []
   // const totalProducts = products.value?.data?.count || 0
-  const inStockProducts = productResults.filter((p: TProduct) => p.total_stock > 0).length
-  const outOfStockProducts = productResults.filter((p: TProduct) => p.total_stock === 0).length
+  const inStockProducts = productResults.filter((p: TProduct) => p.sellable_stock > 0).length
+  const outOfStockProducts = productResults.filter((p: TProduct) => p.sellable_stock === 0).length
   const needsReorderProducts = productResults.filter((p: TProduct) => p.needs_reorder).length
 
   return [
@@ -492,7 +489,7 @@ const productMetrics = computed(() => {
 })
 
 const getStockStatus = (item: TProduct) => {
-  if (item.total_stock === 0) {
+  if (item.sellable_stock === 0) {
     return { label: "Out of Stock", color: "error" as const }
   } else if (item.needs_reorder) {
     return { label: "Low Stock", color: "warning" as const }
@@ -708,10 +705,8 @@ const openAddProductDrawer = () => {
 const handleCategoryCreated = (category: { label: string; value: string }) => {
   showAddCategoryModal.value = false
 
-  // Determine which drawer is currently open and set its category
-  if (showProductFormDrawer.value && productFormDrawerRef.value) {
-    productFormDrawerRef.value.setCategoryFromModal(category)
-  } else if (showProductEditDrawer.value && productEditDrawerRef.value) {
+  // Only handle ProductEditDrawer category updates here
+  if (showProductEditDrawer.value && productEditDrawerRef.value) {
     productEditDrawerRef.value.setCategoryFromModal(category)
   }
 }
@@ -808,7 +803,7 @@ const filteredProducts = computed(() => {
 
     // Status filter
     if (activeFilters.value.status !== null) {
-      const isInStock = product.total_stock > 0
+      const isInStock = product.sellable_stock > 0
       if (activeFilters.value.status === "in_stock" && !isInStock) {
         return false
       }

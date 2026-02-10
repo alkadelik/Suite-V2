@@ -29,7 +29,6 @@
         :columns="orderColumns"
         :loading="loading"
         :show-pagination="false"
-        :enable-row-selection="true"
         @row-click="handleRowClick"
       >
         <template #cell:order_number="{ value }">

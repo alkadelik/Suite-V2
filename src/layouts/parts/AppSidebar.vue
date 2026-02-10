@@ -62,16 +62,19 @@
         icon="shopping-cart"
         label="Sales Suite"
         :children="salesSuiteItems"
-        :default-expanded="true"
+        :is-expanded="expandedGroup === 'sales-suite'"
+        @toggle="expandedGroup = expandedGroup === 'sales-suite' ? null : 'sales-suite'"
       />
 
-      <!-- <SidebarGroup icon="trend-up" label="Marketing" :children="[]" /> -->
+      <SidebarGroup icon="trend-up" label="Marketing" :children="marketingItems" />
 
       <SidebarGroup
         v-if="isStaging"
         icon="building"
         label="Production"
         :children="productionItems"
+        :is-expanded="expandedGroup === 'production'"
+        @toggle="expandedGroup = expandedGroup === 'production' ? null : 'production'"
       />
 
       <SidebarLink icon="receipt-text" label="Expenses" to="/expenses" />
@@ -81,9 +84,9 @@
       <SidebarLink
         icon="life-buoy"
         label="Support"
+        class="w-full"
         @click="
           () => {
-            console.log('opening support modal')
             useSharedStore().openSupportModal()
           }
         "
@@ -177,7 +180,7 @@
 <script setup lang="ts">
 import { useAuthStore } from "@modules/auth/store"
 import { useMediaQuery } from "@vueuse/core"
-import { computed } from "vue"
+import { computed, ref } from "vue"
 import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
 import SidebarLink from "./SidebarLink.vue"
@@ -198,15 +201,26 @@ defineEmits<{ logout: [value: boolean]; upgrade: [] }>()
 const router = useRouter()
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
+// Track which sidebar group is expanded
+const expandedGroup = ref<string | null>("sales-suite")
+
 const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
 
 // Sales Suite items
-const salesSuiteItems = computed(() => [
-  { icon: "box", label: "Orders", to: "/orders" },
-  { icon: "folder", label: "Inventory", to: "/inventory" },
-  { icon: "calendar-tick", label: "Popups", to: "/popups" },
-  { icon: "people", label: "Customers", to: "/customers" },
-])
+const salesSuiteItems = computed(() =>
+  [
+    { icon: "box", label: "Orders", to: "/orders" },
+    { icon: "folder", label: "Inventory", to: "/inventory" },
+    { icon: "calendar-tick", label: "Popups", to: "/popups" },
+    { icon: "people", label: "Customers", to: "/customers" },
+  ].filter((item) => {
+    if (item.label === "Popups") return activeLocation.value?.is_hq
+    return true
+  }),
+)
+
+// Marketing items
+const marketingItems = computed(() => [{ icon: "sms", label: "Email List", to: "/email-list" }])
 
 // Production items
 const productionItems = computed(() => {

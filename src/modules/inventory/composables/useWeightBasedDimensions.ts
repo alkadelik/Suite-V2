@@ -208,11 +208,14 @@ export function useWeightBasedDimensions() {
    * @param weightAttributeUid - UID of the Weight (Kg) attribute
    * @returns True if at least one variant has weight attribute
    */
-  const hasWeightAttribute = (variants: IProductVariant[], weightAttributeUid: string): boolean => {
+  const hasWeightAttribute = (
+    variants: IProductVariant[],
+    weightAttributeUids: string | string[],
+  ): boolean => {
+    const uids = Array.isArray(weightAttributeUids) ? weightAttributeUids : [weightAttributeUids]
     return variants.some(
       (variant) =>
-        variant.attributes &&
-        variant.attributes.some((attr) => attr.attribute === weightAttributeUid),
+        variant.attributes && variant.attributes.some((attr) => uids.includes(attr.attribute)),
     )
   }
 

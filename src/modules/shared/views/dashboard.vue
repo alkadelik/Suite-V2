@@ -136,7 +136,7 @@ import SectionHeader from "@components/SectionHeader.vue"
 import { useAuthStore } from "@modules/auth/store"
 import { useSettingsStore } from "@modules/settings/store"
 import WelcomeToTeamModal from "../components/WelcomeToTeamModal.vue"
-import { computed, ref, watch } from "vue"
+import { computed, ref } from "vue"
 import Icon from "@components/Icon.vue"
 import EmptyState from "@components/EmptyState.vue"
 import { useMediaQuery } from "@vueuse/core"
@@ -148,7 +148,7 @@ import Chip from "@components/Chip.vue"
 import { anonymousCustomer, ORDER_COLUMNS } from "@modules/orders/constants"
 import DataTable from "@components/DataTable.vue"
 import OrderCard from "@modules/orders/components/OrderCard.vue"
-import { formatError } from "@/utils/error-handler"
+// import { formatError } from "@/utils/error-handler"
 import OrderDetailsDrawer from "@modules/orders/components/OrderDetailsDrawer.vue"
 import { TOrder } from "@modules/orders/types"
 import ProductAvatar from "@components/ProductAvatar.vue"
@@ -170,18 +170,22 @@ const greetings = computed(() => {
 })
 
 const isHQ = computed(() => useSettingsStore().activeLocation?.is_hq ?? true)
-const { data: orders, isPending, isError, error } = useGetOrders()
+const {
+  data: orders,
+  isPending,
+  //  isError, error
+} = useGetOrders()
 
-// Reload page if location ID error occurs
-// This can happen if the user switches to a location but state still has the previous location ID
-watch(isError, (newVal) => {
-  if (newVal) {
-    const errMsg = formatError(error.value)?.toLowerCase()
-    if (errMsg?.includes("location") && errMsg?.includes("id")) {
-      window.location.reload()
-    }
-  }
-})
+// // Reload page if location ID error occurs
+// // This can happen if the user switches to a location but state still has the previous location ID
+// watch(isError, (newVal) => {
+//   if (newVal) {
+//     const errMsg = formatError(error.value)?.toLowerCase()
+//     if (errMsg?.includes("location") && errMsg?.includes("id")) {
+//       window.location.reload()
+//     }
+//   }
+// })
 
 const quickActions = computed(() => {
   const allActions = [

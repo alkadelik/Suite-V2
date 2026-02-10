@@ -13,6 +13,14 @@
           placeholder="https://example.com/return-policy"
         />
 
+        <FormField
+          v-model="sizeChartLink"
+          type="url"
+          name="size_chart_link"
+          label="Size Chart Link (if applicable)"
+          placeholder="https://example.com/size-chart"
+        />
+
         <div>
           <h5 class="text-core-700 mb-4 text-sm font-semibold">Social Links</h5>
           <div class="space-y-4">
@@ -121,6 +129,7 @@ const props = defineProps<{
   facebookLink: string
   twitterLink: string
   tiktokLink: string
+  sizeChartLink: string
 }>()
 
 const emit = defineEmits<{
@@ -129,11 +138,17 @@ const emit = defineEmits<{
   "update:facebookLink": [value: string]
   "update:twitterLink": [value: string]
   "update:tiktokLink": [value: string]
+  "update:sizeChartLink": [value: string]
 }>()
 
 const termsLinkModel = computed({
   get: () => props.termsLink,
   set: (value) => emit("update:termsLink", value),
+})
+
+const sizeChartLink = computed({
+  get: () => props.sizeChartLink,
+  set: (value) => emit("update:sizeChartLink", value),
 })
 
 const instagramLinkModel = computed({

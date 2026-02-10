@@ -12,11 +12,14 @@ import Chip from "@components/Chip.vue"
 import { TOrder } from "../types"
 import CreateOrderDrawer from "../components/CreateOrderDrawer.vue"
 import VoidDeleteOrder from "../components/VoidDeleteOrder.vue"
+import ConfirmationModal from "@components/ConfirmationModal.vue"
 import {
   useDeleteOrder,
+  useGenerateInvoice,
   useGenerateReceipt,
   useGetOrderDashboard,
   useGetOrders,
+  useMarkOrderAsPaid,
   useVoidOrder,
 } from "../api"
 import { displayError } from "@/utils/error-handler"
@@ -29,7 +32,7 @@ import OrderMemoDrawer from "../components/OrderMemoDrawer.vue"
 import OrderPaymentDrawer from "../components/OrderPaymentDrawer.vue"
 import Tabs from "@components/Tabs.vue"
 import { formatCurrency } from "@/utils/format-currency"
-import { useRoute } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import ProductAvatar from "@components/ProductAvatar.vue"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
@@ -43,6 +46,7 @@ const openMemo = ref(false)
 const openFulfil = ref(false)
 const openPayment = ref(false)
 const openDetails = ref(false)
+const openMarkPaid = ref(false)
 const selectedOrder = ref<TOrder | null>(null)
 const status = ref(ORDER_STATUS_TAB[0].key)
 
@@ -135,6 +139,19 @@ const getActionItems = (item: TOrder) => [
       openMemo.value = true
     },
   },
+  // Mark as Paid - only for unpaid or partially paid orders
+  ...(item.payment_status !== "paid"
+    ? [
+        {
+          label: "Mark as Paid",
+          icon: "money-add",
+          action: () => {
+            selectedOrder.value = item
+            openMarkPaid.value = true
+          },
+        },
+      ]
+    : []),
   // Share receipt - only for partially paid or paid orders
   ...(item.payment_status === "paid" || item.payment_status === "partially_paid"
     ? [
@@ -151,7 +168,7 @@ const getActionItems = (item: TOrder) => [
         {
           label: "Share invoice",
           icon: "share",
-          action: handleShareInvoice,
+          action: () => handleShareInvoice(item),
         },
       ]
     : []),
@@ -232,6 +249,8 @@ const onCloseVoidDel = () => {
 const { mutate: voidOrder, isPending: isVoiding } = useVoidOrder()
 const { mutate: deleteOrder, isPending: isDeleting } = useDeleteOrder()
 const { mutate: generateReceipt } = useGenerateReceipt()
+const { mutate: generateInvoice } = useGenerateInvoice()
+const { mutate: markAsPaid, isPending: isMarkingPaid } = useMarkOrderAsPaid()
 
 // Get invoice link for an order
 const getInvoiceLink = (order: TOrder) => {
@@ -294,9 +313,33 @@ const handleShareReceipt = (order: TOrder) => {
   })
 }
 
-// Share invoice (coming soon)
-const handleShareInvoice = () => {
-  toast.info("Share invoice is coming soon!")
+// Share invoice using Web Share API
+const handleShareInvoice = (order: TOrder) => {
+  toast.info("Generating invoice...")
+  generateInvoice(order.uid, {
+    onSuccess: (response) => {
+      const invoiceUrl = response.data?.data.url as string | undefined
+      if (invoiceUrl && navigator.share) {
+        navigator
+          .share({
+            title: `Invoice for Order #${order.order_number}`,
+            text: `Invoice for order #${order.order_number}`,
+            url: invoiceUrl,
+          })
+          .catch(() => {
+            navigator.clipboard.writeText(invoiceUrl).then(() => {
+              toast.info("Invoice link copied to clipboard!")
+            })
+          })
+      } else if (invoiceUrl) {
+        navigator.clipboard.writeText(invoiceUrl).then(() => {
+          toast.info("Invoice link copied to clipboard!")
+        })
+      }
+      toast.success("Invoice generated successfully!")
+    },
+    onError: displayError,
+  })
 }
 
 const handleVoidDelete = ({ action, reason }: { action: string; reason: string }) => {
@@ -324,7 +367,20 @@ const handleVoidDelete = ({ action, reason }: { action: string; reason: string }
   }
 }
 
+const handleMarkAsPaid = () => {
+  markAsPaid(selectedOrder.value?.uid || "", {
+    onSuccess: () => {
+      toast.success("Order marked as paid successfully")
+      openMarkPaid.value = false
+      handleRefresh()
+    },
+    onError: displayError,
+  })
+}
+
 const route = useRoute()
+
+const router = useRouter()
 
 // Watch for route query to open create modal/drawer
 watch(
@@ -337,20 +393,38 @@ watch(
   { immediate: true },
 )
 
+// Watch for order_id query param to auto-open order details (from row click or notifications)
+watch(
+  [() => route.query.order_id, () => orders.value],
+  ([orderId, ordersData]) => {
+    if (orderId && typeof orderId === "string" && ordersData?.results?.length) {
+      const order = ordersData.results.find((o: TOrder) => o.uid === orderId)
+      if (order) {
+        selectedOrder.value = order
+        openDetails.value = true
+      }
+    }
+  },
+  { immediate: true },
+)
+
 const handleAction = (action: string, order: TOrder) => {
   selectedOrder.value = order
   switch (action) {
     case "click":
-      openDetails.value = true
+      router.replace({ query: { ...route.query, order_id: order.uid } })
       break
     case "view-memos":
       openMemo.value = true
+      break
+    case "mark-as-paid":
+      openMarkPaid.value = true
       break
     case "share-receipt":
       handleShareReceipt(order)
       break
     case "share-invoice":
-      handleShareInvoice()
+      handleShareInvoice(order)
       break
     case "share-payment-link":
       handleSharePaymentLink(order)
@@ -383,7 +457,7 @@ const handleDetailsShareReceipt = () => {
 
 const handleDetailsShareInvoice = () => {
   openDetails.value = false
-  handleShareInvoice()
+  if (selectedOrder.value) handleShareInvoice(selectedOrder.value)
 }
 
 const handleDetailsSharePaymentLink = () => {
@@ -409,6 +483,11 @@ const handleDetailsVoidOrder = () => {
 const handleDetailsDeleteOrder = () => {
   openDetails.value = false
   openDelete.value = true
+}
+
+const handleDetailsMarkAsPaid = () => {
+  openDetails.value = false
+  openMarkPaid.value = true
 }
 </script>
 
@@ -506,8 +585,7 @@ const handleDetailsDeleteOrder = () => {
           @pagination-change="(d) => (page = d.currentPage)"
           @row-click="
             (row) => {
-              selectedOrder = row
-              openDetails = true
+              router.replace({ query: { ...route.query, order_id: row.uid } })
             }
           "
         >
@@ -562,6 +640,7 @@ const handleDetailsDeleteOrder = () => {
               :order="item"
               @click="handleAction('click', item)"
               @view-memos="handleAction('view-memos', item)"
+              @mark-as-paid="handleAction('mark-as-paid', item)"
               @share-receipt="handleAction('share-receipt', item)"
               @share-invoice="handleAction('share-invoice', item)"
               @share-payment-link="handleAction('share-payment-link', item)"
@@ -584,6 +663,17 @@ const handleDetailsDeleteOrder = () => {
       :order="selectedOrder"
       @close="onCloseVoidDel"
       @action="handleVoidDelete"
+    />
+
+    <ConfirmationModal
+      v-if="selectedOrder"
+      v-model="openMarkPaid"
+      header="Mark Order as Paid"
+      :paragraph="`Are you sure you want to mark order #${selectedOrder.order_number} as fully paid? This will update the payment status to 'Paid'.`"
+      action-label="Mark as Paid"
+      variant="success"
+      :loading="isMarkingPaid"
+      @confirm="handleMarkAsPaid"
     />
 
     <CreateOrderDrawer
@@ -624,8 +714,14 @@ const handleDetailsDeleteOrder = () => {
       v-if="selectedOrder"
       :open="openDetails"
       :order="selectedOrder"
-      @close="openDetails = false"
+      @close="
+        () => {
+          openDetails = false
+          router.replace({ query: { ...route.query, order_id: undefined } })
+        }
+      "
       @view-memos="handleDetailsViewMemos"
+      @mark-as-paid="handleDetailsMarkAsPaid"
       @share-receipt="handleDetailsShareReceipt"
       @share-invoice="handleDetailsShareInvoice"
       @share-payment-link="handleDetailsSharePaymentLink"

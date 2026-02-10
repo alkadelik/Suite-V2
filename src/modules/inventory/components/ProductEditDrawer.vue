@@ -21,7 +21,7 @@
           :has-variants="hasVariants"
           :disable-variants-toggle="true"
           @update:has-variants="hasVariants = $event"
-          @add-category="emit('add-category')"
+          @add-category="showAddCategoryModal = true"
         />
 
         <!-- Variant Details Mode - Edit price and dimensions for one variant -->
@@ -30,6 +30,7 @@
           v-model="variants"
           :product-name="form.name"
           :hide-stock="true"
+          :disable-cost-price="true"
         />
 
         <!-- Images Edit Mode - Edit product images only -->
@@ -73,7 +74,7 @@
             :has-variants="hasVariants"
             :disable-variants-toggle="true"
             @update:has-variants="hasVariants = $event"
-            @add-category="emit('add-category')"
+            @add-category="showAddCategoryModal = true"
           />
 
           <!-- Step 2: Variants Configuration (only if hasVariants is true) -->
@@ -88,6 +89,7 @@
             v-model="variants"
             :product-name="form.name"
             :deleted-variants="deletedVariants"
+            :disable-cost-price="true"
           />
 
           <!-- Step 3/4: Product Images -->
@@ -145,6 +147,12 @@
         </div>
       </div>
     </template>
+
+    <AddCategoryModal
+      v-model="showAddCategoryModal"
+      :teleport="false"
+      @success="handleCategoryCreated"
+    />
   </Drawer>
 </template>
 
@@ -165,6 +173,7 @@ import ProductDetailsForm from "./ProductForm/ProductDetailsForm.vue"
 import ProductManageCombinationsForm from "./ProductForm/ProductManageCombinationsForm.vue"
 import ProductImagesForm from "./ProductForm/ProductImagesForm.vue"
 import ProductVariantsForm from "./ProductForm/ProductVariantsForm.vue"
+import AddCategoryModal from "./AddCategoryModal.vue"
 import {
   useUpdateProduct,
   useUpdateVariant,
@@ -181,6 +190,7 @@ import {
 import baseApi from "@/composables/baseApi"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
+import { htmlToMarkdown, markdownToHtml } from "@/utils/html-to-markdown"
 import { useQueryClient } from "@tanstack/vue-query"
 import ProductEditSkeleton from "./skeletons/ProductEditSkeleton.vue"
 
@@ -235,6 +245,8 @@ const queryClient = useQueryClient()
 const productDetailsRef = ref<{
   setCategory: (category: { label: string; value: string }) => void
 } | null>(null)
+
+const showAddCategoryModal = ref(false)
 
 // API mutations
 const { mutate: updateProduct, isPending: isUpdating } = useUpdateProduct()
@@ -510,7 +522,7 @@ watch(
 
       populateFormState({
         name: product.name || "",
-        description: product.description || "",
+        description: markdownToHtml(product.description || ""),
         story: product.story || "",
         brand: product.brand || "",
         requires_approval: product.requires_approval || false,
@@ -670,7 +682,7 @@ const handleSubmit = async () => {
   if (props.editMode === "product-details") {
     const payload: IProductDetailsUpdatePayload = {
       name: form.name,
-      description: form.description,
+      description: htmlToMarkdown(form.description),
       story: form.story || "",
       category: form.category?.value as string,
       brand: form.brand || "",
@@ -1052,7 +1064,7 @@ const handleSubmit = async () => {
     // Handle Full Edit Mode (original logic)
     const payload: IProductFormPayload = {
       name: form.name,
-      description: form.description,
+      description: htmlToMarkdown(form.description),
       story: form.story || "",
       category: form.category?.value as string,
       brand: form.brand || "",
@@ -1243,6 +1255,18 @@ const handleBack = () => {
   }
 
   previousStep()
+}
+
+/**
+ * Handle category creation from AddCategoryModal
+ * Sets the category in the ProductDetailsForm
+ */
+const handleCategoryCreated = (category: { label: string; value: string }) => {
+  showAddCategoryModal.value = false
+
+  if (productDetailsRef.value) {
+    productDetailsRef.value.setCategory(category)
+  }
 }
 
 /**

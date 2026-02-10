@@ -68,11 +68,12 @@ export function useCreateLocation() {
 }
 
 /** Fetch all store locations */
-export function useGetLocations() {
+export function useGetLocations(enabled = true) {
   return useApiQuery<TPaginatedResponse<TLocation>["data"]>({
     url: "/stores/locations/",
     key: "store-locations",
     selectData: true,
+    enabled,
   })
 }
 

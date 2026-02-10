@@ -144,6 +144,7 @@ import Chip from "@components/Chip.vue"
 import { formatDate } from "../utils/dateFormatter"
 import OrderCard from "@/modules/orders/components/OrderCard.vue"
 import CustomerDetailsSkeleton from "./skeletons/CustomerDetailsSkeleton.vue"
+import { orderSourceMap } from "../constants"
 
 interface Props {
   modelValue: boolean
@@ -236,7 +237,7 @@ const enrichedOrders = computed(() => {
     customer_name: customer.value?.full_name,
     fulfilment_method: "pickup" as const, // Default to pickup if not specified
     subtotal: order.total_amount, // Use total_amount as subtotal if not provided
-    source: order.source === "internal" ? "internal" : "external", // Map source values
+    source: orderSourceMap[order.source] || order.source, // Map source values
   }))
 })
 </script>

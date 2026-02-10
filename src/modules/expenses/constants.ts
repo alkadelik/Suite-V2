@@ -58,3 +58,11 @@ export const EXPENSE_CATEGORY_ICON: Record<string, string> = {
   Tax: "receipt-text",
   Shipping: "truck-fast",
 }
+
+export const isTaxLikeSubcategory = (value?: string | null) => {
+  if (!value) return false
+  const normalized = value.toLowerCase()
+  if (normalized.includes("tax")) return "VAT"
+  if (normalized.includes("vat")) return "VAT"
+  if (normalized.includes("shipping")) return "Shipping"
+}

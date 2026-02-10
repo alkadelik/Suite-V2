@@ -5,6 +5,10 @@ import { computed, ref } from "vue"
 import componentPng from "@/assets/images/components.png"
 import ingredientPng from "@/assets/images/ingredients.png"
 import materialPng from "@/assets/images/materials.png"
+import { useUpdateStoreDetails } from "@modules/settings/api"
+import { displayError } from "@/utils/error-handler"
+import { useSettingsStore } from "@modules/settings/store"
+import { toast } from "@/composables/useToast"
 
 const emit = defineEmits(["select"])
 
@@ -25,7 +29,7 @@ const componentOptions = [
   },
   {
     label: "Raw Materials",
-    value: "materials",
+    value: "raw-materials",
     desc: "Common for manufacturing & retail",
     examples: "e.g. fabric, plastic bottles, packaging",
     class: "border-blue-200 bg-blue-50",
@@ -40,6 +44,24 @@ const componentOptions = [
     image: componentPng,
   },
 ]
+
+const { mutate: updateStore, isPending } = useUpdateStoreDetails()
+const storeId = computed(() => useSettingsStore().storeDetails?.uid || "")
+
+const handleSelect = () => {
+  const selected = { label: selectedOptionLabel.value, value: selectedOption.value! }
+  updateStore(
+    { id: storeId.value, body: { raw_materials: selected.value } },
+    {
+      onSuccess: (res) => {
+        toast.success("Name saved successfully")
+        console.log("res", res)
+        emit("select", selected)
+      },
+      onError: displayError,
+    },
+  )
+}
 </script>
 
 <template>
@@ -109,7 +131,9 @@ const componentOptions = [
       :disabled="!selectedOption"
       class="w-full md:w-max md:min-w-80"
       size="lg"
-      @click="emit('select', { label: selectedOptionLabel, value: selectedOption })"
+      :loading="isPending"
+      loading-text="Saving..."
+      @click="handleSelect"
     />
   </div>
 </template>

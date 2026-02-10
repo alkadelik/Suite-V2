@@ -1,5 +1,6 @@
 import { ICustomer } from "./types"
 import { TableColumn } from "@components/DataTable.vue"
+import { formatDate } from "./utils/dateFormatter"
 
 export const CUSTOMER_COLUMNS: TableColumn<ICustomer>[] = [
   { header: "Name", accessor: "name" },
@@ -23,6 +24,11 @@ export const CUSTOMER_COLUMNS: TableColumn<ICustomer>[] = [
     accessor: "total_orders",
     class: "pl-8",
   },
+  {
+    header: "Date Created",
+    accessor: "created_at",
+    cell: ({ value }) => formatDate(value as string),
+  },
   { header: "", accessor: "action" },
 ]
 
@@ -44,3 +50,10 @@ export const EXPORT_PERIOD_OPTIONS = [
   { label: "Last 90 days", value: "last_90_days" },
   { label: "Custom", value: "custom" },
 ]
+
+export const orderSourceMap: Record<string, string> = {
+  internal: "Internal",
+  storefront: "Storefront",
+  popup_storefront: "Popup",
+  popup_internal: "Popup Internal",
+}

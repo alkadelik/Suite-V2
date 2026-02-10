@@ -19,9 +19,9 @@
       <div
         :class="[
           'flex h-full flex-1 flex-col overflow-hidden transition-all duration-200',
-          'pb-16 lg:pb-2',
           showAppHeader || isInner ? 'pt-14' : 'pt-20',
           sidebarPadding,
+          isMobile && !showAppHeader && isInner ? 'pb-0' : 'pb-16 lg:pb-2',
         ]"
       >
         <!-- Topbar -->
@@ -40,7 +40,9 @@
 
         <!-- Bottom navigation for mobile -->
         <nav
-          v-if="isMobile"
+          v-if="
+            (isMobile && !showAppHeader && !isInner) || (isMobile && $route.path === '/dashboard')
+          "
           class="fixed right-0 bottom-0 left-0 max-h-16 border-t border-gray-200 bg-white"
           :class="openMore || openActions ? 'z-[1500]' : 'z-30'"
         >
@@ -183,10 +185,12 @@ const showNotification = ref(false)
 const { data: notificationsData, refetch: refetchNotifications } = useGetNotifications()
 const { mutate: markAsRead } = useMarkNotificationAsRead()
 
-// Filter for unread "general" type notifications
+// Filter for unread "general" or "system" type notifications
 const generalNotifications = computed<INotification[]>(() => {
   if (!notificationsData.value?.notifications) return []
-  return notificationsData.value.notifications.filter((n) => n.type === "general" && !n.is_read)
+  return notificationsData.value.notifications.filter(
+    (n) => (n.type === "general" || n.type === "system") && !n.is_read,
+  )
 })
 
 // Show notification modal when there are unread general notifications
