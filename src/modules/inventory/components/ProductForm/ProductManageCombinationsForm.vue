@@ -294,7 +294,7 @@ import TextField from "@/components/form/TextField.vue"
 import SelectField from "@/components/form/SelectField.vue"
 import Chip from "@/components/Chip.vue"
 import InfoBox from "@/components/InfoBox.vue"
-import { PRODUCT_DIMENSIONS, WEIGHT_ATTRIBUTE_UID } from "../../constants"
+import { PRODUCT_DIMENSIONS, WEIGHT_ATTRIBUTE_UIDS } from "../../constants"
 import { IProductDimension } from "@modules/inventory/types"
 import { IProductVariant, IProductVariantDetails } from "../../types"
 import { useWeightBasedDimensions } from "../../composables/useWeightBasedDimensions"
@@ -404,7 +404,7 @@ const variants = computed(() => props.modelValue || [])
 const hasWeightAttributeInVariants = computed(() => {
   if (!props.modelValue || props.modelValue.length === 0) return false
 
-  const hasWeight = hasWeightAttribute(props.modelValue, WEIGHT_ATTRIBUTE_UID)
+  const hasWeight = hasWeightAttribute(props.modelValue, WEIGHT_ATTRIBUTE_UIDS)
   return hasWeight
 })
 

@@ -15,7 +15,7 @@
     </div>
 
     <EmptyState
-      v-if="!isLoading && customers.length === 0"
+      v-if="!isLoading && customers.length === 0 && !debouncedSearch"
       title="No customers found"
       description="Add your first customer to start managing them."
       action-label="Add Customer"
