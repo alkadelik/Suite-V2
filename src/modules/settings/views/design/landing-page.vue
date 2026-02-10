@@ -252,7 +252,7 @@
       <!-- Right Content - Desktop -->
       <div class="hidden flex-1 md:block">
         <HeroSettings
-          v-if="activeSection === 'hero'"
+          v-if="activeSection === 'hero' || activeSection === 'hero_carousel'"
           :hero-section="heroSection"
           @change-section="changeSection"
           @refetch="refetch"
@@ -356,7 +356,7 @@ const isHiding = ref(false)
 // Get all sections from landing page data
 const heroSection = computed(() => {
   if (!landingPageData.value?.results) return null
-  return landingPageData.value.results.find((section) => section.section_type === "hero")
+  return landingPageData.value.results.find((section) => section.section_type === "hero_carousel")
 })
 
 const aboutSection = computed(() => {
@@ -406,6 +406,7 @@ const validateSectionRequiredFields = (
 
   switch (sectionId) {
     case "hero":
+    case "hero_carousel":
       // Hero has fallbacks for title and image, so it's always valid
       return { isValid: true, missing: [] }
 
@@ -521,6 +522,7 @@ const confirmHideSection = (): void => {
 // Icon mapping for different section types
 const sectionIconMap: Record<string, string> = {
   hero: "star",
+  hero_carousel: "star",
   featured_products: "bag-2",
   about: "information",
   cta_block_1: "announcements",
@@ -544,7 +546,9 @@ const allDesignItems = ref<DesignItem[]>([])
 
 // Separate hero from other items
 const heroItem = computed(() => {
-  return allDesignItems.value.find((item) => item.id === "hero") || null
+  return (
+    allDesignItems.value.find((item) => item.id === "hero_carousel" || item.id === "hero") || null
+  )
 })
 
 const draggableItems = ref<DesignItem[]>([])
@@ -584,7 +588,9 @@ watch(
         .sort((a, b) => a.order - b.order)
 
       // Separate hero from draggable items
-      let filteredItems = allDesignItems.value.filter((item) => item.id !== "hero")
+      let filteredItems = allDesignItems.value.filter(
+        (item) => item.id !== "hero" && item.id !== "hero_carousel",
+      )
 
       // If reordering is disabled, enforce a fixed display order for backward compatibility
       if (!REORDERING_ENABLED) {

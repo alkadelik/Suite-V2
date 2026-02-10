@@ -218,6 +218,7 @@ export interface IThemeSettings {
 
 export type SectionType =
   | "hero"
+  | "hero_carousel"
   | "about"
   | "featured_products"
   | "cta_block_1"
@@ -253,7 +254,7 @@ export interface ThemeSection {
   created_at: string
   updated_at: string
   //
-  hero_slides?: {
+  hero_carousel_items?: {
     uid: string
     image?: string
     video?: string

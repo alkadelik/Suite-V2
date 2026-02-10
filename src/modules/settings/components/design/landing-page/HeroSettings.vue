@@ -169,7 +169,7 @@ watch(
   (newSection) => {
     if (newSection) {
       const mappedSlides =
-        newSection.hero_slides?.map((slide) => ({
+        newSection.hero_carousel_items?.map((slide) => ({
           id: slide.uid,
           title: slide.title || "",
           subtitle: slide.subtitle || "",
@@ -288,7 +288,7 @@ const saveSection = () => {
   // Add all slides
   slides.forEach((slide, index) => {
     const isExistingSlide = !slide.id.startsWith("slide_")
-    const prefix = `slides[${index}]`
+    const prefix = `hero_carousel[${index}]`
 
     if (isExistingSlide) {
       formData.append(`${prefix}[id]`, slide.id)

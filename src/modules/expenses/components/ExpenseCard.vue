@@ -28,7 +28,7 @@ const props = withDefaults(
   },
 )
 
-const emit = defineEmits(["click", "toggle", "edit", "delete", "void"])
+const emit = defineEmits(["click", "toggle", "edit", "delete", "void", "markPaid"])
 
 const menuItems = computed(() => {
   return props.customActions?.length
@@ -44,6 +44,18 @@ const menuItems = computed(() => {
               },
               { divider: true },
             ]),
+        ...(props.expense.status !== "paid"
+          ? [
+              {
+                label: "Mark as paid",
+                icon: "tick-circle",
+                class: "text-green-600 hover:bg-green-50",
+                iconClass: "text-green-600",
+                action: () => emit("markPaid"),
+              },
+              { divider: true },
+            ]
+          : []),
         {
           label: "Void expense",
           icon: "close-circle",
