@@ -103,7 +103,12 @@ const deliveryPaymentLabel = computed(() => {
   const option = DELIVERY_PAYMENT_OPTION.find(
     (opt) => opt.value === props.shippingInfo.delivery_payment_option,
   )
-  return option ? option.label : "N/A"
+  if (!option) return "N/A"
+
+  const isFulfilled = props.shippingInfo.fulfilment_status === "fulfilled"
+  return isFulfilled
+    ? option.label.replace("pays", "paid").replace("Shipping", "shipping")
+    : option.label
 })
 </script>
 

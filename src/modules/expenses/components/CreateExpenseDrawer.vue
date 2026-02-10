@@ -2,6 +2,7 @@
 import AppButton from "@components/AppButton.vue"
 import Drawer from "@components/Drawer.vue"
 import FormField from "@components/form/FormField.vue"
+import RadioInputField from "@components/form/RadioInputField.vue"
 import SelectField from "@components/form/SelectField.vue"
 import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
@@ -107,6 +108,7 @@ interface FormValues {
   sub_category: { label: string; value: string }
   vendor: { label: string; value: string }
   date: string
+  status: string
   notes: string
   receipt: File | null
 }
@@ -140,6 +142,7 @@ const { handleSubmit, meta, resetForm, values, setFieldValue } = useForm<FormVal
         .nullable()
         .optional(),
       date: yup.string().required("Expense date is required"),
+      status: yup.string().required("Status is required").oneOf(["pending", "unpaid", "paid"]),
       notes: yup.string().optional(),
       receipt: yup.mixed().nullable().optional(),
     }),
@@ -151,6 +154,7 @@ const { handleSubmit, meta, resetForm, values, setFieldValue } = useForm<FormVal
     sub_category: { label: "", value: "" },
     vendor: { label: "", value: "" },
     date: new Date().toISOString().split("T")[0],
+    status: "pending",
     notes: "",
     receipt: null,
   },
@@ -213,6 +217,7 @@ const onSubmit = handleSubmit((values) => {
     formData.append("category", values.category.value)
     formData.append("sub_category", values.sub_category?.value || "")
     formData.append("date", values.date)
+    formData.append("status", values.status)
     formData.append("vendor", values.vendor.value || "")
     formData.append("notes", values.notes || "")
     if (values.receipt) {
@@ -239,6 +244,7 @@ const onSubmit = handleSubmit((values) => {
     formData.append("category", values.category.value)
     formData.append("sub_category", values.sub_category?.value || "")
     formData.append("date", values.date)
+    formData.append("status", values.status)
     formData.append("vendor", values.vendor.value || "")
     formData.append("notes", values.notes || "")
     if (values.receipt) {
@@ -283,6 +289,7 @@ watch(
               ? { label: props.expense.vendor_name || "", value: props.expense.vendor }
               : { label: "", value: "" },
             date: props.expense.date,
+            status: props.expense.status || "pending",
             notes: props.expense.notes || "",
             receipt: null,
           },
@@ -292,6 +299,10 @@ watch(
         resetForm()
         selectedCategory.value = { label: "", value: "" }
       }
+    } else {
+      // Clear form when drawer closes
+      resetForm()
+      selectedCategory.value = { label: "", value: "" }
     }
   },
 )
@@ -401,6 +412,23 @@ watch(
           placeholder="Select expense date"
           required
         />
+      </div>
+
+      <div class="sm:col-span-2">
+        <Field v-slot="{ field, errors: fieldErrors, handleChange }" name="status">
+          <RadioInputField
+            :model-value="field.value"
+            label="Status"
+            :options="[
+              { label: 'Pending', value: 'pending' },
+              { label: 'Unpaid', value: 'unpaid' },
+              { label: 'Paid', value: 'paid' },
+            ]"
+            :error="fieldErrors[0]"
+            required
+            @update:model-value="handleChange"
+          />
+        </Field>
       </div>
 
       <div class="sm:col-span-2">

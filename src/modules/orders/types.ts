@@ -213,3 +213,16 @@ export interface OrderDashboardStats {
     fulfilled_count_pct: number
   }
 }
+
+export type TShipment = {
+  uid: string
+  customer_name: string
+  courier: {
+    name: string
+    image_url: string
+  }
+  delivery_fee: number
+  pickup_date: string
+  delivery_date: string
+  status: "in_transit" | "delivered" | "cancelled" | "awaiting_pickup"
+}

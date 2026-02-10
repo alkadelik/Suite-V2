@@ -212,10 +212,14 @@ const vatAmount = computed(() => {
 })
 
 const totalAmount = computed(() => {
+  const deliveryFee =
+    shippingInfo.value.fulfilment_method === "delivery"
+      ? Number(shippingInfo.value.delivery_fee)
+      : 0
   return (
     productsTotal.value +
     Number(vatAmount.value) +
-    Number(shippingInfo.value.delivery_fee) -
+    deliveryFee -
     Number(paymentInfo.value.discount_amount)
   )
 })
@@ -488,7 +492,9 @@ watch(
           v-if="step === 4"
           v-model:paymentInfo="paymentInfo"
           :productsTotal="productsTotal"
-          :deliveryFee="shippingInfo.delivery_fee"
+          :deliveryFee="
+            shippingInfo.fulfilment_method === 'delivery' ? shippingInfo.delivery_fee : 0
+          "
           :vatAmount="vatAmount"
           :totalAmount="totalAmount"
           :itemsCount="itemsCount"
@@ -504,7 +510,9 @@ watch(
           :shippingInfo="shippingInfo"
           :paymentInfo="paymentInfo"
           :productsTotal="productsTotal"
-          :deliveryFee="shippingInfo.delivery_fee"
+          :deliveryFee="
+            shippingInfo.fulfilment_method === 'delivery' ? shippingInfo.delivery_fee : 0
+          "
           :vatAmount="vatAmount"
           :totalAmount="totalAmount"
           :loading="isPending"

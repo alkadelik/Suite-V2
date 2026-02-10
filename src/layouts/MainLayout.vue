@@ -1,100 +1,102 @@
 <template>
   <div class="bg-white lg:bg-gray-50">
-    <!-- Mobile overlay -->
-    <!-- <div
+    <Container>
+      <!-- Mobile overlay -->
+      <!-- <div
         v-if="isMobile && mobileSidebarOpen"
         class="fixed inset-0 z-30 bg-black/40 lg:hidden"
         @click="mobileSidebarOpen = false"
       /> -->
 
-    <div class="flex h-[100dvh] overflow-hidden lg:h-screen">
-      <!-- Sidebar -->
-      <AppSidebar
-        :mobile-sidebar-open="mobileSidebarOpen"
-        @logout="logout = true"
-        @upgrade="setPlanUpgradeModal(true)"
-      />
-
-      <!-- Main column -->
-      <div
-        :class="[
-          'flex h-full flex-1 flex-col overflow-hidden transition-all duration-200',
-          showAppHeader || isInner ? 'pt-14' : 'pt-20',
-          sidebarPadding,
-          isMobile && !showAppHeader && isInner ? 'pb-0' : 'pb-16 lg:pb-2',
-        ]"
-      >
-        <!-- Topbar -->
-        <AppHeader
-          v-if="showAppHeader"
-          :show-logo="isMobile"
-          :isLive="isLive"
+      <div class="flex h-[100dvh] overflow-hidden lg:h-screen">
+        <!-- Sidebar -->
+        <AppSidebar
+          :mobile-sidebar-open="mobileSidebarOpen"
           @logout="logout = true"
+          @upgrade="setPlanUpgradeModal(true)"
         />
 
-        <!-- Content -->
-        <main class="h-[calc(100dvh-4rem)] overflow-y-auto lg:h-[calc(100vh-4rem)]">
-          <StorefrontNotLiveBanner />
-          <router-view />
-        </main>
-
-        <!-- Bottom navigation for mobile -->
-        <nav
-          v-if="
-            (isMobile && !showAppHeader && !isInner) || (isMobile && $route.path === '/dashboard')
-          "
-          class="fixed right-0 bottom-0 left-0 max-h-16 border-t border-gray-200 bg-white"
-          :class="openMore || openActions ? 'z-[1500]' : 'z-30'"
+        <!-- Main column -->
+        <div
+          :class="[
+            'flex h-full flex-1 flex-col overflow-hidden transition-all duration-200',
+            showAppHeader || isInner ? 'pt-14' : 'pt-20',
+            sidebarPadding,
+            isMobile && !showAppHeader && isInner ? 'pb-0' : 'pb-16 lg:pb-2',
+          ]"
         >
-          <div class="flex items-center justify-around px-2 py-2">
-            <SidebarLink icon="house" label="Home" to="/dashboard" @click="openMore = false" />
-            <SidebarLink
-              v-for="link in MENU_ITEMS.slice(0, 1)"
-              :key="link.label"
-              v-bind="link"
-              @click="openMore = false"
-            />
-            <AppButton
-              size="sm"
-              class="!ring-primary-200 !rounded-full !ring-4"
-              icon="add-circle"
-              @click="
-                () => {
-                  openMore = false
-                  openActions = !openActions
-                }
-              "
-            />
-            <SidebarLink
-              v-for="link in MENU_ITEMS.slice(1, 2)"
-              :key="link.label"
-              v-bind="link"
-              @click="openMore = false"
-            />
-            <SidebarLink
-              label="More"
-              icon="more"
-              :class="openMore ? '!text-primary-700' : ''"
-              @click="openMore = !openMore"
-            />
-          </div>
-        </nav>
+          <!-- Topbar -->
+          <AppHeader
+            v-if="showAppHeader"
+            :show-logo="isMobile"
+            :isLive="isLive"
+            @logout="logout = true"
+          />
 
-        <!-- FAB -->
-        <div v-if="!isMobile" class="fixed right-4 bottom-4 z-[50] hidden lg:inline-block">
-          <DropdownMenu :items="actionMenuItems">
-            <template #trigger="{ open }">
-              <AppButton
-                size="md"
-                :class="['!ring-primary-200 !rounded-full !ring-4']"
-                :icon="open ? 'x-close' : 'add-circle'"
-                :label="!open ? 'Add New' : ''"
+          <!-- Content -->
+          <main class="h-[calc(100dvh-4rem)] overflow-y-auto lg:h-[calc(100vh-4rem)]">
+            <StorefrontNotLiveBanner />
+            <router-view />
+          </main>
+
+          <!-- Bottom navigation for mobile -->
+          <nav
+            v-if="
+              (isMobile && !showAppHeader && !isInner) || (isMobile && $route.path === '/dashboard')
+            "
+            class="fixed right-0 bottom-0 left-0 max-h-16 border-t border-gray-200 bg-white"
+            :class="openMore || openActions ? 'z-[1500]' : 'z-30'"
+          >
+            <div class="flex items-center justify-around px-2 py-2">
+              <SidebarLink icon="house" label="Home" to="/dashboard" @click="openMore = false" />
+              <SidebarLink
+                v-for="link in MENU_ITEMS.slice(0, 1)"
+                :key="link.label"
+                v-bind="link"
+                @click="openMore = false"
               />
-            </template>
-          </DropdownMenu>
+              <AppButton
+                size="sm"
+                class="!ring-primary-200 !rounded-full !ring-4"
+                icon="add-circle"
+                @click="
+                  () => {
+                    openMore = false
+                    openActions = !openActions
+                  }
+                "
+              />
+              <SidebarLink
+                v-for="link in MENU_ITEMS.slice(1, 2)"
+                :key="link.label"
+                v-bind="link"
+                @click="openMore = false"
+              />
+              <SidebarLink
+                label="More"
+                icon="more"
+                :class="openMore ? '!text-primary-700' : ''"
+                @click="openMore = !openMore"
+              />
+            </div>
+          </nav>
+
+          <!-- FAB -->
+          <div v-if="!isMobile" class="fixed right-4 bottom-4 z-[50] hidden lg:inline-block">
+            <DropdownMenu :items="actionMenuItems">
+              <template #trigger="{ open }">
+                <AppButton
+                  size="md"
+                  :class="['!ring-primary-200 !rounded-full !ring-4']"
+                  :icon="open ? 'x-close' : 'add-circle'"
+                  :label="!open ? 'Add New' : ''"
+                />
+              </template>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
-    </div>
+    </Container>
   </div>
   <!--  -->
   <LogoutModal :open="logout" @close="logout = false" />
@@ -173,6 +175,7 @@ import {
   useMarkNotificationAsRead,
 } from "@modules/shared/api"
 import type { INotification } from "@modules/shared/types"
+import Container from "@components/Container.vue"
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
 const mobileSidebarOpen = ref(false)

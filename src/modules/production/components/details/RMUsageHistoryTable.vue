@@ -5,18 +5,20 @@ import Chip from "@components/Chip.vue"
 import DataTable from "@components/DataTable.vue"
 import Drawer from "@components/Drawer.vue"
 import Modal from "@components/Modal.vue"
-import { MOCK_USAGE_HISTORY, USAGE_HISTORY_COLUMN } from "@modules/production/constants"
-import { TUsageHistory } from "@modules/production/types"
+import { USAGE_HISTORY_COLUMN } from "@modules/production/constants"
+import { TMovement, TRawMaterial } from "@modules/production/types"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, ref } from "vue"
 import RMTableCard from "./RMTableCard.vue"
 
+const props = defineProps<{ usage: TMovement[]; material: TRawMaterial }>()
+
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 
 const openDetails = ref(false)
-const selectedHistory = ref<TUsageHistory | null>(null)
+const selectedHistory = ref<TMovement | null>(null)
 
-const onRowClick = (batch: TUsageHistory) => {
+const onRowClick = (batch: TMovement) => {
   selectedHistory.value = batch
   openDetails.value = true
 }
@@ -26,7 +28,7 @@ const onRowClick = (batch: TUsageHistory) => {
   <div>
     <div class="space-y-4 overflow-hidden rounded-xl border-gray-200 md:border md:bg-white">
       <DataTable
-        :data="MOCK_USAGE_HISTORY ?? []"
+        :data="props.usage ?? []"
         :columns="USAGE_HISTORY_COLUMN"
         :loading="false"
         :enable-row-selection="false"
@@ -37,36 +39,48 @@ const onRowClick = (batch: TUsageHistory) => {
         :show-pagination="false"
         @row-click="onRowClick"
       >
+        <template #cell:quantity="{ item }">
+          {{ Number(item.quantity).toLocaleString() }} {{ props.material?.unit }}
+        </template>
         <template #cell:reason="{ item }">
           <Chip :label="item.reason" color="blue" />
         </template>
-        <template #cell:type="{ item }">
+        <template #cell:movement_type="{ item }">
           <Chip
-            :label="item.type"
-            :color="item.type === 'IN' ? 'success' : 'error'"
+            :label="item.movement_type"
+            :color="item.movement_type === 'add' ? 'success' : 'error'"
             radius="md"
-            :icon="item.type === 'IN' ? 'arrow-up' : 'arrow-down'"
+            class="capitalize"
+            :icon="item.movement_type === 'add' ? 'arrow-up' : 'arrow-down'"
           />
         </template>
+
         <template #mobile="{ item }">
           <RMTableCard :title="formatDate(new Date())">
             <template #append>
               <Chip
-                :label="item.type === 'IN' ? 'Add' : 'Remove'"
-                :color="item.type === 'IN' ? 'success' : 'error'"
+                :label="item.movement_type"
+                :color="item.movement_type === 'add' ? 'success' : 'error'"
+                radius="md"
+                class="capitalize"
+                :icon="item.movement_type === 'add' ? 'arrow-up' : 'arrow-down'"
               />
             </template>
             <template #body>
               <div>
-                <p class="text-sm font-medium">500</p>
+                <p class="text-sm font-medium">
+                  {{ Number(item.quantity).toLocaleString() }} {{ props.material?.unit }}
+                </p>
                 <p class="text-core-600 text-xs">Quantity</p>
               </div>
               <div>
-                <p class="text-sm font-medium">{{ formatCurrency(4800) }} / kg</p>
+                <p class="text-sm font-medium">
+                  {{ formatCurrency(Number(item.unit_cost)) }} / {{ props.material?.unit }}
+                </p>
                 <p class="text-core-600 text-xs">Cost</p>
               </div>
               <div>
-                <p class="text-sm font-medium">Adanna O.</p>
+                <p class="text-sm font-medium">{{ "--" }}</p>
                 <p class="text-core-600 text-xs">Performed BY</p>
               </div>
             </template>
