@@ -1,32 +1,58 @@
+import { formatError } from "@/utils/error-handler"
 import { useAuthStore } from "@modules/auth/store"
-import { useMutation, useQuery } from "@tanstack/vue-query"
-import axios, { AxiosError, InternalAxiosRequestConfig } from "axios"
+import { useQuery } from "@tanstack/vue-query"
+import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from "axios"
+import { toast } from "./useToast"
+import { useSettingsStore } from "@modules/settings/store"
+import { toValue, MaybeRefOrGetter, computed } from "vue"
+import * as Sentry from "@sentry/vue"
 
-const baseURL = (import.meta.env.VITE_API_BASE_URL as string) || ""
+const baseURL = import.meta.env.VITE_API_BASE_URL as string
 
 const baseApi = axios.create({
-  baseURL,
+  baseURL: baseURL + "/api/v2",
   headers: { "Content-Type": "application/json" },
 })
 
 baseApi.interceptors.request.use((config) => {
-  //user
-  const { accessToken } = useAuthStore()
+  const { accessToken, user } = useAuthStore()
+  const { activeLocation } = useSettingsStore()
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`
   }
-  //   if (user && user.store_id) {
-  //     config.headers["X-Store-ID"] = user.store_id.toString()
-  //   }
+  if (user && user.store_uid !== "") {
+    config.headers["X-Store-Id"] = user.store_uid
+  }
+  if (user?.store_uid && activeLocation && activeLocation.uid !== "") {
+    config.headers["X-Location-Id"] = activeLocation?.uid || ""
+  }
   return config
 })
 
+// Singleton promise to prevent multiple simultaneous refresh attempts
+let refreshTokenPromise: Promise<string> | null = null
+
 const refreshToken = async (): Promise<string> => {
-  const { refreshToken, setTokens } = useAuthStore()
-  const response = await baseApi.post("/auth/refresh", { refreshToken })
-  const { access, refresh } = response.data as { access: string; refresh: string }
-  setTokens({ accessToken: access, refreshToken: refresh })
-  return access
+  // If a refresh is already in progress, return that promise
+  if (refreshTokenPromise) {
+    return refreshTokenPromise
+  }
+
+  // Create a new refresh promise
+  refreshTokenPromise = (async () => {
+    try {
+      const { refreshToken, setTokens } = useAuthStore()
+      const { data } = await baseApi.post("/token/refresh/", { refresh: refreshToken }, { baseURL })
+      const { access, refresh } = data?.data as { access: string; refresh: string }
+      setTokens({ accessToken: access, refreshToken: refresh })
+      return access
+    } finally {
+      // Clear the promise when done (success or failure)
+      refreshTokenPromise = null
+    }
+  })()
+
+  return refreshTokenPromise
 }
 
 baseApi.interceptors.response.use(
@@ -40,9 +66,14 @@ baseApi.interceptors.response.use(
     }
     const originalRequest = error.config as CustomRequestConfig
 
+    const errorMsg = formatError(error)
+
     // Check if the error is a 401 and we haven't already retried this request
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      console.log("Access token expired. Attempting to refresh...")
+    if (
+      error.response?.status === 401 &&
+      errorMsg.includes("token not valid") &&
+      !originalRequest._retry
+    ) {
       // Mark this request as retried to prevent infinite loops
       originalRequest._retry = true
 
@@ -53,11 +84,22 @@ baseApi.interceptors.response.use(
         return baseApi(originalRequest)
       } catch (refreshError) {
         // If refresh fails, perform a logout or redirect
-        console.error("Token refresh failed:", refreshError)
-        window.location.href = "/login"
+        toast.error("Session expired. Please log in again.")
+        useAuthStore().logout(true)
         return Promise.reject(refreshError as Error)
       }
     }
+
+    // check if error is a Plan_Limit_Error
+    const errorData = error.response?.data as { error?: { error?: string } }
+    if (error.response?.status === 402 && errorData.error?.error === "PLAN_LIMIT_EXCEEDED") {
+      const { setPlanUpgradeModal } = useSettingsStore()
+      setPlanUpgradeModal(true)
+      return Promise.reject(error)
+    }
+
+    // Capture error with Sentry
+    Sentry.captureException(error, { tags: { section: "API" } })
 
     // For all other errors, just return the error
     return Promise.reject(error)
@@ -65,35 +107,51 @@ baseApi.interceptors.response.use(
 )
 
 export type TQueryArg = {
-  url: string
-  params?: Record<string, string | number | boolean>
-  enabled?: boolean
+  url: MaybeRefOrGetter<string>
+  params?: MaybeRefOrGetter<Record<string, string | number | boolean> | undefined>
+  enabled?: MaybeRefOrGetter<boolean>
+  key: MaybeRefOrGetter<string>
+  selectData?: boolean
+  refetchOnWindowFocus?: boolean
 }
-export const useApiQuery = <T>({ url, params, enabled }: TQueryArg) => {
+export const useApiQuery = <T>({
+  url,
+  params,
+  enabled,
+  key,
+  selectData,
+  refetchOnWindowFocus = false,
+}: TQueryArg) => {
   return useQuery<T>({
-    queryKey: ["apiData", params],
+    queryKey: computed(() => [toValue(key), toValue(params)]),
     queryFn: async () => {
-      const { data } = await baseApi.get<T>(url, { params })
+      // Use toValue to handle both reactive and non-reactive values
+      const urlValue = toValue(url)
+      const paramValue = toValue(params)
+      const { data } = await baseApi.get<T>(urlValue, paramValue ? { params: paramValue } : {})
       return data
     },
     retry: false,
-    refetchOnWindowFocus: false,
-    enabled,
+    refetchOnWindowFocus,
+    enabled: enabled !== undefined ? computed(() => toValue(enabled)) : undefined,
+    select: selectData
+      ? (response: T) => {
+          if (response && typeof response === "object" && "data" in response) {
+            return (response as Record<string, unknown>).data as T
+          }
+          return response
+        }
+      : undefined,
   })
 }
 
-export type TMutationArg = {
-  url: string
-  method?: "post" | "put" | "patch" | "delete" | "get"
-}
-export const useApiMutation = ({ url, method = "post" }: TMutationArg) => {
-  return useMutation({
-    mutationKey: ["apiMutation"],
-    mutationFn: async (body?: Record<string, string | number | boolean>) => {
-      const response = await baseApi[method](url, body)
-      return response
-    },
-  })
-}
+export type TApiPromise<T> = Promise<AxiosResponse<T>>
+
+export type TPaginatedResponse<T> = AxiosResponse<{
+  count: number
+  next: string | null
+  previous: string | null
+  results: T[]
+}>
 
 export default baseApi

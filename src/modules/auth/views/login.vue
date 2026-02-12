@@ -1,57 +1,62 @@
 <template>
-  <div class="text-core-800">
-    <div class="mb-10">
-      <h3 class="mb-3.5 text-3xl font-medium">Welcome back!</h3>
-      <p class="text-core-600">Good to see you again—pick up right where you left off.</p>
-    </div>
+  <div>
+    <SectionHeader
+      title="Welcome back!"
+      subtitle="Good to see you again—pick up right where you left off"
+      class="mb-10"
+    />
 
-    <Form
-      v-slot="{ meta }"
-      :validation-schema="validationSchema"
-      @submit="onSubmit"
-      @invalid-submit="onInvalidSubmit"
+    <a
+      href="http://legacy.leyyow.com/auth/signin"
+      class="mb-8 inline-block w-full"
+      target="_blank"
+      rel="noopener noreferrer"
     >
-      <div class="flex flex-col gap-8">
-        <Field v-slot="{ field, errors: fieldErrors }" name="email" validate-on-model-update>
-          <TextInput
-            v-bind="field"
-            type="email"
-            label="Email"
-            placeholder="example@gmail.com"
-            name="email"
-            required
-            :error="fieldErrors[0]"
-          />
-        </Field>
-
-        <Field v-slot="{ field, errors: fieldErrors }" name="password" validate-on-model-update>
-          <div>
-            <TextInput
-              v-bind="field"
-              type="password"
-              label="Password"
-              placeholder="Enter password"
-              name="password"
-              required
-              :error="fieldErrors[0]"
-            />
-          </div>
-        </Field>
-
-        <AppButton
-          type="submit"
-          :loading="isPending"
-          label="Log In"
-          class="w-full"
-          :disabled="!meta.valid"
-        />
+      <div
+        class="bg-primary-50 text-primary-700 border-primary-200 flex flex-wrap items-center gap-2 rounded-xl border px-3 py-2 md:rounded-3xl md:px-2"
+      >
+        <Chip size="sm" label="✨ Returning users" variant="filled" class="shrink-0" />
+        <span class="text-sm font-medium">
+          If you created your account before Nov 18, click here to sign in
+          <Icon name="arrow-right" size="16" class="hidden! md:inline-block!" />
+        </span>
       </div>
-    </Form>
+    </a>
+
+    <AppForm :schema="loginSchema" @submit="onSubmit" v-slot="{ meta }" class="space-y-8">
+      <FormField name="email" label="Email Address" placeholder="example@gmail.com" required />
+
+      <FormField name="password" type="password" label="Password" required />
+
+      <div class="flex items-center justify-between">
+        <!-- <label class="flex cursor-pointer items-center gap-1.5 text-sm">
+          <input v-model="rememberMe" type="checkbox" class="accent-primary-600 h-4 w-4" />
+          Remember me
+        </label> -->
+        <RouterLink
+          :to="`/forgot-password${redirectStr}`"
+          class="text-primary-600 text-sm font-medium transition-colors duration-200 hover:underline"
+        >
+          Forgot Password?
+        </RouterLink>
+      </div>
+
+      <AppButton
+        type="submit"
+        :loading="isPending || isCheckingLiveStatus"
+        label="Log In"
+        class="w-full"
+        :disabled="!meta.valid"
+      />
+    </AppForm>
 
     <div class="mt-5 pb-4">
       <p class="text-center text-sm font-normal text-gray-500">
         I don't have an account?
-        <RouterLink to="/signup" class="text-primary-600 text-sm font-semibold">
+        <RouterLink
+          :to="`/signup${redirectStr}`"
+          class="text-primary-600 text-sm font-semibold transition-colors duration-200 hover:underline"
+        >
           Sign Up
         </RouterLink>
       </p>
@@ -61,67 +66,110 @@
 
 <script setup lang="ts">
 import { useRouter } from "vue-router"
-import AppButton from "@components/common/app-button.vue"
-import TextInput from "@components/common/text-input.vue"
-import { Form, Field } from "vee-validate"
-import * as yup from "yup"
-import { onInvalidSubmit } from "@/utils/validations"
 import { useLogin } from "../api"
-import { displayError, formatError } from "@/utils/error-handler"
+import * as yup from "yup"
+import { displayError } from "@/utils/error-handler"
 import { useAuthStore } from "../store"
-import { ILoginResponse } from "../types"
-import { toast } from "vue3-toastify"
-
-// Define the form data type
-type LoginFormData = {
-  email: string
-  password: string
-}
+import { useSettingsStore } from "@modules/settings/store"
+import { TLoginPayload } from "../types"
+import { toast } from "@/composables/useToast"
+import { fetchLiveStatusForLogin } from "@modules/shared/api"
+import { fetchLocationsForLogin } from "@modules/settings/api"
+import AppForm from "@components/form/AppForm.vue"
+import FormField from "@components/form/FormField.vue"
+import SectionHeader from "@components/SectionHeader.vue"
+import AppButton from "@components/AppButton.vue"
+import Chip from "@components/Chip.vue"
+import Icon from "@components/Icon.vue"
+import { computed, ref } from "vue"
+import * as Sentry from "@sentry/vue"
 
 const authStore = useAuthStore()
 const router = useRouter()
+// const rememberMe = ref(true)
+const { mutate: loginFn, isPending } = useLogin()
+const isCheckingLiveStatus = ref(false)
 
-// Validation schema using yup
-const validationSchema = yup.object().shape({
+const { setActiveLocation, setLocations } = useSettingsStore()
+
+const loginSchema = yup.object({
   email: yup.string().email("Enter a valid email address").required("Email is required"),
   password: yup.string().required("Password is required"),
 })
 
-const { mutate: loginFn, isPending } = useLogin()
+const onSubmit = (values: TLoginPayload) => {
+  loginFn(
+    { ...values, email: values.email?.toLowerCase() },
+    {
+      onSuccess: (res) => {
+        const { access, refresh, ...user } = res.data?.data || {}
+        authStore.setTokens({ accessToken: access, refreshToken: refresh })
+        authStore.setAuthUser({ ...user, email: values.email })
+        toast.success("Your login was successful...")
+        // Set user context in Sentry
+        Sentry.setUser({ id: user.uid, email: values.email })
 
-const onSubmit = (values: Record<string, unknown>) => {
-  const loginData = values as LoginFormData
-  loginFn(loginData, {
-    onSuccess: (response: { data: { data: ILoginResponse } }) => {
-      const loginData = response.data.data
-      console.log("Login successful", loginData)
-      console.log({
-        accessToken: loginData.access,
-        refreshToken: loginData.refresh,
-      })
-      toast.success("Login successful!")
-      void router.push("/dashboard")
-      authStore.setTokens({
-        accessToken: loginData.access,
-        refreshToken: loginData.refresh,
-      })
+        const assignedLocationsMap =
+          user.assigned_locations?.map((loc) => ({
+            ...loc,
+            id: loc.uid,
+            label: loc.name,
+            active: false,
+            is_hq: loc.name?.toLowerCase() === "headquarters" || false,
+            created_at: "",
+            address: "",
+          })) || []
 
-      authStore.setAuthUser({
-        avatar_url: loginData.avatar_url,
-        first_name: loginData.first_name,
-        last_name: loginData.last_name,
-        is_email_verified: loginData.is_email_verified,
-        assigned_locations: loginData.assigned_locations,
-        roles: loginData.roles,
-        subscription: loginData.subscription,
-      })
+        setLocations(assignedLocationsMap)
+        const hqLocation = assignedLocationsMap.find((loc) => loc.is_hq)
+        setActiveLocation(hqLocation || assignedLocationsMap[0] || null)
+
+        // Check live status before redirecting
+        const checkLiveStatusAndRedirect = async () => {
+          if (user.store_slug) {
+            isCheckingLiveStatus.value = true
+            try {
+              const liveStatus = await fetchLiveStatusForLogin(user.store_slug)
+              if (liveStatus.data?.completion_percentage !== 100) {
+                try {
+                  const locations = await fetchLocationsForLogin()
+                  const hqLocation = locations.find((loc) => loc.is_hq)
+                  if (hqLocation) {
+                    const settingsStore = useSettingsStore()
+                    settingsStore.setActiveLocation(hqLocation)
+                    settingsStore.setLocations(locations)
+                    router.push("/onboarding")
+                    return
+                  }
+                } catch {
+                  // If fetching locations fails, go to dashboard
+                }
+                // Fallback to dashboard if no HQ found or fetch failed
+                router.push("/dashboard")
+                return
+              }
+            } catch {
+              // If live status check fails, proceed to dashboard
+            } finally {
+              isCheckingLiveStatus.value = false
+            }
+          }
+
+          // check for redirect query param
+          const redirectPath = router.currentRoute.value.query.redirect as string
+          router.push(redirectPath || "/dashboard")
+        }
+
+        void checkLiveStatusAndRedirect()
+      },
+      onError: displayError,
     },
-    onError: (error) => {
-      displayError(error)
-      // or handle separately
-      const errorMsg = formatError(error)
-      console.error("Login failed!!!", errorMsg)
-    },
-  })
+  )
 }
+
+const redirectStr = computed(() =>
+  router.currentRoute.value.query.redirect
+    ? `?redirect=${router.currentRoute.value.query.redirect as string}`
+    : "",
+)
 </script>

@@ -2,6 +2,17 @@
 @import "tailwindcss";
 @import "./theme.css"; /* tailwind custom variables */
 
+:root {
+  color-scheme: light;
+}
+html {
+  color-scheme: light !important;
+}
+
+body {
+  color: var(--color-core-800);
+}
+
 h1,
 h2,
 h3,
@@ -22,4 +33,16 @@ svg path[fill^="#"] {
 svg [stroke^="#"],
 svg path[stroke^="#"] {
   stroke: currentColor;
+}
+
+@view-transition {
+  navigation: auto;
+}
+@keyframes slide-in {
+  from {
+    transform: translateX(-100%);
+  }
+}
+::view-transition-new(root) {
+  animation: 500ms ease-in-out both slide-in;
 }

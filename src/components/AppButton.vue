@@ -1,22 +1,37 @@
 <template>
-  <button :class="buttonClasses" :disabled="disabled || loading" :type="type" @click="handleClick">
-    <template v-if="loading">
-      <div class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-      <span v-if="loadingText">{{ loadingText }}</span>
-      <span v-else-if="label">{{ label }}</span>
-    </template>
-    <template v-else>
-      <Icon v-if="icon" :name="icon" :class="iconClasses.join(' ')" />
-      <slot>
-        <span v-if="label">{{ label }}</span>
-      </slot>
-    </template>
+  <button
+    :class="[
+      buttonClasses,
+      { '!cursor-not-allowed': disabled || loading || inactive },
+      { '!opacity-50': inactive },
+    ]"
+    :disabled="disabled"
+    :type="type"
+    @click="handleClick"
+  >
+    <Icon
+      v-if="(icon || loading) && iconPlacement === 'left'"
+      :name="loading ? 'loader' : icon || ''"
+      :size="iconSize || iconSizes[props.size] || 20"
+      :class="['flex-shrink-0', loading ? 'animate-spin' : '']"
+    />
+    <slot>
+      <span v-if="loadingText || label" class="truncate">
+        {{ loading && loadingText ? loadingText : label }}
+      </span>
+    </slot>
+    <Icon
+      v-if="(icon || loading) && iconPlacement === 'right'"
+      :name="loading ? 'loader' : icon || ''"
+      :size="iconSize || iconSizes[props.size] || 20"
+      :class="['flex-shrink-0', loading ? 'animate-spin' : '']"
+    />
   </button>
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue"
-import Icon from "./common/icon.vue"
+import { computed, HTMLAttributes } from "vue"
+import Icon from "./Icon.vue"
 
 export interface AppButtonProps {
   /**
@@ -32,6 +47,20 @@ export interface AppButtonProps {
   icon?: string
 
   /**
+   * The size of the icon (overrides default sizing based on button size)
+   * @example 16
+   */
+  iconSize?: number | string
+
+  /**
+   * The placement of the icon relative to the text
+   * - left: Icon appears before the text (default)
+   * - right: Icon appears after the text
+   * @default "left"
+   */
+  iconPlacement?: "left" | "right"
+
+  /**
    * The HTML button type
    * @default "button"
    */
@@ -39,12 +68,13 @@ export interface AppButtonProps {
 
   /**
    * The button size
+   * - xs: 32px height
    * - sm: 40px height
    * - md: 44px height (default)
    * - lg: 48px height
    * @default "md"
    */
-  size?: "sm" | "md" | "lg"
+  size?: "xs" | "sm" | "md" | "lg"
 
   /**
    * The button visual variant
@@ -72,6 +102,12 @@ export interface AppButtonProps {
   disabled?: boolean
 
   /**
+   * Whether the button is inactive (visually faded but still clickable)
+   * @default false
+   */
+  inactive?: boolean
+
+  /**
    * Whether the button is in loading state
    * @default false
    */
@@ -86,7 +122,7 @@ export interface AppButtonProps {
   /**
    * Additional CSS classes to apply to the button
    */
-  class?: string | string[] | Record<string, boolean>
+  class?: HTMLAttributes["class"]
 }
 
 const props = withDefaults(defineProps<AppButtonProps>(), {
@@ -94,6 +130,7 @@ const props = withDefaults(defineProps<AppButtonProps>(), {
   size: "md",
   variant: "filled",
   color: "primary",
+  iconPlacement: "left",
   disabled: false,
   loading: false,
 })
@@ -118,17 +155,39 @@ const buttonClasses = computed(() => {
     "duration-200",
     "ease-in-out",
     "focus:outline-none",
-    "focus:ring-2",
-    "focus:ring-offset-1",
+    ...(props.variant !== "text" ? ["focus:ring-2", "focus:ring-offset-1"] : []),
     "disabled:cursor-not-allowed",
     "disabled:opacity-50",
+    "min-w-0",
+    "max-w-full",
   ]
 
   // Size classes
   const sizeClasses = {
-    sm: props.icon && !props.label ? "w-10 h-10" : "h-10 px-4 gap-2 text-sm",
-    md: props.icon && !props.label ? "w-11 h-11" : "h-11 px-5 gap-2.5 text-sm",
-    lg: props.icon && !props.label ? "w-12 h-12" : "h-12 px-6 gap-3 text-base",
+    xs:
+      props.icon && !props.label
+        ? "w-8 h-8"
+        : props.variant === "text"
+          ? "h-8 px-1 gap-1.5 text-xs"
+          : "h-8 px-3 gap-1.5 text-xs",
+    sm:
+      props.icon && !props.label
+        ? "w-10 h-10"
+        : props.variant === "text"
+          ? "h-10 px-2 gap-2 text-sm"
+          : "h-10 px-4 gap-2 text-sm",
+    md:
+      props.icon && !props.label
+        ? "w-11 h-11"
+        : props.variant === "text"
+          ? "h-11 px-2.5 gap-2.5 text-sm"
+          : "h-11 px-5 gap-2.5 text-sm",
+    lg:
+      props.icon && !props.label
+        ? "w-12 h-12"
+        : props.variant === "text"
+          ? "h-12 px-3 gap-3 text-base"
+          : "h-12 px-6 gap-3 text-base",
   }
 
   // Color and variant combinations
@@ -141,18 +200,17 @@ const buttonClasses = computed(() => {
     },
     outlined: {
       primary:
-        "border border-primary-600 text-primary-600 bg-transparent hover:bg-primary-50 focus:ring-primary-500/50",
-      error:
-        "border border-red-600 text-red-600 bg-transparent hover:bg-red-50 focus:ring-red-500/50",
+        "border border-primary-600 text-primary-600 bg-primary-50 hover:bg-primary-100 focus:ring-primary-500/50",
+      error: "border border-red-600 text-red-600 bg-red-50 hover:bg-red-100 focus:ring-red-500/50",
       success:
-        "border border-green-600 text-green-600 bg-transparent hover:bg-green-50 focus:ring-green-500/50",
-      alt: "border border-core-300 text-core-600 bg-transparent hover:bg-core-50 focus:ring-core-500/50",
+        "border border-green-600 text-green-600 bg-green-50 hover:bg-green-100 focus:ring-green-500/50",
+      alt: "border border-core-300 text-core-600 bg-core-50 hover:bg-core-100 focus:ring-core-500/50",
     },
     text: {
-      primary: "text-primary-600 bg-transparent hover:bg-primary-50 focus:ring-primary-500/50",
-      error: "text-red-600 bg-transparent hover:bg-red-50 focus:ring-red-500/50",
-      success: "text-green-600 bg-transparent hover:bg-green-50 focus:ring-green-500/50",
-      alt: "text-core-600 bg-transparent hover:bg-core-50 focus:ring-core-500/50",
+      primary: "text-primary-600 hover:text-primary-700 hover:underline",
+      error: "text-red-600 hover:text-red-700 hover:underline",
+      success: "text-green-600 hover:text-green-700 hover:underline",
+      alt: "text-core-600 hover:text-core-700 hover:underline",
     },
   }
 
@@ -164,16 +222,10 @@ const buttonClasses = computed(() => {
   ]
 })
 
-const iconClasses = computed(() => {
-  const baseClasses = ["flex-shrink-0"]
-
-  // Icon size based on button size
-  const sizeClasses = {
-    sm: "w-4 h-4",
-    md: "w-5 h-5",
-    lg: "w-5 h-5",
-  }
-
-  return [...baseClasses, sizeClasses[props.size]]
-})
+const iconSizes = {
+  xs: 16,
+  sm: 20,
+  md: 24,
+  lg: 28,
+}
 </script>

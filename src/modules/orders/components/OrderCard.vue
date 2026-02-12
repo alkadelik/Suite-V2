@@ -1,50 +1,336 @@
-<template>
-  <div
-    role="status"
-    class="bg-primary-50 border-primary-200 w-full animate-pulse rounded-xl border p-3"
-  >
-    <div class="flex gap-2.5">
-      <!--  Image Skeleton -->
-      <div class="bg-primary-200 h-12 w-12 rounded-lg"></div>
+<script setup lang="ts">
+import { computed, ref } from "vue"
+import Chip from "@/components/Chip.vue"
+import { getSmartDateLabel } from "@/utils/formatDate"
+import { formatCurrency, truncateCurrency } from "@/utils/format-currency"
+import { anonymousCustomer, ORDER_PAYMENT_STATUS, orderSourceMap } from "../constants"
+import { pluralize } from "@/utils/pluralize"
+import Icon from "@components/Icon.vue"
+import DropdownMenu from "@components/DropdownMenu.vue"
+import type { TOrder } from "../types"
 
-      <!--  Info Skeleton -->
-      <div class="mr-6 flex-1 truncate text-sm">
-        <div class="bg-primary-200 mb-1 h-3.5 w-32 rounded"></div>
-        <div class="bg-primary-200 h-3 w-20 rounded"></div>
-      </div>
+const props = withDefaults(
+  defineProps<{
+    order: TOrder
+    showActions?: boolean
+    customActions?: Array<{
+      label?: string
+      icon?: string
+      action?: () => void
+      class?: string
+      iconClass?: string
+      divider?: boolean
+    }>
+  }>(),
+  {
+    order: () => ({}) as TOrder,
+    showActions: true,
+  },
+)
 
-      <!-- Actions Dropdown Skeleton -->
-      <div class="flex flex-col items-end">
-        <div class="bg-primary-200 mb-2 h-6 w-6 rounded"></div>
-        <div class="bg-primary-200 h-3 w-16 rounded"></div>
-      </div>
-    </div>
+const emit = defineEmits([
+  "click",
+  "view-memos",
+  "mark-as-paid",
+  "share-receipt",
+  "share-invoice",
+  "share-payment-link",
+  "update-payment",
+  "fulfill",
+  "void-order",
+  "delete-order",
+])
 
-    <!-- Divider -->
-    <hr class="border-primary-200 my-2" />
+const isFulfilled = computed(() => {
+  return props.order?.fulfilment_status === "fulfilled"
+})
 
-    <!-- Stock Info & Availability Toggle Skeleton -->
-    <div class="flex items-center justify-between gap-1">
-      <!-- Stock info skeleton -->
-      <div class="border-primary-200 flex items-center gap-2 rounded-full border py-1 pr-3 pl-3">
-        <div class="bg-primary-200 h-3 w-16 rounded"></div>
-      </div>
+const isBuyerCreated = computed(() => {
+  return props.order?.source?.includes("storefront")
+})
 
-      <!-- Toggle switch skeleton -->
-      <div class="flex items-center gap-2">
-        <div class="bg-primary-200 h-3 w-12 rounded"></div>
-        <div class="bg-primary-200 h-4 w-8 rounded-full"></div>
-      </div>
-    </div>
+const menuItems = computed(() => {
+  const paymentStatus = props.order?.payment_status
+  const showVoid = (isFulfilled.value || paymentStatus !== "unpaid") && !isBuyerCreated.value
+  const showDelete = !isFulfilled.value && paymentStatus === "unpaid" && !isBuyerCreated.value
 
-    <span class="sr-only">Loading...</span>
-  </div>
-</template>
+  return props.customActions?.length
+    ? props.customActions
+    : [
+        { label: "View details", icon: "eye", action: () => emit("click") },
+        { label: "View memos", icon: "note", action: () => emit("view-memos") },
+        // Mark as Paid - only for unpaid or partially paid orders
+        ...(paymentStatus !== "paid"
+          ? [{ label: "Mark as Paid", icon: "money-add", action: () => emit("mark-as-paid") }]
+          : []),
+        // Share receipt - only for partially paid or paid orders
+        ...(paymentStatus === "paid" || paymentStatus === "partially_paid"
+          ? [{ label: "Share receipt", icon: "share", action: () => emit("share-receipt") }]
+          : []),
+        // Share invoice - only for partially paid or unpaid orders
+        ...(paymentStatus === "unpaid" || paymentStatus === "partially_paid"
+          ? [{ label: "Share invoice", icon: "document", action: () => emit("share-invoice") }]
+          : []),
+        // Share payment link - only for partially paid or unpaid orders
+        ...(paymentStatus === "unpaid" || paymentStatus === "partially_paid"
+          ? [
+              {
+                label: "Share payment link",
+                icon: "link",
+                action: () => emit("share-payment-link"),
+              },
+            ]
+          : []),
+        // Update Payment - only for unpaid or partially paid orders
+        ...(paymentStatus !== "paid"
+          ? [{ label: "Update Payment", icon: "money-add", action: () => emit("update-payment") }]
+          : []),
+        // Fulfill order - only for unfulfilled orders
+        ...(isFulfilled.value
+          ? []
+          : [{ label: "Fulfill Order", icon: "money-add", action: () => emit("fulfill") }]),
+        ...(showVoid || showDelete ? [{ divider: true }] : []),
+        ...(showVoid
+          ? [
+              {
+                label: "Void Order",
+                icon: "trash",
+                class: "text-red-600 hover:bg-red-50",
+                iconClass: "text-red-600",
+                action: () => emit("void-order"),
+              },
+            ]
+          : []),
+        ...(showDelete
+          ? [
+              {
+                label: "Delete Order",
+                icon: "trash",
+                class: "text-red-600 hover:bg-red-50",
+                iconClass: "text-red-600",
+                action: () => emit("delete-order"),
+              },
+            ]
+          : []),
+      ]
+})
 
-<script setup>
-defineProps({
-  width: { type: String, default: "100%" },
-  height: { type: String, default: "1rem" },
-  rounded: { type: Boolean, default: false },
+const itemsNoteCount = computed(() => {
+  return props.order.items?.filter((item) => item.notes).length || 0
+})
+
+const showOrderItems = ref<Record<string, boolean>>({})
+
+const toggleOrderItems = () => {
+  showOrderItems.value[props.order?.order_number] = !showOrderItems.value[props.order?.order_number]
+}
+
+const outstandingBalance = computed(() => {
+  return props.order.outstanding_balance || 0
 })
 </script>
+
+<template>
+  <div :class="['border-warning-200 cursor-pointer rounded-xl border']" @click="toggleOrderItems">
+    <div class="bg-warning-50 rounded-t-xl p-2">
+      <div class="flex items-start gap-2.5">
+        <div class="flex-1 truncate text-sm">
+          <div class="mb-1 flex items-center gap-1">
+            <h3 class="!font-outfit truncate text-left text-sm font-semibold capitalize">
+              {{ order.customer_name || anonymousCustomer.full_name }}
+            </h3>
+            <!-- truncates from 100k upwards -->
+            <span class="ml-4 flex-1 text-right text-base font-semibold">
+              {{
+                +order.total_amount >= 100000
+                  ? truncateCurrency(+order.total_amount)
+                  : formatCurrency(+order.total_amount, { kobo: true })
+              }}
+            </span>
+            <DropdownMenu
+              v-if="showActions && order.fulfilment_status !== 'voided'"
+              :items="menuItems"
+            />
+          </div>
+          <div class="mb-1 flex items-center justify-between gap-2">
+            <p class="text-core-600 flex items-center text-xs">
+              <span>#{{ order?.order_number }}</span>
+              <span class="text-primary-500 px-1">&bull;</span>
+              <span>{{ getSmartDateLabel(order.created_at) }}</span>
+            </p>
+            <!-- <p class="truncate text-sm">
+              {{
+                order.items?.reduce((acc, item) => acc + (item.qty_fulfilled || 0), 0) +
+                "/" +
+                order.items?.reduce((acc, item) => acc + item.quantity, 0)
+              }}
+            </p> -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- body -->
+    <div class="px-5 py-3">
+      <div
+        v-if="itemsNoteCount > 0"
+        class="border-core-50 flex flex-wrap items-center gap-2 space-y-3 border-b pb-2 text-sm"
+      >
+        <!-- memos count -->
+        <Chip
+          v-if="itemsNoteCount > 0"
+          icon="message-2"
+          color="purple"
+          :label="`${itemsNoteCount} ${pluralize('memo', itemsNoteCount)}`"
+          variant="outlined"
+        />
+      </div>
+
+      <!-- Items Section -->
+      <div v-if="showOrderItems[order.order_number]" class="space-y-3">
+        <div
+          v-for="(item, x) in order?.items"
+          :key="x"
+          class="flex cursor-pointer items-center gap-2.5"
+        >
+          <!-- image placeholder -->
+          <span class="bg-warning-100 flex size-10 items-center justify-center rounded-xl">
+            <Icon name="box" :size="24" class="text-primary-700" />
+          </span>
+
+          <div class="flex-1 truncate">
+            <div class="flex justify-between gap-1">
+              <!-- name -->
+              <h4 class="!font-outfit truncate text-left text-sm font-medium capitalize">
+                {{ item.product_name || "Unknown" }}
+              </h4>
+              <!-- price -->
+              <span class="text-xs font-medium">{{ formatCurrency(+item.unit_price) }}</span>
+            </div>
+            <div class="flex justify-between gap-1">
+              <!-- Variant, note -->
+              <p class="text-primary-300 flex items-center gap-0.5 text-xs">
+                <span v-if="item.variant_name" class="text-core-600">
+                  {{ item.variant_name }}
+                </span>
+                <span v-if="item.notes" class="text-primary-500 px-1">&bull;</span>
+                <Icon v-if="item.notes" name="ClipboardText" size="16" class="text-purple-800" />
+              </p>
+              <!--  -->
+              <div
+                class="inline-flex items-center gap-1 text-xs font-medium"
+                :class="
+                  item.qty_fulfilled == item.quantity
+                    ? 'text-success-600'
+                    : item.qty_fulfilled && item.qty_fulfilled < item.quantity
+                      ? 'text-blue-500'
+                      : 'text-error-600'
+                "
+              >
+                <div
+                  class="h-1.5 w-1.5 rounded-full"
+                  :class="
+                    item.qty_fulfilled == item.quantity
+                      ? 'bg-success-600'
+                      : item.qty_fulfilled && item.qty_fulfilled < item.quantity
+                        ? 'bg-blue-500'
+                        : 'bg-error-600'
+                  "
+                ></div>
+                {{
+                  item.qty_fulfilled == item.quantity
+                    ? "Fulfilled"
+                    : item.qty_fulfilled && item.qty_fulfilled < item.quantity
+                      ? `Partly fulfilled ${item.qty_fulfilled}/${item.quantity}`
+                      : "Unfulfilled"
+                }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <hr class="border-core-50 border-dashed" />
+
+        <div class="space-y-1.5">
+          <p class="text-core-600 flex items-center justify-between gap-1 text-sm">
+            <span>
+              Subtotal ({{ order?.items?.length }} {{ pluralize("item", order?.items?.length) }}):
+            </span>
+            <span class="text-core-700 font-medium">{{ formatCurrency(+order?.subtotal) }}</span>
+          </p>
+          <p
+            v-if="order.fulfilment_method === 'delivery'"
+            class="text-core-600 flex items-center justify-between gap-1 text-sm"
+          >
+            <span>Delivery Fee:</span>
+            <span class="text-core-700 font-medium">{{
+              formatCurrency(+order?.delivery_fee)
+            }}</span>
+          </p>
+          <p class="flex items-center justify-between gap-1 text-base">
+            <span class="text-core-700 font-medium"> Total Amount </span>
+            <span class="text-core-700 font-bold">{{ formatCurrency(+order?.total_amount) }}</span>
+          </p>
+          <p
+            v-if="order?.payment_status === 'partially_paid'"
+            class="text-error flex items-center justify-between gap-1 text-sm"
+          >
+            <span> Outstanding Bal. </span>
+            <span>{{ formatCurrency(outstandingBalance) }}</span>
+          </p>
+        </div>
+      </div>
+
+      <hr v-if="showOrderItems[order.order_number]" class="border-core-300 my-2 border-dashed" />
+
+      <div>
+        <div class="mb-2 flex justify-between">
+          <h4 class="text-core-700 !font-outfit text-sm">Order state</h4>
+        </div>
+        <!-- footer chips -->
+        <div class="flex justify-between gap-1">
+          <div class="flex flex-wrap gap-x-1 gap-y-2">
+            <!-- payment status -->
+            <Chip
+              icon="card-tick"
+              :label="
+                ORDER_PAYMENT_STATUS.find((x) => x.value === order.payment_status)?.label ||
+                order.payment_status
+              "
+              variant="outlined"
+              :color="ORDER_PAYMENT_STATUS.find((x) => x.value === order.payment_status)?.color"
+            />
+            <!-- fulfilment method -->
+            <Chip
+              :icon="order.fulfilment_method === 'delivery' ? 'truck-fast' : 'location'"
+              :label="order.fulfilment_method === 'delivery' ? 'Delivery' : 'Pick up'"
+              variant="outlined"
+              color="blue"
+              dense
+            />
+            <!-- Fulfilment status -->
+            <Chip
+              icon="box-time"
+              :label="
+                isFulfilled
+                  ? 'Fulfilled'
+                  : order.fulfilment_status === 'partially_fulfilled'
+                    ? 'Partial'
+                    : 'Ongoing'
+              "
+              variant="outlined"
+              dense
+            />
+            <!-- source -->
+            <Chip
+              dense
+              variant="outlined"
+              :icon="order.source === 'internal' ? 'clipboard-text' : 'global'"
+              :label="orderSourceMap[order.source] || order.source"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

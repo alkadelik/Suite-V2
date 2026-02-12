@@ -1,5 +1,14 @@
+<script setup lang="ts">
+import Icon from "@components/Icon.vue"
+import { useAuthStore } from "@modules/auth/store"
+
+const onLogout = () => {
+  useAuthStore().logout()
+}
+</script>
+
 <template>
-  <div class="flex h-screen">
+  <div class="flex h-screen max-h-screen overflow-hidden">
     <!-- Left Side -->
     <div class="relative hidden flex-1 lg:block">
       <div class="relative h-full w-full overflow-hidden">
@@ -12,13 +21,19 @@
     </div>
 
     <!-- Right Side -->
-    <div class="flex flex-1 justify-center overflow-auto p-4">
-      <div class="w-full px-4 pt-5 pb-10 md:px-24">
-        <img
-          src="/images/logos/leyyow-logo-2.svg?url"
-          alt="leyyow logo"
-          class="mb-10 h-8 md:mb-20"
-        />
+    <div class="flex flex-1 justify-center overflow-y-auto p-4">
+      <div class="w-full px-4 py-12 md:px-24">
+        <div class="mb-5 flex justify-between md:mb-8">
+          <img src="/LYW.svg?url" alt="leyyow logo" class="h-8" />
+
+          <button
+            v-if="!$route.path.includes('login') && !$route.path.includes('signup')"
+            type="button"
+            @click="onLogout"
+          >
+            <Icon name="signout" size="20" class="text-core-400 hover:text-core-600" />
+          </button>
+        </div>
         <router-view />
       </div>
     </div>

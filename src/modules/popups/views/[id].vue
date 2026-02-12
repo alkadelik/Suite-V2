@@ -1,0 +1,250 @@
+<script setup lang="ts">
+import { formatCurrency } from "@/utils/format-currency"
+import { startCase } from "@/utils/format-strings"
+import { formatDate } from "@/utils/formatDate"
+import PageHeader from "@components/PageHeader.vue"
+import Chip from "@components/Chip.vue"
+import EmptyState from "@components/EmptyState.vue"
+import Icon from "@components/Icon.vue"
+import { computed, ref } from "vue"
+import { useRoute } from "vue-router"
+import { useGetPopupEventById } from "../api"
+import Tabs from "@components/Tabs.vue"
+import DropdownMenu from "@components/DropdownMenu.vue"
+import CreatePopupEventModal from "../components/CreatePopupEventModal.vue"
+import DeletePopupEvent from "../components/DeletePopupEvent.vue"
+import PopupSalesTab from "../components/popup-tabs/PopupSalesTab.vue"
+import PopupInventoryTab from "../components/popup-tabs/PopupInventoryTab.vue"
+import { clipboardCopy, isStaging } from "@/utils/others"
+import { useMediaQuery } from "@vueuse/core"
+import Collapsible from "@components/Collapsible.vue"
+import { useSettingsStore } from "@modules/settings/store"
+import popupEmpty from "@/assets/images/popup-empty.svg?url"
+import popupBanner from "@/assets/images/popup-banner.svg?url"
+import ClosePopupModal from "../components/ClosePopupModal.vue"
+import BackButton from "@components/BackButton.vue"
+
+const route = useRoute()
+const openDelete = ref(false)
+const openEdit = ref(false)
+const openClose = ref(false)
+const activeTab = ref("overview")
+
+const { data: popupEvt, isPending, refetch } = useGetPopupEventById(route.params.id as string)
+
+const overviewInfo = computed(() => {
+  return {
+    "Participation Fee": Number(popupEvt.value?.participation_fee)
+      ? formatCurrency(popupEvt.value?.participation_fee || 0)
+      : "Free",
+    Description: popupEvt.value?.description || "N/A",
+  }
+})
+
+const actionMenu = computed(() => {
+  const actions = []
+  if (popupEvt.value?.status !== "past") {
+    actions.push({
+      label: "Edit Event",
+      icon: "edit",
+      action: () => (openEdit.value = true),
+    })
+  }
+  if (!popupEvt.value?.total_orders && !["past", "closed"].includes(popupEvt.value?.status || "")) {
+    actions.push({ divider: true })
+  }
+  if (popupEvt.value?.status !== "closed") {
+    actions.push({
+      label: "Close Event",
+      icon: "close-circle",
+      iconClass: "text-red-500",
+      class: "text-red-500",
+      action: () => (openClose.value = true),
+    })
+  }
+  if (!popupEvt.value?.total_orders) {
+    actions.push({
+      label: "Delete Event",
+      icon: "trash",
+      iconClass: "text-red-500",
+      class: "text-red-500",
+      action: () => (openDelete.value = true),
+    })
+  }
+  return actions
+})
+
+const isMobile = useMediaQuery("(max-width: 768px)")
+
+const storeDetails = computed(() => useSettingsStore().storeDetails)
+</script>
+
+<template>
+  <PageHeader title="Popup Details" inner />
+
+  <div class="hidden p-4 pb-0 md:inline-block">
+    <BackButton label="Back to Popups" to="/popups" />
+  </div>
+
+  <EmptyState
+    v-if="isPending || !popupEvt"
+    title="Event Details"
+    description="Details for this event is currently not available."
+    :loading="isPending"
+  />
+
+  <section v-else class="flex flex-col px-4 py-4 md:px-8 md:py-6">
+    <section>
+      <div
+        class="bg-primary-800 mb-6 flex gap-4 rounded-xl p-3 text-white md:gap-6 md:p-6"
+        :style="{
+          backgroundImage: `url(${popupBanner})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }"
+      >
+        <div class="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded">
+          <img
+            :src="popupEvt?.banner_image || popupEmpty"
+            alt="Popup Banner"
+            class="h-full w-full rounded object-contain"
+          />
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="mb-2 flex items-center gap-2">
+            <h3
+              class="min-w-0 flex-1 truncate text-base font-semibold capitalize md:flex-none md:text-xl"
+            >
+              {{ popupEvt?.name }}
+            </h3>
+            <Chip
+              v-if="!isMobile"
+              :label="popupEvt.status"
+              size="sm"
+              class="flex-shrink-0 capitalize"
+              show-dot
+              :color="
+                popupEvt.status === 'upcoming'
+                  ? 'primary'
+                  : popupEvt.status === 'active'
+                    ? 'success'
+                    : popupEvt.status === 'closed'
+                      ? 'error'
+                      : 'alt'
+              "
+            />
+          </div>
+          <div class="space-y-1">
+            <p class="flex items-center gap-2 text-xs md:text-sm">
+              <Icon name="calendar" class="!h-4 !w-4 flex-shrink-0 md:h-5! md:w-4!" />
+              <span class="min-w-0 truncate">
+                {{ formatDate(popupEvt?.start_date || "") }} -
+                {{ formatDate(popupEvt?.end_date || "") }}
+              </span>
+            </p>
+            <p class="flex items-center gap-2 text-xs md:text-sm">
+              <span class="min-w-0 truncate">
+                {{
+                  `${isStaging ? "www.storefronts-v2.vercel.app" : "www.buy.leyyow.com"}/${storeDetails?.slug}/events/${popupEvt?.slug}`
+                }}
+              </span>
+              <Icon
+                name="copy"
+                size="20"
+                class="flex-shrink-0 cursor-pointer"
+                @click="
+                  clipboardCopy(
+                    `https://${isStaging ? 'storefronts-v2.vercel.app' : 'buy.leyyow.com'}/${storeDetails?.slug}/events/${popupEvt?.slug}`,
+                  )
+                "
+              />
+            </p>
+            <Chip
+              v-if="isMobile"
+              :label="popupEvt.status"
+              size="sm"
+              class="capitalize"
+              show-dot
+              :color="
+                popupEvt.status === 'upcoming'
+                  ? 'primary'
+                  : popupEvt.status === 'active'
+                    ? 'success'
+                    : popupEvt.status === 'closed'
+                      ? 'error'
+                      : 'alt'
+              "
+            />
+          </div>
+        </div>
+
+        <div v-if="popupEvt.status !== 'closed'" class="flex flex-shrink-0 items-start">
+          <DropdownMenu :items="actionMenu" />
+        </div>
+      </div>
+
+      <Tabs
+        v-model="activeTab"
+        :tabs="[
+          { title: 'Overview', key: 'overview' },
+          { title: 'Sales', key: 'sales' },
+        ]"
+      >
+        <template #overview>
+          <div class="mb-6 pt-3">
+            <Collapsible header="Popup Details" :default-open="true">
+              <template #body>
+                <div class="divide-core-100 divide-y">
+                  <div
+                    v-for="(value, key) in overviewInfo"
+                    :key="key"
+                    class="flex flex-col gap-1 py-3 text-sm"
+                  >
+                    <p class="text-core-600 flex-1 font-semibold">{{ startCase(key) }}</p>
+                    <p class="flex-2 font-medium">{{ value }}</p>
+                  </div>
+                </div>
+              </template>
+            </Collapsible>
+          </div>
+
+          <PopupInventoryTab :popup="popupEvt" />
+        </template>
+        <template #sales>
+          <PopupSalesTab
+            :is-active="popupEvt.status === 'active'"
+            :start-date="popupEvt?.start_date"
+            :popup="popupEvt"
+          />
+        </template>
+      </Tabs>
+    </section>
+
+    <!-- Create/Edit Popup Event Modal -->
+    <CreatePopupEventModal
+      :open="openEdit"
+      @close="openEdit = false"
+      :is-edit-mode="true"
+      :event="popupEvt"
+      @refresh="
+        () => {
+          refetch()
+        }
+      "
+    />
+
+    <DeletePopupEvent
+      :open="openDelete"
+      @close="openDelete = false"
+      :event="popupEvt"
+      @refresh="() => $router.push('/popups')"
+    />
+
+    <ClosePopupModal
+      :open="openClose"
+      @close="openClose = false"
+      :event="popupEvt"
+      @refresh="refetch"
+    />
+  </section>
+</template>
