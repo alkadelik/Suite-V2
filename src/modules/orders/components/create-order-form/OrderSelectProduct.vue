@@ -148,9 +148,10 @@ const handleProductCreated = async (productUid: string) => {
         <AppButton
           :icon="currentViewMode === 'grid' ? 'list' : 'grid'"
           variant="outlined"
+          class="flex-shrink-0"
           @click="currentViewMode = currentViewMode === 'grid' ? 'list' : 'grid'"
         />
-        <AppButton icon="add" @click="showAdd = true" />
+        <AppButton icon="add" class="flex-shrink-0" @click="showAdd = true" />
       </div>
     </div>
 
