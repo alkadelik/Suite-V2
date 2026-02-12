@@ -66,7 +66,13 @@
         @toggle="expandedGroup = expandedGroup === 'sales-suite' ? null : 'sales-suite'"
       />
 
-      <SidebarGroup icon="trend-up" label="Marketing" :children="marketingItems" />
+      <SidebarGroup
+        icon="trend-up"
+        label="Marketing"
+        :children="marketingItems"
+        :is-expanded="expandedGroup === 'marketing'"
+        @toggle="expandedGroup = expandedGroup === 'marketing' ? null : 'marketing'"
+      />
 
       <SidebarGroup
         v-if="isStaging"
