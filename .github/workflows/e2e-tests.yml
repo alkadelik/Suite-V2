@@ -38,13 +38,112 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run E2E tests
-        run: npm run test:e2e
+        id: e2e
+        continue-on-error: true
+        run: npx playwright test --config=e2e/playwright.config.ts --reporter=json,github,html
         env:
           E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
           E2E_API_BASE_URL: ${{ secrets.E2E_API_BASE_URL }}
           E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL }}
           E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
+          E2E_NEW_USER_EMAIL: ${{ secrets.E2E_NEW_USER_EMAIL }}
+          E2E_NEW_USER_PASSWORD: ${{ secrets.E2E_NEW_USER_PASSWORD }}
+          E2E_RUN_DESTRUCTIVE: ${{ secrets.E2E_RUN_DESTRUCTIVE }}
+          E2E_TEST_ACCOUNT_NUMBER: ${{ secrets.E2E_TEST_ACCOUNT_NUMBER }}
+          E2E_TEST_BANK_NAME: ${{ secrets.E2E_TEST_BANK_NAME }}
           CI: true
+          PLAYWRIGHT_JSON_OUTPUT_NAME: e2e/results.json
+
+      - name: Parse test results
+        if: always()
+        id: parse
+        run: |
+          if [ -f e2e/results.json ]; then
+            PASSED=$(jq '[.suites[].specs[].tests[] | select(.status == "expected")] | length' e2e/results.json 2>/dev/null || echo "0")
+            FAILED=$(jq '[.suites[].specs[].tests[] | select(.status == "unexpected")] | length' e2e/results.json 2>/dev/null || echo "0")
+            SKIPPED=$(jq '[.suites[].specs[].tests[] | select(.status == "skipped")] | length' e2e/results.json 2>/dev/null || echo "0")
+            TOTAL=$((PASSED + FAILED + SKIPPED))
+
+            # Build failed test details (one line per failure)
+            FAILURES=$(jq -r '
+              [.suites[].specs[] |
+                select(any(.tests[]; .status == "unexpected")) |
+                "- **\(.title)** (\(.file // "unknown"))"
+              ] | join("\n")' e2e/results.json 2>/dev/null || echo "")
+
+            echo "passed=$PASSED" >> "$GITHUB_OUTPUT"
+            echo "failed=$FAILED" >> "$GITHUB_OUTPUT"
+            echo "skipped=$SKIPPED" >> "$GITHUB_OUTPUT"
+            echo "total=$TOTAL" >> "$GITHUB_OUTPUT"
+
+            # Write failures to file for the comment step
+            printf '%s' "$FAILURES" > e2e/failures.txt
+          else
+            echo "passed=0" >> "$GITHUB_OUTPUT"
+            echo "failed=0" >> "$GITHUB_OUTPUT"
+            echo "skipped=0" >> "$GITHUB_OUTPUT"
+            echo "total=0" >> "$GITHUB_OUTPUT"
+            echo "Test results JSON not found — tests may not have run." > e2e/failures.txt
+          fi
+
+      - name: Comment on PR with test results
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const passed = '${{ steps.parse.outputs.passed }}';
+            const failed = '${{ steps.parse.outputs.failed }}';
+            const skipped = '${{ steps.parse.outputs.skipped }}';
+            const total = '${{ steps.parse.outputs.total }}';
+            const testsFailed = '${{ steps.e2e.outcome }}' === 'failure';
+
+            let failures = '';
+            try {
+              failures = fs.readFileSync('e2e/failures.txt', 'utf8').trim();
+            } catch {}
+
+            const icon = testsFailed ? '❌' : '✅';
+            const status = testsFailed ? 'Some tests failed' : 'All tests passed';
+
+            let body = `## ${icon} E2E Test Results\n\n`;
+            body += `| Passed | Failed | Skipped | Total |\n`;
+            body += `|--------|--------|---------|-------|\n`;
+            body += `| ${passed} | ${failed} | ${skipped} | ${total} |\n\n`;
+
+            if (failures && testsFailed) {
+              body += `### Failed Tests\n\n${failures}\n\n`;
+            }
+
+            body += `**Status:** ${status}\n`;
+            body += `**Report:** [Download from Artifacts](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}#artifacts)\n`;
+
+            // Find and update existing comment, or create new one
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existing = comments.find(c =>
+              c.body?.includes('E2E Test Results')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
 
       - name: Upload HTML report
         uses: actions/upload-artifact@v4
@@ -56,8 +155,12 @@ jobs:
 
       - name: Upload test results (traces, screenshots)
         uses: actions/upload-artifact@v4
-        if: failure()
+        if: failure() || steps.e2e.outcome == 'failure'
         with:
           name: test-results
           path: e2e/test-results/
           retention-days: 7
+
+      - name: Fail workflow if tests failed
+        if: steps.e2e.outcome == 'failure'
+        run: exit 1

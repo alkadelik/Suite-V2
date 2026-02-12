@@ -18,17 +18,17 @@ setup("authenticate", async ({ page }) => {
 
   // Navigate to login page
   await page.goto("/login")
-  await expect(page.getByRole("heading", { name: /log in|sign in/i })).toBeVisible()
+  await expect(page.getByText(/welcome back/i)).toBeVisible({ timeout: 10_000 })
 
   // Fill login form
-  await page.getByPlaceholder(/email/i).fill(email)
-  await page.getByPlaceholder(/password/i).fill(password)
+  await page.getByPlaceholder(/example@gmail/i).fill(email)
+  await page.locator('input[type="password"]').fill(password)
 
   // Submit
   await page.getByRole("button", { name: /log in/i }).click()
 
   // Wait for redirect away from login (dashboard, onboarding, or any authenticated route)
-  await expect(page).not.toHaveURL(/\/login/, { timeout: 15_000 })
+  await expect(page).not.toHaveURL(/\/login/, { timeout: 30_000 })
 
   // Save signed-in state
   await page.context().storageState({ path: authFile })

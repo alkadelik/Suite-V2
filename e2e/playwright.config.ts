@@ -1,8 +1,12 @@
 import { defineConfig, devices } from "@playwright/test"
 import path from "path"
 import { fileURLToPath } from "url"
+import dotenv from "dotenv"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+// Load e2e/.env.test if it exists (local dev); CI uses GitHub secrets
+dotenv.config({ path: path.resolve(__dirname, ".env.test") })
 
 export const STORAGE_STATE = path.resolve(__dirname, ".auth/user.json")
 
@@ -49,6 +53,7 @@ export default defineConfig({
     },
 
     // Unauthenticated tests (login, guards): no storageState
+    // Depends on setup to avoid concurrent login API calls (rate limiting)
     {
       name: "unauthenticated",
       testMatch: /auth\/.+\.spec\.ts/,
@@ -56,6 +61,7 @@ export default defineConfig({
         ...devices["Desktop Chrome"],
         storageState: { cookies: [], origins: [] },
       },
+      dependencies: ["setup"],
     },
   ],
 })

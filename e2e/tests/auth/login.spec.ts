@@ -1,6 +1,9 @@
 import { test, expect } from "@playwright/test"
 import { LoginPage } from "../../pages/LoginPage"
 
+// Run login tests serially — concurrent logins hit API rate limits
+test.describe.configure({ mode: "serial" })
+
 // These tests run in the "unauthenticated" project (no storageState)
 test.describe("Login", () => {
   let loginPage: LoginPage
