@@ -49,7 +49,7 @@
                 v-else
                 type="button"
                 :class="getItemClasses(item)"
-                :disabled="item.disabled"
+                :disabled="item.disabled || loadingItemKey !== null"
                 @click="handleItemClick(item, hide)"
               >
                 <Icon v-if="item.icon" :name="item.icon" :class="getItemIconClasses(item)" />
@@ -65,7 +65,12 @@
                 </slot>
 
                 <Icon
-                  v-if="item.appendIcon"
+                  v-if="loadingItemKey === getItemKey(item, index)"
+                  name="loader"
+                  class="h-4 w-4 animate-spin text-gray-400"
+                />
+                <Icon
+                  v-else-if="item.appendIcon"
                   :name="item.appendIcon"
                   :class="getItemIconClasses(item)"
                 />
@@ -95,7 +100,7 @@
 <script setup lang="ts">
 import { Dropdown, Placement } from "floating-vue"
 import Icon from "@components/Icon.vue"
-import { computed } from "vue"
+import { computed, ref } from "vue"
 
 interface DropdownItem {
   /** Unique identifier for the item */
@@ -114,8 +119,8 @@ interface DropdownItem {
   disabled?: boolean
   /** Whether the item is active/selected */
   active?: boolean
-  /** Function to execute when item is clicked */
-  action?: () => void
+  /** Function to execute when item is clicked. Return a Promise to keep dropdown open with a spinner until resolved. */
+  action?: () => void | Promise<void>
   /** Whether this item is a divider */
   divider?: boolean
   /** Keyboard shortcut text to display */
@@ -279,14 +284,30 @@ const handleClose = (hide: () => void) => {
   emit("close")
 }
 
-const handleItemClick = (item: DropdownItem, hide: () => void) => {
-  if (item.disabled) return
+const loadingItemKey = ref<string | number | null>(null)
+
+const handleItemClick = async (item: DropdownItem, hide: () => void) => {
+  if (item.disabled || loadingItemKey.value !== null) return
 
   const itemIndex = props.items?.indexOf(item) ?? -1
   emit("select", item, itemIndex)
 
   if (item.action) {
-    item.action()
+    const result = item.action()
+
+    if (result instanceof Promise) {
+      const key = item.id ?? itemIndex
+      loadingItemKey.value = key
+      try {
+        await result
+        handleClose(hide)
+      } catch {
+        // Error handling is done by the caller
+      } finally {
+        loadingItemKey.value = null
+      }
+      return
+    }
   }
 
   if (props.closeOnItemClick) {
