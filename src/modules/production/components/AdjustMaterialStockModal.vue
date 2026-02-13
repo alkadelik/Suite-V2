@@ -50,9 +50,8 @@ const reasonOptions = {
 }
 
 interface FormValues {
-  adjustmentType: { label: string; value: string }
   quantity: string
-  cost_per_unit: string
+  unit_cost: string
   reason: { label: string; value: string } | null
   notes: string
 }
@@ -79,12 +78,12 @@ const { handleSubmit, meta, resetForm, values, setFieldValue } = useForm<FormVal
           }
           return true
         }),
-      cost_per_unit: yup
+      unit_cost: yup
         .number()
         .transform((value, originalValue) => (originalValue === "" ? undefined : value))
-        .typeError("Cost per unit must be a number")
-        .required("Cost per unit is required")
-        .positive("Cost per unit must be greater than 0"),
+        .typeError("unit cost must be a number")
+        .required("unit cost is required")
+        .positive("unit cost must be greater than 0"),
       reason: yup
         .object()
         .shape({ label: yup.string().required(), value: yup.string().required() })
@@ -95,7 +94,7 @@ const { handleSubmit, meta, resetForm, values, setFieldValue } = useForm<FormVal
   ),
   initialValues: {
     quantity: "",
-    cost_per_unit: "",
+    unit_cost: "",
     reason: null,
     notes: "",
   },
@@ -127,22 +126,24 @@ const onSubmit = handleSubmit((values) => {
   if (!selectedMaterial.value) return
 
   const payload = {
-    material_id: selectedMaterial.value.uid,
-    adjustment_type: adjustmentType.value,
+    movement_type: adjustmentType.value,
     quantity: Number(values.quantity),
-    cost_per_unit: Number(values.cost_per_unit),
+    unit_cost: Number(values.unit_cost),
     reason: values.reason!.value,
-    notes: values.notes || undefined,
+    notes: values.notes || "",
   }
 
-  adjustStock(payload, {
-    onSuccess: () => {
-      toast.success("Stock adjusted successfully")
-      emit("refresh")
-      closeModal()
+  adjustStock(
+    { id: selectedMaterial.value.uid, payload },
+    {
+      onSuccess: () => {
+        toast.success("Stock adjusted successfully")
+        emit("refresh")
+        closeModal()
+      },
+      onError: displayError,
     },
-    onError: displayError,
-  })
+  )
 }, onInvalidSubmit)
 
 // Close modal
@@ -225,8 +226,8 @@ watch(adjustmentType, () => {
 
         <FormField
           type="text"
-          name="cost_per_unit"
-          label="Cost per Unit"
+          name="unit_cost"
+          label="unit cost"
           :placeholder="`e.g. ${formatCurrency(12400)}`"
         />
 

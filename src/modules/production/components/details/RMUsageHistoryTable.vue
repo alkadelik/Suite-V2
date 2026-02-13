@@ -9,7 +9,7 @@ import { USAGE_HISTORY_COLUMN } from "@modules/production/constants"
 import { TMovement, TRawMaterial } from "@modules/production/types"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, ref } from "vue"
-import RMTableCard from "./RMTableCard.vue"
+import RMUsageCard from "./RMUsageCard.vue"
 
 const props = defineProps<{ usage: TMovement[]; material: TRawMaterial }>()
 
@@ -56,35 +56,7 @@ const onRowClick = (batch: TMovement) => {
         </template>
 
         <template #mobile="{ item }">
-          <RMTableCard :title="formatDate(new Date())">
-            <template #append>
-              <Chip
-                :label="item.movement_type"
-                :color="item.movement_type === 'add' ? 'success' : 'error'"
-                radius="md"
-                class="capitalize"
-                :icon="item.movement_type === 'add' ? 'arrow-up' : 'arrow-down'"
-              />
-            </template>
-            <template #body>
-              <div>
-                <p class="text-sm font-medium">
-                  {{ Number(item.quantity).toLocaleString() }} {{ props.material?.unit }}
-                </p>
-                <p class="text-core-600 text-xs">Quantity</p>
-              </div>
-              <div>
-                <p class="text-sm font-medium">
-                  {{ formatCurrency(Number(item.unit_cost)) }} / {{ props.material?.unit }}
-                </p>
-                <p class="text-core-600 text-xs">Cost</p>
-              </div>
-              <div>
-                <p class="text-sm font-medium">{{ "--" }}</p>
-                <p class="text-core-600 text-xs">Performed BY</p>
-              </div>
-            </template>
-          </RMTableCard>
+          <RMUsageCard :item="item" :material="props.material" />
         </template>
       </DataTable>
     </div>
@@ -98,38 +70,55 @@ const onRowClick = (batch: TMovement) => {
       variant="fullscreen"
       @close="openDetails = false"
     >
-      <div class="space-y-6">
+      <div v-if="selectedHistory" class="space-y-6">
         <div class="flex flex-col items-center justify-center gap-2">
-          <Chip label="IN" icon="arrow-up" color="success" radius="md" />
-          <h4 class="text-3xl font-bold md:text-4xl">50 kg</h4>
-          <p class="text-sm font-medium md:text-base">{{ formatDate(new Date()) }}</p>
+          <Chip
+            :label="selectedHistory.movement_type"
+            class="capitalize"
+            :icon="selectedHistory.movement_type === 'add' ? 'arrow-up' : 'arrow-down'"
+            :color="selectedHistory.movement_type === 'add' ? 'success' : 'error'"
+            radius="md"
+          />
+          <h4 class="text-3xl font-bold md:text-4xl">
+            {{ Number(selectedHistory.quantity).toLocaleString() }} {{ props.material?.unit }}
+          </h4>
+          <p class="text-sm font-medium md:text-base">
+            {{ formatDate(new Date(selectedHistory.created_at)) }}
+          </p>
         </div>
 
         <div class="border-core-300 bg-core-25 my-6 space-y-3 rounded-xl border p-4">
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Reason</span>
-            <Chip label="Purchase Order" color="blue" />
+            <Chip :label="selectedHistory.reason" color="blue" />
           </p>
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Quantity</span>
-            <span class="font-medium capitalize">50 kg</span>
+            <span class="font-medium capitalize"
+              >{{ Number(selectedHistory.quantity).toLocaleString() }}
+              {{ props.material?.unit }}</span
+            >
           </p>
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Cost</span>
-            <span class="font-medium">{{ formatCurrency(4800 * 50) }}</span>
+            <span class="font-medium">{{
+              formatCurrency(Number(selectedHistory.unit_cost) * Number(selectedHistory.quantity))
+            }}</span>
           </p>
-          <p class="flex justify-between text-sm">
+          <p v-if="selectedHistory.performed_by" class="flex justify-between text-sm">
             <span class="text-core-600">Performed By</span>
-            <span class="font-medium capitalize">Adanna O.</span>
+            <span class="font-medium capitalize">{{ selectedHistory.performed_by }}</span>
           </p>
         </div>
 
-        <div class="border-core-300 bg-core-25 my-6 space-y-3 rounded-xl border p-4">
+        <div
+          v-if="selectedHistory.notes"
+          class="border-core-300 bg-core-25 my-6 space-y-3 rounded-xl border p-4"
+        >
           <p class="flex flex-col text-sm">
             <span class="text-core-600">Notes</span>
             <span class="font-medium">
-              This area contains a sample note which I have added as merchant that has made bastard
-              money on Leyyow
+              {{ selectedHistory.notes }}
             </span>
           </p>
         </div>

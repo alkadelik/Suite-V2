@@ -32,7 +32,7 @@ const onUpdateTheme = () => {
   if (!selectedTheme.value) return
   updateActiveTheme(selectedTheme.value.uid, {
     onSuccess: () => {
-      toast.success(`${selectedTheme.value?.name} theme applied successfully.`)
+      toast.success(`${selectedTheme.value?.name?.toUpperCase()} theme applied successfully.`)
       refetch()
       openConfirm.value = false
     },

@@ -123,7 +123,7 @@
               v-model:facebook-link="formState.facebook_url"
               v-model:twitter-link="formState.x_url"
               v-model:tiktok-link="formState.tiktok_url"
-              v-model:size-chart-link="formState.size_chart_url"
+              v-model:size-chart="formState.size_chart"
               @change-section="changeSection"
             />
           </div>
@@ -170,7 +170,7 @@
           v-model:facebook-link="formState.facebook_url"
           v-model:twitter-link="formState.x_url"
           v-model:tiktok-link="formState.tiktok_url"
-          v-model:size-chart-link="formState.size_chart_url"
+          v-model:size-chart="formState.size_chart"
           @change-section="changeSection"
         />
       </div>
@@ -235,7 +235,7 @@ const formState = ref({
   facebook_url: "",
   x_url: "",
   tiktok_url: "",
-  size_chart_url: "",
+  size_chart: null as File | string | null,
 })
 
 // Color palette configurations
@@ -307,7 +307,7 @@ watch(
       formState.value.facebook_url = data.facebook_url || ""
       formState.value.x_url = data.x_url || ""
       formState.value.tiktok_url = data.tiktok_url || ""
-      formState.value.size_chart_url = data.size_chart_url || ""
+      formState.value.size_chart = data.size_chart || null
 
       if (data.color_scheme) setPaletteFromColorScheme(data.color_scheme)
     }
@@ -330,13 +330,15 @@ const publishSettings = () => {
   formData.append("facebook_url", formState.value.facebook_url)
   formData.append("x_url", formState.value.x_url)
   formData.append("tiktok_url", formState.value.tiktok_url)
-  formData.append("size_chart_url", formState.value.size_chart_url)
   formData.append("color_scheme", JSON.stringify(getColorScheme()))
   if (formState.value.logo instanceof File) {
     formData.append("logo", formState.value.logo)
   }
   if (formState.value.favicon instanceof File) {
     formData.append("favicon", formState.value.favicon)
+  }
+  if (formState.value.size_chart instanceof File) {
+    formData.append("size_chart", formState.value.size_chart)
   }
 
   formData.append("is_published", "true")

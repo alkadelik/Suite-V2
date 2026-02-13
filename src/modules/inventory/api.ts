@@ -41,6 +41,16 @@ export function useCreateCategory() {
   })
 }
 
+/** Update category images - bulk api request */
+export function useUpdateBulkCategoryImages() {
+  return useMutation({
+    mutationFn: (body: FormData) =>
+      baseApi.post("inventory/categories/update-images/", body, {
+        headers: { "Content-Type": "multipart/form-data" },
+      }),
+  })
+}
+
 /** Create product api request */
 export function useCreateProduct() {
   return useMutation({

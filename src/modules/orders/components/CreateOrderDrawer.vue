@@ -213,7 +213,8 @@ const vatAmount = computed(() => {
 
 const totalAmount = computed(() => {
   const deliveryFee =
-    shippingInfo.value.fulfilment_method === "delivery"
+    shippingInfo.value.fulfilment_method === "delivery" &&
+    shippingInfo.value.delivery_payment_option !== "free_shipping"
       ? Number(shippingInfo.value.delivery_fee)
       : 0
   return (
@@ -498,6 +499,7 @@ watch(
           :vatAmount="vatAmount"
           :totalAmount="totalAmount"
           :itemsCount="itemsCount"
+          :is-free-shipping="shippingInfo.delivery_payment_option === 'free_shipping'"
           @next="onNext"
           @prev="onPrev"
         />
@@ -516,6 +518,7 @@ watch(
           :vatAmount="vatAmount"
           :totalAmount="totalAmount"
           :loading="isPending"
+          :is-free-shipping="shippingInfo.delivery_payment_option === 'free_shipping'"
           @prev="onPrev"
           @submit="onCreateOrder"
         />
