@@ -38,7 +38,10 @@ const currentViewMode = computed({
   set: (value) => emit("update:viewMode", value),
 })
 
-const { data: products, isFetching } = useGetPopupInventory(route.params.id as string, debouncedSearch)
+const { data: products, isFetching } = useGetPopupInventory(
+  route.params.id as string,
+  debouncedSearch,
+)
 
 // Check if a product is selected
 const isProductSelected = (productUid: string) => {
