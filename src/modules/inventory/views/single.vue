@@ -670,7 +670,7 @@ const productMetrics = computed(
         prev_value: 0,
         icon: "shopping-cart",
         chipText:
-          productData.popup_quantity_taken > 0
+          productData.popup_quantity_taken > 0 && isHQ.value
             ? {
                 text: `+${productData.popup_quantity_taken} in popups`,
                 boldNumbers: true,

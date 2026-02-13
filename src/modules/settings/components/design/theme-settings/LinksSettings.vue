@@ -14,11 +14,12 @@
         />
 
         <FormField
-          v-model="sizeChartLink"
-          type="url"
-          name="size_chart_link"
-          label="Size Chart Link (if applicable)"
-          placeholder="https://example.com/size-chart"
+          v-model="sizeChartModel"
+          type="file"
+          name="size_chart"
+          accept="image/*"
+          :show-preview="true"
+          label="Size Chart Image (if applicable)"
         />
 
         <div>
@@ -129,7 +130,7 @@ const props = defineProps<{
   facebookLink: string
   twitterLink: string
   tiktokLink: string
-  sizeChartLink: string
+  sizeChart: File | string | null
 }>()
 
 const emit = defineEmits<{
@@ -138,7 +139,7 @@ const emit = defineEmits<{
   "update:facebookLink": [value: string]
   "update:twitterLink": [value: string]
   "update:tiktokLink": [value: string]
-  "update:sizeChartLink": [value: string]
+  "update:sizeChart": [value: File | string | null]
 }>()
 
 const termsLinkModel = computed({
@@ -146,9 +147,9 @@ const termsLinkModel = computed({
   set: (value) => emit("update:termsLink", value),
 })
 
-const sizeChartLink = computed({
-  get: () => props.sizeChartLink,
-  set: (value) => emit("update:sizeChartLink", value),
+const sizeChartModel = computed({
+  get: () => props.sizeChart,
+  set: (value) => emit("update:sizeChart", value),
 })
 
 const instagramLinkModel = computed({

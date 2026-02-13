@@ -128,9 +128,6 @@ watch(
   () => props.featuredProductsSection,
   (newSection) => {
     if (newSection) {
-      console.log(productOptions.value)
-      console.log(newSection.featured_products)
-      console.log(newSection.featured_products.map((p) => ({ label: p, value: p })))
       setValues({
         selection_mode: newSection.selection_mode || "default",
         products: productOptions.value.filter((option) =>
