@@ -41,11 +41,11 @@
                   placeholder="e.g. Shop Now"
                 />
 
-                <FormField
+                <!-- <FormField
                   :name="`heroSlides.${index}.cta_button_link`"
                   label="Button Link (optional)"
                   placeholder="e.g. https://yourstore.com/shop"
-                />
+                /> -->
 
                 <div class="flex justify-between border-t border-gray-200 pt-4">
                   <AppButton
@@ -250,7 +250,6 @@ const handleDeleteConfirm = (): void => {
           heroSlides: [...heroSlides.value],
         })
         emit("refetch")
-        window.location.reload()
         showDeleteModal.value = false
         deleteIndex.value = null
         isDeletingSlide.value = false

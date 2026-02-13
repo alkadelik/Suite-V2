@@ -43,7 +43,7 @@ const props = defineProps<{
 
             <!-- date -->
             <p class="ml-auto pl-4 text-xs font-medium">
-              {{ formatDate(new Date(item.created_at)) }}
+              {{ formatDate(item.created_at) }}
             </p>
           </div>
         </div>

@@ -127,7 +127,7 @@ const handleSubmit = () => {
       <div class="mt-2 w-full border-t border-gray-200" />
 
       <!-- Recipes -->
-      <section class="p-4 md:px-6">
+      <section v-if="false" class="p-4 md:px-6">
         <h3 class="!font-outfit mb-4 text-base font-semibold md:text-lg">Recipes</h3>
         <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
           <div

@@ -77,44 +77,47 @@ const { setPlanUpgradeModal } = useSettingsStore()
       :open="open"
       @close="emit('close')"
       max-width="full"
-      body-class="bg-white"
+      body-class="bg-white pt-0!"
       :show-header="false"
     >
-      <div class="flex justify-end">
-        <Icon name="close-circle" size="20" @click="emit('close')" />
-      </div>
-      <div class="flex items-center gap-4">
-        <div class="bg-core-200 flex size-10 items-center justify-center rounded-xl">
-          <Icon name="shop" class="text-primary-800" size="24" />
+      <div class="sticky top-0 z-20 bg-white pt-2 pb-4">
+        <div class="flex justify-end">
+          <Icon name="close-circle" size="20" @click="emit('close')" />
         </div>
-        <div class="min-w-0 flex-1">
-          <div class="mt-2 flex items-end gap-2">
-            <p class="truncate font-medium">{{ storeDetails?.name }}</p>
-            <Chip v-if="currentLocation?.is_hq" label="HQ" class="shrink-0" />
+        <div class="flex items-center gap-4">
+          <div class="bg-core-200 flex size-10 items-center justify-center rounded-xl">
+            <Icon name="shop" class="text-primary-800" size="24" />
           </div>
-          <div class="flex min-w-0 items-center gap-2 text-sm text-gray-600">
-            <p class="truncate">{{ storefrontUrl }}</p>
-            <Icon
-              name="copy"
-              size="24"
-              class="text-primary-600 shrink-0 cursor-pointer"
-              @click="clipboardCopy('https://' + storefrontUrl)"
-            />
+          <div class="min-w-0 flex-1">
+            <div class="mt-2 flex items-end gap-2">
+              <p class="truncate font-medium">{{ storeDetails?.name }}</p>
+              <Chip v-if="currentLocation?.is_hq" label="HQ" class="shrink-0" />
+            </div>
+            <div class="flex min-w-0 items-center gap-2 text-sm text-gray-600">
+              <p class="truncate">{{ storefrontUrl }}</p>
+              <Icon
+                name="copy"
+                size="24"
+                class="text-primary-600 shrink-0 cursor-pointer"
+                @click="clipboardCopy('https://' + storefrontUrl)"
+              />
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="bg-primary-25 mt-6 mb-10 rounded-2xl p-3">
-        <div class="mb-3 rounded-xl bg-white p-2">
+      <div class="bg-primary-25 mt-6 mb-10 rounded-2xl">
+        <div class="bg-primary-25 sticky top-[100px] z-10 rounded-xl p-2">
           <TextField
             left-icon="search-lg"
             size="sm"
             class="w-full"
             placeholder="Search for menu..."
             v-model="searchQuery"
+            container-class="bg-white!"
           />
         </div>
-        <div class="grid max-h-[380px] grid-cols-2 gap-4 overflow-y-auto">
+        <div class="grid grid-cols-2 gap-3 overflow-y-auto p-3 pt-2">
           <div
             v-for="action in quickActions"
             :key="action.label"
@@ -132,9 +135,9 @@ const { setPlanUpgradeModal } = useSettingsStore()
           >
             <div class="mb-1 flex items-center">
               <div
-                class="border-core-200 bg-bloom-50 mx-auto flex size-10 items-center justify-center rounded-full border p-2"
+                class="border-core-200 bg-bloom-50 mx-auto flex size-8 items-center justify-center rounded-full border p-2"
               >
-                <Icon :name="action.icon" size="28" />
+                <Icon :name="action.icon" size="24" />
               </div>
             </div>
             <span class="text-xs font-medium md:text-base">{{ action.label }}</span>
@@ -184,7 +187,7 @@ const { setPlanUpgradeModal } = useSettingsStore()
         />
       </div>
 
-      <div class="py-4" />
+      <div class="py-10" />
     </Drawer>
 
     <!--  -->

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { formatCurrency } from "@/utils/format-currency"
 import { startCase } from "@/utils/format-strings"
+import { formatDate } from "@/utils/formatDate"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
-import { formatDate } from "@modules/customers/utils/dateFormatter"
 import { TBatch, TRawMaterial } from "@modules/production/types"
 import { HTMLAttributes } from "vue"
 
@@ -40,7 +40,7 @@ const props = defineProps<{
 
             <!-- date -->
             <p class="ml-auto pl-4 text-xs font-medium">
-              {{ formatDate(new Date(item.date_added)) }}
+              {{ formatDate(item.date_added) }}
             </p>
             <span class="text-lg">&bull;</span>
             <p class="text-xs font-medium">

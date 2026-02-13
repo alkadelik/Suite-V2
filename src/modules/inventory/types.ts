@@ -131,6 +131,7 @@ export interface IProductCategory {
   is_active: boolean
   created_at: string
   updated_at: string
+  image?: string | null
 }
 
 // Product attribute definition

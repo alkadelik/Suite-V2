@@ -66,14 +66,13 @@
               </div>
 
               <label class="relative cursor-pointer">
-                <img
-                  v-if="category.image"
-                  :src="category.image"
-                  alt="Category Image"
-                  class="size-10 rounded object-cover"
-                />
-                <div v-else class="flex size-10 items-center justify-center rounded bg-gray-200">
-                  <Icon name="box" size="18" class="text-gray-400" />
+                <div class="bg-core-100 flex size-10 items-center justify-center rounded-lg">
+                  <img
+                    v-if="category.image"
+                    :src="category.image"
+                    class="size-10 rounded-lg object-cover"
+                  />
+                  <Icon v-else name="shop-add" size="18" class="text-core-700" />
                 </div>
 
                 <button
@@ -90,7 +89,7 @@
                 />
               </label>
 
-              <span class="flex-1 text-sm font-medium text-gray-900">{{ category.name }}</span>
+              <span class="flex-1 text-sm font-medium text-gray-900">{{ category.name }} </span>
 
               <button
                 type="button"
@@ -143,7 +142,7 @@
               <Icon name="shop-add" size="18" class="text-core-700" />
             </div>
 
-            <span class="flex-1 text-sm font-medium text-gray-700">{{ category.name }}</span>
+            <span class="flex-1 text-sm font-medium text-gray-700">{{ category.name }} </span>
 
             <button
               type="button"
@@ -237,10 +236,15 @@ watch(
           const fullCategory = categories.find((c) => c.uid === item.uid)
           if (!fullCategory) return null
 
+          console.log("Mapping category item:", {
+            item,
+            fullCategory,
+          })
+
           return {
             ...fullCategory,
             position: 0,
-            image: item.image || null,
+            image: item.image || fullCategory?.image || null,
           }
         })
         .filter((item) => item !== null)
@@ -300,7 +304,7 @@ const saveSection = () => {
         const categoryImagesToUpdate = visibleCategories.value
           .filter((cat) => cat.imageFile)
           .map((cat) => ({
-            category_uid: cat.uid,
+            uid: cat.uid,
             image: cat.imageFile!,
           }))
 
@@ -308,8 +312,8 @@ const saveSection = () => {
         if (categoryImagesToUpdate.length > 0) {
           const bulkFormData = new FormData()
           categoryImagesToUpdate.forEach((item, index) => {
-            bulkFormData.append(`categories[${index}][uid]`, item.category_uid)
-            bulkFormData.append(`categories[${index}][image]`, item.image)
+            bulkFormData.append(`categories[${index}]uid`, item.uid)
+            bulkFormData.append(`categories[${index}]image`, item.image)
           })
 
           updateBulkCategoryImages(bulkFormData, {
