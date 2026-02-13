@@ -93,3 +93,30 @@ export const componentOptions = [
     image: componentPng,
   },
 ]
+
+export const recipeNameOptions = [
+  {
+    label: "Recipe",
+    value: "recipe",
+    desc: "Common for food, beverages & craft production",
+    // examples: "e.g., flour, sugar, cooking oil",
+    class: "border-warning-200 bg-warning-50",
+    image: ingredientPng,
+  },
+  {
+    label: "BOM (Bill of Materials)",
+    value: "bom",
+    desc: "Common for manufacturing & assembly",
+    // examples: "e.g. fabric, plastic bottles, packaging",
+    class: "border-blue-200 bg-blue-50",
+    image: materialPng,
+  },
+  {
+    label: "Formula",
+    value: "formula",
+    desc: "Common for chemicals & blends",
+    // examples: "e.g., screws, circuit boards, casings",
+    class: "border-purple-200 bg-purple-50",
+    image: componentPng,
+  },
+]

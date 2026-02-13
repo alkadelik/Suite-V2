@@ -16,6 +16,7 @@ export type TBatch = {
   total_cost: number
   source_type: string
   source_id: string | null
+  notes?: string // NOT IN API RESPONSE
 }
 
 export type TMovement = {
@@ -33,6 +34,7 @@ export type TMovement = {
     quantity: string
     batch_uid: string
   }
+  performed_by?: string // NOT IN API RESPONSE
 }
 
 export type TRawMaterial = {
@@ -102,5 +104,12 @@ export interface ICreateMaterialPayload {
   suppliers?: string[]
   expiry_date?: string
   reorder_threshold?: string
+  notes?: string
+}
+
+export interface IAdjustStockPayload {
+  movement_type: "add" | "remove"
+  quantity: number
+  reason: string
   notes?: string
 }
