@@ -97,9 +97,7 @@ const hasSubCategories = computed(() => {
   return (category?.sub_categories?.length ?? 0) > 0
 })
 
-const isMobile = useMediaQuery("(max-width: 1028px)")
-
-const isEditMode = computed(() => !!props.expense)
+const isMobile = computed(() => useMediaQuery("(max-width: 1028px)").value)
 
 interface FormValues {
   name: string
@@ -113,7 +111,7 @@ interface FormValues {
   receipt: File | null
 }
 
-const { handleSubmit, meta, resetForm, values, setFieldValue } = useForm<FormValues>({
+const { handleSubmit, resetForm, values, setFieldValue } = useForm<FormValues>({
   validationSchema: computed(() =>
     yup.object({
       name: yup
@@ -159,6 +157,22 @@ const { handleSubmit, meta, resetForm, values, setFieldValue } = useForm<FormVal
     receipt: null,
   },
   validateOnMount: false,
+})
+
+const isEditMode = computed(() => !!props.expense)
+
+const isValid = computed(() => {
+  // Manual validation check
+  const hasName = !!values.name && values.name.length >= 3
+  const hasAmount = !!values.amount && Number(values.amount) > 0
+  const hasCategory = !!values.category?.value
+  const hasDate = !!values.date
+  const hasStatus = !!values.status
+
+  // Check sub_category only if the selected category has sub-categories
+  const hasSubCategory = hasSubCategories.value ? !!values.sub_category?.value : true
+
+  return hasName && hasAmount && hasCategory && hasSubCategory && hasDate && hasStatus
 })
 
 // Watch category changes and clear sub_category
@@ -221,7 +235,7 @@ const onSubmit = handleSubmit((values) => {
     formData.append("vendor", values.vendor.value || "")
     formData.append("notes", values.notes || "")
     if (values.receipt) {
-      formData.append("receipt", values.receipt)
+      formData.append("attachment", values.receipt)
     }
 
     editExpense(
@@ -263,7 +277,7 @@ const onSubmit = handleSubmit((values) => {
   }
 }, onInvalidSubmit)
 
-// Reset form or populate with expense data when drawer opens
+// Populate form with expense data when drawer opens
 watch(
   () => props.open,
   (isOpen) => {
@@ -296,13 +310,23 @@ watch(
         })
         selectedCategory.value = categoryOption
       } else {
-        resetForm()
+        console.log("Resetting form for create mode")
+        // Reset to fresh form for create mode
+        resetForm({
+          values: {
+            name: "",
+            amount: "",
+            category: { label: "", value: "" },
+            sub_category: { label: "", value: "" },
+            vendor: { label: "", value: "" },
+            date: new Date().toISOString().split("T")[0],
+            status: "pending",
+            notes: "",
+            receipt: null,
+          },
+        })
         selectedCategory.value = { label: "", value: "" }
       }
-    } else {
-      // Clear form when drawer closes
-      resetForm()
-      selectedCategory.value = { label: "", value: "" }
     }
   },
 )
@@ -460,7 +484,7 @@ watch(
         class="w-full"
         :loading="isPending"
         :disabled="isPending"
-        :inactive="!meta.valid"
+        :inactive="!isValid"
         @click="onSubmit"
       />
     </template>

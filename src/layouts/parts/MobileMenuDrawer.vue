@@ -4,12 +4,13 @@ import { clipboardCopy } from "@/utils/others"
 import AppButton from "@components/AppButton.vue"
 import Chip from "@components/Chip.vue"
 import Drawer from "@components/Drawer.vue"
+import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
 import { useAuthStore } from "@modules/auth/store"
 import PlansModal from "@modules/settings/components/PlansModal.vue"
 import { useSettingsStore } from "@modules/settings/store"
 import { useSharedStore } from "@modules/shared/store"
-import { computed } from "vue"
+import { computed, ref } from "vue"
 
 defineProps<{ open: boolean }>()
 
@@ -21,6 +22,8 @@ const currentLocation = computed(() => useSettingsStore().activeLocation)
 const user = computed(() => useAuthStore().user)
 
 const isHQ = computed(() => currentLocation.value?.is_hq ?? true)
+
+const searchQuery = ref("")
 
 const quickActions = computed(() => {
   const allActions = [
@@ -37,6 +40,14 @@ const quickActions = computed(() => {
       icon: "tag",
       action: () => toast.info("This module is coming soon!", { title: "Discounts" }),
     },
+    { label: "Email List", icon: "sms", to: "/email-list" },
+    { label: "Raw Materials", icon: "box", to: "/raw-materials" },
+    {
+      label: "Recipes",
+      icon: "box",
+      // to: "/recipes",
+      action: () => toast.info("This module is coming soon!", { title: "Recipes" }),
+    },
     {
       label: "Support",
       icon: "life-buoy",
@@ -48,7 +59,11 @@ const quickActions = computed(() => {
     { label: "Settings", icon: "setting", to: "/settings" },
   ]
 
-  return allActions.filter((action) => !action.hqOnly || isHQ.value)
+  const filteredActions = allActions.filter((action) =>
+    action.label.toLowerCase().includes(searchQuery.value.toLowerCase()),
+  )
+
+  return filteredActions.filter((action) => !action.hqOnly || isHQ.value)
 })
 
 const showPlans = computed(() => useSettingsStore().showPlanUpgradeModal)
@@ -90,7 +105,16 @@ const { setPlanUpgradeModal } = useSettingsStore()
       </div>
 
       <div class="bg-primary-25 mt-6 mb-10 rounded-2xl p-3">
-        <div class="grid grid-cols-2 gap-4">
+        <div class="mb-3 rounded-xl bg-white p-2">
+          <TextField
+            left-icon="search-lg"
+            size="sm"
+            class="w-full"
+            placeholder="Search for menu..."
+            v-model="searchQuery"
+          />
+        </div>
+        <div class="grid max-h-[380px] grid-cols-2 gap-4 overflow-y-auto">
           <div
             v-for="action in quickActions"
             :key="action.label"
@@ -159,6 +183,8 @@ const { setPlanUpgradeModal } = useSettingsStore()
           class="absolute top-4 right-6 h-16 w-auto object-contain"
         />
       </div>
+
+      <div class="py-4" />
     </Drawer>
 
     <!--  -->
