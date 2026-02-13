@@ -82,6 +82,7 @@ export interface IStoreDetails {
   tax_collection_enabled?: boolean
   tax_rate?: string
   add_tax_to_product_price?: boolean
+  material_type?: string
 }
 
 export interface IUpdateStoreDetailsPayload {
@@ -105,7 +106,7 @@ export interface IUpdateStoreDetailsPayload {
   collect_vat?: boolean
   tax_collection_enabled?: boolean
   add_tax_to_product_price?: boolean
-  raw_materials?: string
+  material_type?: string
 }
 
 export type TIndustry = {
@@ -203,6 +204,8 @@ export interface IThemeSettings {
   }
   typography: string
   button: string
+  button_text_color: string
+  show_button_outline: boolean
   footer_email: string
   footer_phone: string
   terms_and_conditions_url: string
@@ -215,6 +218,7 @@ export interface IThemeSettings {
 
 export type SectionType =
   | "hero"
+  | "hero_carousel"
   | "about"
   | "featured_products"
   | "cta_block_1"
@@ -249,6 +253,16 @@ export interface ThemeSection {
   position: number
   created_at: string
   updated_at: string
+  //
+  hero_carousel_items?: {
+    uid: string
+    image?: string
+    video?: string
+    title: string
+    subtitle: string
+    cta_text: string
+    cta_link: string
+  }[]
 }
 
 export interface IVersionHistory {

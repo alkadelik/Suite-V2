@@ -63,7 +63,7 @@ const infoIconContainerClasses = computed(() => {
     info: "border-blue-100",
   }
 
-  return ["rounded-full border-2 p-0.5", variantClasses[props.variant]]
+  return ["rounded-full border-2 p-0.5 flex-shrink-0!", variantClasses[props.variant]]
 })
 
 const infoIconInnerClasses = computed(() => {
@@ -74,7 +74,10 @@ const infoIconInnerClasses = computed(() => {
     info: "border-blue-300",
   }
 
-  return ["rounded-full border-2 p-0.5", variantClasses[props.variant]]
+  return [
+    "rounded-full border-2 p-0.5 flex items-center justify-center",
+    variantClasses[props.variant],
+  ]
 })
 
 const infoIconClasses = computed(() => {

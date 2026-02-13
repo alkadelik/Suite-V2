@@ -22,7 +22,7 @@ const router = useRouter()
 
 const openRegister = ref(false)
 const openConfirmation = ref(false)
-const { data: popupEvt, isLoading } = useGetEventfulPopupById(route.params.id as string)
+const { data: popupEvt, isLoading, refetch } = useGetEventfulPopupById(route.params.id as string)
 
 const overviewInfo = computed(() => {
   return {
@@ -219,6 +219,7 @@ const handleConfirmFreeRegistration = () => {
       :event="popupEvt"
       :open="openRegister"
       @close="openRegister = false"
+      @refresh="refetch"
     />
 
     <ConfirmationModal
