@@ -9,7 +9,16 @@
     @close="emit('update:modelValue', false)"
     body-class="!p-0"
   >
+    <!-- Skeleton loader while fetching customer data -->
+    <div v-if="loading" class="flex-1 space-y-4 px-4 py-4 md:space-y-6 md:px-6">
+      <div v-for="i in 7" :key="i" class="space-y-2">
+        <div class="h-4 w-24 animate-pulse rounded bg-gray-200" />
+        <div class="h-10 w-full animate-pulse rounded-lg bg-gray-200" />
+      </div>
+    </div>
+
     <AppForm
+      v-else
       :schema="schema"
       :initial-values="initialValues"
       @submit="onSubmit"
@@ -250,7 +259,7 @@ const onSubmit = (values: FormValues) => {
     city: values.city.trim() || undefined,
     date_of_birth: values.date_of_birth || undefined,
     instagram_handle: values.instagram_handle.trim() || undefined,
-    location: user?.assigned_locations[0].uid || "",
+    ...(props.mode === "add" ? { location: user?.assigned_locations[0].uid || "" } : {}),
   }
 
   // remove empty strings from payload

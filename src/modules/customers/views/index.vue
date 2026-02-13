@@ -194,6 +194,7 @@
       v-model="showCustomerFormDrawer"
       :mode="formMode"
       :customer="formMode === 'edit' && customerData?.data ? customerData.data : customer"
+      :loading="formMode === 'edit' && isFetchingCustomer"
       @close="showCustomerFormDrawer = false"
       @refresh="refetch()"
     />
@@ -263,7 +264,7 @@ const { checkPremiumAccess } = usePremiumAccess()
 
 // Get individual customer data when customerUid is set
 const customerUid = ref<string>("")
-const { data: customerData } = useGetCustomer(customerUid, true)
+const { data: customerData, isFetching: isFetchingCustomer } = useGetCustomer(customerUid, true)
 
 // Computed properties
 const customers = computed(() => {
@@ -389,9 +390,7 @@ const handleAction = (action: "archive" | "edit" | "view" | "delete", item: ICus
     formMode.value = "edit"
     customerUid.value = item.uid
     router.replace({ query: { uid: item.uid } })
-    setTimeout(() => {
-      showCustomerFormDrawer.value = true
-    }, 0)
+    showCustomerFormDrawer.value = true
   } else if (action === "delete") {
     customer.value = item
     showDeleteConfirmationModal.value = true
@@ -473,7 +472,12 @@ watch(
 watch(
   () => route.query.uid,
   (newVal) => {
-    if (newVal && typeof newVal === "string" && !route.query.create) {
+    if (
+      newVal &&
+      typeof newVal === "string" &&
+      !route.query.create &&
+      !showCustomerFormDrawer.value
+    ) {
       customerUid.value = newVal
       formMode.value = "view"
       showViewCustomerDrawer.value = true

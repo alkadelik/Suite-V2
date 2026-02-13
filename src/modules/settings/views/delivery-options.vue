@@ -412,7 +412,7 @@ const handleRefresh = () => {
 
             <!-- Case 2: Has shipping account - Show automatic OR manual toggle (one at a time) -->
             <template v-if="showDeliveryOptions">
-              <!-- Automatic Delivery View -->
+              <!-- Managed Delivery View -->
               <template v-if="currentDeliveryView === 'automatic'">
                 <div class="flex items-start gap-3 md:items-center md:gap-6">
                   <span
@@ -423,7 +423,7 @@ const handleRefresh = () => {
 
                   <div class="flex-1">
                     <h3 class="mb-1 flex items-end gap-2 text-base font-semibold">
-                      Allow Automatic Delivery?
+                      Allow Managed Delivery?
                       <button
                         v-if="form.delivery_enabled"
                         type="button"
@@ -519,7 +519,7 @@ const handleRefresh = () => {
                   />
                 </div>
 
-                <!-- Switch to Automatic Delivery Banner -->
+                <!-- Switch to Managed Delivery Banner -->
                 <div
                   class="border-primary-600 bg-primary-25 text-warning-700 mt-6 flex cursor-pointer flex-col items-center justify-between gap-3 rounded-lg border px-4 py-6 md:flex-row"
                   @click="handleSwitchDeliveryType"
@@ -535,7 +535,7 @@ const handleRefresh = () => {
                       </div>
                     </div>
                     <div class="flex flex-col">
-                      <h6 class="text-md font-semibold">Switch to Automatic Delivery Service</h6>
+                      <h6 class="text-md font-semibold">Switch to Managed Delivery Service</h6>
                       <p class="text-sm">Let ShipBubble handle the delivery logistics for you.</p>
                     </div>
                   </div>

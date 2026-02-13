@@ -74,7 +74,6 @@ import { useSettingsStore } from "@modules/settings/store"
 import { TLoginPayload } from "../types"
 import { toast } from "@/composables/useToast"
 import { fetchLiveStatusForLogin } from "@modules/shared/api"
-import { fetchLocationsForLogin } from "@modules/settings/api"
 import AppForm from "@components/form/AppForm.vue"
 import FormField from "@components/form/FormField.vue"
 import SectionHeader from "@components/SectionHeader.vue"
@@ -131,20 +130,14 @@ const onSubmit = (values: TLoginPayload) => {
             try {
               const liveStatus = await fetchLiveStatusForLogin(user.store_slug)
               if (liveStatus.data?.completion_percentage !== 100) {
-                try {
-                  const locations = await fetchLocationsForLogin()
-                  const hqLocation = locations.find((loc) => loc.is_hq)
-                  if (hqLocation) {
-                    const settingsStore = useSettingsStore()
-                    settingsStore.setActiveLocation(hqLocation)
-                    settingsStore.setLocations(locations)
-                    router.push("/onboarding")
-                    return
-                  }
-                } catch {
-                  // If fetching locations fails, go to dashboard
+                // Only redirect to onboarding if user has HQ in their assigned locations
+                const assignedHq = assignedLocationsMap.find((loc) => loc.is_hq)
+                if (assignedHq) {
+                  setActiveLocation(assignedHq)
+                  router.push("/onboarding")
+                  return
                 }
-                // Fallback to dashboard if no HQ found or fetch failed
+                // Non-HQ users go straight to dashboard
                 router.push("/dashboard")
                 return
               }
