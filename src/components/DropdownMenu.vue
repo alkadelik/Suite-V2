@@ -120,7 +120,7 @@ interface DropdownItem {
   /** Whether the item is active/selected */
   active?: boolean
   /** Function to execute when item is clicked. Return a Promise to keep dropdown open with a spinner until resolved. */
-  action?: () => void | Promise<void>
+  action?: () => unknown
   /** Whether this item is a divider */
   divider?: boolean
   /** Keyboard shortcut text to display */

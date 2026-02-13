@@ -326,6 +326,7 @@ export interface IProductFormPayload {
   category: string
   brand: string
   is_active: boolean
+  is_hidden_from_storefront?: boolean
   is_variable: boolean
   requires_approval: boolean
   variants: IProductVariant[]
