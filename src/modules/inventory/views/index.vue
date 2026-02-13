@@ -125,7 +125,7 @@
                 class="min-w-0 flex-1"
               />
               <Icon
-                v-if="!item.is_active"
+                v-if="item.is_hidden_from_storefront"
                 name="eye-slash-outline"
                 size="16"
                 class="flex-shrink-0 text-gray-500"
@@ -196,15 +196,15 @@
     <ConfirmationModal
       v-model="showHideConfirmationModal"
       @close="showHideConfirmationModal = false"
-      :header="product?.is_active ? 'Hide Product' : 'Unhide Product'"
+      :header="product?.is_hidden_from_storefront ? 'Unhide Product' : 'Hide Product'"
       :paragraph="
-        product?.is_active
-          ? 'Are you sure you want to hide this product from the storefront? Customers will not be able to see or purchase it.'
-          : 'Are you sure you want to make this product visible on the storefront? Customers will be able to see and purchase it.'
+        product?.is_hidden_from_storefront
+          ? 'Are you sure you want to make this product visible on the storefront? Customers will be able to see and purchase it.'
+          : 'Are you sure you want to hide this product from the storefront? Customers will not be able to see or purchase it.'
       "
-      :variant="product?.is_active ? 'warning' : 'success'"
+      :variant="product?.is_hidden_from_storefront ? 'success' : 'warning'"
       info-box-variant="neutral"
-      :action-label="product?.is_active ? 'Hide' : 'Unhide'"
+      :action-label="product?.is_hidden_from_storefront ? 'Unhide' : 'Hide'"
       :loading="isUpdatingProduct"
       @confirm="handleToggleVisibility"
     />
@@ -416,6 +416,7 @@ watch(
           needs_reorder: details.data.needs_reorder,
           variants_count: details.data.variants.length,
           is_active: details.data.is_active,
+          is_hidden_from_storefront: details.data.is_hidden_from_storefront,
           category: details.data.category,
           created_at: details.data.created_at,
           primary_image: null,
@@ -608,18 +609,18 @@ const getActionItems = (item: TProduct) => {
     {
       divider: true,
     },
-    item.is_active
+    item.is_hidden_from_storefront
       ? {
-          id: "hide",
-          label: "Hide Product",
-          icon: "eye-slash-outline",
-          action: () => handleAction("hide", item),
-        }
-      : {
           id: "unhide",
           label: "Unhide Product",
           icon: "eye-outline",
           action: () => handleAction("unhide", item),
+        }
+      : {
+          id: "hide",
+          label: "Hide Product",
+          icon: "eye-slash-outline",
+          action: () => handleAction("hide", item),
         },
     {
       id: "delete",
@@ -670,17 +671,17 @@ const handleDeleteProduct = () => {
 const handleToggleVisibility = () => {
   if (!product.value) return
 
-  const isCurrentlyActive = product.value.is_active
-  const newActiveState = !isCurrentlyActive
+  const isCurrentlyHidden = product.value.is_hidden_from_storefront
+  const newHiddenState = !isCurrentlyHidden
 
   updateProduct(
-    { uid: product.value.uid, is_active: newActiveState },
+    { uid: product.value.uid, is_hidden_from_storefront: newHiddenState },
     {
       onSuccess: () => {
         toast.success(
-          newActiveState
-            ? "Product is now visible on storefront"
-            : "Product hidden from storefront",
+          newHiddenState
+            ? "Product hidden from storefront"
+            : "Product is now visible on storefront",
         )
         showHideConfirmationModal.value = false
         product.value = null

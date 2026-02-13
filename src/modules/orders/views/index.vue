@@ -286,60 +286,68 @@ const handleSharePaymentLink = async (order: TOrder) => {
 }
 
 // Share receipt using Web Share API
-const handleShareReceipt = (order: TOrder) => {
-  generateReceipt(order.uid, {
-    onSuccess: (response) => {
-      const receiptUrl = response.data?.data.url as string | undefined
-      if (receiptUrl && navigator.share) {
-        navigator
-          .share({
-            title: `Receipt for Order #${order.order_number}`,
-            text: `Receipt for order #${order.order_number}`,
-            url: receiptUrl,
-          })
-          .catch(() => {
-            // User cancelled or share failed, fallback to copy
-            navigator.clipboard.writeText(receiptUrl).then(() => {
-              toast.info("Receipt link copied to clipboard!")
+const handleShareReceipt = (order: TOrder): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    generateReceipt(order.uid, {
+      onSuccess: (response) => {
+        const receiptUrl = response.data?.data.url as string | undefined
+        if (receiptUrl && navigator.share) {
+          navigator
+            .share({
+              title: `Receipt for Order #${order.order_number}`,
+              text: `Receipt for order #${order.order_number}`,
+              url: receiptUrl,
             })
+            .catch(() => {
+              navigator.clipboard.writeText(receiptUrl).then(() => {
+                toast.info("Receipt link copied to clipboard!")
+              })
+            })
+        } else if (receiptUrl) {
+          navigator.clipboard.writeText(receiptUrl).then(() => {
+            toast.info("Receipt link copied to clipboard!")
           })
-      } else if (receiptUrl) {
-        // Fallback for browsers that don't support Web Share API
-        navigator.clipboard.writeText(receiptUrl).then(() => {
-          toast.info("Receipt link copied to clipboard!")
-        })
-      }
-    },
-    onError: displayError,
+        }
+        resolve()
+      },
+      onError: (error) => {
+        displayError(error)
+        reject(error)
+      },
+    })
   })
 }
 
 // Share invoice using Web Share API
-const handleShareInvoice = (order: TOrder) => {
-  toast.info("Generating invoice...")
-  generateInvoice(order.uid, {
-    onSuccess: (response) => {
-      const invoiceUrl = response.data?.data.url as string | undefined
-      if (invoiceUrl && navigator.share) {
-        navigator
-          .share({
-            title: `Invoice for Order #${order.order_number}`,
-            text: `Invoice for order #${order.order_number}`,
-            url: invoiceUrl,
-          })
-          .catch(() => {
-            navigator.clipboard.writeText(invoiceUrl).then(() => {
-              toast.info("Invoice link copied to clipboard!")
+const handleShareInvoice = (order: TOrder): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    generateInvoice(order.uid, {
+      onSuccess: (response) => {
+        const invoiceUrl = response.data?.data.url as string | undefined
+        if (invoiceUrl && navigator.share) {
+          navigator
+            .share({
+              title: `Invoice for Order #${order.order_number}`,
+              text: `Invoice for order #${order.order_number}`,
+              url: invoiceUrl,
             })
+            .catch(() => {
+              navigator.clipboard.writeText(invoiceUrl).then(() => {
+                toast.info("Invoice link copied to clipboard!")
+              })
+            })
+        } else if (invoiceUrl) {
+          navigator.clipboard.writeText(invoiceUrl).then(() => {
+            toast.info("Invoice link copied to clipboard!")
           })
-      } else if (invoiceUrl) {
-        navigator.clipboard.writeText(invoiceUrl).then(() => {
-          toast.info("Invoice link copied to clipboard!")
-        })
-      }
-      toast.success("Invoice generated successfully!")
-    },
-    onError: displayError,
+        }
+        resolve()
+      },
+      onError: (error) => {
+        displayError(error)
+        reject(error)
+      },
+    })
   })
 }
 

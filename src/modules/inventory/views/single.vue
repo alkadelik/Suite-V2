@@ -21,7 +21,7 @@
             {{ product?.data.name }}
           </h5>
           <Icon
-            v-if="!product?.data.is_active"
+            v-if="product?.data.is_hidden_from_storefront"
             name="eye-slash-outline"
             size="20"
             class="flex-shrink-0 text-gray-500"
@@ -138,15 +138,15 @@
     <ConfirmationModal
       v-model="showHideConfirmationModal"
       @close="showHideConfirmationModal = false"
-      :header="product?.data.is_active ? 'Hide Product' : 'Unhide Product'"
+      :header="product?.data.is_hidden_from_storefront ? 'Unhide Product' : 'Hide Product'"
       :paragraph="
-        product?.data.is_active
-          ? 'Are you sure you want to hide this product from the storefront? Customers will not be able to see or purchase it.'
-          : 'Are you sure you want to make this product visible on the storefront? Customers will be able to see and purchase it.'
+        product?.data.is_hidden_from_storefront
+          ? 'Are you sure you want to make this product visible on the storefront? Customers will be able to see and purchase it.'
+          : 'Are you sure you want to hide this product from the storefront? Customers will not be able to see or purchase it.'
       "
-      :variant="product?.data.is_active ? 'warning' : 'success'"
+      :variant="product?.data.is_hidden_from_storefront ? 'success' : 'warning'"
       info-box-variant="neutral"
-      :action-label="product?.data.is_active ? 'Hide' : 'Unhide'"
+      :action-label="product?.data.is_hidden_from_storefront ? 'Unhide' : 'Hide'"
       @confirm="handleToggleVisibility"
       :loading="isUpdatingProduct"
     />
@@ -391,6 +391,7 @@ const openProductEditDrawer = () => {
     needs_reorder: product.value.data.needs_reorder,
     variants_count: product.value.data.variants.length,
     is_active: product.value.data.is_active,
+    is_hidden_from_storefront: product.value.data.is_hidden_from_storefront,
     category: product.value.data.category,
     created_at: product.value.data.created_at,
     primary_image: null,
@@ -418,6 +419,7 @@ const openVariantPricingEdit = (variant: IProductVariantDetails) => {
     needs_reorder: product.value.data.needs_reorder,
     variants_count: product.value.data.variants.length,
     is_active: product.value.data.is_active,
+    is_hidden_from_storefront: product.value.data.is_hidden_from_storefront,
     category: product.value.data.category,
     created_at: product.value.data.created_at,
     primary_image: null,
@@ -447,6 +449,7 @@ const openImagesEditDrawer = () => {
     needs_reorder: product.value.data.needs_reorder,
     variants_count: product.value.data.variants.length,
     is_active: product.value.data.is_active,
+    is_hidden_from_storefront: product.value.data.is_hidden_from_storefront,
     category: product.value.data.category,
     created_at: product.value.data.created_at,
     primary_image: null,
@@ -473,6 +476,7 @@ const openPriceWeightEdit = () => {
     needs_reorder: product.value.data.needs_reorder,
     variants_count: product.value.data.variants.length,
     is_active: product.value.data.is_active,
+    is_hidden_from_storefront: product.value.data.is_hidden_from_storefront,
     category: product.value.data.category,
     created_at: product.value.data.created_at,
     primary_image: null,
@@ -501,6 +505,7 @@ const openVariantsManage = () => {
     needs_reorder: product.value.data.needs_reorder,
     variants_count: product.value.data.variants.length,
     is_active: product.value.data.is_active,
+    is_hidden_from_storefront: product.value.data.is_hidden_from_storefront,
     category: product.value.data.category,
     created_at: product.value.data.created_at,
     primary_image: null,
@@ -564,7 +569,7 @@ const actionItems = computed(() => {
   })
 
   if (isHQ.value) {
-    const isHidden = !product?.value?.data.is_active
+    const isHidden = product?.value?.data.is_hidden_from_storefront
 
     items.push(
       {
@@ -712,20 +717,20 @@ const handleDeleteProduct = () => {
 const handleToggleVisibility = () => {
   if (!product.value) return
 
-  const isCurrentlyActive = product.value.data.is_active
-  const newActiveState = !isCurrentlyActive
+  const isCurrentlyHidden = product.value.data.is_hidden_from_storefront
+  const newHiddenState = !isCurrentlyHidden
 
   updateProduct(
     {
       uid: product.value.data.uid,
-      is_active: newActiveState,
+      is_hidden_from_storefront: newHiddenState,
     },
     {
       onSuccess: () => {
         toast.success(
-          newActiveState
-            ? "Product is now visible on storefront"
-            : "Product hidden from storefront",
+          newHiddenState
+            ? "Product hidden from storefront"
+            : "Product is now visible on storefront",
         )
         showHideConfirmationModal.value = false
         queryClient.refetchQueries({ queryKey: ["products", uid] })
@@ -760,6 +765,7 @@ const handleAddVariant = () => {
     needs_reorder: product.value.data.needs_reorder,
     variants_count: product.value.data.variants.length,
     is_active: product.value.data.is_active,
+    is_hidden_from_storefront: product.value.data.is_hidden_from_storefront,
     category: product.value.data.category,
     created_at: product.value.data.created_at,
     primary_image: null,
