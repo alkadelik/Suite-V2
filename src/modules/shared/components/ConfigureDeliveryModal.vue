@@ -118,7 +118,7 @@
 
         <WarningBox header="Heads Up">
           <p class="text-xs md:text-sm">
-            For now, Leyyow doesn’t handle deliveries directly. You’ll be redirected to ShipBubble
+            For now, Leyyow doesn't handle deliveries directly. You'll be redirected to ShipBubble
             to set up your shipping account and select couriers that work for your store.
           </p>
         </WarningBox>

@@ -196,7 +196,9 @@ export function useVariantValidation(options: IVariantValidationOptions) {
       if (step.value === 1) {
         return isVariantConfigurationValid.value
       } else if (step.value === 2) {
-        return areVariantsValid.value
+        // In variants edit mode, price/stock/dimensions are hidden,
+        // so only check that variants exist
+        return variants.value.length > 0
       }
       // Step 3 (images) is optional
       return true

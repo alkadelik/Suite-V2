@@ -35,6 +35,7 @@ export type TProduct = {
   needs_reorder: boolean
   variants_count: number
   is_active: boolean
+  is_hidden_from_storefront: boolean
   category: string | null
   created_at: string
   primary_image: IProductImage | null
@@ -56,6 +57,7 @@ export interface IProductDetails {
   category_name: string
   brand: string
   is_active: boolean
+  is_hidden_from_storefront: boolean
   is_variable: boolean
   requires_approval: boolean
   variants: IProductVariantDetails[]
@@ -324,6 +326,7 @@ export interface IProductFormPayload {
   category: string
   brand: string
   is_active: boolean
+  is_hidden_from_storefront?: boolean
   is_variable: boolean
   requires_approval: boolean
   variants: IProductVariant[]

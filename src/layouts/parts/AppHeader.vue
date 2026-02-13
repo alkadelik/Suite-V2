@@ -1,54 +1,56 @@
 <template>
   <header class="fixed top-0 right-0 left-0 z-20 h-16 border-b border-gray-200 bg-white">
-    <div class="flex h-16 items-center gap-1.5 px-4">
-      <img
-        v-if="showLogo"
-        :src="`${isMobile ? '/LYW-icon.svg' : '/LYW.svg'}`"
-        alt="Leyyow"
-        class="h-8 w-auto cursor-pointer"
-        @click="router.push('/dashboard')"
-      />
-      <div class="hidden flex-1 lg:block" />
+    <Container>
+      <div class="flex h-16 items-center gap-1.5 px-4">
+        <img
+          v-if="showLogo"
+          :src="`${isMobile ? '/LYW-icon.svg' : '/LYW.svg'}`"
+          alt="Leyyow"
+          class="h-8 w-auto cursor-pointer"
+          @click="router.push('/dashboard')"
+        />
+        <div class="hidden flex-1 lg:block" />
 
-      <div v-if="isMobile" class="mx-auto">
-        <LocationDropdown />
+        <div v-if="isMobile" class="mx-auto">
+          <LocationDropdown />
+        </div>
+
+        <!-- Storefront status -->
+        <Chip v-if="!isMobile" color="alt" size="md" label="Storefront" class="!pr-1">
+          <template #append>
+            <Chip
+              showDot
+              :label="isLive ? 'Live' : 'Not live'"
+              :color="isLive ? 'success' : 'error'"
+            />
+          </template>
+        </Chip>
+        <!-- Notifications -->
+        <button class="rounded-xl p-2 hover:bg-gray-100" @click="showNotifications = true">
+          <Icon name="bell" size="20" />
+        </button>
+
+        <!-- User or CTA -->
+        <DropdownMenu :items="profileMenuItems" menuClass="w-56">
+          <template #prepend>
+            <div class="max-w-xs overflow-hidden border-b border-gray-200 px-4 py-2">
+              <p class="text-core-800 block w-full max-w-xs truncate text-sm font-medium">
+                {{ user?.first_name + " " + user?.last_name }}
+              </p>
+              <p class="text-core-600 block w-full max-w-xs truncate text-xs">
+                {{ user?.email }}
+              </p>
+            </div>
+          </template>
+          <template #trigger>
+            <Avatar
+              :name="user?.first_name + ' ' + user?.last_name"
+              backgroundColor="var(--color-core-950)"
+            />
+          </template>
+        </DropdownMenu>
       </div>
-
-      <!-- Storefront status -->
-      <Chip v-if="!isMobile" color="alt" size="md" label="Storefront" class="!pr-1">
-        <template #append>
-          <Chip
-            showDot
-            :label="isLive ? 'Live' : 'Not live'"
-            :color="isLive ? 'success' : 'error'"
-          />
-        </template>
-      </Chip>
-      <!-- Notifications -->
-      <button class="rounded-xl p-2 hover:bg-gray-100" @click="showNotifications = true">
-        <Icon name="bell" size="20" />
-      </button>
-
-      <!-- User or CTA -->
-      <DropdownMenu :items="profileMenuItems" menuClass="w-56">
-        <template #prepend>
-          <div class="max-w-xs overflow-hidden border-b border-gray-200 px-4 py-2">
-            <p class="text-core-800 block w-full max-w-xs truncate text-sm font-medium">
-              {{ user?.first_name + " " + user?.last_name }}
-            </p>
-            <p class="text-core-600 block w-full max-w-xs truncate text-xs">
-              {{ user?.email }}
-            </p>
-          </div>
-        </template>
-        <template #trigger>
-          <Avatar
-            :name="user?.first_name + ' ' + user?.last_name"
-            backgroundColor="var(--color-core-950)"
-          />
-        </template>
-      </DropdownMenu>
-    </div>
+    </Container>
 
     <!-- Notifications Drawer -->
     <NotificationsDrawer
@@ -81,6 +83,7 @@ import LocationDropdown from "./LocationDropdown.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import { useRouter } from "vue-router"
 import { useAuthStore } from "@modules/auth/store"
+import Container from "@components/Container.vue"
 
 defineProps<{ showLogo?: boolean; logo?: "full" | "icon"; isLive?: boolean }>()
 const emit = defineEmits<{

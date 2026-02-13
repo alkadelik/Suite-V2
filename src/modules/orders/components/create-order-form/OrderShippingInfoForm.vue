@@ -125,7 +125,11 @@ const DELIVERY_METHOD_OPTIONS = computed(() =>
     const { shipping_account, delivery_enabled, manual_delivery_enabled } =
       deliveryDetails.value || {}
     if (x.value === "shipbubble") {
-      return shipping_account && delivery_enabled
+      return (
+        shipping_account &&
+        delivery_enabled &&
+        props.shippingInfo.fulfilment_status === "unfulfilled"
+      )
     }
     if (x.value === "manual") {
       return (
@@ -148,6 +152,17 @@ const DELIVERY_TYPE_OPTIONS = computed(() =>
     return true
   }),
 )
+
+// Remap delivery payment options based on fulfilment status
+const DELIVERY_PAYMENT_OPTIONS = computed(() => {
+  const isFulfilled = props.shippingInfo.fulfilment_status === "fulfilled"
+  return DELIVERY_PAYMENT_OPTION.map((option) => ({
+    ...option,
+    label: isFulfilled
+      ? option.label.replace("pays", "paid").replace("Shipping", "shipping")
+      : option.label,
+  }))
+})
 
 const updateField = (field: keyof ShippingInfo, value: unknown) => {
   const updatedInfo = { ...props.shippingInfo, [field]: value }
@@ -491,6 +506,18 @@ const handleUpdateCourier = (courierId: string) => {
   }
 }
 
+// Auto-select standard delivery when it's the only option
+watch(
+  () => DELIVERY_TYPE_OPTIONS.value,
+  (options) => {
+    console.log("Available delivery types:", options)
+    if (options.length === 1 && options[0].value === "standard") {
+      updateField("delivery_type", "standard")
+    }
+  },
+  { immediate: true },
+)
+
 // Sync delivery fee when express_delivery_option changes
 watch(
   () => props.shippingInfo.express_delivery_option,
@@ -676,7 +703,7 @@ const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
 
         <hr class="mb-4 border-gray-300" />
         <RadioInputField
-          :options="DELIVERY_PAYMENT_OPTION"
+          :options="DELIVERY_PAYMENT_OPTIONS"
           :modelValue="shippingInfo.delivery_payment_option"
           @update:modelValue="updateField('delivery_payment_option', $event)"
           orientation="vertical"
@@ -689,6 +716,7 @@ const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
           shippingInfo.delivery_payment_option !== 'customer_pays_courier'
         "
       >
+        <!-- v-if="DELIVERY_TYPE_OPTIONS.length > 1" -->
         <div class="my-6 rounded-xl bg-white p-4">
           <h3 class="mb-4 text-sm font-medium">What type of delivery?</h3>
           <hr class="mb-4 border-gray-300" />
@@ -775,7 +803,7 @@ const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
               </RadioInputField>
             </template>
 
-            <!-- ShipBubble shipbubble Delivery -->
+            <!-- ShipBubble Delivery -->
             <template v-if="shippingInfo.delivery_method === 'shipbubble'">
               <!-- Empty State when shipping is not set up -->
               <EmptyState

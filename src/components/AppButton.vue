@@ -30,7 +30,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, HTMLAttributes } from "vue"
 import Icon from "./Icon.vue"
 
 export interface AppButtonProps {
@@ -122,7 +122,7 @@ export interface AppButtonProps {
   /**
    * Additional CSS classes to apply to the button
    */
-  class?: string | string[] | Record<string, boolean>
+  class?: HTMLAttributes["class"]
 }
 
 const props = withDefaults(defineProps<AppButtonProps>(), {

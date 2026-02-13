@@ -3,12 +3,12 @@ import PageHeader from "@components/PageHeader.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import StatCard from "@components/StatCard.vue"
 import { useMediaQuery } from "@vueuse/core"
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import { useGetRawMaterials, useGetRawMaterialsStats } from "../../api"
 import { truncateCurrency } from "@/utils/format-currency"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import EmptyState from "@components/EmptyState.vue"
-import { MOCK_MATERIALS, RAW_MATERIALS_COLUMN } from "../../constants"
+import { componentOptions, RAW_MATERIALS_COLUMN } from "../../constants"
 import DataTable from "@components/DataTable.vue"
 import Icon from "@components/Icon.vue"
 import Chip from "@components/Chip.vue"
@@ -20,12 +20,27 @@ import { useProductionStore } from "../../store"
 import AppButton from "@components/AppButton.vue"
 import TextField from "@components/form/TextField.vue"
 import AddRawMaterialDrawer from "@modules/production/components/AddRawMaterialDrawer.vue"
+import { useSettingsStore } from "@modules/settings/store"
+import { useRouter } from "vue-router"
+import AdjustMaterialStockModal from "@modules/production/components/AdjustMaterialStockModal.vue"
 
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 
 const showFilter = ref(false)
 const showAddDrawer = ref(false)
+const showAdjustStockModal = ref(false)
+const selectedMaterial = ref<TRawMaterial | null>(null)
 const page = ref(1)
+
+// Refresh function for material updates
+const refreshMaterials = () => {
+  // Force refetch of materials data
+  const currentPage = page.value
+  page.value = 0
+  setTimeout(() => {
+    page.value = currentPage
+  }, 0)
+}
 const itemsPerPage = ref(10)
 const searchQuery = ref("")
 const debouncedSearch = useDebouncedRef(searchQuery, 750)
@@ -47,7 +62,7 @@ const materialStats = computed(() => [
     : [
         {
           label: `Total ${selectedComponent.value?.label || "Materials"}`,
-          value: stats.value?.total || 0,
+          value: stats.value?.total_materials || 0,
           icon: "bag",
           iconClass: "lg:text-gray-700",
         },
@@ -63,9 +78,9 @@ const materialStats = computed(() => [
     value: stats.value?.expiring_soon || 0,
     icon: "bag",
     iconClass: "lg:text-gray-700",
-    chip: stats.value?.expiring_soon
-      ? `Worth ${truncateCurrency(stats.value?.expiring_soon_amount || 0)}`
-      : undefined,
+    // chip: stats.value?.expiring_soon
+    //   ? `Worth ${truncateCurrency(stats.value?.expiring_soon_amount || 0)}`
+    //   : undefined,
     chipColor: "pink",
   },
   ...(isMobile.value
@@ -80,25 +95,46 @@ const materialStats = computed(() => [
       ]),
 ])
 
+const router = useRouter()
+
 const getActionItems = (item: TRawMaterial) => [
   {
     label: "Edit material",
     icon: "edit",
     action: () => {
-      console.log("edit", item)
+      console.log("Edit", item)
+      selectedMaterial.value = item
+      showAddDrawer.value = true
     },
   },
   {
     label: "Adjust stock",
     icon: "box",
-    action: () => {},
+    action: () => {
+      selectedMaterial.value = item
+      showAdjustStockModal.value = true
+    },
   },
   {
     label: "View usage",
     icon: "eye",
-    action: () => {},
+    action: () => router.push(`/raw-materials/${item.uid}?tab=usage`),
   },
 ]
+
+const materialType = computed(() => useSettingsStore().storeDetails?.material_type)
+
+watch(
+  materialType,
+  (newVal) => {
+    if (!newVal) return
+    const fullOption = componentOptions.find((o) => o.value === newVal)
+    if (fullOption) {
+      useProductionStore().setSelectedComponentOption(fullOption)
+    }
+  },
+  { immediate: true },
+)
 
 const selectedComponent = computed(() => useProductionStore().selectedComponentOption)
 
@@ -112,7 +148,7 @@ const onSelect = (option: { label: string; value: string }) => {
     <PageHeader
       v-if="isMobile"
       :title="selectedComponent?.label || 'Raw Materials'"
-      :count="rawMaterials?.count || 100"
+      :count="rawMaterials?.count || 0"
     />
     <SectionHeader
       v-else
@@ -194,7 +230,7 @@ const onSelect = (option: { label: string; value: string }) => {
           </div>
 
           <DataTable
-            :data="rawMaterials?.results ?? MOCK_MATERIALS ?? []"
+            :data="rawMaterials?.results ?? []"
             :columns="RAW_MATERIALS_COLUMN"
             :loading="isFetching"
             :enable-row-selection="false"
@@ -222,12 +258,8 @@ const onSelect = (option: { label: string; value: string }) => {
                 <h4 class="!font-outfit truncate text-left text-sm font-medium capitalize">
                   {{ item.name }}
                 </h4>
-                <Icon
-                  v-if="item.low_stock || item.expired"
-                  name="danger"
-                  :class="item.expired ? 'text-error-500' : 'text-warning-500'"
-                />
-                <Chip v-else-if="item.subassembly" color="purple" label="Sub-assembly" />
+                <Icon v-if="item.low_stock" name="danger" :class="'text-warning-500'" />
+                <Chip v-else-if="item.is_sub_assembly" color="purple" label="Sub-assembly" />
               </div>
             </template>
 
@@ -246,6 +278,28 @@ const onSelect = (option: { label: string; value: string }) => {
     </div>
     <!--  -->
 
-    <AddRawMaterialDrawer :open="showAddDrawer" @close="showAddDrawer = false" />
+    <AddRawMaterialDrawer
+      :open="showAddDrawer"
+      :material="selectedMaterial"
+      @close="
+        () => {
+          showAddDrawer = false
+          selectedMaterial = null
+        }
+      "
+      @refresh="refreshMaterials"
+    />
+
+    <AdjustMaterialStockModal
+      :open="showAdjustStockModal"
+      :material="selectedMaterial"
+      @close="
+        () => {
+          showAdjustStockModal = false
+          selectedMaterial = null
+        }
+      "
+      @refresh="refreshMaterials"
+    />
   </div>
 </template>

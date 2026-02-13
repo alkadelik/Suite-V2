@@ -126,7 +126,7 @@
       <!-- Header -->
       <div class="flex items-center justify-between bg-gray-50 p-4">
         <div class="flex-1">
-          <h3 class="text-sm font-medium text-gray-900">Variant</h3>
+          <h3 class="text-sm font-medium text-gray-900">Available Variants</h3>
         </div>
         <div v-if="!props.hideStock" class="w-24 text-center">
           <h3 class="text-sm font-medium text-gray-900">Quantity</h3>

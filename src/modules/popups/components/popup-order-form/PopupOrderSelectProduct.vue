@@ -10,6 +10,7 @@ import { PopupInventory } from "@modules/popups/types"
 import { getPopupPriceRange, getInventoryQty } from "@modules/popups/constants"
 import { computed, ref } from "vue"
 import { useRoute } from "vue-router"
+import { useDebouncedRef } from "@/composables/useDebouncedRef"
 
 const props = withDefaults(
   defineProps<{
@@ -24,6 +25,7 @@ const props = withDefaults(
 const route = useRoute()
 
 const searchQuery = ref("")
+const debouncedSearch = useDebouncedRef(searchQuery, 500)
 const emit = defineEmits<{
   next: []
   "update:selectedProducts": [products: PopupInventory[]]
@@ -36,21 +38,10 @@ const currentViewMode = computed({
   set: (value) => emit("update:viewMode", value),
 })
 
-const { data: products, isFetching } = useGetPopupInventory(route.params.id as string)
-
-// Filtered products based on search query
-const filteredProducts = computed(() => {
-  if (!products.value) return []
-
-  if (!searchQuery.value.trim()) {
-    return products.value
-  }
-
-  const query = searchQuery.value.toLowerCase().trim()
-  return products.value.filter((product: PopupInventory) =>
-    product.name.toLowerCase().includes(query),
-  )
-})
+const { data: products, isFetching } = useGetPopupInventory(
+  route.params.id as string,
+  debouncedSearch,
+)
 
 // Check if a product is selected
 const isProductSelected = (productUid: string) => {
@@ -117,13 +108,13 @@ const handleNext = () => {
 
     <!-- Products List -->
     <section
-      v-if="!isFetching && filteredProducts.length > 0"
+      v-if="!isFetching && products?.length"
       :class="
         currentViewMode === 'grid' ? 'grid grid-cols-2 gap-6 md:grid-cols-3' : 'flex flex-col gap-3'
       "
     >
       <ProductSelectionItem
-        v-for="prod in filteredProducts"
+        v-for="prod in products"
         :key="prod.uid"
         :image-url="prod.images?.[0]?.image"
         :name="prod.name"
@@ -171,7 +162,7 @@ const handleNext = () => {
     </section>
 
     <EmptyState
-      v-else-if="!isFetching && filteredProducts.length === 0"
+      v-else-if="!isFetching && !products?.length"
       title="No Products Found"
       :description="searchQuery ? 'Try adjusting your search query' : 'Add products to get started'"
       class="!min-h-[500px] md:!bg-none"

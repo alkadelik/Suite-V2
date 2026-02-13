@@ -38,6 +38,7 @@ import ProductAvatar from "@components/ProductAvatar.vue"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
 import OrderDetailsDrawer from "../components/OrderDetailsDrawer.vue"
 import StatCard from "@components/StatCard.vue"
+import OrderShipmentTab from "../components/OrderShipmentTab.vue"
 
 const openCreate = ref(false)
 const openVoid = ref(false)
@@ -285,60 +286,68 @@ const handleSharePaymentLink = async (order: TOrder) => {
 }
 
 // Share receipt using Web Share API
-const handleShareReceipt = (order: TOrder) => {
-  generateReceipt(order.uid, {
-    onSuccess: (response) => {
-      const receiptUrl = response.data?.data.url as string | undefined
-      if (receiptUrl && navigator.share) {
-        navigator
-          .share({
-            title: `Receipt for Order #${order.order_number}`,
-            text: `Receipt for order #${order.order_number}`,
-            url: receiptUrl,
-          })
-          .catch(() => {
-            // User cancelled or share failed, fallback to copy
-            navigator.clipboard.writeText(receiptUrl).then(() => {
-              toast.info("Receipt link copied to clipboard!")
+const handleShareReceipt = (order: TOrder): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    generateReceipt(order.uid, {
+      onSuccess: (response) => {
+        const receiptUrl = response.data?.data.url as string | undefined
+        if (receiptUrl && navigator.share) {
+          navigator
+            .share({
+              title: `Receipt for Order #${order.order_number}`,
+              text: `Receipt for order #${order.order_number}`,
+              url: receiptUrl,
             })
+            .catch(() => {
+              navigator.clipboard.writeText(receiptUrl).then(() => {
+                toast.info("Receipt link copied to clipboard!")
+              })
+            })
+        } else if (receiptUrl) {
+          navigator.clipboard.writeText(receiptUrl).then(() => {
+            toast.info("Receipt link copied to clipboard!")
           })
-      } else if (receiptUrl) {
-        // Fallback for browsers that don't support Web Share API
-        navigator.clipboard.writeText(receiptUrl).then(() => {
-          toast.info("Receipt link copied to clipboard!")
-        })
-      }
-    },
-    onError: displayError,
+        }
+        resolve()
+      },
+      onError: (error) => {
+        displayError(error)
+        reject(error)
+      },
+    })
   })
 }
 
 // Share invoice using Web Share API
-const handleShareInvoice = (order: TOrder) => {
-  toast.info("Generating invoice...")
-  generateInvoice(order.uid, {
-    onSuccess: (response) => {
-      const invoiceUrl = response.data?.data.url as string | undefined
-      if (invoiceUrl && navigator.share) {
-        navigator
-          .share({
-            title: `Invoice for Order #${order.order_number}`,
-            text: `Invoice for order #${order.order_number}`,
-            url: invoiceUrl,
-          })
-          .catch(() => {
-            navigator.clipboard.writeText(invoiceUrl).then(() => {
-              toast.info("Invoice link copied to clipboard!")
+const handleShareInvoice = (order: TOrder): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    generateInvoice(order.uid, {
+      onSuccess: (response) => {
+        const invoiceUrl = response.data?.data.url as string | undefined
+        if (invoiceUrl && navigator.share) {
+          navigator
+            .share({
+              title: `Invoice for Order #${order.order_number}`,
+              text: `Invoice for order #${order.order_number}`,
+              url: invoiceUrl,
             })
+            .catch(() => {
+              navigator.clipboard.writeText(invoiceUrl).then(() => {
+                toast.info("Invoice link copied to clipboard!")
+              })
+            })
+        } else if (invoiceUrl) {
+          navigator.clipboard.writeText(invoiceUrl).then(() => {
+            toast.info("Invoice link copied to clipboard!")
           })
-      } else if (invoiceUrl) {
-        navigator.clipboard.writeText(invoiceUrl).then(() => {
-          toast.info("Invoice link copied to clipboard!")
-        })
-      }
-      toast.success("Invoice generated successfully!")
-    },
-    onError: displayError,
+        }
+        resolve()
+      },
+      onError: (error) => {
+        displayError(error)
+        reject(error)
+      },
+    })
   })
 }
 
@@ -526,7 +535,11 @@ const handleDetailsMarkAsPaid = () => {
         <Tabs v-model="status" :tabs="ORDER_STATUS_TAB" />
       </div>
 
-      <div class="space-y-4 overflow-hidden rounded-xl border-gray-200 pt-3 md:border md:bg-white">
+      <!-- Order statuses excluding shipment -->
+      <div
+        v-if="status !== 'shipments'"
+        class="space-y-4 overflow-hidden rounded-xl border-gray-200 pt-3 md:border md:bg-white"
+      >
         <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
           <h3 v-if="!isMobile" class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
             {{ ORDER_STATUS_TAB.find((tab) => tab.key === status)?.title }} Orders
@@ -652,6 +665,9 @@ const handleDetailsMarkAsPaid = () => {
           </template>
         </DataTable>
       </div>
+
+      <!-- order shipment tab -->
+      <OrderShipmentTab v-if="status === 'shipments'" />
     </section>
 
     <!--  -->

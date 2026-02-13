@@ -5,10 +5,12 @@ import EmptyState from "@components/EmptyState.vue"
 import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
 import ProductSelectionItem from "@components/ProductSelectionItem.vue"
-import { useGetProductCatalogs } from "@modules/inventory/api"
+import { useGetProductCatalogsInfinite } from "@modules/inventory/api"
 import type { IProductCatalogue } from "@modules/inventory/types"
 import AddNewProductModal from "@modules/orders/components/create-order-form/AddNewProductModal.vue"
 import { computed, ref } from "vue"
+import { useInfinitePagination } from "@/composables/useInfinitePagination"
+import { useDebouncedRef } from "@/composables/useDebouncedRef"
 
 const props = withDefaults(
   defineProps<{
@@ -22,6 +24,7 @@ const props = withDefaults(
 )
 
 const searchQuery = ref("")
+const debouncedSearch = useDebouncedRef(searchQuery, 500)
 const emit = defineEmits<{
   next: []
   "update:selectedProducts": [products: IProductCatalogue[]]
@@ -34,22 +37,20 @@ const currentViewMode = computed({
   set: (value) => emit("update:viewMode", value),
 })
 
-const { data: productsData, refetch, isFetching } = useGetProductCatalogs()
-const products = computed(() => productsData?.value?.results ?? [])
+const { data, isPending, isFetchingNextPage, fetchNextPage, hasNextPage, refetch } =
+  useGetProductCatalogsInfinite(20, debouncedSearch)
 
-// Filtered products based on search query
-const filteredProducts = computed(() => {
-  if (!searchQuery.value.trim()) {
-    return products.value
-  }
-
-  const query = searchQuery.value.toLowerCase().trim()
-  return products.value.filter(
-    (product: IProductCatalogue) =>
-      product.name.toLowerCase().includes(query) ||
-      product.category_name?.toLowerCase().includes(query),
-  )
+// Flatten all pages into a single products array
+const products = computed(() => {
+  if (!data.value?.pages) return []
+  return data.value.pages.flatMap((page) => page.results)
 })
+
+// Get total count from first page
+const totalCount = computed(() => data.value?.pages?.[0]?.count ?? 0)
+
+// Setup infinite scroll
+const scrollContainer = useInfinitePagination(fetchNextPage, hasNextPage, 200).el
 
 // Check if a product is selected
 const isProductSelected = (productUid: string) => {
@@ -136,7 +137,7 @@ const handleProductCreated = async (productUid: string) => {
 
     <div class="mb-8 flex flex-col gap-3">
       <h3 class="text-lg font-semibold">
-        All Products <Chip :label="`${productsData?.count || products.length}`" />
+        All Products <Chip :label="`${totalCount || products.length}`" />
       </h3>
       <div class="flex items-center gap-3 rounded-xl bg-white p-2">
         <TextField
@@ -157,13 +158,14 @@ const handleProductCreated = async (productUid: string) => {
 
     <!-- Products List -->
     <section
-      v-if="!isFetching && filteredProducts.length > 0"
+      ref="scrollContainer"
+      v-if="!isPending && products.length > 0"
       :class="
         currentViewMode === 'grid' ? 'grid grid-cols-2 gap-6 md:grid-cols-3' : 'flex flex-col gap-3'
       "
     >
       <ProductSelectionItem
-        v-for="prod in filteredProducts"
+        v-for="prod in products"
         :key="prod.uid"
         :image-url="prod.images?.[0]?.image"
         :name="prod.name"
@@ -228,14 +230,19 @@ const handleProductCreated = async (productUid: string) => {
       </ProductSelectionItem>
     </section>
 
+    <div v-if="isFetchingNextPage" class="flex items-center justify-center gap-2 py-4">
+      <Icon name="loader" size="20" class="text-primary-600 animate-spin" />
+      <span class="text-sm text-gray-500">Loading more...</span>
+    </div>
+
     <EmptyState
-      v-else-if="!isFetching && filteredProducts.length === 0"
+      v-else-if="!isPending && products.length === 0"
       title="No Products Found"
       :description="searchQuery ? 'Try adjusting your search query' : 'Add products to get started'"
       class="!min-h-[500px] md:!bg-none"
     />
 
-    <div v-if="isFetching" class="flex items-center justify-center py-12">
+    <div v-if="isPending" class="flex items-center justify-center py-12">
       <Icon name="loader" size="64" class="!animate text-primary-600 !animate-spin" />
     </div>
 
