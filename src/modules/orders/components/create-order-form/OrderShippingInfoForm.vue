@@ -824,7 +824,7 @@ const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
               </RadioInputField>
             </template>
 
-            <!-- ShipBubble shipbubble Delivery -->
+            <!-- ShipBubble Delivery -->
             <template v-if="shippingInfo.delivery_method === 'shipbubble'">
               <!-- Empty State when shipping is not set up -->
               <EmptyState

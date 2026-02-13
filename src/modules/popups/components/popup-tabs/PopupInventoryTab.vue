@@ -15,6 +15,7 @@ import {
 } from "@modules/popups/constants"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, onMounted, ref } from "vue"
+import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import { useRoute } from "vue-router"
 import SetupPopupBoothDrawer from "../SetupPopupBoothDrawer.vue"
 import ManagePopupProductModal from "../ManagePopupProductModal.vue"
@@ -29,6 +30,7 @@ import { toast } from "@/composables/useToast"
 import PopupProductAvailabilityModal from "../PopupProductAvailabilityModal.vue"
 
 const searchQuery = ref("")
+const debouncedSearch = useDebouncedRef(searchQuery, 500)
 const openAddProduct = ref(false)
 // const showFilter = ref(false)
 const selectedProduct = ref<PopupInventory | null>(null)
@@ -48,7 +50,7 @@ const {
   isPending,
   isFetching,
   refetch,
-} = useGetPopupInventory(route.params.id as string, searchQuery.value)
+} = useGetPopupInventory(route.params.id as string, debouncedSearch)
 const { mutate: updatePopupProduct, isPending: isUpdating } = useUpdatePopupProduct()
 const { mutate: deletePopupProducts, isPending: isDeleting } = useDeletePopupProducts()
 

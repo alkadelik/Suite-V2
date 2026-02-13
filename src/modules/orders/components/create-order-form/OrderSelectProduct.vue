@@ -10,6 +10,7 @@ import type { IProductCatalogue } from "@modules/inventory/types"
 import { computed, ref } from "vue"
 import AddNewProductModal from "./AddNewProductModal.vue"
 import { useInfinitePagination } from "@/composables/useInfinitePagination"
+import { useDebouncedRef } from "@/composables/useDebouncedRef"
 
 const props = withDefaults(
   defineProps<{
@@ -22,6 +23,7 @@ const props = withDefaults(
 )
 
 const searchQuery = ref("")
+const debouncedSearch = useDebouncedRef(searchQuery, 500)
 const emit = defineEmits<{
   next: []
   "update:selectedProducts": [products: IProductCatalogue[]]
@@ -34,7 +36,8 @@ const currentViewMode = computed({
   set: (value) => emit("update:viewMode", value),
 })
 
-const { data, isPending, fetchNextPage, hasNextPage, refetch } = useGetProductCatalogsInfinite(20)
+const { data, isPending, isFetchingNextPage, fetchNextPage, hasNextPage, refetch } =
+  useGetProductCatalogsInfinite(20, debouncedSearch)
 
 // Flatten all pages into a single products array
 const products = computed(() => {
@@ -47,20 +50,6 @@ const totalCount = computed(() => data.value?.pages?.[0]?.count ?? 0)
 
 // Setup infinite scroll - scrollContainer is used as template ref
 const scrollContainer = useInfinitePagination(fetchNextPage, hasNextPage, 200).el
-
-// Filtered products based on search query
-const filteredProducts = computed(() => {
-  if (!searchQuery.value.trim()) {
-    return products.value
-  }
-
-  const query = searchQuery.value.toLowerCase().trim()
-  return products.value.filter(
-    (product: IProductCatalogue) =>
-      product.name.toLowerCase().includes(query) ||
-      product.category_name?.toLowerCase().includes(query),
-  )
-})
 
 // Check if a product is selected
 const isProductSelected = (productUid: string) => {
@@ -158,13 +147,13 @@ const handleProductCreated = async (productUid: string) => {
     <!-- Products List -->
     <section
       ref="scrollContainer"
-      v-if="!isPending && filteredProducts.length > 0"
+      v-if="!isPending && products.length > 0"
       :class="
         currentViewMode === 'grid' ? 'grid grid-cols-2 gap-6 md:grid-cols-3' : 'flex flex-col gap-3'
       "
     >
       <ProductSelectionItem
-        v-for="prod in filteredProducts"
+        v-for="prod in products"
         :key="prod.uid"
         :image-url="prod.images?.[0]?.image"
         :name="prod.name"
@@ -211,8 +200,13 @@ const handleProductCreated = async (productUid: string) => {
       </ProductSelectionItem>
     </section>
 
+    <div v-if="isFetchingNextPage" class="flex items-center justify-center gap-2 py-4">
+      <Icon name="loader" size="20" class="text-primary-600 animate-spin" />
+      <span class="text-sm text-gray-500">Loading more...</span>
+    </div>
+
     <EmptyState
-      v-else-if="!isPending && filteredProducts.length === 0"
+      v-else-if="!isPending && products.length === 0"
       title="No Products Found"
       :description="searchQuery ? 'Try adjusting your search query' : 'Add products to get started'"
       class="!min-h-[500px] md:!bg-none"

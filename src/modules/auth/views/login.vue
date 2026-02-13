@@ -13,15 +13,13 @@
       rel="noopener noreferrer"
     >
       <div
-        class="bg-primary-50 text-primary-700 border-primary-200 flex flex-col items-start gap-2 rounded-xl border px-2 py-2 lg:rounded-3xl xl:flex-row"
+        class="bg-primary-50 text-primary-700 border-primary-200 flex flex-wrap items-center gap-2 rounded-xl border px-3 py-2 md:rounded-3xl md:px-2"
       >
-        <Chip size="sm" label="✨ Returning users" variant="filled" />
-        <div class="flex flex-wrap items-center gap-2 text-sm">
-          <span class="font-medium">
-            If you created your account before Nov 18, click here to sign in
-            <Icon name="arrow-right" size="16" class="inline-block!" />
-          </span>
-        </div>
+        <Chip size="sm" label="✨ Returning users" variant="filled" class="shrink-0" />
+        <span class="text-sm font-medium">
+          If you created your account before Nov 18, click here to sign in
+          <Icon name="arrow-right" size="16" class="hidden! md:inline-block!" />
+        </span>
       </div>
     </a>
 
@@ -75,8 +73,7 @@ import { useAuthStore } from "../store"
 import { useSettingsStore } from "@modules/settings/store"
 import { TLoginPayload } from "../types"
 import { toast } from "@/composables/useToast"
-// import { fetchLiveStatusForLogin } from "@modules/shared/api"
-// import { fetchLocationsForLogin } from "@modules/settings/api"
+import { fetchLiveStatusForLogin } from "@modules/shared/api"
 import AppForm from "@components/form/AppForm.vue"
 import FormField from "@components/form/FormField.vue"
 import SectionHeader from "@components/SectionHeader.vue"
@@ -126,47 +123,37 @@ const onSubmit = (values: TLoginPayload) => {
         const hqLocation = assignedLocationsMap.find((loc) => loc.is_hq)
         setActiveLocation(hqLocation || assignedLocationsMap[0] || null)
 
-        //===========================================================
-        //  This will slow down the login flow. We can consider moving this to a background task after login
-        // =====================================
-
         // Check live status before redirecting
-        // const checkLiveStatusAndRedirect = async () => {
-        //   if (user.store_slug) {
-        //     isCheckingLiveStatus.value = true
-        //     try {
-        //       const liveStatus = await fetchLiveStatusForLogin(user.store_slug)
-        //       if (!liveStatus.data?.is_live) {
-        //         try {
-        //           const locations = await fetchLocationsForLogin()
-        //           const hqLocation = locations.find((loc) => loc.is_hq)
-        //           if (hqLocation) {
-        //             const settingsStore = useSettingsStore()
-        //             settingsStore.setActiveLocation(hqLocation)
-        //             settingsStore.setLocations(locations)
-        //             router.push("/onboarding")
-        //             return
-        //           }
-        //         } catch {
-        //           // If fetching locations fails, go to dashboard
-        //         }
-        //         // Fallback to dashboard if no HQ found or fetch failed
-        //         router.push("/dashboard")
-        //         return
-        //       }
-        //     } catch {
-        //       // If live status check fails, proceed to dashboard
-        //     } finally {
-        //       isCheckingLiveStatus.value = false
-        //     }
-        //   }
+        const checkLiveStatusAndRedirect = async () => {
+          if (user.store_slug) {
+            isCheckingLiveStatus.value = true
+            try {
+              const liveStatus = await fetchLiveStatusForLogin(user.store_slug)
+              if (liveStatus.data?.completion_percentage !== 100) {
+                // Only redirect to onboarding if user has HQ in their assigned locations
+                const assignedHq = assignedLocationsMap.find((loc) => loc.is_hq)
+                if (assignedHq) {
+                  setActiveLocation(assignedHq)
+                  router.push("/onboarding")
+                  return
+                }
+                // Non-HQ users go straight to dashboard
+                router.push("/dashboard")
+                return
+              }
+            } catch {
+              // If live status check fails, proceed to dashboard
+            } finally {
+              isCheckingLiveStatus.value = false
+            }
+          }
 
-        // check for redirect query param
-        const redirectPath = router.currentRoute.value.query.redirect as string
-        router.push(redirectPath || "/dashboard")
-        // }
+          // check for redirect query param
+          const redirectPath = router.currentRoute.value.query.redirect as string
+          router.push(redirectPath || "/dashboard")
+        }
 
-        // void checkLiveStatusAndRedirect()
+        void checkLiveStatusAndRedirect()
       },
       onError: displayError,
     },
