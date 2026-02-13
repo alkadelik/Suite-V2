@@ -9,7 +9,7 @@
     <IconHeader icon-name="shop-add" :title="getHeaderTitle" :subtext="getHeaderText" />
 
     <!-- Loading state for fetching product -->
-    <ProductEditSkeleton v-if="isLoadingProduct || props.loading" />
+    <ProductEditSkeleton v-if="isLoadingProduct || isFetchingProduct || props.loading" />
 
     <form v-else id="product-edit-form" @submit.prevent="handleSubmit" class="min-h-full">
       <div>
@@ -265,7 +265,11 @@ const { mutate: bulkUpdateVariants, isPending: isBulkUpdatingVariants } = useBul
 
 // Product fetching
 const productUidToFetch = ref<string>("")
-const { data: productData, isLoading: isLoadingProduct } = useGetProduct(
+const {
+  data: productData,
+  isLoading: isLoadingProduct,
+  isFetching: isFetchingProduct,
+} = useGetProduct(
   computed(() => productUidToFetch.value),
   { enabled: computed(() => !!productUidToFetch.value) },
 )
@@ -397,8 +401,9 @@ watch(
       // Note: Don't reset variantDetailsWithUids or form state here
       // to avoid flashing single-variant view while refetching
     } else if (!isOpen) {
-      // Drawer is closing - clear expected product UID
+      // Drawer is closing - clear state so reopening triggers a fresh fetch
       expectedProductUid.value = null
+      productUidToFetch.value = ""
     }
   },
   { immediate: true },
@@ -1251,6 +1256,11 @@ const handleBack = () => {
     (isVariantsMode && step.value === 2) || (step.value === 3 && hasVariants.value)
 
   if (isCombinationsStep) {
+    // Restore deleted variants back into variants array so they can be
+    // re-detected when generateVariantCombinations() runs on next forward navigation
+    if (deletedVariants.value.length > 0) {
+      variants.value.push(...deletedVariants.value)
+    }
     deletedVariants.value = []
   }
 
