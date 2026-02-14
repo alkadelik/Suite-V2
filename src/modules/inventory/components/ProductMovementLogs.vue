@@ -69,7 +69,7 @@
           <span class="text-sm font-semibold">{{ value }}</span>
         </template>
 
-        <template #cell:unit_cost="{ value }">
+        <template #cell:variant_cost_price="{ value }">
           <span class="text-sm">{{ formatCurrency(Number(value)) }}</span>
         </template>
 
@@ -79,10 +79,6 @@
 
         <template #cell:created_by="{ value }">
           <span class="text-sm">{{ value }}</span>
-        </template>
-
-        <template #cell:reference="{ value }">
-          <span class="text-sm font-medium">{{ value }}</span>
         </template>
 
         <template #mobile="{ item }">

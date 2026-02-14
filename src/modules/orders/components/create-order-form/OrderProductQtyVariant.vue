@@ -11,6 +11,7 @@ import { computed, onMounted, ref, reactive, watch } from "vue"
 import * as yup from "yup"
 import TextAreaField from "@components/form/TextAreaField.vue"
 import { useMediaQuery } from "@vueuse/core"
+import { toast } from "@/composables/useToast"
 
 interface OrderItem {
   product: IProductCatalogue
@@ -92,9 +93,21 @@ const getVariantOptions = (product: IProductCatalogue) => {
 // Initialize local items when component mounts or products change
 onMounted(() => {
   if (props.orderItems.length > 0) {
-    localItems.value = [...props.orderItems]
-    // Initialize selectedVariants from orderItems
+    // Group orderItems by product UID to avoid duplicate cards
+    // (orderItems contains one entry per variant, but we need one card per product)
+    const productMap = new Map<string, OrderItem>()
     for (const item of props.orderItems) {
+      if (!productMap.has(item.product.uid)) {
+        // Use the first item for this product as the base
+        productMap.set(item.product.uid, {
+          product: item.product,
+          variant: item.variant,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          notes: item.notes,
+        })
+      }
+      // Always populate selectedVariants with all variants
       if (item.variant) {
         const existing = selectedVariants.value.get(item.product.uid) || []
         existing.push({
@@ -105,6 +118,7 @@ onMounted(() => {
         selectedVariants.value.set(item.product.uid, existing)
       }
     }
+    localItems.value = Array.from(productMap.values())
   } else {
     // Create initial items from selected products
     localItems.value = props.selectedProducts.map((product) => {
@@ -433,6 +447,24 @@ const handleNext = async () => {
     }
     emit("update:orderItems", orderItems)
     emit("next")
+  } else {
+    // Get the first validation error to show and scroll to it
+    const firstErrorKey = Object.keys(validationErrors.value)[0]
+    if (firstErrorKey) {
+      const errorObj = validationErrors.value[firstErrorKey]
+      const firstError = errorObj.quantity || errorObj.unit_price
+      if (firstError) {
+        toast.error(firstError)
+        // Scroll to the variant with error
+        const errorElement =
+          document.querySelector(`[name="quantity"][data-variant="${firstErrorKey}"]`) ||
+          document.querySelector(`[name="price"][data-variant="${firstErrorKey}"]`)
+        if (errorElement) {
+          errorElement.scrollIntoView({ behavior: "smooth", block: "center" })
+        }
+        return
+      }
+    }
   }
 }
 
@@ -584,6 +616,7 @@ const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
                 :min="1"
                 :max="variantItem.variant.stock"
                 :error="validationErrors[variantItem.variant.uid]?.quantity"
+                :data-variant="variantItem.variant.uid"
                 @blur="validateVariantItem(variantItem)"
               />
               <TextField
@@ -595,6 +628,7 @@ const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
                 :min="0"
                 step="0.01"
                 :error="validationErrors[variantItem.variant.uid]?.unit_price"
+                :data-variant="variantItem.variant.uid"
                 @blur="validateVariantItem(variantItem)"
               />
             </div>

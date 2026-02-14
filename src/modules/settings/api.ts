@@ -68,11 +68,12 @@ export function useCreateLocation() {
 }
 
 /** Fetch all store locations */
-export function useGetLocations() {
+export function useGetLocations(enabled = true) {
   return useApiQuery<TPaginatedResponse<TLocation>["data"]>({
     url: "/stores/locations/",
     key: "store-locations",
     selectData: true,
+    enabled,
   })
 }
 
@@ -275,7 +276,7 @@ export function useUpdateStorefrontSection() {
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: FormData | Record<string, unknown> }) =>
       baseApi.patch(`/storefront/sections/${id}/`, body, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: body instanceof FormData ? { "Content-Type": "multipart/form-data" } : {},
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["version-history"] })
@@ -304,6 +305,30 @@ export function useUpdateTestimonial() {
 export function useDeleteTestimonial() {
   return useMutation({
     mutationFn: (id: string) => baseApi.delete(`/storefront/sections/testimonials/${id}/`),
+  })
+}
+
+export function useCreateHeroCarousel() {
+  return useMutation({
+    mutationFn: (body: FormData) =>
+      baseApi.post(`/storefront/sections/hero-carousel/`, body, {
+        headers: { "Content-Type": "multipart/form-data" },
+      }),
+  })
+}
+
+export function useUpdateHeroCarousel() {
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: FormData }) =>
+      baseApi.patch(`/storefront/sections/hero-carousel/${id}/`, body, {
+        headers: { "Content-Type": "multipart/form-data" },
+      }),
+  })
+}
+
+export function useDeleteHeroCarousel() {
+  return useMutation({
+    mutationFn: (id: string) => baseApi.delete(`/storefront/sections/hero-carousel/${id}/`),
   })
 }
 

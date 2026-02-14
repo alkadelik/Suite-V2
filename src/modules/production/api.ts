@@ -1,5 +1,10 @@
-import { ICreateMaterialPayload, RawMaterialStats, TRawMaterial } from "./types"
-import baseApi, { TApiPromise, TPaginatedResponse, useApiQuery } from "@/composables/baseApi"
+import {
+  IAdjustStockPayload,
+  ICreateMaterialPayload,
+  RawMaterialStats,
+  TRawMaterial,
+} from "./types"
+import baseApi, { TPaginatedResponse, useApiQuery } from "@/composables/baseApi"
 import { MaybeRefOrGetter } from "vue"
 import { useMutation } from "@tanstack/vue-query"
 
@@ -33,6 +38,14 @@ export function useEditRawMaterial() {
   })
 }
 
+/** Adjust material stock */
+export function useAdjustMaterialStock() {
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: IAdjustStockPayload }) =>
+      baseApi.post(`/raw-materials/${id}/adjust-stock/`, payload),
+  })
+}
+
 /** Fetch raw materials */
 export function useGetRawMaterials(
   params?: MaybeRefOrGetter<Record<string, string | number | boolean> | undefined>,
@@ -56,7 +69,7 @@ export function useGetRawMaterialsStats() {
 
 /** Fetch single raw material by ID */
 export function useGetSingleRawMaterial(id: string) {
-  return useApiQuery<TApiPromise<TRawMaterial>>({
+  return useApiQuery<TRawMaterial>({
     url: `/raw-materials/${id}/`,
     key: `raw-materials/${id}`,
     selectData: true,

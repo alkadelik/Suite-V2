@@ -4,38 +4,53 @@ import Chip from "@components/Chip.vue"
 import EmptyState from "@components/EmptyState.vue"
 import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
-import { useGetProductCatalogs } from "@modules/inventory/api"
+import ProductSelectionItem from "@components/ProductSelectionItem.vue"
+import { useGetProductCatalogsInfinite } from "@modules/inventory/api"
 import type { IProductCatalogue } from "@modules/inventory/types"
 import AddNewProductModal from "@modules/orders/components/create-order-form/AddNewProductModal.vue"
 import { computed, ref } from "vue"
+import { useInfinitePagination } from "@/composables/useInfinitePagination"
+import { useDebouncedRef } from "@/composables/useDebouncedRef"
 
-const props = defineProps<{
-  selectedProducts: IProductCatalogue[]
-  existingVariantSkus?: string[]
-}>()
+const props = withDefaults(
+  defineProps<{
+    selectedProducts: IProductCatalogue[]
+    existingVariantSkus?: string[]
+    viewMode?: "grid" | "list"
+  }>(),
+  {
+    viewMode: "grid",
+  },
+)
 
 const searchQuery = ref("")
+const debouncedSearch = useDebouncedRef(searchQuery, 500)
 const emit = defineEmits<{
   next: []
   "update:selectedProducts": [products: IProductCatalogue[]]
+  "update:viewMode": [mode: "grid" | "list"]
 }>()
 
-const { data: productsData, refetch, isFetching } = useGetProductCatalogs()
-const products = computed(() => productsData?.value?.results ?? [])
-
-// Filtered products based on search query
-const filteredProducts = computed(() => {
-  if (!searchQuery.value.trim()) {
-    return products.value
-  }
-
-  const query = searchQuery.value.toLowerCase().trim()
-  return products.value.filter(
-    (product: IProductCatalogue) =>
-      product.name.toLowerCase().includes(query) ||
-      product.category_name?.toLowerCase().includes(query),
-  )
+// Use computed to sync with parent's viewMode
+const currentViewMode = computed({
+  get: () => props.viewMode,
+  set: (value) => emit("update:viewMode", value),
 })
+
+const { data, isPending, isFetchingNextPage, fetchNextPage, hasNextPage, refetch } =
+  useGetProductCatalogsInfinite(20, debouncedSearch)
+
+// Flatten all pages into a single products array
+const products = computed(() => {
+  if (!data.value?.pages) return []
+  return data.value.pages.flatMap((page) => page.results)
+})
+
+// Get total count from first page
+const totalCount = computed(() => data.value?.pages?.[0]?.count ?? 0)
+
+// Setup infinite scroll
+const scrollContainer = useInfinitePagination(fetchNextPage, hasNextPage, 200).el
 
 // Check if a product is selected
 const isProductSelected = (productUid: string) => {
@@ -122,7 +137,7 @@ const handleProductCreated = async (productUid: string) => {
 
     <div class="mb-8 flex flex-col gap-3">
       <h3 class="text-lg font-semibold">
-        All Products <Chip :label="`${productsData?.count || products.length}`" />
+        All Products <Chip :label="`${totalCount || products.length}`" />
       </h3>
       <div class="flex items-center gap-3 rounded-xl bg-white p-2">
         <TextField
@@ -132,89 +147,102 @@ const handleProductCreated = async (productUid: string) => {
           placeholder="Find product by name"
           v-model="searchQuery"
         />
+        <AppButton
+          :icon="currentViewMode === 'grid' ? 'list' : 'grid'"
+          variant="outlined"
+          @click="currentViewMode = currentViewMode === 'grid' ? 'list' : 'grid'"
+        />
         <AppButton icon="add" class="flex-shrink-0" @click="showAdd = true" />
       </div>
     </div>
 
+    <!-- Products List -->
     <section
-      v-if="!isFetching && filteredProducts.length > 0"
-      class="grid grid-cols-2 gap-6 md:grid-cols-3"
+      ref="scrollContainer"
+      v-if="!isPending && products.length > 0"
+      :class="
+        currentViewMode === 'grid' ? 'grid grid-cols-2 gap-6 md:grid-cols-3' : 'flex flex-col gap-3'
+      "
     >
-      <div
-        v-for="prod in filteredProducts"
+      <ProductSelectionItem
+        v-for="prod in products"
         :key="prod.uid"
-        class="rounded-xl bg-white p-1.5 transition-all"
-        :class="
-          getAvailableProductQty(prod) === 0 || isProductFullyInPopup(prod)
-            ? 'cursor-not-allowed opacity-50'
-            : isProductSelected(prod.uid)
-              ? 'ring-primary-600 cursor-pointer shadow-lg ring-2'
-              : 'cursor-pointer hover:shadow-lg'
-        "
+        :image-url="prod.images?.[0]?.image"
+        :name="prod.name"
+        :selected="isProductSelected(prod.uid)"
+        :disabled="getAvailableProductQty(prod) === 0 || isProductFullyInPopup(prod)"
+        :view-mode="currentViewMode"
         @click="toggleProductSelection(prod)"
       >
-        <div class="relative flex h-[88px] items-center justify-center rounded-xl bg-gray-200">
-          <img
-            v-if="prod.images?.length"
-            :src="prod.images[0]?.image"
-            alt=""
-            class="h-full w-full rounded-xl object-cover"
-          />
-          <Icon v-else name="box" class="h-20 w-20" />
-
+        <template #badge>
           <Chip
             v-if="getAvailableProductQty(prod) === 0"
             label="Out of stock"
             size="sm"
             color="error"
-            class="absolute top-2 right-2 !rounded-lg"
+            :class="
+              currentViewMode === 'grid' ? 'absolute top-2 right-2 !rounded-lg' : 'flex-shrink-0'
+            "
           />
           <Chip
             v-else-if="isProductFullyInPopup(prod)"
             label="Fully added"
             size="sm"
             color="success"
-            class="absolute top-2 right-2 !rounded-lg"
+            :class="
+              currentViewMode === 'grid' ? 'absolute top-2 right-2 !rounded-lg' : 'flex-shrink-0'
+            "
           />
           <Chip
             v-else-if="hasPartiallySelectedVariants(prod)"
             label="Some added"
             size="sm"
             color="warning"
-            class="absolute top-2 right-2 !rounded-lg"
+            :class="
+              currentViewMode === 'grid' ? 'absolute top-2 right-2 !rounded-lg' : 'flex-shrink-0'
+            "
           />
           <input
             v-else
             type="checkbox"
             :checked="isProductSelected(prod.uid)"
-            class="accent-primary-600 pointer-events-none absolute top-2 right-2 h-4 w-4 rounded border-gray-300 bg-white"
+            :class="
+              currentViewMode === 'grid'
+                ? 'accent-primary-600 pointer-events-none absolute top-2 right-2 h-4 w-4 rounded border-gray-300 bg-white'
+                : 'accent-primary-600 pointer-events-none h-4 w-4 flex-shrink-0 rounded border-gray-300'
+            "
           />
-        </div>
-        <div class="space-y-1 p-1 py-2">
-          <h4 class="text-xs font-medium">{{ prod.name }}</h4>
-          <div class="flex justify-between gap-2 text-xs">
-            <span class="text-primary-600 flex items-center gap-1">
-              <Icon name="box" class="h-3 w-3" />
-              {{ prod.variants?.length }} var.
-            </span>
-            <!--  -->
-            <span class="flex items-center gap-1">
-              <Icon name="box" class="h-3 w-3" />
-              {{ getAvailableProductQty(prod) }}
-            </span>
-          </div>
-        </div>
-      </div>
+        </template>
+
+        <template #primaryInfo>
+          <span class="text-primary-600 flex items-center gap-1">
+            <Icon name="box" class="h-3 w-3" />
+            {{ prod.variants?.length }} var.
+          </span>
+        </template>
+
+        <template #secondaryInfo>
+          <span class="flex items-center gap-1">
+            <Icon name="box" class="h-3 w-3" />
+            {{ getAvailableProductQty(prod) }}{{ currentViewMode === "list" ? " in stock" : "" }}
+          </span>
+        </template>
+      </ProductSelectionItem>
     </section>
 
+    <div v-if="isFetchingNextPage" class="flex items-center justify-center gap-2 py-4">
+      <Icon name="loader" size="20" class="text-primary-600 animate-spin" />
+      <span class="text-sm text-gray-500">Loading more...</span>
+    </div>
+
     <EmptyState
-      v-else-if="!isFetching && filteredProducts.length === 0"
+      v-else-if="!isPending && products.length === 0"
       title="No Products Found"
       :description="searchQuery ? 'Try adjusting your search query' : 'Add products to get started'"
       class="!min-h-[500px] md:!bg-none"
     />
 
-    <div v-if="isFetching" class="flex items-center justify-center py-12">
+    <div v-if="isPending" class="flex items-center justify-center py-12">
       <Icon name="loader" size="64" class="!animate text-primary-600 !animate-spin" />
     </div>
 

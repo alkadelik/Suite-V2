@@ -5,6 +5,7 @@ import type {
   TOrderPaymentMethod,
   TOrderPaymentStatus,
   TOrderShippingCompany,
+  TShipment,
 } from "./types"
 import { TableColumn } from "@components/DataTable.vue"
 import { getSmartDateLabel } from "@/utils/formatDate"
@@ -83,7 +84,7 @@ export const ORDER_COLUMNS: TableColumn<TOrder>[] = [
 export const ORDER_STATUS_TAB = [
   { title: "All", key: "all" },
   { title: "Unpaid", key: "unpaid" },
-  // { title: "Shipments", key: "shipments" },
+  { title: "Shipments", key: "shipments" },
   { title: "Ongoing", key: "unfulfilled" },
   { title: "Paid", key: "paid" },
   { title: "Fulfilled", key: "fulfilled" },
@@ -97,3 +98,51 @@ export const orderSourceMap: Record<string, string> = {
   popup_storefront: "Popup",
   popup_internal: "Popup Internal",
 }
+
+export const SAMPLE_SHIPMENTS: TShipment[] = [
+  {
+    uid: "SHP-001",
+    customer_name: "John Doe",
+    courier: {
+      name: "DHL",
+      image_url: "https://example.com/dhl-logo.png",
+    },
+    delivery_fee: 1500,
+    pickup_date: "2024-07-01",
+    delivery_date: "2024-07-03",
+    status: "in_transit",
+  },
+  {
+    uid: "SHP-002",
+    customer_name: "Jane Smith",
+    courier: {
+      name: "Uber",
+      image_url: "",
+    },
+    delivery_fee: 800,
+    pickup_date: "2024-07-02",
+    delivery_date: "2026-02-04",
+    status: "delivered",
+  },
+]
+
+export const ORDER_SHIPMENT_COLUMNS: TableColumn<TShipment>[] = [
+  { header: "Name", accessor: "customer_name" },
+  { header: "Courier", accessor: "courier" },
+  {
+    header: "Delivery Fee",
+    accessor: "delivery_fee",
+    cell: ({ value }) => formatCurrency(Number(value), { kobo: true }),
+  },
+  {
+    header: "Pickup Date",
+    accessor: "pickup_date",
+    cell: ({ value }) => getSmartDateLabel(String(value)),
+  },
+  {
+    header: "Delivery Date",
+    accessor: "delivery_date",
+    cell: ({ value }) => getSmartDateLabel(String(value)),
+  },
+  { header: "Status", accessor: "status" },
+]

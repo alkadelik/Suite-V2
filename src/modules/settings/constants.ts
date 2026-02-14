@@ -46,6 +46,7 @@ export const LOCATIONS: TLocation[] = [
 
 export const TEAMS_COLUMN: TableColumn<TTeam>[] = [
   { header: "Name", accessor: "first_name" },
+  // { header: "Email", accessor: "email" },
   {
     header: "Locations",
     accessor: "locations",
@@ -97,12 +98,12 @@ export const THEME_OPTIONS = [
     desc: "Configure your landing page",
     action: "Publish Page",
   },
-  {
-    title: "Popup Modal",
-    key: "popup",
-    desc: "Show a popup modal with ongoing offers to your visitors",
-    action: "Publish Popup",
-  },
+  // {
+  //   title: "Popup Modal",
+  //   key: "popup",
+  //   desc: "Show a popup modal with ongoing offers to your visitors",
+  //   action: "Publish Popup",
+  // },
 ]
 
 export const STORE_THEMES: IStoreTheme[] = [

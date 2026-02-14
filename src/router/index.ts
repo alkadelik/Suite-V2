@@ -20,6 +20,7 @@ import settingsRoutes from "@modules/settings/routes"
 import sharedRoutes from "@modules/shared/routes"
 import expensesRoutes from "@modules/expenses/routes"
 import productionRoutes from "@modules/production/routes"
+import marketingRoutes from "@modules/marketing/routes"
 import { isStaging } from "@/utils/others"
 
 const routes: RouteRecordRaw[] = [
@@ -53,6 +54,7 @@ const routes: RouteRecordRaw[] = [
       ...sharedRoutes,
       ...expensesRoutes,
       ...productionRoutes,
+      ...marketingRoutes,
     ],
   },
   {
@@ -138,6 +140,14 @@ router.beforeEach((to, from, next) => {
       const { activeLocation } = useSettingsStore()
       if (activeLocation && !activeLocation.is_hq) {
         toast.info("This module is only available at the HQ location.")
+        return next({ path: "/dashboard" })
+      }
+    }
+
+    // Redirect away from onboarding if setup is complete
+    if (to.path === "/onboarding") {
+      const { liveStatus } = useSettingsStore()
+      if (liveStatus?.completion_percentage === 100) {
         return next({ path: "/dashboard" })
       }
     }

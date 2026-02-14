@@ -2,6 +2,7 @@
 import AppButton from "@components/AppButton.vue"
 import Drawer from "@components/Drawer.vue"
 import FormField from "@components/form/FormField.vue"
+import RadioInputField from "@components/form/RadioInputField.vue"
 import SelectField from "@components/form/SelectField.vue"
 import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
@@ -96,9 +97,7 @@ const hasSubCategories = computed(() => {
   return (category?.sub_categories?.length ?? 0) > 0
 })
 
-const isMobile = useMediaQuery("(max-width: 1028px)")
-
-const isEditMode = computed(() => !!props.expense)
+const isMobile = computed(() => useMediaQuery("(max-width: 1028px)").value)
 
 interface FormValues {
   name: string
@@ -107,11 +106,12 @@ interface FormValues {
   sub_category: { label: string; value: string }
   vendor: { label: string; value: string }
   date: string
+  status: string
   notes: string
   receipt: File | null
 }
 
-const { handleSubmit, meta, resetForm, values, setFieldValue } = useForm<FormValues>({
+const { handleSubmit, resetForm, values, setFieldValue } = useForm<FormValues>({
   validationSchema: computed(() =>
     yup.object({
       name: yup
@@ -140,6 +140,7 @@ const { handleSubmit, meta, resetForm, values, setFieldValue } = useForm<FormVal
         .nullable()
         .optional(),
       date: yup.string().required("Expense date is required"),
+      status: yup.string().required("Status is required").oneOf(["pending", "unpaid", "paid"]),
       notes: yup.string().optional(),
       receipt: yup.mixed().nullable().optional(),
     }),
@@ -151,10 +152,27 @@ const { handleSubmit, meta, resetForm, values, setFieldValue } = useForm<FormVal
     sub_category: { label: "", value: "" },
     vendor: { label: "", value: "" },
     date: new Date().toISOString().split("T")[0],
+    status: "pending",
     notes: "",
     receipt: null,
   },
   validateOnMount: false,
+})
+
+const isEditMode = computed(() => !!props.expense)
+
+const isValid = computed(() => {
+  // Manual validation check
+  const hasName = !!values.name && values.name.length >= 3
+  const hasAmount = !!values.amount && Number(values.amount) > 0
+  const hasCategory = !!values.category?.value
+  const hasDate = !!values.date
+  const hasStatus = !!values.status
+
+  // Check sub_category only if the selected category has sub-categories
+  const hasSubCategory = hasSubCategories.value ? !!values.sub_category?.value : true
+
+  return hasName && hasAmount && hasCategory && hasSubCategory && hasDate && hasStatus
 })
 
 // Watch category changes and clear sub_category
@@ -213,10 +231,11 @@ const onSubmit = handleSubmit((values) => {
     formData.append("category", values.category.value)
     formData.append("sub_category", values.sub_category?.value || "")
     formData.append("date", values.date)
+    formData.append("status", values.status)
     formData.append("vendor", values.vendor.value || "")
     formData.append("notes", values.notes || "")
     if (values.receipt) {
-      formData.append("receipt", values.receipt)
+      formData.append("attachment", values.receipt)
     }
 
     editExpense(
@@ -239,6 +258,7 @@ const onSubmit = handleSubmit((values) => {
     formData.append("category", values.category.value)
     formData.append("sub_category", values.sub_category?.value || "")
     formData.append("date", values.date)
+    formData.append("status", values.status)
     formData.append("vendor", values.vendor.value || "")
     formData.append("notes", values.notes || "")
     if (values.receipt) {
@@ -257,7 +277,7 @@ const onSubmit = handleSubmit((values) => {
   }
 }, onInvalidSubmit)
 
-// Reset form or populate with expense data when drawer opens
+// Populate form with expense data when drawer opens
 watch(
   () => props.open,
   (isOpen) => {
@@ -283,13 +303,28 @@ watch(
               ? { label: props.expense.vendor_name || "", value: props.expense.vendor }
               : { label: "", value: "" },
             date: props.expense.date,
+            status: props.expense.status || "pending",
             notes: props.expense.notes || "",
             receipt: null,
           },
         })
         selectedCategory.value = categoryOption
       } else {
-        resetForm()
+        console.log("Resetting form for create mode")
+        // Reset to fresh form for create mode
+        resetForm({
+          values: {
+            name: "",
+            amount: "",
+            category: { label: "", value: "" },
+            sub_category: { label: "", value: "" },
+            vendor: { label: "", value: "" },
+            date: new Date().toISOString().split("T")[0],
+            status: "pending",
+            notes: "",
+            receipt: null,
+          },
+        })
         selectedCategory.value = { label: "", value: "" }
       }
     }
@@ -404,6 +439,23 @@ watch(
       </div>
 
       <div class="sm:col-span-2">
+        <Field v-slot="{ field, errors: fieldErrors, handleChange }" name="status">
+          <RadioInputField
+            :model-value="field.value"
+            label="Status"
+            :options="[
+              { label: 'Pending', value: 'pending' },
+              { label: 'Unpaid', value: 'unpaid' },
+              { label: 'Paid', value: 'paid' },
+            ]"
+            :error="fieldErrors[0]"
+            required
+            @update:model-value="handleChange"
+          />
+        </Field>
+      </div>
+
+      <div class="sm:col-span-2">
         <FormField
           type="textarea"
           name="notes"
@@ -432,49 +484,49 @@ watch(
         class="w-full"
         :loading="isPending"
         :disabled="isPending"
-        :inactive="!meta.valid"
+        :inactive="!isValid"
         @click="onSubmit"
       />
     </template>
+
+    <!-- Create Vendor Modal -->
+    <Modal
+      :open="showCreateVendorModal"
+      title="Add New Vendor"
+      max-width="md"
+      @close="showCreateVendorModal = false"
+    >
+      <div class="space-y-4">
+        <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
+          <Icon name="profile-add" size="28" />
+        </div>
+        <p class="text-sm text-gray-600">Create a new vendor to use in your expenses</p>
+
+        <TextField
+          v-model="newVendorName"
+          label="Vendor Name"
+          placeholder="e.g. ABC Supplies"
+          required
+        />
+      </div>
+
+      <template #footer>
+        <div class="flex gap-3">
+          <AppButton
+            label="Cancel"
+            variant="outlined"
+            class="flex-1"
+            @click="showCreateVendorModal = false"
+          />
+          <AppButton
+            label="Add Vendor"
+            class="flex-1"
+            :loading="isCreatingVendor"
+            :disabled="isCreatingVendor || !newVendorName.trim()"
+            @click="createVendor"
+          />
+        </div>
+      </template>
+    </Modal>
   </component>
-
-  <!-- Create Vendor Modal -->
-  <Modal
-    :open="showCreateVendorModal"
-    title="Add New Vendor"
-    max-width="md"
-    @close="showCreateVendorModal = false"
-  >
-    <div class="space-y-4">
-      <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
-        <Icon name="profile-add" size="28" />
-      </div>
-      <p class="text-sm text-gray-600">Create a new vendor to use in your expenses</p>
-
-      <TextField
-        v-model="newVendorName"
-        label="Vendor Name"
-        placeholder="e.g. ABC Supplies"
-        required
-      />
-    </div>
-
-    <template #footer>
-      <div class="flex gap-3">
-        <AppButton
-          label="Cancel"
-          variant="outlined"
-          class="flex-1"
-          @click="showCreateVendorModal = false"
-        />
-        <AppButton
-          label="Add Vendor"
-          class="flex-1"
-          :loading="isCreatingVendor"
-          :disabled="isCreatingVendor || !newVendorName.trim()"
-          @click="createVendor"
-        />
-      </div>
-    </template>
-  </Modal>
 </template>

@@ -74,10 +74,16 @@ export interface IStoreDetails {
   instagram_handle: string
   currency: string
   pickup_location?: string
+  pickup_weekday_start_time?: string
+  pickup_weekday_end_time?: string
+  pickup_weekend_start_time?: string
+  pickup_weekend_end_time?: string
   collect_vat?: boolean
   tax_collection_enabled?: boolean
   tax_rate?: string
   add_tax_to_product_price?: boolean
+  material_type?: string
+  recipe_name?: string // confirm with DESMOND
 }
 
 export interface IUpdateStoreDetailsPayload {
@@ -94,10 +100,14 @@ export interface IUpdateStoreDetailsPayload {
   manual_delivery_enabled?: boolean
   express_delivery_enabled?: boolean
   pickup_location?: string
+  pickup_weekday_start_time?: string
+  pickup_weekday_end_time?: string
+  pickup_weekend_start_time?: string
+  pickup_weekend_end_time?: string
   collect_vat?: boolean
   tax_collection_enabled?: boolean
   add_tax_to_product_price?: boolean
-  raw_materials?: string
+  material_type?: string
 }
 
 export type TIndustry = {
@@ -195,6 +205,8 @@ export interface IThemeSettings {
   }
   typography: string
   button: string
+  button_text_color: string
+  show_button_outline: boolean
   footer_email: string
   footer_phone: string
   terms_and_conditions_url: string
@@ -202,10 +214,12 @@ export interface IThemeSettings {
   facebook_url: string
   x_url: string
   tiktok_url: string
+  size_chart: string | null
 }
 
 export type SectionType =
   | "hero"
+  | "hero_carousel"
   | "about"
   | "featured_products"
   | "cta_block_1"
@@ -214,6 +228,7 @@ export type SectionType =
   | "highlight_banner"
   | "testimonials"
   | "newsletter_signup"
+  | "categories"
 
 export interface ThemeSection {
   uid: string
@@ -226,6 +241,14 @@ export interface ThemeSection {
   content: string | null
   is_hidden: boolean
   featured_products: string[] // array of product UIDs for featured_products section
+  featured_categories: string[] // array of category UIDs for categories section
+  featured_categories_display: {
+    uid: string
+    name: string
+    description: string
+    image: string
+    is_active: boolean
+  }[]
   testimonials: {
     uid: string
     name: string
@@ -240,6 +263,15 @@ export interface ThemeSection {
   position: number
   created_at: string
   updated_at: string
+  //
+  hero_carousel_items?: {
+    uid: string
+    media: string
+    title: string
+    content: string
+    cta_text: string
+    cta_link: string
+  }[]
 }
 
 export interface IVersionHistory {

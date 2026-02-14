@@ -104,7 +104,10 @@
             />
             <ButtonSettings
               v-else-if="item.id === 'button'"
+              :theme-colors="getColorScheme()"
               v-model:style="formState.button"
+              v-model:button_text_color="formState.button_text_color"
+              v-model:show_button_outline="formState.show_button_outline"
               @change-section="changeSection"
             />
             <FooterSettings
@@ -120,6 +123,7 @@
               v-model:facebook-link="formState.facebook_url"
               v-model:twitter-link="formState.x_url"
               v-model:tiktok-link="formState.tiktok_url"
+              v-model:size-chart="formState.size_chart"
               @change-section="changeSection"
             />
           </div>
@@ -148,6 +152,9 @@
         <ButtonSettings
           v-else-if="activeSection === 'button'"
           v-model:style="formState.button"
+          v-model:button_text_color="formState.button_text_color"
+          v-model:show_button_outline="formState.show_button_outline"
+          :theme-colors="getColorScheme()"
           @change-section="changeSection"
         />
         <FooterSettings
@@ -163,6 +170,7 @@
           v-model:facebook-link="formState.facebook_url"
           v-model:twitter-link="formState.x_url"
           v-model:tiktok-link="formState.tiktok_url"
+          v-model:size-chart="formState.size_chart"
           @change-section="changeSection"
         />
       </div>
@@ -218,6 +226,8 @@ const formState = ref({
   },
   typography: "modern",
   button: "rounded",
+  button_text_color: "light",
+  show_button_outline: false,
   footer_email: "",
   footer_phone: "",
   terms_and_conditions_url: "",
@@ -225,6 +235,7 @@ const formState = ref({
   facebook_url: "",
   x_url: "",
   tiktok_url: "",
+  size_chart: null as File | string | null,
 })
 
 // Color palette configurations
@@ -287,6 +298,8 @@ watch(
       formState.value.favicon = data.favicon || null
       formState.value.typography = data.typography || "modern"
       formState.value.button = data.button || "rounded"
+      formState.value.button_text_color = data.button_text_color || "light"
+      formState.value.show_button_outline = data.show_button_outline || false
       formState.value.footer_email = data.footer_email || ""
       formState.value.footer_phone = data.footer_phone || ""
       formState.value.terms_and_conditions_url = data.terms_and_conditions_url || ""
@@ -294,6 +307,7 @@ watch(
       formState.value.facebook_url = data.facebook_url || ""
       formState.value.x_url = data.x_url || ""
       formState.value.tiktok_url = data.tiktok_url || ""
+      formState.value.size_chart = data.size_chart || null
 
       if (data.color_scheme) setPaletteFromColorScheme(data.color_scheme)
     }
@@ -307,6 +321,8 @@ const publishSettings = () => {
 
   formData.append("typography", formState.value.typography)
   formData.append("button", formState.value.button)
+  formData.append("button_text_color", formState.value.button_text_color)
+  formData.append("show_button_outline", String(formState.value.show_button_outline))
   formData.append("footer_email", formState.value.footer_email)
   formData.append("footer_phone", formState.value.footer_phone)
   formData.append("terms_and_conditions_url", formState.value.terms_and_conditions_url)
@@ -320,6 +336,9 @@ const publishSettings = () => {
   }
   if (formState.value.favicon instanceof File) {
     formData.append("favicon", formState.value.favicon)
+  }
+  if (formState.value.size_chart instanceof File) {
+    formData.append("size_chart", formState.value.size_chart)
   }
 
   formData.append("is_published", "true")

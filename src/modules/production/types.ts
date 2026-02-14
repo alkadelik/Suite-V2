@@ -1,17 +1,61 @@
+export type TSupplier = {
+  uid: string
+  name: string
+  notes: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export type TBatch = {
+  uid: string
+  date_added: string
+  quantity: string
+  remaining_quantity: string
+  unit_cost: string
+  total_cost: number
+  source_type: string
+  source_id: string | null
+  notes?: string // NOT IN API RESPONSE
+}
+
+export type TMovement = {
+  uid: string
+  created_at: string
+  movement_type: string
+  quantity: string
+  unit_cost: string
+  total_cost: string
+  reason: string
+  notes: string
+  source_type: string
+  source_id: string | null
+  breakdown: {
+    quantity: string
+    batch_uid: string
+  }
+  performed_by?: string // NOT IN API RESPONSE
+}
+
 export type TRawMaterial = {
   uid: string
   name: string
-  stock: number
   unit: string
-  category: string
+  default_cost?: string
+  is_sub_assembly: boolean
+  expiry_date?: string | null
+  reorder_threshold?: number | null
+  notes?: string
+  current_stock: number
+  avg_cost: number
   last_cost: number
-  average_cost: number
-  subassembly?: boolean
-  low_stock?: boolean
-  expired?: boolean
-  expiration_date?: string
+  last_cost_date?: string
+  low_stock: boolean
   created_at: string
-  updated_at: string
+  updated_at?: string
+  suppliers?: TSupplier[]
+  batches?: TBatch[]
+  movements?: TMovement[]
 }
 
 export interface RawMaterialPayload {
@@ -27,22 +71,11 @@ export interface RawMaterialPayload {
 }
 
 export interface RawMaterialStats {
-  total: number
+  total_materials: number
   low_stock: number
   expiring_soon: number
-  expiring_soon_amount: number
+  // expiring_soon_amount: number // NOT IN API RESPONSE
   inventory_value: number
-}
-
-export type TBatch = {
-  date_added: string
-  batch_number: string
-  quantity_added: number
-  quantity_left: number
-  unit_cost: number
-  unit: string
-  total_cost: number
-  source: string
 }
 
 export type TUsageHistory = {
@@ -71,5 +104,12 @@ export interface ICreateMaterialPayload {
   suppliers?: string[]
   expiry_date?: string
   reorder_threshold?: string
+  notes?: string
+}
+
+export interface IAdjustStockPayload {
+  movement_type: "add" | "remove"
+  quantity: number
+  reason: string
   notes?: string
 }

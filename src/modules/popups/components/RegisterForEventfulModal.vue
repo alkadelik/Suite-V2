@@ -9,13 +9,13 @@ import { computed, ref } from "vue"
 import { useRegisterForEventful, useValidateEventfulDiscountCode } from "../api"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
-import { useRouter } from "vue-router"
+// import { useRouter } from "vue-router"
 
 const props = defineProps<{ open: boolean; event: EventfulPopup }>()
 
-const emit = defineEmits<{ (e: "close"): void }>()
+const emit = defineEmits<{ (e: "close"): void; (e: "refresh"): void }>()
 
-const router = useRouter()
+// const router = useRouter()
 
 const discountCode = ref("")
 const discountValue = ref(0)
@@ -64,7 +64,7 @@ const handleRegister = () => {
             title: "Event Registration",
           })
           emit("close")
-          router.go(0)
+          emit("refresh")
           return
         }
 
@@ -134,7 +134,11 @@ const handleRegister = () => {
         </p>
 
         <AppButton
-          :label="`Pay ${formatCurrency(totalAmount, { kobo: true })}`"
+          :label="
+            Number(totalAmount)
+              ? `Pay ${formatCurrency(totalAmount, { kobo: true })}`
+              : 'Register Now'
+          "
           class="w-full"
           :loading="isPending"
           @click="handleRegister"

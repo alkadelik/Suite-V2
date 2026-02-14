@@ -32,12 +32,20 @@
 
         <p class="text-core-600 text-center text-sm">
           Didn't get the code?
-          <RouterLink
-            :to="`/forgot-password${redirectStr}`"
+          <button
+            type="button"
             class="btn btn-ghost text-primary-600 font-medium"
+            :disabled="isResending || cooldown > 0"
+            @click="resendCode"
           >
-            Resend Code
-          </RouterLink>
+            {{
+              isResending
+                ? "Resending..."
+                : cooldown > 0
+                  ? `Resend Code (${cooldown}s)`
+                  : "Resend Code"
+            }}
+          </button>
         </p>
       </div>
 
@@ -80,11 +88,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, ref, onUnmounted } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { toast } from "@/composables/useToast"
 import * as yup from "yup"
-import { useResetPassword, useVerifyToken } from "../api"
+import { useForgotPassword, useResetPassword, useVerifyToken } from "../api"
 import { passwordSchema } from "@/utils/validationSchemas"
 import PasswordStrength from "@components/form/PasswordStrength.vue"
 import StepperWizard from "@components/StepperWizard.vue"
@@ -105,6 +113,7 @@ const route = useRoute()
 const email = route.query.email ? decodeURIComponent(route.query.email as string) : ""
 const { mutate: resetPassword, isPending } = useResetPassword()
 const { mutate: verifyTokenMutation, isPending: verifyTokenPending } = useVerifyToken()
+const { mutate: forgotPassword, isPending: isResending } = useForgotPassword()
 
 const schema = yup.object({
   password: passwordSchema,
@@ -113,6 +122,43 @@ const schema = yup.object({
     .oneOf([yup.ref("password")], "Passwords do not match")
     .required("Please confirm your password"),
 })
+
+// Cooldown timer for resend code (60 seconds)
+const cooldown = ref(60)
+let cooldownTimer: ReturnType<typeof setInterval> | null = null
+
+const startCooldown = () => {
+  cooldown.value = 60
+  if (cooldownTimer) clearInterval(cooldownTimer)
+  cooldownTimer = setInterval(() => {
+    cooldown.value--
+    if (cooldown.value <= 0) {
+      clearInterval(cooldownTimer!)
+      cooldownTimer = null
+    }
+  }, 1000)
+}
+
+// Start cooldown immediately (OTP was already sent from forgot-password page)
+startCooldown()
+
+onUnmounted(() => {
+  if (cooldownTimer) clearInterval(cooldownTimer)
+})
+
+const resendCode = () => {
+  if (!email || cooldown.value > 0) return
+  forgotPassword(
+    { email },
+    {
+      onSuccess: () => {
+        toast.success("Password reset OTP resent to your email address.")
+        startCooldown()
+      },
+      onError: displayError,
+    },
+  )
+}
 
 const verifyToken = () => {
   if (otp.value.length === 6) {

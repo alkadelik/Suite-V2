@@ -1,6 +1,6 @@
 import baseApi, { TPaginatedResponse, useApiQuery } from "@/composables/baseApi"
 import { useMutation, useQuery, useInfiniteQuery } from "@tanstack/vue-query"
-import { toValue, type MaybeRefOrGetter } from "vue"
+import { toValue, type MaybeRefOrGetter, type Ref } from "vue"
 import {
   IProductCategoryFormPayload,
   IProductFormPayload,
@@ -38,6 +38,16 @@ export function useGetCategories() {
 export function useCreateCategory() {
   return useMutation({
     mutationFn: (body: IProductCategoryFormPayload) => baseApi.post("inventory/categories/", body),
+  })
+}
+
+/** Update category images - bulk api request */
+export function useUpdateBulkCategoryImages() {
+  return useMutation({
+    mutationFn: (body: FormData) =>
+      baseApi.post("inventory/categories/update-images/", body, {
+        headers: { "Content-Type": "multipart/form-data" },
+      }),
   })
 }
 
@@ -312,18 +322,18 @@ export function useGetProductCatalogs() {
 }
 
 /** Get product catalogs with infinite scroll */
-export function useGetProductCatalogsInfinite(limit = 20) {
+export function useGetProductCatalogsInfinite(limit = 20, search?: Ref<string>) {
   return useInfiniteQuery({
-    queryKey: ["productCatalogsInfinite", limit],
+    queryKey: ["productCatalogsInfinite", limit, search],
     queryFn: async ({ pageParam = 0 }) => {
+      const params: Record<string, string | number> = {
+        limit,
+        offset: pageParam,
+      }
+      if (search?.value) params.search = search.value
       const { data } = await baseApi.get<TPaginatedResponse<IProductCatalogue>>(
         `/inventory/catalog/`,
-        {
-          params: {
-            limit,
-            offset: pageParam,
-          },
-        },
+        { params },
       )
       return data.data
     },

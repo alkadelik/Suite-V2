@@ -138,12 +138,12 @@ interface Props {
 const props = defineProps<Props>()
 
 const stockStatus = computed(() => {
-  if (props.product.total_stock === 0) {
+  if (props.product.sellable_stock === 0) {
     return { label: "Out of Stock", color: "error" as const }
   } else if (props.product.needs_reorder) {
     return { label: "Low Stock", color: "warning" as const }
   } else {
-    return { label: `${props.product.total_stock} in Stock`, color: "success" as const }
+    return { label: `${props.product.sellable_stock} in Stock`, color: "success" as const }
   }
 })
 

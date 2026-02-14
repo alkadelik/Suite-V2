@@ -9,7 +9,7 @@
     <IconHeader icon-name="shop-add" :title="getHeaderTitle" :subtext="getHeaderText" />
 
     <!-- Loading state for fetching product -->
-    <ProductEditSkeleton v-if="isLoadingProduct || props.loading" />
+    <ProductEditSkeleton v-if="isLoadingProduct || isFetchingProduct || props.loading" />
 
     <form v-else id="product-edit-form" @submit.prevent="handleSubmit" class="min-h-full">
       <div>
@@ -21,7 +21,7 @@
           :has-variants="hasVariants"
           :disable-variants-toggle="true"
           @update:has-variants="hasVariants = $event"
-          @add-category="emit('add-category')"
+          @add-category="showAddCategoryModal = true"
         />
 
         <!-- Variant Details Mode - Edit price and dimensions for one variant -->
@@ -30,6 +30,7 @@
           v-model="variants"
           :product-name="form.name"
           :hide-stock="true"
+          :disable-cost-price="true"
         />
 
         <!-- Images Edit Mode - Edit product images only -->
@@ -73,7 +74,7 @@
             :has-variants="hasVariants"
             :disable-variants-toggle="true"
             @update:has-variants="hasVariants = $event"
-            @add-category="emit('add-category')"
+            @add-category="showAddCategoryModal = true"
           />
 
           <!-- Step 2: Variants Configuration (only if hasVariants is true) -->
@@ -88,6 +89,7 @@
             v-model="variants"
             :product-name="form.name"
             :deleted-variants="deletedVariants"
+            :disable-cost-price="true"
           />
 
           <!-- Step 3/4: Product Images -->
@@ -145,6 +147,12 @@
         </div>
       </div>
     </template>
+
+    <AddCategoryModal
+      v-model="showAddCategoryModal"
+      :teleport="false"
+      @success="handleCategoryCreated"
+    />
   </Drawer>
 </template>
 
@@ -165,6 +173,7 @@ import ProductDetailsForm from "./ProductForm/ProductDetailsForm.vue"
 import ProductManageCombinationsForm from "./ProductForm/ProductManageCombinationsForm.vue"
 import ProductImagesForm from "./ProductForm/ProductImagesForm.vue"
 import ProductVariantsForm from "./ProductForm/ProductVariantsForm.vue"
+import AddCategoryModal from "./AddCategoryModal.vue"
 import {
   useUpdateProduct,
   useUpdateVariant,
@@ -181,6 +190,7 @@ import {
 import baseApi from "@/composables/baseApi"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
+import { htmlToMarkdown, markdownToHtml } from "@/utils/html-to-markdown"
 import { useQueryClient } from "@tanstack/vue-query"
 import ProductEditSkeleton from "./skeletons/ProductEditSkeleton.vue"
 
@@ -236,6 +246,8 @@ const productDetailsRef = ref<{
   setCategory: (category: { label: string; value: string }) => void
 } | null>(null)
 
+const showAddCategoryModal = ref(false)
+
 // API mutations
 const { mutate: updateProduct, isPending: isUpdating } = useUpdateProduct()
 const { mutate: updateVariant, isPending: isUpdatingVariant } = useUpdateVariant()
@@ -253,7 +265,11 @@ const { mutate: bulkUpdateVariants, isPending: isBulkUpdatingVariants } = useBul
 
 // Product fetching
 const productUidToFetch = ref<string>("")
-const { data: productData, isLoading: isLoadingProduct } = useGetProduct(
+const {
+  data: productData,
+  isLoading: isLoadingProduct,
+  isFetching: isFetchingProduct,
+} = useGetProduct(
   computed(() => productUidToFetch.value),
   { enabled: computed(() => !!productUidToFetch.value) },
 )
@@ -385,8 +401,9 @@ watch(
       // Note: Don't reset variantDetailsWithUids or form state here
       // to avoid flashing single-variant view while refetching
     } else if (!isOpen) {
-      // Drawer is closing - clear expected product UID
+      // Drawer is closing - clear state so reopening triggers a fresh fetch
       expectedProductUid.value = null
+      productUidToFetch.value = ""
     }
   },
   { immediate: true },
@@ -510,7 +527,7 @@ watch(
 
       populateFormState({
         name: product.name || "",
-        description: product.description || "",
+        description: markdownToHtml(product.description || ""),
         story: product.story || "",
         brand: product.brand || "",
         requires_approval: product.requires_approval || false,
@@ -670,7 +687,7 @@ const handleSubmit = async () => {
   if (props.editMode === "product-details") {
     const payload: IProductDetailsUpdatePayload = {
       name: form.name,
-      description: form.description,
+      description: htmlToMarkdown(form.description),
       story: form.story || "",
       category: form.category?.value as string,
       brand: form.brand || "",
@@ -1052,7 +1069,7 @@ const handleSubmit = async () => {
     // Handle Full Edit Mode (original logic)
     const payload: IProductFormPayload = {
       name: form.name,
-      description: form.description,
+      description: htmlToMarkdown(form.description),
       story: form.story || "",
       category: form.category?.value as string,
       brand: form.brand || "",
@@ -1239,10 +1256,27 @@ const handleBack = () => {
     (isVariantsMode && step.value === 2) || (step.value === 3 && hasVariants.value)
 
   if (isCombinationsStep) {
+    // Restore deleted variants back into variants array so they can be
+    // re-detected when generateVariantCombinations() runs on next forward navigation
+    if (deletedVariants.value.length > 0) {
+      variants.value.push(...deletedVariants.value)
+    }
     deletedVariants.value = []
   }
 
   previousStep()
+}
+
+/**
+ * Handle category creation from AddCategoryModal
+ * Sets the category in the ProductDetailsForm
+ */
+const handleCategoryCreated = (category: { label: string; value: string }) => {
+  showAddCategoryModal.value = false
+
+  if (productDetailsRef.value) {
+    productDetailsRef.value.setCategory(category)
+  }
 }
 
 /**

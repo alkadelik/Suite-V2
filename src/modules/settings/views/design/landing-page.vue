@@ -10,12 +10,12 @@
         class="ml-auto"
         @click="openVersionHistory?.()"
       />
-      <AppButton
+      <!-- <AppButton
         :loading="isPending"
         label="Publish Page"
         class="!hidden md:!inline-flex"
         @click="publishPage"
-      />
+      /> -->
     </div>
     <!-- mobile -->
     <div class="fixed bottom-0 left-0 z-10 w-full border-t border-gray-200 bg-white p-4 md:hidden">
@@ -73,6 +73,7 @@
             handle=".drag-handle"
             @end="onDragEnd"
             class="space-y-2"
+            :disabled="!REORDERING_ENABLED"
           >
             <template #item="{ element: item }">
               <button
@@ -84,10 +85,12 @@
                     'text-core-700 border-gray-200 hover:border-gray-300 hover:bg-gray-50':
                       activeSection !== item.id,
                   },
+                  REORDERING_ENABLED ? 'pr-4' : 'px-4',
                 ]"
                 @click="activeSection = item.id"
               >
                 <div
+                  v-if="REORDERING_ENABLED"
                   class="drag-handle flex h-full w-6 cursor-grab items-center justify-center rounded-l-lg active:cursor-grabbing"
                   :class="activeSection === item.id ? 'bg-primary-100' : 'bg-gray-200'"
                 >
@@ -135,6 +138,7 @@
           >
             <HeroSettings
               :hero-section="heroSection"
+              :old-section="oldHeroSection"
               @change-section="changeSection"
               @refetch="refetch"
             />
@@ -152,18 +156,21 @@
           handle=".mobile-drag-handle"
           @end="onDragEnd"
           class="flex flex-col gap-3"
+          :disabled="!REORDERING_ENABLED"
         >
           <template #item="{ element: item, index }">
             <div :class="{ 'mb-10': index === draggableItems.length - 1 }">
               <button
                 type="button"
                 :class="[
-                  'flex h-14 w-full items-center gap-3 rounded-lg border border-gray-200 pr-4 text-sm font-medium transition-colors',
+                  'flex h-14 w-full items-center gap-3 rounded-lg border border-gray-200 text-sm font-medium transition-colors',
                   { 'rounded-b-none': expandedSection === item.id },
+                  REORDERING_ENABLED ? 'pr-4' : 'px-4',
                 ]"
                 @click="toggleSection(item.id)"
               >
                 <div
+                  v-if="REORDERING_ENABLED"
                   class="mobile-drag-handle flex h-full w-6 cursor-grab items-center justify-center rounded-l-lg active:cursor-grabbing"
                   :class="[
                     activeSection === item.id ? 'bg-primary-100' : 'bg-gray-200',
@@ -191,8 +198,14 @@
                 v-if="expandedSection === item.id"
                 class="rounded-b-lg border border-t-0 border-gray-200 p-4"
               >
+                <CategorySettings
+                  v-if="item.id === 'categories'"
+                  :category-section="categorySection"
+                  @change-section="changeSection"
+                  @refetch="refetch"
+                />
                 <FeaturedProducts
-                  v-if="item.id === 'featured_products'"
+                  v-else-if="item.id === 'featured_products'"
                   :featured-products-section="featuredProductsSection"
                   @change-section="changeSection"
                   @refetch="refetch"
@@ -246,8 +259,15 @@
       <!-- Right Content - Desktop -->
       <div class="hidden flex-1 md:block">
         <HeroSettings
-          v-if="activeSection === 'hero'"
+          v-if="activeSection === 'hero' || activeSection === 'hero_carousel'"
           :hero-section="heroSection"
+          :old-section="oldHeroSection"
+          @change-section="changeSection"
+          @refetch="refetch"
+        />
+        <CategorySettings
+          v-else-if="activeSection === 'categories'"
+          :category-section="categorySection"
           @change-section="changeSection"
           @refetch="refetch"
         />
@@ -319,6 +339,7 @@ import { ref, watch, computed, inject } from "vue"
 import draggable from "vuedraggable"
 import Icon from "@components/Icon.vue"
 import HeroSettings from "@modules/settings/components/design/landing-page/HeroSettings.vue"
+import CategorySettings from "@modules/settings/components/design/landing-page/CategorySettings.vue"
 import FeaturedProducts from "@modules/settings/components/design/landing-page/FeaturedProducts.vue"
 import AboutSettings from "@modules/settings/components/design/landing-page/AboutSettings.vue"
 import CTABlock1 from "@modules/settings/components/design/landing-page/CTABlock1.vue"
@@ -335,6 +356,8 @@ import { displayError } from "@/utils/error-handler"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
 import LandingPageSkeleton from "../../components/skeletons/LandingPageSkeleton.vue"
 
+const REORDERING_ENABLED = false
+
 const { mutate: updateLandingPageItemsOrder, isPending } = useUpdateStorefrontSectionsOrder()
 const { data: landingPageData, refetch, isPending: isLoading } = useGetStorefrontSections()
 
@@ -346,9 +369,19 @@ const sectionToHideId = ref<string | null>(null)
 const isHiding = ref(false)
 
 // Get all sections from landing page data
-const heroSection = computed(() => {
+const oldHeroSection = computed(() => {
   if (!landingPageData.value?.results) return null
   return landingPageData.value.results.find((section) => section.section_type === "hero")
+})
+
+const heroSection = computed(() => {
+  if (!landingPageData.value?.results) return null
+  return landingPageData.value.results.find((section) => section.section_type === "hero_carousel")
+})
+
+const categorySection = computed(() => {
+  if (!landingPageData.value?.results) return null
+  return landingPageData.value.results.find((section) => section.section_type === "categories")
 })
 
 const aboutSection = computed(() => {
@@ -398,8 +431,19 @@ const validateSectionRequiredFields = (
 
   switch (sectionId) {
     case "hero":
+    case "hero_carousel":
       // Hero has fallbacks for title and image, so it's always valid
       return { isValid: true, missing: [] }
+
+    case "categories":
+      if (!categorySection.value) return { isValid: false, missing: ["section data"] }
+      if (
+        !categorySection.value.featured_categories ||
+        categorySection.value.featured_categories.length < 2
+      ) {
+        missing.push("At least two categories")
+      }
+      return { isValid: missing.length === 0, missing }
 
     case "featured_products":
       // Featured products section doesn't have specific required fields in the section data
@@ -425,6 +469,13 @@ const validateSectionRequiredFields = (
       if (!ctaBlock2Section.value.title) missing.push("Headline")
       if (!ctaBlock2Section.value.content) missing.push("Body Text")
       if (!ctaBlock2Section.value.image) missing.push("Image")
+      return { isValid: missing.length === 0, missing }
+
+    case "cta_block_3":
+      if (!ctaBlock3Section.value) return { isValid: false, missing: ["section data"] }
+      if (!ctaBlock3Section.value.title) missing.push("Headline")
+      if (!ctaBlock3Section.value.content) missing.push("Body Text")
+      if (!ctaBlock3Section.value.image) missing.push("Image")
       return { isValid: missing.length === 0, missing }
 
     case "testimonials":
@@ -506,6 +557,8 @@ const confirmHideSection = (): void => {
 // Icon mapping for different section types
 const sectionIconMap: Record<string, string> = {
   hero: "star",
+  hero_carousel: "star",
+  categories: "grid",
   featured_products: "bag-2",
   about: "information",
   cta_block_1: "announcements",
@@ -529,7 +582,9 @@ const allDesignItems = ref<DesignItem[]>([])
 
 // Separate hero from other items
 const heroItem = computed(() => {
-  return allDesignItems.value.find((item) => item.id === "hero") || null
+  return (
+    allDesignItems.value.find((item) => item.id === "hero_carousel" || item.id === "hero") || null
+  )
 })
 
 const draggableItems = ref<DesignItem[]>([])
@@ -569,7 +624,29 @@ watch(
         .sort((a, b) => a.order - b.order)
 
       // Separate hero from draggable items
-      draggableItems.value = allDesignItems.value.filter((item) => item.id !== "hero")
+      let filteredItems = allDesignItems.value.filter(
+        (item) => item.id !== "hero" && item.id !== "hero_carousel",
+      )
+
+      // If reordering is disabled, enforce a fixed display order for backward compatibility
+      if (!REORDERING_ENABLED) {
+        const fixedOrder = [
+          "categories",
+          "featured_products",
+          "about",
+          "cta_block_1",
+          "cta_block_2",
+          "cta_block_3",
+          "testimonials",
+          "newsletter_signup",
+        ]
+
+        filteredItems = fixedOrder
+          .map((sectionId) => filteredItems.find((item) => item.id === sectionId))
+          .filter((item): item is DesignItem => item !== undefined)
+      }
+
+      draggableItems.value = filteredItems
     }
   },
   { immediate: true },

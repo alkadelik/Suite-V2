@@ -31,9 +31,11 @@ export type TProduct = {
   uid: string
   name: string
   total_stock: number
+  sellable_stock: number
   needs_reorder: boolean
   variants_count: number
   is_active: boolean
+  is_hidden_from_storefront: boolean
   category: string | null
   created_at: string
   primary_image: IProductImage | null
@@ -55,6 +57,7 @@ export interface IProductDetails {
   category_name: string
   brand: string
   is_active: boolean
+  is_hidden_from_storefront: boolean
   is_variable: boolean
   requires_approval: boolean
   variants: IProductVariantDetails[]
@@ -130,6 +133,7 @@ export interface IProductCategory {
   is_active: boolean
   created_at: string
   updated_at: string
+  image?: string | null
 }
 
 // Product attribute definition
@@ -323,6 +327,7 @@ export interface IProductFormPayload {
   category: string
   brand: string
   is_active: boolean
+  is_hidden_from_storefront?: boolean
   is_variable: boolean
   requires_approval: boolean
   variants: IProductVariant[]

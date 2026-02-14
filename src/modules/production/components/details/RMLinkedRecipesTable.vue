@@ -1,15 +1,20 @@
 <script setup lang="ts">
 import Chip from "@components/Chip.vue"
 import DataTable from "@components/DataTable.vue"
-import { LINKED_RECIPES_COLUMN, MOCK_LINKED_RECIPES } from "@modules/production/constants"
+import { LINKED_RECIPES_COLUMN } from "@modules/production/constants"
 import RMTableCard from "./RMTableCard.vue"
+import { TLinkedRecipe } from "@modules/production/types"
+
+const props = defineProps<{
+  recipes: TLinkedRecipe[]
+}>()
 </script>
 
 <template>
   <div>
     <div class="space-y-4 overflow-hidden rounded-xl border-gray-200 md:border md:bg-white">
       <DataTable
-        :data="MOCK_LINKED_RECIPES ?? []"
+        :data="props.recipes ?? []"
         :columns="LINKED_RECIPES_COLUMN"
         :loading="false"
         :enable-row-selection="false"

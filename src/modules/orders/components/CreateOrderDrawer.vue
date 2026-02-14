@@ -60,6 +60,7 @@ const activeStep = ref(0)
 // Step 1: Selected products
 const selectedProducts = ref<IProductCatalogue[]>([])
 const selectedPopupProducts = ref<PopupInventory[]>([])
+const productViewMode = ref<"grid" | "list">("grid")
 
 // Step 2: Product variants with quantities and prices
 interface OrderItem {
@@ -211,10 +212,15 @@ const vatAmount = computed(() => {
 })
 
 const totalAmount = computed(() => {
+  const deliveryFee =
+    shippingInfo.value.fulfilment_method === "delivery" &&
+    shippingInfo.value.delivery_payment_option !== "free_shipping"
+      ? Number(shippingInfo.value.delivery_fee)
+      : 0
   return (
     productsTotal.value +
     Number(vatAmount.value) +
-    Number(shippingInfo.value.delivery_fee) -
+    deliveryFee -
     Number(paymentInfo.value.discount_amount)
   )
 })
@@ -380,6 +386,7 @@ const resetForm = () => {
   selectedCustomer.value = null
   shippingInfo.value = getInitialShippingInfo()
   paymentInfo.value = getInitialPaymentInfo()
+  productViewMode.value = "grid"
 }
 
 const isMobile = useMediaQuery("(max-width: 1028px)")
@@ -434,11 +441,13 @@ watch(
         <PopupOrderSelectProduct
           v-if="step === 0 && isPopupOrder"
           v-model:selectedProducts="selectedPopupProducts"
+          v-model:viewMode="productViewMode"
           @next="onNext"
         />
         <OrderSelectProduct
           v-else-if="step === 0"
           v-model:selectedProducts="selectedProducts"
+          v-model:viewMode="productViewMode"
           @next="onNext"
         />
 
@@ -484,10 +493,13 @@ watch(
           v-if="step === 4"
           v-model:paymentInfo="paymentInfo"
           :productsTotal="productsTotal"
-          :deliveryFee="shippingInfo.delivery_fee"
+          :deliveryFee="
+            shippingInfo.fulfilment_method === 'delivery' ? shippingInfo.delivery_fee : 0
+          "
           :vatAmount="vatAmount"
           :totalAmount="totalAmount"
           :itemsCount="itemsCount"
+          :is-free-shipping="shippingInfo.delivery_payment_option === 'free_shipping'"
           @next="onNext"
           @prev="onPrev"
         />
@@ -500,10 +512,13 @@ watch(
           :shippingInfo="shippingInfo"
           :paymentInfo="paymentInfo"
           :productsTotal="productsTotal"
-          :deliveryFee="shippingInfo.delivery_fee"
+          :deliveryFee="
+            shippingInfo.fulfilment_method === 'delivery' ? shippingInfo.delivery_fee : 0
+          "
           :vatAmount="vatAmount"
           :totalAmount="totalAmount"
           :loading="isPending"
+          :is-free-shipping="shippingInfo.delivery_payment_option === 'free_shipping'"
           @prev="onPrev"
           @submit="onCreateOrder"
         />

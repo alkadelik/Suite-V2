@@ -19,7 +19,7 @@
           v-model="form"
           :has-variants="hasVariants"
           @update:has-variants="hasVariants = $event"
-          @add-category="emit('add-category')"
+          @add-category="showAddCategoryModal = true"
         />
 
         <!-- Step 2: Variants Configuration (only if hasVariants is true) -->
@@ -67,6 +67,12 @@
         </div>
       </div>
     </template>
+
+    <AddCategoryModal
+      v-model="showAddCategoryModal"
+      :teleport="false"
+      @success="handleCategoryCreated"
+    />
   </component>
 </template>
 
@@ -80,6 +86,7 @@ import ProductDetailsForm from "./ProductForm/ProductDetailsForm.vue"
 import ProductManageCombinationsForm from "./ProductForm/ProductManageCombinationsForm.vue"
 import ProductImagesForm from "./ProductForm/ProductImagesForm.vue"
 import ProductVariantsForm from "./ProductForm/ProductVariantsForm.vue"
+import AddCategoryModal from "./AddCategoryModal.vue"
 import {
   useCreateProduct,
   useCreateAttribute,
@@ -90,6 +97,7 @@ import {
 import baseApi from "@/composables/baseApi"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
+import { htmlToMarkdown } from "@/utils/html-to-markdown"
 
 // Import composables
 import { useProductFormState } from "../composables/useProductFormState"
@@ -112,10 +120,6 @@ interface Emits {
   "update:modelValue": [value: boolean]
   /** Emitted when drawer should refresh parent data */
   refresh: []
-  /** Emitted when Add New Category is clicked */
-  "add-category": []
-  /** Emitted when a new category is successfully created */
-  "category-created": [category: { label: string; value: string }]
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -123,6 +127,8 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<Emits>()
+
+const showAddCategoryModal = ref(false)
 
 // Ref to ProductDetailsForm component
 const productDetailsRef = ref<{
@@ -187,6 +193,18 @@ const isPending = computed(() => {
   )
 })
 
+/**
+ * Handle category creation from AddCategoryModal
+ * Sets the category in the ProductDetailsForm
+ */
+const handleCategoryCreated = (category: { label: string; value: string }) => {
+  showAddCategoryModal.value = false
+
+  if (productDetailsRef.value) {
+    productDetailsRef.value.setCategory(category)
+  }
+}
+
 // Watch for drawer opening to reset form
 watch(
   () => props.modelValue,
@@ -214,7 +232,7 @@ const handleSubmit = async () => {
     // Format product data according to API schema
     const payload: IProductFormPayload = {
       name: form.name,
-      description: form.description,
+      description: htmlToMarkdown(form.description),
       story: form.story || "",
       category: form.category?.value as string,
       brand: form.brand || "",

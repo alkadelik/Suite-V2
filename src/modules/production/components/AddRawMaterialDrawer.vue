@@ -35,6 +35,21 @@ const activeStep = ref(0)
 const showAddSupplier = ref(false)
 const newSupplierName = ref("")
 
+// unit management
+const showAddUnit = ref(false)
+const newUnitName = ref("")
+
+const createNewUnit = () => {
+  const unit = newUnitName.value.trim()
+  const newUnit = { label: unit, value: unit.toLowerCase().replace(/\s+/g, "_") }
+  // Add the new unit to the unitOptions array and set it as the selected value
+  unitOptions.value.push(newUnit)
+  setFieldValue("unit", newUnit)
+  // toast.success(`Unit "${newUnitName.value.trim()}" added successfully!`)
+  showAddUnit.value = false
+  newUnitName.value = ""
+}
+
 const { data: suppliers } = useGetSuppliers()
 const { mutate: createSupplier, isPending: isCreatingSupplier } = useCreateSupplier()
 
@@ -48,7 +63,7 @@ const supplierOptions = computed(() => {
 })
 
 // Unit options
-const unitOptions = [
+const unitOptions = ref([
   { label: "Kilograms (kg)", value: "kg" },
   { label: "Grams (g)", value: "g" },
   { label: "Liters (L)", value: "L" },
@@ -58,7 +73,7 @@ const unitOptions = [
   { label: "Sheets", value: "sheets" },
   { label: "Bags", value: "bags" },
   { label: "Boxes", value: "boxes" },
-]
+])
 
 // Source of material options
 const sourceOptions = [
@@ -78,7 +93,7 @@ interface FormValues {
   notes?: string
 }
 
-const { handleSubmit, meta, resetForm, values, setFieldValue } = useForm<FormValues>({
+const { handleSubmit, resetForm, values, setFieldValue } = useForm<FormValues>({
   validationSchema: computed(() =>
     yup.object({
       name: yup
@@ -206,17 +221,18 @@ watch(
       activeStep.value = 0
       if (isEditMode.value && props.material) {
         // Populate form with material data
-        const sourceOption =
-          sourceOptions.find((opt) => opt.value === props.material?.category) || sourceOptions[0]
-
         resetForm({
           values: {
             name: props.material.name,
             unit: { label: props.material.unit, value: props.material.unit },
-            qty_in_stock: props.material.stock.toString(),
-            source: sourceOption,
-            suppliers: [], // This would need to come from API if available
-            expiry_date: props.material.expiration_date || "",
+            qty_in_stock: props.material.current_stock.toString(),
+            source: props.material.is_sub_assembly ? sourceOptions[1] : sourceOptions[0],
+            default_cost: props.material.avg_cost.toString(),
+            suppliers: props.material.suppliers?.map((supplier) => ({
+              label: supplier.name,
+              value: supplier.uid,
+            })),
+            expiry_date: "",
             reorder_threshold: "",
             notes: "",
           },
@@ -237,6 +253,13 @@ const canProceedToStep2 = computed(() => {
       values.source?.value === "manufacture")
   )
 })
+
+const canComplete = computed(
+  () =>
+    canProceedToStep2.value &&
+    ((values.source?.value === "supplier" && values.suppliers.length > 0) ||
+      values.source?.value === "manufacture"),
+)
 
 const goToNextStep = () => {
   activeStep.value = activeStep.value + 1
@@ -279,14 +302,37 @@ const goToPrevStep = () => {
             />
 
             <div>
-              <FormField
-                type="select"
-                name="unit"
-                label="Unit of Measurement"
-                placeholder="e.g. kg"
-                required
-                :options="unitOptions"
-              />
+              <!-- Add custom -- add unit -->
+              <Field v-slot="{ field, errors: fieldErrors }" name="unit">
+                <SelectField
+                  v-bind="field"
+                  :model-value="field.value"
+                  label="Unit of Measurement"
+                  placeholder="Select unit"
+                  :options="unitOptions"
+                  searchable
+                  required
+                  :error="fieldErrors[0]"
+                  @update:model-value="field.value = $event"
+                >
+                  <template #prepend="{ close }">
+                    <div
+                      class="hover:bg-core-25 cursor-pointer border-b border-gray-200 px-4 py-2 text-sm transition-colors duration-150"
+                      @click="
+                        () => {
+                          close()
+                          showAddUnit = true
+                        }
+                      "
+                    >
+                      <div class="flex items-center justify-between">
+                        <span class="text-primary-600 font-semibold">Add New Unit</span>
+                        <Icon name="add" class="text-primary-600 h-4 w-4" />
+                      </div>
+                    </div>
+                  </template>
+                </SelectField>
+              </Field>
             </div>
 
             <div>
@@ -362,6 +408,7 @@ const goToPrevStep = () => {
                   searchable
                   multiple
                   required
+                  placement="bottom"
                   :error="fieldErrors[0]"
                   @update:model-value="field.value = $event"
                 >
@@ -424,7 +471,8 @@ const goToPrevStep = () => {
           type="submit"
           class="flex-1"
           :loading="isPending"
-          :inactive="!meta.valid"
+          :disabled="!canComplete"
+          :inactive="!canComplete"
           @click="onSubmit"
         />
       </div>
@@ -441,46 +489,75 @@ const goToPrevStep = () => {
         />
       </div>
     </template>
+
+    <!-- Create Supplier Modal -->
+    <Modal
+      :open="showAddSupplier"
+      title="Add New Supplier"
+      max-width="md"
+      @close="showAddSupplier = false"
+    >
+      <div class="space-y-4">
+        <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
+          <Icon name="profile-add" size="28" />
+        </div>
+        <p class="text-sm text-gray-600">Create a new supplier for your raw materials</p>
+
+        <TextField
+          v-model="newSupplierName"
+          label="Supplier Name"
+          placeholder="e.g. ABC Supplies"
+          required
+        />
+      </div>
+
+      <template #footer>
+        <div class="flex gap-3">
+          <AppButton
+            label="Cancel"
+            variant="outlined"
+            class="flex-1"
+            @click="showAddSupplier = false"
+          />
+          <AppButton
+            label="Add Supplier"
+            class="flex-1"
+            :loading="isCreatingSupplier"
+            loading-text="Adding..."
+            :disabled="isCreatingSupplier || !newSupplierName.trim()"
+            @click="createNewSupplier"
+          />
+        </div>
+      </template>
+    </Modal>
+
+    <!-- Create new Unit Modal -->
+    <Modal :open="showAddUnit" title="Add New Unit" max-width="md" @close="showAddUnit = false">
+      <div class="space-y-4">
+        <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
+          <Icon name="profile-add" size="28" />
+        </div>
+        <p class="text-sm text-gray-600">Create a new unit for your raw materials</p>
+
+        <TextField v-model="newUnitName" label="Unit Name" placeholder="e.g. Kilogram" required />
+      </div>
+
+      <template #footer>
+        <div class="flex gap-3">
+          <AppButton
+            label="Cancel"
+            variant="outlined"
+            class="flex-1"
+            @click="showAddUnit = false"
+          />
+          <AppButton
+            label="Add Unit"
+            class="flex-1"
+            :disabled="!newUnitName.trim()"
+            @click="createNewUnit"
+          />
+        </div>
+      </template>
+    </Modal>
   </component>
-
-  <!-- Create Supplier Modal -->
-  <Modal
-    :open="showAddSupplier"
-    title="Add New Supplier"
-    max-width="md"
-    @close="showAddSupplier = false"
-  >
-    <div class="space-y-4">
-      <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
-        <Icon name="profile-add" size="28" />
-      </div>
-      <p class="text-sm text-gray-600">Create a new supplier for your raw materials</p>
-
-      <TextField
-        v-model="newSupplierName"
-        label="Supplier Name"
-        placeholder="e.g. ABC Supplies"
-        required
-      />
-    </div>
-
-    <template #footer>
-      <div class="flex gap-3">
-        <AppButton
-          label="Cancel"
-          variant="outlined"
-          class="flex-1"
-          @click="showAddSupplier = false"
-        />
-        <AppButton
-          label="Add Supplier"
-          class="flex-1"
-          :loading="isCreatingSupplier"
-          loading-text="Adding..."
-          :disabled="isCreatingSupplier || !newSupplierName.trim()"
-          @click="createNewSupplier"
-        />
-      </div>
-    </template>
-  </Modal>
 </template>

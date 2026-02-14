@@ -125,7 +125,7 @@
                 class="min-w-0 flex-1"
               />
               <Icon
-                v-if="!item.is_active"
+                v-if="item.is_hidden_from_storefront"
                 name="eye-slash-outline"
                 size="16"
                 class="flex-shrink-0 text-gray-500"
@@ -137,7 +137,7 @@
             <Chip :label="String(value) || 'Uncategorized'" icon="tag" color="purple" size="sm" />
           </template>
 
-          <template #cell:total_stock="{ value }">
+          <template #cell:sellable_stock="{ value }">
             <span class="text-sm font-semibold">{{ value }}</span>
           </template>
 
@@ -196,15 +196,15 @@
     <ConfirmationModal
       v-model="showHideConfirmationModal"
       @close="showHideConfirmationModal = false"
-      :header="product?.is_active ? 'Hide Product' : 'Unhide Product'"
+      :header="product?.is_hidden_from_storefront ? 'Unhide Product' : 'Hide Product'"
       :paragraph="
-        product?.is_active
-          ? 'Are you sure you want to hide this product from the storefront? Customers will not be able to see or purchase it.'
-          : 'Are you sure you want to make this product visible on the storefront? Customers will be able to see and purchase it.'
+        product?.is_hidden_from_storefront
+          ? 'Are you sure you want to make this product visible on the storefront? Customers will be able to see and purchase it.'
+          : 'Are you sure you want to hide this product from the storefront? Customers will not be able to see or purchase it.'
       "
-      :variant="product?.is_active ? 'warning' : 'success'"
+      :variant="product?.is_hidden_from_storefront ? 'success' : 'warning'"
       info-box-variant="neutral"
-      :action-label="product?.is_active ? 'Hide' : 'Unhide'"
+      :action-label="product?.is_hidden_from_storefront ? 'Unhide' : 'Hide'"
       :loading="isUpdatingProduct"
       @confirm="handleToggleVisibility"
     />
@@ -213,10 +213,8 @@
     <!-- drawers  -->
     <ProductFormDrawer
       v-if="showProductFormDrawer"
-      ref="productFormDrawerRef"
       v-model="showProductFormDrawer"
       @refresh="refetchProducts"
-      @add-category="showAddCategoryModal = true"
     />
     <ProductEditDrawer
       v-if="showProductEditDrawer"
@@ -235,7 +233,11 @@
     />
 
     <!-- Modals -->
-    <AddCategoryModal v-model="showAddCategoryModal" @success="handleCategoryCreated" />
+    <AddCategoryModal
+      v-model="showAddCategoryModal"
+      :teleport="true"
+      @success="handleCategoryCreated"
+    />
     <ReceiveRequestModal
       v-model="showReceiveRequestModal"
       :open="showReceiveRequestModal"
@@ -367,9 +369,6 @@ const activeFilters = ref<{
   status: null,
   subCategory: null,
 })
-const productFormDrawerRef = ref<{
-  setCategoryFromModal: (category: { label: string; value: string }) => void
-} | null>(null)
 const productEditDrawerRef = ref<{
   setCategoryFromModal: (category: { label: string; value: string }) => void
 } | null>(null)
@@ -410,9 +409,14 @@ watch(
           uid: details.data.uid,
           name: details.data.name,
           total_stock: details.data.total_stock,
+          sellable_stock: details.data.variants.reduce(
+            (sum, v) => sum + (v.sellable_stock || 0),
+            0,
+          ),
           needs_reorder: details.data.needs_reorder,
           variants_count: details.data.variants.length,
           is_active: details.data.is_active,
+          is_hidden_from_storefront: details.data.is_hidden_from_storefront,
           category: details.data.category,
           created_at: details.data.created_at,
           primary_image: null,
@@ -451,8 +455,8 @@ const handleRowClick = (clickedProduct: TProduct) => {
 const productMetrics = computed(() => {
   const productResults = products.value?.data?.results || []
   // const totalProducts = products.value?.data?.count || 0
-  const inStockProducts = productResults.filter((p: TProduct) => p.total_stock > 0).length
-  const outOfStockProducts = productResults.filter((p: TProduct) => p.total_stock === 0).length
+  const inStockProducts = productResults.filter((p: TProduct) => p.sellable_stock > 0).length
+  const outOfStockProducts = productResults.filter((p: TProduct) => p.sellable_stock === 0).length
   const needsReorderProducts = productResults.filter((p: TProduct) => p.needs_reorder).length
 
   return [
@@ -486,7 +490,7 @@ const productMetrics = computed(() => {
 })
 
 const getStockStatus = (item: TProduct) => {
-  if (item.total_stock === 0) {
+  if (item.sellable_stock === 0) {
     return { label: "Out of Stock", color: "error" as const }
   } else if (item.needs_reorder) {
     return { label: "Low Stock", color: "warning" as const }
@@ -605,18 +609,18 @@ const getActionItems = (item: TProduct) => {
     {
       divider: true,
     },
-    item.is_active
+    item.is_hidden_from_storefront
       ? {
-          id: "hide",
-          label: "Hide Product",
-          icon: "eye-slash-outline",
-          action: () => handleAction("hide", item),
-        }
-      : {
           id: "unhide",
           label: "Unhide Product",
           icon: "eye-outline",
           action: () => handleAction("unhide", item),
+        }
+      : {
+          id: "hide",
+          label: "Hide Product",
+          icon: "eye-slash-outline",
+          action: () => handleAction("hide", item),
         },
     {
       id: "delete",
@@ -667,17 +671,17 @@ const handleDeleteProduct = () => {
 const handleToggleVisibility = () => {
   if (!product.value) return
 
-  const isCurrentlyActive = product.value.is_active
-  const newActiveState = !isCurrentlyActive
+  const isCurrentlyHidden = product.value.is_hidden_from_storefront
+  const newHiddenState = !isCurrentlyHidden
 
   updateProduct(
-    { uid: product.value.uid, is_active: newActiveState },
+    { uid: product.value.uid, is_hidden_from_storefront: newHiddenState },
     {
       onSuccess: () => {
         toast.success(
-          newActiveState
-            ? "Product is now visible on storefront"
-            : "Product hidden from storefront",
+          newHiddenState
+            ? "Product hidden from storefront"
+            : "Product is now visible on storefront",
         )
         showHideConfirmationModal.value = false
         product.value = null
@@ -702,10 +706,8 @@ const openAddProductDrawer = () => {
 const handleCategoryCreated = (category: { label: string; value: string }) => {
   showAddCategoryModal.value = false
 
-  // Determine which drawer is currently open and set its category
-  if (showProductFormDrawer.value && productFormDrawerRef.value) {
-    productFormDrawerRef.value.setCategoryFromModal(category)
-  } else if (showProductEditDrawer.value && productEditDrawerRef.value) {
+  // Only handle ProductEditDrawer category updates here
+  if (showProductEditDrawer.value && productEditDrawerRef.value) {
     productEditDrawerRef.value.setCategoryFromModal(category)
   }
 }
@@ -802,7 +804,7 @@ const filteredProducts = computed(() => {
 
     // Status filter
     if (activeFilters.value.status !== null) {
-      const isInStock = product.total_stock > 0
+      const isInStock = product.sellable_stock > 0
       if (activeFilters.value.status === "in_stock" && !isInStock) {
         return false
       }

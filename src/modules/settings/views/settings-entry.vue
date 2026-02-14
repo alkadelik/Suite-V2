@@ -37,6 +37,7 @@ const settingsLinks = computed(() =>
       ],
     },
     { label: "Delivery Options", path: "/settings/delivery-options", icon: "truck-fast-outline" },
+    { label: "Production", path: "/settings/production", icon: "building" },
   ].filter((link) => {
     const { activeLocation } = useSettingsStore()
     if (!activeLocation?.is_hq) {

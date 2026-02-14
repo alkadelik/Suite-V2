@@ -62,7 +62,7 @@ export interface ICustomerFormPayload {
   city?: string
   date_of_birth?: string
   instagram_handle?: string
-  location: string
+  location?: string
 }
 
 export interface IExportPayload {
