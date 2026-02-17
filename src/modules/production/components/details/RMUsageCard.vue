@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { formatCurrency } from "@/utils/format-currency"
+import { formatDate } from "@/utils/formatDate"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
-import { formatDate } from "@modules/customers/utils/dateFormatter"
 import { TMovement, TRawMaterial } from "@modules/production/types"
 import { HTMLAttributes } from "vue"
 
