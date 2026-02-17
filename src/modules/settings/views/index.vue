@@ -124,6 +124,7 @@ const LINKS = computed(() =>
     { label: "Taxes", path: "/settings/taxes" },
     { label: "Storefront Design", path: "/settings/design" },
     { label: "Delivery Options", path: "/settings/delivery-options" },
+    { label: "Production", path: "/settings/production" },
   ].filter((link) => {
     const { activeLocation } = useSettingsStore()
     if (!activeLocation?.is_hq) {

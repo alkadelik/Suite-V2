@@ -138,6 +138,7 @@
           >
             <HeroSettings
               :hero-section="heroSection"
+              :old-section="oldHeroSection"
               @change-section="changeSection"
               @refetch="refetch"
             />
@@ -197,8 +198,14 @@
                 v-if="expandedSection === item.id"
                 class="rounded-b-lg border border-t-0 border-gray-200 p-4"
               >
+                <CategorySettings
+                  v-if="item.id === 'categories'"
+                  :category-section="categorySection"
+                  @change-section="changeSection"
+                  @refetch="refetch"
+                />
                 <FeaturedProducts
-                  v-if="item.id === 'featured_products'"
+                  v-else-if="item.id === 'featured_products'"
                   :featured-products-section="featuredProductsSection"
                   @change-section="changeSection"
                   @refetch="refetch"
@@ -254,6 +261,13 @@
         <HeroSettings
           v-if="activeSection === 'hero' || activeSection === 'hero_carousel'"
           :hero-section="heroSection"
+          :old-section="oldHeroSection"
+          @change-section="changeSection"
+          @refetch="refetch"
+        />
+        <CategorySettings
+          v-else-if="activeSection === 'categories'"
+          :category-section="categorySection"
           @change-section="changeSection"
           @refetch="refetch"
         />
@@ -325,6 +339,7 @@ import { ref, watch, computed, inject } from "vue"
 import draggable from "vuedraggable"
 import Icon from "@components/Icon.vue"
 import HeroSettings from "@modules/settings/components/design/landing-page/HeroSettings.vue"
+import CategorySettings from "@modules/settings/components/design/landing-page/CategorySettings.vue"
 import FeaturedProducts from "@modules/settings/components/design/landing-page/FeaturedProducts.vue"
 import AboutSettings from "@modules/settings/components/design/landing-page/AboutSettings.vue"
 import CTABlock1 from "@modules/settings/components/design/landing-page/CTABlock1.vue"
@@ -354,9 +369,19 @@ const sectionToHideId = ref<string | null>(null)
 const isHiding = ref(false)
 
 // Get all sections from landing page data
+const oldHeroSection = computed(() => {
+  if (!landingPageData.value?.results) return null
+  return landingPageData.value.results.find((section) => section.section_type === "hero")
+})
+
 const heroSection = computed(() => {
   if (!landingPageData.value?.results) return null
   return landingPageData.value.results.find((section) => section.section_type === "hero_carousel")
+})
+
+const categorySection = computed(() => {
+  if (!landingPageData.value?.results) return null
+  return landingPageData.value.results.find((section) => section.section_type === "categories")
 })
 
 const aboutSection = computed(() => {
@@ -409,6 +434,16 @@ const validateSectionRequiredFields = (
     case "hero_carousel":
       // Hero has fallbacks for title and image, so it's always valid
       return { isValid: true, missing: [] }
+
+    case "categories":
+      if (!categorySection.value) return { isValid: false, missing: ["section data"] }
+      if (
+        !categorySection.value.featured_categories ||
+        categorySection.value.featured_categories.length < 2
+      ) {
+        missing.push("At least two categories")
+      }
+      return { isValid: missing.length === 0, missing }
 
     case "featured_products":
       // Featured products section doesn't have specific required fields in the section data
@@ -523,6 +558,7 @@ const confirmHideSection = (): void => {
 const sectionIconMap: Record<string, string> = {
   hero: "star",
   hero_carousel: "star",
+  categories: "grid",
   featured_products: "bag-2",
   about: "information",
   cta_block_1: "announcements",
@@ -595,6 +631,7 @@ watch(
       // If reordering is disabled, enforce a fixed display order for backward compatibility
       if (!REORDERING_ENABLED) {
         const fixedOrder = [
+          "categories",
           "featured_products",
           "about",
           "cta_block_1",

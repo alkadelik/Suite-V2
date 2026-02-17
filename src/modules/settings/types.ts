@@ -83,6 +83,7 @@ export interface IStoreDetails {
   tax_rate?: string
   add_tax_to_product_price?: boolean
   material_type?: string
+  recipe_name?: string // confirm with DESMOND
 }
 
 export interface IUpdateStoreDetailsPayload {
@@ -213,7 +214,7 @@ export interface IThemeSettings {
   facebook_url: string
   x_url: string
   tiktok_url: string
-  size_chart_url: string
+  size_chart: string | null
 }
 
 export type SectionType =
@@ -227,6 +228,7 @@ export type SectionType =
   | "highlight_banner"
   | "testimonials"
   | "newsletter_signup"
+  | "categories"
 
 export interface ThemeSection {
   uid: string
@@ -239,6 +241,14 @@ export interface ThemeSection {
   content: string | null
   is_hidden: boolean
   featured_products: string[] // array of product UIDs for featured_products section
+  featured_categories: string[] // array of category UIDs for categories section
+  featured_categories_display: {
+    uid: string
+    name: string
+    description: string
+    image: string
+    is_active: boolean
+  }[]
   testimonials: {
     uid: string
     name: string
@@ -256,10 +266,9 @@ export interface ThemeSection {
   //
   hero_carousel_items?: {
     uid: string
-    image?: string
-    video?: string
+    media: string
     title: string
-    subtitle: string
+    content: string
     cta_text: string
     cta_link: string
   }[]

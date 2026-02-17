@@ -39,7 +39,7 @@ const chipColor = computed(() => (props.stat.chipColor as TChipColor) || "blue")
   >
     <!-- Loading skeleton -->
     <div v-if="loading" class="animate-pulse">
-      <div :class="['flex gap-2', variant === 'alt' ? 'flex-row items-center' : 'flex-col']">
+      <div :class="['flex gap-2', 'flex-row items-center']">
         <div :class="{ 'flex items-center justify-between': true }">
           <!-- Icon skeleton -->
           <div
@@ -69,7 +69,7 @@ const chipColor = computed(() => (props.stat.chipColor as TChipColor) || "blue")
 
     <template v-else>
       <!-- title -->
-      <div :class="['flex gap-2', variant === 'alt' ? 'flex-row items-center' : 'flex-col']">
+      <div :class="['flex gap-2', 'flex-col md:flex-row md:items-center']">
         <div :class="{ 'flex items-center justify-between': true }">
           <div
             :class="[

@@ -11,6 +11,7 @@ import { computed, onMounted, ref, reactive, watch } from "vue"
 import * as yup from "yup"
 import TextAreaField from "@components/form/TextAreaField.vue"
 import { useMediaQuery } from "@vueuse/core"
+import { toast } from "@/composables/useToast"
 
 interface OrderItem {
   product: IProductCatalogue
@@ -446,6 +447,24 @@ const handleNext = async () => {
     }
     emit("update:orderItems", orderItems)
     emit("next")
+  } else {
+    // Get the first validation error to show and scroll to it
+    const firstErrorKey = Object.keys(validationErrors.value)[0]
+    if (firstErrorKey) {
+      const errorObj = validationErrors.value[firstErrorKey]
+      const firstError = errorObj.quantity || errorObj.unit_price
+      if (firstError) {
+        toast.error(firstError)
+        // Scroll to the variant with error
+        const errorElement =
+          document.querySelector(`[name="quantity"][data-variant="${firstErrorKey}"]`) ||
+          document.querySelector(`[name="price"][data-variant="${firstErrorKey}"]`)
+        if (errorElement) {
+          errorElement.scrollIntoView({ behavior: "smooth", block: "center" })
+        }
+        return
+      }
+    }
   }
 }
 
@@ -597,6 +616,7 @@ const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
                 :min="1"
                 :max="variantItem.variant.stock"
                 :error="validationErrors[variantItem.variant.uid]?.quantity"
+                :data-variant="variantItem.variant.uid"
                 @blur="validateVariantItem(variantItem)"
               />
               <TextField
@@ -608,6 +628,7 @@ const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
                 :min="0"
                 step="0.01"
                 :error="validationErrors[variantItem.variant.uid]?.unit_price"
+                :data-variant="variantItem.variant.uid"
                 @blur="validateVariantItem(variantItem)"
               />
             </div>

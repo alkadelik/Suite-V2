@@ -1,6 +1,6 @@
 <template>
   <header class="fixed top-0 right-0 left-0 z-20 h-16 border-b border-gray-200 bg-white">
-    <Container>
+    <component :is="fullWidth ? 'div' : Container">
       <div class="flex h-16 items-center gap-1.5 px-4">
         <img
           v-if="showLogo"
@@ -50,7 +50,7 @@
           </template>
         </DropdownMenu>
       </div>
-    </Container>
+    </component>
 
     <!-- Notifications Drawer -->
     <NotificationsDrawer
@@ -85,7 +85,7 @@ import { useRouter } from "vue-router"
 import { useAuthStore } from "@modules/auth/store"
 import Container from "@components/Container.vue"
 
-defineProps<{ showLogo?: boolean; logo?: "full" | "icon"; isLive?: boolean }>()
+defineProps<{ showLogo?: boolean; logo?: "full" | "icon"; isLive?: boolean; fullWidth?: boolean }>()
 const emit = defineEmits<{
   (e: "logout", confirm: boolean): void
 }>()

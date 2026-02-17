@@ -21,7 +21,10 @@
         </div>
 
         <!-- Left Icon -->
-        <div v-if="leftIcon" :class="[prefixClasses, 'flex items-center border-r-0 !pr-0']">
+        <div
+          v-if="leftIcon"
+          :class="[prefixClasses, 'flex items-center border-r-0 bg-inherit !pr-0']"
+        >
           <Icon :name="leftIcon" class="h-4 w-4" />
         </div>
 
@@ -345,7 +348,7 @@ const inputClasses = computed(() => {
 
 const prefixClasses = computed(() => {
   const baseClasses =
-    "border-core-100 bg-core-25 mr-2 flex items-center border-r px-3 text-gray-400"
+    "border-core-100 bg-inherit mr-2 flex items-center border-r px-3 text-gray-400"
 
   const sizeClasses = {
     sm: "py-2 text-sm",
@@ -358,7 +361,7 @@ const prefixClasses = computed(() => {
 
 const suffixClasses = computed(() => {
   const baseClasses =
-    "border-core-100 bg-core-25 ml-2 flex items-center border-l px-3 text-gray-400"
+    "border-core-100 bg-inherit ml-2 flex items-center border-l px-3 text-gray-400"
 
   const sizeClasses = {
     sm: "py-2 text-sm",
