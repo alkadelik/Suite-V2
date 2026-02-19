@@ -520,25 +520,6 @@ export interface IProductMetrics {
   categories_count: number
 }
 
-// Dashboard stats
-export interface IProductStats {
-  today: {
-    products_added: number
-    products_sold: number
-    revenue: number
-  }
-  week: {
-    products_added: number
-    products_sold: number
-    revenue: number
-  }
-  month: {
-    products_added: number
-    products_sold: number
-    revenue: number
-  }
-}
-
 interface ProductVariantAttribute {
   uid: string
   attribute: string
