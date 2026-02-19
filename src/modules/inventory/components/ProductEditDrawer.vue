@@ -534,6 +534,7 @@ watch(
         category: product.category
           ? { label: product.category_name || "", value: product.category || "" }
           : null,
+        unit: product.unit ? { label: product.unit, value: product.unit } : null,
         images: [...productImages, ...variantImages],
         hasVariants: product.is_variable || false,
         variants:
@@ -691,6 +692,7 @@ const handleSubmit = async () => {
       story: form.story || "",
       category: form.category?.value as string,
       brand: form.brand || "",
+      unit: form.unit?.value || undefined,
       is_active: true,
       is_variable: hasVariants.value,
       requires_approval: form.requires_approval || false,
