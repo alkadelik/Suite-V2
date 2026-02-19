@@ -704,7 +704,7 @@ const handleSubmit = async () => {
         onSuccess: () => {
           toast.success("Product details updated successfully")
           // Invalidate the product query to ensure fresh data on next open
-          queryClient.invalidateQueries({ queryKey: ["products", productUidToFetch.value] })
+          queryClient.invalidateQueries({ queryKey: ["products"] })
           resetFormState()
           emit("update:modelValue", false)
           emit("refresh")
@@ -750,7 +750,7 @@ const handleSubmit = async () => {
             toast.success(
               `All ${variantDetailsWithUids.value.length} variants updated successfully`,
             )
-            queryClient.invalidateQueries({ queryKey: ["products", productUidToFetch.value] })
+            queryClient.invalidateQueries({ queryKey: ["products"] })
             emit("update:modelValue", false)
             emit("refresh")
           },
@@ -774,7 +774,7 @@ const handleSubmit = async () => {
         {
           onSuccess: () => {
             toast.success("Variant updated successfully")
-            queryClient.invalidateQueries({ queryKey: ["products", productUidToFetch.value] })
+            queryClient.invalidateQueries({ queryKey: ["products"] })
             emit("update:modelValue", false)
             emit("refresh")
           },
@@ -859,10 +859,17 @@ const handleSubmit = async () => {
       }
 
       // Step 4: Upload new product images (File objects - indices 0-4)
+      // Deduplicate by File reference to prevent uploading the same file multiple times
+      const seenEditFiles = new Set<File>()
       const newImages = form.images
         .slice(0, 5)
         .map((image, index) => ({ image, index }))
-        .filter(({ image }) => image && image instanceof File)
+        .filter(({ image }) => {
+          if (!image || !(image instanceof File)) return false
+          if (seenEditFiles.has(image)) return false
+          seenEditFiles.add(image)
+          return true
+        })
 
       if (newImages.length > 0) {
         for (const { image, index } of newImages) {
@@ -924,7 +931,7 @@ const handleSubmit = async () => {
       }
 
       // Invalidate the product query to ensure fresh data on next open
-      queryClient.invalidateQueries({ queryKey: ["products", productUidToFetch.value] })
+      queryClient.invalidateQueries({ queryKey: ["products"] })
       resetFormState()
       emit("update:modelValue", false)
       emit("refresh")
@@ -1055,7 +1062,7 @@ const handleSubmit = async () => {
         }
 
         // Invalidate the product query to ensure fresh data on next open
-        queryClient.invalidateQueries({ queryKey: ["products", productUidToFetch.value] })
+        queryClient.invalidateQueries({ queryKey: ["products"] })
         resetFormState()
         emit("update:modelValue", false)
         emit("refresh")

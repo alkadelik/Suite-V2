@@ -148,6 +148,8 @@ const filePreview = ref("")
 const fileInputRef = ref<HTMLInputElement | null>(null)
 // If we create an object URL for a video preview we track it so we can revoke it later
 const createdObjectUrl = ref<string | null>(null)
+// Guard against concurrent processing (Windows Chrome double-fires @change on programmatic .click())
+const isProcessing = ref(false)
 
 /**
  * Tracks whether we're in edit mode (started with an existing image URL).
@@ -247,17 +249,17 @@ const truncateFilename = (filename: string, maxLength: number): string => {
 }
 
 const handleFileChange = async (event: Event) => {
+  if (isProcessing.value) return
   const target = event.target as HTMLInputElement
   const file = target.files && target.files[0]
-  if (file) {
+  if (!file) return
+
+  isProcessing.value = true
+  try {
     // Validate file size for product images
     if (props.productImageMode && file.size > MAX_FILE_SIZE) {
       const maxSizeMB = (MAX_FILE_SIZE / (1024 * 1024)).toFixed(0)
       toast.error(`File size exceeds ${maxSizeMB}MB limit. Please select a smaller image.`)
-      // Reset file input
-      if (fileInputRef.value) {
-        fileInputRef.value.value = ""
-      }
       return
     }
 
@@ -280,10 +282,6 @@ const handleFileChange = async (event: Event) => {
         // Show user-friendly error message
         const errorMessage = error instanceof Error ? error.message : "Failed to process image"
         toast.error(errorMessage)
-        // Reset file input
-        if (fileInputRef.value) {
-          fileInputRef.value.value = ""
-        }
         return
       }
     } else {
@@ -316,13 +314,20 @@ const handleFileChange = async (event: Event) => {
     }
 
     emit("update:modelValue", processedFile)
+  } finally {
+    isProcessing.value = false
+    target.value = ""
   }
 }
 
 const handleDrop = async (event: DragEvent) => {
+  if (isProcessing.value) return
   event.preventDefault()
   const file = event.dataTransfer?.files[0]
-  if (file) {
+  if (!file) return
+
+  isProcessing.value = true
+  try {
     // Validate file size for product images
     if (props.productImageMode && file.size > MAX_FILE_SIZE) {
       const maxSizeMB = (MAX_FILE_SIZE / (1024 * 1024)).toFixed(0)
@@ -381,6 +386,8 @@ const handleDrop = async (event: DragEvent) => {
     }
 
     emit("update:modelValue", processedFile)
+  } finally {
+    isProcessing.value = false
   }
 }
 
