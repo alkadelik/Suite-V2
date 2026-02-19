@@ -11,8 +11,13 @@
     </div>
 
     <!-- Page content - always visible -->
-    <div class="grid grid-cols-2 gap-4 lg:grid-cols-3">
-      <StatCard v-for="item in productMetrics" :key="item.label" :stat="item" />
+    <div class="grid grid-cols-2 gap-4 lg:grid-cols-5">
+      <StatCard
+        v-for="item in productMetrics"
+        :key="item.label"
+        :stat="item"
+        :loading="isLoadingDashboard"
+      />
     </div>
 
     <!-- Tabs for HQ users -->
@@ -274,7 +279,7 @@ import InventoryRequests from "../components/InventoryRequests.vue"
 import ReceiveRequestModal from "../components/ReceiveRequestModal.vue"
 import ProductCard from "../components/ProductCard.vue"
 import ManageStockModal from "../components/ManageStockModal.vue"
-import { formatPriceRange } from "@/utils/format-currency"
+import { formatPriceRange, formatCurrency } from "@/utils/format-currency"
 import SectionHeader from "@components/SectionHeader.vue"
 import PageHeader from "@components/PageHeader.vue"
 import Tabs from "@components/Tabs.vue"
@@ -285,7 +290,7 @@ import {
   useGetProduct,
   useGetCategories,
   useUpdateProduct,
-  // useGetProductDashboard,
+  useGetProductDashboard,
 } from "../api"
 import ProductAvatar from "@components/ProductAvatar.vue"
 import EmptyState from "@components/EmptyState.vue"
@@ -310,7 +315,7 @@ const combinedParams = computed(() => ({
 }))
 
 const { data: products, isFetching, refetch: refetchProducts } = useGetProducts(combinedParams)
-// const { data: productDashboard } = useGetProductDashboard()
+const { data: productDashboard, isPending: isLoadingDashboard } = useGetProductDashboard()
 const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct()
 const { mutate: updateProduct, isPending: isUpdatingProduct } = useUpdateProduct()
 const { data: categories } = useGetCategories()
@@ -451,41 +456,45 @@ const handleRowClick = (clickedProduct: TProduct) => {
   router.push({ name: "Product-Details", params: { uid: clickedProduct.uid } })
 }
 
-// Calculate metrics from actual API data
 const productMetrics = computed(() => {
-  const productResults = products.value?.data?.results || []
-  // const totalProducts = products.value?.data?.count || 0
-  const inStockProducts = productResults.filter((p: TProduct) => p.sellable_stock > 0).length
-  const outOfStockProducts = productResults.filter((p: TProduct) => p.sellable_stock === 0).length
-  const needsReorderProducts = productResults.filter((p: TProduct) => p.needs_reorder).length
+  const stats = productDashboard.value
 
   return [
-    // {
-    //   label: "Total Products",
-    //   value: totalProducts,
-    //   prev_value: 0,
-    //   icon: "box-filled",
-    // },
     {
-      label: "In Stock",
-      value: inStockProducts,
+      label: "Total Products",
+      value: stats?.total_products ?? 0,
       icon: "box-filled",
       iconClass: "text-success-500",
       percentage: 0,
     },
     {
+      label: "Total Variants",
+      value: stats?.total_variants ?? 0,
+      icon: "box-filled",
+      iconClass: "md:text-green-700",
+      percentage: 0,
+    },
+    {
+      label: "Stock Value",
+      value: formatCurrency(stats?.total_stock_value ?? 0),
+      icon: "moneys",
+      iconClass: "text-bloom-700",
+      percentage: 0,
+    },
+    {
       label: "Low Stock",
-      value: outOfStockProducts + needsReorderProducts,
+      value: stats?.low_stock_count ?? 0,
       icon: "box-time",
       iconClass: "text-warning-500",
       percentage: 0,
     },
-    // {
-    //   label: "Needs Reorder",
-    //   value: needsReorderProducts,
-    //   prev_value: 0,
-    //   icon: "shopping-cart",
-    // },
+    {
+      label: "Overstocked",
+      value: stats?.overstocked_count ?? 0,
+      icon: "box-filled",
+      iconClass: "md:text-bloom-700",
+      percentage: 0,
+    },
   ]
 })
 
