@@ -7,7 +7,7 @@
       class="text-core-800 relative flex w-full cursor-pointer items-center justify-between rounded-xl border-2 border-dashed text-sm transition-colors duration-200"
       :class="[
         props.productImageMode ? 'h-full' : 'px-4 py-4',
-        fileName && isImage && filePreview
+        fileName && (isImage || isVideo) && filePreview
           ? 'border-primary-500 bg-primary-50'
           : 'border-gray-300 bg-transparent hover:bg-gray-50',
       ]"
@@ -16,10 +16,24 @@
     >
       <!-- Product Image Preview Mode -->
       <div
-        v-if="fileName && isImage && filePreview && props.productImageMode"
+        v-if="fileName && (isImage || isVideo) && filePreview && props.productImageMode"
         class="relative h-full w-full p-2"
       >
-        <img :src="filePreview" :alt="fileName" class="h-full w-full rounded-lg object-cover" />
+        <img
+          v-if="isImage"
+          :src="filePreview"
+          :alt="fileName"
+          class="h-full w-full rounded-lg object-cover"
+        />
+        <video
+          v-else-if="isVideo"
+          :src="filePreview"
+          autoplay
+          muted
+          loop
+          playsinline
+          class="h-full w-full rounded-lg object-cover"
+        />
 
         <!-- Primary Label (only shown when showPrimaryLabel prop is true) -->
         <div
@@ -58,6 +72,14 @@
           :alt="fileName"
           class="h-15 w-30 rounded object-cover"
         />
+        <video
+          v-else-if="isVideo && filePreview"
+          :src="filePreview"
+          autoplay
+          loop
+          playsinline
+          class="h-15 w-30 rounded object-cover"
+        />
         <Icon v-else name="document-upload" />
         <p class="text-core-800 flex-1 truncate">
           {{ fileName }}
@@ -75,9 +97,7 @@
         >
           <div class="border-core-400 rounded-xl border p-2"><Icon name="document-upload" /></div>
           <span class="text-core-800 text-sm">{{ props.label }}</span>
-          <span class="text-core-600 text-xs"
-            >Supports: JPG, PNG, HEIC, AVIF{{ props.productImageMode ? "" : ", PDF" }}</span
-          >
+          <span class="text-core-600 text-xs">{{ placeholderText }}</span>
         </div>
       </slot>
 
@@ -96,7 +116,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from "vue"
+import { ref, computed, watch, onBeforeUnmount } from "vue"
 import Icon from "@components/Icon.vue"
 import Chip from "@components/Chip.vue"
 import { useImageConverter } from "@/composables/useImageConverter"
@@ -111,6 +131,7 @@ interface Props {
   productImageMode?: boolean
   modelValue?: File | string | null
   showPrimaryLabel?: boolean
+  placeholder?: string
 }
 
 const emit = defineEmits(["update:modelValue"])
@@ -119,11 +140,14 @@ const props = withDefaults(defineProps<Props>(), {
   productImageMode: false,
   modelValue: null,
   showPrimaryLabel: false,
+  placeholder: "Supports: JPG, PNG, HEIC, AVIF, PDF",
 })
 
 const fileName = ref("")
 const filePreview = ref("")
 const fileInputRef = ref<HTMLInputElement | null>(null)
+// If we create an object URL for a video preview we track it so we can revoke it later
+const createdObjectUrl = ref<string | null>(null)
 
 /**
  * Tracks whether we're in edit mode (started with an existing image URL).
@@ -134,6 +158,11 @@ const isEditMode = ref(false)
 
 // Image converter composable
 const { convertAndCompressImage } = useImageConverter()
+
+const placeholderText = computed(() => {
+  if (props.productImageMode) return props.placeholder.replace(", PDF", "").trim()
+  return props.placeholder
+})
 
 // Watch for modelValue changes to handle existing images (URLs) and File objects
 watch(
@@ -155,12 +184,26 @@ watch(
       // Create preview manually since handleFileChange won't be triggered
       fileName.value = newValue.name
 
+      // Revoke any previously created object URL
+      if (createdObjectUrl.value) {
+        try {
+          URL.revokeObjectURL(createdObjectUrl.value)
+        } catch (e) {
+          console.warn("Failed to revoke object URL:", e)
+        }
+        createdObjectUrl.value = null
+      }
+
       if (newValue.type.startsWith("image/")) {
         const reader = new FileReader()
         reader.onload = (e) => {
           filePreview.value = e.target?.result as string
         }
         reader.readAsDataURL(newValue)
+      } else if (newValue.type.startsWith("video/")) {
+        const url = URL.createObjectURL(newValue)
+        createdObjectUrl.value = url
+        filePreview.value = url
       } else {
         filePreview.value = ""
       }
@@ -171,11 +214,20 @@ watch(
 
 const isImage = computed(() => {
   if (!fileName.value && !filePreview.value) return false
-  // Check if we have a preview URL (either from File or existing URL)
-  if (filePreview.value) return true
-  // Fallback to extension check
+  // If we have a preview and the filename suggests an image, treat as image
   const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".svg"]
+  if (filePreview.value)
+    return imageExtensions.some((ext) => fileName.value.toLowerCase().endsWith(ext))
+  // Fallback to extension check
   return imageExtensions.some((ext) => fileName.value.toLowerCase().endsWith(ext))
+})
+
+const isVideo = computed(() => {
+  if (!fileName.value && !filePreview.value) return false
+  const videoExtensions = [".mp4", ".webm", ".ogg", ".mov", ".m4v"]
+  if (filePreview.value)
+    return videoExtensions.some((ext) => fileName.value.toLowerCase().endsWith(ext))
+  return videoExtensions.some((ext) => fileName.value.toLowerCase().endsWith(ext))
 })
 
 /** Truncates a filename if it exceeds the maximum length. */
@@ -238,13 +290,27 @@ const handleFileChange = async (event: Event) => {
       fileName.value = processedFile.name
     }
 
-    // Create preview for images
+    // Revoke any previous object URL we created
+    if (createdObjectUrl.value) {
+      try {
+        URL.revokeObjectURL(createdObjectUrl.value)
+      } catch (e) {
+        console.warn("Failed to revoke object URL:", e)
+      }
+      createdObjectUrl.value = null
+    }
+
+    // Create preview for images or videos
     if (processedFile.type.startsWith("image/")) {
       const reader = new FileReader()
       reader.onload = (e) => {
         filePreview.value = e.target?.result as string
       }
       reader.readAsDataURL(processedFile)
+    } else if (processedFile.type.startsWith("video/")) {
+      const url = URL.createObjectURL(processedFile)
+      createdObjectUrl.value = url
+      filePreview.value = url
     } else {
       filePreview.value = ""
     }
@@ -289,13 +355,27 @@ const handleDrop = async (event: DragEvent) => {
       fileName.value = processedFile.name
     }
 
-    // Create preview for images
+    // Revoke previous object URL we created
+    if (createdObjectUrl.value) {
+      try {
+        URL.revokeObjectURL(createdObjectUrl.value)
+      } catch (e) {
+        console.warn("Failed to revoke object URL:", e)
+      }
+      createdObjectUrl.value = null
+    }
+
+    // Create preview for images or videos
     if (processedFile.type.startsWith("image/")) {
       const reader = new FileReader()
       reader.onload = (e) => {
         filePreview.value = e.target?.result as string
       }
       reader.readAsDataURL(processedFile)
+    } else if (processedFile.type.startsWith("video/")) {
+      const url = URL.createObjectURL(processedFile)
+      createdObjectUrl.value = url
+      filePreview.value = url
     } else {
       filePreview.value = ""
     }
@@ -338,6 +418,27 @@ const removeFile = (event: MouseEvent) => {
     fileInputRef.value.value = ""
   }
 
+  // Revoke any created object URL
+  if (createdObjectUrl.value) {
+    try {
+      URL.revokeObjectURL(createdObjectUrl.value)
+    } catch (e) {
+      console.warn("Failed to revoke object URL:", e)
+    }
+    createdObjectUrl.value = null
+  }
+
   emit("update:modelValue", null)
 }
+
+onBeforeUnmount(() => {
+  if (createdObjectUrl.value) {
+    try {
+      URL.revokeObjectURL(createdObjectUrl.value)
+    } catch (e) {
+      console.warn("Failed to revoke object URL on unmount:", e)
+    }
+    createdObjectUrl.value = null
+  }
+})
 </script>

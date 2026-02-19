@@ -7,6 +7,7 @@
     <div class="grid gap-6 md:p-6">
       <!-- Hero Slides List -->
       <div v-if="heroSlides.length > 0" class="space-y-4">
+        <h5 class="text-md font-medium text-gray-900">Slides</h5>
         <div v-for="(slide, index) in heroSlides" :key="slide.id" class="space-y-4">
           <Collapsible :header="`Slide ${index + 1}`" :default-open="index === 0">
             <template #body>
@@ -40,18 +41,13 @@
                   placeholder="e.g. Shop Now"
                 />
 
-                <FormField
+                <!-- <FormField
                   :name="`heroSlides.${index}.cta_button_link`"
-                  label="Button Description (optional)"
+                  label="Button Link (optional)"
                   placeholder="e.g. https://yourstore.com/shop"
-                  disabled
-                  hint="Link is fixed to your store URL"
-                />
+                /> -->
 
-                <div
-                  v-if="heroSlides.length > 1"
-                  class="flex justify-start border-t border-gray-200 pt-4"
-                >
+                <div class="flex justify-between border-t border-gray-200 pt-4">
                   <AppButton
                     type="button"
                     label="Remove Slide"
@@ -60,6 +56,13 @@
                     class="text-red-600 hover:text-red-700"
                     @click="confirmDelete(index)"
                   />
+
+                  <AppButton
+                    type="button"
+                    :label="slide.id.startsWith('slide_') ? 'Save Slide' : 'Update Slide'"
+                    :loading="savingSlideId === slide.id"
+                    @click="saveSlide(index, slide.id)"
+                  />
                 </div>
               </div>
             </template>
@@ -67,17 +70,15 @@
         </div>
       </div>
 
-      <div class="flex items-center justify-between gap-4">
+      <div class="flex justify-start">
         <AppButton
           v-if="heroSlides.length < 4"
           type="button"
-          label="Add New Slide"
+          label="Add Slide"
           icon="add"
           variant="text"
           @click="addSlide"
         />
-
-        <AppButton type="button" label="Save Section" :loading="isPending" @click="saveSection" />
       </div>
     </div>
 
@@ -94,16 +95,21 @@
 
 <script setup lang="ts">
 import * as yup from "yup"
-import { ref, watch } from "vue"
+import { computed, ref, watch } from "vue"
 import { useForm } from "vee-validate"
 import AppButton from "@components/AppButton.vue"
 import FormField from "@components/form/FormField.vue"
 import Collapsible from "@components/Collapsible.vue"
 import DeleteConfirmationModal from "@components/DeleteConfirmationModal.vue"
-import { useUpdateStorefrontSection } from "@modules/settings/api"
+import {
+  useCreateHeroCarousel,
+  useDeleteHeroCarousel,
+  useUpdateHeroCarousel,
+} from "@modules/settings/api"
 import type { ThemeSection } from "@modules/settings/types"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
+import { useSettingsStore } from "@modules/settings/store"
 
 interface HeroSlide {
   id: string
@@ -119,15 +125,20 @@ interface HeroFormData {
   heroSlides: HeroSlide[]
 }
 
-const props = defineProps<{ heroSection?: ThemeSection | null }>()
+const props = defineProps<{ heroSection?: ThemeSection | null; oldSection?: ThemeSection | null }>()
 const emit = defineEmits<{ refetch: [] }>()
 
-const { mutate: updateSection, isPending } = useUpdateStorefrontSection()
+const { mutate: createHeroCarousel } = useCreateHeroCarousel()
+const { mutate: updateHeroCarousel } = useUpdateHeroCarousel()
+const { mutate: deleteHeroCarousel } = useDeleteHeroCarousel()
 
 const heroSlides = ref<HeroSlide[]>([])
+const savingSlideId = ref<string | null>(null)
 const showDeleteModal = ref(false)
 const deleteIndex = ref<number | null>(null)
 const isDeletingSlide = ref(false)
+
+const storefrontUrl = computed(() => `https://${useSettingsStore().storefrontUrl}/store`)
 
 const validationSchema = yup.object({
   section_title: yup
@@ -139,21 +150,13 @@ const validationSchema = yup.object({
     .array()
     .of(
       yup.object({
-        title: yup
-          .string()
-          .min(3, "Title must be at least 3 characters")
-          .max(100, "Title must not exceed 100 characters"),
+        title: yup.string().max(200, "Title must not exceed 200 characters").optional(),
         subtitle: yup.string().max(500, "Subtitle must not exceed 500 characters").optional(),
         cta_button_text: yup
           .string()
           .max(50, "CTA button text must not exceed 50 characters")
           .optional(),
-        cta_button_link: yup
-          .string()
-          .url("Please enter a valid URL")
-          .optional()
-          .nullable()
-          .transform((value) => (value === "" ? null : value)),
+        cta_button_link: yup.string().url("Please enter a valid URL").optional().nullable(),
         hero_media: yup.mixed().nullable().optional(),
       }),
     )
@@ -172,18 +175,29 @@ watch(
         newSection.hero_carousel_items?.map((slide) => ({
           id: slide.uid,
           title: slide.title || "",
-          subtitle: slide.subtitle || "",
-          cta_button_text: slide.cta_text || "",
-          cta_button_link: slide.cta_link || "https://buy.leyyow.com/store_slug",
-          hero_media: slide.image || slide.video || null,
+          subtitle: slide.content || "",
+          cta_button_text: slide.cta_text || "Shop Now",
+          cta_button_link: slide.cta_link || storefrontUrl.value,
+          hero_media: slide.media,
         })) || []
 
-      heroSlides.value = mappedSlides
+      // If no carousel items exist, create an array from the old section format
+      if (mappedSlides.length === 0 && props.oldSection) {
+        heroSlides.value = [
+          {
+            id: `slide_${Date.now()}`,
+            title: props.oldSection.title || "",
+            subtitle: props.oldSection.subtitle || "",
+            cta_button_text: props.oldSection.cta_text || "Shop Now",
+            cta_button_link: props.oldSection.cta_link || storefrontUrl.value,
+            hero_media: props.oldSection.image || null,
+          },
+        ]
+      } else {
+        heroSlides.value = mappedSlides
+      }
 
-      setValues({
-        section_title: newSection.title || "",
-        heroSlides: mappedSlides,
-      })
+      setValues({ heroSlides: heroSlides.value })
     }
   },
   { immediate: true },
@@ -199,13 +213,12 @@ const addSlide = (): void => {
     title: "",
     subtitle: "",
     cta_button_text: "",
-    cta_button_link: "https://buy.leyyow.com/store_slug",
+    cta_button_link: storefrontUrl.value,
     hero_media: null,
   }
   heroSlides.value.push(newSlide)
 
   setValues({
-    ...formValues,
     heroSlides: [...heroSlides.value],
   })
 }
@@ -221,40 +234,31 @@ const handleDeleteConfirm = (): void => {
   const index = deleteIndex.value
   const slide = heroSlides.value[index]
 
+  // Check if this is an existing slide from backend (has uid format)
+  // Backend IDs are UUIDs, client-generated IDs start with 'slide_'
   const isExistingSlide = !slide.id.startsWith("slide_")
 
   if (isExistingSlide) {
-    // Mark slide for deletion by sending delete flag to backend
-    if (!props.heroSection?.uid) {
-      toast.error("Hero section not found. Please refresh the page.")
-      return
-    }
-
+    // Delete from backend
     isDeletingSlide.value = true
-    const formData = new FormData()
-    formData.append("delete_slide_id", slide.id)
-
-    updateSection(
-      { id: props.heroSection.uid, body: formData },
-      {
-        onSuccess: () => {
-          toast.success("Slide deleted successfully")
-          heroSlides.value.splice(index, 1)
-          setValues({
-            ...formValues,
-            heroSlides: [...heroSlides.value],
-          })
-          emit("refetch")
-          showDeleteModal.value = false
-          deleteIndex.value = null
-          isDeletingSlide.value = false
-        },
-        onError: (error) => {
-          displayError(error)
-          isDeletingSlide.value = false
-        },
+    deleteHeroCarousel(slide.id, {
+      onSuccess: () => {
+        toast.success("Slide deleted successfully")
+        heroSlides.value.splice(index, 1)
+        setValues({
+          ...formValues,
+          heroSlides: [...heroSlides.value],
+        })
+        emit("refetch")
+        showDeleteModal.value = false
+        deleteIndex.value = null
+        isDeletingSlide.value = false
       },
-    )
+      onError: (error) => {
+        displayError(error)
+        isDeletingSlide.value = false
+      },
+    })
   } else {
     // Just remove from local state (not yet saved to backend)
     heroSlides.value.splice(index, 1)
@@ -267,58 +271,68 @@ const handleDeleteConfirm = (): void => {
   }
 }
 
-const saveSection = () => {
-  const slides = formValues.heroSlides || []
+const saveSlide = (index: number, slideId: string) => {
+  // Get the slide data from the form values
+  const slide = formValues.heroSlides?.[index]
 
-  // Validate that all slides have titles
-  const invalidSlides = slides.filter((slide) => !slide.title)
-  if (invalidSlides.length > 0) {
-    return toast.error("Please fill in the title for all slides")
+  if (!slide) {
+    return toast.error("Slide data not found")
+  }
+
+  if (!slide.hero_media) {
+    return toast.error("Please upload media (image or video) for the slide")
   }
 
   if (!props.heroSection?.uid) {
     return toast.error("Hero section not found. Please refresh the page.")
   }
 
+  savingSlideId.value = slideId
+
   const formData = new FormData()
+  formData.append("section", props.heroSection.uid)
+  if (slide.title) formData.append("title", slide.title)
+  if (slide.subtitle) formData.append("content", slide.subtitle)
+  if (slide.cta_button_text) formData.append("cta_text", slide.cta_button_text)
+  if (slide.cta_button_link) formData.append("cta_link", slide.cta_button_link)
+  if (slide.hero_media && typeof slide.hero_media !== "string") {
+    formData.append("media", slide.hero_media)
+  }
+  formData.append("sort_order", String(index))
 
-  // Add section title
-  formData.append("title", formValues.section_title)
+  // Check if this is an existing slide from backend (has uid format)
+  // Backend IDs are UUIDs, client-generated IDs start with 'slide_'
+  const isExistingSlide = !slideId.startsWith("slide_")
 
-  // Add all slides
-  slides.forEach((slide, index) => {
-    const isExistingSlide = !slide.id.startsWith("slide_")
-    const prefix = `hero_carousel[${index}]`
-
-    if (isExistingSlide) {
-      formData.append(`${prefix}[id]`, slide.id)
-    }
-
-    formData.append(`${prefix}[title]`, slide.title)
-    if (slide.subtitle) formData.append(`${prefix}[subtitle]`, slide.subtitle)
-    if (slide.cta_button_text) formData.append(`${prefix}[cta_text]`, slide.cta_button_text)
-    if (slide.cta_button_link) formData.append(`${prefix}[cta_link]`, slide.cta_button_link)
-
-    if (slide.hero_media && typeof slide.hero_media !== "string") {
-      // Determine if it's an image or video based on file type
-      const file = slide.hero_media
-      if (file.type.startsWith("video/")) {
-        formData.append(`${prefix}[video]`, slide.hero_media)
-      } else if (file.type.startsWith("image/")) {
-        formData.append(`${prefix}[image]`, slide.hero_media)
-      }
-    }
-  })
-
-  updateSection(
-    { id: props.heroSection.uid, body: formData },
-    {
-      onSuccess: () => {
-        toast.success("Hero section saved successfully")
-        emit("refetch")
+  if (isExistingSlide) {
+    // Update existing slide
+    updateHeroCarousel(
+      { id: slideId, body: formData },
+      {
+        onSuccess: () => {
+          toast.success(`Slide ${index + 1} updated successfully`)
+          emit("refetch")
+          savingSlideId.value = null
+        },
+        onError: (error) => {
+          displayError(error)
+          savingSlideId.value = null
+        },
       },
-      onError: displayError,
-    },
-  )
+    )
+  } else {
+    // Create new slide
+    createHeroCarousel(formData, {
+      onSuccess: () => {
+        toast.success(`Slide ${index + 1} saved successfully`)
+        emit("refetch")
+        savingSlideId.value = null
+      },
+      onError: (error) => {
+        displayError(error)
+        savingSlideId.value = null
+      },
+    })
+  }
 }
 </script>
