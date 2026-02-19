@@ -38,7 +38,7 @@ const currentViewMode = computed({
 })
 
 const { data, isPending, isFetchingNextPage, fetchNextPage, hasNextPage, refetch } =
-  useGetProductCatalogsInfinite(20, debouncedSearch)
+  useGetProductCatalogsInfinite(50, debouncedSearch)
 
 // Flatten all pages into a single products array
 const products = computed(() => {
