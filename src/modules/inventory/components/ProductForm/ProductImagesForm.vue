@@ -143,8 +143,8 @@ watch(
       const wasImage = oldValue[index]
       const isNowNull = image === null
 
-      // If there was an image and now it's null, track it
-      if (wasImage && isNowNull && props.existingImageIds[index]) {
+      // If there was an existing image and now it's null (removed) or a File (replaced), track it
+      if (wasImage && (isNowNull || image instanceof File) && props.existingImageIds[index]) {
         const imageId = props.existingImageIds[index]
         if (imageId && !removedImageIds.value.includes(imageId)) {
           removedImageIds.value.push(imageId)
