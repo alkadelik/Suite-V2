@@ -56,6 +56,7 @@ export interface IProductDetails {
   category: string
   category_name: string
   brand: string
+  unit: string
   is_active: boolean
   is_hidden_from_storefront: boolean
   is_variable: boolean
@@ -326,6 +327,7 @@ export interface IProductFormPayload {
   story: string
   category: string
   brand: string
+  unit?: string
   is_active: boolean
   is_hidden_from_storefront?: boolean
   is_variable: boolean
@@ -340,6 +342,7 @@ export interface IProductDetailsUpdatePayload {
   story: string
   category: string
   brand: string
+  unit?: string
   is_active: boolean
   is_variable: boolean
   requires_approval: boolean
