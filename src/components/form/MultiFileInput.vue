@@ -290,30 +290,41 @@ const makePrimary = (index: number) => {
   emit("make-primary", index)
 }
 
-const removeImage = (index: number) => {
-  const currentImage = images[index]
-  if (currentImage && currentImage instanceof File) {
-    // Only revoke object URLs for File objects
-    URL.revokeObjectURL(getImageUrl(currentImage))
-  }
-  images[index] = null
-}
+// Cache object URLs per File instance to avoid creating new ones on every render
+// and to ensure we revoke the correct URL when cleaning up
+const objectUrlCache = new WeakMap<File, string>()
 
 const getImageUrl = (file: File | string): string => {
-  // If it's a string (URL), return it directly
   if (typeof file === "string") {
     return file
   }
-  // If it's a File object, create an object URL
-  return URL.createObjectURL(file)
+  if (!objectUrlCache.has(file)) {
+    objectUrlCache.set(file, URL.createObjectURL(file))
+  }
+  return objectUrlCache.get(file)!
+}
+
+const revokeImageUrl = (file: File) => {
+  const url = objectUrlCache.get(file)
+  if (url) {
+    URL.revokeObjectURL(url)
+    objectUrlCache.delete(file)
+  }
+}
+
+const removeImage = (index: number) => {
+  const currentImage = images[index]
+  if (currentImage && currentImage instanceof File) {
+    revokeImageUrl(currentImage)
+  }
+  images[index] = null
 }
 
 // Cleanup object URLs when component is unmounted
 const cleanup = () => {
   images.forEach((image) => {
     if (image && image instanceof File) {
-      // Only revoke object URLs for File objects
-      URL.revokeObjectURL(getImageUrl(image))
+      revokeImageUrl(image)
     }
   })
 }

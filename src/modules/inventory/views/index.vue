@@ -265,6 +265,7 @@ import DataTable from "@components/DataTable.vue"
 import { TProduct, type IInventoryTransferRequest, type IProductVariantDetails } from "../types"
 import { PRODUCT_COLUMNS } from "../constants"
 import { ref, computed, watch } from "vue"
+import { useQueryClient } from "@tanstack/vue-query"
 import Icon from "@components/Icon.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import Chip from "@components/Chip.vue"
@@ -320,6 +321,7 @@ const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct
 const { mutate: updateProduct, isPending: isUpdatingProduct } = useUpdateProduct()
 const { data: categories } = useGetCategories()
 
+const queryClient = useQueryClient()
 const settingsStore = useSettingsStore()
 const inventoryStore = useInventoryStore()
 const { checkPremiumAccess } = usePremiumAccess()
@@ -670,7 +672,7 @@ const handleDeleteProduct = () => {
       toast.success("Product deleted successfully")
       showDeleteConfirmationModal.value = false
       product.value = null
-      refetchProducts()
+      queryClient.invalidateQueries({ queryKey: ["products"] })
     },
     onError: displayError,
   })

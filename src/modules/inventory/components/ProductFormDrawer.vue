@@ -236,6 +236,7 @@ const handleSubmit = async () => {
       story: form.story || "",
       category: form.category?.value as string,
       brand: form.brand || "",
+      unit: form.unit?.value || undefined,
       is_active: true,
       is_variable: hasVariants.value,
       requires_approval: form.requires_approval || false,
