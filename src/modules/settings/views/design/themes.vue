@@ -39,6 +39,14 @@ const onUpdateTheme = () => {
     onError: displayError,
   })
 }
+
+const THEME_IMAGES: Record<string, string> = {
+  dawn: "/images/themes/dawn.png",
+  grace: "/images/themes/grace.png",
+  heritage: "/images/themes/heritage.png",
+  ember: "/images/themes/ember.png",
+  bloom: "/images/themes/bloom.png",
+}
 </script>
 
 <template>
@@ -81,7 +89,7 @@ const onUpdateTheme = () => {
       >
         <div class="relative h-60 rounded-xl">
           <img
-            :src="theme.preview_image"
+            :src="THEME_IMAGES[theme.name.toLowerCase()] || theme.preview_image"
             class="h-full w-full rounded-t-xl bg-gray-100 object-cover"
           />
           <Icon
