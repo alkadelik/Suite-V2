@@ -7,7 +7,7 @@ import Chip from "@components/Chip.vue"
 import TextField from "@components/form/TextField.vue"
 import { useMarkAllFulfilled, usePartiallyFulfill } from "../api"
 import { toast } from "@/composables/useToast"
-import { ref, computed } from "vue"
+import { ref, computed, watch } from "vue"
 import { displayError } from "@/utils/error-handler"
 import { useMediaQuery } from "@vueuse/core"
 
@@ -27,17 +27,23 @@ const itemQuantities = ref<Record<string, number>>({})
 const initializeQuantities = () => {
   itemQuantities.value = props.items.reduce(
     (acc, item) => {
-      acc[item.uid] = item.quantity - item.qty_fulfilled
+      acc[item.uid] = 0
       return acc
     },
     {} as Record<string, number>,
   )
 }
 
-// Initialize on mount
-if (props.open) {
-  initializeQuantities()
-}
+// Initialize when items are loaded
+watch(
+  () => props.items,
+  (items) => {
+    if (props.open && items.length > 0) {
+      initializeQuantities()
+    }
+  },
+  { immediate: true },
+)
 
 // Compute unfulfilled items
 const unfulfilledItems = computed(() =>

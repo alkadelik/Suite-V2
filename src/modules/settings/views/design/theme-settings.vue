@@ -27,9 +27,9 @@
       />
     </div>
 
-    <div class="mt-6 flex flex-col gap-6 md:flex-row">
+    <div class="mt-6 flex flex-col gap-6 md:flex-row md:items-start">
       <!-- Left Sidebar - Desktop -->
-      <aside class="hidden w-2/5 flex-shrink-0 md:block">
+      <aside class="hidden w-3/10 flex-shrink-0 md:sticky md:top-0 md:block">
         <div class="space-y-2">
           <button
             v-for="item in designItems"
@@ -131,7 +131,7 @@
       </div>
 
       <!-- Right Content - Desktop -->
-      <div class="hidden flex-1 md:block">
+      <div class="hidden flex-1 overflow-y-auto md:block">
         <LogoFaviconSettings
           v-if="activeSection === 'logo-favicon'"
           v-model:logo="formState.logo"

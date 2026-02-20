@@ -70,7 +70,7 @@ const chipColor = computed(() => (props.stat.chipColor as TChipColor) || "blue")
     <template v-else>
       <!-- title -->
       <div :class="['flex gap-2', 'flex-col md:flex-row md:items-center']">
-        <div :class="{ 'flex items-center justify-between': true }">
+        <div :class="{ 'flex flex-1 flex-col gap-2 md:flex-row md:items-center md:gap-4': true }">
           <div
             :class="[
               'size-10 items-center justify-center rounded-xl',
@@ -86,6 +86,10 @@ const chipColor = computed(() => (props.stat.chipColor as TChipColor) || "blue")
           />
 
           <!-- percentage -->
+          <h3 class="!font-outfit text-core-600 line-clamp-1 flex-1 text-sm md:text-base">
+            {{ stat.label }}
+          </h3>
+
           <div
             v-if="stat.percentage && variant !== 'alt'"
             class="hidden items-center gap-1 lg:inline-flex"
@@ -99,9 +103,6 @@ const chipColor = computed(() => (props.stat.chipColor as TChipColor) || "blue")
             <span class="text-xs font-medium">{{ stat.percentage }}%</span>
           </div>
         </div>
-        <h3 class="!font-outfit text-core-600 line-clamp-1 text-sm md:text-base">
-          {{ stat.label }}
-        </h3>
       </div>
       <!-- value -->
       <div

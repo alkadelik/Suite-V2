@@ -2,8 +2,8 @@
   <div class="flex h-[100dvh] flex-col pt-16">
     <AppHeader show-logo :is-live="isLive" @logout="logout = true" />
 
-    <Container>
-      <div class="flex min-h-0 flex-1 rounded-xl bg-white p-4 pb-0 2xl:px-20">
+    <Container class="flex min-h-0 flex-1 overflow-hidden">
+      <div class="flex min-h-0 flex-1 rounded-xl bg-white p-4 pb-0 2xl:px-8">
         <!-- Fixed Header Section -->
         <div class="flex min-h-0 flex-1 flex-col">
           <header
@@ -30,9 +30,9 @@
           />
 
           <!-- Main content area with sidebar and scrollable content -->
-          <div class="flex min-h-0 flex-1 gap-12">
+          <div class="flex min-h-0 flex-1 gap-12 overflow-hidden">
             <!-- Fixed Sidebar -->
-            <aside class="hidden w-40 flex-shrink-0 py-3 md:block">
+            <aside class="hidden w-40 flex-shrink-0 overflow-y-auto py-3 md:block">
               <nav>
                 <ul class="space-y-1">
                   <li v-for="link in LINKS" :key="link.path">

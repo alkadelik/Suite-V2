@@ -11,15 +11,31 @@
         :radio-options="SELECTION_OPTIONS"
       />
 
-      <FormField
+      <Field
         v-if="selectionMode === 'custom'"
-        type="select"
-        multiple
+        v-slot="{ field, errors: fieldErrors }"
         name="products"
-        label="Featured Products"
-        placeholder="Select products to feature"
-        :options="productOptions"
-      />
+      >
+        <SelectField
+          v-bind="field"
+          :model-value="field.value"
+          label="Featured Products"
+          placeholder="Select products to feature"
+          :options="productOptions"
+          :error="fieldErrors[0]"
+          :loading="isSearching"
+          multiple
+          searchable
+          @update:model-value="field.value = $event"
+          @search-change="productSearchInput = $event"
+        />
+        <p
+          class="-mt-4 text-right text-xs"
+          :class="(field.value?.length ?? 0) >= 8 ? 'text-red-500' : 'text-gray-400'"
+        >
+          {{ field.value?.length ?? 0 }} / 8 selected
+        </p>
+      </Field>
 
       <FormField name="title" label="Title (optional)" placeholder="e.g. Featured Products" />
 
@@ -40,14 +56,16 @@
 <script setup lang="ts">
 import * as yup from "yup"
 import { watch, computed, ref } from "vue"
-import { useForm } from "vee-validate"
+import { Field, useForm } from "vee-validate"
 import AppButton from "@components/AppButton.vue"
 import FormField from "@components/form/FormField.vue"
 import { useUpdateStorefrontSection } from "@modules/settings/api"
 import type { ThemeSection } from "@modules/settings/types"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
-import { useGetProductVariants } from "@modules/inventory/api"
+import { useSearchProductVariants } from "@modules/inventory/api"
+import { useDebouncedRef } from "@/composables/useDebouncedRef"
+import SelectField from "@components/form/SelectField.vue"
 
 interface FeaturedProductsFormData {
   selection_mode: string
@@ -73,13 +91,17 @@ const props = defineProps<{ featuredProductsSection?: ThemeSection | null }>()
 const emit = defineEmits<{ refetch: [] }>()
 
 const { mutate: updateSection, isPending } = useUpdateStorefrontSection()
-const { data: productInventories } = useGetProductVariants()
+
+const productSearchInput = ref("")
+const productSearchQuery = useDebouncedRef(productSearchInput, 400)
+const { data: searchResults, isFetching: isSearching } =
+  useSearchProductVariants(productSearchQuery)
 
 const selectionMode = ref("default")
 
 const productOptions = computed(() => {
-  if (!productInventories.value?.results) return []
-  return productInventories.value.results.map((product) => ({
+  if (!searchResults.value?.results) return []
+  return searchResults.value.results.map((product) => ({
     label: product.name,
     value: product.uid || "",
   }))
@@ -104,7 +126,10 @@ const validationSchema = yup.object({
     )
     .when("selection_mode", {
       is: "custom",
-      then: (schema) => schema.min(1, "Please select at least one product"),
+      then: (schema) =>
+        schema
+          .min(1, "Please select at least one product")
+          .max(8, "You can feature at most 8 products"),
       otherwise: (schema) => schema.optional(),
     }),
   title: yup.string().max(100, "Title must not exceed 100 characters").optional(),

@@ -101,7 +101,31 @@
             <div class="max-h-48 overflow-auto">
               <slot name="prepend" :close="closeDropdown" />
 
-              <template v-for="(opt, idx) in filteredOptions" :key="getOptionKey(opt, idx)">
+              <!-- Loading state -->
+              <div
+                v-if="loading"
+                class="text-core-400 flex items-center justify-center gap-2 px-4 py-3 text-sm"
+              >
+                <svg
+                  class="h-4 w-4 animate-spin"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  />
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                </svg>
+                Loading...
+              </div>
+
+              <template v-else v-for="(opt, idx) in filteredOptions" :key="getOptionKey(opt, idx)">
                 <div
                   :class="[getOptionClasses(opt, idx)]"
                   @click="select(opt)"
@@ -150,7 +174,7 @@
               <slot name="append" :close="closeDropdown" />
 
               <div
-                v-if="filteredOptions.length === 0 && !$slots.prepend"
+                v-if="!loading && filteredOptions.length === 0 && !$slots.prepend"
                 class="text-core-400 px-4 py-3 text-center text-sm"
               >
                 {{ noOptionsText }}
@@ -193,7 +217,7 @@ import { capitalizeFirstChar } from "@/utils/format-strings"
 import Icon from "@components/Icon.vue"
 import { useClickOutside } from "@/composables/useClickOutside"
 import { useMediaQuery } from "@vueuse/core"
-import { ref, computed, onMounted, onUnmounted } from "vue"
+import { ref, computed, watch, onMounted, onUnmounted } from "vue"
 
 type OptionValue = string | number | Record<string, unknown>
 
@@ -242,12 +266,15 @@ interface Props {
   leftIcon?: string
   /** Placement direction of the dropdown menu */
   placement?: "bottom" | "top" | "auto"
+  /** Show loading spinner in dropdown (for async search) */
+  loading?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   multiple: false,
   searchable: false,
   hideSelected: false,
+  loading: false,
   clearable: false,
   labelKey: "label",
   valueKey: "value",
@@ -260,12 +287,17 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   "update:modelValue": [value: OptionValue | OptionValue[] | null]
+  "search-change": [value: string]
   blur: [event: FocusEvent]
   focus: [event: FocusEvent]
 }>()
 
 const open = ref(false)
 const search = ref("")
+
+watch(search, (val) => {
+  emit("search-change", val)
+})
 const highlightedIndex = ref(-1)
 const selectContainer = ref<HTMLElement | null>(null)
 const searchInput = ref<HTMLInputElement | null>(null)
