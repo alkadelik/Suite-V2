@@ -78,7 +78,7 @@ export const componentOptions = [
   },
   {
     label: "Raw Materials",
-    value: "raw-materials",
+    value: "raw_materials",
     desc: "Common for manufacturing & retail",
     examples: "e.g. fabric, plastic bottles, packaging",
     class: "border-blue-200 bg-blue-50",
