@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="!isLive && !isLoadingLiveStatus"
+    v-if="!isLive && !isLoadingLiveStatus && !isOnOnboarding"
     class="bg-primary-25 text-warning-700 border-warning-300 flex flex-col items-start gap-3 border-b px-6 py-3 lg:flex-row lg:items-center"
   >
     <span
@@ -40,17 +40,20 @@
 
 <script setup lang="ts">
 import { computed } from "vue"
+import { useRoute } from "vue-router"
 import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
 import { useGetLiveStatus } from "@modules/shared/api"
 import { useAuthStore } from "@modules/auth/store"
 import { useSettingsStore } from "@modules/settings/store"
 
+const route = useRoute()
 const { setPlanUpgradeModal } = useSettingsStore()
 const storeSlug = useAuthStore().user?.store_slug || ""
 const { data: liveStatusData, isPending: isLoadingLiveStatus } = useGetLiveStatus(storeSlug)
 
 const isLive = computed(() => useSettingsStore().liveStatus?.is_live || false)
+const isOnOnboarding = computed(() => route.path === "/onboarding")
 const hasSubscription = computed(
   () => liveStatusData.value?.data?.criteria?.subscription?.status || false,
 )
