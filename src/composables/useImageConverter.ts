@@ -91,7 +91,7 @@ export function useImageConverter() {
       const options = {
         maxSizeMB: 0.5, // Target: 500KB
         maxWidthOrHeight: 1920, // Max dimension
-        useWebWorker: true, // Non-blocking compression
+        useWebWorker: false, // Disabled to prevent race conditions with concurrent uploads
         fileType: fileType || file.type, // Convert format if specified
       }
 
@@ -130,7 +130,7 @@ export function useImageConverter() {
       const options = {
         maxSizeMB: 0.5, // Target: 500KB
         maxWidthOrHeight: 1920, // Max dimension
-        useWebWorker: true, // Non-blocking compression
+        useWebWorker: false, // Disabled to prevent race conditions with concurrent uploads
       }
 
       // Compress the image
