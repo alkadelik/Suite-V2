@@ -250,6 +250,10 @@ const truncateFilename = (filename: string, maxLength: number): string => {
 
 const handleFileChange = async (event: Event) => {
   if (isProcessing.value) return
+  // Stop the change event from bubbling to parent elements (e.g. vee-validate's
+  // field.onChange on the root div) because the finally block clears the input,
+  // which would cause the bubbled handler to see an empty files list and reset the value.
+  event.stopPropagation()
   const target = event.target as HTMLInputElement
   const file = target.files && target.files[0]
   if (!file) return
