@@ -76,6 +76,7 @@
           v-else-if="isVideo && filePreview"
           :src="filePreview"
           autoplay
+          muted
           loop
           playsinline
           class="h-15 w-30 rounded object-cover"

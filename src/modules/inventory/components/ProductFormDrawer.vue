@@ -338,21 +338,42 @@ const handleSubmit = async () => {
               const fetchedVariants = freshProductData.data.variants
               let variantImagesUploaded = 0
 
-              // Upload variant images
-              for (let i = 0; i < fetchedVariants.length; i++) {
+              // Build a lookup map keyed by sorted attribute UIDs so variant
+              // images are matched by identity, not by array position (the API
+              // may return variants in a different order than they were sent)
+              const variantUidByAttrKey = new Map<string, string>()
+              for (const fv of fetchedVariants) {
+                if (fv.attributes?.length) {
+                  const key = fv.attributes
+                    .map((a) => `${a.attribute}:${a.value}`)
+                    .sort()
+                    .join("|")
+                  variantUidByAttrKey.set(key, fv.uid)
+                }
+              }
+
+              for (let i = 0; i < variants.value.length; i++) {
                 const variantImageIndex = 5 + i
                 const variantImage = form.images[variantImageIndex]
-                const variant = fetchedVariants[i]
 
-                if (variantImage && variantImage instanceof File && variant?.uid) {
-                  await updateVariantImage({
-                    variantUid: variant.uid,
-                    image: variantImage,
-                  })
-                  variantImagesUploaded++
-                  console.log(
-                    `Variant image ${i + 1} uploaded successfully for variant: ${variant.name}`,
-                  )
+                if (variantImage && variantImage instanceof File) {
+                  const formAttrs = variants.value[i].attributes || []
+                  const key = formAttrs
+                    .map((a) => `${a.attribute}:${a.value}`)
+                    .sort()
+                    .join("|")
+                  const matchedUid = variantUidByAttrKey.get(key)
+
+                  if (matchedUid) {
+                    await updateVariantImage({
+                      variantUid: matchedUid,
+                      image: variantImage,
+                    })
+                    variantImagesUploaded++
+                    console.log(
+                      `Variant image ${i + 1} uploaded for variant: ${variants.value[i].name}`,
+                    )
+                  }
                 }
               }
 

@@ -37,9 +37,9 @@
       </div>
     </div>
 
-    <div v-else class="flex flex-col gap-6 md:flex-row">
+    <div v-else class="flex flex-col gap-6 md:flex-row md:items-start">
       <!-- Left Sidebar - Desktop -->
-      <aside class="hidden w-2/5 flex-shrink-0 md:block">
+      <aside class="hidden w-3/10 flex-shrink-0 md:sticky md:top-0 md:block">
         <div class="space-y-2">
           <!-- Hero Section - Fixed at top, not draggable -->
           <button
@@ -257,7 +257,7 @@
       </div>
 
       <!-- Right Content - Desktop -->
-      <div class="hidden flex-1 md:block">
+      <div class="hidden flex-1 overflow-y-auto md:block">
         <HeroSettings
           v-if="activeSection === 'hero' || activeSection === 'hero_carousel'"
           :hero-section="heroSection"

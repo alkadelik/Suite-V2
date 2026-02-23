@@ -1,15 +1,18 @@
 <template>
   <div class="rounded-lg bg-white md:block md:border md:border-gray-200">
     <div class="hidden border-b border-gray-200 p-4 md:block">
-      <h4 class="text-lg font-semibold text-gray-900">Hero</h4>
+      <h4 class="text-lg font-semibold text-gray-900">Hero Carousels</h4>
     </div>
 
     <div class="grid gap-6 md:p-6">
       <!-- Hero Slides List -->
       <div v-if="heroSlides.length > 0" class="space-y-4">
-        <h5 class="text-md font-medium text-gray-900">Slides</h5>
         <div v-for="(slide, index) in heroSlides" :key="slide.id" class="space-y-4">
-          <Collapsible :header="`Slide ${index + 1}`" :default-open="index === 0">
+          <Collapsible
+            :header="`Slide ${index + 1}`"
+            :model-value="expandedSlideIndex === index"
+            @update:model-value="(val) => (expandedSlideIndex = val ? index : expandedSlideIndex)"
+          >
             <template #body>
               <div class="space-y-6">
                 <FormField
@@ -41,11 +44,14 @@
                   placeholder="e.g. Shop Now"
                 />
 
-                <!-- <FormField
+                <FormField
+                  type="select"
                   :name="`heroSlides.${index}.cta_button_link`"
-                  label="Button Link (optional)"
-                  placeholder="e.g. https://yourstore.com/shop"
-                /> -->
+                  label="Where should the button link to?"
+                  placeholder="e.g. Select"
+                  :options="buttonDestinationOptions"
+                  required
+                />
 
                 <div class="flex justify-between border-t border-gray-200 pt-4">
                   <AppButton
@@ -110,13 +116,14 @@ import type { ThemeSection } from "@modules/settings/types"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 import { useSettingsStore } from "@modules/settings/store"
+import { useGetCategories } from "@modules/inventory/api"
 
 interface HeroSlide {
   id: string
   title: string
   subtitle?: string
   cta_button_text?: string
-  cta_button_link?: string
+  cta_button_link?: { label: string; value: string }
   hero_media?: File | null | string
 }
 
@@ -131,14 +138,27 @@ const emit = defineEmits<{ refetch: [] }>()
 const { mutate: createHeroCarousel } = useCreateHeroCarousel()
 const { mutate: updateHeroCarousel } = useUpdateHeroCarousel()
 const { mutate: deleteHeroCarousel } = useDeleteHeroCarousel()
+const { data: categoriesData } = useGetCategories()
+
+const buttonDestinationOptions = computed(() => {
+  const categoryOptions =
+    categoriesData.value?.data?.results.map((cat) => ({
+      label: `Category: ${cat.name}`,
+      value: `https://${useSettingsStore().storefrontUrl}/store?category=${cat.uid}`,
+    })) ?? []
+
+  return [
+    { label: "All Products", value: `https://${useSettingsStore().storefrontUrl}/store` },
+    ...categoryOptions,
+  ]
+})
 
 const heroSlides = ref<HeroSlide[]>([])
+const expandedSlideIndex = ref<number>(0)
 const savingSlideId = ref<string | null>(null)
 const showDeleteModal = ref(false)
 const deleteIndex = ref<number | null>(null)
 const isDeletingSlide = ref(false)
-
-const storefrontUrl = computed(() => `https://${useSettingsStore().storefrontUrl}/store`)
 
 const validationSchema = yup.object({
   section_title: yup
@@ -156,7 +176,10 @@ const validationSchema = yup.object({
           .string()
           .max(50, "CTA button text must not exceed 50 characters")
           .optional(),
-        cta_button_link: yup.string().url("Please enter a valid URL").optional().nullable(),
+        cta_button_link: yup.object({
+          label: yup.string().required(),
+          value: yup.string().required(),
+        }),
         hero_media: yup.mixed().nullable().optional(),
       }),
     )
@@ -167,40 +190,53 @@ const { setValues, values: formValues } = useForm<HeroFormData>({
   validationSchema,
 })
 
+const mapSectionToSlides = (newSection: ThemeSection) => {
+  const findOption = (ctaLink?: string) =>
+    buttonDestinationOptions.value.find((option) => option.value === ctaLink) ??
+    buttonDestinationOptions.value[0]
+
+  const mappedSlides =
+    newSection.hero_carousel_items?.map((slide) => ({
+      id: slide.uid,
+      title: slide.title || "",
+      subtitle: slide.content || "",
+      cta_button_text: slide.cta_text || "Shop Now",
+      cta_button_link: findOption(slide.cta_link),
+      hero_media: slide.media,
+    })) || []
+
+  // If no carousel items exist, create an array from the old section format
+  if (mappedSlides.length === 0 && props.oldSection) {
+    heroSlides.value = [
+      {
+        id: `slide_${Date.now()}`,
+        title: props.oldSection.title || "",
+        subtitle: props.oldSection.subtitle || "",
+        cta_button_text: props.oldSection.cta_text || "Shop Now",
+        cta_button_link: findOption(props.oldSection.cta_link || ""),
+        hero_media: props.oldSection.image || null,
+      },
+    ]
+  } else {
+    heroSlides.value = mappedSlides
+  }
+
+  setValues({ heroSlides: heroSlides.value })
+}
+
 watch(
   () => props.heroSection,
   (newSection) => {
-    if (newSection) {
-      const mappedSlides =
-        newSection.hero_carousel_items?.map((slide) => ({
-          id: slide.uid,
-          title: slide.title || "",
-          subtitle: slide.content || "",
-          cta_button_text: slide.cta_text || "Shop Now",
-          cta_button_link: slide.cta_link || storefrontUrl.value,
-          hero_media: slide.media,
-        })) || []
-
-      // If no carousel items exist, create an array from the old section format
-      if (mappedSlides.length === 0 && props.oldSection) {
-        heroSlides.value = [
-          {
-            id: `slide_${Date.now()}`,
-            title: props.oldSection.title || "",
-            subtitle: props.oldSection.subtitle || "",
-            cta_button_text: props.oldSection.cta_text || "Shop Now",
-            cta_button_link: props.oldSection.cta_link || storefrontUrl.value,
-            hero_media: props.oldSection.image || null,
-          },
-        ]
-      } else {
-        heroSlides.value = mappedSlides
-      }
-
-      setValues({ heroSlides: heroSlides.value })
-    }
+    if (newSection) mapSectionToSlides(newSection)
   },
   { immediate: true },
+)
+
+watch(
+  () => categoriesData.value,
+  () => {
+    if (props.heroSection) mapSectionToSlides(props.heroSection)
+  },
 )
 
 const generateId = (): string => {
@@ -213,10 +249,11 @@ const addSlide = (): void => {
     title: "",
     subtitle: "",
     cta_button_text: "",
-    cta_button_link: storefrontUrl.value,
+    cta_button_link: buttonDestinationOptions.value[0], // Default to "All Products" link
     hero_media: null,
   }
   heroSlides.value.push(newSlide)
+  expandedSlideIndex.value = heroSlides.value.length - 1
 
   setValues({
     heroSlides: [...heroSlides.value],
@@ -245,6 +282,7 @@ const handleDeleteConfirm = (): void => {
       onSuccess: () => {
         toast.success("Slide deleted successfully")
         heroSlides.value.splice(index, 1)
+        expandedSlideIndex.value = Math.min(expandedSlideIndex.value, heroSlides.value.length - 1)
         setValues({
           ...formValues,
           heroSlides: [...heroSlides.value],
@@ -262,6 +300,7 @@ const handleDeleteConfirm = (): void => {
   } else {
     // Just remove from local state (not yet saved to backend)
     heroSlides.value.splice(index, 1)
+    expandedSlideIndex.value = Math.min(expandedSlideIndex.value, heroSlides.value.length - 1)
     setValues({
       ...formValues,
       heroSlides: [...heroSlides.value],
@@ -294,7 +333,7 @@ const saveSlide = (index: number, slideId: string) => {
   if (slide.title) formData.append("title", slide.title)
   if (slide.subtitle) formData.append("content", slide.subtitle)
   if (slide.cta_button_text) formData.append("cta_text", slide.cta_button_text)
-  if (slide.cta_button_link) formData.append("cta_link", slide.cta_button_link)
+  if (slide.cta_button_link) formData.append("cta_link", slide.cta_button_link.value)
   if (slide.hero_media && typeof slide.hero_media !== "string") {
     formData.append("media", slide.hero_media)
   }

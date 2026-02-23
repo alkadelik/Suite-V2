@@ -14,9 +14,9 @@ import { ref, inject } from "vue"
 const { data: themes, refetch, isPending: isLoading } = useGetStoreThemes()
 const { mutate: updateActiveTheme, isPending } = useUpdateActiveTheme()
 
-const openPreview = (themeName: string) => {
-  window.open(`/${themeName.toLowerCase()}`, "_blank")
-}
+// const openPreview = (themeName: string) => {
+//   window.open(`/${themeName.toLowerCase()}`, "_blank")
+// }
 
 const selectedTheme = ref<IStoreTheme | null>(null)
 
@@ -109,7 +109,7 @@ const THEME_IMAGES: Record<string, string> = {
           </p>
 
           <div class="mt-4 flex justify-end gap-3">
-            <AppButton color="alt" label="Preview" @click="openPreview(theme.name)" />
+            <!-- <AppButton color="alt" label="Preview" @click="openPreview(theme.name)" /> -->
             <AppButton label="Apply" :disabled="theme.in_use" @click="openApply(theme)" />
           </div>
         </div>
