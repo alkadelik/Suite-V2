@@ -338,21 +338,27 @@ const handleSubmit = async () => {
               const fetchedVariants = freshProductData.data.variants
               let variantImagesUploaded = 0
 
-              // Upload variant images
-              for (let i = 0; i < fetchedVariants.length; i++) {
+              // Upload variant images — match by name, not index, because
+              // the API may return variants in a different order than sent
+              for (let i = 0; i < variants.value.length; i++) {
                 const variantImageIndex = 5 + i
                 const variantImage = form.images[variantImageIndex]
-                const variant = fetchedVariants[i]
 
-                if (variantImage && variantImage instanceof File && variant?.uid) {
-                  await updateVariantImage({
-                    variantUid: variant.uid,
-                    image: variantImage,
-                  })
-                  variantImagesUploaded++
-                  console.log(
-                    `Variant image ${i + 1} uploaded successfully for variant: ${variant.name}`,
+                if (variantImage && variantImage instanceof File) {
+                  const matchedVariant = fetchedVariants.find(
+                    (fv) => fv.name === variants.value[i].name,
                   )
+
+                  if (matchedVariant?.uid) {
+                    await updateVariantImage({
+                      variantUid: matchedVariant.uid,
+                      image: variantImage,
+                    })
+                    variantImagesUploaded++
+                    console.log(
+                      `Variant image ${i + 1} uploaded successfully for variant: ${matchedVariant.name}`,
+                    )
+                  }
                 }
               }
 
