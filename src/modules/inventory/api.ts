@@ -19,11 +19,12 @@ import {
   IApproveRejectRequestPayload,
   IBulkVariantPayload,
   IProductStats,
+  IProductCategory,
 } from "./types"
 
 /** Get categories api request */
 export function useGetCategories() {
-  return useQuery({
+  return useQuery<TPaginatedResponse<IProductCategory>>({
     queryKey: ["categories"],
     queryFn: async () => {
       const { data } = await baseApi.get("/inventory/categories/")
@@ -353,6 +354,27 @@ export function useGetProductVariants() {
     url: `/inventory/variants/`,
     key: "productVariants",
     selectData: true,
+  })
+}
+
+/** search product variants by name */
+export function useSearchProductVariants(search: MaybeRefOrGetter<string>) {
+  return useQuery({
+    queryKey: ["productVariants", "search", search],
+    queryFn: async () => {
+      const { data } = await baseApi.get<TPaginatedResponse<IProductVariant>>(
+        `/inventory/variants/`,
+        {
+          params: {
+            ...(toValue(search) ? { search: toValue(search) } : {}),
+            limit: 10,
+          },
+        },
+      )
+      return data.data
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
   })
 }
 
