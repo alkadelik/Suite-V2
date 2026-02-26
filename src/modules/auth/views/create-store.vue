@@ -95,8 +95,11 @@ import IconHeader from "@components/IconHeader.vue"
 import { useGetStoreIndustries } from "@/modules/shared/api"
 import { useAuthStore } from "../store"
 import { isStaging } from "@/utils/others"
+import { useSettingsStore } from "@modules/settings/store"
+import { TLocation } from "@modules/settings/types"
 
 const authStore = useAuthStore()
+const settingsStore = useSettingsStore()
 const router = useRouter()
 // const authStore = useAuthStore()
 const { data: industriesData } = useGetStoreIndustries()
@@ -158,14 +161,17 @@ const onSubmit = (values: IStoreFormData) => {
   createStore(payload, {
     onSuccess: (res) => {
       toast.success("Store created successfully")
-      console.log("Store created:", res.data.data)
       const { uid, slug } = res.data.data as { uid: string; slug: string }
       authStore.updateAuthUser({ store_uid: uid, store_slug: slug })
-      // authStore.setAuthUser({ ...authStore.user, store_uid: uid, store_slug: slug })
+      const locations = (res.data.data.locations ?? []) as TLocation[]
+      if (locations && locations.length > 0) {
+        settingsStore.setActiveLocation(locations[0])
+        settingsStore.setLocations(locations)
+      }
       // check for redirect query param
       const redirectPath = router.currentRoute.value.query.redirect as string
-      // window.location.href = redirectPath || "/dashboard"
-      router.push(redirectPath || "/onboarding")
+      window.location.href = redirectPath || "/onboarding"
+      // router.push(redirectPath || "/onboarding")
     },
     onError: displayError,
   })
