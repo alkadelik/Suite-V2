@@ -48,18 +48,13 @@
         <button
           v-if="isEditMode"
           type="button"
-          class="absolute -top-4.5 right-12 flex h-6 w-6 items-center justify-center rounded-full"
+          class="absolute -top-3 right-2"
           @click.stop="replaceFile"
         >
           <Chip icon="refresh-cw-01" label="Replace" class="border-primary-700 bg-primary-100" />
         </button>
         <!-- Remove button - only shows in create mode (never started with existing image) -->
-        <button
-          v-else
-          type="button"
-          class="absolute -top-4.5 right-12 flex h-6 w-6 items-center justify-center rounded-full"
-          @click.stop="removeFile"
-        >
+        <button v-else type="button" class="absolute -top-3 right-2" @click.stop="removeFile">
           <Chip icon="x-close" label="Remove" class="border-primary-700 bg-primary-100" />
         </button>
       </div>
@@ -90,6 +85,18 @@
         </button>
       </div>
 
+      <!-- Processing indicator -->
+      <div
+        v-else-if="isProcessing"
+        class="flex w-full flex-col items-center justify-center gap-2 text-center"
+        :class="props.productImageMode ? 'py-4' : ''"
+      >
+        <div
+          class="border-primary-400 h-8 w-8 animate-spin rounded-full border-2 border-t-transparent"
+        />
+        <span class="text-core-600 text-xs">Processing image...</span>
+      </div>
+
       <!-- Placeholder -->
       <slot v-else name="placeholder">
         <div
@@ -108,7 +115,7 @@
         type="file"
         :class="[
           'absolute inset-0 h-full w-full cursor-pointer opacity-0',
-          fileName ? 'pointer-events-none' : '',
+          fileName || isProcessing ? 'pointer-events-none' : '',
         ]"
         @change="handleFileChange"
       />
