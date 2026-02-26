@@ -9,10 +9,11 @@
         name="selection_mode"
         label="Select Featured Products"
         :radio-options="SELECTION_OPTIONS"
+        :show-radio="false"
       />
 
       <Field
-        v-if="selectionMode === 'custom'"
+        v-show="selectionMode === 'custom'"
         v-slot="{ field, errors: fieldErrors }"
         name="products"
       >
@@ -30,6 +31,7 @@
           @search-change="productSearchInput = $event"
         />
         <p
+          v-show="selectionMode === 'custom'"
           class="-mt-4 text-right text-xs"
           :class="(field.value?.length ?? 0) >= 8 ? 'text-red-500' : 'text-gray-400'"
         >
