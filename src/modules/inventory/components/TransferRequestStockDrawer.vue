@@ -50,10 +50,9 @@
           </div>
           <FormField
             name="quantity"
-            type="number"
+            type="stepper"
             placeholder="Enter quantity"
             required
-            :show-steppers="true"
             :hide-label="true"
           />
         </div>

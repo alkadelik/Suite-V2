@@ -4,68 +4,69 @@
       {{ label }}
       <span v-if="required" class="text-red-500">*</span>
     </label>
-    <div :class="containerClasses">
-      <!-- Country Code Prefix for Tel Input -->
-      <div
-        v-if="type === 'tel'"
-        class="flex items-center gap-2 border-r border-gray-200 bg-transparent pr-3 pl-3"
-      >
-        <div
-          class="flex h-4 w-4 items-center justify-center overflow-hidden rounded-full bg-gray-200"
-        >
-          <img src="/images/nigeria.png" alt="Nigerian Flag" class="h-full w-full object-cover" />
-        </div>
-        <span class="text-sm font-medium text-gray-700">+234</span>
-        <Icon name="CaretDown" size="16" class="text-gray-500" />
-      </div>
 
-      <!-- Prefix -->
-      <div v-else-if="prefix" :class="prefixClasses">
-        {{ prefix }}
-      </div>
-
-      <!-- Left Icon -->
-      <div v-else-if="leftIcon" :class="[prefixClasses, 'flex items-center border-r-0 !pr-0']">
-        <Icon :name="leftIcon" class="h-4 w-4" />
-      </div>
-
-      <!-- Input -->
-      <input
-        :id="htmlFor"
-        :name="name"
-        :type="actualType"
-        :placeholder="placeholder"
-        :required="required"
+    <div class="flex items-center gap-2">
+      <!-- Decrement Button -->
+      <AppButton
+        icon="placeholder"
+        size="sm"
+        type="button"
+        @click.prevent="decrementValue"
         :disabled="disabled"
-        :readonly="readonly"
-        :class="inputClasses"
-        :value="displayValue"
-        @input="handleInput"
-        @blur="$emit('blur', $event)"
-        @focus="$emit('focus', $event)"
-        v-bind="$attrs"
       />
 
-      <!-- Password Toggle -->
-      <button
-        v-if="type === 'password'"
+      <div :class="containerClasses" class="flex-1">
+        <!-- Prefix -->
+        <div v-if="prefix" :class="prefixClasses">
+          {{ prefix }}
+        </div>
+
+        <!-- Left Icon -->
+        <div
+          v-if="leftIcon"
+          :class="[prefixClasses, 'flex items-center border-r-0 bg-inherit !pr-0']"
+        >
+          <Icon :name="leftIcon" class="h-4 w-4" />
+        </div>
+
+        <!-- Input -->
+        <input
+          :id="htmlFor"
+          :name="name"
+          type="number"
+          :placeholder="placeholder"
+          :required="required"
+          :disabled="disabled"
+          :readonly="readonly"
+          :class="inputClasses"
+          :value="modelValue"
+          @input="handleInput"
+          @blur="$emit('blur', $event)"
+          @focus="$emit('focus', $event)"
+          v-bind="$attrs"
+        />
+
+        <!-- Right Icon -->
+        <div v-if="rightIcon" class="text-core-400 flex items-center pr-3">
+          <Icon :name="rightIcon" class="h-4 w-4" />
+        </div>
+
+        <!-- Suffix -->
+        <div v-if="suffix" :class="suffixClasses">
+          {{ suffix }}
+        </div>
+      </div>
+
+      <!-- Increment Button -->
+      <AppButton
+        icon="placeholder"
+        size="sm"
         type="button"
-        class="text-core-400 hover:text-core-600 flex items-center pr-3"
-        @click="togglePasswordVisibility"
-      >
-        <Icon :name="showPassword ? 'eye' : 'eye-slash'" class="h-4 w-4" />
-      </button>
-
-      <!-- Right Icon -->
-      <div v-else-if="rightIcon" class="text-core-400 flex items-center pr-3">
-        <Icon :name="rightIcon" class="h-4 w-4" />
-      </div>
-
-      <!-- Suffix -->
-      <div v-if="suffix" :class="suffixClasses" class="max-w-[40%] min-w-0 shrink">
-        <span class="line-clamp-1">{{ suffix }}</span>
-      </div>
+        @click.prevent="incrementValue"
+        :disabled="disabled"
+      />
     </div>
+
     <div v-if="error" class="mt-1 flex items-center text-sm text-red-600">
       <Icon name="info-circle" size="16" class="mr-1" />
       {{ capitalizeFirstChar(error) }}
@@ -86,17 +87,14 @@
 <script setup lang="ts">
 import { capitalizeFirstChar } from "@/utils/format-strings"
 import Icon from "@components/Icon.vue"
-import { computed, ref } from "vue"
+import AppButton from "@components/AppButton.vue"
+import { computed } from "vue"
 
 interface Props {
   /** The model value of the input */
   modelValue?: string | number
   /** The label for the input */
   label?: string
-  /** The input type
-   * @default "text"
-   */
-  type?: string
   /** The name attribute for the input */
   name?: string
   /** The id attribute for the input */
@@ -138,7 +136,6 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  type: "text",
   variant: "default",
   size: "md",
 })
@@ -149,16 +146,12 @@ const emit = defineEmits<{
   focus: [event: FocusEvent]
 }>()
 
-const showPassword = ref(false)
-
 const handleInput = (event: Event) => {
   const target = event.target as HTMLInputElement
   let value = target.value
 
-  // For number inputs, allow only valid numeric characters
-  if (props.type === "number" && value) {
+  if (value) {
     // Allow only digits, decimal point, and minus sign (at the start only)
-    // Remove any characters that are not digits, decimal point, or minus
     let sanitized = value.replace(/[^0-9.-]/g, "")
 
     // Ensure only one decimal point
@@ -177,47 +170,35 @@ const handleInput = (event: Event) => {
     }
 
     value = sanitized
-    target.value = sanitized // Update the input value to reflect the sanitized value
-  }
-
-  // For tel inputs, prefix with +234
-  if (props.type === "tel" && value) {
-    // Remove any existing +234 prefix to avoid duplication
-    value = value.replace(/^\+234\s*/, "")
-    // Remove any non-digit characters
-    value = value.replace(/[^\d]/g, "")
-    // Remove leading 0 if present
-    if (value.startsWith("0")) {
-      value = value.substring(1)
-    }
-    // Add +234 prefix
-    if (value) {
-      value = `+234${value}`
-    }
+    target.value = sanitized
   }
 
   emit("update:modelValue", value)
 }
 
-const togglePasswordVisibility = () => {
-  showPassword.value = !showPassword.value
+const incrementValue = () => {
+  let currentValue = 0
+  if (typeof props.modelValue === "number") {
+    currentValue = props.modelValue
+  } else if (typeof props.modelValue === "string" && props.modelValue !== "") {
+    currentValue = parseFloat(props.modelValue)
+  }
+
+  emit("update:modelValue", String(currentValue + 1))
+}
+
+const decrementValue = () => {
+  let currentValue = 0
+  if (typeof props.modelValue === "number") {
+    currentValue = props.modelValue
+  } else if (typeof props.modelValue === "string" && props.modelValue !== "") {
+    currentValue = parseFloat(props.modelValue)
+  }
+
+  emit("update:modelValue", String(Math.max(0, currentValue - 1)))
 }
 
 const htmlFor = computed(() => props.id || props.name || props.label)
-
-const actualType = computed(() =>
-  props.type === "password" && showPassword.value ? "text" : props.type,
-)
-
-// For tel inputs, display value without +234 prefix
-const displayValue = computed(() => {
-  if (props.type === "tel" && props.modelValue) {
-    const value = String(props.modelValue)
-    // Remove +234 prefix for display
-    return value.replace(/^\+234/, "")
-  }
-  return props.modelValue
-})
 
 const containerClasses = computed(() => {
   const baseClasses =
@@ -233,8 +214,6 @@ const containerClasses = computed(() => {
   }
 
   const disabledClasses = props.disabled ? "opacity-60 cursor-not-allowed !bg-core-200" : ""
-
-  // Use error variant if error prop is provided
   const currentVariant = props.error ? "error" : props.variant
 
   return [baseClasses, variantClasses[currentVariant], disabledClasses, props.containerClass]
@@ -246,11 +225,10 @@ const inputClasses = computed(() => {
   const baseClasses =
     "flex-1 border-0 bg-transparent focus:outline-none focus:ring-0 placeholder-core-400 text-core-800"
 
-  // Adjust padding based on icons/prefix/suffix
   const paddingClasses = {
-    sm: `${props.leftIcon || props.prefix ? "pl-0" : "pl-2"} ${props.rightIcon || props.suffix || props.type === "password" ? "pr-0" : "pr-2"} py-2 text-base`,
-    md: `${props.leftIcon || props.prefix ? "pl-0" : "px-4"} ${props.rightIcon || props.suffix || props.type === "password" ? "pr-0" : "px-4"} py-3 text-base`,
-    lg: `${props.leftIcon || props.prefix ? "pl-0" : "p-3"} ${props.rightIcon || props.suffix || props.type === "password" ? "pr-0" : "p-3"} text-base`,
+    sm: `${props.leftIcon || props.prefix ? "pl-0" : "pl-2"} ${props.rightIcon || props.suffix ? "pr-0" : "pr-2"} py-2 text-base`,
+    md: `${props.leftIcon || props.prefix ? "pl-0" : "px-4"} ${props.rightIcon || props.suffix ? "pr-0" : "px-4"} py-3 text-base`,
+    lg: `${props.leftIcon || props.prefix ? "pl-0" : "p-3"} ${props.rightIcon || props.suffix ? "pr-0" : "p-3"} text-base`,
   }
 
   return [baseClasses, paddingClasses[props.size], props.inputClass].filter(Boolean).join(" ")
