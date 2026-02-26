@@ -9,6 +9,8 @@ import { useGetLocations, useGetStoreDetails } from "@modules/settings/api"
 import { useSettingsStore } from "@modules/settings/store"
 import { useLocationSwitch } from "@/composables/useLocationSwitch"
 import { computed, watch } from "vue"
+import { useProductionStore } from "@modules/production/store"
+import { componentOptions } from "@modules/production/constants"
 
 const settingsStore = useSettingsStore()
 const { setLocations } = settingsStore
@@ -36,6 +38,11 @@ watch(
   (details) => {
     if (details) {
       useSettingsStore().setStoreDetails(details)
+      const materialType = details.material_type
+      const fullOption = componentOptions.find((o) => o.value === materialType)
+      if (fullOption) {
+        useProductionStore().setSelectedComponentOption(fullOption)
+      }
     }
   },
   { immediate: true },

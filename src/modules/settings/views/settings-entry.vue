@@ -26,18 +26,18 @@ const settingsLinks = computed(() =>
     { label: "Plans & Billing", path: "/settings/billing", icon: "star-fast" },
     { label: "Locations", path: "/settings/locations", icon: "map" },
     {
-      label: "Design",
+      label: "Storefront Design",
       path: "/settings/design",
       icon: "designtools",
       subLinks: [
         { label: "Themes", path: "/settings/design/themes", icon: "shapes-02" },
         { label: "Theme Settings", path: "/settings/design/theme-settings", icon: "shapes-01" },
         { label: "Landing Page", path: "/settings/design/landing-page", icon: "message-text" },
-        { label: "Pop Up", path: "/settings/design/popup", icon: "information" },
+        // { label: "Pop Up", path: "/settings/design/popup", icon: "information" },
       ],
     },
     { label: "Delivery Options", path: "/settings/delivery-options", icon: "truck-fast-outline" },
-    { label: "Production", path: "/settings/production", icon: "building" },
+    { label: "Production", path: "/settings/production", icon: "building-outline" },
   ].filter((link) => {
     const { activeLocation } = useSettingsStore()
     if (!activeLocation?.is_hq) {

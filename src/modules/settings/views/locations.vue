@@ -1,21 +1,31 @@
 <template>
-  <div class="space-y-6 overflow-hidden rounded-xl border-gray-200 bg-white md:border md:pt-6">
-    <div class="flex flex-col items-end justify-between gap-2 md:flex-row md:items-center md:px-4">
-      <div class="w-full md:w-auto">
-        <h3 class="flex items-center gap-1 text-lg font-semibold">
-          Locations
-          <Chip v-if="locations?.results" :label="locations?.results.length + ' locations'" />
-        </h3>
-        <p class="text-sm">Keep track of all your business locations in one place.</p>
+  <SectionHeader
+    title="Locations"
+    subtitle="Manage your business locations and their details here."
+  />
+
+  <div class="mt-8 space-y-6 overflow-hidden rounded-xl border-gray-200 bg-white md:border md:pt-6">
+    <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
+      <h3 class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
+        Locations
+        <Chip v-if="locations?.count" :label="locations?.count" />
+      </h3>
+      <div class="flex items-center gap-2">
+        <TextField
+          left-icon="search-lg"
+          size="sm"
+          class="flex-1"
+          placeholder="Find by name or address..."
+        />
+        <AppButton
+          v-if="(locations?.count || 0) < 5"
+          icon="add"
+          size="sm"
+          class="flex-shrink-0"
+          :label="!isMobile ? 'Add New' : undefined"
+          @click="handleAddLocation"
+        />
       </div>
-      <AppButton
-        v-if="!locations?.results || locations?.results.length < 5"
-        icon="add"
-        size="sm"
-        :variant="isMobile ? 'outlined' : 'filled'"
-        label="Add new location"
-        @click="handleAddLocation"
-      />
     </div>
 
     <DataTable
@@ -73,10 +83,6 @@
                 </template>
               </DropdownMenu>
             </div>
-            <p class="flex items-center gap-2 text-sm">
-              <Icon name="call" size="18" />
-              {{ "--" }}
-            </p>
           </div>
         </div>
       </template>
@@ -119,6 +125,8 @@ import DropdownMenu from "@components/DropdownMenu.vue"
 import { useRoute } from "vue-router"
 import { useSettingsStore } from "../store"
 import { useAuthStore } from "@modules/auth/store"
+import SectionHeader from "@components/SectionHeader.vue"
+import TextField from "@components/form/TextField.vue"
 
 const authStore = useAuthStore()
 const openArchive = ref(false)

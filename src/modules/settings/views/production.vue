@@ -9,6 +9,7 @@ import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 import RadioInputField from "@components/form/RadioInputField.vue"
 import { IStoreDetails } from "../types"
+import { useMediaQuery } from "@vueuse/core"
 
 const { mutate: updateStore, isPending } = useUpdateStoreDetails()
 
@@ -60,6 +61,8 @@ const handleSubmit = () => {
     },
   )
 }
+
+const isSmAndUp = computed(() => useMediaQuery("(min-width: 640px)").value)
 </script>
 
 <template>
@@ -78,6 +81,7 @@ const handleSubmit = () => {
           :options="componentOptions"
           v-model="selectedRawMaterial"
           name="raw-material"
+          :orientation="isSmAndUp ? 'horizontal' : 'vertical'"
         />
       </section>
 
@@ -91,6 +95,7 @@ const handleSubmit = () => {
           :options="recipeNameOptions"
           v-model="selectedRecipeName"
           name="recipe-name"
+          :orientation="isSmAndUp ? 'horizontal' : 'vertical'"
         />
       </section>
 

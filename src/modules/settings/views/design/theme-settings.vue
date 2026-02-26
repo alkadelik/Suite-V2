@@ -2,7 +2,12 @@
   <ThemeSettingsSkeleton v-if="isLoading" />
   <section v-else>
     <div class="mb-4 flex items-center gap-6 border-b border-gray-200 pb-4">
-      <SectionHeader title="Theme Settings" size="sm" subtitle="Customize your theme settings" />
+      <SectionHeader
+        title="Theme Settings"
+        size="sm"
+        subtitle="Customize your theme settings"
+        class="!pt-0"
+      />
       <AppButton
         icon="clock-rewind"
         color="alt"
@@ -83,7 +88,7 @@
           </button>
           <div
             v-if="expandedSection === item.id"
-            class="rounded-b-lg border border-t-0 border-gray-200 p-4"
+            class="rounded-b-lg border border-t-0 border-gray-200 p-4 md:p-4"
           >
             <LogoFaviconSettings
               v-if="item.id === 'logo-favicon'"
@@ -128,6 +133,8 @@
             />
           </div>
         </div>
+
+        <div class="py-8" />
       </div>
 
       <!-- Right Content - Desktop -->

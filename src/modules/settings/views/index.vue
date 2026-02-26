@@ -26,7 +26,7 @@
             v-if="route.path !== '/settings'"
             label="Back"
             to="/settings"
-            class="mb-4 flex-shrink-0 md:hidden"
+            class="mb-3 flex-shrink-0 md:hidden"
           />
 
           <!-- Main content area with sidebar and scrollable content -->
@@ -55,7 +55,7 @@
             </aside>
 
             <!-- Scrollable main content -->
-            <main class="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+            <main class="min-h-0 flex-1 overflow-y-auto px-3 md:py-3">
               <router-view />
             </main>
           </div>
