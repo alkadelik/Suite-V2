@@ -252,7 +252,7 @@ const getActionItems = (item: { product: PopupInventory; notes?: string }) => {
   const notesVisible = showNotes[item.product.uid] || false
   return [
     {
-      label: notesVisible ? "Hide Note" : "Show Note",
+      label: notesVisible ? "Hide Note" : "Add Note",
       icon: "note-text",
       action: () => {
         toggleNotes(item.product.uid)
