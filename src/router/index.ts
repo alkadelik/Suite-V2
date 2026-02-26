@@ -22,6 +22,7 @@ import expensesRoutes from "@modules/expenses/routes"
 import productionRoutes from "@modules/production/routes"
 import marketingRoutes from "@modules/marketing/routes"
 import { isStaging } from "@/utils/others"
+import reportsRoutes from "@modules/reports/routes"
 
 const routes: RouteRecordRaw[] = [
   // Public pages routes with LandingLayout
@@ -55,6 +56,7 @@ const routes: RouteRecordRaw[] = [
       ...expensesRoutes,
       ...productionRoutes,
       ...marketingRoutes,
+      ...reportsRoutes,
     ],
   },
   {
