@@ -39,6 +39,18 @@
         </button>
       </div>
 
+      <!-- Processing indicator -->
+      <div
+        v-else-if="isProcessing"
+        class="flex w-full flex-col items-center justify-center gap-2 text-center"
+        :class="props.productImageMode ? 'py-4' : ''"
+      >
+        <div
+          class="border-primary-400 h-8 w-8 animate-spin rounded-full border-2 border-t-transparent"
+        />
+        <span class="text-core-600 text-xs">Processing image...</span>
+      </div>
+
       <!-- Placeholder -->
       <slot v-else name="placeholder">
         <div class="flex w-full flex-col items-center justify-center gap-2 text-center">
@@ -54,7 +66,7 @@
         type="file"
         :class="[
           'absolute inset-0 h-full w-full cursor-pointer opacity-0',
-          fileName ? 'pointer-events-none' : '',
+          fileName || isProcessing ? 'pointer-events-none' : '',
         ]"
         @change="handleFileChange"
       />

@@ -193,6 +193,8 @@ import { toast } from "@/composables/useToast"
 import { htmlToMarkdown, markdownToHtml } from "@/utils/html-to-markdown"
 import { useQueryClient } from "@tanstack/vue-query"
 import ProductEditSkeleton from "./skeletons/ProductEditSkeleton.vue"
+import { useImageConverter } from "@/composables/useImageConverter"
+import { useAuthStore } from "@modules/auth/store"
 
 // Import composables
 import { useProductFormState } from "../composables/useProductFormState"
@@ -240,6 +242,8 @@ const emit = defineEmits<Emits>()
 
 // Query client for cache invalidation
 const queryClient = useQueryClient()
+const { renameProductImage } = useImageConverter()
+const storeName = useAuthStore().user?.store_slug || "product"
 
 // Ref to ProductDetailsForm component
 const productDetailsRef = ref<{
@@ -873,11 +877,12 @@ const handleSubmit = async () => {
 
       if (newImages.length > 0) {
         for (const { image, index } of newImages) {
+          const renamedImage = renameProductImage(image as File, storeName)
           await new Promise<void>((resolve, reject) => {
             addProductImages(
               {
                 product: productUid,
-                image: image as File,
+                image: renamedImage,
                 is_primary: index === 0,
                 sort_order: index + 1,
               },
@@ -903,7 +908,7 @@ const handleSubmit = async () => {
           if (variantImage && variantImage instanceof File && variant?.uid) {
             await updateVariantImage({
               variantUid: variant.uid,
-              image: variantImage,
+              image: renameProductImage(variantImage, storeName),
             })
             variantImagesUploaded.push(i)
           }
@@ -1135,11 +1140,12 @@ const handleSubmit = async () => {
 
             if (productImages.length > 0) {
               for (const { image, index } of productImages) {
+                const renamedImage = renameProductImage(image as File, storeName)
                 await new Promise<void>((resolve, reject) => {
                   addProductImages(
                     {
                       product: productUid,
-                      image: image as File,
+                      image: renamedImage,
                       is_primary: index === 0,
                       sort_order: index + 1,
                     },
@@ -1176,7 +1182,7 @@ const handleSubmit = async () => {
                   if (variantImage && variantImage instanceof File && variant?.uid) {
                     await updateVariantImage({
                       variantUid: variant.uid,
-                      image: variantImage,
+                      image: renameProductImage(variantImage, storeName),
                     })
                     variantImagesUploaded++
                   }
