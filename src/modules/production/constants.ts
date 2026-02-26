@@ -16,12 +16,14 @@ export const RAW_MATERIALS_COLUMN: TableColumn<TRawMaterial>[] = [
   {
     header: "Last Cost",
     accessor: "last_cost",
-    cell: ({ item }) => `${formatCurrency(Number(item.last_cost))}/${item.unit}`,
+    cell: ({ item }) =>
+      Number(item.last_cost) ? `${formatCurrency(Number(item.last_cost))}/${item.unit}` : "-",
   },
   {
     header: "Avg. Cost",
     accessor: "average_cost",
-    cell: ({ item }) => `${formatCurrency(Number(item.avg_cost))}/${item.unit}`,
+    cell: ({ item }) =>
+      Number(item.last_cost) ? `${formatCurrency(Number(item.avg_cost))}/${item.unit}` : "-",
   },
   { header: "", accessor: "actions" },
 ]
