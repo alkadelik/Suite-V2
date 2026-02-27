@@ -1,5 +1,5 @@
 <template>
-  <div class="overflow-hidden rounded-lg border border-gray-200">
+  <div v-bind="$attrs" class="overflow-hidden rounded-lg border border-gray-200">
     <div
       class="cursor-pointer outline-none select-none focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-gray-600"
       :class="{ 'border-b border-gray-200': isOpen }"

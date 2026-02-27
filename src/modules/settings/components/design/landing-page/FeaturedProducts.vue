@@ -9,7 +9,7 @@
         name="selection_mode"
         label="Select Featured Products"
         :radio-options="SELECTION_OPTIONS"
-        :show-radio="false"
+        :show-radio="!isMobile"
       />
 
       <Field
@@ -68,6 +68,7 @@ import { displayError } from "@/utils/error-handler"
 import { useSearchProductVariants } from "@modules/inventory/api"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import SelectField from "@components/form/SelectField.vue"
+import { useMediaQuery } from "@vueuse/core"
 
 interface FeaturedProductsFormData {
   selection_mode: string
@@ -91,6 +92,8 @@ const SELECTION_OPTIONS = [
 
 const props = defineProps<{ featuredProductsSection?: ThemeSection | null }>()
 const emit = defineEmits<{ refetch: [] }>()
+
+const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
 
 const { mutate: updateSection, isPending } = useUpdateStorefrontSection()
 
