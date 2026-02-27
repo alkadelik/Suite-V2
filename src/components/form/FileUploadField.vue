@@ -43,7 +43,6 @@
       <div
         v-else-if="isProcessing"
         class="flex w-full flex-col items-center justify-center gap-2 text-center"
-        :class="props.productImageMode ? 'py-4' : ''"
       >
         <div
           class="border-primary-400 h-8 w-8 animate-spin rounded-full border-2 border-t-transparent"
