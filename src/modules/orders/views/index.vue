@@ -16,6 +16,7 @@ import ConfirmationModal from "@components/ConfirmationModal.vue"
 import OrderShipmentTab from "../components/OrderShipmentTab.vue"
 import {
   useDeleteOrder,
+  useGenerateInvoice,
   useGenerateReceipt,
   useGetOrderDashboard,
   useGetOrders,
@@ -32,7 +33,7 @@ import OrderMemoDrawer from "../components/OrderMemoDrawer.vue"
 import OrderPaymentDrawer from "../components/OrderPaymentDrawer.vue"
 import Tabs from "@components/Tabs.vue"
 import { formatCurrency } from "@/utils/format-currency"
-import { useRoute } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import ProductAvatar from "@components/ProductAvatar.vue"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
@@ -168,7 +169,7 @@ const getActionItems = (item: TOrder) => [
         {
           label: "Share invoice",
           icon: "share",
-          action: handleShareInvoice,
+          action: () => handleShareInvoice(item),
         },
       ]
     : []),
@@ -207,7 +208,7 @@ const getActionItems = (item: TOrder) => [
         },
       ]
     : []),
-  { divider: true },
+  // { divider: true },
   ...((item.fulfilment_status === "fulfilled" || item.payment_status !== "unpaid") &&
   !item.source?.includes("storefront")
     ? [
@@ -249,6 +250,7 @@ const onCloseVoidDel = () => {
 const { mutate: voidOrder, isPending: isVoiding } = useVoidOrder()
 const { mutate: deleteOrder, isPending: isDeleting } = useDeleteOrder()
 const { mutate: generateReceipt } = useGenerateReceipt()
+const { mutate: generateInvoice } = useGenerateInvoice()
 const { mutate: markAsPaid, isPending: isMarkingPaid } = useMarkOrderAsPaid()
 
 // Get invoice link for an order
@@ -284,37 +286,69 @@ const handleSharePaymentLink = async (order: TOrder) => {
 }
 
 // Share receipt using Web Share API
-const handleShareReceipt = (order: TOrder) => {
-  generateReceipt(order.uid, {
-    onSuccess: (response) => {
-      const receiptUrl = response.data?.data.url as string | undefined
-      if (receiptUrl && navigator.share) {
-        navigator
-          .share({
-            title: `Receipt for Order #${order.order_number}`,
-            text: `Receipt for order #${order.order_number}`,
-            url: receiptUrl,
-          })
-          .catch(() => {
-            // User cancelled or share failed, fallback to copy
-            navigator.clipboard.writeText(receiptUrl).then(() => {
-              toast.info("Receipt link copied to clipboard!")
+const handleShareReceipt = (order: TOrder): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    generateReceipt(order.uid, {
+      onSuccess: (response) => {
+        const receiptUrl = response.data?.data.url as string | undefined
+        if (receiptUrl && navigator.share) {
+          navigator
+            .share({
+              title: `Receipt for Order #${order.order_number}`,
+              text: `Receipt for order #${order.order_number}`,
+              url: receiptUrl,
             })
+            .catch(() => {
+              navigator.clipboard.writeText(receiptUrl).then(() => {
+                toast.info("Receipt link copied to clipboard!")
+              })
+            })
+        } else if (receiptUrl) {
+          navigator.clipboard.writeText(receiptUrl).then(() => {
+            toast.info("Receipt link copied to clipboard!")
           })
-      } else if (receiptUrl) {
-        // Fallback for browsers that don't support Web Share API
-        navigator.clipboard.writeText(receiptUrl).then(() => {
-          toast.info("Receipt link copied to clipboard!")
-        })
-      }
-    },
-    onError: displayError,
+        }
+        resolve()
+      },
+      onError: (error) => {
+        displayError(error)
+        reject(error)
+      },
+    })
   })
 }
 
-// Share invoice (coming soon)
-const handleShareInvoice = () => {
-  toast.info("Share invoice is coming soon!")
+// Share invoice using Web Share API
+const handleShareInvoice = (order: TOrder): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    generateInvoice(order.uid, {
+      onSuccess: (response) => {
+        const invoiceUrl = response.data?.data.url as string | undefined
+        if (invoiceUrl && navigator.share) {
+          navigator
+            .share({
+              title: `Invoice for Order #${order.order_number}`,
+              text: `Invoice for order #${order.order_number}`,
+              url: invoiceUrl,
+            })
+            .catch(() => {
+              navigator.clipboard.writeText(invoiceUrl).then(() => {
+                toast.info("Invoice link copied to clipboard!")
+              })
+            })
+        } else if (invoiceUrl) {
+          navigator.clipboard.writeText(invoiceUrl).then(() => {
+            toast.info("Invoice link copied to clipboard!")
+          })
+        }
+        resolve()
+      },
+      onError: (error) => {
+        displayError(error)
+        reject(error)
+      },
+    })
+  })
 }
 
 const handleVoidDelete = ({ action, reason }: { action: string; reason: string }) => {
@@ -355,6 +389,8 @@ const handleMarkAsPaid = () => {
 
 const route = useRoute()
 
+const router = useRouter()
+
 // Watch for route query to open create modal/drawer
 watch(
   () => route.query.create,
@@ -366,11 +402,26 @@ watch(
   { immediate: true },
 )
 
+// Watch for order_id query param to auto-open order details (from row click or notifications)
+watch(
+  [() => route.query.order_id, () => orders.value],
+  ([orderId, ordersData]) => {
+    if (orderId && typeof orderId === "string" && ordersData?.results?.length) {
+      const order = ordersData.results.find((o: TOrder) => o.uid === orderId)
+      if (order) {
+        selectedOrder.value = order
+        openDetails.value = true
+      }
+    }
+  },
+  { immediate: true },
+)
+
 const handleAction = (action: string, order: TOrder) => {
   selectedOrder.value = order
   switch (action) {
     case "click":
-      openDetails.value = true
+      router.replace({ query: { ...route.query, order_id: order.uid } })
       break
     case "view-memos":
       openMemo.value = true
@@ -382,7 +433,7 @@ const handleAction = (action: string, order: TOrder) => {
       handleShareReceipt(order)
       break
     case "share-invoice":
-      handleShareInvoice()
+      handleShareInvoice(order)
       break
     case "share-payment-link":
       handleSharePaymentLink(order)
@@ -415,7 +466,7 @@ const handleDetailsShareReceipt = () => {
 
 const handleDetailsShareInvoice = () => {
   openDetails.value = false
-  handleShareInvoice()
+  if (selectedOrder.value) handleShareInvoice(selectedOrder.value)
 }
 
 const handleDetailsSharePaymentLink = () => {
@@ -547,8 +598,7 @@ const handleDetailsMarkAsPaid = () => {
           @pagination-change="(d) => (page = d.currentPage)"
           @row-click="
             (row) => {
-              selectedOrder = row
-              openDetails = true
+              router.replace({ query: { ...route.query, order_id: row.uid } })
             }
           "
         >
@@ -678,7 +728,12 @@ const handleDetailsMarkAsPaid = () => {
       v-if="selectedOrder"
       :open="openDetails"
       :order="selectedOrder"
-      @close="openDetails = false"
+      @close="
+        () => {
+          openDetails = false
+          router.replace({ query: { ...route.query, order_id: undefined } })
+        }
+      "
       @view-memos="handleDetailsViewMemos"
       @mark-as-paid="handleDetailsMarkAsPaid"
       @share-receipt="handleDetailsShareReceipt"

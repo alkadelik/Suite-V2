@@ -11,8 +11,13 @@
     </div>
 
     <!-- Page content - always visible -->
-    <div class="grid grid-cols-2 gap-4 lg:grid-cols-3">
-      <StatCard v-for="item in productMetrics" :key="item.label" :stat="item" />
+    <div class="grid grid-cols-2 gap-4 lg:grid-cols-5">
+      <StatCard
+        v-for="item in productMetrics"
+        :key="item.label"
+        :stat="item"
+        :loading="isLoadingDashboard"
+      />
     </div>
 
     <!-- Tabs for HQ users -->
@@ -125,7 +130,7 @@
                 class="min-w-0 flex-1"
               />
               <Icon
-                v-if="!item.is_active"
+                v-if="item.is_hidden_from_storefront"
                 name="eye-slash-outline"
                 size="16"
                 class="flex-shrink-0 text-gray-500"
@@ -137,7 +142,7 @@
             <Chip :label="String(value) || 'Uncategorized'" icon="tag" color="purple" size="sm" />
           </template>
 
-          <template #cell:total_stock="{ value }">
+          <template #cell:sellable_stock="{ value }">
             <span class="text-sm font-semibold">{{ value }}</span>
           </template>
 
@@ -196,15 +201,15 @@
     <ConfirmationModal
       v-model="showHideConfirmationModal"
       @close="showHideConfirmationModal = false"
-      :header="product?.is_active ? 'Hide Product' : 'Unhide Product'"
+      :header="product?.is_hidden_from_storefront ? 'Unhide Product' : 'Hide Product'"
       :paragraph="
-        product?.is_active
-          ? 'Are you sure you want to hide this product from the storefront? Customers will not be able to see or purchase it.'
-          : 'Are you sure you want to make this product visible on the storefront? Customers will be able to see and purchase it.'
+        product?.is_hidden_from_storefront
+          ? 'Are you sure you want to make this product visible on the storefront? Customers will be able to see and purchase it.'
+          : 'Are you sure you want to hide this product from the storefront? Customers will not be able to see or purchase it.'
       "
-      :variant="product?.is_active ? 'warning' : 'success'"
+      :variant="product?.is_hidden_from_storefront ? 'success' : 'warning'"
       info-box-variant="neutral"
-      :action-label="product?.is_active ? 'Hide' : 'Unhide'"
+      :action-label="product?.is_hidden_from_storefront ? 'Unhide' : 'Hide'"
       :loading="isUpdatingProduct"
       @confirm="handleToggleVisibility"
     />
@@ -260,6 +265,7 @@ import DataTable from "@components/DataTable.vue"
 import { TProduct, type IInventoryTransferRequest, type IProductVariantDetails } from "../types"
 import { PRODUCT_COLUMNS } from "../constants"
 import { ref, computed, watch } from "vue"
+import { useQueryClient } from "@tanstack/vue-query"
 import Icon from "@components/Icon.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import Chip from "@components/Chip.vue"
@@ -274,7 +280,7 @@ import InventoryRequests from "../components/InventoryRequests.vue"
 import ReceiveRequestModal from "../components/ReceiveRequestModal.vue"
 import ProductCard from "../components/ProductCard.vue"
 import ManageStockModal from "../components/ManageStockModal.vue"
-import { formatPriceRange } from "@/utils/format-currency"
+import { formatPriceRange, formatCurrency } from "@/utils/format-currency"
 import SectionHeader from "@components/SectionHeader.vue"
 import PageHeader from "@components/PageHeader.vue"
 import Tabs from "@components/Tabs.vue"
@@ -285,7 +291,7 @@ import {
   useGetProduct,
   useGetCategories,
   useUpdateProduct,
-  // useGetProductDashboard,
+  useGetProductDashboard,
 } from "../api"
 import ProductAvatar from "@components/ProductAvatar.vue"
 import EmptyState from "@components/EmptyState.vue"
@@ -310,11 +316,12 @@ const combinedParams = computed(() => ({
 }))
 
 const { data: products, isFetching, refetch: refetchProducts } = useGetProducts(combinedParams)
-// const { data: productDashboard } = useGetProductDashboard()
+const { data: productDashboard, isPending: isLoadingDashboard } = useGetProductDashboard()
 const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct()
 const { mutate: updateProduct, isPending: isUpdatingProduct } = useUpdateProduct()
 const { data: categories } = useGetCategories()
 
+const queryClient = useQueryClient()
 const settingsStore = useSettingsStore()
 const inventoryStore = useInventoryStore()
 const { checkPremiumAccess } = usePremiumAccess()
@@ -409,9 +416,14 @@ watch(
           uid: details.data.uid,
           name: details.data.name,
           total_stock: details.data.total_stock,
+          sellable_stock: details.data.variants.reduce(
+            (sum, v) => sum + (v.sellable_stock || 0),
+            0,
+          ),
           needs_reorder: details.data.needs_reorder,
           variants_count: details.data.variants.length,
           is_active: details.data.is_active,
+          is_hidden_from_storefront: details.data.is_hidden_from_storefront,
           category: details.data.category,
           created_at: details.data.created_at,
           primary_image: null,
@@ -446,46 +458,50 @@ const handleRowClick = (clickedProduct: TProduct) => {
   router.push({ name: "Product-Details", params: { uid: clickedProduct.uid } })
 }
 
-// Calculate metrics from actual API data
 const productMetrics = computed(() => {
-  const productResults = products.value?.data?.results || []
-  // const totalProducts = products.value?.data?.count || 0
-  const inStockProducts = productResults.filter((p: TProduct) => p.total_stock > 0).length
-  const outOfStockProducts = productResults.filter((p: TProduct) => p.total_stock === 0).length
-  const needsReorderProducts = productResults.filter((p: TProduct) => p.needs_reorder).length
+  const stats = productDashboard.value
 
   return [
-    // {
-    //   label: "Total Products",
-    //   value: totalProducts,
-    //   prev_value: 0,
-    //   icon: "box-filled",
-    // },
     {
-      label: "In Stock",
-      value: inStockProducts,
+      label: "Total Products",
+      value: stats?.total_products ?? 0,
       icon: "box-filled",
       iconClass: "text-success-500",
       percentage: 0,
     },
     {
+      label: "Total Variants",
+      value: stats?.total_variants ?? 0,
+      icon: "box-filled",
+      iconClass: "md:text-green-700",
+      percentage: 0,
+    },
+    {
+      label: "Stock Value",
+      value: formatCurrency(stats?.total_stock_value ?? 0),
+      icon: "moneys",
+      iconClass: "text-bloom-700",
+      percentage: 0,
+    },
+    {
       label: "Low Stock",
-      value: outOfStockProducts + needsReorderProducts,
+      value: stats?.low_stock_count ?? 0,
       icon: "box-time",
       iconClass: "text-warning-500",
       percentage: 0,
     },
-    // {
-    //   label: "Needs Reorder",
-    //   value: needsReorderProducts,
-    //   prev_value: 0,
-    //   icon: "shopping-cart",
-    // },
+    {
+      label: "Overstocked",
+      value: stats?.overstocked_count ?? 0,
+      icon: "box-filled",
+      iconClass: "md:text-bloom-700",
+      percentage: 0,
+    },
   ]
 })
 
 const getStockStatus = (item: TProduct) => {
-  if (item.total_stock === 0) {
+  if (item.sellable_stock === 0) {
     return { label: "Out of Stock", color: "error" as const }
   } else if (item.needs_reorder) {
     return { label: "Low Stock", color: "warning" as const }
@@ -604,18 +620,18 @@ const getActionItems = (item: TProduct) => {
     {
       divider: true,
     },
-    item.is_active
+    item.is_hidden_from_storefront
       ? {
-          id: "hide",
-          label: "Hide Product",
-          icon: "eye-slash-outline",
-          action: () => handleAction("hide", item),
-        }
-      : {
           id: "unhide",
           label: "Unhide Product",
           icon: "eye-outline",
           action: () => handleAction("unhide", item),
+        }
+      : {
+          id: "hide",
+          label: "Hide Product",
+          icon: "eye-slash-outline",
+          action: () => handleAction("hide", item),
         },
     {
       id: "delete",
@@ -656,7 +672,7 @@ const handleDeleteProduct = () => {
       toast.success("Product deleted successfully")
       showDeleteConfirmationModal.value = false
       product.value = null
-      refetchProducts()
+      queryClient.invalidateQueries({ queryKey: ["products"] })
     },
     onError: displayError,
   })
@@ -666,17 +682,17 @@ const handleDeleteProduct = () => {
 const handleToggleVisibility = () => {
   if (!product.value) return
 
-  const isCurrentlyActive = product.value.is_active
-  const newActiveState = !isCurrentlyActive
+  const isCurrentlyHidden = product.value.is_hidden_from_storefront
+  const newHiddenState = !isCurrentlyHidden
 
   updateProduct(
-    { uid: product.value.uid, is_active: newActiveState },
+    { uid: product.value.uid, is_hidden_from_storefront: newHiddenState },
     {
       onSuccess: () => {
         toast.success(
-          newActiveState
-            ? "Product is now visible on storefront"
-            : "Product hidden from storefront",
+          newHiddenState
+            ? "Product hidden from storefront"
+            : "Product is now visible on storefront",
         )
         showHideConfirmationModal.value = false
         product.value = null
@@ -799,7 +815,7 @@ const filteredProducts = computed(() => {
 
     // Status filter
     if (activeFilters.value.status !== null) {
-      const isInStock = product.total_stock > 0
+      const isInStock = product.sellable_stock > 0
       if (activeFilters.value.status === "in_stock" && !isInStock) {
         return false
       }

@@ -18,11 +18,37 @@
       @update:modelValue="handleCategorySelect"
     />
 
-    <TextAreaField
+    <div>
+      <SelectField
+        v-model="form.unit"
+        :options="unitOptions"
+        label="Unit of Measurement"
+        placeholder="Select unit"
+        searchable
+      >
+        <template #prepend="{ close }">
+          <div
+            class="hover:bg-core-25 cursor-pointer border-b border-gray-200 px-4 py-2 text-sm transition-colors duration-150"
+            @click="
+              () => {
+                close()
+                showAddUnit = true
+              }
+            "
+          >
+            <div class="flex items-center justify-between">
+              <span class="text-primary-600 font-semibold">Add New Unit</span>
+              <Icon name="add" class="text-primary-600 h-4 w-4" />
+            </div>
+          </div>
+        </template>
+      </SelectField>
+    </div>
+
+    <RichTextEditor
       v-model="form.description"
       label="Description"
       placeholder="Enter product description"
-      :rows="4"
       hint="Your customers will see this description when they view this product."
     />
 
@@ -41,20 +67,46 @@
       <Switch v-model="hasProductVariants" />
     </div>
   </div>
+
+  <!-- Add New Unit Modal -->
+  <Modal :open="showAddUnit" title="Add New Unit" max-width="md" @close="showAddUnit = false">
+    <div class="space-y-4">
+      <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
+        <Icon name="ruler" size="28" />
+      </div>
+      <p class="text-sm text-gray-600">Create a new unit of measurement for your products</p>
+      <TextField v-model="newUnitName" label="Unit Name" placeholder="e.g. Carton" required />
+    </div>
+    <template #footer>
+      <div class="flex gap-3">
+        <AppButton label="Cancel" variant="outlined" class="flex-1" @click="showAddUnit = false" />
+        <AppButton
+          label="Add Unit"
+          class="flex-1"
+          :disabled="!newUnitName.trim()"
+          @click="createNewUnit"
+        />
+      </div>
+    </template>
+  </Modal>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from "vue"
 import TextField from "@/components/form/TextField.vue"
-import TextAreaField from "@/components/form/TextAreaField.vue"
+import RichTextEditor from "@/components/form/RichTextEditor.vue"
 import SelectField from "@/components/form/SelectField.vue"
 import Switch from "@components/form/Switch.vue"
+import Modal from "@components/Modal.vue"
+import Icon from "@components/Icon.vue"
+import AppButton from "@components/AppButton.vue"
 import { useGetCategories } from "@modules/inventory/api"
 import { useTextTransform } from "@/composables/useTextTransform"
 
 interface ProductForm {
   name: string
   category: { label: string; value: string } | null
+  unit: { label: string; value: string } | null
   description: string
 }
 
@@ -85,6 +137,30 @@ const { handleCapitalizedInput } = useTextTransform()
 
 // State
 const productName = ref(props.modelValue.name)
+
+// Unit of measurement
+const showAddUnit = ref(false)
+const newUnitName = ref("")
+const unitOptions = ref([
+  { label: "Kilograms (kg)", value: "kg" },
+  { label: "Grams (g)", value: "g" },
+  { label: "Liters (L)", value: "L" },
+  { label: "Milliliters (ml)", value: "ml" },
+  { label: "Pieces (pcs)", value: "pcs" },
+  { label: "Meters (m)", value: "m" },
+  { label: "Sheets", value: "sheets" },
+  { label: "Bags", value: "bags" },
+  { label: "Boxes", value: "boxes" },
+])
+
+const createNewUnit = () => {
+  const unit = newUnitName.value.trim()
+  const newUnit = { label: unit, value: unit.toLowerCase().replace(/\s+/g, "_") }
+  unitOptions.value.push(newUnit)
+  form.value.unit = newUnit
+  showAddUnit.value = false
+  newUnitName.value = ""
+}
 
 // Main form computed with v-model pattern
 const form = computed({

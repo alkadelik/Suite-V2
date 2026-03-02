@@ -16,7 +16,7 @@ export const PRODUCT_COLUMNS: TableColumn<TProduct>[] = [
   { header: "Name", accessor: "name", maxWidth: "300px" },
   { header: "Category", accessor: "category" },
   { header: "Price", accessor: "price" },
-  { header: "Stock Available", accessor: "total_stock" },
+  { header: "Stock Available", accessor: "sellable_stock" },
   { header: "Status", accessor: "status" },
   { header: "", accessor: "action" },
 ]
@@ -45,12 +45,11 @@ export const MOVEMENT_COLUMNS: TableColumn<IInventoryMovement>[] = [
   { header: "Quantity", accessor: "quantity" },
   {
     header: "Unit Cost",
-    accessor: "variant_price",
+    accessor: "variant_cost_price",
     cell: ({ value }) => formatCurrency(Number(value)),
   },
   { header: "Reason", accessor: "reason" },
   { header: "Created By", accessor: "created_by_name" },
-  { header: "Reference", accessor: "reference", class: "max-w-[150px]" },
 ]
 
 export const MOCK_INVENTORY_MOVEMENTS: IInventoryMovement[] = [
@@ -140,11 +139,18 @@ export const updateProductCategoryOptions: (options: IProductCategory[]) => void
 }
 
 /**
- * Weight (Kg) attribute UID - Single source of truth
- * This is the default weight attribute UID that backend sends
+ * Weight (Kg) attribute UIDs - Single source of truth
+ * Staging: 7d961eac-4ed9-4a2d-856d-b05e9bcff8fb
+ * Production: 202c7a38-55cc-4cdb-9889-557ce7f47aa9
  * Used to identify when weight-based auto-population should occur
  */
-export const WEIGHT_ATTRIBUTE_UID = "7d961eac-4ed9-4a2d-856d-b05e9bcff8fb"
+export const WEIGHT_ATTRIBUTE_UIDS = [
+  "7d961eac-4ed9-4a2d-856d-b05e9bcff8fb",
+  "202c7a38-55cc-4cdb-9889-557ce7f47aa9",
+]
+
+/** Check if a given UID is a weight attribute */
+export const isWeightAttributeUid = (uid: string): boolean => WEIGHT_ATTRIBUTE_UIDS.includes(uid)
 
 export const PRODUCT_DIMENSIONS: IProductDimension[] = [
   {

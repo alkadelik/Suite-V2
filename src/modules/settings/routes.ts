@@ -82,6 +82,11 @@ const settingsRoutes: RouteRecordRaw[] = [
           },
         ],
       },
+      {
+        path: "production",
+        name: "Production",
+        component: () => import("./views/production.vue"),
+      },
       // Catch-all route for settings 404
       {
         path: ":pathMatch(.*)*",

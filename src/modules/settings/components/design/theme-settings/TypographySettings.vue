@@ -22,10 +22,10 @@
         >
           <span
             class="text-sm font-medium text-gray-900"
-            :style="{ fontFamily: font.fontFamily }"
+            :style="{ fontFamily: font.headerFontFamily }"
             >{{ font.name }}</span
           >
-          <p class="text-center text-xs text-gray-600" :style="{ fontFamily: font.fontFamily }">
+          <p class="text-center text-xs text-gray-600" :style="{ fontFamily: font.bodyFontFamily }">
             The quick brown fox jumps over the lazy dog
           </p>
         </button>
@@ -40,18 +40,59 @@ import { computed } from "vue"
 interface FontPairing {
   id: string
   name: string
-  fontFamily: string
+  headerFontFamily: string
+  bodyFontFamily: string
 }
 
 const fontPairings: FontPairing[] = [
-  { id: "modern", name: "Modern", fontFamily: "Poppins, sans-serif" },
-  { id: "bold", name: "Bold", fontFamily: "Oswald, sans-serif" },
-  { id: "classic", name: "Classic", fontFamily: "Merriweather, serif" },
-  { id: "elegant", name: "Elegant", fontFamily: "Playfair Display, serif" },
-  { id: "playful", name: "Playful", fontFamily: "Raleway, sans-serif" },
-  { id: "traditional", name: "Traditional", fontFamily: "Quattrocento, serif" },
-  { id: "creative", name: "Creative", fontFamily: "Yeseva One, serif" },
-  { id: "friendly", name: "Friendly", fontFamily: "Quicksand, sans-serif" },
+  {
+    id: "modern",
+    name: "Modern",
+    headerFontFamily: "Poppins, sans-serif",
+    bodyFontFamily: "Inter, sans-serif",
+  },
+  {
+    id: "bold",
+    name: "Bold",
+    headerFontFamily: "Oswald, sans-serif",
+    bodyFontFamily: "Open Sans, sans-serif",
+  },
+  {
+    id: "classic",
+    name: "Classic",
+    headerFontFamily: "Merriweather, serif",
+    bodyFontFamily: "Lato, sans-serif",
+  },
+  {
+    id: "elegant",
+    name: "Elegant",
+    headerFontFamily: "Playfair Display, serif",
+    bodyFontFamily: "Source Sans 3, sans-serif",
+  },
+  {
+    id: "playful",
+    name: "Playful",
+    headerFontFamily: "Raleway, sans-serif",
+    bodyFontFamily: "Nunito, sans-serif",
+  },
+  {
+    id: "traditional",
+    name: "Traditional",
+    headerFontFamily: "Quattrocento, serif",
+    bodyFontFamily: "Quattrocento Sans, sans-serif",
+  },
+  {
+    id: "creative",
+    name: "Creative",
+    headerFontFamily: "Yeseva One, serif",
+    bodyFontFamily: "Josefin Sans, sans-serif",
+  },
+  {
+    id: "friendly",
+    name: "Friendly",
+    headerFontFamily: "Quicksand, sans-serif",
+    bodyFontFamily: "Quicksand, sans-serif",
+  },
 ]
 
 const props = defineProps<{

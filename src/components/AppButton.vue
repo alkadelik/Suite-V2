@@ -3,9 +3,10 @@
     :class="[
       buttonClasses,
       { '!cursor-not-allowed': disabled || loading || inactive },
-      { '!opacity-50': inactive },
+      { '!opacity-50': inactive || disabled },
+      { '!opacity-100': loading },
     ]"
-    :disabled="disabled"
+    :disabled="disabled || loading"
     :type="type"
     @click="handleClick"
   >
@@ -30,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, HTMLAttributes } from "vue"
 import Icon from "./Icon.vue"
 
 export interface AppButtonProps {
@@ -122,7 +123,7 @@ export interface AppButtonProps {
   /**
    * Additional CSS classes to apply to the button
    */
-  class?: string | string[] | Record<string, boolean>
+  class?: HTMLAttributes["class"]
 }
 
 const props = withDefaults(defineProps<AppButtonProps>(), {
@@ -137,10 +138,11 @@ const props = withDefaults(defineProps<AppButtonProps>(), {
 
 const emit = defineEmits<{ click: [event: MouseEvent] }>()
 
+const shouldBeDisabled = computed(() => props.disabled || props.loading)
+
 const handleClick = (event: MouseEvent) => {
-  if (!props.loading && !props.disabled) {
-    emit("click", event)
-  }
+  if (shouldBeDisabled.value) return
+  emit("click", event)
 }
 
 const buttonClasses = computed(() => {

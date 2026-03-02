@@ -2,13 +2,11 @@
 import AppButton from "@components/AppButton.vue"
 import Icon from "@components/Icon.vue"
 import { computed, ref } from "vue"
-import componentPng from "@/assets/images/components.png"
-import ingredientPng from "@/assets/images/ingredients.png"
-import materialPng from "@/assets/images/materials.png"
 import { useUpdateStoreDetails } from "@modules/settings/api"
 import { displayError } from "@/utils/error-handler"
 import { useSettingsStore } from "@modules/settings/store"
 import { toast } from "@/composables/useToast"
+import { componentOptions } from "../constants"
 
 const emit = defineEmits(["select"])
 
@@ -18,40 +16,13 @@ const selectedOptionLabel = computed(() => {
   return selected ? selected.label : ""
 })
 
-const componentOptions = [
-  {
-    label: "Ingredients",
-    value: "ingredients",
-    desc: "Common for food, beverages & cosmetics",
-    examples: "e.g., flour, sugar, cooking oil",
-    class: "border-warning-200 bg-warning-50",
-    image: ingredientPng,
-  },
-  {
-    label: "Raw Materials",
-    value: "raw-materials",
-    desc: "Common for manufacturing & retail",
-    examples: "e.g. fabric, plastic bottles, packaging",
-    class: "border-blue-200 bg-blue-50",
-    image: materialPng,
-  },
-  {
-    label: "Components",
-    value: "components",
-    desc: "Common for assembly & electronics",
-    examples: "e.g., screws, circuit boards, casings",
-    class: "border-purple-200 bg-purple-50",
-    image: componentPng,
-  },
-]
-
 const { mutate: updateStore, isPending } = useUpdateStoreDetails()
 const storeId = computed(() => useSettingsStore().storeDetails?.uid || "")
 
 const handleSelect = () => {
   const selected = { label: selectedOptionLabel.value, value: selectedOption.value! }
   updateStore(
-    { id: storeId.value, body: { raw_materials: selected.value } },
+    { id: storeId.value, body: { material_type: selected.value } },
     {
       onSuccess: (res) => {
         toast.success("Name saved successfully")

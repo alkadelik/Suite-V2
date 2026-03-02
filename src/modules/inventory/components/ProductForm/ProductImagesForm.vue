@@ -1,11 +1,10 @@
 <template>
-  <div class="space-y-6">
-    <!-- Primary Image (File Upload Field) -->
+  <div class="space-y-12">
+    <!-- Primary Image -->
     <div class="mt-6 h-48">
-      <FileUploadField
+      <ProductImageUploader
         v-model="primaryImage"
         label="Upload Primary Image"
-        :product-image-mode="true"
         :show-primary-label="true"
       />
     </div>
@@ -64,7 +63,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
 import MultiFileInput from "@components/form/MultiFileInput.vue"
-import FileUploadField from "@components/form/FileUploadField.vue"
+import ProductImageUploader from "@components/form/ProductImageUploader.vue"
 import Chip from "@components/Chip.vue"
 import type { IProductVariant } from "../../types"
 import { useAuthStore } from "@modules/auth/store"
@@ -143,8 +142,8 @@ watch(
       const wasImage = oldValue[index]
       const isNowNull = image === null
 
-      // If there was an image and now it's null, track it
-      if (wasImage && isNowNull && props.existingImageIds[index]) {
+      // If there was an existing image and now it's null (removed) or a File (replaced), track it
+      if (wasImage && (isNowNull || image instanceof File) && props.existingImageIds[index]) {
         const imageId = props.existingImageIds[index]
         if (imageId && !removedImageIds.value.includes(imageId)) {
           removedImageIds.value.push(imageId)

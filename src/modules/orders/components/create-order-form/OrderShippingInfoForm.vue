@@ -116,8 +116,8 @@ const MANUAL_DELIVERY_LOCATIONS = computed(
     })) ?? [],
 )
 
-const DELIVERY_METHOD_OPTIONS = computed(() =>
-  [
+const DELIVERY_METHOD_OPTIONS = computed(() => {
+  const options = [
     { label: "Manual", value: "manual", description: "Select your delivery location" },
     { label: "Shipbubble", value: "shipbubble", description: "" },
     { label: "Custom", value: "custom", description: "GIG, Bolt, Gokada, etc" },
@@ -125,7 +125,11 @@ const DELIVERY_METHOD_OPTIONS = computed(() =>
     const { shipping_account, delivery_enabled, manual_delivery_enabled } =
       deliveryDetails.value || {}
     if (x.value === "shipbubble") {
-      return shipping_account && delivery_enabled
+      return (
+        shipping_account &&
+        delivery_enabled &&
+        props.shippingInfo.fulfilment_status === "unfulfilled"
+      )
     }
     if (x.value === "manual") {
       return (
@@ -133,11 +137,24 @@ const DELIVERY_METHOD_OPTIONS = computed(() =>
       )
     }
     return true
-  }),
-)
+  })
 
-const DELIVERY_TYPE_OPTIONS = computed(() =>
-  [
+  if (options.length === 1) {
+    // Auto-select the only available option
+    const selectedMethod = options[0].value
+    if (props.shippingInfo.delivery_method !== selectedMethod) {
+      emit("update:shippingInfo", {
+        ...props.shippingInfo,
+        ["delivery_method" as keyof ShippingInfo]: selectedMethod,
+      })
+    }
+  }
+
+  return options
+})
+
+const DELIVERY_TYPE_OPTIONS = computed(() => {
+  const options = [
     { label: "Express", value: "express" },
     { label: "Standard", value: "standard" },
   ].filter((x) => {
@@ -146,8 +163,32 @@ const DELIVERY_TYPE_OPTIONS = computed(() =>
       return express_delivery_enabled && EXPRESS_DELIVERY_LOCATIONS.value.length > 0
     }
     return true
-  }),
-)
+  })
+
+  if (options.length === 1) {
+    // Auto-select the only available option
+    const selectedType = options[0].value
+    if (props.shippingInfo.delivery_type !== selectedType) {
+      emit("update:shippingInfo", {
+        ...props.shippingInfo,
+        ["delivery_type" as keyof ShippingInfo]: selectedType,
+      })
+    }
+  }
+
+  return options
+})
+
+// Remap delivery payment options based on fulfilment status
+const DELIVERY_PAYMENT_OPTIONS = computed(() => {
+  const isFulfilled = props.shippingInfo.fulfilment_status === "fulfilled"
+  return DELIVERY_PAYMENT_OPTION.map((option) => ({
+    ...option,
+    label: isFulfilled
+      ? option.label.replace("pays", "paid").replace("Shipping", "shipping")
+      : option.label,
+  }))
+})
 
 const updateField = (field: keyof ShippingInfo, value: unknown) => {
   const updatedInfo = { ...props.shippingInfo, [field]: value }
@@ -614,6 +655,8 @@ const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
     </div>
     <p class="mb-4 text-sm">
       Provide the shipping method and address for {{ customerName }}'s order.
+
+      {{ shippingInfo.delivery_method }} - {{ shippingInfo.delivery_type }}
     </p>
 
     <div class="space-y-4">
@@ -676,7 +719,7 @@ const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
 
         <hr class="mb-4 border-gray-300" />
         <RadioInputField
-          :options="DELIVERY_PAYMENT_OPTION"
+          :options="DELIVERY_PAYMENT_OPTIONS"
           :modelValue="shippingInfo.delivery_payment_option"
           @update:modelValue="updateField('delivery_payment_option', $event)"
           orientation="vertical"
@@ -689,13 +732,19 @@ const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
           shippingInfo.delivery_payment_option !== 'customer_pays_courier'
         "
       >
-        <div class="my-6 rounded-xl bg-white p-4">
+        <!-- Only show delivery type selection if there's more than one option -->
+        <div v-if="DELIVERY_TYPE_OPTIONS.length > 1" class="my-6 rounded-xl bg-white p-4">
           <h3 class="mb-4 text-sm font-medium">What type of delivery?</h3>
           <hr class="mb-4 border-gray-300" />
           <RadioInputField
             :options="DELIVERY_TYPE_OPTIONS"
             :modelValue="shippingInfo.delivery_type"
-            @update:modelValue="updateField('delivery_type', $event)"
+            @update:modelValue="
+              ($event) => {
+                // console.log('Selected delivery type:', $event)
+                updateField('delivery_type', $event)
+              }
+            "
           />
         </div>
 
@@ -775,7 +824,7 @@ const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
               </RadioInputField>
             </template>
 
-            <!-- ShipBubble shipbubble Delivery -->
+            <!-- ShipBubble Delivery -->
             <template v-if="shippingInfo.delivery_method === 'shipbubble'">
               <!-- Empty State when shipping is not set up -->
               <EmptyState

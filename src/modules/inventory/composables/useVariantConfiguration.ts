@@ -1,7 +1,7 @@
 import type { ComputedRef } from "vue"
 import type { IVariantConfiguration } from "./useProductFormState"
 import type { IProductVariant, IProductAttribute } from "../types"
-import { WEIGHT_ATTRIBUTE_UID } from "../constants"
+import { isWeightAttributeUid } from "../constants"
 import { useWeightBasedDimensions } from "./useWeightBasedDimensions"
 
 /**
@@ -262,7 +262,7 @@ export function useVariantConfiguration(
       })
 
       // Check if this combination contains the Weight (Kg) attribute
-      const weightAttribute = attributes.find((attr) => attr.attribute === WEIGHT_ATTRIBUTE_UID)
+      const weightAttribute = attributes.find((attr) => isWeightAttributeUid(attr.attribute))
 
       // Auto-populate dimensions from weight if weight attribute is present
       let dimensionsFromWeight: {

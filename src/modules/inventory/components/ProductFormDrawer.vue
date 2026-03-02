@@ -97,6 +97,9 @@ import {
 import baseApi from "@/composables/baseApi"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
+import { htmlToMarkdown } from "@/utils/html-to-markdown"
+import { useImageConverter } from "@/composables/useImageConverter"
+import { useAuthStore } from "@modules/auth/store"
 
 // Import composables
 import { useProductFormState } from "../composables/useProductFormState"
@@ -147,6 +150,9 @@ const { mutateAsync: updateVariantImage, isPending: isUpdatingVariantImage } =
 
 // Composables
 const { form, hasVariants, variants, variantConfiguration, resetFormState } = useProductFormState()
+
+const { renameProductImage } = useImageConverter()
+const storeName = useAuthStore().user?.store_slug || "product"
 
 const { drawerPosition } = useProductDrawerUtilities()
 
@@ -231,10 +237,11 @@ const handleSubmit = async () => {
     // Format product data according to API schema
     const payload: IProductFormPayload = {
       name: form.name,
-      description: form.description,
+      description: htmlToMarkdown(form.description),
       story: form.story || "",
       category: form.category?.value as string,
       brand: form.brand || "",
+      unit: form.unit?.value || undefined,
       is_active: true,
       is_variable: hasVariants.value,
       requires_approval: form.requires_approval || false,
@@ -286,11 +293,12 @@ const handleSubmit = async () => {
 
           if (productImages.length > 0) {
             for (const { image, index } of productImages) {
+              const renamedImage = renameProductImage(image as File, storeName)
               await new Promise<void>((resolve, reject) => {
                 addProductImages(
                   {
                     product: productUid,
-                    image: image as File,
+                    image: renamedImage,
                     is_primary: index === 0,
                     sort_order: index + 1,
                   },
@@ -325,21 +333,42 @@ const handleSubmit = async () => {
               const fetchedVariants = freshProductData.data.variants
               let variantImagesUploaded = 0
 
-              // Upload variant images
-              for (let i = 0; i < fetchedVariants.length; i++) {
+              // Build a lookup map keyed by sorted attribute UIDs so variant
+              // images are matched by identity, not by array position (the API
+              // may return variants in a different order than they were sent)
+              const variantUidByAttrKey = new Map<string, string>()
+              for (const fv of fetchedVariants) {
+                if (fv.attributes?.length) {
+                  const key = fv.attributes
+                    .map((a) => `${a.attribute}:${a.value}`)
+                    .sort()
+                    .join("|")
+                  variantUidByAttrKey.set(key, fv.uid)
+                }
+              }
+
+              for (let i = 0; i < variants.value.length; i++) {
                 const variantImageIndex = 5 + i
                 const variantImage = form.images[variantImageIndex]
-                const variant = fetchedVariants[i]
 
-                if (variantImage && variantImage instanceof File && variant?.uid) {
-                  await updateVariantImage({
-                    variantUid: variant.uid,
-                    image: variantImage,
-                  })
-                  variantImagesUploaded++
-                  console.log(
-                    `Variant image ${i + 1} uploaded successfully for variant: ${variant.name}`,
-                  )
+                if (variantImage && variantImage instanceof File) {
+                  const formAttrs = variants.value[i].attributes || []
+                  const key = formAttrs
+                    .map((a) => `${a.attribute}:${a.value}`)
+                    .sort()
+                    .join("|")
+                  const matchedUid = variantUidByAttrKey.get(key)
+
+                  if (matchedUid) {
+                    await updateVariantImage({
+                      variantUid: matchedUid,
+                      image: renameProductImage(variantImage, storeName),
+                    })
+                    variantImagesUploaded++
+                    console.log(
+                      `Variant image ${i + 1} uploaded for variant: ${variants.value[i].name}`,
+                    )
+                  }
                 }
               }
 

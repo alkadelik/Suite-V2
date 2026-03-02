@@ -13,7 +13,7 @@ import { displayError } from "@/utils/error-handler"
 
 const props = defineProps<{ open: boolean; event: EventfulPopup }>()
 
-const emit = defineEmits<{ (e: "close"): void }>()
+const emit = defineEmits<{ (e: "close"): void; (e: "refresh"): void }>()
 
 // const router = useRouter()
 
@@ -64,7 +64,7 @@ const handleRegister = () => {
             title: "Event Registration",
           })
           emit("close")
-          // router.go(0)
+          emit("refresh")
           return
         }
 

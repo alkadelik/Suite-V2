@@ -12,6 +12,7 @@ export interface ISubscription {
   plan_frequency: string
   active_until: string
   is_active: boolean
+  is_cancelled: boolean
   trial_mode: boolean
   subscription_id: string
 }

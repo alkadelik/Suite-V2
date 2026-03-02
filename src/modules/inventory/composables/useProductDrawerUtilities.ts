@@ -175,7 +175,7 @@ export function useProductDrawerUtilities() {
         if (step.value === 1) {
           return `${actionVerb} the different options your product comes in (like size or colour). For example: Size → Large, Color → Red.`
         } else if (step.value === 2) {
-          return `${updateVerb} available quantity and price for each variant combination.`
+          return "These are the updated variations for this product"
         }
       }
 

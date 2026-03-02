@@ -39,6 +39,7 @@
         >
           <!-- Radio indicator -->
           <div
+            v-if="showRadio"
             :class="[
               'flex size-4 shrink-0 items-center justify-center rounded-full border',
               modelValue === option.value
@@ -51,7 +52,7 @@
 
           <!-- Radio content -->
           <slot name="content" :option="option">
-            <div class="flex flex-1 flex-col gap-2.5">
+            <div class="flex flex-1 flex-col gap-1 md:gap-2.5">
               <h6 class="text-sm font-medium text-gray-700">
                 {{ option.label }}
               </h6>
@@ -94,6 +95,7 @@ interface RadioInputFieldProps {
   orientation?: "vertical" | "horizontal"
   /** Background style for inactive options: "default" (gray-50) or "white" */
   variant?: "default" | "white"
+  showRadio?: boolean
 }
 
 const props = withDefaults(defineProps<RadioInputFieldProps>(), {
@@ -103,6 +105,7 @@ const props = withDefaults(defineProps<RadioInputFieldProps>(), {
   size: "md",
   orientation: "horizontal",
   variant: "default",
+  showRadio: true,
 })
 
 const emit = defineEmits<{

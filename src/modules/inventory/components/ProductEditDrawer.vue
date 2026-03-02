@@ -9,7 +9,7 @@
     <IconHeader icon-name="shop-add" :title="getHeaderTitle" :subtext="getHeaderText" />
 
     <!-- Loading state for fetching product -->
-    <ProductEditSkeleton v-if="isLoadingProduct || props.loading" />
+    <ProductEditSkeleton v-if="isLoadingProduct || isFetchingProduct || props.loading" />
 
     <form v-else id="product-edit-form" @submit.prevent="handleSubmit" class="min-h-full">
       <div>
@@ -30,6 +30,7 @@
           v-model="variants"
           :product-name="form.name"
           :hide-stock="true"
+          :disable-cost-price="true"
         />
 
         <!-- Images Edit Mode - Edit product images only -->
@@ -88,6 +89,7 @@
             v-model="variants"
             :product-name="form.name"
             :deleted-variants="deletedVariants"
+            :disable-cost-price="true"
           />
 
           <!-- Step 3/4: Product Images -->
@@ -188,8 +190,11 @@ import {
 import baseApi from "@/composables/baseApi"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
+import { htmlToMarkdown, markdownToHtml } from "@/utils/html-to-markdown"
 import { useQueryClient } from "@tanstack/vue-query"
 import ProductEditSkeleton from "./skeletons/ProductEditSkeleton.vue"
+import { useImageConverter } from "@/composables/useImageConverter"
+import { useAuthStore } from "@modules/auth/store"
 
 // Import composables
 import { useProductFormState } from "../composables/useProductFormState"
@@ -237,6 +242,8 @@ const emit = defineEmits<Emits>()
 
 // Query client for cache invalidation
 const queryClient = useQueryClient()
+const { renameProductImage } = useImageConverter()
+const storeName = useAuthStore().user?.store_slug || "product"
 
 // Ref to ProductDetailsForm component
 const productDetailsRef = ref<{
@@ -262,7 +269,11 @@ const { mutate: bulkUpdateVariants, isPending: isBulkUpdatingVariants } = useBul
 
 // Product fetching
 const productUidToFetch = ref<string>("")
-const { data: productData, isLoading: isLoadingProduct } = useGetProduct(
+const {
+  data: productData,
+  isLoading: isLoadingProduct,
+  isFetching: isFetchingProduct,
+} = useGetProduct(
   computed(() => productUidToFetch.value),
   { enabled: computed(() => !!productUidToFetch.value) },
 )
@@ -394,8 +405,9 @@ watch(
       // Note: Don't reset variantDetailsWithUids or form state here
       // to avoid flashing single-variant view while refetching
     } else if (!isOpen) {
-      // Drawer is closing - clear expected product UID
+      // Drawer is closing - clear state so reopening triggers a fresh fetch
       expectedProductUid.value = null
+      productUidToFetch.value = ""
     }
   },
   { immediate: true },
@@ -519,13 +531,14 @@ watch(
 
       populateFormState({
         name: product.name || "",
-        description: product.description || "",
+        description: markdownToHtml(product.description || ""),
         story: product.story || "",
         brand: product.brand || "",
         requires_approval: product.requires_approval || false,
         category: product.category
           ? { label: product.category_name || "", value: product.category || "" }
           : null,
+        unit: product.unit ? { label: product.unit, value: product.unit } : null,
         images: [...productImages, ...variantImages],
         hasVariants: product.is_variable || false,
         variants:
@@ -679,10 +692,11 @@ const handleSubmit = async () => {
   if (props.editMode === "product-details") {
     const payload: IProductDetailsUpdatePayload = {
       name: form.name,
-      description: form.description,
+      description: htmlToMarkdown(form.description),
       story: form.story || "",
       category: form.category?.value as string,
       brand: form.brand || "",
+      unit: form.unit?.value || undefined,
       is_active: true,
       is_variable: hasVariants.value,
       requires_approval: form.requires_approval || false,
@@ -856,11 +870,12 @@ const handleSubmit = async () => {
 
       if (newImages.length > 0) {
         for (const { image, index } of newImages) {
+          const renamedImage = renameProductImage(image as File, storeName)
           await new Promise<void>((resolve, reject) => {
             addProductImages(
               {
                 product: productUid,
-                image: image as File,
+                image: renamedImage,
                 is_primary: index === 0,
                 sort_order: index + 1,
               },
@@ -886,7 +901,7 @@ const handleSubmit = async () => {
           if (variantImage && variantImage instanceof File && variant?.uid) {
             await updateVariantImage({
               variantUid: variant.uid,
-              image: variantImage,
+              image: renameProductImage(variantImage, storeName),
             })
             variantImagesUploaded.push(i)
           }
@@ -1061,7 +1076,7 @@ const handleSubmit = async () => {
     // Handle Full Edit Mode (original logic)
     const payload: IProductFormPayload = {
       name: form.name,
-      description: form.description,
+      description: htmlToMarkdown(form.description),
       story: form.story || "",
       category: form.category?.value as string,
       brand: form.brand || "",
@@ -1118,11 +1133,12 @@ const handleSubmit = async () => {
 
             if (productImages.length > 0) {
               for (const { image, index } of productImages) {
+                const renamedImage = renameProductImage(image as File, storeName)
                 await new Promise<void>((resolve, reject) => {
                   addProductImages(
                     {
                       product: productUid,
-                      image: image as File,
+                      image: renamedImage,
                       is_primary: index === 0,
                       sort_order: index + 1,
                     },
@@ -1159,7 +1175,7 @@ const handleSubmit = async () => {
                   if (variantImage && variantImage instanceof File && variant?.uid) {
                     await updateVariantImage({
                       variantUid: variant.uid,
-                      image: variantImage,
+                      image: renameProductImage(variantImage, storeName),
                     })
                     variantImagesUploaded++
                   }
@@ -1248,6 +1264,11 @@ const handleBack = () => {
     (isVariantsMode && step.value === 2) || (step.value === 3 && hasVariants.value)
 
   if (isCombinationsStep) {
+    // Restore deleted variants back into variants array so they can be
+    // re-detected when generateVariantCombinations() runs on next forward navigation
+    if (deletedVariants.value.length > 0) {
+      variants.value.push(...deletedVariants.value)
+    }
     deletedVariants.value = []
   }
 

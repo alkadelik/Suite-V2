@@ -29,7 +29,7 @@
           label="Edit Details"
           @click="
             $router.push(
-              `/onboarding?shipbubble=true&edit=true&redirect=${encodeURIComponent(route.path)}`,
+              `/onboarding?shipbubble=true&mode=edit&redirect=${encodeURIComponent(route.path)}`,
             )
           "
         />
@@ -47,7 +47,7 @@
           label="Edit Couriers"
           @click="
             $router.push(
-              `/onboarding?shipbubble=true&edit=true&step=2&redirect=${encodeURIComponent(route.path)}`,
+              `/onboarding?shipbubble=true&step=2&mode=edit&redirect=${encodeURIComponent(route.path)}`,
             )
           "
         />

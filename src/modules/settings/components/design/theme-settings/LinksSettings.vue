@@ -14,11 +14,12 @@
         />
 
         <FormField
-          v-model="sizeChartLink"
-          type="url"
-          name="size_chart_link"
-          label="Size Chart Link (if applicable)"
-          placeholder="https://example.com/size-chart"
+          v-model="sizeChartModel"
+          type="file"
+          name="size_chart"
+          accept="image/*"
+          :show-preview="true"
+          label="Size Chart Image (if applicable)"
         />
 
         <div>
@@ -27,12 +28,10 @@
             <div class="flex flex-col gap-2">
               <p class="text-core-800 text-sm">Instagram</p>
               <div class="flex items-center gap-3">
-                <div class="flex h-10 w-10 items-center justify-center">
-                  <img
-                    src="/images/footer-instagram.png"
-                    alt="Instagram"
-                    class="aspect-square h-full object-contain"
-                  />
+                <div
+                  class="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-600 text-white"
+                >
+                  <Icon name="instagram" size="24" />
                 </div>
                 <div class="flex-1">
                   <FormField
@@ -49,12 +48,10 @@
             <div class="flex flex-col gap-2">
               <p class="text-core-800 text-sm">Facebook</p>
               <div class="flex items-center gap-3">
-                <div class="flex h-10 w-10 items-center justify-center">
-                  <img
-                    src="/images/footer-facebook.png"
-                    alt="Facebook"
-                    class="aspect-square h-full object-contain"
-                  />
+                <div
+                  class="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-600 text-white"
+                >
+                  <Icon name="facebook" size="24" />
                 </div>
                 <div class="flex-1">
                   <FormField
@@ -71,12 +68,10 @@
             <div class="flex flex-col gap-2">
               <p class="text-core-800 text-sm">Twitter</p>
               <div class="flex items-center gap-3">
-                <div class="flex h-10 w-10 items-center justify-center">
-                  <img
-                    src="/images/footer-instagram.png"
-                    alt="Twitter"
-                    class="aspect-square h-full object-contain"
-                  />
+                <div
+                  class="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-600 text-white"
+                >
+                  <Icon name="twitter" size="24" />
                 </div>
                 <div class="flex-1">
                   <FormField
@@ -93,12 +88,10 @@
             <div class="flex flex-col gap-2">
               <p class="text-core-800 text-sm">Tiktok</p>
               <div class="flex items-center gap-3">
-                <div class="flex h-10 w-10 items-center justify-center">
-                  <img
-                    src="/images/footer-instagram.png"
-                    alt="Tiktok"
-                    class="aspect-square h-full object-contain"
-                  />
+                <div
+                  class="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-600 text-white"
+                >
+                  <Icon name="tiktok" size="24" />
                 </div>
                 <div class="flex-1">
                   <FormField
@@ -122,6 +115,7 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import FormField from "@components/form/FormField.vue"
+import Icon from "@components/Icon.vue"
 
 const props = defineProps<{
   termsLink: string
@@ -129,7 +123,7 @@ const props = defineProps<{
   facebookLink: string
   twitterLink: string
   tiktokLink: string
-  sizeChartLink: string
+  sizeChart: File | string | null
 }>()
 
 const emit = defineEmits<{
@@ -138,7 +132,7 @@ const emit = defineEmits<{
   "update:facebookLink": [value: string]
   "update:twitterLink": [value: string]
   "update:tiktokLink": [value: string]
-  "update:sizeChartLink": [value: string]
+  "update:sizeChart": [value: File | string | null]
 }>()
 
 const termsLinkModel = computed({
@@ -146,9 +140,9 @@ const termsLinkModel = computed({
   set: (value) => emit("update:termsLink", value),
 })
 
-const sizeChartLink = computed({
-  get: () => props.sizeChartLink,
-  set: (value) => emit("update:sizeChartLink", value),
+const sizeChartModel = computed({
+  get: () => props.sizeChart,
+  set: (value) => emit("update:sizeChart", value),
 })
 
 const instagramLinkModel = computed({

@@ -31,9 +31,11 @@ export type TProduct = {
   uid: string
   name: string
   total_stock: number
+  sellable_stock: number
   needs_reorder: boolean
   variants_count: number
   is_active: boolean
+  is_hidden_from_storefront: boolean
   category: string | null
   created_at: string
   primary_image: IProductImage | null
@@ -54,7 +56,9 @@ export interface IProductDetails {
   category: string
   category_name: string
   brand: string
+  unit: string
   is_active: boolean
+  is_hidden_from_storefront: boolean
   is_variable: boolean
   requires_approval: boolean
   variants: IProductVariantDetails[]
@@ -130,6 +134,7 @@ export interface IProductCategory {
   is_active: boolean
   created_at: string
   updated_at: string
+  image?: string | null
 }
 
 // Product attribute definition
@@ -322,7 +327,9 @@ export interface IProductFormPayload {
   story: string
   category: string
   brand: string
+  unit?: string
   is_active: boolean
+  is_hidden_from_storefront?: boolean
   is_variable: boolean
   requires_approval: boolean
   variants: IProductVariant[]
@@ -335,6 +342,7 @@ export interface IProductDetailsUpdatePayload {
   story: string
   category: string
   brand: string
+  unit?: string
   is_active: boolean
   is_variable: boolean
   requires_approval: boolean
@@ -513,25 +521,6 @@ export interface IProductMetrics {
   low_stock_products: number
   total_value: number
   categories_count: number
-}
-
-// Dashboard stats
-export interface IProductStats {
-  today: {
-    products_added: number
-    products_sold: number
-    revenue: number
-  }
-  week: {
-    products_added: number
-    products_sold: number
-    revenue: number
-  }
-  month: {
-    products_added: number
-    products_sold: number
-    revenue: number
-  }
 }
 
 interface ProductVariantAttribute {

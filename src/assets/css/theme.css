@@ -11,6 +11,13 @@
   --font-quattrocento: "Quattrocento", serif;
   --font-yeseva: "Yeseva One", serif;
   --font-quicksand: "Quicksand", sans-serif;
+  --font-inter: "Inter", sans-serif;
+  --font-open-sans: "Open Sans", sans-serif;
+  --font-lato: "Lato", sans-serif;
+  --font-source-sans: "Source Sans 3", sans-serif;
+  --font-nunito: "Nunito", sans-serif;
+  --font-quattrocento-sans: "Quattrocento Sans", sans-serif;
+  --font-josefin-sans: "Josefin Sans", sans-serif;
   --font-sans: var(--font-outfit);
   --font-serif: var(--font-sato);
 

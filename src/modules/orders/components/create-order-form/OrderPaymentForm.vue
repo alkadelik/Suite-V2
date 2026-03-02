@@ -22,6 +22,7 @@ const props = defineProps<{
   vatAmount: number
   totalAmount: number
   itemsCount: number
+  isFreeShipping: boolean
 }>()
 
 const emit = defineEmits<{
@@ -135,10 +136,15 @@ const isMobile = useMediaQuery("(max-width: 768px)")
           <span class="font-medium">{{ formatCurrency(productsTotal, { kobo: true }) }}</span>
         </p>
         <p class="flex justify-between text-sm">
-          <span class="text-core-600">Delivery Fee</span>
-          <span class="font-medium">{{
-            deliveryFee > 0 ? formatCurrency(deliveryFee, { kobo: true }) : "-"
-          }}</span>
+          <span class="text-core-600"
+            >Delivery Fee
+            <span v-if="isFreeShipping" class="text-primary-600 text-xs"
+              >(Free Shipping)</span
+            ></span
+          >
+          <span class="font-medium" :class="{ 'font-normal! line-through': isFreeShipping }">
+            {{ deliveryFee > 0 ? formatCurrency(deliveryFee, { kobo: true }) : "-" }}
+          </span>
         </p>
         <p v-if="vatAmount > 0" class="flex justify-between text-sm">
           <span class="text-core-600">VAT (7.5%)</span>
@@ -154,10 +160,16 @@ const isMobile = useMediaQuery("(max-width: 768px)")
           >
         </p>
         <div class="border-core-200 my-2 border-t border-dashed"></div>
-        <p class="flex justify-between text-lg font-semibold">
+        <div class="flex justify-between text-lg font-semibold">
           <span>Total:</span>
-          <span class="text-primary-600">{{ formatCurrency(totalAmount, { kobo: true }) }}</span>
-        </p>
+          <div class="text-right">
+            <span class="text-primary-600">{{ formatCurrency(totalAmount, { kobo: true }) }}</span>
+            <br />
+            <span class="text-core-600 text-sm font-normal line-through" v-if="isFreeShipping">
+              {{ formatCurrency(totalAmount + deliveryFee, { kobo: true }) }}
+            </span>
+          </div>
+        </div>
       </div>
 
       <div class="rounded-xl bg-white p-4">

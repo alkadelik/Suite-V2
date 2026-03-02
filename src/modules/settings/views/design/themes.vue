@@ -14,9 +14,9 @@ import { ref, inject } from "vue"
 const { data: themes, refetch, isPending: isLoading } = useGetStoreThemes()
 const { mutate: updateActiveTheme, isPending } = useUpdateActiveTheme()
 
-const openPreview = (themeName: string) => {
-  window.open(`/${themeName.toLowerCase()}`, "_blank")
-}
+// const openPreview = (themeName: string) => {
+//   window.open(`/${themeName.toLowerCase()}`, "_blank")
+// }
 
 const selectedTheme = ref<IStoreTheme | null>(null)
 
@@ -32,12 +32,20 @@ const onUpdateTheme = () => {
   if (!selectedTheme.value) return
   updateActiveTheme(selectedTheme.value.uid, {
     onSuccess: () => {
-      toast.success(`${selectedTheme.value?.name} theme applied successfully.`)
+      toast.success(`${selectedTheme.value?.name?.toUpperCase()} theme applied successfully.`)
       refetch()
       openConfirm.value = false
     },
     onError: displayError,
   })
+}
+
+const THEME_IMAGES: Record<string, string> = {
+  dawn: "/images/themes/dawn.png",
+  grace: "/images/themes/grace.png",
+  heritage: "/images/themes/heritage.png",
+  ember: "/images/themes/ember.png",
+  bloom: "/images/themes/bloom.png",
 }
 </script>
 
@@ -46,7 +54,7 @@ const onUpdateTheme = () => {
   <section v-else>
     <div class="mb-4 flex items-center gap-6 border-b border-gray-200 pb-4">
       <SectionHeader
-        class="flex-1"
+        class="flex-1 !pt-0"
         title="Themes"
         size="sm"
         subtitle="Pick a theme that reflects your brand. You can always change it later."
@@ -81,7 +89,7 @@ const onUpdateTheme = () => {
       >
         <div class="relative h-60 rounded-xl">
           <img
-            :src="theme.preview_image"
+            :src="THEME_IMAGES[theme.name.toLowerCase()] || theme.preview_image"
             class="h-full w-full rounded-t-xl bg-gray-100 object-cover"
           />
           <Icon
@@ -101,7 +109,7 @@ const onUpdateTheme = () => {
           </p>
 
           <div class="mt-4 flex justify-end gap-3">
-            <AppButton color="alt" label="Preview" @click="openPreview(theme.name)" />
+            <!-- <AppButton color="alt" label="Preview" @click="openPreview(theme.name)" /> -->
             <AppButton label="Apply" :disabled="theme.in_use" @click="openApply(theme)" />
           </div>
         </div>

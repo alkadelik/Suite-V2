@@ -10,7 +10,7 @@
           !image && !isSlotDisabled(index),
         'cursor-not-allowed border-gray-200 bg-gray-50': !image && isSlotDisabled(index),
       }"
-      @click="!isSlotDisabled(index) && triggerFileInput(index)"
+      @click="!isSlotDisabled(index) && !processingSlots.has(index) && triggerFileInput(index)"
     >
       <!-- File input (hidden) -->
       <input
@@ -49,6 +49,17 @@
           >
             <Icon name="close-circle-filled" size="24" class="text-primary-800 fill-white" />
           </button>
+        </div>
+
+        <!-- Processing indicator -->
+        <div
+          v-else-if="processingSlots.has(index)"
+          class="flex flex-col items-center justify-center gap-1"
+        >
+          <div
+            class="border-primary-400 h-6 w-6 animate-spin rounded-full border-2 border-t-transparent"
+          />
+          <span class="text-core-600 text-[10px]">Processing...</span>
         </div>
 
         <!-- Placeholder content -->
@@ -165,6 +176,9 @@ const images = reactive<(File | string | null)[]>(
   Array.from({ length: props.numberOfImages }, (_, i) => props.modelValue[i] || null),
 )
 
+// Track which slots are currently processing
+const processingSlots = reactive<Set<number>>(new Set())
+
 // Refs for file inputs
 const fileInputRefs = ref<(HTMLInputElement | null)[]>([])
 
@@ -262,15 +276,18 @@ const handleFileSelect = async (event: Event, startIndex: number) => {
 
         // Convert and compress in product image mode
         if (props.productImageMode) {
+          processingSlots.add(targetIndex)
           try {
             processedFile = await convertAndCompressImage(file)
           } catch (error) {
             console.error("Failed to process image:", error)
             const errorMessage = error instanceof Error ? error.message : "Failed to process image"
             toast.error(errorMessage)
+            processingSlots.delete(targetIndex)
             // Skip this file on error
             continue
           }
+          processingSlots.delete(targetIndex)
         }
 
         images[targetIndex] = processedFile
@@ -290,30 +307,41 @@ const makePrimary = (index: number) => {
   emit("make-primary", index)
 }
 
-const removeImage = (index: number) => {
-  const currentImage = images[index]
-  if (currentImage && currentImage instanceof File) {
-    // Only revoke object URLs for File objects
-    URL.revokeObjectURL(getImageUrl(currentImage))
-  }
-  images[index] = null
-}
+// Cache object URLs per File instance to avoid creating new ones on every render
+// and to ensure we revoke the correct URL when cleaning up
+const objectUrlCache = new WeakMap<File, string>()
 
 const getImageUrl = (file: File | string): string => {
-  // If it's a string (URL), return it directly
   if (typeof file === "string") {
     return file
   }
-  // If it's a File object, create an object URL
-  return URL.createObjectURL(file)
+  if (!objectUrlCache.has(file)) {
+    objectUrlCache.set(file, URL.createObjectURL(file))
+  }
+  return objectUrlCache.get(file)!
+}
+
+const revokeImageUrl = (file: File) => {
+  const url = objectUrlCache.get(file)
+  if (url) {
+    URL.revokeObjectURL(url)
+    objectUrlCache.delete(file)
+  }
+}
+
+const removeImage = (index: number) => {
+  const currentImage = images[index]
+  if (currentImage && currentImage instanceof File) {
+    revokeImageUrl(currentImage)
+  }
+  images[index] = null
 }
 
 // Cleanup object URLs when component is unmounted
 const cleanup = () => {
   images.forEach((image) => {
     if (image && image instanceof File) {
-      // Only revoke object URLs for File objects
-      URL.revokeObjectURL(getImageUrl(image))
+      revokeImageUrl(image)
     }
   })
 }

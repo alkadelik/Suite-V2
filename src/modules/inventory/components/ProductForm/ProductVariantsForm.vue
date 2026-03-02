@@ -80,7 +80,7 @@ import SelectField from "@components/form/SelectField.vue"
 import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
 import { computed, ref } from "vue"
-import { PRODUCT_ATTRIBUTES, WEIGHT_ATTRIBUTE_UID } from "@modules/inventory/constants"
+import { PRODUCT_ATTRIBUTES, isWeightAttributeUid } from "@modules/inventory/constants"
 import { useTextTransform } from "@/composables/useTextTransform"
 
 // Composables
@@ -92,7 +92,7 @@ const { handleCapitalizedInput } = useTextTransform()
 const isWeightAttribute = (index: number): boolean => {
   if (!variants.value) return false
   const variantValue = getVariantValue(index)
-  return variantValue === WEIGHT_ATTRIBUTE_UID
+  return isWeightAttributeUid(variantValue)
 }
 
 // Use v-model to get variants data from parent

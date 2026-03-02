@@ -34,6 +34,7 @@ import ExpenseStackedBarChart from "../components/ExpenseStackedBarChart.vue"
 const openCreate = ref(false)
 const openDelete = ref(false)
 const openVoid = ref(false)
+const openMarkPaid = ref(false)
 const openDetail = ref(false)
 const selectedExpense = ref<TExpense | null>(null)
 
@@ -121,6 +122,21 @@ const getActionItems = (item: TExpense) => [
         },
         { divider: true },
       ]),
+  ...(item.status !== "paid"
+    ? [
+        {
+          label: "Mark as paid",
+          icon: "tick-circle",
+          class: "text-green-600 hover:bg-green-50",
+          iconClass: "text-green-600",
+          action: () => {
+            openMarkPaid.value = true
+            selectedExpense.value = item
+          },
+        },
+        { divider: true },
+      ]
+    : []),
   {
     label: "Void expense",
     icon: "close-circle",
@@ -149,6 +165,25 @@ const getActionItems = (item: TExpense) => [
 
 const { mutate: deleteExpense, isPending: isDeleting } = useDeleteExpense()
 const { mutate: voidExpense, isPending: isVoiding } = useEditExpense()
+const { mutate: markAsPaidExpense, isPending: isMarkingPaid } = useEditExpense()
+
+const handleMarkAsPaid = () => {
+  markAsPaidExpense(
+    {
+      id: selectedExpense.value?.uid || "",
+      payload: { status: "paid" },
+    },
+    {
+      onSuccess: () => {
+        toast.success("Expense marked as paid successfully")
+        openMarkPaid.value = false
+        selectedExpense.value = null
+        handleRefresh()
+      },
+      onError: displayError,
+    },
+  )
+}
 
 const handleDelete = () => {
   deleteExpense(selectedExpense.value?.uid || "", {
@@ -371,6 +406,12 @@ watch(
                 @delete="() => (openDelete = true)"
                 @void="() => (openVoid = true)"
                 @edit="() => (openCreate = true)"
+                @mark-paid="
+                  () => {
+                    selectedExpense = item
+                    openMarkPaid = true
+                  }
+                "
               />
             </template>
             <template #cell:actions="{ item }">
@@ -424,6 +465,28 @@ watch(
           <template v-else>
             Are you sure you want to void this expense? This will mark the expense as voided.
           </template>
+        </p>
+        <ExpenseCard
+          v-if="selectedExpense"
+          :expense="selectedExpense"
+          class="bg-core-25! rounded-2xl px-3"
+          :show-actions="false"
+        />
+      </template>
+    </ConfirmationModal>
+
+    <ConfirmationModal
+      v-model="openMarkPaid"
+      :loading="isMarkingPaid"
+      header="Mark Expense as Paid"
+      action-label="Mark as Paid"
+      variant="success"
+      @confirm="handleMarkAsPaid"
+    >
+      <template #paragraph>
+        <p class="mb-4 text-sm text-gray-600">
+          Are you sure you want to mark this expense as paid? This will update the expense status to
+          paid.
         </p>
         <ExpenseCard
           v-if="selectedExpense"

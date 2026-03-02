@@ -66,7 +66,13 @@
         @toggle="expandedGroup = expandedGroup === 'sales-suite' ? null : 'sales-suite'"
       />
 
-      <!-- <SidebarGroup icon="trend-up" label="Marketing" :children="[]" /> -->
+      <SidebarGroup
+        icon="trend-up"
+        label="Marketing"
+        :children="marketingItems"
+        :is-expanded="expandedGroup === 'marketing'"
+        @toggle="expandedGroup = expandedGroup === 'marketing' ? null : 'marketing'"
+      />
 
       <SidebarGroup
         v-if="isStaging"
@@ -75,6 +81,15 @@
         :children="productionItems"
         :is-expanded="expandedGroup === 'production'"
         @toggle="expandedGroup = expandedGroup === 'production' ? null : 'production'"
+      />
+
+      <SidebarGroup
+        v-if="isStaging"
+        icon="chart-breakout-square"
+        label="Reports"
+        :children="reportsItems"
+        :is-expanded="expandedGroup === 'reports'"
+        @toggle="expandedGroup = expandedGroup === 'reports' ? null : 'reports'"
       />
 
       <SidebarLink icon="receipt-text" label="Expenses" to="/expenses" />
@@ -219,6 +234,9 @@ const salesSuiteItems = computed(() =>
   }),
 )
 
+// Marketing items
+const marketingItems = computed(() => [{ icon: "sms", label: "Email List", to: "/email-list" }])
+
 // Production items
 const productionItems = computed(() => {
   const componentLabel = useProductionStore().componentLabel || "Raw Materials"
@@ -227,6 +245,12 @@ const productionItems = computed(() => {
     // Add production-related items here when needed
   ]
 })
+
+// reports items
+const reportsItems = computed(() => [
+  { icon: "pie-chart", label: "End of Day", to: "/reports/end-of-day" },
+  { icon: "pie-chart", label: "Monthly", to: "/reports/monthly" },
+])
 
 const storeDetails = computed(() => useSettingsStore().storeDetails)
 

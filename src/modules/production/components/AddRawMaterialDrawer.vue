@@ -36,29 +36,20 @@ const showAddSupplier = ref(false)
 const newSupplierName = ref("")
 
 // unit management
-const showAddUnit = ref(false)
+const showAddUnit = ref<"purchase" | "production" | null>(null)
 const newUnitName = ref("")
+
 const createNewUnit = () => {
-  if (!newUnitName.value.trim()) {
-    toast.error("Please enter a unit name")
-    return
-  }
-
-  // Create the new unit object
-  const newUnit = {
-    label: newUnitName.value.trim(),
-    value: newUnitName.value.trim().toLowerCase().replace(/\s+/g, "_"),
-  }
-
-  // Add the new unit to the unitOptions array
+  const unit = newUnitName.value.trim()
+  const newUnit = { label: unit, value: unit.toLowerCase().replace(/\s+/g, "_") }
+  // Add the new unit to the unitOptions & set as selected value
   unitOptions.value.push(newUnit)
-
-  // Set the newly created unit as selected
-  setFieldValue("unit", newUnit)
-
-  // Show success message and close modal
-  toast.success(`Unit "${newUnitName.value.trim()}" added successfully!`)
-  showAddUnit.value = false
+  if (showAddUnit.value === "purchase") {
+    setFieldValue("unit", newUnit)
+  } else if (showAddUnit.value === "production") {
+    setFieldValue("production_unit", newUnit)
+  }
+  showAddUnit.value = null
   newUnitName.value = ""
 }
 
@@ -95,17 +86,21 @@ const sourceOptions = [
 
 interface FormValues {
   name: string
-  unit: { label: string; value: string }
+  unit: null | { label: string; value: string }
+  production_unit: { label: string; value: string } | null
   qty_in_stock: string
   default_cost: string
-  source: { label: string; value: string }
+  source: null | { label: string; value: string }
   suppliers: { label: string; value: string }[]
   expiry_date?: string
   reorder_threshold?: string
   notes?: string
+  conversion_from_qty: string
+  conversion_to_qty: string
+  conversion_name: string
 }
 
-const { handleSubmit, meta, resetForm, values, setFieldValue } = useForm<FormValues>({
+const { handleSubmit, resetForm, values, setFieldValue } = useForm<FormValues>({
   validationSchema: computed(() =>
     yup.object({
       name: yup
@@ -149,18 +144,26 @@ const { handleSubmit, meta, resetForm, values, setFieldValue } = useForm<FormVal
       expiry_date: yup.string().optional(),
       reorder_threshold: yup.string().optional(),
       notes: yup.string().optional(),
+      production_unit: yup.object().nullable().optional(),
+      conversion_from_qty: yup.string().optional(),
+      conversion_to_qty: yup.string().optional(),
+      conversion_name: yup.string().optional(),
     }),
   ),
   initialValues: {
     name: "",
-    unit: { label: "", value: "" },
+    unit: null,
+    production_unit: null,
     qty_in_stock: "",
     default_cost: "",
-    source: { label: "", value: "" },
+    source: null,
     suppliers: [],
     expiry_date: "",
     reorder_threshold: "",
     notes: "",
+    conversion_from_qty: "1",
+    conversion_to_qty: "",
+    conversion_name: "",
   },
   validateOnMount: false,
 })
@@ -197,18 +200,41 @@ const createNewSupplier = () => {
   )
 }
 
+const buildConversion = (values: FormValues) => {
+  const fromUnit = values.unit?.value
+  const toUnit = values.production_unit?.value
+  const fromQty = values.conversion_from_qty
+  const toQty = values.conversion_to_qty
+
+  if (!fromUnit || !toUnit || !fromQty || !toQty) return undefined
+
+  const rate = (Number(toQty) / Number(fromQty)).toString()
+  const name = values.conversion_name || `${fromUnit} to ${toUnit}`
+
+  return {
+    from_unit: fromUnit,
+    to_unit: toUnit,
+    rate,
+    name,
+    is_active: true,
+  }
+}
+
 const onSubmit = handleSubmit((values) => {
+  const conversion = buildConversion(values)
+
   const payload = {
     name: values.name,
-    unit: values.unit.value,
+    unit: values.unit?.value || "",
     default_cost: values.default_cost,
     qty_in_stock: values.qty_in_stock,
-    is_sub_assembly: values.source.value === "manufacture",
-    ...(values.source.value === "supplier" ? { default_cost: values.default_cost } : {}),
+    is_sub_assembly: values.source?.value === "manufacture",
+    ...(values.source?.value === "supplier" ? { default_cost: values.default_cost } : {}),
     ...(values.suppliers.length ? { suppliers: values.suppliers.map((x) => x.value) } : {}),
     ...(values.expiry_date ? { expiry_date: values.expiry_date } : {}),
     ...(values.reorder_threshold ? { reorder_threshold: values.reorder_threshold } : {}),
     ...(values.notes ? { notes: values.notes } : {}),
+    ...(conversion ? { conversion } : {}),
   }
 
   const onSuccess = () => {
@@ -233,19 +259,24 @@ watch(
       activeStep.value = 0
       if (isEditMode.value && props.material) {
         // Populate form with material data
-        const sourceOption =
-          sourceOptions.find((opt) => opt.value === props.material?.category) || sourceOptions[0]
-
         resetForm({
           values: {
             name: props.material.name,
             unit: { label: props.material.unit, value: props.material.unit },
-            qty_in_stock: props.material.stock.toString(),
-            source: sourceOption,
-            suppliers: [], // This would need to come from API if available
-            expiry_date: props.material.expiration_date || "",
+            production_unit: null,
+            qty_in_stock: props.material.current_stock.toString(),
+            source: props.material.is_sub_assembly ? sourceOptions[1] : sourceOptions[0],
+            default_cost: props.material.avg_cost.toString(),
+            suppliers: props.material.suppliers?.map((supplier) => ({
+              label: supplier.name,
+              value: supplier.uid,
+            })),
+            expiry_date: "",
             reorder_threshold: "",
             notes: "",
+            conversion_from_qty: "1",
+            conversion_to_qty: "",
+            conversion_name: "",
           },
         })
       } else {
@@ -264,6 +295,13 @@ const canProceedToStep2 = computed(() => {
       values.source?.value === "manufacture")
   )
 })
+
+const canComplete = computed(
+  () =>
+    canProceedToStep2.value &&
+    ((values.source?.value === "supplier" && values.suppliers.length > 0) ||
+      values.source?.value === "manufacture"),
+)
 
 const goToNextStep = () => {
   activeStep.value = activeStep.value + 1
@@ -305,35 +343,116 @@ const goToPrevStep = () => {
               required
             />
 
-            <div>
-              <!-- Add custom -- add unit -->
-              <FormField
-                type="select"
-                name="unit"
-                label="Unit of Measurement"
-                placeholder="e.g. kg"
-                required
-                :options="unitOptions"
-                :searchable="true"
-              >
-                <template #prepend="{ close }">
-                  <div
-                    class="hover:bg-core-25 cursor-pointer border-b border-gray-200 px-4 py-2 text-sm transition-colors duration-150"
-                    @click="
-                      () => {
-                        close()
-                        showAddUnit = true
-                      }
-                    "
+            <section class="border-core-300 space-y-4 border-y border-dashed py-3">
+              <div>
+                <Field v-slot="{ field, errors: fieldErrors }" name="unit">
+                  <SelectField
+                    v-bind="field"
+                    :model-value="field.value"
+                    label="Purchase Unit"
+                    placeholder="Select unit"
+                    :options="unitOptions"
+                    searchable
+                    required
+                    :error="fieldErrors[0]"
+                    @update:model-value="field.value = $event"
                   >
-                    <div class="flex items-center justify-between">
-                      <span class="text-primary-600 font-semibold">Add New Unit</span>
-                      <Icon name="add" class="text-primary-600 h-4 w-4" />
-                    </div>
+                    <template #prepend="{ close }">
+                      <div
+                        class="hover:bg-core-25 cursor-pointer border-b border-gray-200 px-4 py-2 text-sm transition-colors duration-150"
+                        @click="
+                          () => {
+                            close()
+                            showAddUnit = 'purchase'
+                          }
+                        "
+                      >
+                        <div class="flex items-center justify-between">
+                          <span class="text-primary-600 font-semibold">Add New Unit</span>
+                          <Icon name="add" class="text-primary-600 h-4 w-4" />
+                        </div>
+                      </div>
+                    </template>
+                  </SelectField>
+                </Field>
+              </div>
+
+              <div>
+                <!-- <FormField
+                  type="select"
+                  name="production_unit"
+                  label="Production Unit"
+                  :options="unitOptions"
+                /> -->
+
+                <Field v-slot="{ field, errors: fieldErrors }" name="production_unit">
+                  <SelectField
+                    v-bind="field"
+                    :model-value="field.value"
+                    label="Production Unit"
+                    placeholder="Select unit"
+                    :options="unitOptions"
+                    searchable
+                    required
+                    :error="fieldErrors[0]"
+                    @update:model-value="field.value = $event"
+                  >
+                    <template #prepend="{ close }">
+                      <div
+                        class="hover:bg-core-25 cursor-pointer border-b border-gray-200 px-4 py-2 text-sm transition-colors duration-150"
+                        @click="
+                          () => {
+                            close()
+                            showAddUnit = 'production'
+                          }
+                        "
+                      >
+                        <div class="flex items-center justify-between">
+                          <span class="text-primary-600 font-semibold">Add New Unit</span>
+                          <Icon name="add" class="text-primary-600 h-4 w-4" />
+                        </div>
+                      </div>
+                    </template>
+                  </SelectField>
+                </Field>
+              </div>
+
+              <div
+                v-if="values.unit?.value && values.production_unit?.value"
+                class="rounded-md bg-gray-200 p-4"
+              >
+                <p class="mb-3 flex items-center gap-1 text-sm font-medium">
+                  Conversion Rate <Icon name="information" />
+                </p>
+                <div class="flex items-end gap-2">
+                  <div class="min-w-0 flex-1">
+                    <FormField
+                      name="conversion_from_qty"
+                      type="number"
+                      label="From Unit Qty"
+                      :suffix="values.unit.label"
+                      placeholder="e.g. 1"
+                      readonly
+                    />
                   </div>
-                </template>
-              </FormField>
-            </div>
+                  <AppButton
+                    icon="arrow-2"
+                    variant="outlined"
+                    size="sm"
+                    class="mb-1 flex-shrink-0"
+                  />
+                  <div class="min-w-0 flex-1">
+                    <FormField
+                      name="conversion_to_qty"
+                      type="number"
+                      label="To Unit Qty"
+                      :suffix="values.production_unit.label"
+                      placeholder="e.g. 12"
+                    />
+                  </div>
+                </div>
+              </div>
+            </section>
 
             <div>
               <FormField
@@ -358,7 +477,7 @@ const goToPrevStep = () => {
             />
 
             <div
-              v-if="values.source.value === 'manufacture'"
+              v-if="values.source?.value === 'manufacture'"
               class="bg-primary-25 text-warning-700 border-warning-300 flex items-center gap-3 rounded-xl border px-3 py-3 md:px-6"
             >
               <span
@@ -395,7 +514,7 @@ const goToPrevStep = () => {
 
           <div class="mt-6 space-y-4">
             <!-- Select suppliers with option to create -->
-            <div v-if="values.source.value === 'supplier'">
+            <div v-if="values.source?.value === 'supplier'">
               <Field v-slot="{ field, errors: fieldErrors }" name="suppliers">
                 <SelectField
                   v-bind="field"
@@ -408,6 +527,7 @@ const goToPrevStep = () => {
                   searchable
                   multiple
                   required
+                  placement="bottom"
                   :error="fieldErrors[0]"
                   @update:model-value="field.value = $event"
                 >
@@ -470,7 +590,8 @@ const goToPrevStep = () => {
           type="submit"
           class="flex-1"
           :loading="isPending"
-          :inactive="!meta.valid"
+          :disabled="!canComplete"
+          :inactive="!canComplete"
           @click="onSubmit"
         />
       </div>
@@ -530,7 +651,7 @@ const goToPrevStep = () => {
     </Modal>
 
     <!-- Create new Unit Modal -->
-    <Modal :open="showAddUnit" title="Add New Unit" max-width="md" @close="showAddUnit = false">
+    <Modal :open="!!showAddUnit" title="Add New Unit" max-width="md" @close="showAddUnit = null">
       <div class="space-y-4">
         <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
           <Icon name="profile-add" size="28" />
@@ -542,12 +663,7 @@ const goToPrevStep = () => {
 
       <template #footer>
         <div class="flex gap-3">
-          <AppButton
-            label="Cancel"
-            variant="outlined"
-            class="flex-1"
-            @click="showAddUnit = false"
-          />
+          <AppButton label="Cancel" variant="outlined" class="flex-1" @click="showAddUnit = null" />
           <AppButton
             label="Add Unit"
             class="flex-1"

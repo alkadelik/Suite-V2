@@ -85,10 +85,13 @@ export function useGetEventfulPopupById(id: string) {
   })
 }
 
-export function useGetPopupInventory(popupId: string, search?: string) {
+export function useGetPopupInventory(popupId: string, search?: MaybeRefOrGetter<string>) {
   return useApiQuery<PopupInventory[]>({
     url: `/popup-events/inventory/event/${popupId}`,
-    params: search ? { search } : undefined,
+    params: computed(() => {
+      const s = toValue(search)
+      return s ? { search: s } : undefined
+    }),
     key: `popup-inventory-${popupId}`,
     selectData: true,
   })

@@ -133,6 +133,8 @@ const chipClasses = computed(() => {
       blue: "bg-blue-600 text-white",
       purple: "bg-purple-600 text-white",
       pink: "bg-pink-600 text-white",
+      indigo: "bg-indigo-600 text-white",
+      cancelled: "bg-gray-600 text-white",
     },
     outlined: {
       primary: "bg-primary-50 text-primary-700 border border-primary-200",
@@ -143,6 +145,8 @@ const chipClasses = computed(() => {
       blue: "bg-blue-50 text-blue-700 border border-blue-200",
       purple: "bg-purple-50 text-purple-700 border border-purple-200",
       pink: "bg-pink-50 text-pink-700 border border-pink-200",
+      indigo: "bg-success-50 text-[#444CE7] border border-[#444CE7]",
+      cancelled: "bg-[#EFF8FF] text-gray-600 border border-gray-600",
     },
   }
 
@@ -189,6 +193,8 @@ const dotClasses = computed(() => {
     blue: "bg-blue-500",
     purple: "bg-purple-400",
     pink: "bg-pink-400",
+    indigo: "bg-[#444CE7]",
+    cancelled: "bg-gray-400",
   }
 
   // Adjust dot color for outlined variant (make it darker)
@@ -203,6 +209,8 @@ const dotClasses = computed(() => {
       blue: "bg-blue-600",
       purple: "bg-purple-600",
       pink: "bg-pink-600",
+      indigo: "bg-[#444CE7]",
+      cancelled: "bg-gray-600",
     },
   }
 
