@@ -97,7 +97,10 @@ import {
 import baseApi from "@/composables/baseApi"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
+import { useQueryClient } from "@tanstack/vue-query"
 import { htmlToMarkdown } from "@/utils/html-to-markdown"
+import { useImageConverter } from "@/composables/useImageConverter"
+import { useAuthStore } from "@modules/auth/store"
 
 // Import composables
 import { useProductFormState } from "../composables/useProductFormState"
@@ -148,6 +151,10 @@ const { mutateAsync: updateVariantImage, isPending: isUpdatingVariantImage } =
 
 // Composables
 const { form, hasVariants, variants, variantConfiguration, resetFormState } = useProductFormState()
+
+const queryClient = useQueryClient()
+const { renameProductImage } = useImageConverter()
+const storeName = useAuthStore().user?.store_slug || "product"
 
 const { drawerPosition } = useProductDrawerUtilities()
 
@@ -281,18 +288,27 @@ const handleSubmit = async () => {
           console.log(`Uploading ${form.images.length} images for product: ${productUid}`)
 
           // Step 1: Upload product images (indices 0-4)
+          // Deduplicate by File reference to prevent uploading the same file multiple times
+          // (defensive fix for a Windows-specific bug where the same File can appear in multiple slots)
+          const seenFiles = new Set<File>()
           const productImages = form.images
             .slice(0, 5)
             .map((image, index) => ({ image, index }))
-            .filter(({ image }) => image && image instanceof File)
+            .filter(({ image }) => {
+              if (!image || !(image instanceof File)) return false
+              if (seenFiles.has(image)) return false
+              seenFiles.add(image)
+              return true
+            })
 
           if (productImages.length > 0) {
             for (const { image, index } of productImages) {
+              const renamedImage = renameProductImage(image as File, storeName)
               await new Promise<void>((resolve, reject) => {
                 addProductImages(
                   {
                     product: productUid,
-                    image: image as File,
+                    image: renamedImage,
                     is_primary: index === 0,
                     sort_order: index + 1,
                   },
@@ -327,21 +343,42 @@ const handleSubmit = async () => {
               const fetchedVariants = freshProductData.data.variants
               let variantImagesUploaded = 0
 
-              // Upload variant images
-              for (let i = 0; i < fetchedVariants.length; i++) {
+              // Build a lookup map keyed by sorted attribute UIDs so variant
+              // images are matched by identity, not by array position (the API
+              // may return variants in a different order than they were sent)
+              const variantUidByAttrKey = new Map<string, string>()
+              for (const fv of fetchedVariants) {
+                if (fv.attributes?.length) {
+                  const key = fv.attributes
+                    .map((a) => `${a.attribute}:${a.value}`)
+                    .sort()
+                    .join("|")
+                  variantUidByAttrKey.set(key, fv.uid)
+                }
+              }
+
+              for (let i = 0; i < variants.value.length; i++) {
                 const variantImageIndex = 5 + i
                 const variantImage = form.images[variantImageIndex]
-                const variant = fetchedVariants[i]
 
-                if (variantImage && variantImage instanceof File && variant?.uid) {
-                  await updateVariantImage({
-                    variantUid: variant.uid,
-                    image: variantImage,
-                  })
-                  variantImagesUploaded++
-                  console.log(
-                    `Variant image ${i + 1} uploaded successfully for variant: ${variant.name}`,
-                  )
+                if (variantImage && variantImage instanceof File) {
+                  const formAttrs = variants.value[i].attributes || []
+                  const key = formAttrs
+                    .map((a) => `${a.attribute}:${a.value}`)
+                    .sort()
+                    .join("|")
+                  const matchedUid = variantUidByAttrKey.get(key)
+
+                  if (matchedUid) {
+                    await updateVariantImage({
+                      variantUid: matchedUid,
+                      image: renameProductImage(variantImage, storeName),
+                    })
+                    variantImagesUploaded++
+                    console.log(
+                      `Variant image ${i + 1} uploaded for variant: ${variants.value[i].name}`,
+                    )
+                  }
                 }
               }
 
@@ -359,6 +396,9 @@ const handleSubmit = async () => {
       } else {
         toast.success("Product created successfully")
       }
+
+      // Invalidate all product-related caches so every view shows fresh data
+      await queryClient.invalidateQueries({ queryKey: ["products"] })
 
       // Reset form state only after all uploads complete
       step.value = 1

@@ -16,12 +16,14 @@ export const RAW_MATERIALS_COLUMN: TableColumn<TRawMaterial>[] = [
   {
     header: "Last Cost",
     accessor: "last_cost",
-    cell: ({ item }) => `${formatCurrency(Number(item.last_cost))}/${item.unit}`,
+    cell: ({ item }) =>
+      Number(item.last_cost) ? `${formatCurrency(Number(item.last_cost))}/${item.unit}` : "-",
   },
   {
     header: "Avg. Cost",
     accessor: "average_cost",
-    cell: ({ item }) => `${formatCurrency(Number(item.avg_cost))}/${item.unit}`,
+    cell: ({ item }) =>
+      Number(item.last_cost) ? `${formatCurrency(Number(item.avg_cost))}/${item.unit}` : "-",
   },
   { header: "", accessor: "actions" },
 ]
@@ -78,7 +80,7 @@ export const componentOptions = [
   },
   {
     label: "Raw Materials",
-    value: "raw-materials",
+    value: "raw_materials",
     desc: "Common for manufacturing & retail",
     examples: "e.g. fabric, plastic bottles, packaging",
     class: "border-blue-200 bg-blue-50",

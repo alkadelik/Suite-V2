@@ -4,69 +4,7 @@
       {{ label }}
       <span v-if="required" class="text-red-500">*</span>
     </label>
-    <div v-if="showSteppers && type === 'number'" class="flex items-center gap-2">
-      <!-- Decrement Button -->
-      <AppButton
-        icon="placeholder"
-        size="sm"
-        type="button"
-        @click.prevent="decrementValue"
-        :disabled="disabled"
-      />
-
-      <div :class="containerClasses" class="flex-1">
-        <!-- Prefix -->
-        <div v-if="prefix" :class="prefixClasses">
-          {{ prefix }}
-        </div>
-
-        <!-- Left Icon -->
-        <div
-          v-if="leftIcon"
-          :class="[prefixClasses, 'flex items-center border-r-0 bg-inherit !pr-0']"
-        >
-          <Icon :name="leftIcon" class="h-4 w-4" />
-        </div>
-
-        <!-- Input -->
-        <input
-          :id="htmlFor"
-          :name="name"
-          :type="actualType"
-          :placeholder="placeholder"
-          :required="required"
-          :disabled="disabled"
-          :readonly="readonly"
-          :class="inputClasses"
-          :value="displayValue"
-          @input="handleInput"
-          @blur="$emit('blur', $event)"
-          @focus="$emit('focus', $event)"
-          v-bind="$attrs"
-        />
-
-        <!-- Right Icon -->
-        <div v-if="rightIcon" class="text-core-400 flex items-center pr-3">
-          <Icon :name="rightIcon" class="h-4 w-4" />
-        </div>
-
-        <!-- Suffix -->
-        <div v-if="suffix" :class="suffixClasses">
-          {{ suffix }}
-        </div>
-      </div>
-
-      <!-- Increment Button -->
-      <AppButton
-        icon="placeholder"
-        size="sm"
-        type="button"
-        @click.prevent="incrementValue"
-        :disabled="disabled"
-      />
-    </div>
-
-    <div v-else :class="containerClasses">
+    <div :class="containerClasses">
       <!-- Country Code Prefix for Tel Input -->
       <div
         v-if="type === 'tel'"
@@ -124,8 +62,8 @@
       </div>
 
       <!-- Suffix -->
-      <div v-if="suffix" :class="suffixClasses">
-        {{ suffix }}
+      <div v-if="suffix" :class="suffixClasses" class="max-w-[40%] min-w-0 shrink">
+        <span class="line-clamp-1">{{ suffix }}</span>
       </div>
     </div>
     <div v-if="error" class="mt-1 flex items-center text-sm text-red-600">
@@ -148,7 +86,6 @@
 <script setup lang="ts">
 import { capitalizeFirstChar } from "@/utils/format-strings"
 import Icon from "@components/Icon.vue"
-import AppButton from "@components/AppButton.vue"
 import { computed, ref } from "vue"
 
 interface Props {
@@ -194,8 +131,6 @@ interface Props {
   rightIcon?: string
   /** Additional description text below the input */
   description?: string
-  /** Show increment/decrement buttons for number inputs */
-  showSteppers?: boolean
   /** Additional classes for the input element */
   inputClass?: string
   /** Additional classes for the container element */
@@ -206,7 +141,6 @@ const props = withDefaults(defineProps<Props>(), {
   type: "text",
   variant: "default",
   size: "md",
-  showSteppers: false,
 })
 
 const emit = defineEmits<{
@@ -267,30 +201,6 @@ const handleInput = (event: Event) => {
 
 const togglePasswordVisibility = () => {
   showPassword.value = !showPassword.value
-}
-
-const incrementValue = () => {
-  let currentValue = 0
-  if (typeof props.modelValue === "number") {
-    currentValue = props.modelValue
-  } else if (typeof props.modelValue === "string" && props.modelValue !== "") {
-    currentValue = parseFloat(props.modelValue)
-  }
-
-  const newValue = currentValue + 1
-  emit("update:modelValue", String(newValue))
-}
-
-const decrementValue = () => {
-  let currentValue = 0
-  if (typeof props.modelValue === "number") {
-    currentValue = props.modelValue
-  } else if (typeof props.modelValue === "string" && props.modelValue !== "") {
-    currentValue = parseFloat(props.modelValue)
-  }
-
-  const newValue = Math.max(0, currentValue - 1) // Prevent negative values
-  emit("update:modelValue", String(newValue))
 }
 
 const htmlFor = computed(() => props.id || props.name || props.label)
@@ -360,8 +270,7 @@ const prefixClasses = computed(() => {
 })
 
 const suffixClasses = computed(() => {
-  const baseClasses =
-    "border-core-100 bg-inherit ml-2 flex items-center border-l px-3 text-gray-400"
+  const baseClasses = "border-core-100 bg-inherit ml-2 border-l px-3 text-gray-400"
 
   const sizeClasses = {
     sm: "py-2 text-sm",

@@ -41,6 +41,7 @@ export type TSubscription = {
   transaction_id: string | null
   user_name: string
   store_name: string
+  planName?: string
 }
 
 export interface IInvitePayload {
@@ -83,7 +84,7 @@ export interface IStoreDetails {
   tax_rate?: string
   add_tax_to_product_price?: boolean
   material_type?: string
-  recipe_name?: string // confirm with DESMOND
+  recipe_terminology?: string
 }
 
 export interface IUpdateStoreDetailsPayload {

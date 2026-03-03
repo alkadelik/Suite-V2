@@ -1,5 +1,5 @@
 <template>
-  <div :class="['flex items-center justify-between pt-5', props.class]">
+  <div :class="['flex items-center justify-between', props.class]">
     <div>
       <h3 :class="[titleClasses, 'mb-1 font-semibold']">{{ title }}</h3>
       <p v-if="subtitle || $slots.subtitle" :class="[subtitleClasses, 'text-core-600']">

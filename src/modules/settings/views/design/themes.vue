@@ -14,9 +14,9 @@ import { ref, inject } from "vue"
 const { data: themes, refetch, isPending: isLoading } = useGetStoreThemes()
 const { mutate: updateActiveTheme, isPending } = useUpdateActiveTheme()
 
-const openPreview = (themeName: string) => {
-  window.open(`/${themeName.toLowerCase()}`, "_blank")
-}
+// const openPreview = (themeName: string) => {
+//   window.open(`/${themeName.toLowerCase()}`, "_blank")
+// }
 
 const selectedTheme = ref<IStoreTheme | null>(null)
 
@@ -54,7 +54,7 @@ const THEME_IMAGES: Record<string, string> = {
   <section v-else>
     <div class="mb-4 flex items-center gap-6 border-b border-gray-200 pb-4">
       <SectionHeader
-        class="flex-1"
+        class="flex-1 !pt-0"
         title="Themes"
         size="sm"
         subtitle="Pick a theme that reflects your brand. You can always change it later."
@@ -109,7 +109,7 @@ const THEME_IMAGES: Record<string, string> = {
           </p>
 
           <div class="mt-4 flex justify-end gap-3">
-            <AppButton color="alt" label="Preview" @click="openPreview(theme.name)" />
+            <!-- <AppButton color="alt" label="Preview" @click="openPreview(theme.name)" /> -->
             <AppButton label="Apply" :disabled="theme.in_use" @click="openApply(theme)" />
           </div>
         </div>

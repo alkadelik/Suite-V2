@@ -95,6 +95,14 @@ export type TLinkedRecipe = {
   unit: string
 }
 
+export interface IConversionPayload {
+  from_unit: string
+  to_unit: string
+  rate: string
+  name: string
+  is_active: boolean
+}
+
 export interface ICreateMaterialPayload {
   name: string
   unit: string
@@ -105,6 +113,7 @@ export interface ICreateMaterialPayload {
   expiry_date?: string
   reorder_threshold?: string
   notes?: string
+  conversion?: IConversionPayload
 }
 
 export interface IAdjustStockPayload {

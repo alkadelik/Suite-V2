@@ -2,7 +2,12 @@
   <ThemeSettingsSkeleton v-if="isLoading" />
   <section v-else>
     <div class="mb-4 flex items-center gap-6 border-b border-gray-200 pb-4">
-      <SectionHeader title="Theme Settings" size="sm" subtitle="Customize your theme settings" />
+      <SectionHeader
+        title="Theme Settings"
+        size="sm"
+        subtitle="Customize your theme settings"
+        class="!pt-0"
+      />
       <AppButton
         icon="clock-rewind"
         color="alt"
@@ -27,9 +32,9 @@
       />
     </div>
 
-    <div class="mt-6 flex flex-col gap-6 md:flex-row">
+    <div class="mt-6 flex flex-col gap-6 md:flex-row md:items-start">
       <!-- Left Sidebar - Desktop -->
-      <aside class="hidden w-2/5 flex-shrink-0 md:block">
+      <aside class="hidden w-3/10 flex-shrink-0 md:sticky md:top-0 md:block">
         <div class="space-y-2">
           <button
             v-for="item in designItems"
@@ -55,36 +60,23 @@
       </aside>
 
       <!-- Mobile Collapsibles -->
-      <div class="flex flex-col gap-2 md:hidden">
-        <div
+      <div id="mobile_collapsibles" ref="mobileCollapsibles" class="flex flex-col gap-2 md:hidden">
+        <Collapsible
           v-for="(item, index) in designItems"
           :key="item.id"
+          :id="item.id"
+          :header="item.label"
+          :model-value="expandedSection === item.id"
+          @update:model-value="(val) => (expandedSection = val ? item.id : null)"
           :class="{ 'mb-10': index === designItems.length - 1 }"
         >
-          <button
-            type="button"
-            :class="[
-              'flex w-full items-center justify-between gap-3 rounded-lg border border-gray-200 p-4 text-sm font-medium transition-colors',
-              {
-                'rounded-b-none': expandedSection === item.id,
-              },
-            ]"
-            @click="toggleSection(item.id)"
-          >
+          <template #header>
             <div class="flex items-center gap-3">
               <Icon :name="item.icon" size="20" />
               <span>{{ item.label }}</span>
             </div>
-            <Icon
-              name="chevron-down"
-              size="18"
-              :class="{ 'rotate-180': expandedSection === item.id }"
-            />
-          </button>
-          <div
-            v-if="expandedSection === item.id"
-            class="rounded-b-lg border border-t-0 border-gray-200 p-4"
-          >
+          </template>
+          <template #body>
             <LogoFaviconSettings
               v-if="item.id === 'logo-favicon'"
               v-model:logo="formState.logo"
@@ -126,12 +118,13 @@
               v-model:size-chart="formState.size_chart"
               @change-section="changeSection"
             />
-          </div>
-        </div>
+          </template>
+        </Collapsible>
+        <div class="py-8" />
       </div>
 
       <!-- Right Content - Desktop -->
-      <div class="hidden flex-1 md:block">
+      <div class="hidden flex-1 overflow-y-auto md:block">
         <LogoFaviconSettings
           v-if="activeSection === 'logo-favicon'"
           v-model:logo="formState.logo"
@@ -179,7 +172,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, inject } from "vue"
+import { ref, watch, inject, nextTick } from "vue"
 import Icon from "@components/Icon.vue"
 import LogoFaviconSettings from "@modules/settings/components/design/theme-settings/LogoFaviconSettings.vue"
 import ColorSettings from "@modules/settings/components/design/theme-settings/ColorSettings.vue"
@@ -194,6 +187,7 @@ import { useGetThemeSettings, useUpdateThemeSettings } from "@modules/settings/a
 import type { IThemeSettings } from "@modules/settings/types"
 import { displayError } from "@/utils/error-handler"
 import ThemeSettingsSkeleton from "../../components/skeletons/ThemeSettingsSkeleton.vue"
+import Collapsible from "@components/Collapsible.vue"
 
 interface DesignItem {
   id: string
@@ -275,13 +269,21 @@ const setPaletteFromColorScheme = (colorScheme: {
   }
 }
 
+const mobileCollapsibles = ref<HTMLElement | null>(null)
+
+watch(expandedSection, async (newVal) => {
+  if (!newVal) return
+  await nextTick()
+  // Scroll to top of parent container first to ensure the expandedSection is visible
+  mobileCollapsibles.value?.scrollTo({ top: 0, behavior: "smooth" })
+  // Scroll to the expanded section
+  const sectionEl = document.getElementById(newVal)
+  sectionEl?.scrollIntoView({ behavior: "smooth", block: "start" })
+})
+
 // API hooks
 const { data: themeSettings, refetch, isPending: isLoading } = useGetThemeSettings()
 const { mutate: updateThemeSettings, isPending: isPublishing } = useUpdateThemeSettings()
-
-const toggleSection = (id: string): void => {
-  expandedSection.value = expandedSection.value === id ? null : id
-}
 
 const changeSection = (section: string): void => {
   activeSection.value = section

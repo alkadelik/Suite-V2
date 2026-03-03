@@ -208,7 +208,7 @@ const getActionItems = (item: TOrder) => [
         },
       ]
     : []),
-  { divider: true },
+  // { divider: true },
   ...((item.fulfilment_status === "fulfilled" || item.payment_status !== "unpaid") &&
   !item.source?.includes("storefront")
     ? [
