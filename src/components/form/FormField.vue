@@ -113,6 +113,24 @@
       @update:model-value="field.value = $event"
     />
 
+    <!-- Stepper Field -->
+    <StepperField
+      v-else-if="type === 'stepper'"
+      v-bind="{ ...field, ...$attrs }"
+      :model-value="field.value"
+      :label="hideLabel ? '' : label || startCase(name)"
+      :placeholder="placeholder"
+      :required="isRequired"
+      :disabled="isDisabled"
+      :readonly="readonly"
+      :error="fieldErrors[0]"
+      :hint="hintText"
+      :variant="variant"
+      :size="size"
+      :description="description"
+      @update:model-value="field.value = $event"
+    />
+
     <!-- Text Field (default for all other types) -->
     <TextField
       v-else
@@ -135,7 +153,6 @@
       :step="step"
       :autocomplete="autocomplete"
       :description="description"
-      :show-steppers="showSteppers"
       @update:model-value="field.value = $event"
     />
   </Field>
@@ -149,6 +166,7 @@ import SelectTagsField from "./SelectTagsField.vue"
 import TextAreaField from "./TextAreaField.vue"
 import OtpField from "./OtpField.vue"
 import RadioInputField from "./RadioInputField.vue"
+import StepperField from "./StepperField.vue"
 import { startCase } from "@/utils/format-strings"
 import { computed } from "vue"
 import FileUploadField from "./FileUploadField.vue"
@@ -185,6 +203,7 @@ export type FormFieldType =
   | "otp"
   | "file"
   | "radio"
+  | "stepper"
 
 /**
  * Updated option value type that includes ISelectOption
@@ -271,10 +290,6 @@ interface FormFieldProps {
   // Radio specific props
   /** Options for radio fields */
   radioOptions?: { label: string; value: string; description?: string }[]
-
-  // Number input specific props
-  /** Show increment/decrement buttons for number inputs */
-  showSteppers?: boolean
 }
 
 const props = withDefaults(defineProps<FormFieldProps>(), {

@@ -54,7 +54,7 @@ const THEME_IMAGES: Record<string, string> = {
   <section v-else>
     <div class="mb-4 flex items-center gap-6 border-b border-gray-200 pb-4">
       <SectionHeader
-        class="flex-1"
+        class="flex-1 !pt-0"
         title="Themes"
         size="sm"
         subtitle="Pick a theme that reflects your brand. You can always change it later."

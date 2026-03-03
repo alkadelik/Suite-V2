@@ -46,7 +46,7 @@
         :loading="isPending || isCheckingLiveStatus"
         label="Log In"
         class="w-full"
-        :disabled="!meta.valid"
+        :inactive="!meta.valid"
       />
     </AppForm>
 
