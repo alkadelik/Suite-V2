@@ -97,6 +97,7 @@ import {
 import baseApi from "@/composables/baseApi"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
+import { useQueryClient } from "@tanstack/vue-query"
 import { htmlToMarkdown } from "@/utils/html-to-markdown"
 import { useImageConverter } from "@/composables/useImageConverter"
 import { useAuthStore } from "@modules/auth/store"
@@ -151,6 +152,7 @@ const { mutateAsync: updateVariantImage, isPending: isUpdatingVariantImage } =
 // Composables
 const { form, hasVariants, variants, variantConfiguration, resetFormState } = useProductFormState()
 
+const queryClient = useQueryClient()
 const { renameProductImage } = useImageConverter()
 const storeName = useAuthStore().user?.store_slug || "product"
 
@@ -286,10 +288,18 @@ const handleSubmit = async () => {
           console.log(`Uploading ${form.images.length} images for product: ${productUid}`)
 
           // Step 1: Upload product images (indices 0-4)
+          // Deduplicate by File reference to prevent uploading the same file multiple times
+          // (defensive fix for a Windows-specific bug where the same File can appear in multiple slots)
+          const seenFiles = new Set<File>()
           const productImages = form.images
             .slice(0, 5)
             .map((image, index) => ({ image, index }))
-            .filter(({ image }) => image && image instanceof File)
+            .filter(({ image }) => {
+              if (!image || !(image instanceof File)) return false
+              if (seenFiles.has(image)) return false
+              seenFiles.add(image)
+              return true
+            })
 
           if (productImages.length > 0) {
             for (const { image, index } of productImages) {
@@ -386,6 +396,9 @@ const handleSubmit = async () => {
       } else {
         toast.success("Product created successfully")
       }
+
+      // Invalidate all product-related caches so every view shows fresh data
+      await queryClient.invalidateQueries({ queryKey: ["products"] })
 
       // Reset form state only after all uploads complete
       step.value = 1
