@@ -14,17 +14,14 @@
       class="focus-visible:ring-primary-300 relative inline-flex items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2"
       :class="[
         value ? 'bg-primary-500' : 'bg-gray-300',
-        dense ? 'h-5 w-9' : 'h-6 w-11',
+        switchSizeClasses,
         disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
       ]"
     >
       <span class="sr-only">Toggle</span>
       <span
         class="inline-block transform rounded-full bg-white shadow-lg transition duration-200 ease-in-out"
-        :class="[
-          value ? (dense ? 'translate-x-4' : 'translate-x-5') : 'translate-x-0',
-          dense ? 'h-4 w-4' : 'h-5 w-5',
-        ]"
+        :class="[value ? translateClasses : 'translate-x-0', thumbSizeClasses]"
       />
     </button>
   </div>
@@ -39,8 +36,8 @@ import { computed } from "vue"
 interface Props {
   /** The current value of the switch */
   modelValue?: boolean
-  /** Whether to render the switch in dense mode (smaller size) */
-  dense?: boolean
+  /** Size of the switch */
+  size?: "xs" | "sm" | "md"
   /** Whether the switch is disabled */
   disabled?: boolean
   /** Optional label text to display next to the switch */
@@ -49,7 +46,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   modelValue: false,
-  dense: false,
+  size: "md",
   disabled: false,
   label: undefined,
 })
@@ -61,6 +58,42 @@ const emit = defineEmits<{
 const value = computed({
   get: (): boolean => props.modelValue,
   set: (val: boolean) => emit("update:modelValue", val),
+})
+
+const switchSizeClasses = computed(() => {
+  switch (props.size) {
+    case "xs":
+      return "h-4 w-7"
+    case "sm":
+      return "h-5 w-9"
+    case "md":
+    default:
+      return "h-6 w-11"
+  }
+})
+
+const thumbSizeClasses = computed(() => {
+  switch (props.size) {
+    case "xs":
+      return "h-3 w-3"
+    case "sm":
+      return "h-4 w-4"
+    case "md":
+    default:
+      return "h-5 w-5"
+  }
+})
+
+const translateClasses = computed(() => {
+  switch (props.size) {
+    case "xs":
+      return "translate-x-3"
+    case "sm":
+      return "translate-x-4"
+    case "md":
+    default:
+      return "translate-x-5"
+  }
 })
 
 function toggle(): void {
