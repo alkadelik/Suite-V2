@@ -298,7 +298,6 @@ import EmptyState from "@components/EmptyState.vue"
 import { displayError } from "@/utils/error-handler"
 import router from "@/router"
 import { useSettingsStore } from "@modules/settings/store"
-import { useInventoryStore } from "../store"
 import { useRoute } from "vue-router"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
@@ -323,22 +322,7 @@ const { data: categories } = useGetCategories()
 
 const queryClient = useQueryClient()
 const settingsStore = useSettingsStore()
-const inventoryStore = useInventoryStore()
 const { checkPremiumAccess } = usePremiumAccess()
-
-// Update store when products data changes
-watch(
-  () => products.value,
-  (newProducts: typeof products.value) => {
-    if (newProducts?.data) {
-      inventoryStore.setProducts(
-        newProducts.data.results as TProduct[],
-        newProducts.data.count as number,
-      )
-    }
-  },
-  { immediate: true },
-)
 
 // Tabs state
 const activeTab = ref("products")
@@ -438,18 +422,6 @@ watch(
       setTimeout(() => {
         showProductEditDrawer.value = true
       }, 0)
-    }
-  },
-)
-
-// Clear edit state when drawer closes to prevent stale data issues
-watch(
-  () => showProductEditDrawer.value,
-  (isOpen) => {
-    if (!isOpen) {
-      // Clear the edit request when drawer closes
-      productUidForEdit.value = null
-      variantForEdit.value = null
     }
   },
 )
@@ -648,8 +620,6 @@ const handleAction = (
   action: "duplicate" | "view" | "delete" | "activate" | "deactivate" | "hide" | "unhide",
   item: TProduct,
 ) => {
-  console.log(action, item)
-
   if (action === "delete") {
     product.value = item
     showDeleteConfirmationModal.value = true

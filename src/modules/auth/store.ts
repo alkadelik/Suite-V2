@@ -17,9 +17,7 @@ export const useAuthStore = defineStore(
 
     // Actions
     const setAuthUser = (userData: IUser) => {
-      console.log("Setting auth user with:", userData)
       user.value = user.value ? { ...user.value, ...userData } : userData
-      console.log("Auth user is now:", user.value)
     }
 
     const updateAuthUser = (userData: Partial<IUser>) => {
@@ -81,5 +79,9 @@ export const useAuthStore = defineStore(
       logout,
     }
   },
-  { persist: true },
+  {
+    persist: {
+      pick: ["user", "accessToken", "refreshToken"],
+    },
+  },
 )

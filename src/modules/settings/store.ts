@@ -70,5 +70,9 @@ export const useSettingsStore = defineStore(
       setLiveStatus,
     }
   },
-  { persist: true },
+  {
+    persist: {
+      pick: ["locations", "activeLocation", "storeDetails", "liveStatus"],
+    },
+  },
 )
