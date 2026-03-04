@@ -453,7 +453,7 @@ const handleRefresh = () => {
 
                 <!-- Switch to Manual Delivery Banner -->
                 <div
-                  class="border-primary-600 bg-primary-25 text-warning-700 mt-6 flex cursor-pointer flex-col items-center justify-between gap-3 rounded-lg border px-4 py-6 md:flex-row"
+                  class="border-primary-600 bg-primary-25 text-warning-700 mt-6 flex cursor-pointer flex-col items-center justify-between gap-3 rounded-lg border px-4 py-4 md:flex-row"
                   @click="handleSwitchDeliveryType"
                 >
                   <div class="flex gap-3">
@@ -474,7 +474,7 @@ const handleRefresh = () => {
                     </div>
                   </div>
 
-                  <div class="flex items-center">
+                  <div class="hidden items-center md:flex">
                     <Icon name="arrow-right" size="16" class="text-primary-600" />
                   </div>
                 </div>

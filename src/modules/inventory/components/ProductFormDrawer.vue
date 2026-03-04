@@ -99,6 +99,8 @@ import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
 import { useQueryClient } from "@tanstack/vue-query"
 import { htmlToMarkdown } from "@/utils/html-to-markdown"
+import { useImageConverter } from "@/composables/useImageConverter"
+import { useAuthStore } from "@modules/auth/store"
 
 // Import composables
 import { useProductFormState } from "../composables/useProductFormState"
@@ -151,6 +153,8 @@ const { mutateAsync: updateVariantImage, isPending: isUpdatingVariantImage } =
 const { form, hasVariants, variants, variantConfiguration, resetFormState } = useProductFormState()
 
 const queryClient = useQueryClient()
+const { renameProductImage } = useImageConverter()
+const storeName = useAuthStore().user?.store_slug || "product"
 
 const { drawerPosition } = useProductDrawerUtilities()
 
@@ -299,11 +303,12 @@ const handleSubmit = async () => {
 
           if (productImages.length > 0) {
             for (const { image, index } of productImages) {
+              const renamedImage = renameProductImage(image as File, storeName)
               await new Promise<void>((resolve, reject) => {
                 addProductImages(
                   {
                     product: productUid,
-                    image: image as File,
+                    image: renamedImage,
                     is_primary: index === 0,
                     sort_order: index + 1,
                   },
@@ -367,7 +372,7 @@ const handleSubmit = async () => {
                   if (matchedUid) {
                     await updateVariantImage({
                       variantUid: matchedUid,
-                      image: variantImage,
+                      image: renameProductImage(variantImage, storeName),
                     })
                     variantImagesUploaded++
                     console.log(

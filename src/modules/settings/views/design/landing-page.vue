@@ -113,37 +113,33 @@
       </aside>
 
       <!-- Mobile Collapsibles -->
-      <div class="flex flex-col gap-3 pb-20 md:hidden">
+      <div
+        id="mobile_collapsibles"
+        ref="mobileCollapsibles"
+        class="flex flex-col gap-2 pb-20 md:hidden"
+      >
         <!-- Hero Section - Fixed at top, not draggable -->
-        <div v-if="heroItem">
-          <button
-            type="button"
-            class="flex h-14 w-full items-center gap-3 rounded-lg border border-gray-200 px-4 text-sm font-medium transition-colors"
-            :class="{ 'rounded-b-none': expandedSection === heroItem.id }"
-            @click="toggleSection(heroItem.id)"
-          >
-            <div class="flex flex-1 items-center gap-3">
+        <Collapsible
+          v-if="heroItem"
+          :id="heroItem.id"
+          :model-value="expandedSection === heroItem.id"
+          @update:model-value="(val) => (expandedSection = val ? heroItem!.id : null)"
+        >
+          <template #header>
+            <div class="flex items-center gap-3">
               <Icon :name="heroItem.icon" size="20" />
               <span>{{ heroItem.label }}</span>
             </div>
-            <Icon
-              name="chevron-down"
-              size="18"
-              :class="{ 'rotate-180': expandedSection === heroItem.id }"
-            />
-          </button>
-          <div
-            v-if="expandedSection === heroItem.id"
-            class="rounded-b-lg border border-t-0 border-gray-200 p-4"
-          >
+          </template>
+          <template #body>
             <HeroSettings
               :hero-section="heroSection"
               :old-section="oldHeroSection"
               @change-section="changeSection"
               @refetch="refetch"
             />
-          </div>
-        </div>
+          </template>
+        </Collapsible>
 
         <!-- Other Sections - Draggable -->
         <draggable
@@ -155,49 +151,51 @@
           chosen-class="chosen-item"
           handle=".mobile-drag-handle"
           @end="onDragEnd"
-          class="flex flex-col gap-3"
+          class="flex flex-col gap-2"
           :disabled="!REORDERING_ENABLED"
         >
           <template #item="{ element: item, index }">
-            <div :class="{ 'mb-10': index === draggableItems.length - 1 }">
-              <button
-                type="button"
-                :class="[
-                  'flex h-14 w-full items-center gap-3 rounded-lg border border-gray-200 text-sm font-medium transition-colors',
-                  { 'rounded-b-none': expandedSection === item.id },
-                  REORDERING_ENABLED ? 'pr-4' : 'px-4',
-                ]"
-                @click="toggleSection(item.id)"
-              >
+            <Collapsible
+              :id="item.id"
+              :model-value="expandedSection === item.id"
+              @update:model-value="(val) => (expandedSection = val ? item.id : null)"
+              :class="{ 'mb-10': index === draggableItems.length - 1 }"
+            >
+              <template #trigger>
                 <div
-                  v-if="REORDERING_ENABLED"
-                  class="mobile-drag-handle flex h-full w-6 cursor-grab items-center justify-center rounded-l-lg active:cursor-grabbing"
                   :class="[
-                    activeSection === item.id ? 'bg-primary-100' : 'bg-gray-200',
-                    { 'rounded-b-none': expandedSection === item.id },
+                    'hover:bg-gray-25 text-core-800 flex items-center bg-white text-xs font-semibold transition-colors duration-200 md:text-sm',
+                    REORDERING_ENABLED ? 'pr-4' : 'px-4',
                   ]"
                 >
-                  <Icon name="six-dots" />
+                  <div
+                    v-if="REORDERING_ENABLED"
+                    class="mobile-drag-handle flex h-full w-6 cursor-grab items-center justify-center rounded-l-lg active:cursor-grabbing"
+                    :class="activeSection === item.id ? 'bg-primary-100' : 'bg-gray-200'"
+                  >
+                    <Icon name="six-dots" />
+                  </div>
+                  <div
+                    class="flex flex-1 items-center gap-3 py-4"
+                    :class="{ 'pl-3': REORDERING_ENABLED }"
+                  >
+                    <Icon :name="item.icon" size="20" />
+                    <span>{{ item.label }}</span>
+                  </div>
+                  <Icon
+                    :name="item.is_visible ? 'eye' : 'eye-slash'"
+                    size="18"
+                    class="mr-2"
+                    @click.stop="hideSection(item.id)"
+                  />
+                  <Icon
+                    :name="expandedSection === item.id ? 'chevron-up' : 'chevron-down'"
+                    class="text-gray-600"
+                    size="24"
+                  />
                 </div>
-                <div class="flex flex-1 items-center gap-3">
-                  <Icon :name="item.icon" size="20" />
-                  <span>{{ item.label }}</span>
-                </div>
-                <Icon
-                  :name="item.is_visible ? 'eye' : 'eye-slash'"
-                  size="18"
-                  @click.stop="hideSection(item.id)"
-                />
-                <Icon
-                  name="chevron-down"
-                  size="18"
-                  :class="{ 'rotate-180': expandedSection === item.id }"
-                />
-              </button>
-              <div
-                v-if="expandedSection === item.id"
-                class="rounded-b-lg border border-t-0 border-gray-200 p-4"
-              >
+              </template>
+              <template #body>
                 <CategorySettings
                   v-if="item.id === 'categories'"
                   :category-section="categorySection"
@@ -250,10 +248,11 @@
                   @change-section="changeSection"
                   @refetch="refetch"
                 />
-              </div>
-            </div>
+              </template>
+            </Collapsible>
           </template>
         </draggable>
+        <div class="py-8" />
       </div>
 
       <!-- Right Content - Desktop -->
@@ -335,7 +334,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, inject } from "vue"
+import { ref, watch, computed, inject, nextTick } from "vue"
 import draggable from "vuedraggable"
 import Icon from "@components/Icon.vue"
 import HeroSettings from "@modules/settings/components/design/landing-page/HeroSettings.vue"
@@ -355,8 +354,11 @@ import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
 import LandingPageSkeleton from "../../components/skeletons/LandingPageSkeleton.vue"
+import Collapsible from "@components/Collapsible.vue"
 
 const REORDERING_ENABLED = false
+
+const mobileCollapsibles = ref<HTMLElement | null>(null)
 
 const { mutate: updateLandingPageItemsOrder, isPending } = useUpdateStorefrontSectionsOrder()
 const { data: landingPageData, refetch, isPending: isLoading } = useGetStorefrontSections()
@@ -592,6 +594,16 @@ const draggableItems = ref<DesignItem[]>([])
 const activeSection = ref<string>("hero")
 const expandedSection = ref<string | null>(null)
 
+watch(expandedSection, async (newVal) => {
+  if (!newVal) return
+  await nextTick()
+  // Scroll to top of parent container first to ensure the expandedSection is visible
+  mobileCollapsibles.value?.scrollTo({ top: 0, behavior: "smooth" })
+  // Scroll to the expanded section
+  const sectionEl = document.getElementById(newVal)
+  sectionEl?.scrollIntoView({ behavior: "smooth", block: "start" })
+})
+
 // Get the label of the section being hidden
 const sectionToHideLabel = computed(() => {
   if (!sectionToHideId.value) return ""
@@ -658,10 +670,6 @@ const onDragEnd = () => {
   draggableItems.value.forEach((item, index) => {
     item.order = index + 2
   })
-}
-
-const toggleSection = (id: string): void => {
-  expandedSection.value = expandedSection.value === id ? null : id
 }
 
 const changeSection = (section: string): void => {

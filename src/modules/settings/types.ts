@@ -41,6 +41,7 @@ export type TSubscription = {
   transaction_id: string | null
   user_name: string
   store_name: string
+  planName?: string
 }
 
 export interface IInvitePayload {

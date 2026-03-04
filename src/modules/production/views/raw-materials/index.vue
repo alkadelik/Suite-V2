@@ -249,7 +249,7 @@ const onSelect = (option: { label: string; value: string }) => {
             @row-click="(row) => $router.push(`/raw-materials/${row.uid}`)"
           >
             <template #cell:name="{ item }">
-              <div class="flex max-w-48 items-center gap-2 truncate">
+              <div class="flex max-w-64 items-center gap-2 truncate">
                 <span
                   class="relative flex size-10 shrink-0 items-center justify-center rounded-xl bg-gray-100"
                 >

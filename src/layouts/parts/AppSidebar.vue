@@ -83,6 +83,15 @@
         @toggle="expandedGroup = expandedGroup === 'production' ? null : 'production'"
       />
 
+      <SidebarGroup
+        v-if="isStaging"
+        icon="chart-breakout-square"
+        label="Reports"
+        :children="reportsItems"
+        :is-expanded="expandedGroup === 'reports'"
+        @toggle="expandedGroup = expandedGroup === 'reports' ? null : 'reports'"
+      />
+
       <SidebarLink icon="receipt-text" label="Expenses" to="/expenses" />
     </section>
 
@@ -236,6 +245,12 @@ const productionItems = computed(() => {
     // Add production-related items here when needed
   ]
 })
+
+// reports items
+const reportsItems = computed(() => [
+  { icon: "pie-chart", label: "End of Day", to: "/reports/end-of-day" },
+  { icon: "pie-chart", label: "Monthly", to: "/reports/monthly" },
+])
 
 const storeDetails = computed(() => useSettingsStore().storeDetails)
 

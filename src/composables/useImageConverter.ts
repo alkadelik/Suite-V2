@@ -159,11 +159,28 @@ export function useImageConverter() {
     return Promise.all(promises)
   }
 
+  /**
+   * Renames a File to `storename_timestamp.ext` format
+   * @param file - The image file to rename
+   * @param storeName - The store name to use as prefix
+   * @returns A new File with the renamed filename
+   */
+  const renameProductImage = (file: File, storeName: string): File => {
+    const sanitized = storeName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_|_$/g, "")
+    const ext = file.name.includes(".") ? file.name.substring(file.name.lastIndexOf(".")) : ".jpg"
+    const newName = `${sanitized}_${Date.now()}${ext}`
+    return new File([file], newName, { type: file.type, lastModified: file.lastModified })
+  }
+
   return {
     convertAndCompressImage,
     convertHeicToJpeg,
     compressImageWithConversion,
     compressImage,
     convertAndCompressMultiple,
+    renameProductImage,
   }
 }
