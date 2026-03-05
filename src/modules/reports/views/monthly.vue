@@ -13,8 +13,13 @@ import MonthlyCustomer from "../components/monthly/MonthlyCustomer.vue"
 import MonthlyProducts from "../components/monthly/MonthlyProducts.vue"
 import MonthlyOperations from "../components/monthly/MonthlyOperations.vue"
 import ReportInsightCard from "../components/ReportInsightCard.vue"
+import { useGenerateMonthlyReport } from "../api"
 
-const activeDate = ref(new Date().toISOString().slice(0, 7))
+const lastMonth = new Date()
+lastMonth.setMonth(lastMonth.getMonth() - 1)
+const activeDate = ref(lastMonth.toISOString().slice(0, 7))
+
+const { mutate: generateMonthlyReport, isPending: isGenerating } = useGenerateMonthlyReport()
 
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 const fullMonth = computed(() =>
@@ -31,6 +36,20 @@ const dateRange = computed(() => {
 })
 
 const activeSection = ref("summary")
+const reportData = ref(null)
+
+const handleGenerate = () => {
+  const [year, month] = activeDate.value.split("-").map(Number)
+
+  generateMonthlyReport(
+    { year, month },
+    {
+      onSuccess: (res) => {
+        console.log("Report generated successfully:", res)
+      },
+    },
+  )
+}
 </script>
 
 <template>
@@ -42,18 +61,20 @@ const activeSection = ref("summary")
           type="month"
           size="sm"
           v-model="activeDate"
-          :max="new Date().toISOString().slice(0, 7)"
+          :max="lastMonth.toISOString().slice(0, 7)"
         />
       </template>
     </SectionHeader>
 
     <EmptyState
-      v-if="false"
+      v-if="!reportData"
       :title="`${fullMonth} Sales Report`"
       :description="`Get a complete breakdown of your revenue, customers, products and profit — with actionable recommendations.`"
       :action-label="`Generate ${fullMonth} Report`"
       action-icon="add"
       class="mt-4"
+      :loading="isGenerating"
+      @action="handleGenerate"
     >
       <template #image>
         <img src="@/assets/images/empty-report.svg?url" class="mx-auto mb-4" />

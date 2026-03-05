@@ -20,10 +20,15 @@ import EodOrders from "../components/eod/EodOrders.vue"
 import { EOD_REPORT_SECTIONS } from "../constants"
 import Tabs from "@components/Tabs.vue"
 import ReportInsightCard from "../components/ReportInsightCard.vue"
+import { useGenerateEODReport } from "../api"
 
-const activeDate = ref(new Date().toISOString().slice(0, 10))
+const yesterday = new Date()
+yesterday.setDate(yesterday.getDate() - 1)
+const activeDate = ref(yesterday.toISOString().slice(0, 10))
 const activeSection = ref(EOD_REPORT_SECTIONS[0].key)
 const isScrolling = ref(false)
+
+const { mutate: generateEODReport, isPending: isGenerating } = useGenerateEODReport()
 
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 const storeName = computed(() => useSettingsStore().storeDetails?.name || "Store")
@@ -79,6 +84,19 @@ onMounted(() => {
 onBeforeUnmount(() => {
   sectionObserver?.disconnect()
 })
+
+const reportData = ref(null)
+
+const handleGenerateReport = () => {
+  generateEODReport(
+    { date: activeDate.value },
+    {
+      onSuccess: (res) => {
+        console.log("Report generated:", res)
+      },
+    },
+  )
+}
 </script>
 
 <template>
@@ -90,18 +108,20 @@ onBeforeUnmount(() => {
           type="date"
           size="sm"
           v-model="activeDate"
-          :max="new Date().toISOString().slice(0, 10)"
+          :max="yesterday.toISOString().slice(0, 10)"
         />
       </template>
     </SectionHeader>
 
     <EmptyState
-      v-if="false"
+      v-if="!reportData"
       :title="`${fullDate.split(', ')[1]},  End of Day Report`"
       :description="`Get a complete breakdown of your revenue, customers, products and profit — with actionable recommendations.`"
       action-label="Generate End of Day Report"
       action-icon="add"
       class="mt-4"
+      :loading="isGenerating"
+      @action="handleGenerateReport"
     >
       <template #image>
         <img src="@/assets/images/empty-report.svg?url" class="mx-auto mb-4" />
