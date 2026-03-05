@@ -25,6 +25,15 @@ const REGIONS = [
   { name: "Ibadan", revenue: 800, percentage: 3 },
   { name: "Others (12 cities)", revenue: 500, percentage: 2 },
 ]
+
+const customerRevenueData = [
+  { label: "Returning Customers", revenue: 87600, percentage: 58, color: "#10b981" },
+  { label: "New Customers", revenue: 63400, percentage: 42, color: "#3b82f6" },
+]
+
+const totalRevenue = computed(() =>
+  customerRevenueData.reduce((sum, item) => sum + item.revenue, 0),
+)
 </script>
 
 <template>
@@ -51,7 +60,65 @@ const REGIONS = [
           <h3 class="mb-1 text-sm font-semibold">New vs Returning Revenue</h3>
           <p class="text-xs">Revenue split by customer type</p>
         </div>
-        <div class="px-4 py-6"></div>
+        <div class="px-4 py-6">
+          <!-- donut chart -->
+          <div class="flex flex-col items-center gap-6">
+            <!-- Donut Chart -->
+            <div class="relative h-48 w-48">
+              <svg viewBox="0 0 100 100" class="-rotate-90 transform">
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#e5e7eb" stroke-width="20" />
+                <!-- Returning Customers segment -->
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="40"
+                  fill="none"
+                  :stroke="customerRevenueData[0].color"
+                  stroke-width="20"
+                  :stroke-dasharray="`${customerRevenueData[0].percentage * 2.51} ${251 - customerRevenueData[0].percentage * 2.51}`"
+                  stroke-linecap="round"
+                  class="transition-all duration-500"
+                />
+                <!-- New Customers segment -->
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="40"
+                  fill="none"
+                  :stroke="customerRevenueData[1].color"
+                  stroke-width="20"
+                  :stroke-dasharray="`${customerRevenueData[1].percentage * 2.51} ${251 - customerRevenueData[1].percentage * 2.51}`"
+                  :stroke-dashoffset="`${-customerRevenueData[0].percentage * 2.51}`"
+                  stroke-linecap="round"
+                  class="transition-all duration-500"
+                />
+              </svg>
+              <!-- Center text -->
+              <div class="absolute inset-0 flex flex-col items-center justify-center">
+                <p class="text-2xl font-bold">{{ formatCurrency(totalRevenue) }}</p>
+                <p class="text-xs text-gray-500">Total Revenue</p>
+              </div>
+            </div>
+
+            <!-- Legend -->
+            <div class="w-full space-y-3">
+              <div
+                v-for="item in customerRevenueData"
+                :key="item.label"
+                class="flex items-center justify-between"
+              >
+                <div class="flex items-center gap-2">
+                  <div class="h-3 w-3 rounded-full" :style="{ backgroundColor: item.color }" />
+                  <span class="text-sm font-medium text-gray-700">{{ item.label }}</span>
+                </div>
+                <div class="text-right">
+                  <p class="text-sm font-semibold">{{ formatCurrency(item.revenue) }}</p>
+                  <p class="text-xs text-gray-500">{{ item.percentage }}%</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       <!--  -->
       <div class="divide-y divide-gray-200 rounded-xl bg-white shadow">

@@ -6,6 +6,32 @@ import { MONTHLY_SUMMARY_STATS } from "@modules/reports/constants"
 import DataTable, { TableColumn } from "@components/DataTable.vue"
 import ReportInsightCard from "../ReportInsightCard.vue"
 import { useMediaQuery } from "@vueuse/core"
+import { Bar, Line } from "vue-chartjs"
+import {
+  Chart as ChartJS,
+  Title,
+  Tooltip,
+  Legend,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  LineElement,
+  PointElement,
+  Filler,
+  ChartOptions,
+} from "chart.js"
+
+ChartJS.register(
+  Title,
+  Tooltip,
+  Legend,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  LineElement,
+  PointElement,
+  Filler,
+)
 
 const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
 
@@ -52,6 +78,113 @@ const DATA: TFinancialRow[] = [
 const isBoldRow = (row: TFinancialRow) => {
   return ["Net Revenue", "Gross Profit", "Net Income (EBITDA)"].includes(row.line_item)
 }
+
+// Weekly Revenue & Expenses Chart Data
+const weeklyRevenueExpensesData = {
+  labels: ["Week 1", "Week 2", "Week 3", "Week 4", "Week 5"],
+  datasets: [
+    {
+      label: "Revenue",
+      data: [48200, 52100, 58300, 45600, 14200],
+      backgroundColor: "#3B82F6",
+      borderRadius: 4,
+    },
+    {
+      label: "Expenses",
+      data: [32500, 35800, 38200, 31900, 10200],
+      backgroundColor: "#EF4444",
+      borderRadius: 4,
+    },
+  ],
+}
+
+const weeklyRevenueExpensesOptions: ChartOptions<"bar"> = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      display: true,
+      position: "bottom",
+      labels: {
+        usePointStyle: true,
+        padding: 15,
+      },
+    },
+    tooltip: {
+      callbacks: {
+        label: (context) => `${context.dataset.label}: ${formatCurrency(Number(context.parsed.y))}`,
+      },
+    },
+  },
+  scales: {
+    y: {
+      beginAtZero: true,
+      ticks: {
+        callback: (value) => `₦${(Number(value) / 1000).toFixed(0)}K`,
+      },
+    },
+  },
+}
+
+// Daily Revenue Trend Chart Data
+const dailyRevenueTrendData = {
+  labels: Array.from({ length: 31 }, (_, i) => (i + 1).toString()),
+  datasets: [
+    {
+      label: "Revenue",
+      data: [
+        5200, 6100, 7300, 8500, 7800, 6900, 5800, 8200, 9100, 8700, 9500, 10200, 11500, 9800, 8300,
+        7600, 8900, 9400, 10100, 11200, 9700, 8500, 7200, 6800, 7500, 8800, 9900, 10800, 9200, 7900,
+        6500,
+      ],
+      borderColor: "#3B82F6",
+      backgroundColor: "rgba(59, 130, 246, 0.1)",
+      tension: 0.4,
+      fill: true,
+      pointRadius: 0,
+      pointHoverRadius: 6,
+      pointHoverBackgroundColor: "#3B82F6",
+      pointHoverBorderColor: "#ffffff",
+      pointHoverBorderWidth: 2,
+    },
+  ],
+}
+
+const dailyRevenueTrendOptions: ChartOptions<"line"> = {
+  responsive: true,
+  maintainAspectRatio: false,
+  interaction: {
+    intersect: false,
+    mode: "index",
+  },
+  plugins: {
+    legend: {
+      display: false,
+    },
+    tooltip: {
+      callbacks: {
+        title: (context) => `Day ${context[0].label}`,
+        label: (context) => `Revenue: ${formatCurrency(Number(context.parsed.y))}`,
+      },
+    },
+  },
+  scales: {
+    y: {
+      beginAtZero: true,
+      ticks: {
+        callback: (value) => `₦${(Number(value) / 1000).toFixed(0)}K`,
+      },
+    },
+    x: {
+      grid: {
+        display: false,
+      },
+      ticks: {
+        maxTicksLimit: 10,
+      },
+    },
+  },
+}
 </script>
 
 <template>
@@ -78,7 +211,11 @@ const isBoldRow = (row: TFinancialRow) => {
           <h3 class="mb-1 text-sm font-semibold">Weekly Revenue & Expenses</h3>
           <p class="text-xs">Sales vs expenses by week of January</p>
         </div>
-        <div class="px-4 py-6"></div>
+        <div class="px-4 py-6">
+          <div class="h-64">
+            <Bar :data="weeklyRevenueExpensesData" :options="weeklyRevenueExpensesOptions" />
+          </div>
+        </div>
       </div>
       <!--  -->
       <div class="rounded-xl bg-white shadow">
@@ -86,7 +223,11 @@ const isBoldRow = (row: TFinancialRow) => {
           <h3 class="mb-1 text-sm font-semibold">Daily Revenue Trend</h3>
           <p class="text-xs">Revenue per day across January</p>
         </div>
-        <div class="min-h-80 px-4 py-6"></div>
+        <div class="px-4 py-6">
+          <div class="h-64">
+            <Line :data="dailyRevenueTrendData" :options="dailyRevenueTrendOptions" />
+          </div>
+        </div>
       </div>
     </div>
 
