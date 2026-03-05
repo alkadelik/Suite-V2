@@ -1,20 +1,25 @@
 <script setup lang="ts">
-import { EOD_FINANCIAL_DATA } from "../../constants"
-import Icon from "@components/Icon.vue"
 import { formatCurrency } from "@/utils/format-currency"
 import { startCase } from "@/utils/format-strings"
-import { h } from "vue"
+import { computed, h } from "vue"
 import Chip from "@components/Chip.vue"
 import DataTable, { TableColumn } from "@components/DataTable.vue"
-import ReportStatCard from "../ReportStatCard.vue"
+import ReportStatCard, { IReportStat } from "../ReportStatCard.vue"
+import { useMediaQuery } from "@vueuse/core"
+import ReportInsightCard from "../ReportInsightCard.vue"
 
-const stats = EOD_FINANCIAL_DATA.map((item) => ({
-  label: item.label,
-  value: item.value,
-  caption: item.meta,
-  percentage: item.percentage || undefined,
-}))
+const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
 
+const stats = computed(() => {
+  const data: IReportStat[] = [
+    { label: "Orders Fulfilled", value: 120, caption: "of 17 total" },
+    { label: "Pending Fulfilment", value: 5, caption: "3 awaiting payment · 2 stock" },
+    { label: "Delivered Today", value: 2, caption: "From previous days" },
+    { label: "Returns Received", value: 1, caption: "Refund processed same-day" },
+    { label: "Delivered Exceptions", value: 1, caption: "Customer not available (Abuja)" },
+  ]
+  return isMobile.value ? data.slice(0, 2) : data
+})
 type TPendingOrders = {
   order_number: string
   issue: "awaiting_payment" | "low_stock"
@@ -102,7 +107,7 @@ const DATA: TPendingOrders[] = [
       />
     </div>
 
-    <div class="grid grid-cols-2 gap-8 py-4">
+    <div class="grid grid-cols-1 gap-8 py-4 md:grid-cols-2">
       <!--  -->
       <div class="rounded-xl bg-white shadow">
         <div class="border-b border-gray-200 px-4 py-3">
@@ -136,21 +141,24 @@ const DATA: TPendingOrders[] = [
           <p class="text-xs">5 orders carrying over &bull; {{ formatCurrency(4500) }} at stake</p>
         </div>
         <div>
-          <DataTable :columns="COLUMNS" :data="DATA ?? []" :show-pagination="false" />
+          <DataTable
+            :columns="COLUMNS"
+            :data="DATA ?? []"
+            :show-mobile-view="false"
+            :fix-first-column="isMobile"
+            :show-pagination="false"
+          />
         </div>
       </div>
     </div>
 
-    <div class="rounded-r-lg border border-l-4 border-gray-200 border-l-gray-600 bg-white p-4">
-      <h4 class="mb-3 flex items-center gap-2 text-xs font-medium uppercase">
-        <Icon name="box-filled" class="text-warning-400" size="16" /> Delivery Exceptions
-      </h4>
+    <ReportInsightCard title="Delivery Exceptions">
       <p class="text-sm">
         <b>Order #1038</b> (Abuja, <b>₦18,200</b>) — GIG attempted delivery at <b>3:45pm</b> but
         customer was not available. Rescheduled for <b>Monday</b>. Recommendation: Send the customer
         a WhatsApp confirming the Monday delivery window to avoid a second failed attempt, which
         would trigger a <b>return</b>.
       </p>
-    </div>
+    </ReportInsightCard>
   </section>
 </template>

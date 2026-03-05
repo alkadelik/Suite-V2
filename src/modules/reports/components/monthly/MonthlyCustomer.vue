@@ -4,13 +4,18 @@ import ReportStatCard from "../ReportStatCard.vue"
 import { computed } from "vue"
 import { MONTHLY_SUMMARY_STATS } from "@modules/reports/constants"
 import ReportInsightCard from "../ReportInsightCard.vue"
+import { useMediaQuery } from "@vueuse/core"
 
-const stats = computed(() =>
-  MONTHLY_SUMMARY_STATS.map((stat) => ({
+const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
+
+const stats = computed(() => {
+  const data = MONTHLY_SUMMARY_STATS.map((stat) => ({
     ...stat,
     value: truncateCurrency(Number(stat.value)),
-  })),
-)
+  }))
+
+  return isMobile.value ? data.slice(0, 2) : data
+})
 
 const REGIONS = [
   { name: "Lagos", revenue: 10800, percentage: 45 },
@@ -29,20 +34,17 @@ const REGIONS = [
     </div>
 
     <ReportInsightCard title="Customer Insights">
-      <template #content>
-        <p>
-          The <b>38% repeat rate</b> is the standout metric this month — up from <b>27.6%</b> in
-          December. This suggests your holiday promotions successfully converted deal-seekers into
-          loyal customers. Your <b>LTV:CAC ratio of 12.4x</b> is exceptional (benchmark:
-          <b>3-5x</b>), meaning every naira spent on ads generates tremendous long-term value.
-          Recommended action: invest more in retention marketing (loyalty points, exclusive drops
-          for repeat buyers) since your repeat customers generate <b>2.8x more revenue</b> per order
-          than first-time buyers.
-        </p>
-      </template>
+      <p>
+        The <b>38% repeat rate</b> is the standout metric this month — up from <b>27.6%</b> in
+        December. This suggests your holiday promotions successfully converted deal-seekers into
+        loyal customers. Your <b>LTV:CAC ratio of 12.4x</b> is exceptional (benchmark: <b>3-5x</b>),
+        meaning every naira spent on ads generates tremendous long-term value. Recommended action:
+        invest more in retention marketing (loyalty points, exclusive drops for repeat buyers) since
+        your repeat customers generate <b>2.8x more revenue</b> per order than first-time buyers.
+      </p>
     </ReportInsightCard>
 
-    <div class="grid grid-cols-2 gap-8 py-4">
+    <div class="grid grid-cols-1 gap-8 py-4 md:grid-cols-2">
       <!--  -->
       <div class="rounded-xl bg-white shadow">
         <div class="border-b border-gray-200 px-4 py-3">

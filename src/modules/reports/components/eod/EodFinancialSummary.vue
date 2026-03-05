@@ -1,13 +1,20 @@
 <script setup lang="ts">
+import { computed } from "vue"
 import { EOD_FINANCIAL_DATA } from "../../constants"
 import ReportStatCard from "../ReportStatCard.vue"
+import { useMediaQuery } from "@vueuse/core"
 
-const stats = EOD_FINANCIAL_DATA.map((item) => ({
-  label: item.label,
-  value: item.value,
-  caption: item.meta,
-  percentage: item.percentage || undefined,
-}))
+const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
+
+const stats = computed(() => {
+  const data = EOD_FINANCIAL_DATA.map((item) => ({
+    label: item.label,
+    value: item.value,
+    caption: item.meta,
+    percentage: item.percentage || undefined,
+  }))
+  return isMobile.value ? data.slice(0, 2) : data
+})
 </script>
 
 <template>

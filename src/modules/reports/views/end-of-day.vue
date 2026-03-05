@@ -6,7 +6,6 @@ import SectionHeader from "@components/SectionHeader.vue"
 import { useSettingsStore } from "@modules/settings/store"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue"
-import Icon from "@components/Icon.vue"
 import EodFinancialSummary from "../components/eod/EodFinancialSummary.vue"
 import EodExpenses from "../components/eod/EodExpenses.vue"
 import EodPayments from "../components/eod/EodPayments.vue"
@@ -20,6 +19,7 @@ import EodProductsSold from "../components/eod/EodProductsSold.vue"
 import EodOrders from "../components/eod/EodOrders.vue"
 import { EOD_REPORT_SECTIONS } from "../constants"
 import Tabs from "@components/Tabs.vue"
+import ReportInsightCard from "../components/ReportInsightCard.vue"
 
 const activeDate = ref(new Date().toISOString().slice(0, 10))
 const activeSection = ref(EOD_REPORT_SECTIONS[0].key)
@@ -118,25 +118,6 @@ onBeforeUnmount(() => {
         />
       </div>
 
-      <div
-        class="border-l-primary-600 border-primary-200 bg-primary-50 rounded-r-lg border border-l-4 p-4"
-      >
-        <h4 class="mb-3 flex items-center gap-2 text-xs font-medium uppercase">
-          <Icon name="trend-up" size="16" /> Daily Summary
-        </h4>
-        <p class="text-sm">
-          Solid Saturday. <b>₦218,400</b> in gross revenue across <b>17 orders</b>, your second-best
-          Saturday this month. Net revenue landed at <b>₦189,650</b> after one refund (<b>₦8,500</b>
-          — wrong size, Ankara Wrap Dress again) and <b>₦6,250</b> in discounts. Digital payments
-          dominated at <b>76%</b>, with cash-on-delivery accounting for <b>₦52,400</b> — all
-          collected. All <b>12 fulfilled orders</b> shipped via GIG Logistics today with a
-          <b>100% on-time handoff</b>. You have <b>5 pending orders</b> carrying into Monday —
-          <b>3 awaiting payment confirmation</b> and <b>2 awaiting stock</b> (Adire Bucket Hat is
-          now at just <b>2 units</b>). Reorder the bucket hat tonight — at current velocity, you'll
-          stock out by <b>Tuesday</b>.
-        </p>
-      </div>
-
       <!-- Financial Summary -->
       <EodFinancialSummary id="summary" />
       <EodPayments id="payments" />
@@ -149,6 +130,30 @@ onBeforeUnmount(() => {
       <EodUnresolvedIssues id="issues" />
       <EodProductsSold id="products" />
       <EodOrders id="orders" />
+
+      <ReportInsightCard title="Daily Summary & Closing Note">
+        <p class="text-sm">
+          Solid Saturday. <b>₦218,400</b> in gross revenue across <b>17 orders</b>, your second-best
+          Saturday this month. Net revenue landed at <b>₦189,650</b> after one refund (<b>₦8,500</b>
+          — wrong size, Ankara Wrap Dress again) and <b>₦6,250</b> in discounts. Digital payments
+          dominated at <b>76%</b>, with cash-on-delivery accounting for <b>₦52,400</b> — all
+          collected. All <b>12 fulfilled orders</b> shipped via GIG Logistics today with a
+          <b>100% on-time handoff</b>. You have <b>5 pending orders</b> carrying into Monday —
+          <b>3 awaiting payment confirmation</b> and <b>2 awaiting stock</b> (Adire Bucket Hat is
+          now at just <b>2 units</b>). Reorder the bucket hat tonight — at current velocity, you'll
+          stock out by <b>Tuesday</b>.
+        </p>
+        <br />
+        <p class="text-sm">
+          Three things for Monday: (1) Reorder <b>Adire Bucket Hats</b> and
+          <b>Lagos Life Totes</b> — both are at critical stock and you'll lose sales this week
+          without them. (2) Follow up on the <b>3 pending payments</b> (<b>₦38,200 total</b>) — send
+          a friendly WhatsApp reminder before <b>10am</b>. (3) Confirm Monday delivery for
+          <b>Order #1038</b> (Abuja, <b>₦18,200</b>) to avoid a second failed delivery attempt.
+          Overall, a good Saturday. Your returning customer revenue share (<b>67.9%</b>) is strong —
+          your regulars are showing up.
+        </p>
+      </ReportInsightCard>
     </section>
   </div>
 </template>

@@ -4,15 +4,20 @@ import ReportStatCard from "../ReportStatCard.vue"
 import { computed } from "vue"
 import { MONTHLY_PERFOMANCE_INSIGHTS } from "@modules/reports/constants"
 import ReportInsightCard from "../ReportInsightCard.vue"
+import { useMediaQuery } from "@vueuse/core"
+
+const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
 
 const stats = computed(() => {
   const ngnValue = ["Gross Margin", "Avg Order Value", "Discount Impact"]
-  return MONTHLY_PERFOMANCE_INSIGHTS.map((stat) => ({
+  const data = MONTHLY_PERFOMANCE_INSIGHTS.map((stat) => ({
     ...stat,
     value: ngnValue.includes(String(stat.label))
       ? truncateCurrency(Number(stat.value))
       : stat.value,
   }))
+
+  return isMobile.value ? data.slice(0, 2) : data
 })
 </script>
 
@@ -23,20 +28,18 @@ const stats = computed(() => {
     </div>
 
     <ReportInsightCard title="Performance Insights">
-      <template #content>
-        <p>
-          Your margins are healthy and improving, but growth is being partially offset by rising
-          discount absorption and cart abandonment. The highest-leverage fix this month: address
-          checkout friction. At <b>34.7% abandonment</b> with <b>62%</b> dropping off at payment,
-          adding bank transfer or USSD payment options could recover <b>₦200-350K/month</b>. Also,
-          your conversion rate of <b>4.2%</b> suggests your traffic quality is decent but product
-          pages aren't closing the sale — consider adding more customer reviews and size-specific
-          photos.
-        </p>
-      </template>
+      <p>
+        Your margins are healthy and improving, but growth is being partially offset by rising
+        discount absorption and cart abandonment. The highest-leverage fix this month: address
+        checkout friction. At <b>34.7% abandonment</b> with <b>62%</b> dropping off at payment,
+        adding bank transfer or USSD payment options could recover <b>₦200-350K/month</b>. Also,
+        your conversion rate of <b>4.2%</b> suggests your traffic quality is decent but product
+        pages aren't closing the sale — consider adding more customer reviews and size-specific
+        photos.
+      </p>
     </ReportInsightCard>
 
-    <div class="grid grid-cols-2 gap-8 py-4">
+    <div class="grid grid-cols-1 gap-8 py-4 md:grid-cols-2">
       <!--  -->
       <div class="rounded-xl bg-white shadow">
         <div class="border-b border-gray-200 px-4 py-3">

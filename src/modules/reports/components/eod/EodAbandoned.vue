@@ -2,6 +2,10 @@
 import { formatCurrency } from "@/utils/format-currency"
 import DataTable from "@components/DataTable.vue"
 import { EOD_ABANDONED, EOD_ABANDONED_COLUMNS } from "@modules/reports/constants"
+import { useMediaQuery } from "@vueuse/core"
+import { computed } from "vue"
+
+const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
 </script>
 
 <template>
@@ -13,7 +17,7 @@ import { EOD_ABANDONED, EOD_ABANDONED_COLUMNS } from "@modules/reports/constants
       <span class="ml-auto text-xs font-medium text-gray-600 uppercase">Lost Revenue</span>
     </header>
     <!-- content -->
-    <div class="grid grid-cols-2 gap-8 py-4">
+    <div class="grid grid-cols-1 gap-8 py-4 md:grid-cols-2">
       <!--  -->
       <div class="rounded-xl bg-white shadow">
         <div class="border-b border-gray-200 px-4 py-3">
@@ -41,6 +45,8 @@ import { EOD_ABANDONED, EOD_ABANDONED_COLUMNS } from "@modules/reports/constants
             :columns="EOD_ABANDONED_COLUMNS"
             :data="EOD_ABANDONED ?? []"
             :show-pagination="false"
+            :show-mobile-view="false"
+            :fix-first-column="isMobile"
           />
         </div>
         <div class="p-4 text-sm italic">

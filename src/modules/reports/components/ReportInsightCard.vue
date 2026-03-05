@@ -35,7 +35,7 @@ withDefaults(defineProps<IReportInsight>(), {
       {{ title }}
     </h4>
     <div class="text-sm" :class="{ 'rounded-lg bg-gray-100 p-3': variant === 'alt' }">
-      <slot name="content">
+      <slot>
         <p>{{ content }}</p>
       </slot>
     </div>

@@ -5,13 +5,17 @@ import { computed } from "vue"
 import { MONTHLY_SUMMARY_STATS } from "@modules/reports/constants"
 import DataTable, { TableColumn } from "@components/DataTable.vue"
 import ReportInsightCard from "../ReportInsightCard.vue"
+import { useMediaQuery } from "@vueuse/core"
 
-const stats = computed(() =>
-  MONTHLY_SUMMARY_STATS.map((stat) => ({
+const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
+
+const stats = computed(() => {
+  const data = MONTHLY_SUMMARY_STATS.map((stat) => ({
     ...stat,
     value: truncateCurrency(Number(stat.value)),
-  })),
-)
+  }))
+  return isMobile.value ? data.slice(0, 2) : data
+})
 
 type TFinancialRow = {
   line_item: string
@@ -57,19 +61,17 @@ const isBoldRow = (row: TFinancialRow) => {
     </div>
 
     <ReportInsightCard title="What this Mean">
-      <template #content>
-        <p>
-          Your revenue grew faster than your costs — a healthy sign. COGS rose <b>8.1%</b> vs
-          revenue's <b>14.2%</b>, meaning your sourcing efficiency improved or your product mix
-          shifted toward higher-margin items. The refund spike (<b>+22%</b>) is the one flag here:
-          <b>12 of 18</b> refunded orders were in the <b>"wrong size"</b> category. This suggests
-          your size guide may need updating, especially for the new Ankara line. Fixing this alone
-          could recover <b>~₦85K/month</b> in lost revenue and processing costs.
-        </p>
-      </template>
+      <p>
+        Your revenue grew faster than your costs — a healthy sign. COGS rose <b>8.1%</b> vs
+        revenue's <b>14.2%</b>, meaning your sourcing efficiency improved or your product mix
+        shifted toward higher-margin items. The refund spike (<b>+22%</b>) is the one flag here:
+        <b>12 of 18</b> refunded orders were in the <b>"wrong size"</b> category. This suggests your
+        size guide may need updating, especially for the new Ankara line. Fixing this alone could
+        recover <b>~₦85K/month</b> in lost revenue and processing costs.
+      </p>
     </ReportInsightCard>
 
-    <div class="grid grid-cols-2 gap-8 py-4">
+    <div class="grid gap-8 py-4 md:grid-cols-2">
       <!--  -->
       <div class="rounded-xl bg-white shadow">
         <div class="border-b border-gray-200 px-4 py-3">
@@ -98,6 +100,8 @@ const isBoldRow = (row: TFinancialRow) => {
           :data="DATA ?? []"
           :columns="COLUMNS"
           :show-pagination="false"
+          :show-mobile-view="false"
+          :fix-first-column="isMobile"
           :row-class="(row) => (isBoldRow(row) ? 'font-semibold bg-gray-50  ' : '')"
         >
           <template #cell:vs_last_month="{ item }">

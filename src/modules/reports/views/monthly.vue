@@ -62,22 +62,20 @@ const activeSection = ref("summary")
 
     <section v-else class="mt-6 space-y-6">
       <ReportInsightCard variant="primary" icon="trend-up" title="Executive Summary - AI Insights">
-        <template #content>
-          <p>
-            January was a <b>strong recovery month</b> following the holiday season. Total revenue
-            hit <b>₦4.87M</b>, up <b>14.2%</b> from December. Net revenue (EBITDA) settled at
-            <b>₦1.52M</b>, reflecting a healthy <b>31.2% margin</b> after accounting for COGS,
-            refunds, and shipping costs. The biggest driver was a
-            <b>38% surge in repeat customers</b> — likely a downstream effect of your December
-            promotions converting one-time buyers into returning shoppers. However,
-            <b>cart abandonment climbed to 34.7%</b>, suggesting friction at checkout that's leaving
-            roughly <b>₦580K in unrealized revenue</b> on the table. Your best-selling category (<b
-              >Ankara dresses</b
-            >) accounts for <b>41% of total revenue</b> — a <b>concentration risk</b> worth
-            watching. Consider diversifying promotional focus to your <b>accessories line</b>, which
-            showed a quiet but promising <b>22% growth</b> this month.
-          </p>
-        </template>
+        <p>
+          January was a <b>strong recovery month</b> following the holiday season. Total revenue hit
+          <b>₦4.87M</b>, up <b>14.2%</b> from December. Net revenue (EBITDA) settled at
+          <b>₦1.52M</b>, reflecting a healthy <b>31.2% margin</b> after accounting for COGS,
+          refunds, and shipping costs. The biggest driver was a
+          <b>38% surge in repeat customers</b> — likely a downstream effect of your December
+          promotions converting one-time buyers into returning shoppers. However,
+          <b>cart abandonment climbed to 34.7%</b>, suggesting friction at checkout that's leaving
+          roughly <b>₦580K in unrealized revenue</b> on the table. Your best-selling category (<b
+            >Ankara dresses</b
+          >) accounts for <b>41% of total revenue</b> — a <b>concentration risk</b> worth watching.
+          Consider diversifying promotional focus to your <b>accessories line</b>, which showed a
+          quiet but promising <b>22% growth</b> this month.
+        </p>
       </ReportInsightCard>
 
       <div>

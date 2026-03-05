@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import DataTable from "@components/DataTable.vue"
 import { EOD_PRODUCTS_SOLD, EOD_PRODUCTS_SOLD_COLUMNS } from "@modules/reports/constants"
+import { useMediaQuery } from "@vueuse/core"
+import { computed } from "vue"
+
+const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
 </script>
 
 <template>
@@ -18,6 +22,8 @@ import { EOD_PRODUCTS_SOLD, EOD_PRODUCTS_SOLD_COLUMNS } from "@modules/reports/c
           :columns="EOD_PRODUCTS_SOLD_COLUMNS"
           :data="EOD_PRODUCTS_SOLD ?? []"
           :show-pagination="false"
+          :show-mobile-view="false"
+          :fix-first-column="isMobile"
         />
       </div>
     </div>

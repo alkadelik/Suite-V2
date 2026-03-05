@@ -23,7 +23,12 @@ defineProps<{
 </script>
 
 <template>
-  <div class="flex flex-col gap-1.5 rounded-lg bg-white p-4 shadow">
+  <div
+    :class="[
+      'flex flex-col gap-1.5 rounded-lg border p-4',
+      'bg-primary-25 border-primary-200 sm:border-gray-100 sm:bg-white',
+    ]"
+  >
     <span class="border-primary-600 w-12 rounded-full border-t-3" />
     <p class="text-core-700 text-sm">{{ stat.label }}</p>
     <p class="text-xl font-semibold">{{ stat.value }}</p>

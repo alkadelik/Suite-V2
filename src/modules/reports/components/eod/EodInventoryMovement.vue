@@ -11,7 +11,7 @@ import Icon from "@components/Icon.vue"
       <span class="ml-auto text-xs font-medium text-gray-600 uppercase">Stock</span>
     </header>
     <!-- content -->
-    <div class="grid grid-cols-2 gap-8 py-4">
+    <div class="grid grid-cols-1 gap-8 py-4 md:grid-cols-2">
       <!--  -->
       <div class="rounded-xl bg-white shadow">
         <div class="border-b border-gray-200 px-4 py-3">

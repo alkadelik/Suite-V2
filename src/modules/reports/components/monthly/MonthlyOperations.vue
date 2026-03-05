@@ -84,18 +84,16 @@ const DATA: TRefundRow[] = [
     </div>
 
     <ReportInsightCard title="Operations Insights">
-      <template #content>
-        <p>
-          Fulfillment improved significantly — <b>2.4 days</b> vs <b>3.1</b> in December — likely
-          because post-holiday order volume normalized and your logistics partner cleared their
-          backlog. The key concern is returns: <b>67%</b> are <b>"wrong size"</b> which is a
-          preventable issue. Top returned product: <b>Ankara Wrap Dress</b>. Recommendation: Add a
-          measurement guide popup on that product page and consider offering free size exchanges
-          instead of refunds to retain revenue. For payments, the pay-on-delivery channel shows
-          <b>3.2x higher cancellations</b> — a <b>₦200-300 prepayment discount</b> could shift
-          <b>15-20%</b> of POD orders to prepaid, reducing no-shows and improving cash flow.
-        </p>
-      </template>
+      <p>
+        Fulfillment improved significantly — <b>2.4 days</b> vs <b>3.1</b> in December — likely
+        because post-holiday order volume normalized and your logistics partner cleared their
+        backlog. The key concern is returns: <b>67%</b> are <b>"wrong size"</b> which is a
+        preventable issue. Top returned product: <b>Ankara Wrap Dress</b>. Recommendation: Add a
+        measurement guide popup on that product page and consider offering free size exchanges
+        instead of refunds to retain revenue. For payments, the pay-on-delivery channel shows
+        <b>3.2x higher cancellations</b> — a <b>₦200-300 prepayment discount</b> could shift
+        <b>15-20%</b> of POD orders to prepaid, reducing no-shows and improving cash flow.
+      </p>
     </ReportInsightCard>
 
     <div class="rounded-xl bg-white shadow">
