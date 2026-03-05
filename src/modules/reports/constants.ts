@@ -1,9 +1,10 @@
 import Chip from "@components/Chip.vue"
 import { TableColumn } from "@components/DataTable.vue"
 import { h } from "vue"
-import { TEodAbandoned, TEodOrders, TEodProductsSold } from "./types"
+import { TEodAbandoned, TEodOrders, TEodProductsSold, TMonthlyProductRow } from "./types"
 import { formatCurrency } from "@/utils/format-currency"
 import { startCase } from "@/utils/format-strings"
+import { IReportStat } from "./components/ReportStatCard.vue"
 
 export const EOD_REPORT_SECTIONS = [
   { title: "Summary", key: "summary" },
@@ -259,4 +260,207 @@ export const MONTHLY_REPORT_SECTIONS = [
   { title: "Customers", key: "customers" },
   { title: "Products", key: "products" },
   { title: "Operations", key: "operations" },
+]
+
+export const MONTHLY_SUMMARY_STATS: IReportStat[] = [
+  {
+    label: "Total Sales Revenue",
+    value: 120560000000,
+    percentage: 20,
+    percentageText: "vs Dec",
+    caption: "43.9% of revenue",
+  },
+  {
+    label: "Cost of Goods Sold",
+    value: 45000000000,
+    percentage: -10,
+    percentageText: "vs Dec",
+    caption: "37.3% of revenue",
+  },
+  {
+    label: "Total Expenses",
+    value: 15000000000,
+    percentage: -5,
+    percentageText: "vs Dec",
+    caption: "12.4% of revenue",
+  },
+  {
+    label: "Refunds",
+    value: 5000000000,
+    percentage: 15,
+    percentageText: "vs Dec",
+    caption: "4.1% of revenue",
+  },
+  {
+    label: "Shipping Costs",
+    value: 2000000000,
+    percentage: -2,
+    percentageText: "vs Dec",
+    caption: "1.6% of revenue",
+  },
+  {
+    label: "Net Revenue (EBITDA)",
+    value: 8000000000,
+    percentage: 10,
+    percentageText: "vs Dec",
+    caption: "6.5% of revenue",
+  },
+]
+
+export const MONTHLY_PERFOMANCE_INSIGHTS: IReportStat[] = [
+  {
+    label: "Gross Margin",
+    value: 62.7,
+    percentage: 5.2,
+    percentageText: "vs Dec",
+    note: "Margin is healthy and improving. Focus on maintaining this trajectory.",
+  },
+  {
+    label: "Avg Order Value",
+    value: 12500,
+    caption: "Customers are spending more",
+    note: "Strong AOV growth indicates successful upselling or premium product adoption.",
+  },
+  {
+    label: "Avg Items/Order",
+    value: 2.3,
+    percentage: -3.1,
+    percentageText: "vs Dec",
+    note: "Consider bundling strategies to increase items per transaction.",
+  },
+  {
+    label: "Inventory Turnonver",
+    value: 4.5,
+    caption: "Faster inventory turnover",
+    note: "Efficient stock movement reduces holding costs and improves cash flow.",
+  },
+  {
+    label: "Sell-through Rate",
+    value: 78.2,
+    percentage: 3.4,
+    percentageText: "vs Dec",
+    note: "Strong sell-through indicates good product-market fit and inventory planning.",
+  },
+  {
+    label: "Conversion Rate",
+    value: 5.6,
+    caption: "Slight decrease in conversion rate",
+    note: "Review checkout flow and product page optimization to improve conversions.",
+  },
+  {
+    label: "Cart Abandonment",
+    value: 23.4,
+    percentage: -2.1,
+    percentageText: "vs Dec",
+    note: "Improvement in cart abandonment shows better checkout experience.",
+  },
+  {
+    label: "Discount Impact",
+    value: 12.5,
+    caption: "Discounts are having a positive impact",
+    note: "Monitor profit margins to ensure discounting strategy remains sustainable.",
+  },
+]
+
+export const MONTHLY_TOP_PRODUCTS: TMonthlyProductRow[] = [
+  {
+    sn: 1,
+    product_name: "Classic Ankara Dress",
+    amount: 485000,
+    units_sold: 92,
+    avg_price: 5272,
+    margin: 58,
+    sell_through: 89,
+    inventory_turnover: 5.2,
+  },
+  {
+    sn: 2,
+    product_name: "Lagos Life Tote Bag",
+    amount: 412000,
+    units_sold: 154,
+    avg_price: 2675,
+    margin: 52,
+    sell_through: 76,
+    inventory_turnover: 4.8,
+  },
+  {
+    sn: 3,
+    product_name: "Adire Bucket Hat",
+    amount: 358000,
+    units_sold: 179,
+    avg_price: 2000,
+    margin: 62,
+    sell_through: 94,
+    inventory_turnover: 6.1,
+  },
+  {
+    sn: 4,
+    product_name: "Aso-Oke Cap",
+    amount: 296000,
+    units_sold: 148,
+    avg_price: 2000,
+    margin: 48,
+    sell_through: 71,
+    inventory_turnover: 4.2,
+  },
+  {
+    sn: 5,
+    product_name: "Naija Pride T-Shirt",
+    amount: 267000,
+    units_sold: 178,
+    avg_price: 1500,
+    margin: 55,
+    sell_through: 82,
+    inventory_turnover: 5.5,
+  },
+  {
+    sn: 6,
+    product_name: "Dashiki Shirt - Unisex",
+    amount: 234000,
+    units_sold: 78,
+    avg_price: 3000,
+    margin: 49,
+    sell_through: 68,
+    inventory_turnover: 3.9,
+  },
+  {
+    sn: 7,
+    product_name: "Kente Print Sneakers",
+    amount: 198000,
+    units_sold: 44,
+    avg_price: 4500,
+    margin: 44,
+    sell_through: 61,
+    inventory_turnover: 3.4,
+  },
+  {
+    sn: 8,
+    product_name: "Agbada Set - Premium",
+    amount: 184000,
+    units_sold: 8,
+    avg_price: 23000,
+    margin: 42,
+    sell_through: 48,
+    inventory_turnover: 2.1,
+  },
+  {
+    sn: 9,
+    product_name: "Yoruba Print Scarf",
+    amount: 156000,
+    units_sold: 104,
+    avg_price: 1500,
+    margin: 60,
+    sell_through: 73,
+    inventory_turnover: 4.5,
+  },
+  {
+    sn: 10,
+    product_name: "Afrobeat Hoodie",
+    amount: 142000,
+    units_sold: 71,
+    avg_price: 2000,
+    margin: 51,
+    sell_through: 66,
+    inventory_turnover: 3.7,
+  },
 ]

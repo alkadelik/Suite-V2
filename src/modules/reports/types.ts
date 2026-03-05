@@ -24,3 +24,14 @@ export type TEodAbandoned = {
   amount: number
   drop_off: "shipping_info" | "payment_page"
 }
+
+export type TMonthlyProductRow = {
+  sn: number
+  product_name: string
+  amount: number
+  units_sold: number
+  avg_price: number
+  margin: number
+  sell_through: number
+  inventory_turnover: number
+}

@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import StatCard from "@components/StatCard.vue"
 import { EOD_FINANCIAL_DATA } from "../../constants"
+import ReportStatCard from "../ReportStatCard.vue"
 
 const stats = EOD_FINANCIAL_DATA.map((item) => ({
-  icon: "moneys",
   label: item.label,
   value: item.value,
-  valueText: item.meta,
+  caption: item.meta,
   percentage: item.percentage || undefined,
 }))
 </script>
@@ -21,7 +20,7 @@ const stats = EOD_FINANCIAL_DATA.map((item) => ({
     </header>
     <!-- content -->
     <div class="grid grid-cols-2 gap-3 py-4 md:grid-cols-3 xl:grid-cols-4">
-      <StatCard
+      <ReportStatCard
         v-for="stat in stats"
         :key="stat.label"
         :stat="stat"
