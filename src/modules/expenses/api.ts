@@ -30,9 +30,12 @@ export function useGetExpenses(
 }
 
 /** Fetch expense statistics */
-export function useGetExpenseDashboard() {
+export function useGetExpenseDashboard(
+  params?: MaybeRefOrGetter<Record<string, string | number | boolean> | undefined>,
+) {
   return useApiQuery<ExpenseDashboardStats>({
     url: `/expenses/stats/`,
+    params,
     key: `expenses-stats`,
     selectData: true,
   })

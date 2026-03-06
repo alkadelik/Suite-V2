@@ -39,21 +39,30 @@ const totalAmount = computed(() => {
 
 <template>
   <div
-    :class="['text-core-800 space-y-4 rounded-xl bg-white p-4 lg:h-full lg:shadow', props.class]"
+    :class="[
+      'text-core-800 space-y-4 rounded-xl bg-white p-4 pb-0 md:pb-4 lg:h-full lg:shadow',
+      props.class,
+    ]"
   >
-    <div v-if="props.showLabel" class="text-core-600 text-base font-medium">
+    <div
+      v-if="props.showLabel && categoryBreakDown.length"
+      class="text-core-600 text-base font-medium"
+    >
       Expense Distribution
     </div>
 
     <div v-if="props.totalExpense" class="text-center">
       <h3 class="text-core-800 font-outfit! text-center text-4xl font-bold">
-        {{ formatCurrency(totalAmount) }}
+        {{ formatCurrency(totalAmount, { kobo: true }) }}
       </h3>
       <p class="text-core-600 mt-1 text-sm">Total Expenses</p>
     </div>
 
     <!-- stacked bar chart -->
-    <div class="flex h-8 w-full overflow-hidden rounded bg-gray-100">
+    <div
+      v-if="categoryBreakDown.length"
+      class="flex h-8 w-full overflow-hidden rounded bg-gray-100"
+    >
       <div
         v-for="category in categoryBreakDown"
         :key="category.category_name"
@@ -67,7 +76,7 @@ const totalAmount = computed(() => {
     </div>
 
     <!-- legend -->
-    <div class="mt-4 flex flex-wrap justify-center gap-3">
+    <div v-if="categoryBreakDown.length" class="mt-4 flex flex-wrap justify-center gap-3">
       <div
         v-for="category in categoryBreakDown"
         :key="category.category_name"

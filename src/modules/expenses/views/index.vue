@@ -24,12 +24,34 @@ import { useRoute } from "vue-router"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
 import ExpenseCard from "../components/ExpenseCard.vue"
+import { useExpenseStore } from "../store"
 import Icon from "@components/Icon.vue"
 import ExpenseDetailsDrawer from "../components/ExpenseDetailsDrawer.vue"
 import StatCard from "@components/StatCard.vue"
 import { formatCurrency, truncateCurrency } from "@/utils/format-currency"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
 import ExpenseStackedBarChart from "../components/ExpenseStackedBarChart.vue"
+import SelectField from "@components/form/SelectField.vue"
+import { calculateDateRange } from "@/utils/formatDate"
+
+const PERIODS = [
+  { label: "Last 7 days", value: "last_7_days" },
+  { label: "This month", value: "this_month" },
+  { label: "Last month", value: "last_month" },
+  { label: "Year to date", value: "year_to_date" },
+  { label: "All time", value: "all_time" },
+]
+
+const expenseStore = useExpenseStore()
+const selectedPeriod = computed({
+  get: () => expenseStore.selectedDateRange,
+  set: (value) => expenseStore.setDateRange(value),
+})
+
+const dateRangeParams = computed(() => {
+  const { start_date, end_date } = calculateDateRange(selectedPeriod.value)
+  return { range: "custom", start_date, end_date }
+})
 
 const openCreate = ref(false)
 const openDelete = ref(false)
@@ -40,18 +62,20 @@ const selectedExpense = ref<TExpense | null>(null)
 
 const {
   data: expenseDashboard,
-  isLoading: isLoadingStats,
+  isPending: isLoadingStats,
   refetch: refetchStats,
-} = useGetExpenseDashboard()
+} = useGetExpenseDashboard(dateRangeParams)
 
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 
 const expenseMetrics = computed(() => {
   const stat = expenseDashboard?.value
 
-  const biggestExpenseCategory = stat?.category_breakdown.reduce((prev, current) =>
-    current.total_amount > prev.total_amount ? current : prev,
-  )
+  const biggestExpenseCategory = stat?.category_breakdown.length
+    ? stat?.category_breakdown.reduce((prev, current) =>
+        current.total_amount > prev.total_amount ? current : prev,
+      )
+    : null
 
   return [
     {
@@ -76,6 +100,13 @@ const expenseMetrics = computed(() => {
   ]
 })
 
+const totalExpenseAmount = computed(() => {
+  const total = expenseDashboard.value?.trend?.length
+    ? expenseDashboard.value?.trend?.reduce((acc, curr) => acc + curr.total_expenses, 0)
+    : 0
+  return total || expenseDashboard?.value?.current.total_amount || 0
+})
+
 const showFilter = ref(false)
 
 const page = ref(1)
@@ -88,6 +119,10 @@ const computedParams = computed(() => {
   if (debouncedSearch.value) params.search = debouncedSearch.value
   params.offset = ((page.value - 1) * itemsPerPage.value).toString()
   params.limit = itemsPerPage.value.toString()
+  // Add date range params
+  params.range = dateRangeParams.value.range
+  params.start_date = dateRangeParams.value.start_date
+  params.end_date = dateRangeParams.value.end_date
   return params
 })
 
@@ -227,6 +262,11 @@ watch(
   },
   { immediate: true },
 )
+
+// Watch for period changes and trigger refetch
+watch(selectedPeriod, () => {
+  handleRefresh()
+})
 </script>
 
 <template>
@@ -235,7 +275,16 @@ watch(
 
     <div class="flex flex-col gap-8">
       <div class="hidden lg:block">
-        <SectionHeader title="Expenses" subtitle="Review your daily performance report." />
+        <SectionHeader title="Expenses" subtitle="Review your daily performance report.">
+          <template #action>
+            <SelectField
+              v-model="selectedPeriod"
+              left-icon="calendar"
+              :options="PERIODS"
+              class="min-w-40"
+            />
+          </template>
+        </SectionHeader>
       </div>
 
       <EmptyState
@@ -265,6 +314,7 @@ watch(
             :loading="isLoadingStats"
           />
           <ExpenseStackedBarChart
+            v-if="expenseDashboard?.category_breakdown.length"
             class="col-span-2"
             show-label
             :category_breakdown="expenseDashboard?.category_breakdown"
@@ -272,8 +322,12 @@ watch(
         </div>
 
         <div v-else>
+          <div class="mb-2 flex justify-end">
+            <SelectField v-model="selectedPeriod" :options="PERIODS" />
+          </div>
+
           <ExpenseStackedBarChart
-            :total-expense="expenseDashboard?.current.total_amount || 0"
+            :total-expense="totalExpenseAmount"
             :category_breakdown="expenseDashboard?.category_breakdown"
           />
         </div>
