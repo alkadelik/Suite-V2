@@ -20,7 +20,7 @@ import EodOrders from "../components/eod/EodOrders.vue"
 import { EOD_REPORT_SECTIONS } from "../constants"
 import Tabs from "@components/Tabs.vue"
 import ReportInsightCard from "../components/ReportInsightCard.vue"
-import { useGenerateEODReport } from "../api"
+import { useGenerateEODReport, useGetLatestEODReport } from "../api"
 
 const yesterday = new Date()
 yesterday.setDate(yesterday.getDate() - 1)
@@ -29,6 +29,9 @@ const activeSection = ref(EOD_REPORT_SECTIONS[0].key)
 const isScrolling = ref(false)
 
 const { mutate: generateEODReport, isPending: isGenerating } = useGenerateEODReport()
+
+const { data: latestEODReport } = useGetLatestEODReport()
+console.log("Latest EOD Report:", latestEODReport)
 
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 const storeName = computed(() => useSettingsStore().storeDetails?.name || "Store")
@@ -114,7 +117,7 @@ const handleGenerateReport = () => {
     </SectionHeader>
 
     <EmptyState
-      v-if="!reportData"
+      v-if="reportData"
       :title="`${fullDate.split(', ')[1]},  End of Day Report`"
       :description="`Get a complete breakdown of your revenue, customers, products and profit — with actionable recommendations.`"
       action-label="Generate End of Day Report"

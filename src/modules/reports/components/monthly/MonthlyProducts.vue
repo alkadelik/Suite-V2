@@ -123,7 +123,7 @@ const bubbleChartOptions: ChartOptions<"bubble"> = {
 }
 
 const COLUMNS: TableColumn<TMonthlyProductRow>[] = [
-  //   { header: "#", accessor: "sn" },
+  { header: "#", accessor: "sn" },
   { header: "Product", accessor: "product_name" },
   { header: "Revenue", accessor: "amount", cell: ({ value }) => formatCurrency(Number(value)) },
   { header: "Units Sold", accessor: "units_sold" },

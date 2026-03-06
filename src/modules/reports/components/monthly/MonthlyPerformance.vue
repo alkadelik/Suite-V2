@@ -35,7 +35,7 @@ const stats = computed(() => {
 
 // Revenue Per Day of Week Chart Data
 const revenueByDayData = {
-  labels: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+  labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
   datasets: [
     {
       label: "Revenue",
@@ -107,37 +107,43 @@ const transactionSizeOptions: ChartOptions<"bar"> = {
 
 // Peak Sales Hours - GitHub-style heatmap data
 const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-const hours = Array.from({ length: 24 }, (_, i) => {
-  const hour = i % 12 || 12
-  const ampm = i < 12 ? "AM" : "PM"
-  return `${hour}${ampm}`
+const hours = Array.from({ length: 8 }, (_, i) => {
+  const startHour = i * 3
+  const endHour = (i + 1) * 3
+  const formatHour = (h: number) => {
+    const hour = h % 12 || 12
+    const ampm = h < 12 || h === 24 ? "am" : "pm"
+    return `${hour}${ampm}`
+  }
+  return `${formatHour(startHour)} - ${formatHour(endHour)}`
 })
 
-// Generate heatmap data (hour x day)
+// Generate heatmap data (3-hour intervals x day)
 const generateHeatmapData = () => {
   const data: { day: number; hour: number; value: number }[] = []
 
   // Sample data with peaks at lunch and evening hours, especially on weekends
   for (let day = 0; day < 7; day++) {
-    for (let hour = 0; hour < 24; hour++) {
-      let value = Math.floor(Math.random() * 3) + 1 // Base activity 1-3
+    for (let hourBlock = 0; hourBlock < 8; hourBlock++) {
+      const startHour = hourBlock * 3
+      let value = Math.floor(Math.random() * 10) + 5 // Base activity 5-15
 
-      // Lunch time peak (12-15)
-      if (hour >= 12 && hour <= 14) {
-        value += day === 5 ? 15 : 8 // Saturday extra busy
+      // Lunch time peak (12PM-3PM) - Block 4
+      if (startHour === 12) {
+        value += day === 5 ? 60 : 35 // Saturday extra busy
       }
 
-      // Evening peak (19-21)
-      if (hour >= 19 && hour <= 21) {
-        value += day < 5 ? 10 : 5 // Weekdays busy in evening
+      // Evening peak (6PM-9PM) - Block 6
+      if (startHour === 18) {
+        value += day < 5 ? 50 : 25 // Weekdays busy in evening
       }
 
-      // Late night and early morning (0-6, 23) - low activity
-      if (hour < 6 || hour === 23) {
-        value = Math.floor(Math.random() * 2)
+      // Late night and early morning (0-6, 21-24) - low activity
+      if (startHour < 6 || startHour >= 21) {
+        value = Math.floor(Math.random() * 15) + 5
       }
 
-      data.push({ day, hour, value })
+      data.push({ day, hour: hourBlock, value })
     }
   }
 
@@ -146,12 +152,19 @@ const generateHeatmapData = () => {
 
 const heatmapData = generateHeatmapData()
 
+// Find max value for percentage calculation
+const maxValue = Math.max(...heatmapData.map((d) => d.value), 1)
+
 const getHeatmapColor = (value: number) => {
-  if (value === 0) return "#ebedf0"
-  if (value <= 3) return "#c6e48b"
-  if (value <= 8) return "#7bc96f"
-  if (value <= 15) return "#239a3b"
-  return "#196127"
+  if (value === 0) return "#f3f4f6" // Gray for 0
+
+  const percentage = (value / maxValue) * 100
+
+  if (percentage <= 20) return "#E5D9FF"
+  if (percentage <= 40) return "#B89EFF"
+  if (percentage <= 60) return "#8B5CF6"
+  if (percentage <= 80) return "#6927DA"
+  return "#4B1A9E"
 }
 </script>
 
@@ -206,16 +219,16 @@ const getHeatmapColor = (value: number) => {
         <p class="text-xs">Order volume by day and hour — darker = more orders</p>
       </div>
       <div class="pt-1 pb-6">
-        <div class="overflow-x-auto px-4 py-6">
+        <div class="px-4 py-6">
           <!-- GitHub-style heatmap -->
-          <div class="inline-flex flex-col gap-1">
+          <div class="flex flex-col gap-1">
             <!-- Day labels -->
             <div class="flex gap-1">
-              <div class="w-12"></div>
+              <div class="w-12 flex-shrink-0"></div>
               <div
                 v-for="(day, idx) in daysOfWeek"
                 :key="idx"
-                class="flex w-8 items-center justify-center text-xs text-gray-600"
+                class="flex flex-1 items-center justify-center text-xs text-gray-600"
               >
                 {{ day }}
               </div>
@@ -224,12 +237,12 @@ const getHeatmapColor = (value: number) => {
             <!-- Hour rows -->
             <div v-for="(hour, hourIdx) in hours" :key="hourIdx" class="flex items-center gap-1">
               <!-- Hour label -->
-              <div class="w-12 text-right text-xs text-gray-600">
+              <div class="w-16 flex-shrink-0 text-right text-xs text-gray-600">
                 {{ hour }}
               </div>
 
               <!-- Heatmap cells -->
-              <div v-for="dayIdx in 7" :key="dayIdx" class="group relative">
+              <div v-for="dayIdx in 7" :key="dayIdx" class="group relative flex-1">
                 <div
                   :style="{
                     backgroundColor: getHeatmapColor(
@@ -237,7 +250,7 @@ const getHeatmapColor = (value: number) => {
                         0,
                     ),
                   }"
-                  class="h-8 w-8 rounded-sm border border-gray-200 transition-all hover:border-gray-400"
+                  class="h-12 w-full rounded-sm border border-gray-200 transition-all hover:border-gray-400"
                   :title="`${daysOfWeek[dayIdx - 1]} ${hour}: ${
                     heatmapData.find((d) => d.day === dayIdx - 1 && d.hour === hourIdx)?.value || 0
                   } orders`"
@@ -260,11 +273,12 @@ const getHeatmapColor = (value: number) => {
             <div class="mt-4 flex items-center gap-2 text-xs text-gray-600">
               <span>Less</span>
               <div class="flex gap-1">
-                <div class="h-4 w-4 rounded-sm" style="background-color: #ebedf0"></div>
-                <div class="h-4 w-4 rounded-sm" style="background-color: #c6e48b"></div>
-                <div class="h-4 w-4 rounded-sm" style="background-color: #7bc96f"></div>
-                <div class="h-4 w-4 rounded-sm" style="background-color: #239a3b"></div>
-                <div class="h-4 w-4 rounded-sm" style="background-color: #196127"></div>
+                <div class="h-4 w-4 rounded-sm" style="background-color: #f3f4f6"></div>
+                <div class="h-4 w-4 rounded-sm" style="background-color: #e5d9ff"></div>
+                <div class="h-4 w-4 rounded-sm" style="background-color: #b89eff"></div>
+                <div class="h-4 w-4 rounded-sm" style="background-color: #8b5cf6"></div>
+                <div class="h-4 w-4 rounded-sm" style="background-color: #6927da"></div>
+                <div class="h-4 w-4 rounded-sm" style="background-color: #4b1a9e"></div>
               </div>
               <span>More</span>
             </div>

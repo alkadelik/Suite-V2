@@ -13,13 +13,16 @@ import MonthlyCustomer from "../components/monthly/MonthlyCustomer.vue"
 import MonthlyProducts from "../components/monthly/MonthlyProducts.vue"
 import MonthlyOperations from "../components/monthly/MonthlyOperations.vue"
 import ReportInsightCard from "../components/ReportInsightCard.vue"
-import { useGenerateMonthlyReport } from "../api"
+import { useGenerateMonthlyReport, useGetLatestMonthlyReport } from "../api"
 
 const lastMonth = new Date()
 lastMonth.setMonth(lastMonth.getMonth() - 1)
 const activeDate = ref(lastMonth.toISOString().slice(0, 7))
 
 const { mutate: generateMonthlyReport, isPending: isGenerating } = useGenerateMonthlyReport()
+
+const { data: latestMonthlyReport } = useGetLatestMonthlyReport()
+console.log("Latest Monthly Report:", latestMonthlyReport)
 
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 const fullMonth = computed(() =>
@@ -67,7 +70,7 @@ const handleGenerate = () => {
     </SectionHeader>
 
     <EmptyState
-      v-if="!reportData"
+      v-if="reportData"
       :title="`${fullMonth} Sales Report`"
       :description="`Get a complete breakdown of your revenue, customers, products and profit — with actionable recommendations.`"
       :action-label="`Generate ${fullMonth} Report`"
