@@ -7,7 +7,7 @@ export interface IReportStat {
   /** The main value to display for the statistic */
   value: number | string
   /** The percentage change for the statistic */
-  percentage?: number
+  percentage?: number | string
   /** The text to display for the percentage change */
   percentageText?: string
   /** The caption for the statistic */
@@ -35,12 +35,12 @@ defineProps<{
     <div
       v-if="stat.percentage"
       class="mt-1 flex items-center gap-1"
-      :class="stat.percentage > 0 ? 'text-success-600' : 'text-error-600'"
+      :class="Number(stat.percentage) > 0 ? 'text-success-600' : 'text-error-600'"
     >
       <Icon name="arrow-up-square" size="20" :class="'rotate-180'" />
       <span
         class="text-sm font-medium"
-        :class="stat.percentage > 0 ? 'text-success-600' : 'text-error-600'"
+        :class="Number(stat.percentage) > 0 ? 'text-success-600' : 'text-error-600'"
         >{{ stat.percentage }}% {{ stat.percentageText }}</span
       >
     </div>

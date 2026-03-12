@@ -1,39 +1,159 @@
 <script setup lang="ts">
 import { formatCurrency, truncateCurrency } from "@/utils/format-currency"
-import ReportStatCard from "../ReportStatCard.vue"
-import { computed } from "vue"
-import { MONTHLY_SUMMARY_STATS } from "@modules/reports/constants"
+import ReportStatCard, { IReportStat } from "../ReportStatCard.vue"
+import { computed, ref } from "vue"
 import ReportInsightCard from "../ReportInsightCard.vue"
 import { useMediaQuery } from "@vueuse/core"
+import { IMonthlyReport } from "@modules/reports/types"
+import { Doughnut } from "vue-chartjs"
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, ChartOptions } from "chart.js"
+
+ChartJS.register(ArcElement, Tooltip, Legend)
+
+const props = defineProps<{ data: IMonthlyReport | null }>()
 
 const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
 
 const stats = computed(() => {
-  const data = MONTHLY_SUMMARY_STATS.map((stat) => ({
-    ...stat,
-    value: truncateCurrency(Number(stat.value)),
-  }))
+  if (!props.data) return []
+
+  const metrics = props.data.customer_metrics
+
+  const data: IReportStat[] = [
+    {
+      label: "New Customers",
+      value: metrics.new_customers.toString(),
+      caption: "First-time buyers",
+    },
+    {
+      label: "Repeat Rate",
+      value: `${metrics.repeat_customer_rate_180_percent.toFixed(1)}%`,
+      caption: "Customer retention",
+    },
+    {
+      label: "Customer Growth",
+      value: `${metrics.customer_growth_rate_percent.toFixed(1)}%`,
+      caption: "Month-over-month",
+    },
+    {
+      label: "Avg Spend/Customer",
+      value: truncateCurrency(props.data.breakdowns.customers.avg_spend_per_customer),
+      caption: "Revenue per customer",
+    },
+    {
+      label: "LTV:CAC Ratio",
+      value: metrics.ltv_cac_ratio?.toFixed(1) ?? "N/A",
+      caption: "Customer value efficiency",
+    },
+    {
+      label: "Total Active (180d)",
+      value: metrics.total_active_customers_180.toString(),
+      caption: "Recent customers",
+    },
+  ]
 
   return isMobile.value ? data.slice(0, 2) : data
 })
 
-const REGIONS = [
-  { name: "Lagos", revenue: 10800, percentage: 45 },
-  { name: "Abuja", revenue: 8500, percentage: 35 },
-  { name: "Port Harcourt", revenue: 4200, percentage: 17 },
-  { name: "Kano", revenue: 1500, percentage: 6 },
-  { name: "Ibadan", revenue: 800, percentage: 3 },
-  { name: "Others (12 cities)", revenue: 500, percentage: 2 },
-]
+const regions = computed(() => {
+  if (!props.data) return []
+  return props.data.sales_by_region.map((item) => ({
+    name: item.city || item.state || "Unknown",
+    revenue: item.revenue,
+  }))
+})
 
-const customerRevenueData = [
-  { label: "Returning Customers", revenue: 87600, percentage: 58, color: "#10b981" },
-  { label: "New Customers", revenue: 63400, percentage: 42, color: "#3b82f6" },
-]
+const regionalSummary = computed(() => {
+  if (!props.data || regions.value.length === 0) return ""
+
+  const totalRegionalRevenue = regions.value.reduce((sum, region) => sum + region.revenue, 0)
+  const sortedRegions = [...regions.value].sort((a, b) => b.revenue - a.revenue)
+
+  if (sortedRegions.length === 0) return ""
+
+  const topRegion = sortedRegions[0]
+  const topPercentage = ((topRegion.revenue / totalRegionalRevenue) * 100).toFixed(0)
+
+  if (sortedRegions.length === 1) {
+    return `${topRegion.name} accounts for all regional sales (${formatCurrency(topRegion.revenue)}).`
+  }
+
+  const secondRegion = sortedRegions[1]
+  const secondPercentage = ((secondRegion.revenue / totalRegionalRevenue) * 100).toFixed(0)
+
+  return `${topRegion.name} leads with ${topPercentage}% of sales (${formatCurrency(topRegion.revenue)}), followed by ${secondRegion.name} at ${secondPercentage}% (${formatCurrency(secondRegion.revenue)}).`
+})
+
+const customerRevenueData = computed(() => {
+  if (!props.data) return []
+
+  const { new_revenue, new_percent, returning_revenue, returning_percent } =
+    props.data.customer_metrics.new_vs_returning_revenue
+
+  return [
+    {
+      label: "Returning Customers",
+      revenue: returning_revenue,
+      percentage: returning_percent,
+      color: "#85E13A",
+    },
+    {
+      label: "New Customers",
+      revenue: new_revenue,
+      percentage: new_percent,
+      color: "#53B1FD",
+    },
+  ]
+})
 
 const totalRevenue = computed(() =>
-  customerRevenueData.reduce((sum, item) => sum + item.revenue, 0),
+  customerRevenueData.value.reduce((sum, item) => sum + item.revenue, 0),
 )
+
+const isHoveringChart = ref(false)
+
+const customerChartData = computed(() => {
+  if (!props.data) return { labels: [], datasets: [] }
+
+  return {
+    labels: customerRevenueData.value.map((item) => item.label),
+    datasets: [
+      {
+        data: customerRevenueData.value.map((item) => item.revenue),
+        backgroundColor: customerRevenueData.value.map((item) => item.color),
+        borderWidth: 2,
+        borderColor: "#ffffff",
+      },
+    ],
+  }
+})
+
+const customerChartOptions: ChartOptions<"doughnut"> = {
+  responsive: true,
+  maintainAspectRatio: false,
+  onHover: (_, activeElements) => {
+    isHoveringChart.value = activeElements.length > 0
+  },
+  plugins: {
+    legend: {
+      position: "bottom",
+      labels: {
+        padding: 15,
+        usePointStyle: true,
+      },
+    },
+    tooltip: {
+      callbacks: {
+        label: (context) => {
+          const value = context.parsed || 0
+          const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0)
+          const percentage = ((value / total) * 100).toFixed(1)
+          return ` ${formatCurrency(value)} (${percentage}%)`
+        },
+      },
+    },
+  },
+}
 </script>
 
 <template>
@@ -44,12 +164,7 @@ const totalRevenue = computed(() =>
 
     <ReportInsightCard title="Customer Insights">
       <p>
-        The <b>38% repeat rate</b> is the standout metric this month — up from <b>27.6%</b> in
-        December. This suggests your holiday promotions successfully converted deal-seekers into
-        loyal customers. Your <b>LTV:CAC ratio of 12.4x</b> is exceptional (benchmark: <b>3-5x</b>),
-        meaning every naira spent on ads generates tremendous long-term value. Recommended action:
-        invest more in retention marketing (loyalty points, exclusive drops for repeat buyers) since
-        your repeat customers generate <b>2.8x more revenue</b> per order than first-time buyers.
+        {{ data?.narratives.customer_insight }}
       </p>
     </ReportInsightCard>
 
@@ -61,61 +176,15 @@ const totalRevenue = computed(() =>
           <p class="text-xs">Revenue split by customer type</p>
         </div>
         <div class="px-4 py-6">
-          <!-- donut chart -->
-          <div class="flex flex-col items-center gap-6">
-            <!-- Donut Chart -->
-            <div class="relative h-48 w-48">
-              <svg viewBox="0 0 100 100" class="-rotate-90 transform">
-                <circle cx="50" cy="50" r="40" fill="none" stroke="#e5e7eb" stroke-width="20" />
-                <!-- Returning Customers segment -->
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="40"
-                  fill="none"
-                  :stroke="customerRevenueData[0].color"
-                  stroke-width="20"
-                  :stroke-dasharray="`${customerRevenueData[0].percentage * 2.51} ${251 - customerRevenueData[0].percentage * 2.51}`"
-                  stroke-linecap="round"
-                  class="transition-all duration-500"
-                />
-                <!-- New Customers segment -->
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="40"
-                  fill="none"
-                  :stroke="customerRevenueData[1].color"
-                  stroke-width="20"
-                  :stroke-dasharray="`${customerRevenueData[1].percentage * 2.51} ${251 - customerRevenueData[1].percentage * 2.51}`"
-                  :stroke-dashoffset="`${-customerRevenueData[0].percentage * 2.51}`"
-                  stroke-linecap="round"
-                  class="transition-all duration-500"
-                />
-              </svg>
-              <!-- Center text -->
-              <div class="absolute inset-0 flex flex-col items-center justify-center">
-                <p class="text-2xl font-bold">{{ formatCurrency(totalRevenue) }}</p>
-                <p class="text-xs text-gray-500">Total Revenue</p>
-              </div>
-            </div>
-
-            <!-- Legend -->
-            <div class="w-full space-y-3">
-              <div
-                v-for="item in customerRevenueData"
-                :key="item.label"
-                class="flex items-center justify-between"
-              >
-                <div class="flex items-center gap-2">
-                  <div class="h-3 w-3 rounded-full" :style="{ backgroundColor: item.color }" />
-                  <span class="text-sm font-medium text-gray-700">{{ item.label }}</span>
-                </div>
-                <div class="text-right">
-                  <p class="text-sm font-semibold">{{ formatCurrency(item.revenue) }}</p>
-                  <p class="text-xs text-gray-500">{{ item.percentage }}%</p>
-                </div>
-              </div>
+          <div class="relative" style="height: 300px">
+            <Doughnut :data="customerChartData" :options="customerChartOptions" />
+            <!-- Center text overlay -->
+            <div
+              v-show="!isHoveringChart"
+              class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center pb-10"
+            >
+              <p class="text-2xl font-bold">{{ truncateCurrency(totalRevenue) }}</p>
+              <p class="text-xs text-gray-500">Total Revenue</p>
             </div>
           </div>
         </div>
@@ -130,21 +199,19 @@ const totalRevenue = computed(() =>
           <div class="w-full divide-y divide-gray-200 rounded-xl bg-gray-100">
             <!--  -->
             <div
-              v-for="v in REGIONS"
+              v-for="v in regions"
               :key="v.name"
               class="flex items-center justify-between gap-4 px-4 py-5"
             >
               <p class="text-sm font-medium">{{ v.name }}</p>
               <p :class="['text-sm font-medium']">
                 {{ formatCurrency(v.revenue) }}
-                <span class="text-xs font-normal"> {{ v.percentage }}% </span>
               </p>
             </div>
           </div>
 
-          <p class="text-core-600 mt-4 text-sm italic">
-            Lagos dominance (50%) is expected but<b>Abuja grew 24%</b> month-over-month. Consider
-            targeted Instagram ads for the Abuja market.
+          <p v-if="regionalSummary" class="text-core-600 mt-4 text-sm italic">
+            {{ regionalSummary }}
           </p>
         </div>
       </div>

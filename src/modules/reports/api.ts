@@ -1,5 +1,6 @@
 import baseApi, { useApiQuery } from "@/composables/baseApi"
 import { useMutation } from "@tanstack/vue-query"
+import { IMonthlyReport } from "./types"
 
 /** Generate End of Day (EOD) report */
 export function useGenerateEODReport() {
@@ -26,8 +27,9 @@ export function useGenerateMonthlyReport() {
 
 /** Get latest Monthly report */
 export function useGetLatestMonthlyReport() {
-  return useApiQuery({
+  return useApiQuery<IMonthlyReport | null>({
     key: "latestMonthlyReport",
     url: `/reports/monthly/latest/`,
+    selectData: true,
   })
 }

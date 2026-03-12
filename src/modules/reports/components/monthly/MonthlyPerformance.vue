@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { truncateCurrency, formatCurrency } from "@/utils/format-currency"
-import ReportStatCard from "../ReportStatCard.vue"
+import ReportStatCard, { IReportStat } from "../ReportStatCard.vue"
 import { computed } from "vue"
-import { MONTHLY_PERFOMANCE_INSIGHTS } from "@modules/reports/constants"
 import ReportInsightCard from "../ReportInsightCard.vue"
 import { useMediaQuery } from "@vueuse/core"
 import { Bar } from "vue-chartjs"
@@ -16,35 +15,90 @@ import {
   LinearScale,
   ChartOptions,
 } from "chart.js"
+import { IMonthlyReport } from "@modules/reports/types"
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
+
+const props = defineProps<{ data: IMonthlyReport | null }>()
 
 const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
 
 const stats = computed(() => {
-  const ngnValue = ["Gross Margin", "Avg Order Value", "Discount Impact"]
-  const data = MONTHLY_PERFOMANCE_INSIGHTS.map((stat) => ({
-    ...stat,
-    value: ngnValue.includes(String(stat.label))
-      ? truncateCurrency(Number(stat.value))
-      : stat.value,
-  }))
+  if (!props.data) return []
+
+  const metrics = props.data.performance_metrics
+
+  const data: IReportStat[] = [
+    {
+      label: "Gross Margin",
+      value: `${metrics.gross_margin_percent}%`,
+      note: "Healthy profit margin",
+    },
+    {
+      label: "Avg Order Value",
+      value: truncateCurrency(metrics.aov),
+      note: "Average per order",
+    },
+    {
+      label: "Avg Items/Order",
+      value: metrics.avg_items_per_order.toFixed(1),
+      note: "Items per transaction",
+    },
+    {
+      label: "Inventory Turnover",
+      value: metrics.inventory_turnover?.toFixed(1) ?? "N/A",
+      note: "Stock movement rate",
+    },
+    {
+      label: "Sell-through Rate",
+      value: metrics.sell_through_rate ? `${metrics.sell_through_rate}%` : "N/A",
+      note: "Product sell-through",
+    },
+    {
+      label: "Conversion Rate",
+      value: metrics.conversion_rate ? `${metrics.conversion_rate}%` : "N/A",
+      note: "Visitor to customer",
+    },
+    {
+      label: "Cart Abandonment",
+      value: `${metrics.cart_abandonment_rate}%`,
+      note: `${truncateCurrency(metrics.estimated_lost_revenue_from_abandonment)} lost`,
+    },
+    {
+      label: "Discount Impact",
+      value: `${metrics.discount_impact_percent}%`,
+      note: "Revenue impact",
+    },
+  ]
 
   return isMobile.value ? data.slice(0, 2) : data
 })
 
 // Revenue Per Day of Week Chart Data
-const revenueByDayData = {
-  labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-  datasets: [
-    {
-      label: "Revenue",
-      data: [85000, 78000, 92000, 88000, 95000, 145000, 125000],
-      backgroundColor: "#3B82F6",
-      borderRadius: 4,
-    },
-  ],
-}
+const revenueByDayData = computed(() => {
+  if (!props.data) return { labels: [], datasets: [] }
+
+  const dayData = props.data.revenue_by_day_of_week
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+
+  // Create array with all 7 days, defaulting to 0 revenue
+  const allDaysData = dayNames.map((_, index) => {
+    const dayInfo = dayData.find((item) => item.weekday === index)
+    return dayInfo ? dayInfo.revenue : 0
+  })
+
+  return {
+    labels: dayNames,
+    datasets: [
+      {
+        label: "Revenue",
+        data: allDaysData,
+        backgroundColor: "#3B82F6",
+        borderRadius: 4,
+      },
+    ],
+  }
+})
 
 const revenueByDayOptions: ChartOptions<"bar"> = {
   responsive: true,
@@ -70,17 +124,23 @@ const revenueByDayOptions: ChartOptions<"bar"> = {
 }
 
 // Transaction Size Distribution Chart Data
-const transactionSizeData = {
-  labels: ["₦0-5K", "₦5K-10K", "₦10K-20K", "₦20K-50K", "₦50K-100K", "₦100K+"],
-  datasets: [
-    {
-      label: "Order Count",
-      data: [45, 82, 125, 98, 42, 18],
-      backgroundColor: "#10B981",
-      borderRadius: 4,
-    },
-  ],
-}
+const transactionSizeData = computed(() => {
+  if (!props.data) return { labels: [], datasets: [] }
+
+  const distribution = props.data.transaction_size_distribution
+
+  return {
+    labels: distribution.map((item) => item.range),
+    datasets: [
+      {
+        label: "Order Count",
+        data: distribution.map((item) => item.order_count),
+        backgroundColor: "#10B981",
+        borderRadius: 4,
+      },
+    ],
+  }
+})
 
 const transactionSizeOptions: ChartOptions<"bar"> = {
   responsive: true,
@@ -118,47 +178,43 @@ const hours = Array.from({ length: 8 }, (_, i) => {
   return `${formatHour(startHour)} - ${formatHour(endHour)}`
 })
 
-// Generate heatmap data (3-hour intervals x day)
-const generateHeatmapData = () => {
-  const data: { day: number; hour: number; value: number }[] = []
+// Generate heatmap data from API data
+const heatmapData = computed(() => {
+  if (!props.data) return []
 
-  // Sample data with peaks at lunch and evening hours, especially on weekends
+  const data: { day: number; hour: number; value: number }[] = []
+  const apiData = props.data.peak_sales_hours_heatmap
+
+  // Initialize all cells with 0
   for (let day = 0; day < 7; day++) {
     for (let hourBlock = 0; hourBlock < 8; hourBlock++) {
-      const startHour = hourBlock * 3
-      let value = Math.floor(Math.random() * 10) + 5 // Base activity 5-15
-
-      // Lunch time peak (12PM-3PM) - Block 4
-      if (startHour === 12) {
-        value += day === 5 ? 60 : 35 // Saturday extra busy
-      }
-
-      // Evening peak (6PM-9PM) - Block 6
-      if (startHour === 18) {
-        value += day < 5 ? 50 : 25 // Weekdays busy in evening
-      }
-
-      // Late night and early morning (0-6, 21-24) - low activity
-      if (startHour < 6 || startHour >= 21) {
-        value = Math.floor(Math.random() * 15) + 5
-      }
-
-      data.push({ day, hour: hourBlock, value })
+      data.push({ day, hour: hourBlock, value: 0 })
     }
   }
 
-  return data
-}
+  // Fill in actual data from API
+  apiData.forEach((item) => {
+    // weekday: 0 = Sunday, 1 = Monday, etc.
+    // Convert to our format where 0 = Monday
+    const dayIndex = item.weekday === 0 ? 6 : item.weekday - 1
+    const hourBlock = Math.floor(item.hour / 3)
 
-const heatmapData = generateHeatmapData()
+    const cell = data.find((d) => d.day === dayIndex && d.hour === hourBlock)
+    if (cell) {
+      cell.value += item.order_count
+    }
+  })
+
+  return data
+})
 
 // Find max value for percentage calculation
-const maxValue = Math.max(...heatmapData.map((d) => d.value), 1)
+const maxValue = computed(() => Math.max(...heatmapData.value.map((d) => d.value), 1))
 
 const getHeatmapColor = (value: number) => {
   if (value === 0) return "#f3f4f6" // Gray for 0
 
-  const percentage = (value / maxValue) * 100
+  const percentage = (value / maxValue.value) * 100
 
   if (percentage <= 20) return "#E5D9FF"
   if (percentage <= 40) return "#B89EFF"
@@ -166,6 +222,34 @@ const getHeatmapColor = (value: number) => {
   if (percentage <= 80) return "#6927DA"
   return "#4B1A9E"
 }
+
+// Compute peak ordering windows
+const peakOrderingWindow = computed(() => {
+  if (!props.data || heatmapData.value.length === 0) return ""
+
+  // Find top 2 peak periods
+  const sortedPeaks = [...heatmapData.value].sort((a, b) => b.value - a.value).slice(0, 2)
+
+  const formatPeakTime = (peak: { day: number; hour: number; value: number }) => {
+    const dayName = daysOfWeek[peak.day]
+    const hourBlock = peak.hour
+    const startHour = hourBlock * 3
+    const endHour = (hourBlock + 1) * 3
+
+    const formatHour = (h: number) => {
+      const hour = h % 12 || 12
+      const ampm = h < 12 || h === 24 ? "am" : "pm"
+      return `${hour}${ampm}`
+    }
+
+    return `${dayName} ${formatHour(startHour)} - ${formatHour(endHour)}`
+  }
+
+  if (sortedPeaks.length === 0) return "No peak periods identified"
+  if (sortedPeaks.length === 1) return formatPeakTime(sortedPeaks[0])
+
+  return `${formatPeakTime(sortedPeaks[0])} & ${formatPeakTime(sortedPeaks[1])}`
+})
 </script>
 
 <template>
@@ -176,13 +260,7 @@ const getHeatmapColor = (value: number) => {
 
     <ReportInsightCard title="Performance Insights">
       <p>
-        Your margins are healthy and improving, but growth is being partially offset by rising
-        discount absorption and cart abandonment. The highest-leverage fix this month: address
-        checkout friction. At <b>34.7% abandonment</b> with <b>62%</b> dropping off at payment,
-        adding bank transfer or USSD payment options could recover <b>₦200-350K/month</b>. Also,
-        your conversion rate of <b>4.2%</b> suggests your traffic quality is decent but product
-        pages aren't closing the sale — consider adding more customer reviews and size-specific
-        photos.
+        {{ data?.narratives.performance_insight || "N/A" }}
       </p>
     </ReportInsightCard>
 
@@ -285,9 +363,10 @@ const getHeatmapColor = (value: number) => {
           </div>
         </div>
         <p class="text-core-600 border-t border-gray-200 px-4 pt-4 text-sm">
-          <span class="text-core-800 font-semibold">Peak ordering window:</span>
-          <b>Saturdays 12pm - 3pm</b> and <b>Weekday evenings 7pm - 9pm</b>. Consider scheduling
-          promotions and social posts <b>1-2 hours</b> before these windows to maximize impact.
+          <span class="text-core-800 font-semibold">Peak ordering window: </span>
+          <b>{{ peakOrderingWindow }}</b
+          >. Consider scheduling promotions and social posts <b>1-2 hours</b> before these windows
+          to maximize impact.
         </p>
       </div>
     </div>

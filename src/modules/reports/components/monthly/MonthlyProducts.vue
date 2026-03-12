@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import DataTable, { TableColumn } from "@components/DataTable.vue"
 import { formatCurrency } from "@/utils/format-currency"
-import { TMonthlyProductRow } from "@modules/reports/types"
-import { MONTHLY_TOP_PRODUCTS } from "@modules/reports/constants"
 import ReportInsightCard from "../ReportInsightCard.vue"
-import { computed } from "vue"
+import { computed, ref } from "vue"
 import { useMediaQuery } from "@vueuse/core"
 import { Doughnut, Bubble } from "vue-chartjs"
 import {
@@ -16,68 +14,32 @@ import {
   LinearScale,
   PointElement,
 } from "chart.js"
+import { IMonthlyReport } from "@modules/reports/types"
 
 ChartJS.register(ArcElement, Tooltip, Legend, LinearScale, PointElement)
 
+const props = defineProps<{ data: IMonthlyReport | null }>()
+
 const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
+const isHoveringChart = ref(false)
 
-const categoryChartData = {
-  labels: ["Traditional Wear", "Accessories", "Footwear", "Modern Fusion", "Jewelry"],
-  datasets: [
-    {
-      data: [450000, 180000, 120000, 95000, 75000],
-      backgroundColor: ["#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EC4899"],
-      borderWidth: 2,
-      borderColor: "#ffffff",
-    },
-  ],
-}
+const categoryChartData = computed(() => {
+  if (!props.data) return { labels: [], datasets: [] }
 
-const categoryChartOptions: ChartOptions<"doughnut"> = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      position: "bottom",
-      labels: {
-        padding: 15,
-        usePointStyle: true,
+  const categories = props.data.revenue_by_category
+
+  return {
+    labels: categories.map((item) => item.category),
+    datasets: [
+      {
+        data: categories.map((item) => item.revenue),
+        backgroundColor: ["#85E13A", "#53B1FD", "#A48AFB", "#FDB022", "#F97066", "#B2836B"],
+        borderWidth: 2,
+        borderColor: "#ffffff",
       },
-    },
-    tooltip: {
-      callbacks: {
-        label: (context) => {
-          const label = context.label || ""
-          const value = context.parsed || 0
-          const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0)
-          const percentage = ((value / total) * 100).toFixed(1)
-          return `${label}: ${formatCurrency(value)} (${percentage}%)`
-        },
-      },
-    },
-  },
-}
-
-const bubbleChartData = {
-  datasets: [
-    {
-      label: "Products",
-      data: [
-        { x: 94, y: 62, r: 15, product: "Adire Bucket Hat" },
-        { x: 78, y: 58, r: 25, product: "Ankara Maxi Dress" },
-        { x: 85, y: 55, r: 20, product: "Aso-Oke Gele" },
-        { x: 72, y: 48, r: 12, product: "Dashiki Shirt" },
-        { x: 65, y: 52, r: 18, product: "Kente Bag" },
-        { x: 48, y: 45, r: 10, product: "Agbada Set" },
-        { x: 88, y: 60, r: 14, product: "Beaded Necklace" },
-        { x: 70, y: 50, r: 16, product: "Traditional Sandals" },
-      ],
-      backgroundColor: "rgba(59, 130, 246, 0.6)",
-      borderColor: "rgba(59, 130, 246, 1)",
-      borderWidth: 2,
-    },
-  ],
-}
+    ],
+  }
+})
 
 const bubbleChartOptions: ChartOptions<"bubble"> = {
   responsive: true,
@@ -89,7 +51,7 @@ const bubbleChartOptions: ChartOptions<"bubble"> = {
         text: "Sell-through (%)",
         font: { size: 12, weight: "bold" },
       },
-      min: 40,
+      min: 0,
       max: 100,
     },
     y: {
@@ -98,8 +60,8 @@ const bubbleChartOptions: ChartOptions<"bubble"> = {
         text: "Margin (%)",
         font: { size: 12, weight: "bold" },
       },
-      min: 40,
-      max: 70,
+      min: 0,
+      max: 100,
     },
   },
   plugins: {
@@ -122,7 +84,84 @@ const bubbleChartOptions: ChartOptions<"bubble"> = {
   },
 }
 
-const COLUMNS: TableColumn<TMonthlyProductRow>[] = [
+const categoryChartOptions: ChartOptions<"doughnut"> = {
+  responsive: true,
+  maintainAspectRatio: false,
+  onHover: (_, activeElements) => {
+    isHoveringChart.value = activeElements.length > 0
+  },
+  plugins: {
+    legend: {
+      position: "bottom",
+      labels: {
+        padding: 15,
+        usePointStyle: true,
+      },
+    },
+    tooltip: {
+      callbacks: {
+        label: (context) => {
+          const label = context.label || ""
+          const value = context.parsed || 0
+          const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0)
+          const percentage = ((value / total) * 100).toFixed(1)
+          return `${label}: ${formatCurrency(value)} (${percentage}%)`
+        },
+      },
+    },
+  },
+}
+
+const bubbleChartData = computed(() => {
+  if (!props.data) return { datasets: [] }
+
+  const products = props.data.top_10_products
+
+  return {
+    datasets: [
+      {
+        label: "Products",
+        data: products.map((product) => ({
+          x: product.sell_through_percent,
+          y: product.gross_margin_percent,
+          r: Math.max(5, Math.min(25, product.revenue / 5000)),
+          product: product.name,
+        })),
+        backgroundColor: "rgba(59, 130, 246, 0.6)",
+        borderColor: "rgba(59, 130, 246, 1)",
+        borderWidth: 2,
+      },
+    ],
+  }
+})
+
+const tableData = computed(() => {
+  if (!props.data) return []
+
+  return props.data.top_10_products.map((product) => ({
+    sn: product.rank,
+    product_name: product.name,
+    amount: product.revenue,
+    units_sold: product.units_sold,
+    avg_price: product.average_price,
+    margin: product.gross_margin_percent,
+    sell_through: product.sell_through_percent,
+    inventory_turnover: product.inventory_turnover ?? 0,
+  }))
+})
+
+type TProductRow = {
+  sn: number
+  product_name: string
+  amount: number
+  units_sold: number
+  avg_price: number
+  margin: number
+  sell_through: number
+  inventory_turnover: number | null
+}
+
+const COLUMNS: TableColumn<TProductRow>[] = [
   { header: "#", accessor: "sn" },
   { header: "Product", accessor: "product_name" },
   { header: "Revenue", accessor: "amount", cell: ({ value }) => formatCurrency(Number(value)) },
@@ -134,7 +173,11 @@ const COLUMNS: TableColumn<TMonthlyProductRow>[] = [
   },
   { header: "Margin", accessor: "margin", cell: ({ value }) => `${value}%` },
   { header: "Sell-Through", accessor: "sell_through", cell: ({ value }) => `${value}%` },
-  { header: "Inv. Turnover", accessor: "inventory_turnover", cell: ({ value }) => `${value}x` },
+  {
+    header: "Inv. Turnover",
+    accessor: "inventory_turnover",
+    cell: ({ value }) => (value ? `${value}x` : "N/A"),
+  },
 ]
 </script>
 
@@ -149,7 +192,7 @@ const COLUMNS: TableColumn<TMonthlyProductRow>[] = [
       </div>
       <div class="pt-1">
         <DataTable
-          :data="MONTHLY_TOP_PRODUCTS ?? []"
+          :data="tableData"
           :show-mobile-view="false"
           :fix-first-column="isMobile"
           :columns="COLUMNS"
@@ -160,16 +203,7 @@ const COLUMNS: TableColumn<TMonthlyProductRow>[] = [
     </div>
 
     <ReportInsightCard title="Product Insights">
-      <p>
-        Three standout stories here: (1) The <b>Adire Bucket Hat at #3</b> with
-        <b>94% sell-through</b> and <b>62% margin</b> is your efficiency champion — consider
-        expanding to other colors/patterns. (2) The <b>Agbada Set at #8</b> has the lowest
-        sell-through (<b>48%</b>) and turnover (<b>2.1x</b>) — at <b>₦23K</b> it's a slow mover
-        tying up capital. Consider made-to-order instead of holding stock. (3) Your
-        <b>top 3 products</b> generate <b>41% of total revenue</b> — this concentration means a
-        stockout in any of them would significantly hurt monthly numbers. Maintain a
-        <b>2-week safety stock</b> on these items.
-      </p>
+      <p>{{ data?.narratives.product_insight || "N/A" }}</p>
     </ReportInsightCard>
 
     <div class="grid grid-cols-1 gap-8 py-4 md:grid-cols-2">
@@ -180,8 +214,17 @@ const COLUMNS: TableColumn<TMonthlyProductRow>[] = [
           <p class="text-xs">Product category contribution</p>
         </div>
         <div class="px-4 py-6">
-          <div style="height: 300px">
+          <div class="relative" style="height: 300px">
             <Doughnut :data="categoryChartData" :options="categoryChartOptions" />
+
+            <!-- categories count -->
+            <div
+              v-show="!isHoveringChart"
+              class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center pb-10"
+            >
+              <p class="text-2xl font-bold">{{ categoryChartData.labels.length }}</p>
+              <p class="text-xs text-gray-500">Categories</p>
+            </div>
           </div>
         </div>
       </div>
