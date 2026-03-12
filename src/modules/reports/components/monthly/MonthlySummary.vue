@@ -214,7 +214,7 @@ const dailyRevenueTrendOptions: ChartOptions<"line"> = {
 
     <ReportInsightCard title="What this Mean">
       <p>
-        {{ data?.narratives.financial_insight }}
+        {{ data?.narratives.financial_insight || "N/A" }}
       </p>
     </ReportInsightCard>
 
@@ -223,7 +223,7 @@ const dailyRevenueTrendOptions: ChartOptions<"line"> = {
       <div class="rounded-xl bg-white shadow">
         <div class="border-b border-gray-200 px-4 py-3">
           <h3 class="mb-1 text-sm font-semibold">Weekly Revenue & Expenses</h3>
-          <p class="text-xs">Sales vs expenses by week of January</p>
+          <p class="text-xs">Sales vs expenses by week of {{ formattedPeriod }}</p>
         </div>
         <div class="px-4 py-6">
           <div class="h-64">
@@ -235,7 +235,7 @@ const dailyRevenueTrendOptions: ChartOptions<"line"> = {
       <div class="rounded-xl bg-white shadow">
         <div class="border-b border-gray-200 px-4 py-3">
           <h3 class="mb-1 text-sm font-semibold">Daily Revenue Trend</h3>
-          <p class="text-xs">Revenue per day across January</p>
+          <p class="text-xs">Revenue per day across {{ formattedPeriod }}</p>
         </div>
         <div class="px-4 py-6">
           <div class="h-64">

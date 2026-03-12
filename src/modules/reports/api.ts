@@ -1,6 +1,7 @@
-import baseApi, { useApiQuery } from "@/composables/baseApi"
+import baseApi, { TApiPromise, useApiQuery } from "@/composables/baseApi"
 import { useMutation } from "@tanstack/vue-query"
-import { IMonthlyReport } from "./types"
+import { IMonthlyReport, IReportGenerationStatus } from "./types"
+import { MaybeRefOrGetter, toValue, computed } from "vue"
 
 /** Generate End of Day (EOD) report */
 export function useGenerateEODReport() {
@@ -20,16 +21,30 @@ export function useGetLatestEODReport() {
 /** Generate Monthly report */
 export function useGenerateMonthlyReport() {
   return useMutation({
-    mutationFn: (payload: { year: number; month: number }) =>
+    mutationFn: (payload: {
+      year: number
+      month: number
+    }): TApiPromise<{ data: IReportGenerationStatus }> =>
       baseApi.post(`/reports/monthly/generate/`, payload),
   })
 }
 
 /** Get latest Monthly report */
-export function useGetLatestMonthlyReport() {
+export function useGetLatestMonthlyReport(
+  params?: MaybeRefOrGetter<{ year?: number; month?: number }>,
+) {
   return useApiQuery<IMonthlyReport | null>({
-    key: "latestMonthlyReport",
-    url: `/reports/monthly/latest/`,
+    key: computed(() => {
+      const p = toValue(params)
+      return p?.year && p?.month
+        ? `latestMonthlyReport-${p.year}-${p.month}`
+        : "latestMonthlyReport"
+    }),
+    url: computed(() => {
+      const p = toValue(params)
+      const queryParams = p?.year && p?.month ? `?year=${p.year}&month=${p.month}` : ""
+      return `/reports/monthly/latest/${queryParams}`
+    }),
     selectData: true,
   })
 }

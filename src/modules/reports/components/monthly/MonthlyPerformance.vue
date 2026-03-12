@@ -36,7 +36,7 @@ const stats = computed(() => {
     },
     {
       label: "Avg Order Value",
-      value: truncateCurrency(metrics.aov),
+      value: truncateCurrency(metrics.average_order_value),
       note: "Average per order",
     },
     {

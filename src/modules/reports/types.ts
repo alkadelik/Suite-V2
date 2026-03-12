@@ -44,6 +44,7 @@ export type TRefundRow = {
 }
 
 export interface IMonthlyReport {
+  detail?: string
   summary: {
     aov: number
     net: number
@@ -155,7 +156,7 @@ export interface IMonthlyReport {
     discounts: number
   }
   performance_metrics: {
-    aov: number
+    average_order_value: number
     conversion_rate: number | null
     mark_up_percent: number
     sell_through_rate: number | null
@@ -253,4 +254,12 @@ export interface IMonthlyReport {
     prev_end: string
     prev_start: string
   }
+}
+
+export interface IReportGenerationStatus {
+  status: "generating" | "completed"
+  uid: string
+  year: number
+  month: number
+  payload?: IMonthlyReport
 }
