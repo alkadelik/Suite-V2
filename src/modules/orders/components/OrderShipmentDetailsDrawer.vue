@@ -29,6 +29,7 @@ const extractUrl = (res: UrlResponse): string | undefined => res?.data?.data?.ur
 const props = defineProps<{
   open: boolean
   shipment: Shipment
+  loading?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -73,9 +74,20 @@ const pickFirst = (obj: UnknownRecord, keys: string[]): unknown => {
   return undefined
 }
 
+const toNumber = (v: unknown): number | undefined => {
+  if (typeof v === "number" && !Number.isNaN(v)) return v
+
+  if (typeof v === "string") {
+    const n = Number(v)
+    return Number.isFinite(n) ? n : undefined
+  }
+
+  return undefined
+}
+
 const formatMoney = (v: unknown) => {
-  const n = typeof v === "number" ? v : Number(v)
-  if (Number.isNaN(n)) return safe(v)
+  const n = toNumber(v)
+  if (n === undefined) return "--"
   return `₦${n.toLocaleString()}`
 }
 

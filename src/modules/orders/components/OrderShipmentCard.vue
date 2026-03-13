@@ -48,16 +48,42 @@ const isDone = (idx: number) => idx < activeIndex.value
 const isActive = (idx: number) => idx === activeIndex.value
 
 const formatMoney = (value: number | string, currency = "NGN") => {
-  const n = typeof value === "string" ? Number(value) : value
-  if (Number.isNaN(n)) return String(value)
+  if (value === null || value === undefined || value === "") return "--"
+
+  if (typeof value === "string") {
+    const s = value.trim()
+    if (!s) return "--"
+
+    const upper = s.toUpperCase()
+    if (s.includes("₦") || upper.includes("NGN")) return s
+
+    // parse plain numeric string safely
+    const cleaned = s.replace(/[₦,\s]/g, "")
+    const n = Number(cleaned)
+    if (!Number.isFinite(n)) return "--"
+
+    try {
+      return new Intl.NumberFormat(undefined, {
+        style: "currency",
+        currency,
+        maximumFractionDigits: 0,
+      }).format(n)
+    } catch {
+      return `${currency} ${n.toLocaleString()}`
+    }
+  }
+
+  // number path
+  if (!Number.isFinite(value)) return "--"
+
   try {
     return new Intl.NumberFormat(undefined, {
       style: "currency",
       currency,
       maximumFractionDigits: 0,
-    }).format(n)
+    }).format(value)
   } catch {
-    return `${currency} ${n.toLocaleString()}`
+    return `${currency} ${value.toLocaleString()}`
   }
 }
 

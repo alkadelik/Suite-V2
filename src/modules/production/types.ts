@@ -58,6 +58,23 @@ export type TRawMaterial = {
   movements?: TMovement[]
 }
 
+export type TRecipes = {
+  uid: string
+  output_product?: string | null
+  output_raw_material?: string | null
+  output_item_name: string
+  item_type: "product" | "sub_assembly"
+  output_quantity: number | string
+  producible_quantity: number | string
+  ingredient_count: number | string
+  process_cost_count: number | string
+  is_active: boolean
+  updated_at: string
+}
+export type TRecipesRow = TRecipes & {
+  output_qty?: number | string
+  outputQuantity?: number | string
+}
 export interface RawMaterialPayload {
   date: string
   amount: string
