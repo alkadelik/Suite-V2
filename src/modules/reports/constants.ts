@@ -59,44 +59,11 @@ export const EOD_FINANCIAL_DATA = [
   },
 ]
 
-export const EOD_ORDERS: TEodOrders[] = [
-  {
-    order_number: "1001",
-    order_date: "2024-06-01T10:15:00Z",
-    customer_name: "John Doe",
-    customer_type: "New",
-    status: "fulfilled",
-    items: 3,
-    total_amount: 4500,
-    payment_method: "card",
-  },
-  {
-    order_number: "1002",
-    order_date: "2024-06-01T11:30:00Z",
-    customer_name: "Jane Smith",
-    customer_type: "Returning",
-    status: "unfulfilled",
-    items: 1,
-    total_amount: 1500,
-    payment_method: "cash",
-  },
-  {
-    order_number: "1003",
-    order_date: "2024-06-01T12:45:00Z",
-    customer_name: "Alice Johnson",
-    customer_type: "New",
-    status: "shipped",
-    items: 2,
-    total_amount: 3000,
-    payment_method: "bank_transfer",
-  },
-]
-
 export const EOD_ORDER_COLUMNS: TableColumn<TEodOrders>[] = [
   { header: "Order ID", accessor: "order_number" },
   {
     header: "Time",
-    accessor: "order_date",
+    accessor: "created_at",
     cell: ({ value }) =>
       new Date(value as string).toLocaleTimeString([], {
         hour: "2-digit",
@@ -107,16 +74,16 @@ export const EOD_ORDER_COLUMNS: TableColumn<TEodOrders>[] = [
   { header: "Customer", accessor: "customer_name" },
   {
     header: "Type",
-    accessor: "customer_type",
+    accessor: "order_type",
     cell: ({ item }) =>
       h(Chip, {
-        label: item.customer_type,
-        color: item.customer_type === "New" ? "blue" : "success",
+        label: item.order_type,
+        color: item.order_type === "New" ? "blue" : "success",
       }),
   },
   {
     header: "Amount",
-    accessor: "total_amount",
+    accessor: "amount",
     cell: ({ value }) => formatCurrency(Number(value), { kobo: true }),
   },
   {
@@ -124,26 +91,21 @@ export const EOD_ORDER_COLUMNS: TableColumn<TEodOrders>[] = [
     accessor: "payment_method",
     cell: ({ value }) => startCase(String(value)),
   },
-  { header: "Items", accessor: "items" },
+  { header: "Items", accessor: "items_count" },
   {
     header: "Status",
     accessor: "status",
     cell: ({ item }) =>
       h(Chip, {
         label: startCase(String(item.status)),
-        color:
-          item.status === "fulfilled"
-            ? "success"
-            : item.status === "unfulfilled"
-              ? "error"
-              : "warning",
+        color: item.status === "Fulfilled" ? "success" : "warning",
       }),
   },
 ]
 
 export const EOD_PRODUCTS_SOLD_COLUMNS: TableColumn<TEodProductsSold>[] = [
   { header: "Product", accessor: "product_name", class: "max-w-[200px] truncate" },
-  { header: "Quantity", accessor: "quantity" },
+  { header: "Quantity", accessor: "quantity_sold" },
   {
     header: "Revenue",
     accessor: "revenue",
@@ -151,61 +113,18 @@ export const EOD_PRODUCTS_SOLD_COLUMNS: TableColumn<TEodProductsSold>[] = [
   },
   {
     header: "Avg. Price",
-    accessor: "avg_price",
+    accessor: "average_price",
     cell: ({ value }) => formatCurrency(Number(value), { kobo: true }),
   },
-  { header: "Stock After", accessor: "stock_after_sale" },
+  { header: "Stock After", accessor: "stock_remaining" },
   {
     header: "Status",
     accessor: "status",
     cell: ({ item }) =>
       h(Chip, {
-        label: startCase(String(item.status)),
-        color: item.status === "ok" ? "success" : item.status === "critical" ? "error" : "warning",
+        label: item.status,
+        color: item.status === "OK" ? "success" : item.status === "Critical" ? "error" : "warning",
       }),
-  },
-]
-
-export const EOD_PRODUCTS_SOLD: TEodProductsSold[] = [
-  {
-    product_name: "Adire Bucket Hat",
-    quantity: 5,
-    revenue: 25000,
-    avg_price: 5000,
-    stock_after_sale: 2,
-    status: "critical",
-  },
-  {
-    product_name: "Lagos Life Tote",
-    quantity: 3,
-    revenue: 15000,
-    avg_price: 5000,
-    stock_after_sale: 4,
-    status: "critical",
-  },
-  {
-    product_name: "Eko Cap",
-    quantity: 8,
-    revenue: 40000,
-    avg_price: 5000,
-    stock_after_sale: 15,
-    status: "ok",
-  },
-  {
-    product_name: "Naija Tee",
-    quantity: 10,
-    revenue: 50000,
-    avg_price: 5000,
-    stock_after_sale: 25,
-    status: "ok",
-  },
-  {
-    product_name: "Yoruba Print Dress",
-    quantity: 2,
-    revenue: 30000,
-    avg_price: 15000,
-    stock_after_sale: 1,
-    status: "low",
   },
 ]
 

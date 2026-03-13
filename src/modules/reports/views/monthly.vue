@@ -17,12 +17,19 @@ import { useGenerateMonthlyReport, useGetLatestMonthlyReport } from "../api"
 import { useReportsStore } from "../store"
 import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
+import { useSettingsStore } from "@modules/settings/store"
 
 const lastMonth = new Date()
 lastMonth.setMonth(lastMonth.getMonth() - 1)
 const activeDate = ref(lastMonth.toISOString().slice(0, 7))
 
 const reportsStore = useReportsStore()
+const settingsStore = useSettingsStore()
+
+const storeCreatedDate = computed(() => {
+  if (!settingsStore.storeDetails?.created_at) return undefined
+  return new Date(settingsStore.storeDetails.created_at).toISOString().slice(0, 7)
+})
 
 const { mutate: generateMonthlyReport, isPending: isGenerating } = useGenerateMonthlyReport()
 
@@ -35,6 +42,7 @@ const activeDateParts = computed(() => {
 const {
   data: latestMonthlyReport,
   isPending,
+  isFetching,
   refetch: refetchSpecificReport,
 } = useGetLatestMonthlyReport(activeDateParts)
 
@@ -125,12 +133,13 @@ const STEPS = computed(() => [
           size="sm"
           v-model="activeDate"
           :max="lastMonth.toISOString().slice(0, 7)"
+          :min="storeCreatedDate"
         />
       </template>
     </SectionHeader>
 
     <EmptyState
-      v-if="!reportData || isCurrentMonthGenerating || isPending"
+      v-if="!reportData || isCurrentMonthGenerating || isPending || isFetching"
       :title="`${fullMonth} Sales Report`"
       :description="
         isCurrentMonthGenerating
@@ -138,7 +147,7 @@ const STEPS = computed(() => [
           : `Get a complete breakdown of your revenue, customers, products and profit — with actionable recommendations.`
       "
       class="mt-4"
-      :loading="isPending"
+      :loading="isPending || isFetching"
     >
       <template #image>
         <img src="@/assets/images/empty-report.svg?url" class="mx-auto mb-4" />

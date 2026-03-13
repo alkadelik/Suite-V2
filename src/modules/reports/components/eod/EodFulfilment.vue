@@ -7,27 +7,45 @@ import DataTable, { TableColumn } from "@components/DataTable.vue"
 import ReportStatCard, { IReportStat } from "../ReportStatCard.vue"
 import { useMediaQuery } from "@vueuse/core"
 import ReportInsightCard from "../ReportInsightCard.vue"
+import { IEODReport, TEodPendingOrder } from "@modules/reports/types"
 
 const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
+const props = defineProps<{ data: IEODReport | null }>()
 
 const stats = computed(() => {
+  const { fulfillment_metrics, summary } = props.data || {}
+
   const data: IReportStat[] = [
-    { label: "Orders Fulfilled", value: 120, caption: "of 17 total" },
-    { label: "Pending Fulfilment", value: 5, caption: "3 awaiting payment · 2 stock" },
-    { label: "Delivered Today", value: 2, caption: "From previous days" },
-    { label: "Returns Received", value: 1, caption: "Refund processed same-day" },
-    { label: "Delivered Exceptions", value: 1, caption: "Customer not available (Abuja)" },
+    {
+      label: "Orders Fulfilled",
+      value: fulfillment_metrics?.delivered_today ?? 0,
+      caption: `of ${summary?.order_count ?? 0} total`,
+    },
+    {
+      label: "Pending Fulfilment",
+      value: fulfillment_metrics?.pending_fulfillment ?? 0,
+      // caption: "3 awaiting payment · 2 stock",
+    },
+    {
+      label: "Delivered Today",
+      value: fulfillment_metrics?.delivered_today ?? 0,
+      caption: "From previous days",
+    },
+    {
+      label: "Returns Received",
+      value: fulfillment_metrics?.returns_received ?? 0,
+      caption: "Refund processed same-day",
+    },
+    // {
+    //   label: "Delivered Exceptions",
+    //   value: fulfillment_metrics?.delivered_exceptions ?? 0,
+    //   caption: "Customer not available (Abuja)",
+    // },
   ]
   return isMobile.value ? data.slice(0, 2) : data
 })
-type TPendingOrders = {
-  order_number: string
-  issue: "awaiting_payment" | "low_stock"
-  amount: number
-  action: "send_reminder" | "reorder_item"
-}
 
-const COLUMNS: TableColumn<TPendingOrders>[] = [
+const COLUMNS: TableColumn<TEodPendingOrder>[] = [
   { header: "Order", accessor: "order_number" },
   {
     header: "Issue",
@@ -52,39 +70,6 @@ const COLUMNS: TableColumn<TPendingOrders>[] = [
         label: startCase(String(item.action)),
         color: item.action === "send_reminder" ? "blue" : "warning",
       }),
-  },
-]
-
-const DATA: TPendingOrders[] = [
-  {
-    order_number: "#1038",
-    issue: "awaiting_payment",
-    amount: 18200,
-    action: "send_reminder",
-  },
-  {
-    order_number: "#1042",
-    issue: "low_stock",
-    amount: 4500,
-    action: "reorder_item",
-  },
-  {
-    order_number: "#1045",
-    issue: "awaiting_payment",
-    amount: 32000,
-    action: "send_reminder",
-  },
-  {
-    order_number: "#1049",
-    issue: "low_stock",
-    amount: 1500,
-    action: "reorder_item",
-  },
-  {
-    order_number: "#1053",
-    issue: "awaiting_payment",
-    amount: 27500,
-    action: "send_reminder",
   },
 ]
 </script>
@@ -143,10 +128,11 @@ const DATA: TPendingOrders[] = [
         <div>
           <DataTable
             :columns="COLUMNS"
-            :data="DATA ?? []"
+            :data="data?.pending_orders ?? []"
             :show-mobile-view="false"
             :fix-first-column="isMobile"
             :show-pagination="false"
+            :empty-state="{ class: '!h-[25vh]' }"
           />
         </div>
       </div>

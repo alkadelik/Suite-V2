@@ -41,12 +41,12 @@ const stats = computed(() => {
     },
     {
       label: "Avg Items/Order",
-      value: metrics.avg_items_per_order.toFixed(1),
+      value: metrics.avg_items_per_order.toFixed(2),
       note: "Items per transaction",
     },
     {
       label: "Inventory Turnover",
-      value: metrics.inventory_turnover?.toFixed(1) ?? "N/A",
+      value: metrics.inventory_turnover?.toFixed(2) ?? "N/A",
       note: "Stock movement rate",
     },
     {
@@ -216,11 +216,11 @@ const getHeatmapColor = (value: number) => {
 
   const percentage = (value / maxValue.value) * 100
 
-  if (percentage <= 20) return "#E5D9FF"
-  if (percentage <= 40) return "#B89EFF"
-  if (percentage <= 60) return "#8B5CF6"
-  if (percentage <= 80) return "#6927DA"
-  return "#4B1A9E"
+  if (percentage <= 20) return "#DCCEFC"
+  if (percentage <= 40) return "#C5AEFB"
+  if (percentage <= 60) return "#ae8df9"
+  if (percentage <= 80) return "#7D53DD"
+  return "#462E7B"
 }
 
 // Compute peak ordering windows

@@ -68,6 +68,7 @@ interface Props {
     description?: string
     actionLabel?: string
     actionIcon?: string
+    class?: HTMLAttributes["class"]
   }
   /** Additional CSS classes for the table container */
   class?: HTMLAttributes["class"]
@@ -397,7 +398,7 @@ const getRowClasses = (row: T) => {
           :action-label="props.emptyState?.actionLabel"
           :action-icon="props.emptyState?.actionIcon"
           size="md"
-          class="!min-h-[auto] !shadow-none"
+          :class="['!min-h-[auto] !shadow-none', props.emptyState?.class]"
           @action="$emit('empty-action')"
         />
       </div>
@@ -465,7 +466,7 @@ const getRowClasses = (row: T) => {
           :action-label="props.emptyState?.actionLabel"
           :action-icon="props.emptyState?.actionIcon"
           size="md"
-          class="!min-h-[auto] !shadow-none"
+          :class="['!shadow-none', props.emptyState?.class]"
           @action="$emit('empty-action')"
         />
       </div>

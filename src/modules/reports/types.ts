@@ -1,21 +1,26 @@
 export type TEodOrders = {
+  amount: number
+  status: "Unfulfilled" | "Fulfilled" | "Shipped" | "Awaiting Payment"
+  order_uid: string
+  created_at: string
+  order_type: "New" | "Returning"
+  items_count: number
+  customer_uid: string
   order_number: string
-  order_date: string
   customer_name: string
-  customer_type: "New" | "Returning"
-  status: "fulfilled" | "unfulfilled" | "shipped" | "awaiting_pay"
-  items: number
-  total_amount: number
-  payment_method: "card" | "cash" | "bank_transfer"
+  payment_method: "Online" | "Cash" | "Bank Transfer"
 }
 
 export type TEodProductsSold = {
-  product_name: string
-  quantity: number
+  sku: string
+  status: "Critical" | "Low" | "OK"
   revenue: number
-  avg_price: number
-  stock_after_sale: number
-  status: "critical" | "low" | "ok"
+  product_uid: string
+  variant_uid: string
+  product_name: string
+  average_price: number
+  quantity_sold: number
+  stock_remaining: number
 }
 
 export type TEodAbandoned = {
@@ -41,6 +46,201 @@ export type TRefundRow = {
   count: number
   amount: number
   percentage: number
+}
+
+export interface IEODReportSummary {
+  net_revenue: number
+  order_count: number
+  gross_revenue: number
+  total_refunds: number
+  total_discounts: number
+  active_customers: number
+  total_items_sold: number
+  average_order_value: number
+  total_shipping_costs: number
+  unique_products_sold: number
+}
+
+export interface IEODPayment {
+  mode: string
+  amount: number
+  orders: number
+  percent_collected?: number
+}
+
+export interface IEODCashDigitalReconciliation {
+  cash_collected: number
+  pending_payments: number
+  confirmed_revenue: number
+  refunds_processed: number
+  digital_payments_total: number
+}
+
+export interface IEODCustomers {
+  new_customers: number
+  unique_customers: number
+  returning_revenue: number
+  returning_customers: number
+  repeat_orderers_today: number
+  returning_revenue_percent: number
+}
+
+export interface IEODHourlySales {
+  hour: number
+  revenue: number
+  order_count: number
+}
+
+export interface IEODFulfilment {
+  status: string
+  orders: number
+  revenue: number
+}
+
+export interface IEODCourierPerformance {
+  courier: string
+  orders: number
+  delivered: number
+  pending: number
+}
+
+export interface IEODFulfilmentKPIs {
+  delivered_today: number
+  orders_fulfilled: number
+  returns_received: number
+  pending_fulfillment: number
+}
+
+export type TEodPendingOrder = {
+  order_number: string
+  issue: "awaiting_payment" | "low_stock"
+  amount: number
+  action: "send_reminder" | "reorder_item"
+}
+
+export interface IEODFailedPayments {
+  count: number
+  total_failed_amount: number
+}
+
+export interface IEODRefundsBreakdown {
+  refund_count: number
+  reason_summary: TRefundRow[]
+  total_refund_amount: number
+}
+
+export interface IEODSummaryComparison {
+  net_revenue_percent_change: number
+  gross_revenue_percent_change: number
+  average_order_value_absolute_change: number
+}
+
+export interface IEODExpensesByCategory {
+  amount: number
+  category: string
+  percent_of_revenue?: number
+}
+
+export interface IEODExpensesOverview {
+  biggest_expense_amount: number
+  expense_to_revenue_percent: number
+  biggest_expense_category_name: string | null
+}
+
+export interface IEODSalesByOrigin {
+  origin: string
+  orders: number
+  revenue: number
+  percent: number
+}
+
+export interface IEODAbandonedCarts {
+  count: number
+  orders: TEodAbandoned[]
+  total_potential_revenue: number
+}
+
+export interface IEODInventoryFlow {
+  units_sold: number
+  closing_stock: number
+  opening_stock: number
+  units_returned: number
+  units_restocked: number
+}
+
+export interface IEODLowStockAlert {
+  product_name: string
+  current_stock: number
+  status: "critical" | "low"
+}
+
+export interface IEODUnresolvedIssue {
+  type: string
+  count: number
+  details: string
+}
+
+export interface IEODNarratives {
+  daily_summary: string
+  fulfilment_insight: string
+  tomorrow_priorities: string
+  abandoned_carts_insight: string
+  failed_payments_insight: string
+  payment_reconciliation_insight: string
+}
+
+export interface IEODPeriod {
+  end: string
+  date: string
+  start: string
+  prev_end: string
+  prev_date: string
+  prev_start: string
+}
+
+export interface IEODReport {
+  detail?: string
+  summary: IEODReportSummary
+  previous_day_summary: IEODReportSummary
+  payments: IEODPayment[]
+  cash_digital_reconciliation: IEODCashDigitalReconciliation
+  customers: IEODCustomers
+  hourly_sales: IEODHourlySales[]
+  fulfilment: IEODFulfilment[]
+  courier_performance: IEODCourierPerformance[]
+  fulfilment_kpis: IEODFulfilmentKPIs
+  fulfillment_metrics: IEODFulfilmentKPIs
+  pending_orders: TEodPendingOrder[]
+  orders: TEodOrders[]
+  all_orders: TEodOrders[]
+  orders_grand_total: number
+  products: TEodProductsSold[]
+  products_sold: TEodProductsSold[]
+  failed_payments: IEODFailedPayments
+  previous_day_failed_payments: IEODFailedPayments
+  refunds_breakdown: IEODRefundsBreakdown
+  summary_comparison: IEODSummaryComparison
+  total_expenses: number
+  expenses_by_category: IEODExpensesByCategory[]
+  expenses_overview: IEODExpensesOverview
+  sales_by_origin: IEODSalesByOrigin[]
+  abandoned_carts: IEODAbandonedCarts
+  inventory_flow: IEODInventoryFlow
+  low_stock_alerts: IEODLowStockAlert[]
+  unresolved_issues: IEODUnresolvedIssue[]
+  insights: string[]
+  narratives: IEODNarratives
+  period: IEODPeriod
+}
+
+export interface IEODReportGenerationStatus {
+  uid: string
+  report_date: string
+  status: "generating" | "completed"
+  payload: Record<string, unknown>
+  generated_at: string | null
+  created_at: string
+  updated_at: string
 }
 
 export interface IMonthlyReport {

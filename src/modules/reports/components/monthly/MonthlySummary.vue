@@ -212,7 +212,7 @@ const dailyRevenueTrendOptions: ChartOptions<"line"> = {
       <ReportStatCard v-for="stat in stats" :key="stat.label" :stat="stat" />
     </div>
 
-    <ReportInsightCard title="What this Mean">
+    <ReportInsightCard title="What this Means?">
       <p>
         {{ data?.narratives.financial_insight || "N/A" }}
       </p>

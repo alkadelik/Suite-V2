@@ -1,18 +1,63 @@
 <script setup lang="ts">
 import { computed } from "vue"
-import { EOD_FINANCIAL_DATA } from "../../constants"
+// import { EOD_FINANCIAL_DATA } from "../../constants"
 import ReportStatCard from "../ReportStatCard.vue"
 import { useMediaQuery } from "@vueuse/core"
+import { IEODReport } from "@modules/reports/types"
+import { formatCurrency } from "@/utils/format-currency"
 
 const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
+const props = defineProps<{ data: IEODReport | null }>()
 
 const stats = computed(() => {
-  const data = EOD_FINANCIAL_DATA.map((item) => ({
-    label: item.label,
-    value: item.value,
-    caption: item.meta,
-    percentage: item.percentage || undefined,
-  }))
+  const { summary, summary_comparison } = props.data || {}
+
+  const averageOrderMargin =
+    summary?.average_order_value && summary_comparison?.average_order_value_absolute_change
+      ? (summary_comparison.average_order_value_absolute_change /
+          (summary.average_order_value - summary_comparison.average_order_value_absolute_change)) *
+        100
+      : 0
+
+  const data = [
+    {
+      label: "Gross Revenue",
+      value: formatCurrency(summary?.gross_revenue ?? 0),
+      caption: `${summary?.order_count ?? 0} orders`,
+      percentage: summary_comparison?.gross_revenue_percent_change ?? 0,
+    },
+    {
+      label: "Refunds",
+      value: formatCurrency(summary?.total_refunds ?? 0),
+      // caption: `${summary?.total_refunds ?? 0} orders`,
+      percentage: undefined,
+    },
+    {
+      label: "Discounts",
+      value: formatCurrency(summary?.total_discounts ?? 0),
+      // caption: `${summary?.discount_count ?? 0} orders`,
+      // percentage: summary_comparison?.discounts_percent_change ?? 0,
+    },
+    {
+      label: "Shipping Costs",
+      value: formatCurrency(summary?.total_shipping_costs ?? 0),
+      // caption: `${summary?.shipping_count ?? 0} orders`,
+      percentage: undefined,
+    },
+    {
+      label: "Net Revenue",
+      value: formatCurrency(summary?.net_revenue ?? 0),
+      // caption: `${summary?.net_margin ?? 0}% net margin`,
+      percentage: summary_comparison?.net_revenue_percent_change ?? 0,
+    },
+    {
+      label: "Avg Order Value",
+      value: formatCurrency(summary?.average_order_value ?? 0),
+      caption: `${averageOrderMargin.toFixed(1)}% change`,
+      percentage: undefined,
+    },
+  ]
+
   return isMobile.value ? data.slice(0, 2) : data
 })
 </script>

@@ -95,6 +95,20 @@ export function useNotificationsWebSocket(options?: UseNotificationsWebSocketOpt
                 console.log(`Invalidated monthly report query for ${year}-${month}`)
               }
             }
+
+            // Handle EOD report completion
+            if (notification.extras?.report_type === "eod") {
+              const parsedDate = reportsStore.parseDateFromMessage(notification.message)
+              if (parsedDate) {
+                // Remove from generating reports
+                reportsStore.removeGeneratingEODReport(parsedDate)
+                // Invalidate the query to refetch the report
+                queryClient.invalidateQueries({
+                  queryKey: [`latestEODReport-${parsedDate}`],
+                })
+                console.log(`Invalidated EOD report query for ${parsedDate}`)
+              }
+            }
           }
 
           // Call the callback if provided

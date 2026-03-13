@@ -1,20 +1,34 @@
 import baseApi, { TApiPromise, useApiQuery } from "@/composables/baseApi"
 import { useMutation } from "@tanstack/vue-query"
-import { IMonthlyReport, IReportGenerationStatus } from "./types"
+import {
+  IMonthlyReport,
+  IReportGenerationStatus,
+  IEODReport,
+  IEODReportGenerationStatus,
+} from "./types"
 import { MaybeRefOrGetter, toValue, computed } from "vue"
 
 /** Generate End of Day (EOD) report */
 export function useGenerateEODReport() {
   return useMutation({
-    mutationFn: (payload: { date: string }) => baseApi.post(`/reports/eod/generate/`, payload),
+    mutationFn: (payload: { date: string }): TApiPromise<{ data: IEODReportGenerationStatus }> =>
+      baseApi.post(`/reports/eod/generate/`, payload),
   })
 }
 
 /** Get latest End of Day (EOD) report */
-export function useGetLatestEODReport() {
-  return useApiQuery({
-    key: "latestEODReport",
-    url: `/reports/eod/latest/`,
+export function useGetLatestEODReport(date?: MaybeRefOrGetter<string>) {
+  return useApiQuery<IEODReport | null>({
+    key: computed(() => {
+      const d = toValue(date)
+      return d ? `latestEODReport-${d}` : "latestEODReport"
+    }),
+    url: computed(() => {
+      const d = toValue(date)
+      const queryParams = d ? `?date=${d}` : ""
+      return `/reports/eod/latest/${queryParams}`
+    }),
+    selectData: true,
   })
 }
 

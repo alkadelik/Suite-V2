@@ -1,5 +1,9 @@
 <script setup lang="ts">
+import EmptyState from "@components/EmptyState.vue"
 import Icon from "@components/Icon.vue"
+import { IEODReport } from "@modules/reports/types"
+
+defineProps<{ data: IEODReport | null }>()
 </script>
 
 <template>
@@ -13,31 +17,44 @@ import Icon from "@components/Icon.vue"
     <!-- content -->
     <div class="py-4">
       <div class="rounded-xl bg-white p-6 shadow">
-        <div class="divide-y divide-gray-300 rounded-xl bg-gray-200 p-4">
+        <div
+          v-if="data?.unresolved_issues?.length"
+          class="divide-y divide-gray-300 rounded-xl bg-gray-200 p-4"
+        >
           <!--  -->
-          <div v-for="v in 3" :key="v" class="flex items-center gap-4 py-3">
+          <div
+            v-for="(issue, v) in data?.unresolved_issues ?? []"
+            :key="v"
+            class="flex items-center gap-4 py-3"
+          >
             <span
               class="flex size-10 items-center justify-center rounded-lg"
-              :class="v > 1 ? 'bg-core-200' : 'bg-primary-100'"
+              :class="v > 0 ? 'bg-core-200' : 'bg-primary-100'"
             >
               <Icon
-                :name="v > 1 ? 'box-filled' : 'flash'"
+                :name="v > 0 ? 'box-filled' : 'flash'"
                 size="24"
-                :class="v > 1 ? 'text-core-700' : 'text-primary-700'"
+                :class="v > 0 ? 'text-core-700' : 'text-primary-700'"
               />
             </span>
             <div class="flex-1">
               <h3 class="text-core-800 text-sm font-semibold">
-                Size exchange request - Order #12345
+                {{ issue.type }}
               </h3>
               <p class="text-core-700 text-xs">
-                Customer Amara wants to swap Ankara Wrap Dress from L to M. Awaiting your
-                confirmation.
+                {{ issue.details }}
               </p>
             </div>
-            <span class="text-xs text-gray-600">2:30pm</span>
+            <span class="text-xs text-gray-600">{{ issue.count }}</span>
+            <!-- TODO: should be time not issue.count -->
           </div>
         </div>
+        <EmptyState
+          v-else
+          title="No unresolved issues"
+          description="No reported issues that need your attention. Great work!"
+          class="!min-h-[25vh] py-4! shadow-none!"
+        />
       </div>
     </div>
   </section>
