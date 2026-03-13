@@ -11,7 +11,7 @@ import { formatCurrency } from "@/utils/format-currency"
       <span class="ml-auto text-xs font-medium text-gray-600 uppercase">Money In</span>
     </header>
     <!-- content -->
-    <div class="grid grid-cols-2 gap-8 py-4">
+    <div class="grid grid-cols-1 gap-8 py-4 md:grid-cols-2">
       <!--  -->
       <div class="rounded-xl bg-white shadow">
         <div class="border-b border-gray-200 px-4 py-3">
@@ -45,7 +45,7 @@ import { formatCurrency } from "@/utils/format-currency"
                 </div>
               </div>
               <!--  -->
-              <p class="text-sm font-semibold">
+              <p class="text-sm font-semibold break-keep">
                 {{ formatCurrency(x === "Card" ? 108000 : x === "Bank Transfer" ? 38200 : 4500) }}
                 <span class="ml-2 text-xs font-normal text-gray-600">4 orders</span>
               </p>

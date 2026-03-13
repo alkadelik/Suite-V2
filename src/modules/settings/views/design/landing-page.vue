@@ -100,11 +100,19 @@
                   <Icon :name="item.icon" size="20" />
                   <span>{{ item.label }}</span>
                 </div>
-                <Icon
+                <!-- <Icon
                   :name="item.is_visible ? 'eye' : 'eye-slash'"
                   size="18"
                   @click.stop="hideSection(item.id)"
+                /> -->
+
+                <Switch
+                  v-if="item.id !== 'categories' && item.id !== 'featured_products'"
+                  :model-value="item.is_visible"
+                  size="xs"
+                  @update:model-value="hideSection(item.id)"
                 />
+
                 <Icon name="arrow-right" size="18" />
               </button>
             </template>
@@ -182,12 +190,20 @@
                     <Icon :name="item.icon" size="20" />
                     <span>{{ item.label }}</span>
                   </div>
-                  <Icon
+                  <!-- <Icon
                     :name="item.is_visible ? 'eye' : 'eye-slash'"
                     size="18"
                     class="mr-2"
                     @click.stop="hideSection(item.id)"
+                  /> -->
+
+                  <Switch
+                    v-if="item.id !== 'categories' && item.id !== 'featured_products'"
+                    :model-value="item.is_visible"
+                    size="xs"
+                    @update:model-value="hideSection(item.id)"
                   />
+
                   <Icon
                     :name="expandedSection === item.id ? 'chevron-up' : 'chevron-down'"
                     class="text-gray-600"
@@ -355,6 +371,7 @@ import { displayError } from "@/utils/error-handler"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
 import LandingPageSkeleton from "../../components/skeletons/LandingPageSkeleton.vue"
 import Collapsible from "@components/Collapsible.vue"
+import Switch from "@components/form/Switch.vue"
 
 const REORDERING_ENABLED = false
 
@@ -544,13 +561,15 @@ const confirmHideSection = (): void => {
   updateLandingPageItemsOrder(payload, {
     onSuccess: () => {
       toast.success("Section hidden successfully")
+      // optimally hide section
+      sectionToHide.is_visible = !sectionToHide.is_visible
+      isHiding.value = false
       showHideConfirmation.value = false
       sectionToHideId.value = null
-      isHiding.value = false
       refetch()
     },
-    onError: (error) => {
-      displayError(error)
+    onError: (err) => {
+      displayError(err)
       isHiding.value = false
     },
   })

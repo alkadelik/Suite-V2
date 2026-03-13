@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { formatCurrency } from "@/utils/format-currency"
-import StatCard from "@components/StatCard.vue"
+import ReportStatCard from "../ReportStatCard.vue"
 
 const stats = [
   {
@@ -36,7 +36,7 @@ const stats = [
     </header>
     <!-- content -->
     <div class="grid grid-cols-2 gap-3 py-4 md:grid-cols-3 xl:grid-cols-4">
-      <StatCard
+      <ReportStatCard
         v-for="stat in stats"
         :key="stat.label"
         :stat="stat"

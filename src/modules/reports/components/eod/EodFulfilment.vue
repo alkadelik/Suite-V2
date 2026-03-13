@@ -1,29 +1,51 @@
 <script setup lang="ts">
-import StatCard from "@components/StatCard.vue"
-import { EOD_FINANCIAL_DATA } from "../../constants"
-import Icon from "@components/Icon.vue"
 import { formatCurrency } from "@/utils/format-currency"
 import { startCase } from "@/utils/format-strings"
-import { h } from "vue"
+import { computed, h } from "vue"
 import Chip from "@components/Chip.vue"
 import DataTable, { TableColumn } from "@components/DataTable.vue"
+import ReportStatCard, { IReportStat } from "../ReportStatCard.vue"
+import { useMediaQuery } from "@vueuse/core"
+import ReportInsightCard from "../ReportInsightCard.vue"
+import { IEODReport, TEodPendingOrder } from "@modules/reports/types"
 
-const stats = EOD_FINANCIAL_DATA.map((item) => ({
-  icon: "moneys",
-  label: item.label,
-  value: item.value,
-  valueText: item.meta,
-  percentage: item.percentage || undefined,
-}))
+const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
+const props = defineProps<{ data: IEODReport | null }>()
 
-type TPendingOrders = {
-  order_number: string
-  issue: "awaiting_payment" | "low_stock"
-  amount: number
-  action: "send_reminder" | "reorder_item"
-}
+const stats = computed(() => {
+  const { fulfillment_metrics, summary } = props.data || {}
 
-const COLUMNS: TableColumn<TPendingOrders>[] = [
+  const data: IReportStat[] = [
+    {
+      label: "Orders Fulfilled",
+      value: fulfillment_metrics?.delivered_today ?? 0,
+      caption: `of ${summary?.order_count ?? 0} total`,
+    },
+    {
+      label: "Pending Fulfilment",
+      value: fulfillment_metrics?.pending_fulfillment ?? 0,
+      // caption: "3 awaiting payment · 2 stock",
+    },
+    {
+      label: "Delivered Today",
+      value: fulfillment_metrics?.delivered_today ?? 0,
+      caption: "From previous days",
+    },
+    {
+      label: "Returns Received",
+      value: fulfillment_metrics?.returns_received ?? 0,
+      caption: "Refund processed same-day",
+    },
+    // {
+    //   label: "Delivered Exceptions",
+    //   value: fulfillment_metrics?.delivered_exceptions ?? 0,
+    //   caption: "Customer not available (Abuja)",
+    // },
+  ]
+  return isMobile.value ? data.slice(0, 2) : data
+})
+
+const COLUMNS: TableColumn<TEodPendingOrder>[] = [
   { header: "Order", accessor: "order_number" },
   {
     header: "Issue",
@@ -50,39 +72,6 @@ const COLUMNS: TableColumn<TPendingOrders>[] = [
       }),
   },
 ]
-
-const DATA: TPendingOrders[] = [
-  {
-    order_number: "#1038",
-    issue: "awaiting_payment",
-    amount: 18200,
-    action: "send_reminder",
-  },
-  {
-    order_number: "#1042",
-    issue: "low_stock",
-    amount: 4500,
-    action: "reorder_item",
-  },
-  {
-    order_number: "#1045",
-    issue: "awaiting_payment",
-    amount: 32000,
-    action: "send_reminder",
-  },
-  {
-    order_number: "#1049",
-    issue: "low_stock",
-    amount: 1500,
-    action: "reorder_item",
-  },
-  {
-    order_number: "#1053",
-    issue: "awaiting_payment",
-    amount: 27500,
-    action: "send_reminder",
-  },
-]
 </script>
 
 <template>
@@ -95,7 +84,7 @@ const DATA: TPendingOrders[] = [
     </header>
     <!-- content -->
     <div class="grid grid-cols-2 gap-3 py-4 md:grid-cols-3 xl:grid-cols-4">
-      <StatCard
+      <ReportStatCard
         v-for="stat in stats"
         :key="stat.label"
         :stat="stat"
@@ -103,7 +92,7 @@ const DATA: TPendingOrders[] = [
       />
     </div>
 
-    <div class="grid grid-cols-2 gap-8 py-4">
+    <div class="grid grid-cols-1 gap-8 py-4 md:grid-cols-2">
       <!--  -->
       <div class="rounded-xl bg-white shadow">
         <div class="border-b border-gray-200 px-4 py-3">
@@ -137,21 +126,25 @@ const DATA: TPendingOrders[] = [
           <p class="text-xs">5 orders carrying over &bull; {{ formatCurrency(4500) }} at stake</p>
         </div>
         <div>
-          <DataTable :columns="COLUMNS" :data="DATA ?? []" :show-pagination="false" />
+          <DataTable
+            :columns="COLUMNS"
+            :data="data?.pending_orders ?? []"
+            :show-mobile-view="false"
+            :fix-first-column="isMobile"
+            :show-pagination="false"
+            :empty-state="{ class: '!h-[25vh]' }"
+          />
         </div>
       </div>
     </div>
 
-    <div class="rounded-r-lg border border-l-4 border-gray-200 border-l-gray-600 bg-white p-4">
-      <h4 class="mb-3 flex items-center gap-2 text-xs font-medium uppercase">
-        <Icon name="box-filled" class="text-warning-400" size="16" /> Delivery Exceptions
-      </h4>
+    <ReportInsightCard title="Delivery Exceptions">
       <p class="text-sm">
         <b>Order #1038</b> (Abuja, <b>₦18,200</b>) — GIG attempted delivery at <b>3:45pm</b> but
         customer was not available. Rescheduled for <b>Monday</b>. Recommendation: Send the customer
         a WhatsApp confirming the Monday delivery window to avoid a second failed attempt, which
         would trigger a <b>return</b>.
       </p>
-    </div>
+    </ReportInsightCard>
   </section>
 </template>

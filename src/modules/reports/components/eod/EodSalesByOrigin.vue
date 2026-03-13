@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { formatCurrency } from "@/utils/format-currency"
 import DataTable, { TableColumn } from "@components/DataTable.vue"
+import { useMediaQuery } from "@vueuse/core"
+import { computed } from "vue"
 
 interface SalesByOrigin {
   channel: string
@@ -27,6 +29,8 @@ const DATA = [
   { channel: "Walk-in", orders: 3, revenue: 20000, share: "2.9%" },
   { channel: "Facebook", orders: 1, revenue: 1000, share: "1.0%" },
 ]
+
+const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
 </script>
 
 <template>
@@ -38,7 +42,7 @@ const DATA = [
       <span class="ml-auto text-xs font-medium text-gray-600 uppercase">Channel Mix</span>
     </header>
     <!-- content -->
-    <div class="grid grid-cols-2 gap-8 py-4">
+    <div class="grid grid-cols-1 gap-8 py-4 md:grid-cols-2">
       <!--  -->
       <div class="rounded-xl bg-white shadow">
         <div class="border-b border-gray-200 px-4 py-3">
@@ -56,7 +60,13 @@ const DATA = [
           <p class="text-xs">Orders, revenue, and share</p>
         </div>
         <div>
-          <DataTable :columns="COLUMNS" :data="DATA" :show-pagination="false" />
+          <DataTable
+            :columns="COLUMNS"
+            :data="DATA"
+            :show-mobile-view="false"
+            :fix-first-column="isMobile"
+            :show-pagination="false"
+          />
         </div>
       </div>
     </div>

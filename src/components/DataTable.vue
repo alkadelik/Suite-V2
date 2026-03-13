@@ -8,7 +8,7 @@ import {
   type Table,
   type Row,
 } from "@tanstack/vue-table"
-import { computed, h, onMounted, ref, useSlots, watch, type VNode } from "vue"
+import { computed, h, HTMLAttributes, onMounted, ref, useSlots, watch, type VNode } from "vue"
 import Icon from "./Icon.vue"
 import AppButton from "./AppButton.vue"
 import EmptyState from "./EmptyState.vue"
@@ -33,8 +33,6 @@ interface PaginationChangeParams {
 }
 
 interface Props {
-  /** Optional title for the table */
-  title?: string
   /** Array of data to display in the table */
   data: T[]
   /** Column definitions for the table */
@@ -70,18 +68,18 @@ interface Props {
     description?: string
     actionLabel?: string
     actionIcon?: string
+    class?: HTMLAttributes["class"]
   }
   /** Additional CSS classes for the table container */
-  class?: string
-
-  /** Hide total items count in title */
-  hideTotal?: boolean
+  class?: HTMLAttributes["class"]
   /** Fix the first column during horizontal scroll */
   fixFirstColumn?: boolean
   /** Fix the last column during horizontal scroll */
   fixLastColumn?: boolean
   /** CSS class(es) to apply to each row - can be a string or function that receives row data */
   rowClass?: RowClass<T>
+  /** Whether to show the mobile card view instead of the table on small screens */
+  showMobileView?: boolean
 }
 
 // Define emits
@@ -124,6 +122,7 @@ const props = withDefaults(defineProps<Props>(), {
   layout: "table-auto",
   fixFirstColumn: false,
   fixLastColumn: false,
+  showMobileView: true,
 })
 
 const rowSelection = ref<Record<string, boolean>>({})
@@ -323,7 +322,7 @@ const getRowClasses = (row: T) => {
 <template>
   <div class="w-full overflow-hidden" :class="props.class">
     <!--  -->
-    <div class="hidden w-full overflow-x-auto md:block">
+    <div class="w-full overflow-x-auto md:block" :class="showMobileView ? 'hidden' : 'block'">
       <table class="min-w-full border-0" :class="props.layout">
         <thead class="bg-gray-50">
           <tr v-for="headerGroup in table.getHeaderGroups()" :key="headerGroup.id">
@@ -399,7 +398,7 @@ const getRowClasses = (row: T) => {
           :action-label="props.emptyState?.actionLabel"
           :action-icon="props.emptyState?.actionIcon"
           size="md"
-          class="!min-h-[auto] !shadow-none"
+          :class="['!min-h-[auto] !shadow-none', props.emptyState?.class]"
           @action="$emit('empty-action')"
         />
       </div>
@@ -408,7 +407,7 @@ const getRowClasses = (row: T) => {
     <!--  -->
     <!-- MOBILE TABLE -->
     <!--  -->
-    <div class="space-y-4 md:hidden">
+    <div v-if="showMobileView" class="space-y-4 md:hidden">
       <!-- Loading progress bar for mobile when there's data -->
       <template v-if="loading && (data.length || table.getPageCount() > 1)">
         <div class="px-1">
@@ -467,7 +466,7 @@ const getRowClasses = (row: T) => {
           :action-label="props.emptyState?.actionLabel"
           :action-icon="props.emptyState?.actionIcon"
           size="md"
-          class="!min-h-[auto] !shadow-none"
+          :class="['!shadow-none', props.emptyState?.class]"
           @action="$emit('empty-action')"
         />
       </div>

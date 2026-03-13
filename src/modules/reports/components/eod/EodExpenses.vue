@@ -2,6 +2,9 @@
 import { computed } from "vue"
 import { formatCurrency } from "@/utils/format-currency"
 import DataTable, { TableColumn } from "@components/DataTable.vue"
+import { useMediaQuery } from "@vueuse/core"
+
+const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
 
 const stats = [
   { title: "Total Expenses", value: formatCurrency(281400), subtitle: "5 categories" },
@@ -86,7 +89,7 @@ const isTotalRow = (row: TExpense) => row.category_name === "Total"
       <span class="ml-auto text-xs font-medium text-gray-600 uppercase">Costs Today</span>
     </header>
     <!-- content -->
-    <div class="grid grid-cols-3 gap-8 py-4">
+    <div class="grid grid-cols-1 gap-8 py-4 md:grid-cols-3">
       <!--  -->
       <div>
         <div class="divide-y divide-gray-200 rounded-xl bg-white shadow">
@@ -100,11 +103,13 @@ const isTotalRow = (row: TExpense) => row.category_name === "Total"
         </div>
       </div>
       <!--  -->
-      <div class="col-span-2 overflow-hidden rounded-xl bg-white shadow">
+      <div class="overflow-hidden rounded-xl bg-white shadow md:col-span-2">
         <DataTable
           :data="DATA"
           :columns="COLUMNS"
           :show-pagination="false"
+          :show-mobile-view="false"
+          :fix-first-column="isMobile"
           :row-class="(row) => (isTotalRow(row) ? 'font-semibold bg-gray-50  ' : '')"
         >
           <template #cell:chip="{ item }">
