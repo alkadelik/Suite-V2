@@ -83,7 +83,7 @@ const itemsPerPage = ref(100)
 const searchQuery = ref("")
 const debouncedSearch = useDebouncedRef(searchQuery, 750)
 
-const selectedComponent = computed(() => productionStore.selectedComponentOption)
+const selectedComponent = computed(() => productionStore.selectedRecipeOption)
 
 const onSelect = (option: { label: string; value: string }) => {
   productionStore.setSelectedRecipeOption(option)

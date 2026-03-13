@@ -183,7 +183,7 @@ export const componentOptions = [
 
 export const recipeNameOptions = [
   {
-    label: "Recipe",
+    label: "Recipes",
     value: "recipe",
     desc: "Common for food, beverages & craft production",
     // examples: "e.g., flour, sugar, cooking oil",

@@ -1,9 +1,15 @@
 <!-- eslint-disable @typescript-eslint/no-explicit-any -->
 <script setup lang="ts">
 import { useProductionStore } from "../../../store"
-import type { RecipeCreatePayload } from "../../../recipes.api"
+import {
+  RecipesAPI,
+  rawMaterialToIngredientOption,
+  type RecipeCreatePayload,
+  type ItemType,
+  type OutputItemOption,
+  type IngredientOption,
+} from "../../../recipes.api"
 
-import baseApi from "@/composables/baseApi"
 import AppButton from "@components/AppButton.vue"
 import Drawer from "@components/Drawer.vue"
 import Modal from "@components/Modal.vue"
@@ -20,21 +26,6 @@ import { toast } from "@/composables/useToast"
 import { onInvalidSubmit } from "@/utils/validations"
 
 type Option = { label: string; value: string }
-
-type OutputItemType = "product" | "sub_assembly" | "item"
-type OutputOption = {
-  label: string
-  value: string
-  type: OutputItemType
-  unit?: string
-}
-
-type IngredientKind = "raw_material" | "sub_assembly"
-type IngredientOption = Option & {
-  unit?: string
-  cost_per_unit: number
-  kind: IngredientKind
-}
 
 type RecipeIngredientA = { ingredient: string; qty: number }
 type RecipeIngredientB = { material_uid: string; quantity: number }
@@ -74,7 +65,7 @@ const isMobile = useMediaQuery("(max-width: 1028px)")
 const isEditMode = computed(() => props.mode === "edit" && !!props.recipe)
 const isDuplicateMode = computed(() => props.mode !== "edit" && !!props.recipe)
 
-const selectedComponent = computed(() => useProductionStore().selectedComponentOption)
+const selectedComponent = computed(() => useProductionStore().selectedRecipeOption)
 const recipeLabel = computed(() => selectedComponent.value?.label || "Recipe")
 const isSubAssembly = computed(() => values.output_item?.type === "sub_assembly")
 const steps = computed(() => [`Add ${recipeLabel.value}`, "Ingredients", "Process costs"])
@@ -96,7 +87,7 @@ const unitOptions = ref<Option[]>([
   { label: "Milliliters (ml)", value: "ml" },
 ])
 
-const outputItemOptions = ref<OutputOption[]>([])
+const outputItemOptions = ref<OutputItemOption[]>([])
 const ingredientOptions = ref<IngredientOption[]>([])
 
 const loadingOutputItems = ref(false)
@@ -123,43 +114,6 @@ const findOption = (options: Option[], raw: unknown): Option | null => {
   )
 }
 
-const extractUnit = (x: unknown): string => {
-  if (!x || typeof x !== "object") return ""
-
-  const record = x as Record<string, unknown>
-
-  const directCandidates = [
-    record.unit,
-    record.measurement_unit,
-    record.uom,
-    record.unit_of_measurement,
-    record.unit_name,
-    record.unit_label,
-    record.unitName,
-  ]
-
-  for (const candidate of directCandidates) {
-    if (typeof candidate === "string" && candidate.trim()) return candidate.trim()
-  }
-
-  const nestedUnit = record.unit
-  if (nestedUnit && typeof nestedUnit === "object") {
-    const unitRecord = nestedUnit as Record<string, unknown>
-    const nestedCandidates = [unitRecord.label, unitRecord.name, unitRecord.value]
-    for (const candidate of nestedCandidates) {
-      if (typeof candidate === "string" && candidate.trim()) return candidate.trim()
-    }
-  }
-
-  for (const [key, value] of Object.entries(record)) {
-    if (key.toLowerCase().includes("unit") && typeof value === "string" && value.trim()) {
-      return value.trim()
-    }
-  }
-
-  return ""
-}
-
 const normaliseUnitValue = (raw: string) => {
   const u = normalise(raw)
   const map: Record<string, string> = {
@@ -184,39 +138,27 @@ const normaliseUnitValue = (raw: string) => {
 }
 
 const getErrorMessage = (e: unknown): string => {
-  const err = e as {
-    response?: { data?: unknown }
-    message?: string
-  }
-
+  const err = e as { response?: { data?: unknown }; message?: string }
   const data = err.response?.data
 
   if (data && typeof data === "object" && !Array.isArray(data)) {
     const record = data as Record<string, unknown>
-    const detail = record.detail
-    const message = record.message
-
-    if (typeof detail === "string" && detail.trim()) return detail
-    if (typeof message === "string" && message.trim()) return message
+    if (typeof record.detail === "string" && record.detail.trim()) return record.detail
+    if (typeof record.message === "string" && record.message.trim()) return record.message
 
     const fieldErrors = Object.entries(record)
       .map(([key, val]) => {
-        if (Array.isArray(val)) {
-          return `${key}: ${val.map((item) => String(item)).join(", ")}`
-        }
-        if (typeof val === "string" || typeof val === "number" || typeof val === "boolean") {
+        if (Array.isArray(val)) return `${key}: ${val.map((item) => String(item)).join(", ")}`
+        if (typeof val === "string" || typeof val === "number" || typeof val === "boolean")
           return `${key}: ${String(val)}`
-        }
         return `${key}: Invalid value`
       })
       .join(" | ")
-
     if (fieldErrors) return fieldErrors
   }
 
   if (typeof data === "string" && data.trim()) return data
   if (typeof err.message === "string" && err.message.trim()) return err.message
-
   return "Something went wrong"
 }
 
@@ -234,59 +176,7 @@ const formatNaira = (amount: number) => {
   }
 }
 
-const unwrapResults = (res: unknown): unknown[] => {
-  const recordA = res && typeof res === "object" ? (res as Record<string, unknown>) : {}
-  const a = recordA.data ?? res
-
-  const recordB = a && typeof a === "object" ? (a as Record<string, unknown>) : {}
-  const b = recordB.data ?? a
-
-  const recordC = b && typeof b === "object" ? (b as Record<string, unknown>) : {}
-  const c = recordC.data ?? b
-
-  const results =
-    (c && typeof c === "object" ? (c as Record<string, unknown>).results : undefined) ??
-    (b && typeof b === "object" ? (b as Record<string, unknown>).results : undefined) ??
-    (a && typeof a === "object" ? (a as Record<string, unknown>).results : undefined)
-
-  return Array.isArray(results) ? results : []
-}
-
-const detailEndpointForType = (type: OutputItemType, uid: string) => {
-  if (type === "product") return `/inventory/products/${uid}/`
-  if (type === "sub_assembly") return `/inventory/sub-assemblies/${uid}/`
-  return `/inventory/items/${uid}/`
-}
-
-const fetchUnitForOutputItem = async (type: OutputItemType, uid: string): Promise<string> => {
-  if (!uid || !isUuid(uid)) return ""
-
-  const primary = detailEndpointForType(type, uid)
-  const fallbacks = [
-    `/inventory/products/${uid}/`,
-    `/inventory/sub-assemblies/${uid}/`,
-    `/inventory/items/${uid}/`,
-    `/raw-materials/${uid}/`,
-  ].filter((ep) => ep !== primary)
-
-  for (const endpoint of [primary, ...fallbacks]) {
-    try {
-      const res = await baseApi.get(endpoint)
-      const resRecord = res && typeof res === "object" ? (res as Record<string, unknown>) : {}
-      const resData = resRecord.data
-      const dataRecord =
-        resData && typeof resData === "object" ? (resData as Record<string, unknown>) : {}
-      const d = dataRecord.data ?? resData ?? res
-      const unit = extractUnit(d)
-      if (unit) return unit
-    } catch {
-      // try next endpoint
-    }
-  }
-  return ""
-}
-
-const setUnitFromInventory = async (opt: OutputOption | null, fallbackUid?: string) => {
+const setUnitFromInventory = async (opt: OutputItemOption | null, fallbackUid?: string) => {
   const uid = opt?.value || fallbackUid || ""
 
   if (!uid) {
@@ -296,7 +186,7 @@ const setUnitFromInventory = async (opt: OutputOption | null, fallbackUid?: stri
   }
 
   let unit = (opt?.unit || "").trim()
-  if (!unit) unit = await fetchUnitForOutputItem(opt?.type || "product", uid)
+  if (!unit) unit = await RecipesAPI.getEntityUnit(uid)
 
   unit = normaliseUnitValue(unit)
 
@@ -321,49 +211,21 @@ const CACHE_TTL_MS = 5 * 60 * 1000
 const fetchOutputItems = async (force = false) => {
   const cached = productionStore.cachedOutputItems
   if (!force && cached.length && Date.now() - productionStore.inventoryCachedAt < CACHE_TTL_MS) {
-    outputItemOptions.value = cached as OutputOption[]
+    outputItemOptions.value = cached as OutputItemOption[]
     return
   }
 
   loadingOutputItems.value = true
   try {
-    const res = await baseApi.get("/inventory/products/", { params: { limit: 500, offset: 0 } })
-    const items = unwrapResults(res)
-
-    const deduped: OutputOption[] = items
-      .map((item) => {
-        const x = item as Record<string, unknown>
-        const uid = typeof x.uid === "string" ? x.uid : ""
-        const labelSource =
-          typeof x.name === "string"
-            ? x.name
-            : typeof x.title === "string"
-              ? x.title
-              : typeof x.label === "string"
-                ? x.label
-                : ""
-        const label = labelSource.trim()
-        if (!uid || !isUuid(uid) || !label) return null
-
-        const resolvedType: OutputItemType =
-          x.is_sub_assembly === true ||
-          x.is_sub_assembly === "true" ||
-          x.sub_assembly === true ||
-          x.sub_assembly === "true" ||
-          x.item_type === "sub_assembly" ||
-          x.type === "sub_assembly" ||
-          x.category === "sub_assembly"
-            ? "sub_assembly"
-            : "product"
-
-        return {
-          label,
-          value: uid,
-          type: resolvedType,
-          unit: extractUnit(x) || undefined,
-        }
-      })
-      .filter((option): option is OutputOption => option !== null)
+    const items = await RecipesAPI.listInventoryProducts({ limit: 500, offset: 0 })
+    const deduped: OutputItemOption[] = items
+      .filter((x) => x.uid && x.name)
+      .map((x) => ({
+        label: x.name.trim(),
+        value: x.uid,
+        type: (x.is_sub_assembly ? "sub_assembly" : "product") as ItemType,
+        unit: x.unit?.trim() || undefined,
+      }))
 
     outputItemOptions.value = deduped
     productionStore.cachedOutputItems = deduped
@@ -378,100 +240,17 @@ const fetchOutputItems = async (force = false) => {
 const fetchIngredients = async (force = false) => {
   const cached = productionStore.cachedIngredients
   if (!force && cached.length && Date.now() - productionStore.inventoryCachedAt < CACHE_TTL_MS) {
-    ingredientOptions.value = cached.map((o) => ({
-      ...o,
-      cost_per_unit: o.cost_per_unit ?? 0,
-    }))
+    ingredientOptions.value = cached.map((o) => ({ ...o }))
     return
   }
 
   loadingIngredients.value = true
   try {
-    const [rawRes, subRes] = await Promise.allSettled([
-      baseApi.get("/raw-materials/", { params: { limit: 500, offset: 0 } }),
-      baseApi.get("/inventory/sub-assemblies/", { params: { limit: 500, offset: 0 } }),
-    ])
+    const rawResults = await RecipesAPI.listRawMaterials({ limit: 500, offset: 0 })
+    const deduped: IngredientOption[] = rawResults
+      .filter((m) => m.uid && m.name)
+      .map((m) => rawMaterialToIngredientOption(m))
 
-    const rawResults = rawRes.status === "fulfilled" ? unwrapResults(rawRes.value) : []
-    const subResults = subRes.status === "fulfilled" ? unwrapResults(subRes.value) : []
-
-    const rawOpts: IngredientOption[] = rawResults
-      .map((item) => {
-        const m = item as Record<string, unknown>
-        const uid = typeof m.uid === "string" ? m.uid : ""
-        const name =
-          typeof m.name === "string"
-            ? m.name.trim()
-            : typeof m.title === "string"
-              ? m.title.trim()
-              : ""
-
-        if (!uid || !name) return null
-
-        const avgCost =
-          typeof m.average_cost === "number" || typeof m.average_cost === "string"
-            ? Number(m.average_cost)
-            : NaN
-        const lastCost =
-          typeof m.last_cost === "number" || typeof m.last_cost === "string"
-            ? Number(m.last_cost)
-            : NaN
-
-        return {
-          label: name,
-          value: uid,
-          unit: extractUnit(m) || undefined,
-          cost_per_unit: Number.isFinite(avgCost)
-            ? avgCost
-            : Number.isFinite(lastCost)
-              ? lastCost
-              : 0,
-          kind: "raw_material",
-        } satisfies IngredientOption
-      })
-      .filter((option): option is IngredientOption => option !== null)
-
-    const subOpts: IngredientOption[] = subResults
-      .map((item) => {
-        const s = item as Record<string, unknown>
-        const uid = typeof s.uid === "string" ? s.uid : ""
-        const name =
-          typeof s.name === "string"
-            ? s.name.trim()
-            : typeof s.title === "string"
-              ? s.title.trim()
-              : ""
-
-        if (!uid || !name) return null
-
-        const avgCost =
-          typeof s.average_cost === "number" || typeof s.average_cost === "string"
-            ? Number(s.average_cost)
-            : NaN
-        const lastCost =
-          typeof s.last_cost === "number" || typeof s.last_cost === "string"
-            ? Number(s.last_cost)
-            : NaN
-
-        return {
-          label: name,
-          value: uid,
-          unit: extractUnit(s) || undefined,
-          cost_per_unit: Number.isFinite(avgCost)
-            ? avgCost
-            : Number.isFinite(lastCost)
-              ? lastCost
-              : 0,
-          kind: "sub_assembly",
-        } satisfies IngredientOption
-      })
-      .filter((option): option is IngredientOption => option !== null)
-
-    const map = new Map<string, IngredientOption>()
-    for (const o of rawOpts) map.set(o.value, o)
-    for (const o of subOpts) map.set(o.value, o)
-
-    const deduped = Array.from(map.values()).filter((o) => isUuid(o.value))
     ingredientOptions.value = deduped
     productionStore.cachedIngredients = deduped
   } catch (e: unknown) {
@@ -483,7 +262,7 @@ const fetchIngredients = async (force = false) => {
 }
 
 interface FormValues {
-  output_item: OutputOption | null
+  output_item: OutputItemOption | null
   output_qty: string
   unit: Option | null
   notes: string
@@ -575,7 +354,7 @@ const closeDesktopOutput = () => {
   desktopOutputOpen.value = false
   desktopOutputQuery.value = ""
 }
-const pickDesktopOutput = (opt: OutputOption) => {
+const pickDesktopOutput = (opt: OutputItemOption) => {
   setFieldValue("output_item", opt)
   outputItemTouched.value = true
   closeDesktopOutput()
@@ -810,7 +589,6 @@ const duplicateRecipeExists = computed(() => {
 
   return productionStore.recipes.some((r: unknown) => {
     const recipe = r as Record<string, unknown>
-
     const recipeUid = typeof recipe.uid === "string" ? recipe.uid : ""
     const outputProduct = typeof recipe.output_product === "string" ? recipe.output_product : ""
     const outputRawMaterial =
@@ -821,7 +599,6 @@ const duplicateRecipeExists = computed(() => {
         : Number(recipe.output_quantity ?? 0)
 
     if (isEditMode.value && recipeUid === currentRecipeUid) return false
-
     return (outputProduct === uid || outputRawMaterial === uid) && outputQuantity === qty
   })
 })
@@ -904,24 +681,11 @@ const onSubmit = handleSubmit(async (formValues) => {
         toast.error("Missing recipe uid")
         return
       }
-
-      const res = await baseApi.patch(`/recipes/${uid}/`, payload)
-      const resRecord = res && typeof res === "object" ? (res as Record<string, unknown>) : {}
-      const resData = resRecord.data
-      const dataRecord =
-        resData && typeof resData === "object" ? (resData as Record<string, unknown>) : {}
-      const updated = dataRecord.data ?? resData ?? res
-
+      const updated = await RecipesAPI.partialUpdate(uid, payload)
       emit("updated", updated)
       toast.success("Recipe updated successfully!")
     } else {
-      const res = await baseApi.post("/recipes/", payload)
-      const resRecord = res && typeof res === "object" ? (res as Record<string, unknown>) : {}
-      const resData = resRecord.data
-      const dataRecord =
-        resData && typeof resData === "object" ? (resData as Record<string, unknown>) : {}
-      const created = dataRecord.data ?? resData ?? res
-
+      const created = await RecipesAPI.create(payload)
       emit("created", created)
       toast.success("Recipe added successfully!")
     }
@@ -1135,10 +899,7 @@ const onSubmit = handleSubmit(async (formValues) => {
                       :class="values.output_item?.value === opt.value ? 'bg-orange-50' : ''"
                       @click="pickDesktopOutput(opt)"
                     >
-                      <span class="truncate text-gray-900">
-                        {{ opt.label }}
-                      </span>
-
+                      <span class="truncate text-gray-900">{{ opt.label }}</span>
                       <div class="ml-2 flex shrink-0 items-center gap-2">
                         <span
                           v-if="opt.type === 'sub_assembly'"
@@ -1146,7 +907,6 @@ const onSubmit = handleSubmit(async (formValues) => {
                         >
                           Sub-assembly
                         </span>
-
                         <Icon
                           v-if="values.output_item?.value === opt.value"
                           name="check"
@@ -1224,7 +984,7 @@ const onSubmit = handleSubmit(async (formValues) => {
               value-key="value"
               label-key="label"
               searchable
-              @update:model-value="(v: IngredientOption | null) => (ingredientSelect = v)"
+              @update:model-value="(v) => (ingredientSelect = v as IngredientOption | null)"
             />
           </div>
 
@@ -1326,13 +1086,11 @@ const onSubmit = handleSubmit(async (formValues) => {
                     <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
                       <Icon name="blur" size="18" />
                     </span>
-
                     <div class="flex min-w-0 flex-col">
                       <div class="flex min-w-0 items-center gap-2">
                         <p class="truncate text-sm font-medium text-gray-900">
                           {{ row.ingredient.label }}
                         </p>
-
                         <span
                           v-if="row.ingredient.kind === 'sub_assembly'"
                           class="inline-flex rounded-full border border-purple-200 bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700"
@@ -1340,7 +1098,6 @@ const onSubmit = handleSubmit(async (formValues) => {
                           Sub-assembly
                         </span>
                       </div>
-
                       <div class="mt-1 flex items-center gap-2">
                         <span
                           v-if="row.ingredient.cost_per_unit"
@@ -1368,11 +1125,9 @@ const onSubmit = handleSubmit(async (formValues) => {
                       >
                         <span class="text-lg leading-none">−</span>
                       </button>
-
                       <span class="min-w-6 text-center text-sm font-medium text-gray-900">
                         {{ row.qty }}
                       </span>
-
                       <button
                         type="button"
                         class="flex h-7 w-7 items-center justify-center rounded-lg text-gray-700 hover:bg-gray-50"
@@ -1427,7 +1182,6 @@ const onSubmit = handleSubmit(async (formValues) => {
                   </span>
                   <p class="text-sm font-medium text-gray-900">Process {{ idx + 1 }}</p>
                 </div>
-
                 <div class="flex items-center gap-3">
                   <button
                     type="button"
@@ -1437,7 +1191,6 @@ const onSubmit = handleSubmit(async (formValues) => {
                   >
                     <Icon name="note-add" size="24" />
                   </button>
-
                   <button
                     type="button"
                     class="flex h-7 w-7 items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600"
@@ -1459,7 +1212,6 @@ const onSubmit = handleSubmit(async (formValues) => {
                     placeholder="e.g Boiling, Labour"
                   />
                 </div>
-
                 <div class="col-span-1">
                   <label class="mb-2 block text-xs font-medium text-gray-700">Cost</label>
                   <input
@@ -1509,10 +1261,8 @@ const onSubmit = handleSubmit(async (formValues) => {
             <Transition name="note-sheet">
               <div v-if="showProcessNote" class="fixed inset-0 z-[9999] flex flex-col justify-end">
                 <div class="absolute inset-0 bg-black/40" @click="showProcessNote = false" />
-
                 <div class="relative rounded-t-3xl bg-white px-5 pt-5 pb-10 shadow-2xl">
                   <div class="mx-auto mb-5 h-1 w-10 rounded-full bg-gray-300" />
-
                   <div class="mb-5 flex items-center justify-between">
                     <h2 class="text-base font-semibold text-gray-900">Add Note</h2>
                     <button
@@ -1523,7 +1273,6 @@ const onSubmit = handleSubmit(async (formValues) => {
                       <Icon name="x" size="16" />
                     </button>
                   </div>
-
                   <p class="mb-2 text-sm font-medium text-gray-700">Notes (optional)</p>
                   <textarea
                     v-model="processNoteDraft"
@@ -1531,7 +1280,6 @@ const onSubmit = handleSubmit(async (formValues) => {
                     class="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none focus:border-gray-300 focus:bg-white"
                     placeholder='e.g "I spent too much money on this process"'
                   />
-
                   <button
                     type="button"
                     class="mt-5 w-full rounded-2xl bg-[#C2570A] py-4 text-sm font-semibold text-white active:opacity-90"

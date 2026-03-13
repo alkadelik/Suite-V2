@@ -17,7 +17,7 @@ export type IngredientOption = {
   label: string
   value: string
   unit?: string
-  cost_per_unit?: number
+  cost_per_unit: number
   kind: IngredientKind
 }
 
@@ -102,6 +102,7 @@ export type InventoryProduct = {
   is_hidden_from_storefront: boolean
   category: string
   has_variants: boolean
+  is_sub_assembly?: boolean
 }
 
 export type InventorySubAssembly = {
@@ -151,18 +152,11 @@ function unwrapApiPayload<T>(payload: WrappedPayload<T>): T {
 
 function getPaginatedResults<T>(payload: PaginatedLike<T>): T[] {
   if (Array.isArray(payload)) return payload
-
   if (typeof payload !== "object" || payload === null) return []
-
-  if ("results" in payload && Array.isArray(payload.results)) {
-    return payload.results
-  }
-
+  if ("results" in payload && Array.isArray(payload.results)) return payload.results
   if ("data" in payload) {
     const data = payload.data
-
     if (Array.isArray(data)) return data
-
     if (
       typeof data === "object" &&
       data !== null &&
@@ -172,15 +166,11 @@ function getPaginatedResults<T>(payload: PaginatedLike<T>): T[] {
       return data.results
     }
   }
-
   return []
 }
 
 function getEntityPayload(payload: EntityResponse): EntityPayload {
-  if (payload.data && typeof payload.data === "object") {
-    return payload.data
-  }
-
+  if (payload.data && typeof payload.data === "object") return payload.data
   return {
     name: payload.name,
     unit: payload.unit,
@@ -193,7 +183,7 @@ export function productToOutputOption(product: InventoryProduct): OutputItemOpti
   return {
     label: String(product.name ?? ""),
     value: String(product.uid ?? ""),
-    type: "product",
+    type: product.is_sub_assembly ? "sub_assembly" : "product",
     unit: String(product.unit ?? "").trim() || undefined,
   }
 }
@@ -229,12 +219,10 @@ export function getTotalCostFromDetail(d: RecipeDetail): number {
     const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN
     return Number.isFinite(n) ? n : 0
   }
-
   if (d.total_cost != null && toNum(d.total_cost) > 0) return toNum(d.total_cost)
   if (d.estimated_cost_per_batch != null && toNum(d.estimated_cost_per_batch) > 0) {
     return toNum(d.estimated_cost_per_batch)
   }
-
   return 0
 }
 
@@ -326,22 +314,10 @@ export const RecipesAPI = {
     return getPaginatedResults(res.data)
   },
 
-  async listInventorySubAssemblies(
-    params?: Record<string, string | number | boolean>,
-  ): Promise<InventorySubAssembly[]> {
-    const res = await baseApi.get<PaginatedLike<InventorySubAssembly>>(
-      "/inventory/sub-assemblies/",
-      { params },
-    )
-    return getPaginatedResults(res.data)
-  },
-
   async listRawMaterials(
     params?: Record<string, string | number | boolean>,
   ): Promise<RawMaterial[]> {
-    const res = await baseApi.get<PaginatedLike<RawMaterial>>("/raw-materials/", {
-      params,
-    })
+    const res = await baseApi.get<PaginatedLike<RawMaterial>>("/raw-materials/", { params })
     return getPaginatedResults(res.data)
   },
 
@@ -366,9 +342,7 @@ export const RecipesAPI = {
   },
 
   async setActive(uid: string, is_active: boolean): Promise<RecipeDetail> {
-    const res = await baseApi.patch<WrappedPayload<RecipeDetail>>(`/recipes/${uid}/`, {
-      is_active,
-    })
+    const res = await baseApi.patch<WrappedPayload<RecipeDetail>>(`/recipes/${uid}/`, { is_active })
     return unwrapApiPayload(res.data)
   },
 
@@ -380,7 +354,6 @@ export const RecipesAPI = {
     for (const endpoint of [
       `/raw-materials/${uid}/`,
       `/inventory/products/${uid}/`,
-      `/inventory/sub-assemblies/${uid}/`,
       `/inventory/items/${uid}/`,
     ]) {
       try {
@@ -388,22 +361,18 @@ export const RecipesAPI = {
         const payload = getEntityPayload(res.data)
         const name = String(payload.name ?? "").trim()
         const unit = String(payload.unit ?? payload.measurement_unit ?? payload.uom ?? "").trim()
-
         if (name) return { name, unit }
       } catch {
         continue
       }
     }
-
     return { name: uid, unit: "" }
   },
 
   async getEntityUnit(uid: string): Promise<string> {
     if (!uid) return ""
-
     for (const endpoint of [
       `/inventory/products/${uid}/`,
-      `/inventory/sub-assemblies/${uid}/`,
       `/raw-materials/${uid}/`,
       `/inventory/items/${uid}/`,
     ]) {
@@ -411,13 +380,11 @@ export const RecipesAPI = {
         const res = await baseApi.get<EntityResponse>(endpoint)
         const payload = getEntityPayload(res.data)
         const unit = String(payload.unit ?? payload.measurement_unit ?? payload.uom ?? "").trim()
-
         if (unit) return unit
       } catch {
         continue
       }
     }
-
     return ""
   },
 }

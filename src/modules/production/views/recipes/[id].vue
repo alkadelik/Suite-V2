@@ -582,6 +582,8 @@ const onUpdated = () => {
   void fetchRecipeDetail(recipeId.value)
 }
 
+const selectedComponent = computed(() => productionStore.selectedRecipeOption)
+
 const onCreated = (created: { uid?: string }) => {
   const uid = String(created.uid ?? "")
   toast.success("Recipe created")
@@ -721,7 +723,7 @@ const onCreated = (created: { uid?: string }) => {
             class="inline-flex items-center gap-2 rounded-xl border border-[#FDBA74] bg-white px-4 py-2 text-sm font-semibold text-[#9A3412] hover:bg-[#FFF7ED]"
             @click="toggleManage"
           >
-            <span>Manage Recipe</span>
+            <span>Manage {{ selectedComponent.value }}</span>
             <span class="text-lg">⋮</span>
           </button>
 
