@@ -102,18 +102,27 @@ const COLUMNS: TableColumn<TEodPendingOrder>[] = [
         <div class="flex p-6">
           <div class="w-full divide-y divide-gray-200 rounded-xl bg-gray-100">
             <!--  -->
-            <div v-for="v in 3" :key="v" class="flex items-center justify-between gap-4 px-4 py-5">
-              <p class="text-sm font-medium">GIG Logistics</p>
+            <div
+              v-for="courier in data?.courier_performance ?? []"
+              :key="courier.courier"
+              class="flex items-center justify-between gap-4 px-4 py-5"
+            >
+              <p class="text-sm font-medium">{{ courier.courier }}</p>
               <p class="text-xs">
-                <b>9</b> shipments <b>{{ formatCurrency(10800) }}</b> costs
-                <span class="text-success-700">100% on time</span>
+                <b>{{ courier.orders }}</b> shipment{{ courier.orders !== 1 ? "s" : "" }}
+                <span v-if="courier.delivered > 0" class="text-success-700">
+                  &bull; {{ ((courier.delivered / courier.orders) * 100).toFixed(0) }}% delivered
+                </span>
+                <span v-if="courier.pending > 0" class="text-warning-700">
+                  &bull; {{ courier.pending }} pending
+                </span>
               </p>
             </div>
             <!--  -->
             <div class="flex items-center justify-between gap-4 px-4 py-5">
               <p class="text-sm font-semibold">Total Shipping Today</p>
               <p class="text-success-700 text-sm font-semibold">
-                {{ formatCurrency(10800 * 4) }}
+                {{ formatCurrency(data?.summary?.total_shipping_costs ?? 0, { kobo: true }) }}
               </p>
             </div>
           </div>
@@ -123,7 +132,16 @@ const COLUMNS: TableColumn<TEodPendingOrder>[] = [
       <div class="divide-y divide-gray-200 rounded-xl bg-white shadow">
         <div class="px-4 py-3">
           <h3 class="mb-1 text-sm font-semibold">Pending Orders → Monday</h3>
-          <p class="text-xs">5 orders carrying over &bull; {{ formatCurrency(4500) }} at stake</p>
+          <p class="text-xs">
+            {{ data?.pending_orders?.length ?? 0 }} orders carrying over &bull;
+            {{
+              formatCurrency(
+                data?.pending_orders?.reduce((sum, order) => sum + order.amount, 0) ?? 0,
+                { kobo: true },
+              )
+            }}
+            at stake
+          </p>
         </div>
         <div>
           <DataTable
@@ -138,12 +156,9 @@ const COLUMNS: TableColumn<TEodPendingOrder>[] = [
       </div>
     </div>
 
-    <ReportInsightCard title="Delivery Exceptions">
+    <ReportInsightCard v-if="data?.narratives?.fulfilment_insight" title="Delivery Exceptions">
       <p class="text-sm">
-        <b>Order #1038</b> (Abuja, <b>₦18,200</b>) — GIG attempted delivery at <b>3:45pm</b> but
-        customer was not available. Rescheduled for <b>Monday</b>. Recommendation: Send the customer
-        a WhatsApp confirming the Monday delivery window to avoid a second failed attempt, which
-        would trigger a <b>return</b>.
+        {{ data?.narratives?.fulfilment_insight }}
       </p>
     </ReportInsightCard>
   </section>

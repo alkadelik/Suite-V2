@@ -62,10 +62,10 @@ export interface IEODReportSummary {
 }
 
 export interface IEODPayment {
-  mode: string
+  method: string
   amount: number
-  orders: number
-  percent_collected?: number
+  order_count: number
+  percent?: number
 }
 
 export interface IEODCashDigitalReconciliation {
@@ -147,11 +147,11 @@ export interface IEODExpensesOverview {
   biggest_expense_category_name: string | null
 }
 
-export interface IEODSalesByOrigin {
-  origin: string
-  orders: number
+export type TEodSalesByOrigin = {
+  origin_name: string
+  order_count: number
   revenue: number
-  percent: number
+  percent_of_revenue: number
 }
 
 export interface IEODAbandonedCarts {
@@ -223,7 +223,7 @@ export interface IEODReport {
   total_expenses: number
   expenses_by_category: IEODExpensesByCategory[]
   expenses_overview: IEODExpensesOverview
-  sales_by_origin: IEODSalesByOrigin[]
+  sales_by_origin: TEodSalesByOrigin[]
   abandoned_carts: IEODAbandonedCarts
   inventory_flow: IEODInventoryFlow
   low_stock_alerts: IEODLowStockAlert[]

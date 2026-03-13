@@ -1,29 +1,35 @@
 <script setup lang="ts">
 import { formatCurrency } from "@/utils/format-currency"
 import ReportStatCard from "../ReportStatCard.vue"
+import { IEODReport } from "@modules/reports/types"
+import { computed } from "vue"
 
-const stats = [
+const props = defineProps<{ data: IEODReport | null }>()
+
+const stats = computed(() => [
   {
     label: "Total Customers",
-    value: 120,
+    value: props.data?.customers?.unique_customers ?? 0,
     icon: "people",
+    caption: `${props.data?.summary?.order_count ?? 0} orders from ${props.data?.customers?.unique_customers ?? 0} unique`,
   },
   {
     label: "New Customers",
-    value: 30,
+    value: props.data?.customers?.new_customers ?? 0,
     icon: "user-circle-add",
   },
   {
     label: "Returning Customers",
-    value: 90,
+    value: props.data?.customers?.returning_customers ?? 0,
     icon: "user-octagon",
   },
   {
     label: "Returning Revenue",
-    value: formatCurrency(120000),
+    value: formatCurrency(props.data?.customers?.returning_revenue ?? 0, { kobo: true }),
     icon: "moneys-solid",
+    caption: `${props.data?.customers?.returning_revenue_percent?.toFixed(1) ?? 0}% of total revenue`,
   },
-]
+])
 </script>
 
 <template>

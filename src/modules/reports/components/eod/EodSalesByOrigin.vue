@@ -3,32 +3,32 @@ import { formatCurrency } from "@/utils/format-currency"
 import DataTable, { TableColumn } from "@components/DataTable.vue"
 import { useMediaQuery } from "@vueuse/core"
 import { computed } from "vue"
+import { IEODReport, TEodSalesByOrigin } from "@modules/reports/types"
 
-interface SalesByOrigin {
-  channel: string
-  orders: number
-  revenue: number
-  share: string
-}
+const props = defineProps<{ data: IEODReport | null }>()
 
-const COLUMNS: TableColumn<SalesByOrigin>[] = [
-  { header: "Channel", accessor: "channel" },
-  { header: "Orders", accessor: "orders" },
+const COLUMNS: TableColumn<TEodSalesByOrigin>[] = [
+  { header: "Channel", accessor: "origin_name" },
+  { header: "Orders", accessor: "order_count" },
   {
     header: "Revenue",
     accessor: "revenue",
-    cell: ({ value }) => formatCurrency(Number(value)),
+    cell: ({ value }) => formatCurrency(Number(value), { kobo: true }),
   },
-  { header: "Share", accessor: "share" },
+  {
+    header: "Share",
+    accessor: "percent_of_revenue",
+    cell: ({ value }) => `${Number(value).toFixed(1)}%`,
+  },
 ]
 
-const DATA = [
-  { channel: "Instagram DM", orders: 10, revenue: 150000, share: "68.7%" },
-  { channel: "Website", orders: 5, revenue: 50000, share: "22.9%" },
-  { channel: "Whatsapp", orders: 2, revenue: 15000, share: "6.8%" },
-  { channel: "Walk-in", orders: 3, revenue: 20000, share: "2.9%" },
-  { channel: "Facebook", orders: 1, revenue: 1000, share: "1.0%" },
-]
+const totalOrders = computed(() => {
+  return props.data?.sales_by_origin?.reduce((sum, item) => sum + item.order_count, 0) ?? 0
+})
+
+const totalRevenue = computed(() => {
+  return props.data?.sales_by_origin?.reduce((sum, item) => sum + item.revenue, 0) ?? 0
+})
 
 const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
 </script>
@@ -47,7 +47,9 @@ const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
       <div class="rounded-xl bg-white shadow">
         <div class="border-b border-gray-200 px-4 py-3">
           <h3 class="mb-1 text-sm font-semibold">Revenue by Channel</h3>
-          <p class="text-xs">17 orders &bull; {{ formatCurrency(218400) }} total</p>
+          <p class="text-xs">
+            {{ totalOrders }} orders &bull; {{ formatCurrency(totalRevenue, { kobo: true }) }} total
+          </p>
         </div>
         <div class="flex min-h-[280px] items-center justify-center">
           <!-- pie chart -->
@@ -62,7 +64,7 @@ const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
         <div>
           <DataTable
             :columns="COLUMNS"
-            :data="DATA"
+            :data="data?.sales_by_origin ?? []"
             :show-mobile-view="false"
             :fix-first-column="isMobile"
             :show-pagination="false"
