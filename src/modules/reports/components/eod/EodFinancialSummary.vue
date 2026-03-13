@@ -14,9 +14,7 @@ const stats = computed(() => {
 
   const averageOrderMargin =
     summary?.average_order_value && summary_comparison?.average_order_value_absolute_change
-      ? (summary_comparison.average_order_value_absolute_change /
-          (summary.average_order_value - summary_comparison.average_order_value_absolute_change)) *
-        100
+      ? (summary.average_order_value / summary_comparison.average_order_value_absolute_change) * 100
       : 0
 
   const data = [
@@ -53,7 +51,7 @@ const stats = computed(() => {
     {
       label: "Avg Order Value",
       value: formatCurrency(summary?.average_order_value ?? 0),
-      caption: `${averageOrderMargin.toFixed(1)}% change`,
+      caption: `${averageOrderMargin}% net margin`,
       percentage: undefined,
     },
   ]
