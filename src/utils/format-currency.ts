@@ -91,11 +91,11 @@ export function truncateCurrency(
   } else if (absValue >= 1_000_000) {
     suffix = "M"
     divisor = 1_000_000
-  } else if (absValue >= 1_000) {
+  } else if (absValue >= 10_000) {
     suffix = "K"
     divisor = 1_000
   } else {
-    // For values less than 1000, show full number
+    // For values less than 10000, show full number
     return new Intl.NumberFormat(currency === "NGN" ? "en-NG" : "en-US", {
       style: "currency",
       currency,
