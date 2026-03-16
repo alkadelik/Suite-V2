@@ -82,6 +82,8 @@ interface Props {
   fixLastColumn?: boolean
   /** CSS class(es) to apply to each row - can be a string or function that receives row data */
   rowClass?: RowClass<T>
+  /** Show table layout on mobile instead of cards (enables horizontal scroll) */
+  mobileTableView?: boolean
 }
 
 // Define emits
@@ -124,10 +126,18 @@ const props = withDefaults(defineProps<Props>(), {
   layout: "table-auto",
   fixFirstColumn: false,
   fixLastColumn: false,
+  mobileTableView: false,
 })
 
 const rowSelection = ref<Record<string, boolean>>({})
 const slots = useSlots()
+const tableScrollContainer = ref<HTMLElement | null>(null)
+const isScrolled = ref(false)
+
+const onTableScroll = (e: Event) => {
+  const el = e.target as HTMLElement
+  isScrolled.value = el.scrollLeft > 0
+}
 const data = computed(() => props.data)
 const columnHelper = createColumnHelper<T>()
 
@@ -308,9 +318,9 @@ const getFixedColumnClasses = (position: "left" | "right" | null) => {
   if (!position) return ""
   const baseClasses = "sticky bg-white z-5"
   if (position === "left") {
-    return `${baseClasses} left-0 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]`
+    return `${baseClasses} left-0 fixed-col-left ${isScrolled.value ? "is-scrolled" : ""}`
   }
-  return `${baseClasses} right-0 shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.1)]`
+  return `${baseClasses} right-0 fixed-col-right`
 }
 
 // Helper function to compute row classes
@@ -323,7 +333,11 @@ const getRowClasses = (row: T) => {
 <template>
   <div class="w-full overflow-hidden" :class="props.class">
     <!--  -->
-    <div class="hidden w-full overflow-x-auto md:block">
+    <div
+      ref="tableScrollContainer"
+      :class="[props.mobileTableView ? 'block' : 'hidden md:block', 'w-full overflow-x-auto']"
+      @scroll="onTableScroll"
+    >
       <table class="min-w-full border-0" :class="props.layout">
         <thead class="bg-gray-50">
           <tr v-for="headerGroup in table.getHeaderGroups()" :key="headerGroup.id">
@@ -408,7 +422,7 @@ const getRowClasses = (row: T) => {
     <!--  -->
     <!-- MOBILE TABLE -->
     <!--  -->
-    <div class="space-y-4 md:hidden">
+    <div :class="[props.mobileTableView ? 'hidden' : 'md:hidden', 'space-y-4']">
       <!-- Loading progress bar for mobile when there's data -->
       <template v-if="loading && (data.length || table.getPageCount() > 1)">
         <div class="px-1">
@@ -525,6 +539,16 @@ const getRowClasses = (row: T) => {
 </template>
 
 <style scoped>
+.fixed-col-left {
+  box-shadow: none;
+  transition: box-shadow 0.15s ease;
+}
+.fixed-col-left.is-scrolled {
+  box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.1);
+}
+.fixed-col-right {
+  box-shadow: -2px 0 4px -2px rgba(0, 0, 0, 0.1);
+}
 .progress {
   animation: progress 1.5s infinite linear;
 }
