@@ -13,6 +13,7 @@ import { TOrder } from "../types"
 import CreateOrderDrawer from "../components/CreateOrderDrawer.vue"
 import VoidDeleteOrder from "../components/VoidDeleteOrder.vue"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
+import OrderShipmentTab from "../components/OrderShipmentTab.vue"
 import {
   useDeleteOrder,
   useGenerateInvoice,
@@ -38,7 +39,6 @@ import ProductAvatar from "@components/ProductAvatar.vue"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
 import OrderDetailsDrawer from "../components/OrderDetailsDrawer.vue"
 import StatCard from "@components/StatCard.vue"
-import OrderShipmentTab from "../components/OrderShipmentTab.vue"
 
 const openCreate = ref(false)
 const openVoid = ref(false)
@@ -535,10 +535,9 @@ const handleDetailsMarkAsPaid = () => {
         <Tabs v-model="status" :tabs="ORDER_STATUS_TAB" />
       </div>
 
-      <!-- Order statuses excluding shipment -->
       <div
-        v-if="status !== 'shipments'"
         class="space-y-4 overflow-hidden rounded-xl border-gray-200 pt-3 md:border md:bg-white"
+        v-if="status !== 'shipments'"
       >
         <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
           <h3 v-if="!isMobile" class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
@@ -575,6 +574,7 @@ const handleDetailsMarkAsPaid = () => {
         </div>
 
         <DataTable
+          v-if="status !== 'shipments'"
           :key="status"
           :data="orders?.results ?? []"
           :columns="
@@ -665,8 +665,6 @@ const handleDetailsMarkAsPaid = () => {
           </template>
         </DataTable>
       </div>
-
-      <!-- order shipment tab -->
       <OrderShipmentTab v-if="status === 'shipments'" />
     </section>
 

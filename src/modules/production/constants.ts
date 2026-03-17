@@ -1,11 +1,46 @@
 import { TableColumn } from "@components/DataTable.vue"
 import { formatCurrency } from "@/utils/format-currency"
-import { TRawMaterial, TLinkedRecipe, TBatch, TMovement } from "./types"
+import { TRawMaterial, TLinkedRecipe, TBatch, TMovement, TRecipes } from "./types"
 import componentPng from "@/assets/images/components.png"
 import ingredientPng from "@/assets/images/ingredients.png"
 import materialPng from "@/assets/images/materials.png"
 import { formatDate } from "@/utils/formatDate"
 
+const toDateOnly = (v: string) => (v ? v.slice(0, 10) : "--")
+
+export const RECIPES_COLUMN: TableColumn<TRecipes>[] = [
+  { header: "Output Item", accessor: "output_item_name" }, // output_item_name +
+
+  // {
+  //   header: "Output Quantity",
+  //   accessor: "output_quantity",
+  //   cell: ({ item }) => formatQty(item.output_quantity),
+  // },
+
+  {
+    header: "Ingredient Count",
+    accessor: "ingredient_count",
+    cell: ({ item }) => String(item.ingredient_count ?? "—"),
+  },
+
+  {
+    header: "Status",
+    accessor: "is_active",
+    cell: ({ item }) => (item.is_active ? "Active" : "Disabled"),
+  },
+
+  {
+    header: "Last Edited",
+    accessor: "updated_at",
+    cell: ({ item }) => toDateOnly(item.updated_at as string),
+  },
+
+  // ✅ new accessors so we can render values via slots
+  { header: "Last Cost", accessor: "last_cost" },
+  { header: "Avg. Cost", accessor: "average_cost" },
+
+  { header: "Actions", accessor: "actions" },
+]
 export const RAW_MATERIALS_COLUMN: TableColumn<TRawMaterial>[] = [
   { header: "Name", accessor: "name" },
   {
@@ -26,6 +61,56 @@ export const RAW_MATERIALS_COLUMN: TableColumn<TRawMaterial>[] = [
       Number(item.last_cost) ? `${formatCurrency(Number(item.avg_cost))}/${item.unit}` : "-",
   },
   { header: "", accessor: "actions" },
+]
+
+// You can keep RECIPE_MATERIALS, but make it match the new type exactly.
+
+export const MOCK_MATERIALS: TRawMaterial[] = [
+  {
+    uid: "mat-001",
+    name: "Aluminum Sheets",
+    stock: 150,
+    unit: "sheets",
+    category: "Metals",
+    last_cost: 3000,
+    average_cost: 2800,
+    subassembly: false,
+    low_stock: false,
+    expired: false,
+    expiration_date: "2025-12-31",
+    created_at: "2023-01-15",
+    updated_at: "2023-06-20",
+  },
+  {
+    uid: "mat-002",
+    name: "Plastic Pellets",
+    stock: 500,
+    unit: "kg",
+    category: "Polymers",
+    last_cost: 1500,
+    average_cost: 1400,
+    subassembly: false,
+    low_stock: true,
+    expired: false,
+    expiration_date: "2024-11-30",
+    created_at: "2023-02-10",
+    updated_at: "2023-06-18",
+  },
+  {
+    uid: "mat-003",
+    name: "Copper Wires",
+    stock: 200,
+    unit: "meters",
+    category: "Metals",
+    last_cost: 5000,
+    average_cost: 4800,
+    subassembly: true,
+    low_stock: false,
+    expired: true,
+    expiration_date: "2023-05-01",
+    created_at: "2023-03-05",
+    updated_at: "2023-06-15",
+  },
 ]
 
 export const BATCHES_COLUMN: TableColumn<TBatch>[] = [
@@ -98,7 +183,7 @@ export const componentOptions = [
 
 export const recipeNameOptions = [
   {
-    label: "Recipe",
+    label: "Recipes",
     value: "recipe",
     desc: "Common for food, beverages & craft production",
     // examples: "e.g., flour, sugar, cooking oil",

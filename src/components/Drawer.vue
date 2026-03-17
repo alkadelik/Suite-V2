@@ -93,7 +93,7 @@ const close = () => emit("close")
  */
 const backdropClasses = computed(() => {
   return [
-    "fixed inset-0 z-[1000] transition-all duration-300 ease-out",
+    "fixed inset-0 z-[1000] transition-all duration-300 ease-out m-0",
     props.open
       ? "opacity-100 pointer-events-auto bg-black/60"
       : "opacity-0 pointer-events-none bg-black/60",
