@@ -139,7 +139,7 @@
     @close="closeAllNotifications"
   />
 
-  <WhatsNewModal :open="whatNew" @close="whatNew = false" />
+  <!-- <WhatsNewModal :open="whatNew" @close="whatNew = false" /> -->
 </template>
 
 <script setup lang="ts">
@@ -176,7 +176,7 @@ import {
   useMarkNotificationAsRead,
 } from "@modules/shared/api"
 import type { INotification } from "@modules/shared/types"
-import WhatsNewModal from "@components/WhatsNewModal.vue"
+// import WhatsNewModal from "@components/WhatsNewModal.vue"
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
 const mobileSidebarOpen = ref(false)
@@ -184,7 +184,7 @@ const logout = ref(false)
 const openMore = ref(false)
 const openActions = ref(false)
 const showNotification = ref(false)
-const whatNew = ref(true)
+// const whatNew = ref(true)
 
 // Fetch notifications from API
 const { data: notificationsData, refetch: refetchNotifications } = useGetNotifications()
