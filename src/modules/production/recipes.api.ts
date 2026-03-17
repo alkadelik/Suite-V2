@@ -23,8 +23,8 @@ export type IngredientOption = {
 
 export type TRecipes = {
   uid: string
-  output_product?: string
-  output_raw_material?: string
+  output_product?: string | null
+  output_raw_material?: string | null
   output_item_name: string
   output_unit?: string
   item_type: ItemType
@@ -118,6 +118,7 @@ export type RawMaterial = {
   unit?: string
   last_cost?: string | number
   average_cost?: string | number
+  is_sub_assembly?: boolean // raw-materials API returns this flag
 }
 
 export type IngredientEntityDetail = {
@@ -210,7 +211,16 @@ export function rawMaterialToIngredientOption(material: RawMaterial): Ingredient
     value: String(material.uid ?? ""),
     unit: String(material.unit ?? "").trim() || undefined,
     cost_per_unit: cost,
-    kind: "raw_material",
+    kind: (material.is_sub_assembly ? "sub_assembly" : "raw_material") as IngredientKind,
+  }
+}
+
+export function rawMaterialToOutputOption(material: RawMaterial): OutputItemOption {
+  return {
+    label: String(material.name ?? ""),
+    value: String(material.uid ?? ""),
+    type: "sub_assembly",
+    unit: String(material.unit ?? "").trim() || undefined,
   }
 }
 

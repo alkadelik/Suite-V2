@@ -3,9 +3,12 @@ import { ref, computed } from "vue"
 import type { TRecipes } from "./types"
 import {
   RecipesAPI,
-  type RecipesListItem,
+  type TRecipes as RecipesListItem,
   type RecipeCreatePayload,
+  type RecipePatchPayload,
   type RecipeDetail,
+  type InventoryProduct,
+  type RawMaterial,
 } from "./recipes.api"
 import { TRawMaterial } from "./types"
 
@@ -38,14 +41,14 @@ const unwrapPaginated = <T>(res: unknown): { count: number; results: T[] } => {
 const mapListItem = (item: RecipesListItem): TRecipes => ({
   uid: String(item.uid),
   output_item_name: String(item.output_item_name ?? ""),
-  item_type: item.item_type,
+  item_type: item.item_type === "sub_assembly" ? "sub_assembly" : "product",
   output_quantity: item.output_quantity,
   producible_quantity: item.producible_quantity,
   ingredient_count: item.ingredient_count,
   process_cost_count: item.process_cost_count,
   is_active: Boolean(item.is_active),
   updated_at: String(item.updated_at ?? ""),
-  // ✅ preserve output UIDs so unit hydration can look them up in inventory
+  // preserve output UIDs so unit hydration can look them up in inventory
   output_product: item.output_product ?? null,
   output_raw_material: item.output_raw_material ?? null,
 })
@@ -76,19 +79,23 @@ export const useProductionStore = defineStore(
     const currentRecipe = ref<RecipeDetail | null>(null)
     const currentRecipeLoading = ref(false)
 
-    // ✅ Persisted unit cache: recipeUid → unit string
-    // Survives page refresh so units show instantly on next visit
+    // Persisted unit cache: recipeUid → unit string
     const unitsByRecipeUid = ref<Record<string, string>>({})
 
-    // ✅ Persisted output item + ingredient caches for drawer
-    // Avoids re-fetching inventory lists every time drawer opens
+    // Persisted output item + ingredient caches for drawer
     const cachedOutputItems = ref<
       Array<{ label: string; value: string; type: string; unit?: string }>
     >([])
     const cachedIngredients = ref<
-      Array<{ label: string; value: string; unit?: string; cost_per_unit: number; kind: string }>
+      Array<{
+        label: string
+        value: string
+        unit?: string
+        cost_per_unit: number
+        kind: "raw_material" | "sub_assembly"
+      }>
     >([])
-    const inventoryCachedAt = ref<number>(0) // timestamp of last cache
+    const inventoryCachedAt = ref<number>(0)
 
     const getRecipeById = (id: string) => recipes.value.find((r) => r.uid === id) || null
 
@@ -114,7 +121,8 @@ export const useProductionStore = defineStore(
         : createdRes
     }
 
-    const patchRecipe = async (uid: string, payload: Partial<RecipeCreatePayload>) => {
+    // Accepts full RecipePatchPayload so is_active toggling works alongside field updates
+    const patchRecipe = async (uid: string, payload: RecipePatchPayload) => {
       const updatedRes = await RecipesAPI.partialUpdate(uid, payload)
       await fetchRecipes(recipesQuery.value)
       return updatedRes && typeof updatedRes === "object" && "data" in updatedRes
@@ -145,17 +153,67 @@ export const useProductionStore = defineStore(
         currentRecipe.value = null
     }
 
-    // ✅ Cache a resolved unit for a recipe — called from index.vue after hydration
+    const fetchInventoryProducts = async (
+      params?: Record<string, string | number | boolean>,
+    ): Promise<InventoryProduct[]> => {
+      return RecipesAPI.listInventoryProducts(params)
+    }
+
+    const fetchRawMaterials = async (
+      params?: Record<string, string | number | boolean>,
+    ): Promise<RawMaterial[]> => {
+      return RecipesAPI.listRawMaterials(params)
+    }
+
+    // Fetches all output items for the recipe drawer dropdown.
+    // Products come from /inventory/products/, sub-assemblies from /raw-materials/.
+    // We fetch all raw-materials (no filter) and use is_sub_assembly on each item to set type.
+    // Sub-assembly UIDs are excluded from inventory products to prevent duplicates.
+    const fetchOutputItemOptions = async (): Promise<
+      Array<{ label: string; value: string; type: string; unit?: string }>
+    > => {
+      const [products, rawMaterials] = await Promise.all([
+        RecipesAPI.listInventoryProducts({ limit: 500, offset: 0 }),
+        RecipesAPI.listRawMaterials({ limit: 500, offset: 0 }),
+      ])
+
+      const subAssemblyUids = new Set(
+        rawMaterials.filter((m) => m.is_sub_assembly).map((m) => m.uid),
+      )
+
+      const productOptions = products
+        .filter((x) => x.uid && x.name && !subAssemblyUids.has(x.uid))
+        .map((x) => ({
+          label: x.name.trim(),
+          value: x.uid,
+          type: "product",
+          unit: x.unit?.trim() || undefined,
+        }))
+
+      const subAssemblyOptions = rawMaterials
+        .filter((m) => m.uid && m.name && m.is_sub_assembly)
+        .map((m) => ({
+          label: m.name.trim(),
+          value: m.uid,
+          type: "sub_assembly",
+          unit: m.unit?.trim() || undefined,
+        }))
+
+      return [...productOptions, ...subAssemblyOptions]
+    }
+
+    const getEntityUnit = async (uid: string): Promise<string> => {
+      return RecipesAPI.getEntityUnit(uid)
+    }
+
     const cacheUnitForRecipe = (recipeUid: string, unit: string) => {
       if (unit) unitsByRecipeUid.value = { ...unitsByRecipeUid.value, [recipeUid]: unit }
     }
 
-    // ✅ Invalidate inventory cache (called after create/update so drawer re-fetches)
     const invalidateInventoryCache = () => {
       inventoryCachedAt.value = 0
     }
 
-    // Selected material for editing/adjusting
     const selectedMaterial = ref<TRawMaterial | null>(null)
     const showEditDrawer = ref(false)
     const showAdjustStockModal = ref(false)
@@ -200,18 +258,19 @@ export const useProductionStore = defineStore(
       recipesCount,
       recipesLoading,
       recipesQuery,
-
       currentRecipe,
       currentRecipeLoading,
-
       fetchRecipes,
       createRecipe,
       patchRecipe,
       fetchRecipeDetail,
       deleteRecipe,
       getRecipeById,
+      fetchInventoryProducts,
+      fetchRawMaterials,
+      fetchOutputItemOptions,
+      getEntityUnit,
 
-      // ✅ Persisted caches
       unitsByRecipeUid,
       cacheUnitForRecipe,
       cachedOutputItems,

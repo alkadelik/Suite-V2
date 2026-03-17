@@ -2,10 +2,8 @@
 <script setup lang="ts">
 import { useProductionStore } from "../../../store"
 import {
-  RecipesAPI,
   rawMaterialToIngredientOption,
   type RecipeCreatePayload,
-  type ItemType,
   type OutputItemOption,
   type IngredientOption,
 } from "../../../recipes.api"
@@ -37,11 +35,11 @@ type TRecipe = {
   uid?: string
   output_item?: string
   output_item_name?: string
-  output_qty?: number
-  output_quantity?: number
+  output_qty?: string | number
+  output_quantity?: string | number
   unit?: string
   notes?: string
-  stock?: number
+  stock?: string | number
   ingredients?: RecipeIngredientA[] | RecipeIngredientB[]
   process_costs?: RecipeProcessA[] | RecipeProcessB[]
 }
@@ -186,7 +184,7 @@ const setUnitFromInventory = async (opt: OutputItemOption | null, fallbackUid?: 
   }
 
   let unit = (opt?.unit || "").trim()
-  if (!unit) unit = await RecipesAPI.getEntityUnit(uid)
+  if (!unit) unit = await productionStore.getEntityUnit(uid)
 
   unit = normaliseUnitValue(unit)
 
@@ -217,15 +215,8 @@ const fetchOutputItems = async (force = false) => {
 
   loadingOutputItems.value = true
   try {
-    const items = await RecipesAPI.listInventoryProducts({ limit: 500, offset: 0 })
-    const deduped: OutputItemOption[] = items
-      .filter((x) => x.uid && x.name)
-      .map((x) => ({
-        label: x.name.trim(),
-        value: x.uid,
-        type: (x.is_sub_assembly ? "sub_assembly" : "product") as ItemType,
-        unit: x.unit?.trim() || undefined,
-      }))
+    const items = await productionStore.fetchOutputItemOptions()
+    const deduped = items as OutputItemOption[]
 
     outputItemOptions.value = deduped
     productionStore.cachedOutputItems = deduped
@@ -246,7 +237,7 @@ const fetchIngredients = async (force = false) => {
 
   loadingIngredients.value = true
   try {
-    const rawResults = await RecipesAPI.listRawMaterials({ limit: 500, offset: 0 })
+    const rawResults = await productionStore.fetchRawMaterials({ limit: 500, offset: 0 })
     const deduped: IngredientOption[] = rawResults
       .filter((m) => m.uid && m.name)
       .map((m) => rawMaterialToIngredientOption(m))
@@ -681,11 +672,11 @@ const onSubmit = handleSubmit(async (formValues) => {
         toast.error("Missing recipe uid")
         return
       }
-      const updated = await RecipesAPI.partialUpdate(uid, payload)
+      const updated = await productionStore.patchRecipe(uid, payload)
       emit("updated", updated)
       toast.success("Recipe updated successfully!")
     } else {
-      const created = await RecipesAPI.create(payload)
+      const created = await productionStore.createRecipe(payload)
       emit("created", created)
       toast.success("Recipe added successfully!")
     }

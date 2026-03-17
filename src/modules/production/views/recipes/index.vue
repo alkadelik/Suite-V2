@@ -28,6 +28,7 @@ import {
   getTotalCostFromDetail,
   type TRecipes,
   type RecipeDetail,
+  type RecipePatchPayload,
 } from "../../recipes.api"
 
 const productionStore = useProductionStore()
@@ -137,11 +138,6 @@ const recipes = computed(() => ({
 const isFetching = computed(() => productionStore.recipesLoading)
 
 // ── Cost hydration — only calls /recipes/:uid/ ─────────────────────────────────
-//
-// The list endpoint returns output_unit directly on each item, so unit display
-// needs no extra API calls. Cost is fetched from the recipe detail endpoint only
-// when missing from the list item (last_cost field).
-
 const totalCostByUid = ref<Record<string, number>>({})
 const loadingDetails = ref(false)
 
@@ -149,7 +145,6 @@ const hydrateVisibleCosts = async () => {
   const rows = recipes.value.results
   if (!rows.length) return
 
-  // Use last_cost from the list item if present — no extra call needed
   const nextCosts = { ...totalCostByUid.value }
   for (const r of rows) {
     const uid = String(r.uid)
@@ -160,7 +155,6 @@ const hydrateVisibleCosts = async () => {
     }
   }
 
-  // Only hit the detail endpoint for rows where cost is still unknown
   const stillMissing = rows.map((r) => String(r.uid)).filter((uid) => !(uid in nextCosts))
 
   if (stillMissing.length) {
@@ -185,7 +179,7 @@ watch(
   { immediate: true },
 )
 
-// ── Output quantity display (unit comes from list item's output_unit field) ────
+// ── Output quantity display ────────────────────────────────────────────────────
 
 const outputQtyWithUnit = (item: TRecipes): string => {
   const qty = item.output_quantity
@@ -262,7 +256,9 @@ const confirmDisableRecipe = async () => {
   if (!item) return
   disabling.value = true
   try {
-    await productionStore.patchRecipe(String(item.uid), { is_active: !item.is_active })
+    await productionStore.patchRecipe(String(item.uid), {
+      is_active: !item.is_active,
+    } as RecipePatchPayload)
     toast.success(item.is_active ? "Recipe disabled" : "Recipe enabled")
     showDisableModal.value = false
     recipeToDisable.value = null
@@ -423,7 +419,7 @@ const recipesWithDuplicateFlag = computed(() => {
         >
           <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
             <h3 class="mb-2 hidden items-center gap-1 text-lg font-semibold md:mb-0 lg:flex">
-              {{ "All " + selectedComponent.label + "(s)" }}
+              {{ "All " + selectedComponent.label }}
               <Chip v-if="recipes?.count" :label="recipes?.count" />
             </h3>
 
@@ -533,10 +529,8 @@ const recipesWithDuplicateFlag = computed(() => {
             :data="recipesWithDuplicateFlag"
             :columns="RECIPES_COLUMN"
             :loading="isFetching"
-            :row-class="
-              (row: TRecipes & { is_duplicate: boolean }) => (!row.is_active ? 'opacity-50' : '')
-            "
-            @row-click="(row: TRecipes) => $router.push(`/recipes/${row.uid}`)"
+            :row-class="(row) => (!row.is_active ? 'opacity-50' : '')"
+            @row-click="(row) => $router.push(`/recipes/${row.uid}`)"
           >
             <template #cell:output_item_name="{ item }">
               <div class="flex items-center gap-2">
@@ -547,8 +541,9 @@ const recipesWithDuplicateFlag = computed(() => {
                 >
                   {{ outputQtyWithUnit(item) }}
                 </span>
+                <!-- Fixed: use item_type from the recipes list API directly -->
                 <span
-                  v-if="item.item_type === 'sub_assembly' || item.output_raw_material"
+                  v-if="item.item_type === 'sub_assembly'"
                   class="inline-flex items-center rounded-full border border-purple-200 bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700"
                 >
                   Sub-assembly

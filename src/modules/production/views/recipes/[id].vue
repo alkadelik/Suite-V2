@@ -239,7 +239,7 @@ const fetchRecipeDetail = async (uid: string) => {
 const fetchRawMaterials = async () => {
   try {
     const response = await RecipesAPI.listRawMaterials({ limit: 500, offset: 0 })
-    rawMaterialsList.value = response.results
+    rawMaterialsList.value = response
   } catch (err) {
     toast.error(getErrorMessage(err as ApiErrorShape | Error))
   }
@@ -723,7 +723,7 @@ const onCreated = (created: { uid?: string }) => {
             class="inline-flex items-center gap-2 rounded-xl border border-[#FDBA74] bg-white px-4 py-2 text-sm font-semibold text-[#9A3412] hover:bg-[#FFF7ED]"
             @click="toggleManage"
           >
-            <span>Manage {{ selectedComponent.value }}</span>
+            <span>Manage {{ selectedComponent?.value }}</span>
             <span class="text-lg">⋮</span>
           </button>
 
@@ -863,7 +863,7 @@ const onCreated = (created: { uid?: string }) => {
       :recipe="drawerRecipe"
       @close="onDrawerClosed"
       @updated="onUpdated"
-      @created="onCreated"
+      @created="(r) => onCreated(r as { uid?: string })"
       @refresh="() => {}"
     />
 
