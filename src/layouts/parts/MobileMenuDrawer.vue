@@ -45,7 +45,8 @@ const quickActions = computed(() => {
     {
       label: "Recipes",
       icon: "box",
-      to: "/recipes",
+      // to: "/recipes",
+      action: () => toast.info("This module is coming soon!", { title: "Recipes" }),
     },
     {
       label: "Support",

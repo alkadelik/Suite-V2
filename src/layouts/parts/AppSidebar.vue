@@ -239,11 +239,9 @@ const marketingItems = computed(() => [{ icon: "sms", label: "Email List", to: "
 
 // Production items
 const productionItems = computed(() => {
-  const componentLabel = useProductionStore().componentLabel
-  const recipeLabel = useProductionStore().recipeLabel
+  const componentLabel = useProductionStore().componentLabel || "Raw Materials"
   return [
-    { icon: "box", label: componentLabel || "Raw materials", to: "/raw-materials" },
-    { icon: "recipe-board", label: recipeLabel || "Recipes", to: "/recipes" },
+    { icon: "box", label: componentLabel, to: "/raw-materials" },
     // Add production-related items here when needed
   ]
 })
