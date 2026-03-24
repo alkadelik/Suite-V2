@@ -349,7 +349,7 @@ const goToPrevStep = () => {
                   <SelectField
                     v-bind="field"
                     :model-value="field.value"
-                    label="Purchase Unit"
+                    label="Purchase Unit of Measurement"
                     placeholder="Select unit"
                     :options="unitOptions"
                     searchable
@@ -389,7 +389,7 @@ const goToPrevStep = () => {
                   <SelectField
                     v-bind="field"
                     :model-value="field.value"
-                    label="Production Unit"
+                    label="Production Unit (Market Standard)"
                     placeholder="Select unit"
                     :options="unitOptions"
                     searchable
