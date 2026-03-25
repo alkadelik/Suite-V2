@@ -20,6 +20,7 @@ import {
   IBulkVariantPayload,
   IProductStats,
   IProductCategory,
+  IProductVariantDetails,
 } from "./types"
 
 /** Get categories api request */
@@ -284,13 +285,17 @@ export function useGetInventoryMovements(
 }
 
 /** get product movements */
-export function useGetProductMovements(productUid: MaybeRefOrGetter<string>) {
+export function useGetProductMovements(
+  productUid: MaybeRefOrGetter<string>,
+  params?: MaybeRefOrGetter<Record<string, string | number> | undefined>,
+) {
   return useQuery({
-    queryKey: ["product-movements", productUid],
+    queryKey: ["product-movements", productUid, params],
     queryFn: async () => {
       const uid = toValue(productUid)
       const { data } = await baseApi.get<IInventoryMovementsApiResponse>(
         `/inventory/products/${uid}/movements/`,
+        params ? { params: toValue(params) } : {},
       )
       return data
     },
@@ -354,6 +359,30 @@ export function useGetProductVariants() {
     url: `/inventory/variants/`,
     key: "productVariants",
     selectData: true,
+  })
+}
+
+/** get variants by product with optional filters (search, stock_status) */
+export function useGetVariantsByProduct(
+  params?: MaybeRefOrGetter<Record<string, string | number> | undefined>,
+) {
+  return useQuery<{
+    data: { count: number; results: IProductVariantDetails[] }
+  }>({
+    queryKey: ["product-variants-filtered", params],
+    queryFn: async () => {
+      const { data } = await baseApi.get(
+        `/inventory/variants/`,
+        params ? { params: toValue(params) } : {},
+      )
+      return data
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
+    enabled: () => {
+      const p = toValue(params)
+      return !!p?.product
+    },
   })
 }
 

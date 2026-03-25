@@ -524,6 +524,16 @@ const getRowClasses = (row: T) => {
 </template>
 
 <style scoped>
+.fixed-col-left {
+  box-shadow: none;
+  transition: box-shadow 0.15s ease;
+}
+.fixed-col-left.is-scrolled {
+  box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.1);
+}
+.fixed-col-right {
+  box-shadow: -2px 0 4px -2px rgba(0, 0, 0, 0.1);
+}
 .progress {
   animation: progress 1.5s infinite linear;
 }

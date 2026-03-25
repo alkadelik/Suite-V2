@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="!isLive && !isLoadingLiveStatus && !isOnOnboarding"
+    v-if="!isLive && !isLoadingLiveStatus && (!isOnOnboarding || !hasSubscription)"
     class="bg-primary-25 text-warning-700 border-warning-300 flex flex-col items-start gap-3 border-b px-6 py-3 lg:flex-row lg:items-center"
   >
     <span

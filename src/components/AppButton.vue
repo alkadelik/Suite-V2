@@ -5,6 +5,7 @@
       { '!cursor-not-allowed': disabled || loading || inactive },
       { '!opacity-50': inactive || disabled },
       { '!opacity-100': loading },
+      { relative: badge },
     ]"
     :disabled="disabled || loading"
     :type="type"
@@ -27,6 +28,12 @@
       :size="iconSize || iconSizes[props.size] || 20"
       :class="['flex-shrink-0', loading ? 'animate-spin' : '']"
     />
+    <span
+      v-if="badge"
+      class="bg-primary-600 absolute -top-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white ring-2 ring-white"
+    >
+      {{ badge }}
+    </span>
   </button>
 </template>
 
@@ -119,6 +126,12 @@ export interface AppButtonProps {
    * @example "Saving..."
    */
   loadingText?: string
+
+  /**
+   * Badge count to display on the button (top-right corner)
+   * @example 3
+   */
+  badge?: number | string
 
   /**
    * Additional CSS classes to apply to the button

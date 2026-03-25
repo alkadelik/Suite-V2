@@ -8,10 +8,12 @@ import PageHeader from "@components/PageHeader.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import TextField from "@components/form/TextField.vue"
 import ExportSubscriberModal from "../components/ExportSubscriberModal.vue"
+import ListFilterDrawer from "@components/ListFilterDrawer.vue"
 import { ref, computed } from "vue"
 import { useMediaQuery } from "@vueuse/core"
 import type { TableColumn } from "@components/DataTable.vue"
 import type { ISubscriber } from "../types"
+import type { FilterGroup } from "@components/ListFilterDrawer.vue"
 import { useGetSubscribers } from "../api"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 
@@ -22,10 +24,51 @@ const showExportModal = ref(false)
 const isMobile = useMediaQuery("(max-width: 1024px)")
 const page = ref(1)
 const itemsPerPage = ref(10)
+const activeFilters = ref<Record<string, string | null>>({})
+
+const filterGroups: FilterGroup[] = [
+  {
+    key: "source",
+    label: "Source",
+    options: [
+      { value: "newsletter", label: "Newsletter", color: "blue", icon: "global" },
+      { value: "waitlist", label: "Waitlist", color: "purple", icon: "shop" },
+    ],
+  },
+  {
+    key: "date_range",
+    label: "Sign-up Date",
+    type: "date-range",
+    startKey: "created_after",
+    endKey: "created_before",
+  },
+]
+
+const activeFilterCount = computed(() => {
+  return Object.values(activeFilters.value).filter((v) => v !== null && v !== undefined).length
+})
+
+const hasActiveFilters = computed(() => {
+  return !!debouncedSearch.value || activeFilterCount.value > 0
+})
+
+const handleApplyFilters = (filters: Record<string, string | null>) => {
+  activeFilters.value = filters
+  page.value = 1
+}
+
+const clearFilters = () => {
+  activeFilters.value = {}
+  searchQuery.value = ""
+  page.value = 1
+}
 
 const computedParams = computed(() => {
   const params: Record<string, string> = {}
   if (debouncedSearch.value) params.search = debouncedSearch.value
+  if (activeFilters.value.source) params.source = activeFilters.value.source
+  if (activeFilters.value.created_after) params.created_after = activeFilters.value.created_after
+  if (activeFilters.value.created_before) params.created_before = activeFilters.value.created_before
   params.offset = ((page.value - 1) * itemsPerPage.value).toString()
   params.limit = itemsPerPage.value.toString()
   return params
@@ -64,21 +107,7 @@ const handleExport = () => {
         />
       </div>
 
-      <EmptyState
-        v-if="!subscribers?.results?.length && !debouncedSearch && !isPending"
-        title="No subscribers yet"
-        description="When customers opt in to receive your newsletters or join your waitlist, they'll appear here."
-      >
-        <template #image>
-          <div
-            class="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-gray-100"
-          >
-            <Icon name="sms" size="48" class="text-gray-400" />
-          </div>
-        </template>
-      </EmptyState>
-
-      <section v-else class="flex flex-col gap-5 lg:gap-8">
+      <section class="flex flex-col gap-5 lg:gap-8">
         <div
           class="space-y-4 overflow-hidden rounded-xl border-gray-200 pt-3 md:border md:bg-white"
         >
@@ -89,19 +118,21 @@ const handleExport = () => {
             </h3>
             <div class="flex items-center gap-2">
               <TextField
+                v-model="searchQuery"
                 left-icon="search-lg"
                 size="sm"
                 class="w-full md:min-w-64"
                 placeholder="Search by email"
-                v-model="searchQuery"
               />
 
               <AppButton
                 icon="filter-lines"
                 size="sm"
-                color="alt"
+                :color="activeFilterCount ? 'primary' : 'alt'"
+                :variant="activeFilterCount ? 'outlined' : 'filled'"
                 class="flex-shrink-0"
                 :label="isMobile ? '' : 'Filter'"
+                :badge="activeFilterCount || undefined"
                 @click="showFilter = true"
               />
 
@@ -116,17 +147,40 @@ const handleExport = () => {
             </div>
           </div>
 
+          <ListFilterDrawer
+            v-model="showFilter"
+            :filter-groups="filterGroups"
+            @apply="handleApplyFilters"
+          />
+
+          <!-- Empty State: Only when no results AND no search/filters active -->
+          <EmptyState
+            v-if="!subscribers?.results?.length && !hasActiveFilters && !isPending"
+            title="No subscribers yet"
+            description="When customers opt in to receive your newsletters or join your waitlist, they'll appear here."
+          >
+            <template #image>
+              <div
+                class="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-gray-100"
+              >
+                <Icon name="sms" size="48" class="text-gray-400" />
+              </div>
+            </template>
+          </EmptyState>
+
           <DataTable
+            v-else
             :data="subscribers?.results ?? []"
             :columns="columns"
             :loading="isFetching"
             :enable-row-selection="true"
             :empty-state="{
-              title: 'No Subscribers Found',
-              description: searchQuery
-                ? 'Try adjusting your search query'
-                : 'When customers opt in to receive your newsletters or join your waitlist, they will appear here.',
+              title: 'No results match this filter',
+              description: 'Try adjusting or clearing your filters.',
+              actionLabel: 'Clear Filter',
+              actionIcon: 'x-close',
             }"
+            @empty-action="clearFilters"
             :show-pagination="true"
             :items-per-page="itemsPerPage"
             :total-items-count="subscribers?.count || 0"

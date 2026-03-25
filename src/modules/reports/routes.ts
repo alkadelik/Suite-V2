@@ -13,6 +13,10 @@ const reportsRoutes: RouteRecordRaw[] = [
         path: "monthly",
         component: () => import("./views/monthly.vue"),
       },
+      {
+        path: "store-overview",
+        component: () => import("./views/store-overview.vue"),
+      },
     ],
   },
 ]
