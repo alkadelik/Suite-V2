@@ -3,6 +3,9 @@ import { useAuthStore } from "@modules/auth/store"
 import { storeToRefs } from "pinia"
 import type { INotification } from "@/modules/shared/types"
 import baseApi from "@/composables/baseApi"
+import { toast } from "./useToast"
+import { useQueryClient } from "@tanstack/vue-query"
+import { useReportsStore } from "@/modules/reports/store"
 
 interface WebSocketNotification {
   title: string
@@ -27,6 +30,8 @@ export function useNotificationsWebSocket(options?: UseNotificationsWebSocketOpt
 
   const authStore = useAuthStore()
   const { user, accessToken } = storeToRefs(authStore)
+  const queryClient = useQueryClient()
+  const reportsStore = useReportsStore()
 
   const canConnect = computed(() => Boolean(user.value && accessToken.value))
 
@@ -71,6 +76,39 @@ export function useNotificationsWebSocket(options?: UseNotificationsWebSocketOpt
             extras: data.extras || null,
             is_read: false,
             created_at: data.timestamp,
+          }
+
+          if (notification.type === "report") {
+            toast.success(notification.message, { title: notification.title, persistent: true })
+
+            // Handle monthly report completion
+            if (notification.extras?.report_type === "monthly") {
+              const parsedDate = reportsStore.parseMonthYearFromMessage(notification.message)
+              if (parsedDate) {
+                const { year, month } = parsedDate
+                // Remove from generating reports
+                reportsStore.removeGeneratingReport(year, month)
+                // Invalidate the query to refetch the report
+                queryClient.invalidateQueries({
+                  queryKey: [`latestMonthlyReport-${year}-${month}`],
+                })
+                console.log(`Invalidated monthly report query for ${year}-${month}`)
+              }
+            }
+
+            // Handle EOD report completion
+            if (notification.extras?.report_type === "eod") {
+              const parsedDate = reportsStore.parseDateFromMessage(notification.message)
+              if (parsedDate) {
+                // Remove from generating reports
+                reportsStore.removeGeneratingEODReport(parsedDate)
+                // Invalidate the query to refetch the report
+                queryClient.invalidateQueries({
+                  queryKey: [`latestEODReport-${parsedDate}`],
+                })
+                console.log(`Invalidated EOD report query for ${parsedDate}`)
+              }
+            }
           }
 
           // Call the callback if provided

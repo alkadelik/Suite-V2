@@ -23,7 +23,7 @@ const products = computed(() => (props.useDummyData ? SO_TOP_PRODUCTS : []))
         :data="products"
         :columns="SO_TOP_PRODUCT_COLUMNS"
         :show-pagination="false"
-        :mobile-table-view="true"
+        :show-mobile-view="false"
         :fix-first-column="true"
       >
         <template #cell:sell_through="{ item }">

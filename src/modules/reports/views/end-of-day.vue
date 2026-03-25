@@ -5,8 +5,7 @@ import PageHeader from "@components/PageHeader.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import { useSettingsStore } from "@modules/settings/store"
 import { useMediaQuery } from "@vueuse/core"
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue"
-import Icon from "@components/Icon.vue"
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import EodFinancialSummary from "../components/eod/EodFinancialSummary.vue"
 import EodExpenses from "../components/eod/EodExpenses.vue"
 import EodPayments from "../components/eod/EodPayments.vue"
@@ -20,10 +19,59 @@ import EodProductsSold from "../components/eod/EodProductsSold.vue"
 import EodOrders from "../components/eod/EodOrders.vue"
 import { EOD_REPORT_SECTIONS } from "../constants"
 import Tabs from "@components/Tabs.vue"
+import ReportInsightCard from "../components/ReportInsightCard.vue"
+import { useGenerateEODReport, useGetLatestEODReport } from "../api"
+import { useReportsStore } from "../store"
+import Icon from "@components/Icon.vue"
+import AppButton from "@components/AppButton.vue"
 
-const activeDate = ref(new Date().toISOString().slice(0, 10))
+const yesterday = new Date("2026-02-17")
+yesterday.setDate(yesterday.getDate() - 1)
+const activeDate = ref(yesterday.toISOString().slice(0, 10))
 const activeSection = ref(EOD_REPORT_SECTIONS[0].key)
 const isScrolling = ref(false)
+
+const reportsStore = useReportsStore()
+const settingsStore = useSettingsStore()
+
+const storeCreatedDate = computed(() => {
+  if (!settingsStore.storeDetails?.created_at) return undefined
+  return new Date(settingsStore.storeDetails.created_at).toISOString().slice(0, 10)
+})
+
+const { mutate: generateEODReport, isPending: isGenerating } = useGenerateEODReport()
+
+const {
+  data: latestEODReport,
+  isPending,
+  isFetching,
+  refetch: refetchEODReport,
+} = useGetLatestEODReport(activeDate)
+
+// Check if current day's report is generating
+const isCurrentDayGenerating = computed(() => {
+  return reportsStore.isEODReportGenerating(activeDate.value)
+})
+
+watch(
+  () => latestEODReport.value,
+  (newReport) => {
+    if (newReport?.period?.date) {
+      const date = newReport.period.date
+      if (reportsStore.isEODReportGenerating(date)) {
+        reportsStore.removeGeneratingEODReport(date)
+      }
+    }
+  },
+  { immediate: true },
+)
+
+const reportData = computed(() => {
+  if (!latestEODReport.value) return null
+  // Check if response is an error detail message
+  if (typeof latestEODReport.value === "object" && "detail" in latestEODReport.value) return null
+  return latestEODReport.value
+})
 
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 const storeName = computed(() => useSettingsStore().storeDetails?.name || "Store")
@@ -79,6 +127,38 @@ onMounted(() => {
 onBeforeUnmount(() => {
   sectionObserver?.disconnect()
 })
+
+const handleGenerateReport = () => {
+  generateEODReport(
+    { date: activeDate.value },
+    {
+      onSuccess: (res) => {
+        const responseData = res.data.data
+        console.log("Generate EOD Report response:", responseData)
+        // Check if report is still generating
+        if (responseData.status === "generating") {
+          reportsStore.setGeneratingEODReport({
+            uid: responseData.uid,
+            date: responseData.report_date,
+            status: "generating",
+            generatedAt: null,
+          })
+        } else if (responseData.status === "completed") {
+          // If completed immediately, refetch the latest report
+          refetchEODReport()
+        }
+      },
+    },
+  )
+}
+
+const STEPS = computed(() => [
+  { label: "Reviewing daily transactions...", icon: "trend-up" },
+  { label: "Analyzing Payment Methods...", icon: "wallet" },
+  { label: "Evaluating Order Fulfillment...", icon: "box-filled" },
+  { label: "Checking Inventory Movement...", icon: "box" },
+  { label: "Generating Daily Insights...", icon: "bulb" },
+])
 </script>
 
 <template>
@@ -90,21 +170,64 @@ onBeforeUnmount(() => {
           type="date"
           size="sm"
           v-model="activeDate"
-          :max="new Date().toISOString().slice(0, 10)"
+          :max="yesterday.toISOString().slice(0, 10)"
+          :min="storeCreatedDate"
         />
       </template>
     </SectionHeader>
 
     <EmptyState
-      v-if="false"
-      :title="`${fullDate.split(', ')[1]},  End of Day Report`"
-      :description="`Get a complete breakdown of your revenue, customers, products and profit — with actionable recommendations.`"
-      action-label="Generate End of Day Report"
-      action-icon="add"
+      v-if="!reportData || isCurrentDayGenerating || isPending || isFetching"
+      :title="`${fullDate.split(', ')[1]} Report`"
+      :description="
+        isCurrentDayGenerating
+          ? `Your ${fullDate.split(', ')[1]} report is being prepared...`
+          : `Get a complete breakdown of your revenue, customers, products and profit — with actionable recommendations.`
+      "
       class="mt-4"
+      :loading="isPending || isFetching"
     >
       <template #image>
         <img src="@/assets/images/empty-report.svg?url" class="mx-auto mb-4" />
+      </template>
+
+      <template #action>
+        <div v-if="isCurrentDayGenerating">
+          <div
+            class="w-full divide-y divide-gray-200 rounded-xl border border-gray-100 bg-gray-50 px-4"
+          >
+            <p
+              v-for="step in STEPS"
+              :key="step.label"
+              class="text-core-600 flex items-center gap-4 py-3 text-sm"
+            >
+              <Icon :name="step.icon" size="16" />
+              <span>{{ step.label }}</span>
+              <span class="ml-auto">
+                <Icon
+                  v-if="step.icon == 'trend-up'"
+                  name="check-circle"
+                  size="18"
+                  class="text-primary-600"
+                />
+                <Icon v-else name="loader" size="16" class="text-core-600 animate-spin" />
+              </span>
+            </p>
+          </div>
+
+          <p class="text-core-600 mt-6 text-center text-sm">
+            You can leave this page. We'll notify you when it's ready.
+          </p>
+        </div>
+
+        <AppButton
+          v-else
+          variant="outlined"
+          :label="`Generate ${fullDate.split(', ')[1]} Report`"
+          icon="add"
+          :loading="isGenerating"
+          @click="handleGenerateReport"
+        />
       </template>
     </EmptyState>
 
@@ -118,37 +241,28 @@ onBeforeUnmount(() => {
         />
       </div>
 
-      <div
-        class="border-l-primary-600 border-primary-200 bg-primary-50 rounded-r-lg border border-l-4 p-4"
-      >
-        <h4 class="mb-3 flex items-center gap-2 text-xs font-medium uppercase">
-          <Icon name="trend-up" size="16" /> Daily Summary
-        </h4>
-        <p class="text-sm">
-          Solid Saturday. <b>₦218,400</b> in gross revenue across <b>17 orders</b>, your second-best
-          Saturday this month. Net revenue landed at <b>₦189,650</b> after one refund (<b>₦8,500</b>
-          — wrong size, Ankara Wrap Dress again) and <b>₦6,250</b> in discounts. Digital payments
-          dominated at <b>76%</b>, with cash-on-delivery accounting for <b>₦52,400</b> — all
-          collected. All <b>12 fulfilled orders</b> shipped via GIG Logistics today with a
-          <b>100% on-time handoff</b>. You have <b>5 pending orders</b> carrying into Monday —
-          <b>3 awaiting payment confirmation</b> and <b>2 awaiting stock</b> (Adire Bucket Hat is
-          now at just <b>2 units</b>). Reorder the bucket hat tonight — at current velocity, you'll
-          stock out by <b>Tuesday</b>.
-        </p>
-      </div>
-
       <!-- Financial Summary -->
-      <EodFinancialSummary id="summary" />
-      <EodPayments id="payments" />
-      <EodExpenses id="expenses" />
-      <EodCustomers id="customers" />
-      <EodSalesByOrigin id="origin" />
-      <EodFulfilment id="fulfillment" />
-      <EodInventoryMovement id="inventory" />
-      <EodAbandoned id="abandoned" />
-      <EodUnresolvedIssues id="issues" />
-      <EodProductsSold id="products" />
-      <EodOrders id="orders" />
+      <EodFinancialSummary id="summary" :data="reportData" />
+      <EodPayments id="payments" :data="reportData" />
+      <EodExpenses id="expenses" :data="reportData" />
+      <EodCustomers id="customers" :data="reportData" />
+      <EodSalesByOrigin id="origin" :data="reportData" />
+      <EodFulfilment id="fulfillment" :data="reportData" />
+      <EodInventoryMovement id="inventory" :data="reportData" />
+      <EodAbandoned id="abandoned" :data="reportData" />
+      <EodUnresolvedIssues id="issues" :data="reportData" />
+      <EodProductsSold id="products" :data="reportData" />
+      <EodOrders id="orders" :data="reportData" />
+
+      <ReportInsightCard title="Daily Summary & Closing Note">
+        <p class="text-sm">
+          {{ reportData?.narratives.daily_summary || "N/A" }}
+        </p>
+        <br />
+        <p v-if="reportData?.narratives.tomorrow_priorities" class="text-sm">
+          {{ reportData?.narratives.tomorrow_priorities || "N/A" }}
+        </p>
+      </ReportInsightCard>
     </section>
   </div>
 </template>

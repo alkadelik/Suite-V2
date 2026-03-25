@@ -1,6 +1,5 @@
 <template>
   <DataTable
-    title="Inventory Management"
     :data="INVENTORY_DATA"
     :columns="INVENTORY_COLUMNS"
     :loading="false"
