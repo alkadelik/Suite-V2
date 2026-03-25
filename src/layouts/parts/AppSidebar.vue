@@ -244,6 +244,7 @@ const productionItems = computed(() => {
   return [
     { icon: "box", label: componentLabel || "Raw materials", to: "/raw-materials" },
     { icon: "recipe-board", label: recipeLabel || "Recipes", to: "/recipes" },
+     { icon: "recipe-board", label: "Production run", to: "/production-run" },
     // Add production-related items here when needed
   ]
 })

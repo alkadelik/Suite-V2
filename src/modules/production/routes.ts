@@ -21,6 +21,12 @@ const productionRoutes: RouteRecordRaw[] = [
     meta: { hideAppHeader: true },
   },
   {
+    path: "production-run",
+    name: "ProductionRun",
+    component: () => import("./views/production-run/index.vue"),
+    meta: { hideAppHeader: true },
+  },
+  {
     path: "recipes/:id",
     name: "RecipeDetails",
     component: () => import("./views/recipes/[id].vue"),

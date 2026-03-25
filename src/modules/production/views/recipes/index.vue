@@ -24,12 +24,14 @@ import { RECIPES_COLUMN } from "../../constants"
 import { useProductionStore } from "../../store"
 import {
   useDeleteRecipe,
+  fetchRecipes,
+  patchRecipe,
   RecipesAPI,
   getTotalCostFromDetail,
   type TRecipes,
   type RecipeDetail,
   type RecipePatchPayload,
-} from "../../recipes.api"
+} from "../../api"
 
 const productionStore = useProductionStore()
 const router = useRouter()
@@ -107,13 +109,37 @@ const loadList = async () => {
         ? false
         : undefined
 
-  await productionStore.fetchRecipes({
-    search: debouncedSearch.value || undefined,
-    limit: itemsPerPage.value,
-    offset: (page.value - 1) * itemsPerPage.value,
-    item_type: itemType,
-    ...(isActive !== undefined ? { is_active: isActive } : {}),
-  })
+  productionStore.setRecipesLoading(true)
+  try {
+    const { count, results } = await fetchRecipes({
+      search: debouncedSearch.value || undefined,
+      limit: itemsPerPage.value,
+      offset: (page.value - 1) * itemsPerPage.value,
+      item_type: itemType,
+      ...(isActive !== undefined ? { is_active: isActive } : {}),
+    })
+    productionStore.setRecipes(
+      results.map((item) => ({
+        uid: String(item.uid),
+        output_item_name: String(item.output_item_name ?? ""),
+        output_unit: item.output_unit,
+        item_type: item.item_type === "sub_assembly" ? "sub_assembly" : "product",
+        output_quantity: item.output_quantity,
+        producible_quantity: item.producible_quantity,
+        ingredient_count: item.ingredient_count,
+        process_cost_count: item.process_cost_count,
+        last_cost: item.last_cost,
+        average_cost: item.average_cost,
+        is_active: Boolean(item.is_active),
+        updated_at: String(item.updated_at ?? ""),
+        output_product: item.output_product ?? null,
+        output_raw_material: item.output_raw_material ?? null,
+      })),
+      count,
+    )
+  } finally {
+    productionStore.setRecipesLoading(false)
+  }
 }
 
 watch(
@@ -256,16 +282,32 @@ const confirmDisableRecipe = async () => {
   if (!item) return
   disabling.value = true
   try {
-    await productionStore.patchRecipe(String(item.uid), {
+    const updated = await patchRecipe(String(item.uid), {
       is_active: !item.is_active,
     } as RecipePatchPayload)
+    productionStore.upsertRecipeInList({
+      uid: updated.uid,
+      output_item_name: updated.output_item_name ?? "",
+      output_unit: updated.output_unit,
+      item_type: updated.item_type === "sub_assembly" ? "sub_assembly" : "product",
+      output_quantity: updated.output_quantity,
+      producible_quantity: 0,
+      ingredient_count: updated.ingredients != null ? updated.ingredients.length : 0,
+      process_cost_count: updated.process_costs != null ? updated.process_costs.length : 0,
+      last_cost: updated.last_cost,
+      average_cost: updated.average_cost,
+      is_active: updated.is_active,
+      updated_at: updated.updated_at,
+      output_product: updated.output_product ?? null,
+      output_raw_material: updated.output_raw_material ?? null,
+    })
     toast.success(item.is_active ? "Recipe disabled" : "Recipe enabled")
     showDisableModal.value = false
     recipeToDisable.value = null
     await loadList()
   } catch (e: unknown) {
     const err = e as { response?: { data?: { detail?: string } }; message?: string }
-    toast.error(err?.response?.data?.detail || err?.message || "Failed to update recipe")
+    toast.error(err?.response?.data?.detail ?? err?.message ?? "Failed to update recipe")
   } finally {
     disabling.value = false
   }
@@ -292,7 +334,7 @@ const confirmDeleteRecipe = async () => {
     await loadList()
   } catch (e: unknown) {
     const err = e as { response?: { data?: { detail?: string } }; message?: string }
-    toast.error(err?.response?.data?.detail || err?.message || "Failed to delete recipe")
+    toast.error(err?.response?.data?.detail ?? err?.message ?? "Failed to delete recipe")
   } finally {
     deleting.value = false
   }
@@ -541,7 +583,6 @@ const recipesWithDuplicateFlag = computed(() => {
                 >
                   {{ outputQtyWithUnit(item) }}
                 </span>
-                <!-- Fixed: use item_type from the recipes list API directly -->
                 <span
                   v-if="item.item_type === 'sub_assembly'"
                   class="inline-flex items-center rounded-full border border-purple-200 bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700"

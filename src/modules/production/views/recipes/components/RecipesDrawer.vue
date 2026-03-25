@@ -3,10 +3,16 @@
 import { useProductionStore } from "../../../store"
 import {
   rawMaterialToIngredientOption,
+  fetchRawMaterials,
+  fetchOutputItemOptions,
+  createRecipe,
+  patchRecipe,
+  getEntityUnit,
   type RecipeCreatePayload,
   type OutputItemOption,
   type IngredientOption,
-} from "../../../recipes.api"
+  type TRecipes,
+} from "../../../api"
 
 import AppButton from "@components/AppButton.vue"
 import Drawer from "@components/Drawer.vue"
@@ -184,7 +190,7 @@ const setUnitFromInventory = async (opt: OutputItemOption | null, fallbackUid?: 
   }
 
   let unit = (opt?.unit || "").trim()
-  if (!unit) unit = await productionStore.getEntityUnit(uid)
+  if (!unit) unit = await getEntityUnit(uid)
 
   unit = normaliseUnitValue(unit)
 
@@ -215,7 +221,7 @@ const fetchOutputItems = async (force = false) => {
 
   loadingOutputItems.value = true
   try {
-    const items = await productionStore.fetchOutputItemOptions()
+    const items = await fetchOutputItemOptions()
     const deduped = items as OutputItemOption[]
 
     outputItemOptions.value = deduped
@@ -237,7 +243,7 @@ const fetchIngredients = async (force = false) => {
 
   loadingIngredients.value = true
   try {
-    const rawResults = await productionStore.fetchRawMaterials({ limit: 500, offset: 0 })
+    const rawResults = await fetchRawMaterials({ limit: 500, offset: 0 })
     const deduped: IngredientOption[] = rawResults
       .filter((m) => m.uid && m.name)
       .map((m) => rawMaterialToIngredientOption(m))
@@ -504,7 +510,7 @@ const populateFromRecipe = async () => {
       return {
         id: `${opt.value}-${Date.now()}-${Math.random()}`,
         ingredient: opt,
-        qty,
+        qty: isDuplicateMode.value ? 0 : qty,
       }
     })
     .filter((row): row is IngredientRow => row !== null)
@@ -516,7 +522,7 @@ const populateFromRecipe = async () => {
       return {
         id: `process-${Date.now()}-${Math.random()}`,
         name: typeof item.name === "string" ? item.name : "",
-        cost: isDuplicateMode.value ? "0" : String(item.cost ?? item.cost_per_batch ?? "0"),
+        cost: String(item.cost ?? item.cost_per_batch ?? "0"),
         note:
           typeof item.note === "string"
             ? item.note
@@ -672,11 +678,28 @@ const onSubmit = handleSubmit(async (formValues) => {
         toast.error("Missing recipe uid")
         return
       }
-      const updated = await productionStore.patchRecipe(uid, payload)
+      const updated = await patchRecipe(uid, payload)
+      const mapped: TRecipes = {
+        uid: updated.uid,
+        output_item_name: updated.output_item_name ?? "",
+        output_unit: updated.output_unit,
+        item_type: updated.item_type === "sub_assembly" ? "sub_assembly" : "product",
+        output_quantity: updated.output_quantity,
+        producible_quantity: 0,
+        ingredient_count: updated.ingredients != null ? updated.ingredients.length : 0,
+        process_cost_count: updated.process_costs != null ? updated.process_costs.length : 0,
+        last_cost: updated.last_cost,
+        average_cost: updated.average_cost,
+        is_active: updated.is_active,
+        updated_at: updated.updated_at,
+        output_product: updated.output_product ?? null,
+        output_raw_material: updated.output_raw_material ?? null,
+      }
+      productionStore.upsertRecipeInList(mapped)
       emit("updated", updated)
       toast.success("Recipe updated successfully!")
     } else {
-      const created = await productionStore.createRecipe(payload)
+      const created = await createRecipe(payload)
       emit("created", created)
       toast.success("Recipe added successfully!")
     }

@@ -1,13 +1,62 @@
 import { TableColumn } from "@components/DataTable.vue"
 import { formatCurrency } from "@/utils/format-currency"
-import { TRawMaterial, TLinkedRecipe, TBatch, TMovement, TRecipes } from "./types"
+import { TRawMaterial, TLinkedRecipe, TBatch, TMovement, TRecipes, TProdRun } from "./types"
 import componentPng from "@/assets/images/components.png"
 import ingredientPng from "@/assets/images/ingredients.png"
 import materialPng from "@/assets/images/materials.png"
 import { formatDate } from "@/utils/formatDate"
+const formatQty = (value: string | number | null | undefined): string => {
+  if (value == null || value === "") return ""
+  const n = typeof value === "number" ? value : Number(value)
+  if (!Number.isFinite(n)) return String(value)
+  return n.toString()
+}
+const toDateOnly = (v: string | number | null | undefined): string => {
+  if (!v) return "—"
+  return String(v).slice(0, 10)
+}
+export const PRODUCTION_COLUMN: TableColumn<TProdRun>[] = [
+  { header: "Output Id", accessor: "run_id" },
+  { header: "Output Item", accessor: "output_item_name" },
 
-const toDateOnly = (v: string) => (v ? v.slice(0, 10) : "--")
+  {
+    header: "",
+    accessor: "damaged_quantity",
+    cell: ({ item }: { item: TProdRun }) => formatQty(item.damaged_quantity),
+  },
+  {
+    header: "Output Quantity",
+    accessor: "output_quantity",
+    // cell: ({ item }: { item: TProdRun }) => formatQty(item.output_quantity),
+  },
 
+  {
+    header: "Ingredient Count",
+    accessor: "ingredient_count",
+    cell: ({ item }) => String(item.ingredient_count ?? "—"),
+  },
+
+  {
+    header: "Status",
+    accessor: "status",
+    cell: ({ item }) =>
+      item.status === "completed"
+        ? "Completed"
+        : item.status === "in_progress"
+          ? "In Progress"
+          : "Incomplete",
+  },
+
+  {
+    header: "Date created",
+    accessor: "date_created",
+    cell: ({ item }) => toDateOnly(item.date_created as string),
+  },
+
+  { header: "Last Cost", accessor: "last_cost" },
+
+  { header: "", accessor: "actions" },
+]
 export const RECIPES_COLUMN: TableColumn<TRecipes>[] = [
   { header: "Output Item", accessor: "output_item_name" }, // output_item_name +
 
@@ -62,9 +111,19 @@ export const RAW_MATERIALS_COLUMN: TableColumn<TRawMaterial>[] = [
   },
   { header: "", accessor: "actions" },
 ]
-
-// You can keep RECIPE_MATERIALS, but make it match the new type exactly.
-
+export const MOCK_RUNS: TProdRun[] = [
+  {
+    uid: "1",
+    run_id: "PRN-4821",
+    output_item_name: "Coconut Soap Bar",
+    output_quantity: 200,
+    damaged_quantity: 18,
+    usable_quantity: 182,
+    total_cost: 45500,
+    status: "completed",
+    date_created: "Today",
+  },
+]
 export const MOCK_MATERIALS: TRawMaterial[] = [
   {
     uid: "mat-001",

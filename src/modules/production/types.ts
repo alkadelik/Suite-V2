@@ -58,10 +58,21 @@ export type TRawMaterial = {
   movements?: TMovement[]
 }
 
-// Single source of truth for recipes list items.
-// output_product / output_raw_material can be null from the API.
-// last_cost / average_cost are returned by the list endpoint.
-// output_quantity comes as string or number depending on endpoint version.
+export type TProdRun = {
+  uid: string
+  run_id: string
+  output_item_name: string
+  output_quantity: number
+  damaged_quantity: number
+  usable_quantity: number
+  total_cost: number
+  status: "completed" | "pending" | "cancelled"
+  date_created: string
+  updated_at?: string
+  ingredient_count?: number
+  last_cost?: number
+}
+
 export type TRecipes = {
   uid: string
   output_product?: string | null

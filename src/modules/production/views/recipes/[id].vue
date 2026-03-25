@@ -10,7 +10,7 @@ import {
   type RecipeDetail,
   type RecipeIngredient,
   type RecipeProcessCost,
-} from "../../recipes.api"
+} from "../../api"
 import { formatCurrency } from "@/utils/format-currency"
 import { toast } from "@/composables/useToast"
 import { useMediaQuery } from "@vueuse/core"
