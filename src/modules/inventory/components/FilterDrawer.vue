@@ -14,9 +14,17 @@
             v-for="category in categories?.data?.results || []"
             :key="category.uid"
             class="flex cursor-pointer items-center gap-2 rounded-lg bg-white p-3 transition-colors hover:bg-gray-50"
-            @click="selectedCategories[category.uid] = !selectedCategories[category.uid]"
+            @click="selectedCategory = selectedCategory === category.uid ? null : category.uid"
           >
-            <Checkbox v-model="selectedCategories[category.uid]" dense />
+            <input
+              type="radio"
+              :value="category.uid"
+              :checked="selectedCategory === category.uid"
+              class="border-primary-300 text-primary-500 focus:ring-primary-400 h-4 w-4"
+              :style="{ accentColor: '#b65702' }"
+              @click.stop
+              @change="selectedCategory = selectedCategory === category.uid ? null : category.uid"
+            />
             <div class="min-w-0 flex-1 overflow-hidden">
               <Chip :label="category.name" icon="tag" color="purple" size="sm">
                 <template #default>
@@ -94,7 +102,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue"
 import Drawer from "@components/Drawer.vue"
-import Checkbox from "@components/form/Checkbox.vue"
 import Chip from "@components/Chip.vue"
 import AppButton from "@components/AppButton.vue"
 import { useGetCategories } from "../api"
@@ -104,7 +111,7 @@ interface Props {
 }
 
 interface FilterData {
-  categories: string[]
+  category: string | null
   status: string | null
   subCategory: string | null
 }
@@ -120,13 +127,15 @@ const emit = defineEmits<Emits>()
 // Fetch categories
 const { data: categories } = useGetCategories()
 
-// Selected categories state
-const selectedCategories = ref<Record<string, boolean>>({})
+// Selected category state (single select)
+const selectedCategory = ref<string | null>(null)
 
 // Status options
 const statusOptions = [
   { value: "in_stock", label: "In Stock", color: "success" as const },
   { value: "out_of_stock", label: "Out of Stock", color: "error" as const },
+  { value: "low_stock", label: "Low Stock", color: "warning" as const },
+  { value: "overstocked", label: "Overstocked", color: "primary" as const },
 ]
 
 // Selected status state
@@ -164,21 +173,15 @@ const drawerPosition = computed(() => {
 
 // Clear all filters
 const clearFilters = () => {
-  selectedCategories.value = {}
+  selectedCategory.value = null
   selectedStatus.value = null
   selectedSubCategory.value = null
 }
 
 // Apply filters and close drawer
 const applyFilters = () => {
-  // Get selected category UIDs
-  const selectedCategoryUids = Object.keys(selectedCategories.value).filter(
-    (uid) => selectedCategories.value[uid],
-  )
-
-  // Emit filter data
   emit("apply", {
-    categories: selectedCategoryUids,
+    category: selectedCategory.value,
     status: selectedStatus.value,
     subCategory: selectedSubCategory.value,
   })

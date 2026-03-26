@@ -6,23 +6,6 @@
       class="mb-10"
     />
 
-    <a
-      href="http://legacy.leyyow.com/auth/signin"
-      class="mb-8 inline-block w-full"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      <div
-        class="bg-primary-50 text-primary-700 border-primary-200 flex flex-wrap items-center gap-2 rounded-xl border px-3 py-2 md:rounded-3xl md:px-2"
-      >
-        <Chip size="sm" label="✨ Returning users" variant="filled" class="shrink-0" />
-        <span class="text-sm font-medium">
-          If you created your account before Nov 18, click here to sign in
-          <Icon name="arrow-right" size="16" class="hidden! md:inline-block!" />
-        </span>
-      </div>
-    </a>
-
     <AppForm :schema="loginSchema" @submit="onSubmit" v-slot="{ meta }" class="space-y-8">
       <FormField name="email" label="Email Address" placeholder="example@gmail.com" required />
 
@@ -78,8 +61,6 @@ import AppForm from "@components/form/AppForm.vue"
 import FormField from "@components/form/FormField.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import AppButton from "@components/AppButton.vue"
-import Chip from "@components/Chip.vue"
-import Icon from "@components/Icon.vue"
 import { computed, ref } from "vue"
 import * as Sentry from "@sentry/vue"
 
@@ -129,7 +110,9 @@ const onSubmit = (values: TLoginPayload) => {
             isCheckingLiveStatus.value = true
             try {
               const liveStatus = await fetchLiveStatusForLogin(user.store_slug)
-              if (liveStatus.data?.completion_percentage !== 100) {
+              const missingReqs = liveStatus.data?.missing_requirements || []
+              const hasNonSubscriptionGaps = missingReqs.some((r) => r !== "subscription")
+              if (liveStatus.data?.completion_percentage !== 100 && hasNonSubscriptionGaps) {
                 // Only redirect to onboarding if user has HQ in their assigned locations
                 const assignedHq = assignedLocationsMap.find((loc) => loc.is_hq)
                 if (assignedHq) {
