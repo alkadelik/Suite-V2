@@ -860,7 +860,7 @@ const onCreated = (created: { uid?: string }) => {
     <RecipesDrawer
       v-model:open="showDrawer"
       :mode="drawerMode"
-      :recipe="drawerRecipe"
+      :recipe="drawerRecipe ? (drawerRecipe as unknown as Partial<RecipeDetail>) : null"
       @close="onDrawerClosed"
       @updated="onUpdated"
       @created="(r) => onCreated(r as { uid?: string })"

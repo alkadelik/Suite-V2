@@ -88,7 +88,13 @@ const statusClass = (status: TProdRun["status"]) => {
 // ── Actions ────────────────────────────────────────────────────────────────────
 
 const getActionItems = (row: TProdRun) => [
-  { label: "View run", icon: "eye", action: () => {} },
+  {
+    label: "View run",
+    icon: "eye",
+    action: () => {
+      console.log("View run", row.run_id)
+    },
+  },
   { label: "Edit run", icon: "edit", action: () => {} },
   { label: "Delete run", icon: "trash", danger: true, action: () => {} },
 ]
@@ -321,9 +327,14 @@ const getActionItems = (row: TProdRun) => [
           <template #cell:output_item_name="{ item }">
             <span class="text-sm font-semibold text-gray-900">{{ item.output_item_name }}</span>
           </template>
-          <template #cell:damaged_quantity="{ item }" v-if="item.damaged_quantity > 0">
-            <span class="text-primary-600 text-sm font-semibold">{{ item.damaged_quantity }}</span>
-            <Icon name="warning-2" size="14" class="text-primary-500" />
+          <template #cell:damaged_quantity="{ item }">
+            <div v-if="item.damaged_quantity > 0">
+              <span class="text-primary-600 text-sm font-semibold">
+                {{ item.damaged_quantity }}
+              </span>
+              <Icon name="warning-2" size="14" class="text-primary-500" />
+            </div>
+            <span v-else>--</span>
           </template>
           <template #cell:output_quantity="{ item }">
             <div class="flex items-center gap-1.5">

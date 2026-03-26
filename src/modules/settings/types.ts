@@ -109,6 +109,7 @@ export interface IUpdateStoreDetailsPayload {
   tax_collection_enabled?: boolean
   add_tax_to_product_price?: boolean
   material_type?: string
+  recipe_terminology?: string
 }
 
 export type TIndustry = {

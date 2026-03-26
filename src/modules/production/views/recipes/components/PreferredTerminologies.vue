@@ -51,7 +51,7 @@ const storeId = computed(() => useSettingsStore().storeDetails?.uid || "")
 const handleSelect = () => {
   const selected = { label: selectedOptionLabel.value, value: selectedOption.value! }
   updateStore(
-    { id: storeId.value, body: { raw_materials: selected.value } },
+    { id: storeId.value, body: { recipe_terminology: selected.value } },
     {
       onSuccess: (res) => {
         toast.success("Name saved successfully")

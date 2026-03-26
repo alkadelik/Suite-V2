@@ -52,7 +52,7 @@ type TRecipe = {
 
 const props = defineProps<{
   open: boolean
-  recipe?: Partial<TRecipe> | null
+  recipe: Partial<TRecipe> | null
   mode?: "create" | "edit"
 }>()
 

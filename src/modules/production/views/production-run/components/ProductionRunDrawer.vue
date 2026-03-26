@@ -48,7 +48,10 @@ export type ProductionRunData = {
   recipe_uid?: string
   quantity_produced?: number
   quantity_damaged?: number
-  ingredients?: Pick<IngredientRow, "uid" | "name" | "cost" | "required" | "available" | "used" | "unit" | "adjusted">[]
+  ingredients?: Pick<
+    IngredientRow,
+    "uid" | "name" | "cost" | "required" | "available" | "used" | "unit" | "adjusted"
+  >[]
   process_costs?: ExpenseRow[]
   additional_expenses?: ExpenseRow[]
   selling_price?: string
@@ -71,7 +74,7 @@ const emit = defineEmits<{
 // ── Derived mode ───────────────────────────────────────────────────────────────
 
 const isEditMode = computed(() => props.mode === "edit" && !!props.run)
-const drawerTitle = computed(() => isEditMode.value ? "Edit Run" : "Create Run")
+const drawerTitle = computed(() => (isEditMode.value ? "Edit Run" : "Create Run"))
 
 // ── Responsive ─────────────────────────────────────────────────────────────────
 
@@ -143,11 +146,66 @@ const MOCK_RECIPES: Record<string, Recipe[]> = {
 // ── Step 2 mock ingredients ────────────────────────────────────────────────────
 
 const makeIngredients = (): IngredientRow[] => [
-  { uid: "i1", name: "Hibiscus",       cost: 360000, required: 200, available: 10,  used: 200, unit: "g",  adjusted: false, editValue: "200", editing: false },
-  { uid: "i2", name: "Ginger",         cost: 61600,  required: 28,  available: 58,  used: 28,  unit: "kg", adjusted: false, editValue: "28",  editing: false },
-  { uid: "i3", name: "Distilled Water",cost: 12000,  required: 60,  available: 20,  used: 60,  unit: "L",  adjusted: false, editValue: "60",  editing: false },
-  { uid: "i4", name: "Fragrance Oil",  cost: 22000,  required: 4,   available: 5,   used: 4,   unit: "L",  adjusted: false, editValue: "4",   editing: false },
-  { uid: "i5", name: "Shea Butter",    cost: 175000, required: 50,  available: 2,   used: 50,  unit: "kg", adjusted: false, editValue: "50",  editing: false },
+  {
+    uid: "i1",
+    name: "Hibiscus",
+    cost: 360000,
+    required: 200,
+    available: 10,
+    used: 200,
+    unit: "g",
+    adjusted: false,
+    editValue: "200",
+    editing: false,
+  },
+  {
+    uid: "i2",
+    name: "Ginger",
+    cost: 61600,
+    required: 28,
+    available: 58,
+    used: 28,
+    unit: "kg",
+    adjusted: false,
+    editValue: "28",
+    editing: false,
+  },
+  {
+    uid: "i3",
+    name: "Distilled Water",
+    cost: 12000,
+    required: 60,
+    available: 20,
+    used: 60,
+    unit: "L",
+    adjusted: false,
+    editValue: "60",
+    editing: false,
+  },
+  {
+    uid: "i4",
+    name: "Fragrance Oil",
+    cost: 22000,
+    required: 4,
+    available: 5,
+    used: 4,
+    unit: "L",
+    adjusted: false,
+    editValue: "4",
+    editing: false,
+  },
+  {
+    uid: "i5",
+    name: "Shea Butter",
+    cost: 175000,
+    required: 50,
+    available: 2,
+    used: 50,
+    unit: "kg",
+    adjusted: false,
+    editValue: "50",
+    editing: false,
+  },
 ]
 
 const ingredients = ref<IngredientRow[]>(makeIngredients())
@@ -172,14 +230,19 @@ const quickAdjustValues = ref<Record<string, string>>({})
 watch(quickAdjustOpen, (isOpen) => {
   if (!isOpen) return
   const vals: Record<string, string> = {}
-  insufficientRows.value.forEach((r) => { vals[r.uid] = String(r.available) })
+  insufficientRows.value.forEach((r) => {
+    vals[r.uid] = String(r.available)
+  })
   quickAdjustValues.value = vals
 })
 
 const adjustAll = () => {
   insufficientRows.value.forEach((row) => {
     const v = Number(quickAdjustValues.value[row.uid] ?? row.available)
-    if (!isNaN(v) && v >= 0) { row.available = v; row.adjusted = true }
+    if (!isNaN(v) && v >= 0) {
+      row.available = v
+      row.adjusted = true
+    }
   })
   quickAdjustOpen.value = false
 }
@@ -187,14 +250,19 @@ const adjustAll = () => {
 // ── Inline edit ────────────────────────────────────────────────────────────────
 
 const openEdit = (row: IngredientRow) => {
-  ingredients.value.forEach((r) => { r.editing = false })
+  ingredients.value.forEach((r) => {
+    r.editing = false
+  })
   row.editValue = String(row.used)
   row.editing = true
 }
 
 const confirmEdit = (row: IngredientRow) => {
   const v = Number(row.editValue)
-  if (!isNaN(v) && v >= 0) { row.used = v; row.adjusted = true }
+  if (!isNaN(v) && v >= 0) {
+    row.used = v
+    row.adjusted = true
+  }
   row.editing = false
 }
 
@@ -243,11 +311,14 @@ const filteredOutputItems = computed(() => {
 })
 
 const openOutputDropdown = () => {
-  if (isEditMode.value) return   // output item is locked in edit mode
+  if (isEditMode.value) return // output item is locked in edit mode
   outputDropdownOpen.value = true
   outputQuery.value = ""
 }
-const closeOutputDropdown = () => { outputDropdownOpen.value = false; outputQuery.value = "" }
+const closeOutputDropdown = () => {
+  outputDropdownOpen.value = false
+  outputQuery.value = ""
+}
 const pickOutputItem = (item: OutputItem) => {
   selectedOutputItem.value = item
   selectedVariantsByGroup.value = {}
@@ -261,13 +332,24 @@ const recipeDropdownRoot = ref<HTMLElement | null>(null)
 const recipeDropdownOpen = ref(false)
 
 const openRecipeDropdown = () => {
-  if (!selectedOutputItem.value || isEditMode.value) return  // recipe locked in edit mode
+  if (!selectedOutputItem.value || isEditMode.value) return // recipe locked in edit mode
   recipeDropdownOpen.value = true
 }
-const closeRecipeDropdown = () => { recipeDropdownOpen.value = false }
-const pickRecipe = (r: Recipe) => { selectedRecipeUid.value = r.uid; closeRecipeDropdown() }
+const closeRecipeDropdown = () => {
+  recipeDropdownOpen.value = false
+}
+const pickRecipe = (r: Recipe) => {
+  selectedRecipeUid.value = r.uid
+  closeRecipeDropdown()
+}
 
-watch(selectedVariantsByGroup, () => { selectedRecipeUid.value = null }, { deep: true })
+watch(
+  selectedVariantsByGroup,
+  () => {
+    selectedRecipeUid.value = null
+  },
+  { deep: true },
+)
 
 // ── Click-outside ───────────────────────────────────────────────────────────────
 
@@ -283,8 +365,12 @@ onBeforeUnmount(() => document.removeEventListener("click", onDocClick, true))
 
 // ── Navigation ─────────────────────────────────────────────────────────────────
 
-const goNext = () => { activeStep.value = Math.min(activeStep.value + 1, TOTAL_STEPS - 1) }
-const goBack = () => { activeStep.value = Math.max(activeStep.value - 1, 0) }
+const goNext = () => {
+  activeStep.value = Math.min(activeStep.value + 1, TOTAL_STEPS - 1)
+}
+const goBack = () => {
+  activeStep.value = Math.max(activeStep.value - 1, 0)
+}
 
 // ── Step 3: Expenses ───────────────────────────────────────────────────────────
 
@@ -421,7 +507,17 @@ const onFinalize = () => {
     recipe_uid: selectedRecipeUid.value ?? undefined,
     quantity_produced: Number(quantityProduced.value) || 0,
     quantity_damaged: Number(quantityDamaged.value) || 0,
-    ingredients: ingredients.value.map(({ editValue: _ev, editing: _ed, ...rest }) => rest),
+    ingredients: ingredients.value.map((x) => ({
+      uid: x.uid,
+      name: x.name,
+      cost: x.cost,
+      required: x.required,
+      available: x.available,
+      used: x.used,
+      unit: x.unit,
+      adjusted: x.adjusted,
+    })),
+    // .map(({ editValue, editing, ...rest }) => rest),
     process_costs: processCosts.value,
     additional_expenses: additionalExpenses.value.filter((e) => e.name.trim()),
     selling_price: sellingPrice.value,
@@ -797,7 +893,8 @@ const onFinalize = () => {
               <span
                 v-if="row.adjusted"
                 class="inline-flex items-center rounded-full border border-purple-200 bg-purple-50 px-2.5 py-0.5 text-xs font-semibold text-purple-700"
-              >Adjusted</span>
+                >Adjusted</span
+              >
             </div>
             <span class="text-sm font-bold text-gray-900">{{ formatNaira(row.cost) }}</span>
           </div>
@@ -807,7 +904,9 @@ const onFinalize = () => {
           <div class="flex items-end gap-2">
             <!-- Required -->
             <div class="flex flex-1 flex-col gap-1.5">
-              <span class="inline-flex w-fit items-center rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700">
+              <span
+                class="inline-flex w-fit items-center rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700"
+              >
                 {{ row.required }} {{ row.unit }}
               </span>
               <span class="text-xs text-gray-400">Required Stock</span>
@@ -831,7 +930,9 @@ const onFinalize = () => {
             <!-- Used -->
             <div class="flex flex-1 flex-col gap-1.5">
               <div v-if="!row.editing">
-                <span class="inline-flex w-fit items-center rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700">
+                <span
+                  class="inline-flex w-fit items-center rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700"
+                >
                   {{ row.used }} {{ row.unit }}
                 </span>
               </div>
@@ -893,7 +994,9 @@ const onFinalize = () => {
               class="focus:border-primary-300 flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none placeholder:text-gray-400"
               placeholder="e.g Fuel, Labour"
             />
-            <div class="flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2">
+            <div
+              class="flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2"
+            >
               <span class="text-sm text-gray-400">₦</span>
               <input
                 v-model="row.cost"
@@ -920,14 +1023,20 @@ const onFinalize = () => {
           <span class="text-sm font-semibold text-gray-800">Additional Expenses</span>
         </div>
         <div class="divide-y divide-gray-100">
-          <div v-for="row in additionalExpenses" :key="row.id" class="flex items-center gap-3 px-4 py-3">
+          <div
+            v-for="row in additionalExpenses"
+            :key="row.id"
+            class="flex items-center gap-3 px-4 py-3"
+          >
             <input
               v-model="row.name"
               type="text"
               class="focus:border-primary-300 flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none placeholder:text-gray-400"
               placeholder="e.g Boiling, Labour"
             />
-            <div class="flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2">
+            <div
+              class="flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2"
+            >
               <span class="text-sm text-gray-400">₦</span>
               <input
                 v-model="row.cost"
@@ -994,7 +1103,9 @@ const onFinalize = () => {
 
         <div class="mb-2 flex items-center justify-between">
           <span class="text-sm font-semibold text-gray-800">Total Production Cost</span>
-          <span class="text-sm font-bold text-gray-900">{{ formatNaira(totalProductionCost) }}</span>
+          <span class="text-sm font-bold text-gray-900">{{
+            formatNaira(totalProductionCost)
+          }}</span>
         </div>
         <div class="mb-1 flex items-center justify-between">
           <span class="text-sm text-gray-500">Usable units</span>
@@ -1065,7 +1176,10 @@ const onFinalize = () => {
           :class="isNegativeProfit ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'"
         >
           <p class="mb-1 text-xs text-gray-400">Expected Profit per Unit</p>
-          <p class="text-base font-bold" :class="isNegativeProfit ? 'text-red-600' : 'text-green-600'">
+          <p
+            class="text-base font-bold"
+            :class="isNegativeProfit ? 'text-red-600' : 'text-green-600'"
+          >
             {{ isNegativeProfit ? "-" : "" }}{{ formatNaira(Math.abs(profitPerUnit)) }}
           </p>
         </div>
@@ -1074,7 +1188,10 @@ const onFinalize = () => {
           :class="isNegativeProfit ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'"
         >
           <p class="mb-1 text-xs text-gray-400">Expected Profit per Batch</p>
-          <p class="text-base font-bold" :class="isNegativeProfit ? 'text-red-600' : 'text-green-600'">
+          <p
+            class="text-base font-bold"
+            :class="isNegativeProfit ? 'text-red-600' : 'text-green-600'"
+          >
             {{ isNegativeProfit ? "-" : "" }}{{ formatNaira(Math.abs(profitPerBatch)) }}
           </p>
         </div>
@@ -1139,7 +1256,9 @@ const onFinalize = () => {
       <div v-else-if="activeStep === 2" class="border-t border-gray-100 px-6 py-4">
         <div class="mb-1 flex items-center justify-between">
           <span class="text-sm text-gray-600">Recipe Process Costs</span>
-          <span class="text-sm font-semibold text-gray-900">{{ formatNaira(recipeProcessTotal) }}</span>
+          <span class="text-sm font-semibold text-gray-900">{{
+            formatNaira(recipeProcessTotal)
+          }}</span>
         </div>
         <div class="mb-4 flex items-center justify-between">
           <span class="text-sm text-gray-600">Additional Expenses</span>

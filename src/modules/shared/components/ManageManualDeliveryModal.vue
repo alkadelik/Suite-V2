@@ -214,7 +214,8 @@ const handleSave = async () => {
   isSaving.value = true
 
   try {
-    const promises: Promise<unknown>[] = []
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const promises: Promise<any>[] = []
 
     // Process deletions first
     for (const uid of pendingDeletions.value) {

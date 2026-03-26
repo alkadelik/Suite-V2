@@ -30,6 +30,24 @@ export type TEodAbandoned = {
   drop_off: "shipping_info" | "payment_page"
 }
 
+export type TEbitdaBreakdownItem = {
+  label: string
+  value: number
+  color: string
+  isPositive: boolean
+}
+
+export type TStoreOverviewProduct = {
+  rank: number
+  product_name: string
+  revenue: number
+  units_sold: number
+  avg_price: number
+  margin: number
+  sell_through: number
+  inventory_turnover: number
+}
+
 export type TMonthlyProductRow = {
   sn: number
   product_name: string

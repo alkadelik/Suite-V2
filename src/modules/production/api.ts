@@ -92,7 +92,7 @@ function getEntityPayload(payload: EntityResponse): EntityPayload {
 
 // ─── Raw Materials Types ───────────────────────────────────────────────────────
 
-export type ItemType = "product" | "sub_assembly" | "item"
+export type ItemType = "product" | "sub_assembly"
 
 export type OutputItemOption = {
   label: string
