@@ -84,7 +84,6 @@
       />
 
       <SidebarGroup
-        v-if="isStaging"
         icon="chart-breakout-square"
         label="Reports"
         :children="reportsItems"
