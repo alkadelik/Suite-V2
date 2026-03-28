@@ -328,15 +328,14 @@ const getActionItems = (item: TProdRun) => [
           <template #cell:output_item_name="{ item }">
             <span class="text-sm font-semibold text-gray-900">{{ item.output_item_name }}</span>
           </template>
-
           <template #cell:damaged_quantity="{ item }">
-            <div v-if="Number(item.damaged_quantity) > 0" class="flex items-center gap-1">
-              <span class="text-primary-600 text-sm font-semibold">{{
-                item.damaged_quantity
-              }}</span>
+            <div v-if="Number(item.damaged_quantity) > 0">
+              <span class="text-primary-600 text-sm font-semibold">
+                {{ item.damaged_quantity }}
+              </span>
               <Icon name="warning-2" size="14" class="text-primary-500" />
             </div>
-            <span v-else class="text-sm text-gray-400">—</span>
+            <span v-else>--</span>
           </template>
 
           <template #cell:output_quantity="{ item }">

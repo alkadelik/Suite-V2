@@ -132,44 +132,17 @@ export const ORDER_SHIPMENT_COLUMNS: TableColumn<TShipment>[] = [
   {
     header: "Delivery Fee",
     accessor: "delivery_fee",
-    cell: ({ value }) => {
-      // if missing, show --
-      if (value === null || value === undefined || value === "") return "--"
-
-      // handle numeric strings safely
-      const n =
-        typeof value === "number"
-          ? value
-          : Number(
-              String(value)
-                .replace(/[₦,\s]/g, "")
-                .trim(),
-            )
-
-      if (!Number.isFinite(n)) return "--"
-
-      return formatCurrency(n, { kobo: true })
-    },
+    cell: ({ value }) => formatCurrency(Number(value), { kobo: true }),
   },
   {
     header: "Pickup Date",
     accessor: "pickup_date",
-    cell: ({ value }) => {
-      if (value === null || value === undefined || value === "") return "--"
-      const s = String(value).trim()
-      if (!s || s.toLowerCase() === "undefined" || s.toLowerCase() === "null") return "--"
-      return getSmartDateLabel(s)
-    },
+    cell: ({ value }) => getSmartDateLabel(String(value)),
   },
   {
     header: "Delivery Date",
     accessor: "delivery_date",
-    cell: ({ value }) => {
-      if (value === null || value === undefined || value === "") return "--"
-      const s = String(value).trim()
-      if (!s || s.toLowerCase() === "undefined" || s.toLowerCase() === "null") return "--"
-      return getSmartDateLabel(s)
-    },
+    cell: ({ value }) => getSmartDateLabel(String(value)),
   },
   { header: "Status", accessor: "status" },
 ]

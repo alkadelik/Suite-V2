@@ -145,6 +145,132 @@ function getEntityPayload(payload: EntityResponse): EntityPayload {
   }
 }
 
+// ─── Raw Materials Types ───────────────────────────────────────────────────────
+
+export type ItemType = "product" | "sub_assembly"
+
+export type OutputItemOption = {
+  label: string
+  value: string
+  type: ItemType
+  unit?: string
+}
+
+export type IngredientKind = "raw_material" | "sub_assembly"
+
+export type IngredientOption = {
+  label: string
+  value: string
+  unit?: string
+  cost_per_unit: number
+  kind: IngredientKind
+}
+
+export type TRecipes = {
+  uid: string
+  output_product?: string | null
+  output_raw_material?: string | null
+  output_item_name: string
+  output_unit?: string
+  item_type: ItemType
+  output_quantity: string | number
+  ingredient_count: string | number
+  process_cost_count: string | number
+  producible_quantity: string | number
+  last_cost?: string | number
+  average_cost?: string | number
+  is_active: boolean
+  updated_at: string
+}
+
+export type RecipeIngredient = {
+  material_uid: string
+  quantity: number
+}
+
+export type RecipeProcessCost = {
+  name: string
+  cost_per_batch: number
+  notes?: string
+}
+
+export type RecipeDetail = {
+  uid: string
+  output_product?: string
+  output_raw_material?: string
+  output_item?: string
+  output_item_name?: string
+  output_unit?: string
+  unit?: string
+  output_quantity: string | number
+  item_type: ItemType
+  notes?: string
+  is_active: boolean
+  estimated_cost_per_batch?: string | number
+  last_cost?: string | number
+  average_cost?: string | number
+  total_cost?: string | number
+  ingredients: RecipeIngredient[]
+  process_costs: RecipeProcessCost[]
+  created_at: string
+  updated_at: string
+}
+
+export type RecipeCreatePayload = {
+  output_item_type: ItemType
+  output_item_uid: string
+  output_quantity: number
+  notes?: string
+  ingredients: RecipeIngredient[]
+  process_costs: RecipeProcessCost[]
+}
+
+export type RecipePatchPayload = Partial<RecipeCreatePayload> & {
+  is_active?: boolean
+}
+
+export type InventoryProduct = {
+  uid: string
+  name: string
+  price: string
+  unit: string
+  total_stock: string
+  sellable_stock: string
+  needs_reorder: boolean
+  variants_count: string
+  is_active: boolean
+  amount_sold: string
+  quantity_sold: string
+  memo_count: string
+  return_count: string
+  popup_quantity_taken: number
+  is_hidden_from_storefront: boolean
+  category: string
+  has_variants: boolean
+  is_sub_assembly?: boolean
+}
+
+export type InventorySubAssembly = {
+  uid: string
+  name: string
+  unit?: string
+  is_active?: boolean
+}
+
+export type RawMaterial = {
+  uid: string
+  name: string
+  unit?: string
+  last_cost?: string | number
+  average_cost?: string | number
+  is_sub_assembly?: boolean
+}
+
+export type IngredientEntityDetail = {
+  name: string
+  unit: string
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 export function productToOutputOption(product: InventoryProduct): OutputItemOption {

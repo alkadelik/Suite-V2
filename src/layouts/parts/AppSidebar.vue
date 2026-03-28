@@ -84,7 +84,6 @@
       />
 
       <SidebarGroup
-        v-if="isStaging"
         icon="chart-breakout-square"
         label="Reports"
         :children="reportsItems"
@@ -239,8 +238,8 @@ const marketingItems = computed(() => [{ icon: "sms", label: "Email List", to: "
 
 // Production items
 const productionItems = computed(() => {
-  const componentLabel = useProductionStore().componentLabel
-  const recipeLabel = useProductionStore().recipeLabel
+  const componentLabel = useProductionStore().componentLabel || "Raw Materials"
+  const recipeLabel = useProductionStore().recipeLabel || "Recipes"
   return [
     { icon: "box", label: componentLabel || "Raw materials", to: "/raw-materials" },
     { icon: "recipe-board", label: recipeLabel || "Recipes", to: "/recipes" },
@@ -253,6 +252,7 @@ const productionItems = computed(() => {
 const reportsItems = computed(() => [
   { icon: "pie-chart", label: "End of Day", to: "/reports/end-of-day" },
   { icon: "pie-chart", label: "Monthly", to: "/reports/monthly" },
+  { icon: "pie-chart", label: "Store Overview", to: "/reports/store-overview" },
 ])
 
 const storeDetails = computed(() => useSettingsStore().storeDetails)
@@ -260,7 +260,12 @@ const storeDetails = computed(() => useSettingsStore().storeDetails)
 const activeLocation = computed(() => useSettingsStore().activeLocation)
 
 // Check if setup requirements are complete (regardless of subscription status)
-const setupComplete = computed(() => useSettingsStore().liveStatus?.completion_percentage === 100)
+const setupComplete = computed(() => {
+  const status = useSettingsStore().liveStatus
+  if (status?.completion_percentage === 100) return true
+  const missing = status?.missing_requirements || []
+  return missing.every((r) => r === "subscription")
+})
 
 // Subscription derived state
 const subscription = computed(() => useAuthStore().user?.subscription)

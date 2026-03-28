@@ -103,9 +103,7 @@
       <ProductOrders
         v-else-if="activeTab === 'orders' && product"
         :product="product.data"
-        :orders="ordersData?.results || []"
         :order-columns="PRODUCT_ORDER_COLUMNS"
-        :loading="isLoadingOrders"
         @create-order="handleCreateOrder"
         @order-action="handleOrderAction"
         @row-click="handleOrderRowClick"
@@ -114,13 +112,11 @@
       <ProductMovementLogs
         v-else-if="activeTab === 'movement_logs' && product"
         :product="product.data"
-        :movements="movementsData?.data.results || []"
         :movement-columns="
           product.data.variants.length > 1
             ? MOVEMENT_COLUMNS
             : MOVEMENT_COLUMNS.filter((col) => col.accessor !== 'variant')
         "
-        :loading="isLoadingMovements"
       />
     </div>
 
@@ -231,7 +227,6 @@ import TransferRequestStockDrawer from "../components/TransferRequestStockDrawer
 import ManageStockModal from "../components/ManageStockModal.vue"
 import type { TOrder } from "@modules/orders/types"
 import { useSettingsStore } from "@modules/settings/store"
-import { useGetOrders } from "@modules/orders/api"
 import { useGetProductMovements } from "../api"
 import AppButton from "@components/AppButton.vue"
 import ProductEditDrawer from "../components/ProductEditDrawer.vue"
@@ -249,16 +244,7 @@ const { data: product, isPending, isFetching } = useGetProduct(uid)
 const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct()
 const { mutate: updateProduct, isPending: isUpdatingProduct } = useUpdateProduct()
 
-const orderParams = computed(() => ({
-  product: uid,
-}))
-const { data: ordersData, isPending: isLoadingOrders } = useGetOrders(orderParams)
-
-const {
-  data: movementsData,
-  isPending: isLoadingMovements,
-  refetch: refetchMovements,
-} = useGetProductMovements(uid)
+const { refetch: refetchMovements } = useGetProductMovements(uid)
 
 // Initialize activeTab from query parameter or default to "overview"
 const activeTab = ref((route.query.tab as string) || "overview")

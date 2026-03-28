@@ -5,6 +5,7 @@ import componentPng from "@/assets/images/components.png"
 import ingredientPng from "@/assets/images/ingredients.png"
 import materialPng from "@/assets/images/materials.png"
 import { formatDate } from "@/utils/formatDate"
+import { startCase } from "@/utils/format-strings"
 const formatQty = (value: string | number | null | undefined): string => {
   if (value == null || value === "") return ""
   const n = typeof value === "number" ? value : Number(value)
@@ -39,12 +40,7 @@ export const PRODUCTION_COLUMN: TableColumn<TProdRun>[] = [
   {
     header: "Status",
     accessor: "status",
-    cell: ({ item }) =>
-      item.status === "completed"
-        ? "Completed"
-        : item.status === "in_progress"
-          ? "In Progress"
-          : "Incomplete",
+    cell: ({ item }) => startCase(item.status as string),
   },
 
   {
@@ -122,53 +118,6 @@ export const MOCK_RUNS: TProdRun[] = [
     total_cost: 45500,
     status: "completed",
     date_created: "Today",
-  },
-]
-export const MOCK_MATERIALS: TRawMaterial[] = [
-  {
-    uid: "mat-001",
-    name: "Aluminum Sheets",
-    stock: 150,
-    unit: "sheets",
-    category: "Metals",
-    last_cost: 3000,
-    average_cost: 2800,
-    subassembly: false,
-    low_stock: false,
-    expired: false,
-    expiration_date: "2025-12-31",
-    created_at: "2023-01-15",
-    updated_at: "2023-06-20",
-  },
-  {
-    uid: "mat-002",
-    name: "Plastic Pellets",
-    stock: 500,
-    unit: "kg",
-    category: "Polymers",
-    last_cost: 1500,
-    average_cost: 1400,
-    subassembly: false,
-    low_stock: true,
-    expired: false,
-    expiration_date: "2024-11-30",
-    created_at: "2023-02-10",
-    updated_at: "2023-06-18",
-  },
-  {
-    uid: "mat-003",
-    name: "Copper Wires",
-    stock: 200,
-    unit: "meters",
-    category: "Metals",
-    last_cost: 5000,
-    average_cost: 4800,
-    subassembly: true,
-    low_stock: false,
-    expired: true,
-    expiration_date: "2023-05-01",
-    created_at: "2023-03-05",
-    updated_at: "2023-06-15",
   },
 ]
 

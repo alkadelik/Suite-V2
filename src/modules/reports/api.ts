@@ -6,7 +6,15 @@ import {
   IEODReport,
   IEODReportGenerationStatus,
 } from "./types"
-import { MaybeRefOrGetter, toValue, computed } from "vue"
+import { MaybeRefOrGetter, computed, toValue } from "vue"
+
+export function useGetHighlights() {
+  return useApiQuery<unknown>({
+    url: "/reports/highlights/",
+    key: "report-highlights",
+    selectData: true,
+  })
+}
 
 /** Generate End of Day (EOD) report */
 export function useGenerateEODReport() {

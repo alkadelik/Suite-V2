@@ -178,12 +178,10 @@ const selectedRecipe = computed(
 
 const canContinue = computed(
   () =>
-    // Edit mode: draft exists, just need quantities
     (isEditMode.value &&
       !!draftUid.value &&
       !!quantityProduced.value &&
       Number(quantityProduced.value) > 0) ||
-    // Create mode: need all fields
     (!!selectedOutputItem.value &&
       !!selectedRecipeUid.value &&
       !!quantityProduced.value &&
@@ -319,7 +317,6 @@ watch(activeStep, (step) => {
 
 const goNext = async () => {
   if (activeStep.value === 0) {
-    // Edit mode: draft already exists, skip create
     if (isEditMode.value && draftUid.value) {
       activeStep.value = Math.min(activeStep.value + 1, TOTAL_STEPS - 1)
       return
@@ -367,7 +364,6 @@ const populateFromRun = async (run: Partial<ProductionRunData>) => {
   if (!run.uid) return
 
   draftUid.value = run.uid
-  // Start at step 1 (pre-filled, locked) so user can review and click through
   activeStep.value = 0
 
   loadingIngredients.value = true
@@ -375,7 +371,6 @@ const populateFromRun = async (run: Partial<ProductionRunData>) => {
     const detail = await fetchProductionRunDetail(run.uid)
     if (!detail) return
 
-    // Resolve output item from detail — more reliable than the list payload
     const itemUid = detail.output_product ?? detail.output_raw_material ?? ""
     const itemName = detail.output_item_name ?? run.output_item_name ?? ""
     const itemType: "product" | "sub_assembly" = detail.output_product ? "product" : "sub_assembly"
@@ -383,15 +378,12 @@ const populateFromRun = async (run: Partial<ProductionRunData>) => {
     selectedOutputItem.value =
       match ?? (itemName ? { uid: itemUid, name: itemName, type: itemType } : null)
 
-    // Recipe
     selectedRecipeUid.value = run.recipe_uid ?? detail.recipe ?? null
 
-    // Quantities from detail (more accurate than list)
     if (!quantityProduced.value) quantityProduced.value = String(detail.quantity_to_produce ?? "")
     if (!quantityDamaged.value) quantityDamaged.value = String(detail.damaged_quantity ?? "")
     if (!sellingPrice.value) sellingPrice.value = String(detail.selling_price_per_unit ?? "")
 
-    // Ingredients — fall back to recipe if run has none
     const toNum = (v: string | number | null | undefined) => {
       const n = Number(v)
       return Number.isFinite(n) ? n : 0
@@ -437,7 +429,6 @@ const populateFromRun = async (run: Partial<ProductionRunData>) => {
       }
     }
 
-    // Process costs — fall back to recipe.process_costs if draft has none
     const usedCosts = detail.process_costs_used.filter((p: ProdRunProcessCostUsed) =>
       p.name?.trim(),
     )
@@ -576,35 +567,31 @@ const onFinalize = async () => {
 
     <!-- ── Step 1: Basic run details ── -->
     <div v-show="activeStep === 0" class="px-5 pt-2">
-      <!-- ── Skeleton while output items load ── -->
+      <!-- Skeleton while output items load -->
       <div v-if="loadingOutputItems" class="animate-pulse space-y-5 pt-2">
         <div class="flex size-10 items-center justify-center rounded-xl bg-gray-100">
           <div class="h-5 w-5 rounded-lg bg-gray-200" />
         </div>
         <div class="h-3 w-32 rounded-full bg-gray-200" />
-        <!-- Output item field -->
         <div class="space-y-1.5">
           <div class="h-3 w-20 rounded-full bg-gray-200" />
           <div class="h-11 w-full rounded-xl bg-gray-100" />
         </div>
-        <!-- Recipe field -->
         <div class="space-y-1.5">
           <div class="h-3 w-24 rounded-full bg-gray-200" />
           <div class="h-11 w-full rounded-xl bg-gray-100" />
         </div>
-        <!-- Qty produced field -->
         <div class="space-y-1.5">
           <div class="h-3 w-36 rounded-full bg-gray-200" />
           <div class="h-11 w-full rounded-xl bg-gray-100" />
         </div>
-        <!-- Qty damaged field -->
         <div class="space-y-1.5">
           <div class="h-3 w-28 rounded-full bg-gray-200" />
           <div class="h-11 w-full rounded-xl bg-gray-100" />
         </div>
       </div>
 
-      <!-- ── Real form once loaded ── -->
+      <!-- Real form once loaded -->
       <template v-else>
         <div class="mb-2 flex size-10 items-center justify-center rounded-xl bg-gray-100">
           <Icon name="shop-add" size="22" class="text-gray-700" />
@@ -712,7 +699,6 @@ const onFinalize = async () => {
               Select Recipe <span class="text-red-500">*</span>
             </label>
             <div ref="recipeDropdownRoot" class="relative">
-              <!-- Skeleton while fetching recipes -->
               <div
                 v-if="loadingRecipes"
                 class="flex h-11 w-full animate-pulse items-center rounded-xl border border-gray-200 bg-gray-100 px-4"
@@ -799,7 +785,7 @@ const onFinalize = async () => {
 
     <!-- ── Step 2: Review ingredients ── -->
     <div v-show="activeStep === 1" class="flex flex-col">
-      <!-- ── Skeleton while ingredients load ── -->
+      <!-- Skeleton while ingredients load -->
       <div v-if="loadingIngredients" class="animate-pulse space-y-3 px-5 pt-2">
         <div class="flex size-10 items-center justify-center rounded-xl bg-gray-100">
           <div class="h-5 w-5 rounded-lg bg-gray-200" />
@@ -828,7 +814,7 @@ const onFinalize = async () => {
         </div>
       </div>
 
-      <!-- ── Real content once loaded ── -->
+      <!-- Real content once loaded -->
       <template v-else>
         <div class="px-5 pt-2">
           <div class="mb-2 flex size-10 items-center justify-center rounded-xl bg-gray-100">

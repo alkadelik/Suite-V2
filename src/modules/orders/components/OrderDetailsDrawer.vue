@@ -13,41 +13,6 @@ import { useSettingsStore } from "@modules/settings/store"
 import { clipboardCopy } from "@/utils/others"
 import AppButton from "@components/AppButton.vue"
 
-type UnknownRecord = Record<string, unknown>
-
-const isRecord = (v: unknown): v is UnknownRecord =>
-  typeof v === "object" && v !== null && !Array.isArray(v)
-
-const toText = (v: unknown, fallback = "-") => {
-  if (v === null || v === undefined) return fallback
-  if (typeof v === "string") {
-    const s = v.trim()
-    return s.length ? s : fallback
-  }
-  if (typeof v === "number") return Number.isFinite(v) ? String(v) : fallback
-  if (typeof v === "boolean" || typeof v === "bigint") return String(v)
-  return fallback
-}
-
-const pickFirst = (obj: UnknownRecord, keys: string[]) => {
-  for (const k of keys) {
-    const v = obj[k]
-    const t = toText(v, "")
-    if (t) return v
-  }
-  return undefined
-}
-
-const toNumber = (v: unknown): number | undefined => {
-  if (typeof v === "number" && Number.isFinite(v)) return v
-  if (typeof v === "string") {
-    const cleaned = v.replace(/[₦,\s]/g, "").trim()
-    const n = Number(cleaned)
-    return Number.isFinite(n) ? n : undefined
-  }
-  return undefined
-}
-
 const props = defineProps<{
   open: boolean
   order: TOrder
@@ -60,7 +25,6 @@ const props = defineProps<{
     divider?: boolean
   }>
 }>()
-
 const emit = defineEmits([
   "close",
   "refresh",
@@ -77,87 +41,40 @@ const emit = defineEmits([
 
 const isMobile = useMediaQuery("(max-width: 1028px)")
 
-/**
- * ✅ NORMALISE SHIPPING FIELDS (this is what fixes the mobile `--`)
- */
-const shipping = computed(() => {
-  const x = props.order as unknown as UnknownRecord
-
-  const orderObj = isRecord(x["order"]) ? x["order"] : undefined
-  const shippingDetails = isRecord(x["shipping_details"]) ? x["shipping_details"] : undefined
-
-  // IDs
-  const orderId =
-    pickFirst(orderObj ?? x, ["order_number", "orderNumber", "uid", "id"]) ??
-    pickFirst(x, ["order_number", "orderNumber", "uid", "id"])
-
-  const shipmentId =
-    pickFirst(x, ["shipment_id", "shipmentId", "shipbubble_order_id", "shipbubbleOrderId"]) ??
-    (shippingDetails ? pickFirst(shippingDetails, ["shipment_id", "shipmentId"]) : undefined)
-
-  // Courier
-  const courierName =
-    pickFirst(x, ["courier_name", "courierName", "courier"]) ??
-    (orderObj ? pickFirst(orderObj, ["courier_name", "courierName", "courier"]) : undefined)
-
-  // Fees
-  const deliveryFeeRaw =
-    pickFirst(x, ["delivery_fee", "deliveryFee", "price", "fee", "shipping_fee"]) ??
-    (orderObj
-      ? pickFirst(orderObj, ["delivery_fee", "deliveryFee", "price", "fee", "shipping_fee"])
-      : undefined)
-
-  const deliveryFee = toNumber(deliveryFeeRaw)
-
-  // Dates
-  const expectedDeliveryDate =
-    pickFirst(x, ["expected_delivery_date", "delivery_date", "deliveryDate"]) ??
-    (orderObj
-      ? pickFirst(orderObj, ["expected_delivery_date", "delivery_date", "deliveryDate"])
-      : undefined)
-
-  // Tracking
-  const trackingUrl =
-    (shippingDetails ? pickFirst(shippingDetails, ["tracking_url", "trackingUrl"]) : undefined) ??
-    pickFirst(x, ["tracking_url", "trackingUrl"])
-
-  return {
-    orderIdText: toText(orderId, "--"),
-    shipmentIdText: toText(shipmentId, "--"),
-    courierNameText: toText(courierName, "--"),
-
-    expectedDeliveryDateText:
-      typeof expectedDeliveryDate === "string" && expectedDeliveryDate.trim()
-        ? formatDate(expectedDeliveryDate)
-        : "--",
-
-    deliveryFeeText:
-      typeof deliveryFee === "number" && deliveryFee > 0
-        ? formatCurrency(deliveryFee, { kobo: true })
-        : "--",
-
-    trackingUrl: typeof trackingUrl === "string" ? trackingUrl : undefined,
-  }
+const customerName = computed(() => {
+  return props.order.customer_name || "Unknown Customer"
 })
 
-/* the rest of your existing code below can remain the same */
-const customerName = computed(() => props.order.customer_name || "Unknown Customer")
-const itemsCount = computed(() =>
-  (props.order.items ?? []).reduce((sum, item) => sum + item.quantity, 0),
-)
-const productsTotal = computed(() => toNumber(props.order.subtotal) ?? 0)
-const deliveryFee = computed(() => toNumber(props.order.delivery_fee) ?? 0)
+const itemsCount = computed(() => {
+  return props.order.items.reduce((sum, item) => sum + item.quantity, 0)
+})
 
+const productsTotal = computed(() => {
+  return Number(props.order.subtotal)
+})
+
+const deliveryFee = computed(() => {
+  return Number(props.order.delivery_fee)
+})
+
+// Get store's default VAT rate as fallback
 const storeVatRate = computed(() => {
   const rate = useSettingsStore().storeDetails?.tax_rate
   return rate ? `${Number(rate) * 100}%` : "7.5%"
 })
 
-const isFulfilled = computed(() => props.order?.fulfilment_status === "fulfilled")
-const isBuyerCreated = computed(() => props.order?.source?.includes("storefront"))
+const isFulfilled = computed(() => {
+  return props.order?.fulfilment_status === "fulfilled"
+})
+
+const isBuyerCreated = computed(() => {
+  return props.order?.source?.includes("storefront")
+})
 
 const menuItems = computed(() => {
-  if (props.customActions && props.customActions.length > 0) return props.customActions
+  if (props.customActions && props.customActions.length > 0) {
+    return props.customActions
+  }
 
   const paymentStatus = props.order?.payment_status
   const showVoid = (isFulfilled.value || paymentStatus !== "unpaid") && !isBuyerCreated.value
@@ -165,21 +82,27 @@ const menuItems = computed(() => {
 
   return [
     { label: "View memos", icon: "note", action: () => emit("view-memos") },
+    // Mark as Paid - only for unpaid or partially paid orders
     ...(paymentStatus !== "paid"
       ? [{ label: "Mark as Paid", icon: "money-add", action: () => emit("mark-as-paid") }]
       : []),
+    // Share receipt - only for partially paid or paid orders
     ...(paymentStatus === "paid" || paymentStatus === "partially_paid"
       ? [{ label: "Share receipt", icon: "share", action: () => emit("share-receipt") }]
       : []),
+    // Share invoice - only for partially paid or unpaid orders
     ...(paymentStatus === "unpaid" || paymentStatus === "partially_paid"
       ? [{ label: "Share invoice", icon: "share", action: () => emit("share-invoice") }]
       : []),
+    // Share payment link - only for partially paid or unpaid orders
     ...(paymentStatus === "unpaid" || paymentStatus === "partially_paid"
       ? [{ label: "Share payment link", icon: "share", action: () => emit("share-payment-link") }]
       : []),
+    // Update Payment - only for unpaid or partially paid orders
     ...(paymentStatus !== "paid"
       ? [{ label: "Update Payment", icon: "money-add", action: () => emit("update-payment") }]
       : []),
+    // Fulfill order - only for unfulfilled orders
     ...(isFulfilled.value
       ? []
       : [{ label: "Fulfill Order", icon: "money-add", action: () => emit("fulfill") }]),
@@ -221,7 +144,7 @@ const menuItems = computed(() => {
     <template #header>
       <div class="flex items-center justify-between px-6 py-4">
         <h2 class="text-core-800 text-lg font-semibold">
-          Order #{{ shipping.orderIdText }}
+          Order #{{ order.order_number }}
           <Icon
             name="copy"
             size="14"
@@ -265,6 +188,7 @@ const menuItems = computed(() => {
 
     <div class="space-y-4">
       <!-- Order Items -->
+
       <div class="border-core-300 bg-core-25 my-6 space-y-4 rounded-xl border p-4">
         <div
           v-for="(item, idx) in order.items"
@@ -278,9 +202,9 @@ const menuItems = computed(() => {
             <div>
               <h4 class="text-sm font-medium">
                 {{ item.product_name }}
-                <span class="text-primary-700 ml-1 text-xs font-medium"
-                  >(x{{ item.quantity }})</span
-                >
+                <span class="text-primary-700 ml-1 text-xs font-medium">
+                  (x{{ item.quantity }})
+                </span>
               </h4>
               <p v-if="item.variant_name" class="text-core-500 text-xs">
                 {{ item.variant_name.split(" - ")[1] || item.variant_name }}
@@ -289,11 +213,7 @@ const menuItems = computed(() => {
           </div>
           <div class="text-right">
             <span class="text-sm font-medium">
-              {{
-                toNumber(item.total_price)
-                  ? formatCurrency(toNumber(item.total_price)!, { kobo: true })
-                  : "-"
-              }}
+              {{ formatCurrency(Number(item.total_price)) }}
             </span>
           </div>
         </div>
@@ -327,17 +247,17 @@ const menuItems = computed(() => {
         </p>
         <p class="flex justify-between text-sm">
           <span class="text-core-600">Delivery Fee</span>
-          <span class="font-medium">
-            {{ deliveryFee > 0 ? formatCurrency(deliveryFee, { kobo: true }) : "-" }}
-          </span>
+          <span class="font-medium">{{
+            deliveryFee > 0 ? formatCurrency(deliveryFee, { kobo: true }) : "-"
+          }}</span>
         </p>
         <p
           v-if="order.tax_amount && Number(order.tax_amount) > 0"
           class="flex justify-between text-sm"
         >
-          <span class="text-core-600">
-            VAT ({{ order.tax_rate_used ? `${+order.tax_rate_used * 100}%` : storeVatRate }})
-          </span>
+          <span class="text-core-600"
+            >VAT ({{ order.tax_rate_used ? `${+order.tax_rate_used * 100}%` : storeVatRate }})</span
+          >
           <span class="font-medium">{{ formatCurrency(Number(order.tax_amount)) }}</span>
         </p>
         <p
@@ -350,9 +270,9 @@ const menuItems = computed(() => {
         <div class="border-core-200 my-2 border-t border-dashed"></div>
         <p class="flex justify-between text-lg font-semibold">
           <span>Total:</span>
-          <span class="text-primary-600">
-            {{ formatCurrency(order.total_amount, { kobo: true }) }}
-          </span>
+          <span class="text-primary-600">{{
+            formatCurrency(order.total_amount, { kobo: true })
+          }}</span>
         </p>
       </div>
 
@@ -386,46 +306,59 @@ const menuItems = computed(() => {
 
       <!-- Shipping & Delivery -->
       <div class="border-core-300 bg-core-25 space-y-3 rounded-xl border p-4">
+        <h4 class="text-sm font-medium">Shipping & Delivery</h4>
         <p class="flex justify-between text-sm">
-          <span class="text-core-600">Order ID</span>
-          <span class="font-medium">{{ shipping.orderIdText }}</span>
+          <span class="text-core-600">Order Date</span>
+          <span class="font-medium">{{ formatDate(order.order_date || order.created_at) }}</span>
         </p>
-
         <p class="flex justify-between text-sm">
-          <span class="text-core-600">Shipment ID</span>
-          <span class="font-medium">{{ shipping.shipmentIdText }}</span>
+          <span class="text-core-600">Has this product been delivered?</span>
+          <span class="font-medium">{{
+            order.fulfilment_status === "fulfilled" ? "Yes" : "No"
+          }}</span>
         </p>
-
         <p class="flex justify-between text-sm">
+          <span class="text-core-600">
+            {{
+              order.fulfilment_status === "fulfilled"
+                ? "How was it delivered?"
+                : "How will it be delivered?"
+            }}
+          </span>
+          <span class="font-medium">{{ startCase(order.fulfilment_method) }}</span>
+        </p>
+        <p
+          v-if="order.fulfilment_method === 'delivery' && order.delivery_address"
+          class="flex justify-between text-sm"
+        >
+          <span class="text-core-600">Delivery Address</span>
+          <span class="font-medium">{{ order.customer_address }}</span>
+        </p>
+        <p
+          v-if="order.fulfilment_method === 'delivery' && order.courier"
+          class="flex justify-between text-sm"
+        >
           <span class="text-core-600">Courier</span>
-          <span class="font-medium">{{ shipping.courierNameText }}</span>
+          <span class="font-medium">{{ order.courier_name || "-" }}</span>
         </p>
-
-        <p class="flex justify-between text-sm">
-          <span class="text-core-600">Expected Delivery Date</span>
-          <span class="font-medium">{{ shipping.expectedDeliveryDateText }}</span>
-        </p>
-
-        <p class="flex justify-between text-sm">
-          <span class="text-core-600">Delivery Fee</span>
-          <span class="font-medium">{{ shipping.deliveryFeeText }}</span>
-        </p>
-
-        <div v-if="shipping.trackingUrl" class="flex items-center justify-between gap-6 text-sm">
-          <span class="text-core-600 flex-shrink-0">Tracking ID</span>
+        <div
+          v-if="order.shipping_details?.tracking_url"
+          class="flex items-center justify-between gap-6 text-sm"
+        >
+          <span class="text-core-600 flex-shrink-0">Tracking Link</span>
           <div class="flex items-center gap-2 truncate">
             <a
-              :href="shipping.trackingUrl"
+              :href="order.shipping_details?.tracking_url"
               target="_blank"
               class="text-primary-600 max-w-sm truncate font-medium underline underline-offset-2"
             >
-              {{ shipping.trackingUrl }}
+              {{ order.shipping_details?.tracking_url }}
             </a>
             <Icon
               name="copy"
               size="28"
               class="text-primary-600 cursor-pointer"
-              @click="clipboardCopy(shipping.trackingUrl)"
+              @click="clipboardCopy(order.shipping_details?.tracking_url)"
             />
           </div>
         </div>

@@ -139,7 +139,7 @@ const props = withDefaults(defineProps<Props>(), {
   label: "Upload Image",
   modelValue: null,
   showPrimaryLabel: false,
-  placeholder: "Supports: JPG, PNG, HEIC, AVIF",
+  placeholder: "Supports: JPG, PNG, WebP, HEIC, AVIF",
 })
 
 const fileName = ref("")
