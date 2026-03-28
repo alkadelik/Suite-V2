@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue"
+import { useRouter } from "vue-router"
 import { useMediaQuery } from "@vueuse/core"
 import PageHeader from "@components/PageHeader.vue"
 import SectionHeader from "@components/SectionHeader.vue"
@@ -9,28 +10,70 @@ import TextField from "@components/form/TextField.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import AppButton from "@components/AppButton.vue"
 import CreateRunDrawer from "./components/ProductionRunDrawer.vue"
-import { PRODUCTION_COLUMN, MOCK_RUNS } from "@modules/production/constants"
-import type { TProdRun } from "@modules/production/types"
+// ProductionRunData imported from types below
+import { PRODUCTION_COLUMN } from "@modules/production/constants"
+import { useGetProductionRuns } from "@modules/production/api"
+import type { TProdRun, ProdRunStatus, ProductionRunData } from "@modules/production/types"
 
+const router = useRouter()
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 
+// ── API ────────────────────────────────────────────────────────────────────────
+
+const limit = ref(100)
+const offset = ref(0)
+
+const { data: runsData, isLoading } = useGetProductionRuns(
+  computed(() => ({ limit: limit.value, offset: offset.value })),
+)
+
+const allRuns = computed<TProdRun[]>(() => (runsData.value?.results ?? []) as TProdRun[])
+const totalCount = computed(() => runsData.value?.count ?? 0)
+
+// ── Drawers ────────────────────────────────────────────────────────────────────
+
 const showCreateDrawer = ref(false)
+const showEditDrawer = ref(false)
+const runToEdit = ref<ProductionRunData | null>(null)
+
+const openEditRun = (run: TProdRun) => {
+  runToEdit.value = {
+    uid: run.uid,
+    output_item_name: run.output_item_name,
+    recipe_uid: run.recipe ?? undefined,
+    quantity_produced:
+      run.quantity_to_produce != null ? Number(run.quantity_to_produce) : undefined,
+    quantity_damaged: run.damaged_quantity != null ? Number(run.damaged_quantity) : undefined,
+    selling_price:
+      run.selling_price_per_unit != null ? String(run.selling_price_per_unit) : undefined,
+  }
+  showEditDrawer.value = true
+}
+
+const closeEditDrawer = () => {
+  showEditDrawer.value = false
+  runToEdit.value = null
+}
+
+const viewRun = (run: TProdRun) => {
+  void router.push(`/production/runs/${run.uid}`)
+}
 
 // ── Search & filter ────────────────────────────────────────────────────────────
 
 const searchQuery = ref("")
 const showFilter = ref(false)
-const activeStatus = ref<"" | "completed" | "pending" | "cancelled">("")
+const activeStatus = ref<"" | ProdRunStatus>("")
 
-const filterOptions = [
-  { label: "Completed", value: "completed" as const },
-  { label: "Pending", value: "pending" as const },
-  { label: "Cancelled", value: "cancelled" as const },
+const filterOptions: { label: string; value: ProdRunStatus }[] = [
+  { label: "Completed", value: "completed" },
+  { label: "In Progress", value: "in_progress" },
+  { label: "Draft", value: "draft" },
 ]
 
 const hasActiveFilters = computed(() => !!activeStatus.value)
 
-const selectFilter = (v: typeof activeStatus.value) => {
+const selectFilter = (v: ProdRunStatus) => {
   activeStatus.value = activeStatus.value === v ? "" : v
   showFilter.value = false
 }
@@ -41,12 +84,10 @@ const clearFilters = () => {
 }
 
 const filteredRuns = computed(() => {
-  let rows: TProdRun[] = MOCK_RUNS
+  let rows = allRuns.value
   if (searchQuery.value.trim()) {
     const q = searchQuery.value.trim().toLowerCase()
-    rows = rows.filter(
-      (r) => r.output_item_name.toLowerCase().includes(q) || r.run_id.toLowerCase().includes(q),
-    )
+    rows = rows.filter((r) => r.output_item_name.toLowerCase().includes(q))
   }
   if (activeStatus.value) {
     rows = rows.filter((r) => r.status === activeStatus.value)
@@ -57,10 +98,10 @@ const filteredRuns = computed(() => {
 // ── Stats ──────────────────────────────────────────────────────────────────────
 
 const stats = computed(() => {
-  const runs: TProdRun[] = MOCK_RUNS
-  const totalRuns = runs.length
-  const totalUnits = runs.reduce((s, r) => s + r.output_quantity, 0)
-  const totalCost = runs.reduce((s, r) => s + r.total_cost, 0)
+  const runs = allRuns.value
+  const totalRuns = totalCount.value
+  const totalUnits = runs.reduce((s, r) => s + Number(r.quantity_to_produce ?? 0), 0)
+  const totalCost = runs.reduce((s, r) => s + Number(r.total_cost ?? 0), 0)
   const avgCost = totalUnits ? totalCost / totalUnits : 0
   return { totalRuns, totalUnits, totalCost, avgCost }
 })
@@ -79,24 +120,29 @@ const formatNairaFull = (n: number) =>
 
 // ── Status chip ────────────────────────────────────────────────────────────────
 
-const statusClass = (status: TProdRun["status"]) => {
+const statusClass = (status: ProdRunStatus) => {
   if (status === "completed") return "border-green-200 bg-green-50 text-green-700"
-  if (status === "pending") return "border-yellow-200 bg-yellow-50 text-yellow-700"
+  if (status === "in_progress") return "border-yellow-200 bg-yellow-50 text-yellow-700"
   return "border-gray-200 bg-gray-100 text-gray-500"
+}
+
+const statusLabel = (status: ProdRunStatus) => {
+  if (status === "completed") return "Completed"
+  if (status === "in_progress") return "In Progress"
+  return "Draft"
 }
 
 // ── Actions ────────────────────────────────────────────────────────────────────
 
-const getActionItems = (row: TProdRun) => [
-  { label: "View run", icon: "eye", action: () => {} },
-  { label: "Edit run", icon: "edit", action: () => {} },
-  { label: "Delete run", icon: "trash", danger: true, action: () => {} },
+const getActionItems = (item: TProdRun) => [
+  { label: "View run", icon: "eye", action: () => viewRun(item) },
+  { label: "Edit run", icon: "edit", action: () => openEditRun(item) },
 ]
 </script>
 
 <template>
   <div class="px-3 pb-6">
-    <PageHeader v-if="isMobile" title="Production Run" :count="MOCK_RUNS.length" />
+    <PageHeader v-if="isMobile" title="Production Run" :count="totalCount" />
     <SectionHeader
       v-else
       title="Production Run"
@@ -107,53 +153,14 @@ const getActionItems = (row: TProdRun) => [
 
     <!-- ── Empty state ── -->
     <div
-      v-if="!MOCK_RUNS.length"
+      v-if="!isLoading && !allRuns.length"
       class="overflow-hidden rounded-2xl border border-gray-200 bg-white"
     >
       <div class="flex flex-col items-center justify-center px-6 py-24 text-center">
         <div class="relative mb-6 flex h-28 w-28 items-center justify-center">
           <div class="absolute inset-0 rounded-full bg-gray-50" />
-          <img
-            src="@/assets/icons/empty-production-run.svg?url"
-            alt=""
-            class="relative z-10 h-40 w-40"
-            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'"
-          />
-          <div
-            class="relative z-10 hidden h-20 w-20 items-center justify-center"
-            style="display: none"
-          >
-            <svg
-              width="72"
-              height="72"
-              viewBox="0 0 72 72"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <rect x="18" y="14" width="36" height="46" rx="4" fill="#E5E7EB" />
-              <rect
-                x="14"
-                y="10"
-                width="36"
-                height="46"
-                rx="4"
-                fill="#F3F4F6"
-                stroke="#D1D5DB"
-                stroke-width="1.5"
-              />
-              <rect x="24" y="7" width="16" height="8" rx="3" fill="#D1D5DB" />
-              <rect x="20" y="24" width="20" height="2.5" rx="1.25" fill="#D1D5DB" />
-              <rect x="20" y="30" width="24" height="2.5" rx="1.25" fill="#D1D5DB" />
-              <rect x="20" y="36" width="16" height="2.5" rx="1.25" fill="#D1D5DB" />
-              <circle cx="38" cy="46" r="10" fill="#FEF3C7" />
-              <path
-                d="M33.5 46L36.5 49L42.5 43"
-                stroke="#D97706"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
+          <div class="relative z-10 flex h-20 w-20 items-center justify-center">
+            <Icon name="empty-production-run" size="16" />
           </div>
         </div>
         <p class="mb-1 text-sm font-semibold text-gray-800">
@@ -209,7 +216,6 @@ const getActionItems = (row: TProdRun) => [
 
       <!-- Table card -->
       <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white">
-        <!-- Table header -->
         <div
           class="flex flex-col gap-3 border-b border-gray-100 px-4 py-4 md:flex-row md:items-center md:justify-between"
         >
@@ -223,7 +229,6 @@ const getActionItems = (row: TProdRun) => [
           </div>
 
           <div class="flex items-center gap-2">
-            <!-- Search -->
             <TextField
               left-icon="search-lg"
               size="sm"
@@ -232,7 +237,6 @@ const getActionItems = (row: TProdRun) => [
               v-model="searchQuery"
             />
 
-            <!-- Filter -->
             <div class="relative flex-shrink-0">
               <button
                 type="button"
@@ -278,7 +282,7 @@ const getActionItems = (row: TProdRun) => [
                         :class="
                           opt.value === 'completed'
                             ? 'bg-green-500'
-                            : opt.value === 'pending'
+                            : opt.value === 'in_progress'
                               ? 'bg-yellow-400'
                               : 'bg-gray-400'
                         "
@@ -305,7 +309,6 @@ const getActionItems = (row: TProdRun) => [
               </div>
             </div>
 
-            <!-- Add Run -->
             <AppButton
               icon="add"
               size="sm"
@@ -316,19 +319,28 @@ const getActionItems = (row: TProdRun) => [
           </div>
         </div>
 
-        <!-- Data table -->
-        <DataTable :data="filteredRuns" :columns="PRODUCTION_COLUMN" :loading="false">
+        <DataTable
+          :data="filteredRuns"
+          :columns="PRODUCTION_COLUMN"
+          :loading="isLoading"
+          @row-click="viewRun"
+        >
           <template #cell:output_item_name="{ item }">
             <span class="text-sm font-semibold text-gray-900">{{ item.output_item_name }}</span>
           </template>
-          <template #cell:damaged_quantity="{ item }" v-if="item.damaged_quantity > 0">
-            <span class="text-primary-600 text-sm font-semibold">{{ item.damaged_quantity }}</span>
-            <Icon name="warning-2" size="14" class="text-primary-500" />
-          </template>
-          <template #cell:output_quantity="{ item }">
-            <div class="flex items-center gap-1.5">
-              <span class="text-sm text-gray-700">{{ item.output_quantity }}</span>
+
+          <template #cell:damaged_quantity="{ item }">
+            <div v-if="Number(item.damaged_quantity) > 0" class="flex items-center gap-1">
+              <span class="text-primary-600 text-sm font-semibold">{{
+                item.damaged_quantity
+              }}</span>
+              <Icon name="warning-2" size="14" class="text-primary-500" />
             </div>
+            <span v-else class="text-sm text-gray-400">—</span>
+          </template>
+
+          <template #cell:output_quantity="{ item }">
+            <span class="text-sm text-gray-700">{{ item.quantity_to_produce }}</span>
           </template>
 
           <template #cell:usable_quantity="{ item }">
@@ -336,20 +348,28 @@ const getActionItems = (row: TProdRun) => [
           </template>
 
           <template #cell:total_cost="{ item }">
-            <span class="text-sm text-gray-700">{{ formatNairaFull(item.total_cost) }}</span>
+            <span class="text-sm text-gray-700">{{
+              formatNairaFull(Number(item.total_cost))
+            }}</span>
           </template>
 
           <template #cell:status="{ item }">
             <span
-              class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold capitalize"
+              class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold"
               :class="statusClass(item.status)"
             >
-              {{ item.status }}
+              {{ statusLabel(item.status) }}
             </span>
           </template>
 
           <template #cell:date_created="{ item }">
-            <span class="text-sm text-gray-500">{{ item.date_created }}</span>
+            <span class="text-sm text-gray-500">{{ item.created_at?.slice(0, 10) ?? "—" }}</span>
+          </template>
+
+          <template #cell:last_cost="{ item }">
+            <span class="text-sm text-gray-700">{{
+              item.cost_per_unit ? formatNairaFull(Number(item.cost_per_unit)) : "—"
+            }}</span>
           </template>
 
           <template #cell:actions="{ item }">
@@ -363,5 +383,14 @@ const getActionItems = (row: TProdRun) => [
 
     <!-- ── Create Run Drawer ── -->
     <CreateRunDrawer v-model:open="showCreateDrawer" @close="showCreateDrawer = false" />
+
+    <!-- ── Edit Run Drawer ── -->
+    <CreateRunDrawer
+      v-model:open="showEditDrawer"
+      mode="edit"
+      :run="runToEdit"
+      @close="closeEditDrawer"
+      @saved="closeEditDrawer"
+    />
   </div>
 </template>
