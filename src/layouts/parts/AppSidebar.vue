@@ -84,6 +84,7 @@
       />
 
       <SidebarGroup
+        v-if="isStaging"
         icon="chart-breakout-square"
         label="Reports"
         :children="reportsItems"
@@ -252,9 +253,7 @@ const productionItems = computed(() => {
 const reportsItems = computed(() => [
   { icon: "pie-chart", label: "End of Day", to: "/reports/end-of-day" },
   { icon: "pie-chart", label: "Monthly", to: "/reports/monthly" },
-  ...(isStaging
-    ? [{ icon: "pie-chart", label: "Store Overview", to: "/reports/store-overview" }]
-    : []),
+  { icon: "pie-chart", label: "Store Overview", to: "/reports/store-overview" },
 ])
 
 const storeDetails = computed(() => useSettingsStore().storeDetails)
