@@ -1,9 +1,17 @@
 import Chip from "@components/Chip.vue"
 import { TableColumn } from "@components/DataTable.vue"
 import { h } from "vue"
-import { TEodAbandoned, TEodOrders, TEodProductsSold } from "./types"
+import {
+  TEbitdaBreakdownItem,
+  TEodAbandoned,
+  TEodOrders,
+  TEodProductsSold,
+  TMonthlyProductRow,
+  TStoreOverviewProduct,
+} from "./types"
 import { formatCurrency } from "@/utils/format-currency"
 import { startCase } from "@/utils/format-strings"
+import { IReportStat } from "./components/ReportStatCard.vue"
 
 export const EOD_REPORT_SECTIONS = [
   { title: "Summary", key: "summary" },
@@ -58,44 +66,11 @@ export const EOD_FINANCIAL_DATA = [
   },
 ]
 
-export const EOD_ORDERS: TEodOrders[] = [
-  {
-    order_number: "1001",
-    order_date: "2024-06-01T10:15:00Z",
-    customer_name: "John Doe",
-    customer_type: "New",
-    status: "fulfilled",
-    items: 3,
-    total_amount: 4500,
-    payment_method: "card",
-  },
-  {
-    order_number: "1002",
-    order_date: "2024-06-01T11:30:00Z",
-    customer_name: "Jane Smith",
-    customer_type: "Returning",
-    status: "unfulfilled",
-    items: 1,
-    total_amount: 1500,
-    payment_method: "cash",
-  },
-  {
-    order_number: "1003",
-    order_date: "2024-06-01T12:45:00Z",
-    customer_name: "Alice Johnson",
-    customer_type: "New",
-    status: "shipped",
-    items: 2,
-    total_amount: 3000,
-    payment_method: "bank_transfer",
-  },
-]
-
 export const EOD_ORDER_COLUMNS: TableColumn<TEodOrders>[] = [
   { header: "Order ID", accessor: "order_number" },
   {
     header: "Time",
-    accessor: "order_date",
+    accessor: "created_at",
     cell: ({ value }) =>
       new Date(value as string).toLocaleTimeString([], {
         hour: "2-digit",
@@ -106,16 +81,16 @@ export const EOD_ORDER_COLUMNS: TableColumn<TEodOrders>[] = [
   { header: "Customer", accessor: "customer_name" },
   {
     header: "Type",
-    accessor: "customer_type",
+    accessor: "order_type",
     cell: ({ item }) =>
       h(Chip, {
-        label: item.customer_type,
-        color: item.customer_type === "New" ? "blue" : "success",
+        label: item.order_type,
+        color: item.order_type === "New" ? "blue" : "success",
       }),
   },
   {
     header: "Amount",
-    accessor: "total_amount",
+    accessor: "amount",
     cell: ({ value }) => formatCurrency(Number(value), { kobo: true }),
   },
   {
@@ -123,26 +98,21 @@ export const EOD_ORDER_COLUMNS: TableColumn<TEodOrders>[] = [
     accessor: "payment_method",
     cell: ({ value }) => startCase(String(value)),
   },
-  { header: "Items", accessor: "items" },
+  { header: "Items", accessor: "items_count" },
   {
     header: "Status",
     accessor: "status",
     cell: ({ item }) =>
       h(Chip, {
         label: startCase(String(item.status)),
-        color:
-          item.status === "fulfilled"
-            ? "success"
-            : item.status === "unfulfilled"
-              ? "error"
-              : "warning",
+        color: item.status === "Fulfilled" ? "success" : "warning",
       }),
   },
 ]
 
 export const EOD_PRODUCTS_SOLD_COLUMNS: TableColumn<TEodProductsSold>[] = [
   { header: "Product", accessor: "product_name", class: "max-w-[200px] truncate" },
-  { header: "Quantity", accessor: "quantity" },
+  { header: "Quantity", accessor: "quantity_sold" },
   {
     header: "Revenue",
     accessor: "revenue",
@@ -150,61 +120,18 @@ export const EOD_PRODUCTS_SOLD_COLUMNS: TableColumn<TEodProductsSold>[] = [
   },
   {
     header: "Avg. Price",
-    accessor: "avg_price",
+    accessor: "average_price",
     cell: ({ value }) => formatCurrency(Number(value), { kobo: true }),
   },
-  { header: "Stock After", accessor: "stock_after_sale" },
+  { header: "Stock After", accessor: "stock_remaining" },
   {
     header: "Status",
     accessor: "status",
     cell: ({ item }) =>
       h(Chip, {
-        label: startCase(String(item.status)),
-        color: item.status === "ok" ? "success" : item.status === "critical" ? "error" : "warning",
+        label: item.status,
+        color: item.status === "OK" ? "success" : item.status === "Critical" ? "error" : "warning",
       }),
-  },
-]
-
-export const EOD_PRODUCTS_SOLD: TEodProductsSold[] = [
-  {
-    product_name: "Adire Bucket Hat",
-    quantity: 5,
-    revenue: 25000,
-    avg_price: 5000,
-    stock_after_sale: 2,
-    status: "critical",
-  },
-  {
-    product_name: "Lagos Life Tote",
-    quantity: 3,
-    revenue: 15000,
-    avg_price: 5000,
-    stock_after_sale: 4,
-    status: "critical",
-  },
-  {
-    product_name: "Eko Cap",
-    quantity: 8,
-    revenue: 40000,
-    avg_price: 5000,
-    stock_after_sale: 15,
-    status: "ok",
-  },
-  {
-    product_name: "Naija Tee",
-    quantity: 10,
-    revenue: 50000,
-    avg_price: 5000,
-    stock_after_sale: 25,
-    status: "ok",
-  },
-  {
-    product_name: "Yoruba Print Dress",
-    quantity: 2,
-    revenue: 30000,
-    avg_price: 15000,
-    stock_after_sale: 1,
-    status: "low",
   },
 ]
 
@@ -259,4 +186,396 @@ export const MONTHLY_REPORT_SECTIONS = [
   { title: "Customers", key: "customers" },
   { title: "Products", key: "products" },
   { title: "Operations", key: "operations" },
+]
+
+export const MONTHLY_SUMMARY_STATS: IReportStat[] = [
+  {
+    label: "Total Sales Revenue",
+    value: 120560000000,
+    percentage: 20,
+    percentageText: "vs Dec",
+    caption: "43.9% of revenue",
+  },
+  {
+    label: "Cost of Goods Sold",
+    value: 45000000000,
+    percentage: -10,
+    percentageText: "vs Dec",
+    caption: "37.3% of revenue",
+  },
+  {
+    label: "Total Expenses",
+    value: 15000000000,
+    percentage: -5,
+    percentageText: "vs Dec",
+    caption: "12.4% of revenue",
+  },
+  {
+    label: "Refunds",
+    value: 5000000000,
+    percentage: 15,
+    percentageText: "vs Dec",
+    caption: "4.1% of revenue",
+  },
+  {
+    label: "Shipping Costs",
+    value: 2000000000,
+    percentage: -2,
+    percentageText: "vs Dec",
+    caption: "1.6% of revenue",
+  },
+  {
+    label: "Net Revenue (EBITDA)",
+    value: 8000000000,
+    percentage: 10,
+    percentageText: "vs Dec",
+    caption: "6.5% of revenue",
+  },
+]
+
+export const MONTHLY_PERFOMANCE_INSIGHTS: IReportStat[] = [
+  {
+    label: "Gross Margin",
+    value: 62.7,
+    percentage: 5.2,
+    percentageText: "vs Dec",
+    note: "Margin is healthy and improving. Focus on maintaining this trajectory.",
+  },
+  {
+    label: "Avg Order Value",
+    value: 12500,
+    caption: "Customers are spending more",
+    note: "Strong AOV growth indicates successful upselling or premium product adoption.",
+  },
+  {
+    label: "Avg Items/Order",
+    value: 2.3,
+    percentage: -3.1,
+    percentageText: "vs Dec",
+    note: "Consider bundling strategies to increase items per transaction.",
+  },
+  {
+    label: "Inventory Turnonver",
+    value: 4.5,
+    caption: "Faster inventory turnover",
+    note: "Efficient stock movement reduces holding costs and improves cash flow.",
+  },
+  {
+    label: "Sell-through Rate",
+    value: 78.2,
+    percentage: 3.4,
+    percentageText: "vs Dec",
+    note: "Strong sell-through indicates good product-market fit and inventory planning.",
+  },
+  {
+    label: "Conversion Rate",
+    value: 5.6,
+    caption: "Slight decrease in conversion rate",
+    note: "Review checkout flow and product page optimization to improve conversions.",
+  },
+  {
+    label: "Cart Abandonment",
+    value: 23.4,
+    percentage: -2.1,
+    percentageText: "vs Dec",
+    note: "Improvement in cart abandonment shows better checkout experience.",
+  },
+  {
+    label: "Discount Impact",
+    value: 12.5,
+    caption: "Discounts are having a positive impact",
+    note: "Monitor profit margins to ensure discounting strategy remains sustainable.",
+  },
+]
+
+export const MONTHLY_TOP_PRODUCTS: TMonthlyProductRow[] = [
+  {
+    sn: 1,
+    product_name: "Classic Ankara Dress",
+    amount: 485000,
+    units_sold: 92,
+    avg_price: 5272,
+    margin: 58,
+    sell_through: 89,
+    inventory_turnover: 5.2,
+  },
+  {
+    sn: 2,
+    product_name: "Lagos Life Tote Bag",
+    amount: 412000,
+    units_sold: 154,
+    avg_price: 2675,
+    margin: 52,
+    sell_through: 76,
+    inventory_turnover: 4.8,
+  },
+  {
+    sn: 3,
+    product_name: "Adire Bucket Hat",
+    amount: 358000,
+    units_sold: 179,
+    avg_price: 2000,
+    margin: 62,
+    sell_through: 94,
+    inventory_turnover: 6.1,
+  },
+  {
+    sn: 4,
+    product_name: "Aso-Oke Cap",
+    amount: 296000,
+    units_sold: 148,
+    avg_price: 2000,
+    margin: 48,
+    sell_through: 71,
+    inventory_turnover: 4.2,
+  },
+  {
+    sn: 5,
+    product_name: "Naija Pride T-Shirt",
+    amount: 267000,
+    units_sold: 178,
+    avg_price: 1500,
+    margin: 55,
+    sell_through: 82,
+    inventory_turnover: 5.5,
+  },
+  {
+    sn: 6,
+    product_name: "Dashiki Shirt - Unisex",
+    amount: 234000,
+    units_sold: 78,
+    avg_price: 3000,
+    margin: 49,
+    sell_through: 68,
+    inventory_turnover: 3.9,
+  },
+  {
+    sn: 7,
+    product_name: "Kente Print Sneakers",
+    amount: 198000,
+    units_sold: 44,
+    avg_price: 4500,
+    margin: 44,
+    sell_through: 61,
+    inventory_turnover: 3.4,
+  },
+  {
+    sn: 8,
+    product_name: "Agbada Set - Premium",
+    amount: 184000,
+    units_sold: 8,
+    avg_price: 23000,
+    margin: 42,
+    sell_through: 48,
+    inventory_turnover: 2.1,
+  },
+  {
+    sn: 9,
+    product_name: "Yoruba Print Scarf",
+    amount: 156000,
+    units_sold: 104,
+    avg_price: 1500,
+    margin: 60,
+    sell_through: 73,
+    inventory_turnover: 4.5,
+  },
+  {
+    sn: 10,
+    product_name: "Afrobeat Hoodie",
+    amount: 142000,
+    units_sold: 71,
+    avg_price: 2000,
+    margin: 51,
+    sell_through: 66,
+    inventory_turnover: 3.7,
+  },
+]
+
+export const SO_SUMMARY_CARDS = [
+  { icon: "moneys", label: "Average Order Value (AOV)", value: "₦18,400" },
+  { icon: "box", label: "Average Items per Sale", value: "3.2" },
+  { icon: "refresh-circle", label: "Inventory Turnover", value: "4.1x" },
+  { icon: "trend-up", label: "Sell-Through Rate", value: "68%" },
+]
+
+export const SO_SUMMARY_CARDS_EMPTY = [
+  { icon: "moneys", label: "Average Order Value (AOV)", value: "₦0" },
+  { icon: "box", label: "Average Items per Sale", value: "0" },
+  { icon: "refresh-circle", label: "Inventory Turnover", value: "0" },
+  { icon: "trend-up", label: "Sell-Through Rate", value: "0%" },
+]
+
+export const SO_EBITDA = {
+  value: 2520000,
+  percentageChange: 11.3,
+  breakdown: [
+    { label: "Revenue", value: 8000000, color: "bg-success-500", isPositive: true },
+    { label: "Cost of Goods Sold", value: 4200000, color: "bg-error-400", isPositive: false },
+    { label: "Expenses", value: 1100000, color: "bg-warning-400", isPositive: false },
+    { label: "Shipping", value: 180000, color: "bg-blue-400", isPositive: false },
+  ] as TEbitdaBreakdownItem[],
+}
+
+export const SO_EBITDA_EMPTY = {
+  value: 0,
+  percentageChange: 0,
+  breakdown: [
+    { label: "Revenue", value: 0, color: "bg-success-500", isPositive: true },
+    { label: "Cost of Goods Sold", value: 0, color: "bg-error-400", isPositive: false },
+    { label: "Expenses", value: 0, color: "bg-warning-400", isPositive: false },
+    { label: "Shipping", value: 0, color: "bg-blue-400", isPositive: false },
+  ] as TEbitdaBreakdownItem[],
+}
+
+export const SO_GROSS_PROFIT = {
+  value: 850000,
+  marginPercent: 42,
+  percentageChange: 11.3,
+}
+
+export const SO_GROSS_PROFIT_EMPTY = {
+  value: 0,
+  marginPercent: 0,
+  percentageChange: 0,
+}
+
+export const SO_REPEAT_CUSTOMER = { percent: 27 }
+export const SO_REPEAT_CUSTOMER_EMPTY = { percent: 0 }
+
+export const SO_CUSTOMER_GROWTH = { percent: 12 }
+export const SO_CUSTOMER_GROWTH_EMPTY = { percent: 0 }
+
+export const SO_TOP_PRODUCTS: TStoreOverviewProduct[] = [
+  {
+    rank: 1,
+    product_name: "Ankara Wrap Dress — Floral",
+    revenue: 842000,
+    units_sold: 68,
+    avg_price: 12382,
+    margin: 58,
+    sell_through: 89,
+    inventory_turnover: 5.2,
+  },
+  {
+    rank: 2,
+    product_name: "Ankara Midi Skirt — Geo Print",
+    revenue: 624000,
+    units_sold: 78,
+    avg_price: 8000,
+    margin: 54,
+    sell_through: 82,
+    inventory_turnover: 4.8,
+  },
+  {
+    rank: 3,
+    product_name: "Adire Bucket Hat",
+    revenue: 518000,
+    units_sold: 148,
+    avg_price: 3500,
+    margin: 62,
+    sell_through: 94,
+    inventory_turnover: 6.1,
+  },
+  {
+    rank: 4,
+    product_name: "Linen Wide-Leg Trousers",
+    revenue: 445000,
+    units_sold: 52,
+    avg_price: 8558,
+    margin: 46,
+    sell_through: 71,
+    inventory_turnover: 3.9,
+  },
+  {
+    rank: 5,
+    product_name: "Beaded Statement Necklace",
+    revenue: 387000,
+    units_sold: 86,
+    avg_price: 4500,
+    margin: 71,
+    sell_through: 78,
+    inventory_turnover: 4.2,
+  },
+  {
+    rank: 6,
+    product_name: "Dashiki Crop Top",
+    revenue: 342000,
+    units_sold: 57,
+    avg_price: 6000,
+    margin: 48,
+    sell_through: 65,
+    inventory_turnover: 3.4,
+  },
+  {
+    rank: 7,
+    product_name: 'Cotton Tote — "Lagos Life"',
+    revenue: 298000,
+    units_sold: 149,
+    avg_price: 2000,
+    margin: 68,
+    sell_through: 91,
+    inventory_turnover: 5.8,
+  },
+  {
+    rank: 8,
+    product_name: "Agbada Set — Men's Classic",
+    revenue: 276000,
+    units_sold: 12,
+    avg_price: 23000,
+    margin: 42,
+    sell_through: 48,
+    inventory_turnover: 2.1,
+  },
+  {
+    rank: 9,
+    product_name: "Stretch Denim Jacket",
+    revenue: 214000,
+    units_sold: 24,
+    avg_price: 8917,
+    margin: 34,
+    sell_through: 52,
+    inventory_turnover: 2.4,
+  },
+  {
+    rank: 10,
+    product_name: "Handwoven Raffia Sandals",
+    revenue: 198000,
+    units_sold: 33,
+    avg_price: 6000,
+    margin: 51,
+    sell_through: 67,
+    inventory_turnover: 3.2,
+  },
+]
+
+export const SO_TOP_PRODUCT_COLUMNS: TableColumn<TStoreOverviewProduct>[] = [
+  { header: "#", accessor: "rank" },
+  { header: "Product", accessor: "product_name", class: "min-w-[180px]" },
+  {
+    header: "Revenue",
+    accessor: "revenue",
+    cell: ({ value }) => formatCurrency(Number(value)),
+  },
+  { header: "Units Sold", accessor: "units_sold" },
+  {
+    header: "Avg. Price",
+    accessor: "avg_price",
+    cell: ({ value }) => formatCurrency(Number(value)),
+  },
+  {
+    header: "Margin",
+    accessor: "margin",
+    cell: ({ item }) =>
+      h(
+        "span",
+        { class: item.margin >= 50 ? "text-success-600 font-semibold" : "" },
+        `${item.margin}%`,
+      ),
+  },
+  { header: "Sell-Through", accessor: "sell_through" },
+  {
+    header: "Inv. Turnover",
+    accessor: "inventory_turnover",
+    cell: ({ value }) => `${value}x`,
+  },
 ]

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { HTMLAttributes } from "vue"
 import AppButton from "./AppButton.vue"
 import Icon from "./Icon.vue"
 import emptyGridPng from "@/assets/images/empty-grid.png"
@@ -22,7 +23,7 @@ interface Props {
   /** Action button color */
   actionColor?: "primary" | "error" | "success" | "alt"
   /** Additional CSS classes for the container */
-  class?: string
+  class?: HTMLAttributes["class"]
 }
 
 /**

@@ -52,18 +52,22 @@
             <AppButton
               icon="filter-lines"
               size="sm"
-              color="alt"
+              :color="productFilterCount ? 'primary' : 'alt'"
+              :variant="productFilterCount ? 'outlined' : 'filled'"
               label="Filter"
-              @click="showFilterDrawer = true"
+              :badge="productFilterCount || undefined"
               class="!hidden md:!inline-flex"
+              @click="showFilterDrawer = true"
             />
             <AppButton
               icon="filter-lines"
               size="sm"
-              color="alt"
+              :color="productFilterCount ? 'primary' : 'alt'"
+              :variant="productFilterCount ? 'outlined' : 'filled'"
               label=""
-              @click="showFilterDrawer = true"
+              :badge="productFilterCount || undefined"
               class="md:hidden"
+              @click="showFilterDrawer = true"
             />
             <AppButton
               v-if="isHQ"
@@ -90,7 +94,7 @@
             !isFetching &&
             filteredProducts.length === 0 &&
             !search &&
-            activeFilters.categories.length === 0 &&
+            activeFilters.category === null &&
             activeFilters.status === null &&
             activeFilters.subCategory === null
           "
@@ -289,7 +293,6 @@ import {
   useGetProducts,
   useDeleteProduct,
   useGetProduct,
-  useGetCategories,
   useUpdateProduct,
   useGetProductDashboard,
 } from "../api"
@@ -309,18 +312,33 @@ const itemsPerPage = ref(10)
 const search = ref("")
 const debouncedSearch = useDebouncedRef(search, 750)
 
-const combinedParams = computed(() => ({
-  offset: (page.value - 1) * itemsPerPage.value,
-  limit: itemsPerPage.value,
-  ...(debouncedSearch.value ? { name: debouncedSearch.value } : {}),
-}))
+// Active filters
+const activeFilters = ref<{
+  category: string | null
+  status: string | null
+  subCategory: string | null
+}>({
+  category: null,
+  status: null,
+  subCategory: null,
+})
+
+const combinedParams = computed(() => {
+  const params: Record<string, string | number> = {
+    offset: (page.value - 1) * itemsPerPage.value,
+    limit: itemsPerPage.value,
+  }
+  if (debouncedSearch.value) params.name = debouncedSearch.value
+  if (activeFilters.value.category) params.category = activeFilters.value.category
+  if (activeFilters.value.status) params.stock_status = activeFilters.value.status
+  if (activeFilters.value.subCategory) params.variant_type = activeFilters.value.subCategory
+  return params
+})
 
 const { data: products, isFetching, refetch: refetchProducts } = useGetProducts(combinedParams)
 const { data: productDashboard, isPending: isLoadingDashboard } = useGetProductDashboard()
 const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct()
 const { mutate: updateProduct, isPending: isUpdatingProduct } = useUpdateProduct()
-const { data: categories } = useGetCategories()
-
 const queryClient = useQueryClient()
 const settingsStore = useSettingsStore()
 const inventoryStore = useInventoryStore()
@@ -366,16 +384,6 @@ const hasOpenedFilterDrawer = ref(false)
 const product = ref<TProduct | null>(null)
 const showAddCategoryModal = ref(false)
 
-// Active filters
-const activeFilters = ref<{
-  categories: string[]
-  status: string | null
-  subCategory: string | null
-}>({
-  categories: [],
-  status: null,
-  subCategory: null,
-})
 const productEditDrawerRef = ref<{
   setCategoryFromModal: (category: { label: string; value: string }) => void
 } | null>(null)
@@ -767,75 +775,24 @@ watch(showFilterDrawer, (isOpen) => {
   }
 })
 
-// Create a mapping of category UID to category name
-const categoryUidToNameMap = computed(() => {
-  const map: Record<string, string> = {}
-  const categoryList = categories.value?.data?.results || []
-  categoryList.forEach((category: { uid: string; name: string }) => {
-    map[category.uid] = category.name
-  })
-  return map
+const productFilterCount = computed(() => {
+  let count = 0
+  if (activeFilters.value.category !== null) count++
+  if (activeFilters.value.status !== null) count++
+  if (activeFilters.value.subCategory !== null) count++
+  return count
 })
 
 // Handle filter application
 const handleApplyFilters = (filters: {
-  categories: string[]
+  category: string | null
   status: string | null
   subCategory: string | null
 }) => {
   activeFilters.value = filters
+  page.value = 1
 }
 
-// Filtered products based on active filters (client-side filters only, search is server-side)
-const filteredProducts = computed(() => {
-  const productResults = products.value?.data?.results || []
-
-  // If no filters are active, return all products
-  const hasActiveFilters =
-    activeFilters.value.categories.length > 0 ||
-    activeFilters.value.status !== null ||
-    activeFilters.value.subCategory !== null
-
-  if (!hasActiveFilters) {
-    return productResults
-  }
-
-  return productResults.filter((product: TProduct) => {
-    // Category filter
-    if (activeFilters.value.categories.length > 0) {
-      // Convert category UIDs to names
-      const selectedCategoryNames = activeFilters.value.categories.map(
-        (uid) => categoryUidToNameMap.value[uid],
-      )
-
-      if (!product.category || !selectedCategoryNames.includes(product.category)) {
-        return false
-      }
-    }
-
-    // Status filter
-    if (activeFilters.value.status !== null) {
-      const isInStock = product.sellable_stock > 0
-      if (activeFilters.value.status === "in_stock" && !isInStock) {
-        return false
-      }
-      if (activeFilters.value.status === "out_of_stock" && isInStock) {
-        return false
-      }
-    }
-
-    // Sub-category filter (simple vs complex)
-    if (activeFilters.value.subCategory !== null) {
-      const isSimple = product.variants_count === 1
-      if (activeFilters.value.subCategory === "simple" && !isSimple) {
-        return false
-      }
-      if (activeFilters.value.subCategory === "complex" && isSimple) {
-        return false
-      }
-    }
-
-    return true
-  })
-})
+// Products from server (filtering is now server-side)
+const filteredProducts = computed(() => products.value?.data?.results || [])
 </script>

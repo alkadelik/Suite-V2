@@ -41,6 +41,7 @@ import Icon from "./Icon.vue"
  * Drawer position types
  */
 type DrawerPosition = "left" | "right" | "top" | "bottom"
+type DrawerVariant = "default" | "fullscreen"
 
 /**
  * Props interface for the Drawer component
@@ -50,6 +51,8 @@ interface Props {
   open: boolean
   /** Optional title for the drawer header */
   title?: string
+  /** Visual variant for API compatibility with modal-based call sites */
+  variant?: DrawerVariant
   /** Position from which the drawer slides in */
   position?: DrawerPosition
   /** Custom max width for the drawer (e.g., 'sm', 'md', 'lg', 'xl', '2xl', '500px') */
@@ -74,6 +77,7 @@ interface Emits {
 
 // Define props with defaults
 const props = withDefaults(defineProps<Props>(), {
+  variant: "default",
   position: "right",
   maxWidth: "md",
   showHeader: true,

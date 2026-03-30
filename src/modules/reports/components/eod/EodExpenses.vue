@@ -2,16 +2,32 @@
 import { computed } from "vue"
 import { formatCurrency } from "@/utils/format-currency"
 import DataTable, { TableColumn } from "@components/DataTable.vue"
+import { useMediaQuery } from "@vueuse/core"
+import { IEODReport } from "@modules/reports/types"
+import { startCase } from "@/utils/format-strings"
 
-const stats = [
-  { title: "Total Expenses", value: formatCurrency(281400), subtitle: "5 categories" },
-  { title: "Biggest Line Item", value: formatCurrency(120000), subtitle: "Shopping & Logistics" },
+const props = defineProps<{ data: IEODReport | null }>()
+const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
+
+const stats = computed(() => [
+  {
+    title: "Total Expenses",
+    value: formatCurrency(props.data?.total_expenses ?? 0, { kobo: true }),
+    subtitle: `${props.data?.expenses_by_category?.length ?? 0} categories`,
+  },
+  {
+    title: "Biggest Line Item",
+    value: formatCurrency(props.data?.expenses_overview?.biggest_expense_amount ?? 0, {
+      kobo: true,
+    }),
+    subtitle: startCase(props.data?.expenses_overview?.biggest_expense_category_name ?? "N/A"),
+  },
   {
     title: "Expense-to-Revenue",
-    value: "13.2%",
-    subtitle: `${formatCurrency(28850)} / ${formatCurrency(218400)}`,
+    value: `${(props.data?.expenses_overview?.expense_to_revenue_percent ?? 0).toFixed(1)}%`,
+    subtitle: `${formatCurrency(props.data?.total_expenses ?? 0, { kobo: true })} / ${formatCurrency(props.data?.summary?.gross_revenue ?? 0, { kobo: true })}`,
   },
-]
+])
 
 type TExpense = {
   category_name: string
@@ -25,48 +41,28 @@ const COLUMNS: TableColumn<TExpense>[] = [
   {
     header: "Amount",
     accessor: "amount",
-    cell: ({ value }) => formatCurrency(Number(value)),
+    cell: ({ value }) => formatCurrency(Number(value), { kobo: true }),
   },
   {
-    header: "Inv. Turnover",
+    header: "% of Revenue",
     accessor: "percentage",
-    cell: ({ value }) => `${value}%`,
+    cell: ({ value }) => `${Number(value).toFixed(1)}%`,
   },
 ]
 
-const EXPENSE_ROWS: TExpense[] = [
-  {
-    category_name: "Shopping & Logistics",
-    percentage: 13.2,
-    amount: 120000,
-  },
-  {
-    category_name: "Marketing & Advertising",
-    percentage: 8.5,
-    amount: 18200,
-  },
-  {
-    category_name: "Utilities",
-    percentage: 2.1,
-    amount: 4500,
-  },
-  {
-    category_name: "Miscellaneous",
-    percentage: 1.2,
-    amount: 2500,
-  },
-  {
-    category_name: "Other Expenses",
-    percentage: 5.0,
-    amount: 32000,
-  },
-]
+const EXPENSE_ROWS = computed(() => {
+  return (props.data?.expenses_by_category ?? []).map((expense) => ({
+    category_name: startCase(expense.category),
+    percentage: expense.percent_of_revenue ?? 0,
+    amount: expense.amount,
+  }))
+})
 
-const totalAmount = computed(() => EXPENSE_ROWS.reduce((sum, r) => sum + r.amount, 0))
-const totalPercentage = computed(() => EXPENSE_ROWS.reduce((sum, r) => sum + r.percentage, 0))
+const totalAmount = computed(() => props.data?.total_expenses ?? 0)
+const totalPercentage = computed(() => EXPENSE_ROWS.value.reduce((sum, r) => sum + r.percentage, 0))
 
 const DATA = computed<TExpense[]>(() => [
-  ...EXPENSE_ROWS,
+  ...EXPENSE_ROWS.value,
   {
     category_name: "Total",
     amount: totalAmount.value,
@@ -86,7 +82,7 @@ const isTotalRow = (row: TExpense) => row.category_name === "Total"
       <span class="ml-auto text-xs font-medium text-gray-600 uppercase">Costs Today</span>
     </header>
     <!-- content -->
-    <div class="grid grid-cols-3 gap-8 py-4">
+    <div class="grid grid-cols-1 gap-8 py-4 md:grid-cols-3">
       <!--  -->
       <div>
         <div class="divide-y divide-gray-200 rounded-xl bg-white shadow">
@@ -100,11 +96,13 @@ const isTotalRow = (row: TExpense) => row.category_name === "Total"
         </div>
       </div>
       <!--  -->
-      <div class="col-span-2 overflow-hidden rounded-xl bg-white shadow">
+      <div class="overflow-hidden rounded-xl bg-white shadow md:col-span-2">
         <DataTable
           :data="DATA"
           :columns="COLUMNS"
           :show-pagination="false"
+          :show-mobile-view="false"
+          :fix-first-column="isMobile"
           :row-class="(row) => (isTotalRow(row) ? 'font-semibold bg-gray-50  ' : '')"
         >
           <template #cell:chip="{ item }">

@@ -16,15 +16,33 @@
           <AppButton
             icon="filter-lines"
             size="sm"
-            color="alt"
+            :color="activeFilterCount ? 'primary' : 'alt'"
+            :variant="activeFilterCount ? 'outlined' : 'filled'"
             label="Filter"
+            :badge="activeFilterCount || undefined"
             class="!hidden md:!inline-flex"
+            @click="showFilter = true"
           />
-          <AppButton icon="filter-lines" size="sm" color="alt" label="" class="md:hidden" />
+          <AppButton
+            icon="filter-lines"
+            size="sm"
+            :color="activeFilterCount ? 'primary' : 'alt'"
+            :variant="activeFilterCount ? 'outlined' : 'filled'"
+            label=""
+            :badge="activeFilterCount || undefined"
+            class="md:hidden"
+            @click="showFilter = true"
+          />
           <AppButton icon="share-06" size="sm" label="Export" class="!hidden md:!inline-flex" />
           <AppButton icon="share-06" size="sm" label="" class="md:hidden" />
         </div>
       </div>
+
+      <ListFilterDrawer
+        v-model="showFilter"
+        :filter-groups="filterGroups"
+        @apply="handleApplyFilters"
+      />
 
       <DataTable
         :data="movements"
@@ -32,6 +50,13 @@
         :loading="loading"
         :show-pagination="true"
         :enable-row-selection="false"
+        :empty-state="{
+          title: 'No results match this filter',
+          description: 'Try adjusting or clearing your filters.',
+          actionLabel: 'Clear Filter',
+          actionIcon: 'x-close',
+        }"
+        @empty-action="clearFilters"
         @row-click="handleRowClick"
       >
         <template #cell:created_at="{ value }">
@@ -103,26 +128,79 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue"
+import { ref, computed } from "vue"
 import EmptyState from "@components/EmptyState.vue"
 import DataTable from "@components/DataTable.vue"
 import AppButton from "@components/AppButton.vue"
 import Chip from "@components/Chip.vue"
 import ProductMovementCard from "./ProductMovementCard.vue"
 import MovementDetailsModal from "./MovementDetailsModal.vue"
+import ListFilterDrawer from "@components/ListFilterDrawer.vue"
 import { getSmartDateLabel } from "@/utils/formatDate"
 import { formatCurrency } from "@/utils/format-currency"
+import { useGetProductMovements } from "../api"
 import type { IProductDetails, IInventoryMovement } from "../types"
 import type { TableColumn } from "@components/DataTable.vue"
+import type { FilterGroup } from "@components/ListFilterDrawer.vue"
 
 interface Props {
   product: IProductDetails
-  movements: IInventoryMovement[]
   movementColumns: TableColumn<IInventoryMovement>[]
-  loading?: boolean
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
+
+const showFilter = ref(false)
+const activeFilters = ref<Record<string, string | null>>({})
+
+const movementParams = computed(() => {
+  const params: Record<string, string | number> = {}
+  if (activeFilters.value.type) params.type = activeFilters.value.type
+  if (activeFilters.value.reason) params.reason = activeFilters.value.reason
+  return params
+})
+
+const { data: movementsData, isFetching: loading } = useGetProductMovements(
+  computed(() => props.product.uid),
+  movementParams,
+)
+
+const movements = computed(() => movementsData.value?.data?.results || [])
+
+const filterGroups: FilterGroup[] = [
+  {
+    key: "type",
+    label: "Movement Type",
+    options: [
+      { value: "in", label: "In", color: "success", icon: "arrow-up" },
+      { value: "out", label: "Out", color: "error", icon: "arrow-down" },
+    ],
+  },
+  {
+    key: "reason",
+    label: "Reason",
+    options: [
+      { value: "sale", label: "Sale" },
+      { value: "restock", label: "Restock" },
+      { value: "transfer", label: "Transfer" },
+      { value: "damage", label: "Damage" },
+      { value: "wastage", label: "Wastage" },
+      { value: "manual_adjustment_out", label: "Manual Adjustment" },
+    ],
+  },
+]
+
+const activeFilterCount = computed(() => {
+  return Object.values(activeFilters.value).filter((v) => v !== null && v !== undefined).length
+})
+
+const handleApplyFilters = (filters: Record<string, string | null>) => {
+  activeFilters.value = filters
+}
+
+const clearFilters = () => {
+  activeFilters.value = {}
+}
 
 const showMovementModal = ref(false)
 const selectedMovement = ref<IInventoryMovement | null>(null)

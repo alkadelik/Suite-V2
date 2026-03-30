@@ -40,7 +40,10 @@
         :readonly="readonly"
         :class="inputClasses"
         :value="displayValue"
+        @beforeinput="handleBeforeInput"
         @input="handleInput"
+        @keydown="handleKeydown"
+        @paste="handlePaste"
         @blur="$emit('blur', $event)"
         @focus="$emit('focus', $event)"
         v-bind="$attrs"
@@ -151,33 +154,76 @@ const emit = defineEmits<{
 
 const showPassword = ref(false)
 
+const sanitizeNumberValue = (value: string): string => {
+  if (!value) return value
+
+  // Allow only digits, decimal point, and minus sign (at the start only)
+  let sanitized = value.replace(/[^0-9.-]/g, "")
+
+  // Ensure only one decimal point
+  const decimalCount = (sanitized.match(/\./g) || []).length
+  if (decimalCount > 1) {
+    const parts = sanitized.split(".")
+    sanitized = parts[0] + "." + parts.slice(1).join("")
+  }
+
+  // Ensure minus sign only at the start
+  if (sanitized.includes("-")) {
+    const minusCount = (sanitized.match(/-/g) || []).length
+    if (minusCount > 1 || sanitized.indexOf("-") > 0) {
+      sanitized = sanitized.replace(/-/g, "")
+    }
+  }
+
+  return sanitized
+}
+
+const handleBeforeInput = (event: Event) => {
+  const inputEvent = event as InputEvent
+
+  if (props.type !== "number" || !inputEvent.data?.includes(",")) return
+
+  inputEvent.preventDefault()
+}
+
+const handleKeydown = (event: Event) => {
+  const keyboardEvent = event as KeyboardEvent
+
+  if (props.type !== "number" || keyboardEvent.key !== ",") return
+
+  keyboardEvent.preventDefault()
+}
+
+const handlePaste = (event: Event) => {
+  const clipboardEvent = event as ClipboardEvent
+
+  if (props.type !== "number") return
+
+  const pastedText = clipboardEvent.clipboardData?.getData("text") || ""
+  if (!pastedText.includes(",")) return
+
+  clipboardEvent.preventDefault()
+
+  const target = clipboardEvent.target as HTMLInputElement
+  const currentValue = target.value
+  const selectionStart = target.selectionStart ?? currentValue.length
+  const selectionEnd = target.selectionEnd ?? currentValue.length
+  const nextValue = sanitizeNumberValue(
+    `${currentValue.slice(0, selectionStart)}${pastedText}${currentValue.slice(selectionEnd)}`,
+  )
+
+  target.value = nextValue
+  emit("update:modelValue", nextValue)
+}
+
 const handleInput = (event: Event) => {
   const target = event.target as HTMLInputElement
   let value = target.value
 
   // For number inputs, allow only valid numeric characters
   if (props.type === "number" && value) {
-    // Allow only digits, decimal point, and minus sign (at the start only)
-    // Remove any characters that are not digits, decimal point, or minus
-    let sanitized = value.replace(/[^0-9.-]/g, "")
-
-    // Ensure only one decimal point
-    const decimalCount = (sanitized.match(/\./g) || []).length
-    if (decimalCount > 1) {
-      const parts = sanitized.split(".")
-      sanitized = parts[0] + "." + parts.slice(1).join("")
-    }
-
-    // Ensure minus sign only at the start
-    if (sanitized.includes("-")) {
-      const minusCount = (sanitized.match(/-/g) || []).length
-      if (minusCount > 1 || sanitized.indexOf("-") > 0) {
-        sanitized = sanitized.replace(/-/g, "")
-      }
-    }
-
-    value = sanitized
-    target.value = sanitized // Update the input value to reflect the sanitized value
+    value = sanitizeNumberValue(value)
+    target.value = value
   }
 
   // For tel inputs, prefix with +234
