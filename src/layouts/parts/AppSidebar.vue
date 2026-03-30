@@ -83,6 +83,14 @@
         @toggle="expandedGroup = expandedGroup === 'production' ? null : 'production'"
       />
 
+      <SidebarGroup
+        icon="chart-breakout-square"
+        label="Reports"
+        :children="reportsItems"
+        :is-expanded="expandedGroup === 'reports'"
+        @toggle="expandedGroup = expandedGroup === 'reports' ? null : 'reports'"
+      />
+
       <SidebarLink icon="receipt-text" label="Expenses" to="/expenses" />
     </section>
 
@@ -231,18 +239,35 @@ const marketingItems = computed(() => [{ icon: "sms", label: "Email List", to: "
 // Production items
 const productionItems = computed(() => {
   const componentLabel = useProductionStore().componentLabel || "Raw Materials"
+  const recipeLabel = useProductionStore().recipeLabel || "Recipes"
   return [
-    { icon: "box", label: componentLabel, to: "/raw-materials" },
+    { icon: "box", label: componentLabel || "Raw materials", to: "/raw-materials" },
+    { icon: "recipe-board", label: recipeLabel || "Recipes", to: "/recipes" },
+    { icon: "recipe-board", label: "Production run", to: "/production-run" },
     // Add production-related items here when needed
   ]
 })
+
+// reports items
+const reportsItems = computed(() => [
+  { icon: "pie-chart", label: "End of Day", to: "/reports/end-of-day" },
+  { icon: "pie-chart", label: "Monthly", to: "/reports/monthly" },
+  ...(isStaging
+    ? [{ icon: "pie-chart", label: "Store Overview", to: "/reports/store-overview" }]
+    : []),
+])
 
 const storeDetails = computed(() => useSettingsStore().storeDetails)
 
 const activeLocation = computed(() => useSettingsStore().activeLocation)
 
 // Check if setup requirements are complete (regardless of subscription status)
-const setupComplete = computed(() => useSettingsStore().liveStatus?.completion_percentage === 100)
+const setupComplete = computed(() => {
+  const status = useSettingsStore().liveStatus
+  if (status?.completion_percentage === 100) return true
+  const missing = status?.missing_requirements || []
+  return missing.every((r) => r === "subscription")
+})
 
 // Subscription derived state
 const subscription = computed(() => useAuthStore().user?.subscription)

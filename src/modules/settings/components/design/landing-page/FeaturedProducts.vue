@@ -9,10 +9,11 @@
         name="selection_mode"
         label="Select Featured Products"
         :radio-options="SELECTION_OPTIONS"
+        :show-radio="!isMobile"
       />
 
       <Field
-        v-if="selectionMode === 'custom'"
+        v-show="selectionMode === 'custom'"
         v-slot="{ field, errors: fieldErrors }"
         name="products"
       >
@@ -30,6 +31,7 @@
           @search-change="productSearchInput = $event"
         />
         <p
+          v-show="selectionMode === 'custom'"
           class="-mt-4 text-right text-xs"
           :class="(field.value?.length ?? 0) >= 8 ? 'text-red-500' : 'text-gray-400'"
         >
@@ -66,6 +68,7 @@ import { displayError } from "@/utils/error-handler"
 import { useSearchProductVariants } from "@modules/inventory/api"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import SelectField from "@components/form/SelectField.vue"
+import { useMediaQuery } from "@vueuse/core"
 
 interface FeaturedProductsFormData {
   selection_mode: string
@@ -89,6 +92,8 @@ const SELECTION_OPTIONS = [
 
 const props = defineProps<{ featuredProductsSection?: ThemeSection | null }>()
 const emit = defineEmits<{ refetch: [] }>()
+
+const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
 
 const { mutate: updateSection, isPending } = useUpdateStorefrontSection()
 

@@ -150,8 +150,8 @@ export function useVariantValidation(options: IVariantValidationOptions) {
   const isVariantValid = (variant: IProductVariant): boolean => {
     if (!variant) return false
 
-    // Validate selling price
-    if (!isValidPositiveNumber(variant.price)) return false
+    // Validate selling price (free products with a 0 price are allowed)
+    if (!isValidNonNegativeNumber(variant.price)) return false
 
     // Validate cost price (if provided, must be valid and not exceed selling price)
     if (variant.cost_price && variant.cost_price.trim() !== "") {

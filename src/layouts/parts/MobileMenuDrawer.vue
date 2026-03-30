@@ -30,11 +30,8 @@ const quickActions = computed(() => {
     { label: "Customers", icon: "people", to: "/customers" },
     { label: "Popups", icon: "calendar-tick", to: "/popups", hqOnly: true },
     { label: "Expenses", icon: "receipt-text", to: "/expenses" },
-    {
-      label: "Reports",
-      icon: "pie-chart",
-      action: () => toast.info("This module is coming soon!", { title: "Reports" }),
-    },
+    { label: "EOD Reports", icon: "pie-chart", to: "/reports/eod" },
+    { label: "Monthly Reports", icon: "pie-chart", to: "/reports/monthly" },
     {
       label: "Discounts",
       icon: "tag",
