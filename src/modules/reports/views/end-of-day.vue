@@ -25,7 +25,7 @@ import { useReportsStore } from "../store"
 import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
 
-const yesterday = new Date("2026-02-17")
+const yesterday = new Date()
 yesterday.setDate(yesterday.getDate() - 1)
 const activeDate = ref(yesterday.toISOString().slice(0, 10))
 const activeSection = ref(EOD_REPORT_SECTIONS[0].key)

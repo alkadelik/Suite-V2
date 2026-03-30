@@ -58,6 +58,44 @@ export type TRawMaterial = {
   movements?: TMovement[]
 }
 
+export type TProdRun = {
+  uid: string
+  run_id: string
+  output_item_name: string
+  output_quantity: number
+  damaged_quantity: number
+  usable_quantity: number
+  total_cost: number
+  status: "completed" | "pending" | "cancelled"
+  date_created: string
+  updated_at?: string
+  ingredient_count?: number
+  last_cost?: number
+}
+
+export type TRecipes = {
+  uid: string
+  output_product?: string | null
+  output_raw_material?: string | null
+  output_item_name: string
+  output_unit?: string
+  item_type: "product" | "sub_assembly"
+  output_quantity: string | number
+  producible_quantity: string | number
+  ingredient_count: string | number
+  process_cost_count: string | number
+  last_cost?: string | number
+  average_cost?: string | number
+  is_active: boolean
+  updated_at: string
+}
+
+export type TRecipesRow = TRecipes & {
+  output_qty?: string | number
+  outputQuantity?: string | number
+  is_duplicate?: boolean
+}
+
 export interface RawMaterialPayload {
   date: string
   amount: string
