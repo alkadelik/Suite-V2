@@ -94,7 +94,7 @@ import SetPickupModal from "../components/ConfigurePickupModal.vue"
 import VerifyIdentityModal from "../components/VerifyIdentityModal.vue"
 import ConfigureDeliveryModal from "../components/ConfigureDeliveryModal.vue"
 import OnboardingSkeleton from "../components/skeletons/OnboardingSkeleton.vue"
-import { useGetLiveStatus, useGetManualDeliveryOptions } from "../api"
+import { useGetLiveStatus } from "../api"
 import { useAuthStore } from "@modules/auth/store"
 import { useGetCustomers } from "@modules/customers/api"
 import { useGetOrders } from "@modules/orders/api"
@@ -128,10 +128,6 @@ const { data: ordersData, isPending: isLoadingOrders } = useGetOrders(
   ref({ page: 1, page_size: 1 }),
 )
 const hasOrders = computed(() => (ordersData.value?.count || 0) > 0)
-
-// Check if manual delivery options exist
-const { data: manualDeliveryOptions } = useGetManualDeliveryOptions()
-const hasManualDeliveries = computed(() => (manualDeliveryOptions.value?.length ?? 0) > 0)
 
 // Combined loading state
 const isLoading = computed(
@@ -199,8 +195,7 @@ const tasks = computed(() => {
     {
       id: 4,
       title: "Allow Delivery?",
-      completed:
-        criteria?.delivery_options?.details?.delivery_enabled || hasManualDeliveries.value || false,
+      completed: criteria?.delivery_options?.details?.delivery_enabled || false,
       subtext: "Offer delivery to your customers.",
       isButton: false,
       buttonLabel: "",
