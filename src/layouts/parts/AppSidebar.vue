@@ -252,7 +252,9 @@ const productionItems = computed(() => {
 const reportsItems = computed(() => [
   { icon: "pie-chart", label: "End of Day", to: "/reports/end-of-day" },
   { icon: "pie-chart", label: "Monthly", to: "/reports/monthly" },
-  { icon: "pie-chart", label: "Store Overview", to: "/reports/store-overview" },
+  ...(isStaging
+    ? [{ icon: "pie-chart", label: "Store Overview", to: "/reports/store-overview" }]
+    : []),
 ])
 
 const storeDetails = computed(() => useSettingsStore().storeDetails)

@@ -83,8 +83,8 @@ const showSetupDeliveryPrompt = computed(
   () => !hasShippingAccount.value && !hasManualDeliveries.value,
 )
 
-// Scenario: Has shipping account - show automatic/manual toggle and express section
-const showDeliveryOptions = computed(() => hasShippingAccount.value)
+// Scenario: Has shipping account OR manual deliveries - show delivery options
+const showDeliveryOptions = computed(() => hasShippingAccount.value || hasManualDeliveries.value)
 
 // Watch store details for pickup location and delivery settings
 watch(
