@@ -28,6 +28,7 @@ import * as yup from "yup"
 import { watch, computed, ref, onMounted, onBeforeUnmount } from "vue"
 import { toast } from "@/composables/useToast"
 import { onInvalidSubmit } from "@/utils/validations"
+import { useSettingsStore } from "@modules/settings/store"
 
 type Option = { label: string; value: string }
 
@@ -63,6 +64,8 @@ const emit = defineEmits<{
   (e: "close"): void
   (e: "refresh"): void
 }>()
+
+const currency = computed(() => useSettingsStore().storeDetails?.currency || "NGN")
 
 const productionStore = useProductionStore()
 const isMobile = useMediaQuery("(max-width: 1028px)")
@@ -1227,7 +1230,9 @@ const onSubmit = handleSubmit(async (formValues) => {
                   />
                 </div>
                 <div class="col-span-1">
-                  <label class="mb-2 block text-xs font-medium text-gray-700">Cost</label>
+                  <label class="mb-2 block text-xs font-medium text-gray-700"
+                    >Cost ({{ currency }})</label
+                  >
                   <input
                     v-model="row.cost"
                     type="text"

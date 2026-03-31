@@ -12,6 +12,7 @@ import * as yup from "yup"
 import TextAreaField from "@components/form/TextAreaField.vue"
 import { useMediaQuery } from "@vueuse/core"
 import { toast } from "@/composables/useToast"
+import { useSettingsStore } from "@modules/settings/store"
 
 interface OrderItem {
   product: IProductCatalogue
@@ -56,6 +57,7 @@ const emit = defineEmits<{
   "update:orderItems": [items: OrderItem[]]
   "update:selectedProducts": [products: IProductCatalogue[]]
 }>()
+const currency = computed(() => useSettingsStore().storeDetails?.currency || "NGN")
 
 const localItems = ref<OrderItem[]>([])
 const selectedVariants = ref<Map<string, VariantItem[]>>(new Map())
@@ -623,7 +625,7 @@ const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
                 v-model="variantItem.unit_price"
                 name="price"
                 type="number"
-                label="Unit Price"
+                :label="`Unit Price (${currency})`"
                 placeholder="e.g. 59.99"
                 :min="0"
                 step="0.01"

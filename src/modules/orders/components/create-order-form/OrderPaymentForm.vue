@@ -5,6 +5,7 @@ import FormField from "@components/form/FormField.vue"
 import RadioInputField from "@components/form/RadioInputField.vue"
 import Icon from "@components/Icon.vue"
 import { ORDER_PAYMENT_METHODS, ORDER_PAYMENT_STATUS } from "@modules/orders/constants"
+import { useSettingsStore } from "@modules/settings/store"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, watch, onMounted } from "vue"
 
@@ -29,6 +30,7 @@ const emit = defineEmits<{
   next: []
   prev: []
 }>()
+const currency = computed(() => useSettingsStore().storeDetails?.currency || "NGN")
 
 // Use defineModel for two-way binding - cleaner than manual v-model implementation
 const paymentInfo = defineModel<PaymentInfo>("paymentInfo", { required: true })
@@ -197,7 +199,7 @@ const isMobile = useMediaQuery("(max-width: 768px)")
         <FormField
           type="number"
           name="payment_amount"
-          label="Amount Paid"
+          :label="`Amount Paid (${currency})`"
           placeholder="0.00"
           v-model.number="paymentInfo.payment_amount"
           :min="0"

@@ -85,7 +85,7 @@
         v-if="!props.hidePrice"
         :model-value="singleVariantForm.cost_price"
         @update:model-value="updateSingleVariantField('cost_price', removeLeadingZeros($event))"
-        label="Cost Price"
+        :label="`Cost Price (${currency})`"
         placeholder=""
         type="number"
         step="0.01"
@@ -99,7 +99,7 @@
         v-if="!props.hidePrice"
         :model-value="singleVariantForm.price"
         @update:model-value="updateSingleVariantField('price', removeLeadingZeros($event))"
-        label="Selling Price"
+        :label="`Selling Price (${currency})`"
         placeholder=""
         type="number"
         step="0.01"
@@ -132,10 +132,10 @@
           <h3 class="text-sm font-medium text-gray-900">Quantity</h3>
         </div>
         <div v-if="!props.hidePrice" class="w-24 text-center">
-          <h3 class="text-sm font-medium text-gray-900">Cost Price</h3>
+          <h3 class="text-sm font-medium text-gray-900">Cost Price ({{ currency }})</h3>
         </div>
         <div v-if="!props.hidePrice" class="w-24 text-center">
-          <h3 class="text-sm font-medium text-gray-900">Selling Price</h3>
+          <h3 class="text-sm font-medium text-gray-900">Selling Price ({{ currency }})</h3>
         </div>
       </div>
 
@@ -253,7 +253,7 @@
           <div v-if="!props.hidePrice">
             <TextField
               :model-value="variant.cost_price"
-              label="Cost Price"
+              :label="`Cost Price (${currency})`"
               placeholder=""
               type="number"
               step="0.01"
@@ -271,7 +271,7 @@
           <div v-if="!props.hidePrice">
             <TextField
               :model-value="variant.price"
-              label="Selling Price"
+              :label="`Selling Price (${currency})`"
               placeholder=""
               type="number"
               step="0.01"
@@ -298,6 +298,7 @@ import { PRODUCT_DIMENSIONS, WEIGHT_ATTRIBUTE_UIDS } from "../../constants"
 import { IProductDimension } from "@modules/inventory/types"
 import { IProductVariant, IProductVariantDetails } from "../../types"
 import { useWeightBasedDimensions } from "../../composables/useWeightBasedDimensions"
+import { useSettingsStore } from "@modules/settings/store"
 
 interface Props {
   /** Variants array - for no variants case, should contain single variant */
@@ -327,6 +328,7 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+const currency = computed(() => useSettingsStore().storeDetails?.currency || "NGN")
 
 // Initialize weight-based dimensions composable
 const { hasWeightAttribute } = useWeightBasedDimensions()

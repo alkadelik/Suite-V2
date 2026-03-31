@@ -24,9 +24,11 @@ import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 import { onInvalidSubmit } from "@/utils/validations"
 import { TExpense } from "../types"
+import { useSettingsStore } from "@modules/settings/store"
 
 const props = defineProps<{ open: boolean; expense?: TExpense | null }>()
 const emit = defineEmits(["close", "refresh"])
+const currency = computed(() => useSettingsStore().storeDetails?.currency || "NGN")
 
 const expenseStore = useExpenseStore()
 
@@ -368,7 +370,13 @@ const handleAddFromSearch = (search: string, close: () => void) => {
       </div>
 
       <div class="sm:col-span-2">
-        <FormField type="number" name="amount" label="Amount" placeholder="e.g. 12,500" required />
+        <FormField
+          type="number"
+          name="amount"
+          :label="`Amount (${currency})`"
+          placeholder="e.g. 12,500"
+          required
+        />
       </div>
 
       <div>
