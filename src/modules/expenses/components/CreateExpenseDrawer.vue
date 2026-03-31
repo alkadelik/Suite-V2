@@ -330,6 +330,12 @@ watch(
     }
   },
 )
+
+const handleAddFromSearch = (search: string, close: () => void) => {
+  showCreateVendorModal.value = true
+  newVendorName.value = search
+  close()
+}
 </script>
 
 <template>
@@ -406,6 +412,7 @@ watch(
             value-key="value"
             label-key="label"
             :error="fieldErrors[0]"
+            searchable
             @update:model-value="field.value = $event"
           >
             <template #prepend="{ close }">
@@ -423,6 +430,18 @@ watch(
                   <Icon name="add" class="text-primary-600 h-4 w-4" />
                 </div>
               </div>
+            </template>
+            <template #no-options="{ search, close }">
+              <p>
+                No results found.
+                <button
+                  class="text-primary-600 ml-1 hover:underline"
+                  @click="handleAddFromSearch(search, close)"
+                >
+                  Add <span class="font-semibold">"{{ search }}"</span>
+                </button>
+                as vendor?
+              </p>
             </template>
           </SelectField>
         </Field>

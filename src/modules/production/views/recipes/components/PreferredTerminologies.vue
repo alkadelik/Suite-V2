@@ -25,9 +25,8 @@ const handleSelect = () => {
   updateStore(
     { id: storeId.value, body: { recipe_terminology: selected.value } },
     {
-      onSuccess: (res) => {
+      onSuccess: () => {
         toast.success("Name saved successfully")
-        console.log("res", res)
         emit("select", selected)
       },
       onError: displayError,

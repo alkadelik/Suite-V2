@@ -6,86 +6,64 @@ import ingredientPng from "@/assets/images/ingredients.png"
 import materialPng from "@/assets/images/materials.png"
 import { formatDate } from "@/utils/formatDate"
 import { startCase } from "@/utils/format-strings"
+
 const formatQty = (value: string | number | null | undefined): string => {
   if (value == null || value === "") return ""
   const n = typeof value === "number" ? value : Number(value)
   if (!Number.isFinite(n)) return String(value)
   return n.toString()
 }
-const toDateOnly = (v: string | number | null | undefined): string => {
-  if (!v) return "—"
-  return String(v).slice(0, 10)
-}
+
 export const PRODUCTION_COLUMN: TableColumn<TProdRun>[] = [
   { header: "Output Id", accessor: "run_id" },
   { header: "Output Item", accessor: "output_item_name" },
-
   {
     header: "",
     accessor: "damaged_quantity",
     cell: ({ item }: { item: TProdRun }) => formatQty(item.damaged_quantity),
   },
-  {
-    header: "Output Quantity",
-    accessor: "output_quantity",
-    // cell: ({ item }: { item: TProdRun }) => formatQty(item.output_quantity),
-  },
-
+  { header: "Output Quantity", accessor: "output_quantity" },
   {
     header: "Ingredient Count",
     accessor: "ingredient_count",
     cell: ({ item }) => String(item.ingredient_count ?? "—"),
   },
-
   {
     header: "Status",
     accessor: "status",
     cell: ({ item }) => startCase(item.status as string),
   },
-
   {
     header: "Date created",
     accessor: "date_created",
-    cell: ({ item }) => toDateOnly(item.date_created as string),
+    cell: ({ item }) => formatDate(item.date_created as string),
   },
-
   { header: "Last Cost", accessor: "last_cost" },
-
   { header: "", accessor: "actions" },
 ]
+
 export const RECIPES_COLUMN: TableColumn<TRecipes>[] = [
-  { header: "Output Item", accessor: "output_item_name" }, // output_item_name +
-
-  // {
-  //   header: "Output Quantity",
-  //   accessor: "output_quantity",
-  //   cell: ({ item }) => formatQty(item.output_quantity),
-  // },
-
+  { header: "Output Item", accessor: "output_item_name" },
   {
     header: "Ingredient Count",
     accessor: "ingredient_count",
     cell: ({ item }) => String(item.ingredient_count ?? "—"),
   },
-
   {
     header: "Status",
     accessor: "is_active",
     cell: ({ item }) => (item.is_active ? "Active" : "Disabled"),
   },
-
   {
     header: "Last Edited",
     accessor: "updated_at",
-    cell: ({ item }) => toDateOnly(item.updated_at as string),
+    cell: ({ item }) => formatDate(item.updated_at as string),
   },
-
-  // ✅ new accessors so we can render values via slots
   { header: "Last Cost", accessor: "last_cost" },
   { header: "Avg. Cost", accessor: "average_cost" },
-
   { header: "Actions", accessor: "actions" },
 ]
+
 export const RAW_MATERIALS_COLUMN: TableColumn<TRawMaterial>[] = [
   { header: "Name", accessor: "name" },
   {
@@ -106,19 +84,6 @@ export const RAW_MATERIALS_COLUMN: TableColumn<TRawMaterial>[] = [
       Number(item.last_cost) ? `${formatCurrency(Number(item.avg_cost))}/${item.unit}` : "-",
   },
   { header: "", accessor: "actions" },
-]
-export const MOCK_RUNS: TProdRun[] = [
-  {
-    uid: "1",
-    run_id: "PRN-4821",
-    output_item_name: "Coconut Soap Bar",
-    output_quantity: 200,
-    damaged_quantity: 18,
-    usable_quantity: 182,
-    total_cost: 45500,
-    status: "completed",
-    date_created: "Today",
-  },
 ]
 
 export const BATCHES_COLUMN: TableColumn<TBatch>[] = [
