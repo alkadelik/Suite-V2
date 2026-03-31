@@ -3,12 +3,74 @@ import {
   ICreateMaterialPayload,
   RawMaterialStats,
   TRawMaterial,
+  OutputItemOption,
+  IngredientKind,
+  IngredientOption,
+  IngredientEntityDetail,
+  RecipesQuery,
+  RecipeDetail,
+  RecipeCreatePayload,
+  RecipePatchPayload,
+  InventoryProduct,
+  InventorySubAssembly,
+  RawMaterial,
+  ProdRunCreatePayload,
+  ProdRunFinalizePayload,
+  ProdRunIngredientUsed,
+  TProdRunDetail,
+  TProdRunListItem,
+  TRecipes,
 } from "./types"
+
+// Re-export all types so consumers can import from either api.ts or types.ts
+export type {
+  TSupplier,
+  TBatch,
+  TMovement,
+  TRawMaterial,
+  TProdRun,
+  TRecipes,
+  TRecipesRow,
+  RawMaterialPayload,
+  RawMaterialStats,
+  TUsageHistory,
+  TLinkedRecipe,
+  IConversionPayload,
+  ICreateMaterialPayload,
+  IAdjustStockPayload,
+  ItemType,
+  OutputItemOption,
+  IngredientKind,
+  IngredientOption,
+  IngredientEntityDetail,
+  RecipesQuery,
+  RecipeIngredient,
+  RecipeProcessCost,
+  RecipeDetail,
+  RecipeCreatePayload,
+  RecipePatchPayload,
+  InventoryProduct,
+  InventorySubAssembly,
+  RawMaterial,
+  ProdRunStatus,
+  ProdRunIngredientPayload,
+  ProdRunProcessCostPayload,
+  ProdRunAdditionalExpensePayload,
+  ProdRunCreatePayload,
+  ProdRunFinalizePayload,
+  ProdRunIngredientUsed,
+  ProdRunProcessCostUsed,
+  ProdRunAdditionalExpenseUsed,
+  TProdRunDetail,
+  TProdRunListItem,
+  ProductionRunData,
+} from "./types"
+
 import baseApi, { TPaginatedResponse, useApiQuery } from "@/composables/baseApi"
 import { MaybeRefOrGetter, toValue } from "vue"
 import { useMutation, useQuery } from "@tanstack/vue-query"
 
-// ─── Shared Types ─────────────────────────────────────────────────────────────
+// ─── Internal utility types (not exported — implementation detail only) ────────
 
 type WrappedPayload<T> = T | { data: T }
 
@@ -28,14 +90,7 @@ type EntityResponse = {
   data?: EntityPayload
 } & EntityPayload
 
-export type RecipesQuery = {
-  search?: string
-  ordering?: string
-  limit?: number
-  offset?: number
-  is_active?: boolean
-  item_type?: "product" | "sub_assembly"
-}
+// ─── Internal utility functions ───────────────────────────────────────────────
 
 function unwrapApiPayload<T>(payload: WrappedPayload<T>): T {
   if (typeof payload === "object" && payload !== null && "data" in payload) {
@@ -222,7 +277,7 @@ export function productToOutputOption(product: InventoryProduct): OutputItemOpti
   return {
     label: String(product.name ?? ""),
     value: String(product.uid ?? ""),
-    type: product.is_sub_assembly ? "sub_assembly" : "product",
+    type: "product",
     unit: String(product.unit ?? "").trim() || undefined,
   }
 }
@@ -408,8 +463,8 @@ export async function fetchOutputItemOptions(): Promise<
   Array<{ label: string; value: string; type: string; unit?: string }>
 > {
   const [products, rawMaterials] = await Promise.all([
-    fetchInventoryProducts({ limit: 500, offset: 0 }),
-    fetchRawMaterials({ limit: 500, offset: 0 }),
+    fetchInventoryProducts({ limit: 500 }),
+    fetchRawMaterials({ limit: 500 }),
   ])
 
   const subAssemblyUids = new Set(rawMaterials.filter((m) => m.is_sub_assembly).map((m) => m.uid))
@@ -419,16 +474,16 @@ export async function fetchOutputItemOptions(): Promise<
     .map((x) => ({
       label: x.name.trim(),
       value: x.uid,
-      type: "product",
+      type: "product" as const,
       unit: x.unit?.trim() || undefined,
     }))
 
   const subAssemblyOptions = rawMaterials
-    .filter((m) => m.uid && m.name && m.is_sub_assembly)
+    .filter((m) => m.uid && m.name && m.is_sub_assembly === true)
     .map((m) => ({
       label: m.name.trim(),
       value: m.uid,
-      type: "sub_assembly",
+      type: "sub_assembly" as const,
       unit: m.unit?.trim() || undefined,
     }))
 
@@ -474,8 +529,6 @@ export async function getEntityDetail(uid: string): Promise<IngredientEntityDeta
   }
   return { name: uid, unit: "" }
 }
-
-// ─── Vue Query Hooks ──────────────────────────────────────────────────────────
 
 /** Vue Query hook — recipes list */
 export function useGetRecipes(
@@ -555,9 +608,7 @@ export function useDeleteRecipe() {
   })
 }
 
-// ─── Imperative API Object ────────────────────────────────────────────────────
-// Alias object for store/composable use. Method names match the original API.
-
+/** Imperative API object — alias for store/composable use */
 export const RecipesAPI = {
   list: fetchRecipes,
   listInventoryProducts: fetchInventoryProducts,
@@ -569,4 +620,252 @@ export const RecipesAPI = {
   remove: deleteRecipe,
   getEntityUnit,
   getEntityDetail,
+}
+
+// ─── Production Runs ──────────────────────────────────────────────────────────
+
+/** Create a draft production run */
+export async function createProductionRun(payload: ProdRunCreatePayload): Promise<TProdRunDetail> {
+  const res = await baseApi.post<WrappedPayload<TProdRunDetail>>("/production-runs/", payload)
+  return unwrapApiPayload(res.data)
+}
+
+/** List all production runs */
+export async function fetchProductionRuns(params?: {
+  limit?: number
+  offset?: number
+}): Promise<{ count: number; results: TProdRunListItem[] }> {
+  const res = await baseApi.get<TPaginatedResponse<TProdRunListItem>>("/production-runs/", {
+    params,
+  })
+  return unwrapPaginated<TProdRunListItem>(res.data)
+}
+
+/** Get full production run detail by UID */
+export async function fetchProductionRunDetail(uid: string): Promise<TProdRunDetail | null> {
+  try {
+    const res = await baseApi.get<WrappedPayload<TProdRunDetail>>(`/production-runs/${uid}/`)
+    return unwrapApiPayload(res.data)
+  } catch {
+    return null
+  }
+}
+
+/** Finalize a production run — posts inventory */
+export async function finalizeProductionRun(
+  uid: string,
+  payload: ProdRunFinalizePayload,
+): Promise<TProdRunDetail> {
+  const res = await baseApi.post<WrappedPayload<TProdRunDetail>>(
+    `/production-runs/${uid}/finalize/`,
+    payload,
+  )
+  return unwrapApiPayload(res.data)
+}
+
+/** Vue Query hook — production runs list */
+export function useGetProductionRuns(
+  params?: MaybeRefOrGetter<{ limit?: number; offset?: number } | undefined>,
+) {
+  return useApiQuery<TPaginatedResponse<TProdRunListItem>["data"]>({
+    url: "/production-runs/",
+    params,
+    key: "production-runs",
+    selectData: true,
+  })
+}
+
+/** Vue Query hook — production run detail */
+export function useGetProductionRunDetail(uid: MaybeRefOrGetter<string>) {
+  return useQuery({
+    queryKey: ["production-run", uid],
+    queryFn: async () => {
+      const uidValue = toValue(uid)
+      const res = await baseApi.get<WrappedPayload<TProdRunDetail>>(`/production-runs/${uidValue}/`)
+      return unwrapApiPayload(res.data)
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
+    enabled: () => !!toValue(uid),
+  })
+}
+
+/** Vue Query hook — create production run mutation */
+export function useCreateProductionRun() {
+  return useMutation({
+    mutationFn: (payload: ProdRunCreatePayload) => createProductionRun(payload),
+  })
+}
+
+/** Vue Query hook — finalize production run mutation */
+export function useFinalizeProductionRun() {
+  return useMutation({
+    mutationFn: ({ uid, payload }: { uid: string; payload: ProdRunFinalizePayload }) =>
+      finalizeProductionRun(uid, payload),
+  })
+}
+
+// ─── Production Run Drawer Composable ────────────────────────────────────────
+// All API logic for ProdRunDrawer lives here — the component calls only this.
+
+export type DrawerOutputItem = {
+  uid: string
+  name: string
+  type: "product" | "sub_assembly"
+}
+
+export type DrawerRecipe = {
+  uid: string
+  code: string
+  output_quantity: number
+  output_unit: string
+}
+
+export type DrawerIngredientRow = {
+  uid: string
+  material_uid: string
+  name: string
+  cost: number
+  required: number
+  available: number
+  used: number
+  unit: string
+  adjusted: boolean
+  editValue: string
+  editing: boolean
+  is_sufficient: boolean
+  estimated_cost: string
+}
+
+export type DrawerExpenseRow = {
+  id: string
+  name: string
+  cost: string
+}
+
+export type DrawerDraftResult = {
+  draftUid: string
+  ingredients: DrawerIngredientRow[]
+  processCosts: DrawerExpenseRow[]
+}
+
+/** Fetch all output items (products + sub-assemblies) for the drawer dropdown */
+export async function fetchDrawerOutputItems(): Promise<DrawerOutputItem[]> {
+  const items = await fetchOutputItemOptions()
+  return items.map((i) => ({
+    uid: i.value,
+    name: i.label,
+    type: i.type as "product" | "sub_assembly",
+  }))
+}
+
+/** Fetch recipes for a specific output item UID */
+export async function fetchDrawerRecipesForItem(itemUid: string): Promise<DrawerRecipe[]> {
+  const { results } = await fetchRecipes({ limit: 200, offset: 0 })
+  return results
+    .filter((r) => r.output_product === itemUid || r.output_raw_material === itemUid)
+    .map((r) => ({
+      uid: r.uid,
+      code: `#RCP-${String(r.uid).slice(0, 7).toUpperCase()}`,
+      output_quantity: Number(r.output_quantity),
+      output_unit: String(r.output_unit ?? ""),
+    }))
+}
+
+/** Create a draft production run and hydrate ingredients + process costs from detail */
+export async function createDraftAndHydrate(
+  payload: ProdRunCreatePayload,
+): Promise<DrawerDraftResult> {
+  const created = await createProductionRun(payload)
+
+  // Always fetch detail — create response may return empty ingredients_used
+  // even when the recipe has ingredients (API populates them async)
+  let detail = await fetchProductionRunDetail(created.uid)
+
+  // If detail came back empty, retry once after a short delay
+  if (!detail?.ingredients_used?.length && created.uid) {
+    await new Promise((r) => setTimeout(r, 800))
+    detail = await fetchProductionRunDetail(created.uid)
+  }
+
+  const toNum = (v: string | number | null | undefined) => {
+    const n = Number(v)
+    return Number.isFinite(n) ? n : 0
+  }
+
+  const ingredientSource = detail?.ingredients_used?.length
+    ? detail.ingredients_used
+    : created.ingredients_used?.length
+      ? created.ingredients_used
+      : []
+
+  let ingredients: DrawerIngredientRow[] = ingredientSource.map((i: ProdRunIngredientUsed) => ({
+    uid: i.uid,
+    material_uid: i.material_uid,
+    name: i.material_name,
+    cost: toNum(i.actual_total_cost),
+    required: toNum(i.quantity_required),
+    available: toNum(i.available_inventory),
+    used: toNum(i.quantity_required),
+    unit: String(i.unit ?? ""),
+    adjusted: i.is_adjusted ?? false,
+    editValue: String(i.quantity_required ?? "0"),
+    editing: false,
+    is_sufficient: String(i.is_sufficient_inventory).toLowerCase() === "true",
+    estimated_cost: String(i.estimated_cost ?? ""),
+  }))
+
+  // process_costs_used and ingredients_used may be empty on a fresh draft —
+  // fall back to the recipe detail for both
+  let processCosts: DrawerExpenseRow[] = (detail?.process_costs_used ?? [])
+    .filter((p) => p.name?.trim())
+    .map((p) => ({
+      id: p.uid,
+      name: p.name,
+      cost: String(p.cost_per_batch),
+    }))
+
+  if (!ingredients.length || !processCosts.length) {
+    const recipe = await fetchRecipeDetail(payload.recipe_uid)
+
+    if (!ingredients.length && recipe?.ingredients?.length) {
+      // Resolve material names in parallel
+      const details = await Promise.all(
+        recipe.ingredients.map((i) => getEntityDetail(i.material_uid)),
+      )
+      ingredients = recipe.ingredients.map((i, idx) => ({
+        uid: `rcp-ing-${idx}`,
+        material_uid: i.material_uid,
+        name: details[idx]?.name || i.material_uid,
+        cost: 0,
+        required: toNum(i.quantity),
+        available: 0,
+        used: toNum(i.quantity),
+        unit: details[idx]?.unit || "",
+        adjusted: false,
+        editValue: String(i.quantity ?? "0"),
+        editing: false,
+        is_sufficient: true,
+        estimated_cost: "",
+      }))
+    }
+
+    if (!processCosts.length && recipe?.process_costs?.length) {
+      processCosts = recipe.process_costs.map((p, idx) => ({
+        id: `rcp-pc-${idx}`,
+        name: p.name,
+        cost: String(p.cost_per_batch),
+      }))
+    }
+  }
+
+  return { draftUid: created.uid, ingredients, processCosts }
+}
+
+/** Finalize a draft production run */
+export async function finalizeDraft(
+  uid: string,
+  payload: ProdRunFinalizePayload,
+): Promise<TProdRunDetail> {
+  return finalizeProductionRun(uid, payload)
 }
