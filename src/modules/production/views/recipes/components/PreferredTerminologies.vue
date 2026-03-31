@@ -2,48 +2,19 @@
 import AppButton from "@components/AppButton.vue"
 import Icon from "@components/Icon.vue"
 import { computed, ref } from "vue"
-import componentPng from "@/assets/images/chemical.png"
-import ingredientPng from "@/assets/images/ingredients.png"
-import materialPng from "@/assets/images/materials.png"
 import { useUpdateStoreDetails } from "@modules/settings/api"
 import { displayError } from "@/utils/error-handler"
 import { useSettingsStore } from "@modules/settings/store"
 import { toast } from "@/composables/useToast"
+import { recipeNameOptions } from "@modules/production/constants"
 
 const emit = defineEmits(["select"])
 
 const selectedOption = ref<string | null>(null)
 const selectedOptionLabel = computed(() => {
-  const selected = componentOptions.find((option) => option.value === selectedOption.value)
+  const selected = recipeNameOptions.find((option) => option.value === selectedOption.value)
   return selected ? selected.label : ""
 })
-
-const componentOptions = [
-  {
-    label: "Recipe",
-    value: "Recipe",
-    desc: "Common for food, beverage & craft production",
-    examples: "e.g. Bread loaf, juice blend, soap batch",
-    class: "border-warning-200 bg-warning-50",
-    image: ingredientPng,
-  },
-  {
-    label: "BOM (Bill of Materials)",
-    value: "BOM (Bill of Materials)",
-    desc: "Common for manufacturing & assembly",
-    examples: "e.g. Screws, steel sheets, packaging boxes",
-    class: "border-blue-200 bg-blue-50",
-    image: materialPng,
-  },
-  {
-    label: "Formula",
-    value: "Formula",
-    desc: "Common for chemicals & blends",
-    examples: "e.g. Base solution, additives, concentrates",
-    class: "border-purple-200 bg-purple-50",
-    image: componentPng,
-  },
-]
 
 const { mutate: updateStore, isPending } = useUpdateStoreDetails()
 const storeId = computed(() => useSettingsStore().storeDetails?.uid || "")
@@ -53,9 +24,8 @@ const handleSelect = () => {
   updateStore(
     { id: storeId.value, body: { recipe_terminology: selected.value } },
     {
-      onSuccess: (res) => {
+      onSuccess: () => {
         toast.success("Name saved successfully")
-        console.log("res", res)
         emit("select", selected)
       },
       onError: displayError,
@@ -86,7 +56,7 @@ const handleSelect = () => {
     <!-- option with radio -->
     <div class="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
       <div
-        v-for="option in componentOptions"
+        v-for="option in recipeNameOptions"
         :key="option.value"
         @click="selectedOption = option.value"
         :class="[
