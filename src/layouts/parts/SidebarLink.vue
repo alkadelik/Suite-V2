@@ -36,5 +36,8 @@ const emit = defineEmits<{ (e: "click"): void }>()
 const route = useRoute()
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
-const isActive = computed(() => route.path === props.to)
+const isActive = computed(() => {
+  if (!props.to) return false
+  return route.path === props.to || route.path.startsWith(props.to + "/")
+})
 </script>
