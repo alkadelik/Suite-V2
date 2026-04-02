@@ -226,9 +226,8 @@ const productionItems = computed(() => {
   const recipeLabel = useProductionStore().recipeLabel || "Recipes"
   return [
     { icon: "box", label: componentLabel || "Raw materials", to: "/raw-materials" },
-    { icon: "recipe-board", label: recipeLabel || "Recipes", to: "/recipes" },
-    { icon: "recipe-board", label: "Production run", to: "/production-run" },
-    // Add production-related items here when needed
+    { icon: "box", label: recipeLabel || "Recipes", to: "/recipes" },
+    { icon: "box", label: "Production run", to: "/production-run" },
   ]
 })
 
@@ -240,7 +239,6 @@ const reportsItems = computed(() => [
 ])
 
 const storeDetails = computed(() => useSettingsStore().storeDetails)
-
 const activeLocation = computed(() => useSettingsStore().activeLocation)
 
 // Auto-expand the group containing the current active route

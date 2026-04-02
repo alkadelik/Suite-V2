@@ -21,6 +21,7 @@ const storeId = computed(() => useSettingsStore().storeDetails?.uid || "")
 
 const handleSelect = () => {
   const selected = { label: selectedOptionLabel.value, value: selectedOption.value! }
+  console.log("Selected option:", selected)
   updateStore(
     { id: storeId.value, body: { recipe_terminology: selected.value } },
     {
@@ -36,7 +37,7 @@ const handleSelect = () => {
 
 <template>
   <div
-    class="flex min-h-[80vh] flex-col items-center justify-center pb-6 md:rounded-3xl md:bg-white md:pb-0 md:shadow-xs"
+    class="flex min-h-[80vh] flex-col items-center justify-center p-4 pb-6 md:rounded-3xl md:bg-white md:pb-0 md:shadow-xs"
   >
     <div class="mx-auto max-w-2xl text-center">
       <h2 class="text-core-900 mb-3 text-xl font-semibold md:text-2xl">
@@ -49,7 +50,7 @@ const handleSelect = () => {
       </p>
 
       <p class="text-core-700 mt-4 text-sm md:text-base">
-        "What would you like us to call it in your workspace?”
+        What would you like us to call it in your workspace?
       </p>
     </div>
 
