@@ -33,10 +33,10 @@ const isLoading = computed(() => props.loading)
 <template>
   <div
     :class="[
-      'rounded-xl border lg:shadow',
+      'rounded-xl border',
       variant === 'alt'
         ? 'border-primary-200 bg-primary-25 p-4'
-        : 'border-primary-200 bg-primary-25 p-3 pb-2 lg:border-0 lg:bg-white lg:p-5 lg:pb-3',
+        : 'border-primary-200 bg-primary-25 p-3 pb-2 lg:border-gray-300 lg:bg-white lg:p-5 lg:pb-3',
     ]"
   >
     <!-- Loading skeleton -->
@@ -74,7 +74,8 @@ const isLoading = computed(() => props.loading)
       <div :class="['flex gap-2', 'flex-col overflow-hidden md:flex-row md:items-center']">
         <div
           :class="{
-            'flex flex-1 flex-col gap-2 md:flex-row md:flex-wrap md:items-center md:gap-4': true,
+            'flex flex-1 flex-col gap-2 md:gap-4': true,
+            'md:flex-row md:items-center': stat.percentage !== undefined && variant !== 'alt',
           }"
         >
           <span
@@ -92,13 +93,13 @@ const isLoading = computed(() => props.loading)
           />
 
           <!-- label -->
-          <h3 class="!font-outfit text-core-600 text-sm whitespace-nowrap md:text-base">
+          <h3 class="!font-outfit text-core-600 line-clamp-1 text-sm md:text-base">
             {{ stat.label }}
           </h3>
 
           <div
             v-if="stat.percentage && variant !== 'alt'"
-            class="hidden items-center gap-1 lg:inline-flex"
+            class="ml-auto hidden items-center gap-1 lg:inline-flex"
             :class="stat.percentage > 0 ? 'text-success-600' : 'text-error-600'"
           >
             <Icon

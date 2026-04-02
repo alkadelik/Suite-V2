@@ -212,7 +212,9 @@ const getMenuAction = (item: PopupEvent) => {
     </div>
 
     <EmptyState
-      v-if="!popupEvents?.count && !status && !searchQuery && !debouncedSearch"
+      v-if="
+        !popupEvents?.count && !status && !searchQuery && !debouncedSearch && !activeFilterCount
+      "
       title="You don't have any popup yet!"
       description="Create a popup event."
       action-label="Create a popup event"
@@ -271,7 +273,7 @@ const getMenuAction = (item: PopupEvent) => {
           :empty-state="{
             title: 'No Popup Found',
             description:
-              searchQuery || status
+              searchQuery || status || activeFilterCount
                 ? 'Try adjusting your filters or search query'
                 : 'You don\'t have any popup yet. Create a popup event to get started.',
           }"
@@ -282,12 +284,12 @@ const getMenuAction = (item: PopupEvent) => {
               <div class="h-1.5 w-16 rounded-full bg-gray-200">
                 <div
                   class="bg-primary-600 h-1.5 rounded-full"
-                  :style="`width: ${((item.items_sold_count || 0) / (item.products_count || 1)) * 100}%`"
+                  :style="`width: ${((item.total_orders || 0) / (item.products_count || 1)) * 100}%`"
                 ></div>
               </div>
               <span class="flex flex-shrink-0 break-keep">
                 {{
-                  `${parseInt(String(((item.items_sold_count || 0) / (item.products_count || 1)) * 100))}%`
+                  `${parseInt(String(((item.total_orders || 0) / (item.products_count || 1)) * 100))}%`
                 }}
               </span>
             </div>

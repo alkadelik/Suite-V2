@@ -24,11 +24,11 @@ import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 import { onInvalidSubmit } from "@/utils/validations"
 import { TExpense } from "../types"
-import { useSettingsStore } from "@modules/settings/store"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 
 const props = defineProps<{ open: boolean; expense?: TExpense | null }>()
 const emit = defineEmits(["close", "refresh"])
-const currency = computed(() => useSettingsStore().storeDetails?.currency || "NGN")
+const { currency } = useFormatCurrency()
 
 const expenseStore = useExpenseStore()
 

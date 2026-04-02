@@ -27,10 +27,12 @@ import ExpenseCard from "../components/ExpenseCard.vue"
 import Icon from "@components/Icon.vue"
 import ExpenseDetailsDrawer from "../components/ExpenseDetailsDrawer.vue"
 import StatCard from "@components/StatCard.vue"
-import { formatCurrency, truncateCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
 import ExpenseStackedBarChart from "../components/ExpenseStackedBarChart.vue"
 import ExpenseFiltersDrawer from "../components/ExpenseFiltersDrawer.vue"
+
+const { format, truncate } = useFormatCurrency()
 
 const openCreate = ref(false)
 const openDelete = ref(false)
@@ -67,24 +69,25 @@ const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 const expenseMetrics = computed(() => {
   const stat = expenseDashboard?.value
 
-  const biggestExpenseCategory =
-    stat?.category_breakdown?.reduce((prev, current) =>
-      current.total_amount > prev.total_amount ? current : prev,
-    ) || null
+  const biggestExpenseCategory = stat?.category_breakdown?.length
+    ? stat.category_breakdown.reduce((prev, current) =>
+        current.total_amount > prev.total_amount ? current : prev,
+      )
+    : null
 
   return [
     {
       label: "Total Expenses",
       value: isMobile.value
-        ? truncateCurrency(stat?.current.total_amount || 0)
-        : formatCurrency(stat?.current.total_amount || 0),
+        ? truncate(stat?.current.total_amount || 0)
+        : format(stat?.current.total_amount || 0),
       icon: "wallet-money",
       iconClass: "md:text-green-700",
-      percentage: stat?.change.total_amount_pct || undefined,
+      // percentage: stat?.change.total_amount_pct || undefined,
     },
     {
-      label: isMobile.value ? "Biggest Category" : "Biggest Expense Category",
-      value: formatCurrency(biggestExpenseCategory?.total_amount || 0),
+      label: isMobile.value ? "Biggest Category" : "Largest Category",
+      value: format(biggestExpenseCategory?.total_amount || 0),
       chip: biggestExpenseCategory ? biggestExpenseCategory.category_name : "N/A",
       chipColor: "blue",
       icon: "moneys-solid",
@@ -256,15 +259,12 @@ watch(
 </script>
 
 <template>
-  <div class="px-3 pb-6">
+  <div class="px-3 pt-4 pb-6">
     <PageHeader title="Expenses" :count="expenses?.count" count-label="records" />
 
-    <div class="flex flex-col gap-8">
+    <div class="flex flex-col gap-6">
       <div class="hidden lg:block">
-        <SectionHeader
-          title="Expenses"
-          :subtitle="`Review your expenses for ${currentMonthLabel}.`"
-        />
+        <SectionHeader title="Expenses" subtitle="Review your expenses." />
       </div>
 
       <EmptyState
@@ -288,10 +288,19 @@ watch(
       </EmptyState>
 
       <section v-else class="flex flex-col gap-5 lg:gap-8">
-        <div v-if="!isMobile" class="rounded-xl border border-gray-200 bg-white p-4">
-          <h3 class="text-core-800 mb-4 text-base font-medium">
-            Summary for {{ currentMonthLabel }}
-          </h3>
+        <div
+          v-if="!isMobile && expenseDashboard?.current.total_amount"
+          class="rounded-xl border border-gray-200 bg-white p-4"
+        >
+          <div class="mb-4">
+            <h3 class="text-core-800 flex items-center gap-2 text-base font-medium">
+              Summary <Chip :label="currentMonthLabel" color="blue" />
+            </h3>
+            <p class="text-core-600 mt-1 text-sm">
+              <span> See <b class="text-core-800">Menu > Reports</b> for previous months </span>
+            </p>
+          </div>
+
           <div class="grid-cols-4 gap-4 lg:grid">
             <StatCard
               v-for="item in expenseMetrics"
@@ -307,7 +316,7 @@ watch(
           </div>
         </div>
 
-        <div v-else>
+        <div v-if="isMobile && expenseDashboard?.current.total_amount">
           <ExpenseStackedBarChart
             :total-expense="expenseDashboard?.current.total_amount || 0"
             :category_breakdown="expenseDashboard?.category_breakdown"
@@ -414,16 +423,20 @@ watch(
               </div>
             </template>
             <template #cell:category_name="{ item }">
-              <Chip :label="item.category_name" color="purple" icon="tag" />
+              <div class="max-w-48">
+                <Chip :label="item.category_name" color="purple" icon="tag" />
+              </div>
             </template>
             <template #cell:sub_category_name="{ item }">
-              <Chip
-                v-if="item.sub_category_name"
-                :label="item.sub_category_name"
-                color="pink"
-                icon="tag"
-              />
-              <span v-else>---</span>
+              <div class="max-w-48">
+                <Chip
+                  v-if="item.sub_category_name"
+                  :label="item.sub_category_name"
+                  color="pink"
+                  icon="tag"
+                />
+                <span v-else>---</span>
+              </div>
             </template>
             <template #cell:status="{ item }">
               <Chip

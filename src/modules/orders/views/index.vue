@@ -522,7 +522,13 @@ const handleDetailsMarkAsPaid = () => {
     </div>
 
     <EmptyState
-      v-if="!orders?.results?.length && status === 'all' && !debouncedSearch && !isPending"
+      v-if="
+        !orders?.results?.length &&
+        status === 'all' &&
+        !debouncedSearch &&
+        !isPending &&
+        !activeFilterCount
+      "
       title="No Orders Yet"
       description="You haven't received any orders. Once you start receiving orders, they will appear here."
       action-label="Add an order"
@@ -596,7 +602,7 @@ const handleDetailsMarkAsPaid = () => {
           :empty-state="{
             title: 'No Order Found',
             description:
-              searchQuery || status !== 'all'
+              searchQuery || status !== 'all' || activeFilterCount
                 ? 'Try adjusting your filters or search query'
                 : `You haven't received any orders. Once you start receiving orders, they will appear here.`,
           }"

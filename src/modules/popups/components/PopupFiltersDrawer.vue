@@ -2,7 +2,7 @@
 import AppButton from "@components/AppButton.vue"
 import Drawer from "@components/Drawer.vue"
 import Modal from "@components/Modal.vue"
-import RadioInputField from "@components/form/RadioInputField.vue"
+// import RadioInputField from "@components/form/RadioInputField.vue"
 import TextField from "@components/form/TextField.vue"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, ref } from "vue"
@@ -15,18 +15,18 @@ const emit = defineEmits<{
 
 const isMobile = computed(() => useMediaQuery("(max-width: 1028px)").value)
 
-const ORGANIZER_EVENT_OPTIONS = [
-  { value: "true", label: "Yes" },
-  { value: "false", label: "No" },
-]
+// const ORGANIZER_EVENT_OPTIONS = [
+//   { value: "true", label: "Eventful Only" },
+//   { value: "false", label: "Popups Only" },
+// ]
 
 const hasOrganizerEvent = ref<string | null>(null)
 const startDate = ref("")
 const endDate = ref("")
 
-const toggleOrganizerEvent = (value: string) => {
-  hasOrganizerEvent.value = hasOrganizerEvent.value === value ? null : value
-}
+// const toggleOrganizerEvent = (value: string) => {
+//   hasOrganizerEvent.value = hasOrganizerEvent.value === value ? null : value
+// }
 
 const activeFilterCount = computed(() => {
   let count = 0
@@ -39,8 +39,8 @@ const activeFilterCount = computed(() => {
 const applyFilters = () => {
   const filters: Record<string, string> = {}
   if (hasOrganizerEvent.value !== null) filters.has_organizer_event = hasOrganizerEvent.value
-  if (startDate.value) filters.start_date = startDate.value
-  if (endDate.value) filters.end_date = endDate.value
+  if (endDate.value) filters.start_date_before = endDate.value
+  if (startDate.value) filters.start_date_after = startDate.value
   emit("apply", filters)
   emit("close")
 }
@@ -65,7 +65,7 @@ const clearFilters = () => {
   >
     <div class="space-y-6">
       <!-- Organizer Event -->
-      <div>
+      <!-- <div>
         <h3 class="text-core-700 mb-3 text-sm font-semibold">Organizer Event?</h3>
         <RadioInputField
           :model-value="hasOrganizerEvent ?? ''"
@@ -73,16 +73,16 @@ const clearFilters = () => {
           options-container-class="grid! grid-cols-2!"
           @update:model-value="(v) => toggleOrganizerEvent(v as string)"
         />
-      </div>
+      </div> -->
 
       <div class="border-b border-gray-100" />
 
       <!-- Date Range -->
       <div>
-        <h3 class="text-core-700 mb-3 text-sm font-semibold">Date Range</h3>
+        <h3 class="text-core-700 mb-3 text-sm font-semibold">Start Date</h3>
         <div class="grid grid-cols-2 gap-3">
-          <TextField v-model="startDate" label="Start Date" type="date" left-icon="calendar" />
-          <TextField v-model="endDate" label="End Date" type="date" left-icon="calendar" />
+          <TextField v-model="startDate" label="From" type="date" left-icon="calendar" />
+          <TextField v-model="endDate" label="To" type="date" left-icon="calendar" />
         </div>
       </div>
     </div>
