@@ -323,8 +323,10 @@ const goNext = async () => {
     }
     if (!selectedRecipeUid.value || !quantityProduced.value) return
     isSubmitting.value = true
+    console.log("Selected recipe", selectedRecipe.value)
     try {
-      const variantUid = Object.values(selectedVariantsByGroup.value)[0]
+      const variantUid =
+        selectedRecipe.value?.output_variant_uid ?? Object.values(selectedVariantsByGroup.value)[0]
       const payload: ProdRunCreatePayload = {
         recipe_uid: selectedRecipeUid.value,
         ...(variantUid ? { output_variant_uid: variantUid } : {}),
@@ -598,6 +600,7 @@ const onFinalize = async () => {
         </div>
         <p class="mb-6 text-sm text-gray-500">Basic run details</p>
         <div class="space-y-5">
+          {{ selectedRecipe }}
           <!-- Output Item -->
           <div>
             <label class="mb-1.5 block text-xs font-medium text-gray-700">

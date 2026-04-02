@@ -105,8 +105,8 @@ const computedParams = computed(() => {
   if (debouncedSearch.value) params.search = debouncedSearch.value
   params.offset = ((page.value - 1) * itemsPerPage.value).toString()
   params.limit = itemsPerPage.value.toString()
-  params.date_after = currentMonthRange.value.date_after
-  params.date_before = currentMonthRange.value.date_before
+  // params.date_after = currentMonthRange.value.date_after
+  // params.date_before = currentMonthRange.value.date_before
   return params
 })
 

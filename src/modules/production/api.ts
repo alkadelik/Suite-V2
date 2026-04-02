@@ -115,6 +115,7 @@ export type TRecipes = {
   uid: string
   output_product?: string | null
   output_raw_material?: string | null
+  output_variant?: string | null
   output_item_name: string
   output_unit?: string
   item_type: ItemType
@@ -664,6 +665,7 @@ export type DrawerRecipe = {
   code: string
   output_quantity: number
   output_unit: string
+  output_variant_uid?: string | null
 }
 
 export type DrawerIngredientRow = {
@@ -714,6 +716,7 @@ export async function fetchDrawerRecipesForItem(itemUid: string): Promise<Drawer
       code: `#RCP-${String(r.uid).slice(0, 7).toUpperCase()}`,
       output_quantity: Number(r.output_quantity),
       output_unit: String(r.output_unit ?? ""),
+      output_variant_uid: r.output_variant ?? null,
     }))
 }
 

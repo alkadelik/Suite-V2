@@ -59,8 +59,16 @@ export const RECIPES_COLUMN: TableColumn<TRecipes>[] = [
     accessor: "updated_at",
     cell: ({ item }) => formatDate(item.updated_at as string),
   },
-  { header: "Last Cost", accessor: "last_cost" },
-  { header: "Avg. Cost", accessor: "average_cost" },
+  {
+    header: "Last Cost",
+    accessor: "last_cost",
+    cell: ({ item }) => formatCurrency(Number(item.last_cost)),
+  },
+  {
+    header: "Avg. Cost",
+    accessor: "average_cost",
+    cell: ({ item }) => formatCurrency(Number(item.average_cost)),
+  },
   { header: "Actions", accessor: "actions" },
 ]
 
