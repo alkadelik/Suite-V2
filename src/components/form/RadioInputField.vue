@@ -7,9 +7,17 @@
     <p v-if="hint" class="text-core-600 text-xs">{{ hint }}</p>
 
     <div
-      :class="['flex gap-4', props.orientation === 'vertical' ? '!flex-col' : 'flex-row flex-wrap']"
+      :class="[
+        'flex gap-4',
+        props.orientation === 'vertical' ? '!flex-col' : 'flex-row flex-wrap',
+        props.optionsContainerClass,
+      ]"
     >
-      <div v-for="option in options" :key="String(option.value)" class="flex flex-1">
+      <div
+        v-for="option in options"
+        :key="String(option.value)"
+        :class="['flex flex-1', props.optionItemClass]"
+      >
         <input
           :id="`${label}-${String(option.value)}`"
           type="radio"
@@ -70,7 +78,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, HTMLAttributes } from "vue"
 
 type RadioOptionValue = string | boolean | object
 
@@ -96,6 +104,10 @@ interface RadioInputFieldProps {
   /** Background style for inactive options: "default" (gray-50) or "white" */
   variant?: "default" | "white"
   showRadio?: boolean
+  /** Custom classes for options container */
+  optionsContainerClass?: HTMLAttributes["class"]
+  /** Custom classes for each option item */
+  optionItemClass?: HTMLAttributes["class"]
 }
 
 const props = withDefaults(defineProps<RadioInputFieldProps>(), {

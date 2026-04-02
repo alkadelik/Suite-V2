@@ -25,6 +25,7 @@ import PopupCreatedSuccessModal from "../components/PopupCreatedSuccessModal.vue
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
 import ClosePopupModal from "../components/ClosePopupModal.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
+import PopupFiltersDrawer from "../components/PopupFiltersDrawer.vue"
 
 const TABS = [
   { title: "All", key: "" },
@@ -46,6 +47,13 @@ const openClose = ref(false)
 const selectedPopup = ref<PopupEvent | null>(null)
 
 const isMobile = useMediaQuery("(max-width: 768px)")
+const activeFilters = ref<Record<string, string>>({})
+
+const activeFilterCount = computed(() => Object.keys(activeFilters.value).length)
+
+const handleApplyFilters = (filters: Record<string, string>) => {
+  activeFilters.value = filters
+}
 
 const handleAction = (action: string, item: PopupEvent) => {
   selectedPopup.value = item
@@ -58,6 +66,7 @@ const computedFilters = computed(() => {
   const filters: Record<string, string> = {}
   if (status.value && status.value !== "all") filters.status = status.value
   if (debouncedSearch.value) filters.search = debouncedSearch.value
+  Object.assign(filters, activeFilters.value)
   return filters
 })
 const { data: popupEvents, isPending, isFetching, refetch } = useGetPopupEvents(computedFilters)
@@ -235,11 +244,11 @@ const getMenuAction = (item: PopupEvent) => {
 
             <AppButton
               icon="filter-lines"
-              variant="outlined"
               size="sm"
               color="alt"
-              class="flex-shrink-0"
+              class="relative flex-shrink-0"
               :label="isMobile ? '' : 'Filter'"
+              :badge="activeFilterCount ? activeFilterCount : ''"
               @click="showFilter = true"
             />
 
@@ -382,6 +391,12 @@ const getMenuAction = (item: PopupEvent) => {
       :event="selectedPopup"
       @refresh="refetch"
       :has-full-details="false"
+    />
+
+    <PopupFiltersDrawer
+      :open="showFilter"
+      @close="showFilter = false"
+      @apply="handleApplyFilters"
     />
   </div>
 </template>

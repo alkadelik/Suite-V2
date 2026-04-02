@@ -30,6 +30,7 @@ import StatCard from "@components/StatCard.vue"
 import { formatCurrency, truncateCurrency } from "@/utils/format-currency"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
 import ExpenseStackedBarChart from "../components/ExpenseStackedBarChart.vue"
+import ExpenseFiltersDrawer from "../components/ExpenseFiltersDrawer.vue"
 
 const openCreate = ref(false)
 const openDelete = ref(false)
@@ -57,7 +58,7 @@ const statsParams = computed(() => currentMonthRange.value)
 
 const {
   data: expenseDashboard,
-  isLoading: isLoadingStats,
+  isPending: isLoadingStats,
   refetch: refetchStats,
 } = useGetExpenseDashboard(statsParams)
 
@@ -66,9 +67,10 @@ const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 const expenseMetrics = computed(() => {
   const stat = expenseDashboard?.value
 
-  const biggestExpenseCategory = stat?.category_breakdown.reduce((prev, current) =>
-    current.total_amount > prev.total_amount ? current : prev,
-  )
+  const biggestExpenseCategory =
+    stat?.category_breakdown?.reduce((prev, current) =>
+      current.total_amount > prev.total_amount ? current : prev,
+    ) || null
 
   return [
     {
@@ -78,9 +80,7 @@ const expenseMetrics = computed(() => {
         : formatCurrency(stat?.current.total_amount || 0),
       icon: "wallet-money",
       iconClass: "md:text-green-700",
-      percentage: stat?.change.total_amount_pct,
-      // chip: `${stat?.current.expense_count || 0} records`,
-      // chipColor: "primary",
+      percentage: stat?.change.total_amount_pct || undefined,
     },
     {
       label: isMobile.value ? "Biggest Category" : "Biggest Expense Category",
@@ -99,14 +99,21 @@ const page = ref(1)
 const itemsPerPage = ref(10)
 const searchQuery = ref("")
 const debouncedSearch = useDebouncedRef(searchQuery, 750)
+const activeFilters = ref<Record<string, string>>({})
+
+const activeFilterCount = computed(() => Object.keys(activeFilters.value).length)
+
+const handleApplyFilters = (filters: Record<string, string>) => {
+  activeFilters.value = filters
+  page.value = 1
+}
 
 const computedParams = computed(() => {
   const params: Record<string, string> = {}
   if (debouncedSearch.value) params.search = debouncedSearch.value
   params.offset = ((page.value - 1) * itemsPerPage.value).toString()
   params.limit = itemsPerPage.value.toString()
-  // params.date_after = currentMonthRange.value.date_after
-  // params.date_before = currentMonthRange.value.date_before
+  Object.assign(params, activeFilters.value)
   return params
 })
 
@@ -261,9 +268,11 @@ watch(
       </div>
 
       <EmptyState
-        v-if="!expenses?.results?.length && !debouncedSearch && !isPending"
-        :title="`No expenses for ${currentMonthLabel}`"
-        :description="`You have no expenses recorded for ${currentMonthLabel}. They will be automatically added as they come in, or you can add one manually.`"
+        v-if="
+          !expenses?.results?.length && !debouncedSearch && !isPending && activeFilterCount === 0
+        "
+        :title="`No expenses recorded yet`"
+        :description="`Your expenses will be automatically added as they come in. You can also add one manually to get started.`"
         action-label="Add an expense"
         action-icon="add"
         :loading="isPending"
@@ -279,18 +288,23 @@ watch(
       </EmptyState>
 
       <section v-else class="flex flex-col gap-5 lg:gap-8">
-        <div v-if="!isMobile" class="grid-cols-4 gap-4 lg:grid">
-          <StatCard
-            v-for="item in expenseMetrics"
-            :key="item.label"
-            :stat="item"
-            :loading="isLoadingStats"
-          />
-          <ExpenseStackedBarChart
-            class="col-span-2"
-            show-label
-            :category_breakdown="expenseDashboard?.category_breakdown"
-          />
+        <div v-if="!isMobile" class="rounded-xl border border-gray-200 bg-white p-4">
+          <h3 class="text-core-800 mb-4 text-base font-medium">
+            Summary for {{ currentMonthLabel }}
+          </h3>
+          <div class="grid-cols-4 gap-4 lg:grid">
+            <StatCard
+              v-for="item in expenseMetrics"
+              :key="item.label"
+              :stat="item"
+              :loading="isLoadingStats"
+            />
+            <ExpenseStackedBarChart
+              class="col-span-2"
+              show-label
+              :category_breakdown="expenseDashboard?.category_breakdown"
+            />
+          </div>
         </div>
 
         <div v-else>
@@ -321,8 +335,9 @@ watch(
                 icon="filter-lines"
                 size="sm"
                 color="alt"
-                class="flex-shrink-0"
+                class="relative flex-shrink-0"
                 :label="isMobile ? '' : 'Filter'"
+                :badge="activeFilterCount ? activeFilterCount : ''"
                 @click="showFilter = true"
               />
 
@@ -343,9 +358,10 @@ watch(
             :enable-row-selection="false"
             :empty-state="{
               title: 'No Expense Found',
-              description: searchQuery
-                ? 'Try adjusting your filters or search query'
-                : `Your expenses will be automatically added as they come in. You can also add one manually to get started.`,
+              description:
+                searchQuery || activeFilterCount
+                  ? 'Try adjusting your filters or search query'
+                  : `Your expenses will be automatically added as they come in. You can also add one manually to get started.`,
             }"
             :row-class="
               (row) => (row.status === 'void' ? 'opacity-70! bg-gray-100! grayscale!' : '')
@@ -518,5 +534,11 @@ watch(
         />
       </template>
     </ConfirmationModal>
+
+    <ExpenseFiltersDrawer
+      :open="showFilter"
+      @close="showFilter = false"
+      @apply="handleApplyFilters"
+    />
   </div>
 </template>

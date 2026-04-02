@@ -26,6 +26,8 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), { variant: "main" })
 const chipColor = computed(() => (props.stat.chipColor as TChipColor) || "blue")
+
+const isLoading = computed(() => props.loading)
 </script>
 
 <template>
@@ -38,7 +40,7 @@ const chipColor = computed(() => (props.stat.chipColor as TChipColor) || "blue")
     ]"
   >
     <!-- Loading skeleton -->
-    <div v-if="loading" class="animate-pulse">
+    <div v-if="isLoading" class="animate-pulse">
       <div :class="['flex gap-2', 'flex-row items-center']">
         <div :class="{ 'flex items-center justify-between': true }">
           <!-- Icon skeleton -->
@@ -69,9 +71,13 @@ const chipColor = computed(() => (props.stat.chipColor as TChipColor) || "blue")
 
     <template v-else>
       <!-- title -->
-      <div :class="['flex gap-2', 'flex-col md:flex-row md:items-center']">
-        <div :class="{ 'flex flex-1 flex-col gap-2 md:flex-row md:items-center md:gap-4': true }">
-          <div
+      <div :class="['flex gap-2', 'flex-col overflow-hidden md:flex-row md:items-center']">
+        <div
+          :class="{
+            'flex flex-1 flex-col gap-2 md:flex-row md:flex-wrap md:items-center md:gap-4': true,
+          }"
+        >
+          <span
             :class="[
               'size-10 items-center justify-center rounded-xl',
               variant === 'alt' ? 'bg-core-200 flex' : 'hidden bg-gray-100 lg:flex',
@@ -79,14 +85,14 @@ const chipColor = computed(() => (props.stat.chipColor as TChipColor) || "blue")
             ]"
           >
             <Icon :name="stat.icon" size="24" />
-          </div>
+          </span>
           <span
             :class="variant === 'alt' ? 'hidden' : 'inline lg:hidden'"
             class="border-primary-600 w-8 rounded-full border-t-2"
           />
 
-          <!-- percentage -->
-          <h3 class="!font-outfit text-core-600 line-clamp-1 flex-1 text-sm md:text-base">
+          <!-- label -->
+          <h3 class="!font-outfit text-core-600 text-sm whitespace-nowrap md:text-base">
             {{ stat.label }}
           </h3>
 
