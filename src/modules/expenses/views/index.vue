@@ -38,11 +38,28 @@ const openMarkPaid = ref(false)
 const openDetail = ref(false)
 const selectedExpense = ref<TExpense | null>(null)
 
+const currentMonthRange = computed(() => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = now.getMonth()
+  const pad = (n: number) => String(n).padStart(2, "0")
+  const dateAfter = `${year}-${pad(month + 1)}-01`
+  const lastDay = new Date(year, month + 1, 0).getDate()
+  const dateBefore = `${year}-${pad(month + 1)}-${pad(lastDay)}`
+  return { date_after: dateAfter, date_before: dateBefore }
+})
+
+const currentMonthLabel = computed(() =>
+  new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+)
+
+const statsParams = computed(() => currentMonthRange.value)
+
 const {
   data: expenseDashboard,
   isLoading: isLoadingStats,
   refetch: refetchStats,
-} = useGetExpenseDashboard()
+} = useGetExpenseDashboard(statsParams)
 
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 
@@ -88,6 +105,8 @@ const computedParams = computed(() => {
   if (debouncedSearch.value) params.search = debouncedSearch.value
   params.offset = ((page.value - 1) * itemsPerPage.value).toString()
   params.limit = itemsPerPage.value.toString()
+  params.date_after = currentMonthRange.value.date_after
+  params.date_before = currentMonthRange.value.date_before
   return params
 })
 
@@ -235,13 +254,16 @@ watch(
 
     <div class="flex flex-col gap-8">
       <div class="hidden lg:block">
-        <SectionHeader title="Expenses" subtitle="Review your daily performance report." />
+        <SectionHeader
+          title="Expenses"
+          :subtitle="`Review your expenses for ${currentMonthLabel}.`"
+        />
       </div>
 
       <EmptyState
         v-if="!expenses?.results?.length && !debouncedSearch && !isPending"
-        title="You don’t have any expense yet!"
-        description="Your expenses will be automatically added as they come in. You can also add one manually to get started."
+        :title="`No expenses for ${currentMonthLabel}`"
+        :description="`You have no expenses recorded for ${currentMonthLabel}. They will be automatically added as they come in, or you can add one manually.`"
         action-label="Add an expense"
         action-icon="add"
         :loading="isPending"
