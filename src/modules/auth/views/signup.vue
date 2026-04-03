@@ -1,123 +1,76 @@
 <template>
   <div class="text-core-800">
-    <div class="mb-4">
-      <h3 class="mb-3.5 text-3xl font-medium">Let's get started</h3>
-      <p class="text-core-600">Create your free Leyyow account and get your store online today.</p>
-    </div>
+    <SectionHeader
+      title="Let's get started"
+      subtitle="Create your free Leyyow account and get your store online today."
+      class="mb-4"
+    />
 
-    <Form
-      v-slot="{ meta }"
-      :validation-schema="validationSchema"
-      @submit="onSubmit"
-      @invalid-submit="onInvalidSubmit"
-    >
-      <div class="flex flex-col gap-8">
-        <div class="grid gap-3 md:grid-cols-2">
-          <Field v-slot="{ field, errors: fieldErrors }" name="first_name" validate-on-model-update>
-            <TextInput
-              v-bind="field"
-              label="First Name"
-              placeholder="e.g. John"
-              name="first_name"
-              required
-              :error="fieldErrors[0]"
-            />
-          </Field>
-
-          <Field v-slot="{ field, errors: fieldErrors }" name="last_name" validate-on-model-update>
-            <TextInput
-              v-bind="field"
-              label="Last Name"
-              placeholder="e.g. Doe"
-              name="last_name"
-              required
-              :error="fieldErrors[0]"
-            />
-          </Field>
-        </div>
-
-        <Field v-slot="{ field, errors: fieldErrors }" name="email" validate-on-model-update>
-          <TextInput
-            v-bind="field"
-            type="email"
-            label="Email"
-            placeholder="example@gmail.com"
-            name="email"
-            required
-            :error="fieldErrors[0]"
-          />
-        </Field>
-
-        <Field
-          v-slot="{ field, errors: fieldErrors, value }"
-          name="password"
-          validate-on-model-update
-        >
-          <div>
-            <TextInput
-              v-bind="field"
-              type="password"
-              label="Password"
-              placeholder="Enter password"
-              name="password"
-              required
-              :error="fieldErrors[0]"
-              @update:model-value="currentPassword = $event"
-            />
-            <PasswordStrength v-if="value" :model-value="value" />
-          </div>
-        </Field>
-
-        <Field
-          v-slot="{ field, errors: fieldErrors }"
-          name="confirm_password"
-          validate-on-model-update
-        >
-          <TextInput
-            v-bind="field"
-            type="password"
-            label="Confirm Password"
-            placeholder="Re-enter password"
-            name="confirm_password"
-            required
-            :error="fieldErrors[0]"
-          />
-        </Field>
-        <p class="mt-2 text-center text-sm">
-          By signing up, I agree to the Leyyow
-          <a
-            href="https://leyyow.notion.site/Refund-policy-162f3934f3148085a337fc0d3cbffb99?pvs=4"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-primary-600"
-          >
-            Privacy Policy
-          </a>
-          and
-          <a
-            href="https://leyyow.notion.site/Refund-policy-162f3934f3148085a337fc0d3cbffb99?pvs=4"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-primary-600"
-          >
-            Terms of Services
-          </a>
-        </p>
-
-        <AppButton
-          type="submit"
-          :loading="loading"
-          label="Create account"
-          class="w-full"
-          :disabled="!meta.valid"
-        />
+    <AppForm :schema="validationSchema" @submit="onSubmit" v-slot="{ meta }" class="space-y-5">
+      <div class="grid grid-cols-2 gap-5">
+        <FormField name="first_name" label="First Name" placeholder="e.g. John" required />
+        <FormField name="last_name" label="Last Name" placeholder="e.g. Doe" />
       </div>
-    </Form>
+
+      <FormField name="email" label="Email Address" placeholder="example@gmail.com" required />
+
+      <div>
+        <FormField
+          name="password"
+          label="Password"
+          type="password"
+          placeholder="Enter password"
+          required
+          @update:model-value="currentPassword = $event"
+        />
+        <PasswordStrength v-if="currentPassword" :model-value="currentPassword" />
+      </div>
+
+      <FormField
+        type="password"
+        label="Confirm Password"
+        placeholder="Re-enter password"
+        name="confirm_password"
+        required
+      />
+
+      <p class="text-center text-sm">
+        By signing up, I agree to the Leyyow
+        <a
+          href="https://leyyow.notion.site/Refund-policy-162f3934f3148085a337fc0d3cbffb99?pvs=4"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-primary-600"
+        >
+          Privacy Policy
+        </a>
+        and
+        <a
+          href="https://leyyow.notion.site/Refund-policy-162f3934f3148085a337fc0d3cbffb99?pvs=4"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-primary-600"
+        >
+          Terms of Services
+        </a>
+      </p>
+
+      <AppButton
+        type="submit"
+        :loading="isPending"
+        label="Create Account"
+        class="w-full"
+        :disabled="!meta.valid"
+      />
+    </AppForm>
 
     <div class="mt-5 pb-4">
       <p class="text-center text-sm font-normal text-gray-500">
         Already have an account?
-        <RouterLink to="/login" class="text-primary-600 text-sm font-semibold">
+        <RouterLink
+          :to="`/login${redirectStr}`"
+          class="text-primary-600 text-sm font-semibold transition-colors duration-200 hover:underline"
+        >
           Sign In
         </RouterLink>
       </p>
@@ -126,26 +79,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import { useRouter } from "vue-router"
-import AppButton from "@/components/common/app-button.vue"
-import TextInput from "@/components/common/text-input.vue"
-import PasswordStrength from "@/components/others/password-strength.vue"
-import { Form, Field } from "vee-validate"
+import PasswordStrength from "@components/form/PasswordStrength.vue"
 import * as yup from "yup"
-import { onInvalidSubmit } from "@/utils/validations"
 import { passwordSchema } from "@/utils/validationSchemas"
 import { useRegister } from "../api"
-import { displayError, formatError } from "@/utils/error-handler"
+import { displayError } from "@/utils/error-handler"
 import { useAuthStore } from "../store"
-import { ILoginResponse } from "../types"
-import { toast } from "vue3-toastify"
+import { TSignupPayload } from "../types"
+import { toast } from "@/composables/useToast"
+import AppForm from "@components/form/AppForm.vue"
+import FormField from "@components/form/FormField.vue"
+import SectionHeader from "@components/SectionHeader.vue"
+import AppButton from "@components/AppButton.vue"
 
-const { mutate: signupFn, isPending: loading } = useRegister()
+const { mutate: signupFn, isPending } = useRegister()
 const authStore = useAuthStore()
 const router = useRouter()
 
-// Validation schema using yup
 const validationSchema = yup.object().shape({
   first_name: yup.string().required("First name is required"),
   last_name: yup.string(),
@@ -159,46 +111,23 @@ const validationSchema = yup.object().shape({
 
 const currentPassword = ref("")
 
-interface SignupFormValues {
-  first_name: string
-  last_name?: string
-  email: string
-  password: string
-  confirm_password: string
-}
+const redirectStr = computed(() =>
+  router.currentRoute.value.query.redirect
+    ? `?redirect=${router.currentRoute.value.query.redirect as string}`
+    : "",
+)
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const onSubmit = (values: Record<string, any>) => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { confirm_password, ...signupData } = values as SignupFormValues
-  // Remove confirm_password from signupData before sending to API
-  signupFn(signupData, {
-    onSuccess: (response: { data: { data: ILoginResponse } }) => {
-      const signupData = response.data.data
-      console.log("Signup successful", signupData)
+const onSubmit = (values: TSignupPayload) => {
+  signupFn(values, {
+    onSuccess: (res) => {
+      const { access, refresh, ...user } = res.data?.data || {}
+      authStore.setTokens({ accessToken: access, refreshToken: refresh })
+      authStore.setAuthUser({ ...user, email: values.email, store_slug: "" })
       toast.success("Signup successful!")
-      void router.push("/dashboard")
-      authStore.setTokens({
-        accessToken: signupData.access,
-        refreshToken: signupData.refresh,
-      })
-
-      authStore.setAuthUser({
-        avatar_url: signupData.avatar_url,
-        first_name: signupData.first_name,
-        last_name: signupData.last_name,
-        is_email_verified: signupData.is_email_verified,
-        assigned_locations: signupData.assigned_locations,
-        roles: signupData.roles,
-        subscription: signupData.subscription,
-      })
+      // check for redirect query param
+      router.push(`/confirm-email?email=${values.email}${redirectStr.value.replace("?", "&")}`)
     },
-    onError: (error) => {
-      displayError(error)
-      // or handle separately
-      const errorMsg = formatError(error)
-      console.error("Signup failed!!!", errorMsg)
-    },
+    onError: displayError,
   })
 }
 </script>

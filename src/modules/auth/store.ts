@@ -1,6 +1,7 @@
 import { defineStore } from "pinia"
 import { ref, computed } from "vue"
 import type { IUser, IAuthTokens } from "./types"
+import * as Sentry from "@sentry/vue"
 
 export const useAuthStore = defineStore(
   "auth",
@@ -16,7 +17,15 @@ export const useAuthStore = defineStore(
 
     // Actions
     const setAuthUser = (userData: IUser) => {
+      console.log("Setting auth user with:", userData)
       user.value = user.value ? { ...user.value, ...userData } : userData
+      console.log("Auth user is now:", user.value)
+    }
+
+    const updateAuthUser = (userData: Partial<IUser>) => {
+      if (user.value) {
+        user.value = { ...user.value, ...userData }
+      }
     }
 
     const setTokens = (tokens: IAuthTokens) => {
@@ -28,6 +37,25 @@ export const useAuthStore = defineStore(
       user.value = null
       accessToken.value = null
       refreshToken.value = null
+    }
+
+    const logout = (redirect?: boolean) => {
+      clearAuth()
+      // clear local storage - auth, settings, etc.
+      localStorage.removeItem("auth")
+      localStorage.removeItem("settings")
+      localStorage.removeItem("production")
+      localStorage.removeItem("expenses")
+      // clear sentry user context
+      Sentry.setUser(null)
+
+      // redirect user back to previous page or login page
+      if (redirect) {
+        const redirectPath = window.location.pathname + window.location.search
+        window.location.href = `/login?redirect=${encodeURIComponent(redirectPath)}`
+      } else {
+        window.location.href = "/login"
+      }
     }
 
     const setLoading = (loading: boolean) => {
@@ -46,15 +74,12 @@ export const useAuthStore = defineStore(
 
       // Actions
       setAuthUser,
+      updateAuthUser,
       setTokens,
       clearAuth,
       setLoading,
+      logout,
     }
   },
-  {
-    persist: {
-      storage: localStorage, // or sessionStorage if you prefer
-      paths: ["user", "accessToken", "refreshToken"], // only persist these
-    },
-  },
+  { persist: true },
 )

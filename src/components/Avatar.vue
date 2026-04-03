@@ -9,7 +9,7 @@
         v-if="url && !loading"
         :src="url"
         :alt="name"
-        :class="imageClasses"
+        :class="[imageClasses]"
         :style="{ height: `${sizeValue}px`, width: `${sizeValue}px` }"
         loading="lazy"
       />
@@ -20,7 +20,9 @@
 
     <div v-if="extraText" :class="textClasses" :style="maxWidth ? { maxWidth } : {}">
       <h4 :class="nameClasses">{{ name }}</h4>
-      <p :class="extraTextClasses">{{ extraText }}</p>
+      <p v-if="extraText && typeof extraText === 'string'" :class="extraTextClasses">
+        {{ extraText }}
+      </p>
     </div>
   </div>
 </template>
@@ -39,7 +41,7 @@ interface AvatarProps {
   /** User's name (required for alt text and initials) */
   name: string
   /** Additional text to display next to avatar */
-  extraText?: string
+  extraText?: string | boolean
   /** Size of the avatar - preset or custom number */
   size?: AvatarSize
   /** Maximum width for the text container */
@@ -133,7 +135,7 @@ const statusContainerClasses = computed(() => [
 const textClasses = computed(() => ["flex-1 min-w-0"])
 
 const nameClasses = computed(() => [
-  "font-medium text-gray-800 truncate m-0",
+  "font-medium text-core-800 truncate m-0",
   {
     "text-xs": sizeClass.value === "sm",
     "text-sm": sizeClass.value === "md" || !sizeClass.value,

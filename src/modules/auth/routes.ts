@@ -17,6 +17,27 @@ const authRoutes: RouteRecordRaw[] = [
     name: "ForgotPassword",
     component: () => import("./views/forgot-password.vue"),
   },
+  {
+    path: "reset-password",
+    name: "ResetPassword",
+    component: () => import("./views/reset-password.vue"),
+  },
+  {
+    path: "join-team",
+    name: "JoinTeam",
+    component: () => import("./views/join-team.vue"),
+  },
+  {
+    path: "confirm-email",
+    name: "ConfirmEmail",
+    component: () => import("./views/confirm-email.vue"),
+  },
+  {
+    path: "create-store",
+    name: "CreateStore",
+    meta: { requiresAuth: true },
+    component: () => import("./views/create-store.vue"),
+  },
 ]
 
 export default authRoutes

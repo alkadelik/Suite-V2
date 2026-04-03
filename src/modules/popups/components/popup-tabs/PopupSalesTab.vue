@@ -1,0 +1,376 @@
+<script setup lang="ts">
+import { startCase } from "@/utils/format-strings"
+import { formatDate } from "@/utils/formatDate"
+import Chip from "@components/Chip.vue"
+import DropdownMenu from "@components/DropdownMenu.vue"
+import EmptyState from "@components/EmptyState.vue"
+import OrderCard from "@modules/orders/components/OrderCard.vue"
+import { TOrder } from "@modules/orders/types"
+import { useGetPopupOrders, useMarkPopupOrderAsPaid } from "@modules/popups/api"
+import { POPUP_ORDER_COLUMNS } from "@modules/popups/constants"
+import { useMediaQuery } from "@vueuse/core"
+import { computed, ref } from "vue"
+import { useRoute } from "vue-router"
+import CreateOrderDrawer from "@modules/orders/components/CreateOrderDrawer.vue"
+import DataTable from "@components/DataTable.vue"
+import AppButton from "@components/AppButton.vue"
+import TextField from "@components/form/TextField.vue"
+import ConfirmationModal from "@components/ConfirmationModal.vue"
+import VoidDeleteOrder from "@modules/orders/components/VoidDeleteOrder.vue"
+import FulfilOrderModal from "@modules/orders/components/FulfilOrderModal.vue"
+import OrderMemoDrawer from "@modules/orders/components/OrderMemoDrawer.vue"
+import OrderPaymentDrawer from "@modules/orders/components/OrderPaymentDrawer.vue"
+import { displayError } from "@/utils/error-handler"
+import { toast } from "@/composables/useToast"
+import { PopupEvent } from "@modules/popups/types"
+import { anonymousCustomer } from "@modules/orders/constants"
+import ProductAvatar from "@components/ProductAvatar.vue"
+import { useDeleteOrder, useVoidOrder } from "@modules/orders/api"
+import OrderDetailsDrawer from "@modules/orders/components/OrderDetailsDrawer.vue"
+
+const searchQuery = ref("")
+const openCreate = ref(false)
+const showFilter = ref(false)
+const selectedOrder = ref<TOrder | null>(null)
+const openMarkPaid = ref(false)
+const openVoid = ref(false)
+const openDelete = ref(false)
+const openMemo = ref(false)
+const openFulfil = ref(false)
+const openPayment = ref(false)
+const openDetails = ref(false)
+
+const route = useRoute()
+const isMobile = useMediaQuery("(max-width: 768px)")
+
+const props = defineProps<{ isActive: boolean; startDate?: string; popup: PopupEvent }>()
+const startDate = props.startDate
+
+const isClosed = computed(() => props.popup.status === "closed")
+
+const {
+  data: popupOrders,
+  refetch,
+  isPending,
+  isFetching,
+} = useGetPopupOrders(route.params.id as string)
+
+const hasStarted = computed(() => {
+  if (!startDate) return true
+  try {
+    return new Date(String(startDate)) <= new Date()
+  } catch {
+    return true
+  }
+})
+
+const formattedStartDate = computed(() => (startDate ? formatDate(String(startDate)) : ""))
+
+const emptyStateDescription = computed(() => {
+  if (!hasStarted.value) {
+    return `Hang tight! You can add your orders as soon as the popup launches on ${formattedStartDate.value}.`
+  }
+
+  return "Your popup sales will appear here when customers purchase from you. You can also add an order."
+})
+
+const getActionItems = (item: TOrder) => [
+  // Mark as Paid - only for unpaid or partially paid orders
+  ...(item.payment_status !== "paid"
+    ? [
+        {
+          label: "Mark as Paid",
+          icon: "money-add",
+          action: () => {
+            selectedOrder.value = item
+            openMarkPaid.value = true
+          },
+        },
+      ]
+    : []),
+  // Update Payment - only for unpaid or partially paid orders
+  ...(item.payment_status !== "paid"
+    ? [
+        {
+          label: "Update Payment",
+          icon: "money-add",
+          action: () => {
+            selectedOrder.value = item
+            openPayment.value = true
+          },
+        },
+      ]
+    : []),
+  ...(item.fulfilment_status === "unfulfilled"
+    ? [
+        {
+          label: "Fulfill Order",
+          icon: "money-add",
+          action: () => {
+            selectedOrder.value = item
+            openFulfil.value = true
+          },
+        },
+      ]
+    : []),
+  // { divider: true },
+  ...((item.fulfilment_status === "fulfilled" || item.payment_status !== "unpaid") &&
+  !item.source?.includes("storefront")
+    ? [
+        {
+          label: "Void Order",
+          icon: "trash",
+          class: "text-red-600 hover:bg-red-50",
+          iconClass: "text-red-600",
+          action: () => {
+            selectedOrder.value = item
+            openVoid.value = true
+          },
+        },
+      ]
+    : []),
+  ...(item.fulfilment_status !== "fulfilled" &&
+  item.payment_status === "unpaid" &&
+  !item.source?.includes("storefront")
+    ? [
+        {
+          label: "Delete Order",
+          icon: "trash",
+          class: "text-red-600 hover:bg-red-50",
+          iconClass: "text-red-600",
+          action: () => {
+            selectedOrder.value = item
+            openDelete.value = true
+          },
+        },
+      ]
+    : []),
+]
+
+const { mutate: markAsPaid, isPending: isMarking } = useMarkPopupOrderAsPaid()
+const { mutate: voidOrder, isPending: isVoiding } = useVoidOrder()
+const { mutate: deleteOrder, isPending: isDeleting } = useDeleteOrder()
+
+const handleMarkAsPaid = () => {
+  markAsPaid(selectedOrder.value?.uid || "", {
+    onSuccess: () => {
+      toast.success("Order marked as paid successfully")
+      openMarkPaid.value = false
+      refetch()
+    },
+    onError: displayError,
+  })
+}
+
+const onCloseVoidDel = () => {
+  openVoid.value = false
+  openDelete.value = false
+}
+
+const handleVoidDelete = ({ action, reason }: { action: string; reason: string }) => {
+  if (action === "void") {
+    voidOrder(
+      { id: selectedOrder.value?.uid || "", void_reason: reason },
+      {
+        onSuccess: () => {
+          toast.success("Order voided successfully")
+          onCloseVoidDel()
+          refetch()
+        },
+        onError: displayError,
+      },
+    )
+  } else if (action === "delete") {
+    deleteOrder(selectedOrder.value?.uid || "", {
+      onSuccess: () => {
+        toast.success("Order deleted successfully")
+        onCloseVoidDel()
+        refetch()
+      },
+      onError: displayError,
+    })
+  }
+}
+</script>
+
+<template>
+  <EmptyState
+    v-if="!popupOrders?.count || isPending"
+    title="You haven't made any sales yet!"
+    :description="emptyStateDescription"
+    :action-icon="hasStarted && !isClosed ? 'add' : undefined"
+    :action-label="hasStarted && !isClosed ? 'Add an order' : undefined"
+    :loading="isPending"
+    @action="hasStarted && !isClosed && (openCreate = true)"
+  />
+
+  <section v-else>
+    <div
+      class="mt-4 space-y-4 overflow-hidden rounded-xl border-gray-200 pt-3 md:border md:bg-white"
+    >
+      <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
+        <h3 class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
+          Popup Orders <Chip :label="popupOrders?.count || 0" />
+        </h3>
+        <div class="flex items-center gap-2">
+          <TextField
+            left-icon="search-lg"
+            size="md"
+            class="w-full md:min-w-64"
+            placeholder="Search by customer or order ref"
+            v-model="searchQuery"
+          />
+
+          <AppButton
+            icon="filter-lines"
+            variant="outlined"
+            size="sm"
+            color="alt"
+            class="flex-shrink-0"
+            :label="isMobile ? '' : 'Filter'"
+            @click="showFilter = true"
+          />
+
+          <AppButton
+            v-if="hasStarted && !isClosed"
+            icon="add"
+            size="sm"
+            class="flex-shrink-0"
+            :label="isMobile ? '' : 'Add Order'"
+            :disabled="!hasStarted"
+            @click="hasStarted && (openCreate = true)"
+          />
+        </div>
+      </div>
+
+      <DataTable
+        :data="popupOrders?.results ?? []"
+        :columns="POPUP_ORDER_COLUMNS"
+        :loading="isFetching"
+        :show-pagination="true"
+        @row-click="
+          (row) => {
+            selectedOrder = row
+            openDetails = true
+          }
+        "
+      >
+        <template #cell:items="{ item }">
+          <ProductAvatar
+            :name="item.items?.[0].product_name"
+            :url="undefined"
+            :variants-count="item.items.length > 1 ? item.items.length : undefined"
+            :variants-count-text="`+ ${item.items.length - 1}`"
+            shape="rounded"
+            class="!gap-2"
+            max-width="100px"
+          />
+        </template>
+        <template #cell:fulfilment_status="{ item }">
+          <Chip
+            :color="item.fulfilment_status === 'fulfilled' ? 'success' : 'primary'"
+            :label="item.fulfilment_status === 'fulfilled' ? 'Yes' : 'No'"
+          />
+        </template>
+        <!--  -->
+        <template #cell:payment_status="{ item }">
+          <Chip
+            :icon="item.payment_status === 'paid' ? 'card-tick' : 'card-pos'"
+            :label="startCase(item.payment_status)"
+            :color="
+              item.payment_status === 'paid'
+                ? 'success'
+                : item.payment_status === 'partially_paid'
+                  ? 'warning'
+                  : 'error'
+            "
+          />
+        </template>
+        <!--  -->
+        <template #cell:customer_info="{ item }">
+          <span>
+            {{ item.customer_name || anonymousCustomer.full_name }}
+          </span>
+        </template>
+        <template #cell:actions="{ item }">
+          <div class="inline-flex items-center gap-1">
+            <DropdownMenu :items="getActionItems(item)" size="sm" @toggle="selectedOrder = item" />
+          </div>
+        </template>
+        <template #mobile="{ item }">
+          <OrderCard
+            :order="item"
+            @click="
+              (item) => {
+                selectedOrder = item
+                openDetails = true
+              }
+            "
+            :custom-actions="getActionItems(item)"
+          />
+        </template>
+      </DataTable>
+    </div>
+  </section>
+
+  <!--  -->
+  <CreateOrderDrawer
+    :open="openCreate"
+    @close="openCreate = false"
+    :popup-event-id="String(route.params.id)"
+    @refresh="refetch()"
+  />
+
+  <VoidDeleteOrder
+    v-if="selectedOrder"
+    :open="openVoid || openDelete"
+    :action="openVoid ? 'void' : 'delete'"
+    :loading="isVoiding || isDeleting"
+    :order="selectedOrder"
+    @close="onCloseVoidDel"
+    @action="handleVoidDelete"
+  />
+
+  <ConfirmationModal
+    v-if="selectedOrder"
+    v-model="openMarkPaid"
+    header="Mark Order as Paid"
+    :paragraph="`Are you sure you want to mark order #${selectedOrder.order_number} as fully paid? This will update the payment status to 'Paid'.`"
+    action-label="Mark as Paid"
+    variant="success"
+    :loading="isMarking"
+    @confirm="handleMarkAsPaid"
+  />
+
+  <FulfilOrderModal
+    v-if="selectedOrder"
+    :open="openFulfil"
+    @close="openFulfil = false"
+    :order-id="selectedOrder?.uid"
+    :items="selectedOrder?.items || []"
+    @refresh="refetch"
+  />
+
+  <OrderMemoDrawer
+    v-if="selectedOrder"
+    :order="selectedOrder"
+    :open="openMemo"
+    @close="openMemo = false"
+  />
+
+  <OrderPaymentDrawer
+    v-if="selectedOrder"
+    :open="openPayment"
+    @close="openPayment = false"
+    :order="selectedOrder"
+    @refresh="refetch"
+  />
+
+  <OrderDetailsDrawer
+    v-if="selectedOrder"
+    :open="openDetails"
+    :order="selectedOrder"
+    @close="openDetails = false"
+    :custom-actions="getActionItems(selectedOrder)"
+  />
+</template>

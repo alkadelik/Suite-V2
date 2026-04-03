@@ -30,3 +30,24 @@ export function getInitials(name: string): string {
   if (parts.length === 1) return parts[0].charAt(0).toUpperCase()
   return parts[0].charAt(0).toUpperCase() + parts[1].charAt(0).toUpperCase()
 }
+
+export type TNameObj = { first_name?: string; last_name?: string }
+/** Constructs a full name from an object with optional first_name and last_name properties.
+ *  - If both names are missing, returns a fallback string (default: "Unknown User").
+ * @param nameObj - Object containing optional first_name and last_name
+ * @param fallback - Fallback string if both names are missing (default: "Unknown User")
+ * @returns The full name as a string.
+ */
+export function getFullName(obj: TNameObj = {}, fallback: string = "Unknown User"): string {
+  const firstName = obj?.first_name ? obj.first_name : ""
+  const lastName = obj?.last_name ? obj.last_name : ""
+  return startCase(`${firstName} ${lastName}`.trim()) || fallback
+}
+
+/** Capitalizes the first character of a string
+ * @param str - The input string
+ * @returns The input string with the first character capitalized
+ */
+export function capitalizeFirstChar(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1)
+}

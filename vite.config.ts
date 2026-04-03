@@ -6,6 +6,8 @@ import svgLoader from "vite-svg-loader"
 export default defineConfig(({ mode }) => {
   process.env = { ...process.env, ...loadEnv(mode, process.cwd()) }
 
+  const shouldUseSentry = process.env.PROD && process.env.VITE_SENTRY_DSN
+
   return {
     plugins: [
       vue(),
@@ -25,7 +27,13 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
+      host: true,
       port: Number(process.env.VITE_PORT) || 8080,
+    },
+    build: {
+      // generates source maps and uploads them to Sentry,
+      // but doesn't expose them publicly via sourceMappingURL comments.
+      sourcemap: shouldUseSentry ? "hidden" : false,
     },
   }
 })
