@@ -159,7 +159,10 @@ import {
   useUpdateShippingProfile,
   useSetupShippingProfile,
 } from "@/modules/shared/api"
-import { shouldReturnToRedirect } from "@/modules/shared/utils/shipbubble-flow"
+import {
+  shouldAutoEnableManagedDelivery,
+  shouldReturnToRedirect,
+} from "@/modules/shared/utils/shipbubble-flow"
 import { useUpdateStoreDetails, useGetStoreDetails } from "@/modules/settings/api"
 import type { ICourier } from "@/modules/shared/types"
 import { useMediaQuery } from "@vueuse/core"
@@ -283,30 +286,40 @@ const handleCouriersSubmit = () => {
         }
         showShipbubbleScreens.value = false
       }
+      const completeWithSuccessScreen = () => {
+        shipBubbleStep.value = 3
+        setTimeout(() => {
+          completeCourierFlow()
+        }, 3000)
+      }
 
-      // After successfully updating courier preferences, enable delivery
-      updateStoreDetails(
-        {
-          id: user?.store_uid || "",
-          body: { delivery_enabled: true },
-        },
-        {
-          onSuccess: () => {
-            shipBubbleStep.value = 3
-            setTimeout(() => {
-              completeCourierFlow()
-            }, 3000)
+      if (
+        shouldAutoEnableManagedDelivery({
+          pathname: route.path,
+          redirect: route.query.redirect,
+        })
+      ) {
+        // First-time onboarding setup enables managed delivery automatically.
+        updateStoreDetails(
+          {
+            id: user?.store_uid || "",
+            body: { delivery_enabled: true },
           },
-          onError: (error) => {
-            console.error("Failed to enable delivery:", error)
-            // Still proceed to step 3 even if enabling delivery fails
-            shipBubbleStep.value = 3
-            setTimeout(() => {
-              completeCourierFlow()
-            }, 3000)
+          {
+            onSuccess: () => {
+              completeWithSuccessScreen()
+            },
+            onError: (error) => {
+              console.error("Failed to enable delivery:", error)
+              // Still proceed to step 3 even if enabling delivery fails
+              completeWithSuccessScreen()
+            },
           },
-        },
-      )
+        )
+        return
+      }
+
+      completeWithSuccessScreen()
     },
   })
 }
