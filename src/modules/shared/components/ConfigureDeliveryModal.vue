@@ -159,6 +159,7 @@ import {
   useUpdateShippingProfile,
   useSetupShippingProfile,
 } from "@/modules/shared/api"
+import { shouldReturnToRedirect } from "@/modules/shared/utils/shipbubble-flow"
 import { useUpdateStoreDetails, useGetStoreDetails } from "@/modules/settings/api"
 import type { ICourier } from "@/modules/shared/types"
 import { useMediaQuery } from "@vueuse/core"
@@ -274,6 +275,15 @@ const handleCouriersSubmit = () => {
   }
   updateShippingProfile(payload, {
     onSuccess: () => {
+      const completeCourierFlow = () => {
+        emit("refresh")
+        if (shouldReturnToRedirect(route.query.redirect)) {
+          handleClose()
+          return
+        }
+        showShipbubbleScreens.value = false
+      }
+
       // After successfully updating courier preferences, enable delivery
       updateStoreDetails(
         {
@@ -284,8 +294,7 @@ const handleCouriersSubmit = () => {
           onSuccess: () => {
             shipBubbleStep.value = 3
             setTimeout(() => {
-              showShipbubbleScreens.value = false
-              emit("refresh")
+              completeCourierFlow()
             }, 3000)
           },
           onError: (error) => {
@@ -293,8 +302,7 @@ const handleCouriersSubmit = () => {
             // Still proceed to step 3 even if enabling delivery fails
             shipBubbleStep.value = 3
             setTimeout(() => {
-              showShipbubbleScreens.value = false
-              emit("refresh")
+              completeCourierFlow()
             }, 3000)
           },
         },
