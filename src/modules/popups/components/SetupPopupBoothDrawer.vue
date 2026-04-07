@@ -4,7 +4,7 @@ import StepperWizard from "@components/StepperWizard.vue"
 import AppButton from "@components/AppButton.vue"
 import Icon from "@components/Icon.vue"
 import { ref, computed, watch } from "vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import type { IProductCatalogue } from "@modules/inventory/types"
 import BoothSelectProduct from "./booth-form/BoothSelectProduct.vue"
 import BoothSelectQtyVariant from "./booth-form/BoothSelectQtyVariant.vue"
@@ -31,6 +31,8 @@ const props = defineProps({
 const emit = defineEmits(["close", "refresh"])
 
 const route = useRoute()
+
+const { format } = useFormatCurrency()
 
 const steps = ["Select Products", "Select Variants & Qty", "Review & Confirm"]
 const activeStep = ref(0)
@@ -201,19 +203,8 @@ watch(activeStep, (newStep, oldStep) => {
 
                 <!-- RIGHT PRICE COLUMN -->
                 <div class="text-right">
-                  <!-- Show original price if discounted -->
-                  <!-- <span
-                    v-if="
-                      item.variant?.original_price &&
-                      item.variant.original_price !== item.unit_price
-                    "
-                    class="text-core-400 text-xs line-through"
-                  >
-                    {{ formatCurrency(item.quantity * item.variant.original_price) }}
-                  </span> -->
-
                   <span class="ml-1 block text-sm font-medium">
-                    {{ formatCurrency(Number(item.quantity * item.event_price)) }}
+                    {{ format(Number(item.quantity * item.event_price)) }}
                   </span>
                 </div>
               </div>
@@ -230,9 +221,7 @@ watch(activeStep, (newStep, oldStep) => {
               </p>
               <p class="flex justify-between">
                 <span class="text-gray-600">Total Value:</span>
-                <span class="text-primary-600 font-medium">{{
-                  formatCurrency(productsTotal)
-                }}</span>
+                <span class="text-primary-600 font-medium">{{ format(productsTotal) }}</span>
               </p>
             </div>
           </div>

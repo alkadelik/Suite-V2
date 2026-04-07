@@ -284,7 +284,8 @@ import InventoryRequests from "../components/InventoryRequests.vue"
 import ReceiveRequestModal from "../components/ReceiveRequestModal.vue"
 import ProductCard from "../components/ProductCard.vue"
 import ManageStockModal from "../components/ManageStockModal.vue"
-import { formatPriceRange, formatCurrency } from "@/utils/format-currency"
+import { formatPriceRange } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import SectionHeader from "@components/SectionHeader.vue"
 import PageHeader from "@components/PageHeader.vue"
 import Tabs from "@components/Tabs.vue"
@@ -308,6 +309,7 @@ import { usePremiumAccess } from "@/composables/usePremiumAccess"
 import StatCard from "@components/StatCard.vue"
 
 const page = ref(1)
+const { format } = useFormatCurrency()
 const itemsPerPage = ref(10)
 const search = ref("")
 const debouncedSearch = useDebouncedRef(search, 750)
@@ -486,7 +488,7 @@ const productMetrics = computed(() => {
     },
     {
       label: "Stock Value",
-      value: formatCurrency(stats?.total_stock_value ?? 0),
+      value: format(stats?.total_stock_value ?? 0),
       icon: "moneys",
       iconClass: "text-bloom-700",
       percentage: 0,

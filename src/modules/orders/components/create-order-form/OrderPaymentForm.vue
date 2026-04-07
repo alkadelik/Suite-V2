@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import AppButton from "@components/AppButton.vue"
 import FormField from "@components/form/FormField.vue"
 import RadioInputField from "@components/form/RadioInputField.vue"
@@ -31,6 +31,8 @@ const emit = defineEmits<{
   prev: []
 }>()
 const currency = computed(() => useSettingsStore().storeDetails?.currency || "NGN")
+
+const { format } = useFormatCurrency()
 
 // Use defineModel for two-way binding - cleaner than manual v-model implementation
 const paymentInfo = defineModel<PaymentInfo>("paymentInfo", { required: true })
@@ -135,7 +137,7 @@ const isMobile = useMediaQuery("(max-width: 768px)")
         </p>
         <p class="flex justify-between text-sm">
           <span class="text-core-600">Total products amount</span>
-          <span class="font-medium">{{ formatCurrency(productsTotal, { kobo: true }) }}</span>
+          <span class="font-medium">{{ format(productsTotal, { kobo: true }) }}</span>
         </p>
         <p class="flex justify-between text-sm">
           <span class="text-core-600"
@@ -145,12 +147,12 @@ const isMobile = useMediaQuery("(max-width: 768px)")
             ></span
           >
           <span class="font-medium" :class="{ 'font-normal! line-through': isFreeShipping }">
-            {{ deliveryFee > 0 ? formatCurrency(deliveryFee, { kobo: true }) : "-" }}
+            {{ deliveryFee > 0 ? format(deliveryFee, { kobo: true }) : "-" }}
           </span>
         </p>
         <p v-if="vatAmount > 0" class="flex justify-between text-sm">
           <span class="text-core-600">VAT (7.5%)</span>
-          <span class="font-medium">{{ formatCurrency(vatAmount, { kobo: true }) }}</span>
+          <span class="font-medium">{{ format(vatAmount, { kobo: true }) }}</span>
         </p>
         <p
           v-if="paymentInfo.discount_amount > 0"
@@ -158,17 +160,17 @@ const isMobile = useMediaQuery("(max-width: 768px)")
         >
           <span>Discount</span>
           <span class="font-medium"
-            >-{{ formatCurrency(paymentInfo.discount_amount, { kobo: true }) }}</span
+            >-{{ format(paymentInfo.discount_amount, { kobo: true }) }}</span
           >
         </p>
         <div class="border-core-200 my-2 border-t border-dashed"></div>
         <div class="flex justify-between text-lg font-semibold">
           <span>Total:</span>
           <div class="text-right">
-            <span class="text-primary-600">{{ formatCurrency(totalAmount, { kobo: true }) }}</span>
+            <span class="text-primary-600">{{ format(totalAmount, { kobo: true }) }}</span>
             <br />
             <span class="text-core-600 text-sm font-normal line-through" v-if="isFreeShipping">
-              {{ formatCurrency(totalAmount + deliveryFee, { kobo: true }) }}
+              {{ format(totalAmount + deliveryFee, { kobo: true }) }}
             </span>
           </div>
         </div>

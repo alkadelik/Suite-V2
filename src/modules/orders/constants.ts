@@ -9,7 +9,7 @@ import type {
 } from "./types"
 import { TableColumn } from "@components/DataTable.vue"
 import { getSmartDateLabel } from "@/utils/formatDate"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 
 export const ORDERS: TOrder[] = []
 
@@ -69,7 +69,10 @@ export const ORDER_COLUMNS: TableColumn<TOrder>[] = [
   {
     header: "Amount",
     accessor: "total_amount",
-    cell: ({ value }) => formatCurrency(Number(value), { kobo: true }),
+    cell: ({ value }) => {
+      const { format } = useFormatCurrency()
+      return format(Number(value), { kobo: true })
+    },
   },
   { header: "Status", accessor: "payment_status" },
   { header: "Fulfilled", accessor: "fulfilment_status" },
@@ -132,7 +135,10 @@ export const ORDER_SHIPMENT_COLUMNS: TableColumn<TShipment>[] = [
   {
     header: "Delivery Fee",
     accessor: "delivery_fee",
-    cell: ({ value }) => formatCurrency(Number(value), { kobo: true }),
+    cell: ({ value }) => {
+      const { format } = useFormatCurrency()
+      return format(Number(value), { kobo: true })
+    },
   },
   {
     header: "Pickup Date",

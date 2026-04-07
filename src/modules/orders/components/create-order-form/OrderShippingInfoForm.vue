@@ -23,7 +23,7 @@ import {
   useGetShippingRates,
 } from "@modules/shared/api"
 import { toast } from "@/composables/useToast"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import * as yup from "yup"
 import { useSettingsStore } from "@modules/settings/store"
 import { useMediaQuery } from "@vueuse/core"
@@ -68,6 +68,8 @@ const emit = defineEmits<{
 }>()
 const currency = computed(() => useSettingsStore().storeDetails?.currency || "NGN")
 
+const { format } = useFormatCurrency()
+
 const ratesFetched = ref(false)
 
 const deliveryDetails = computed(
@@ -104,7 +106,7 @@ const EXPRESS_DELIVERY_LOCATIONS = computed(
     expressOptions.value?.map((v) => ({
       label: v.location,
       value: v.uid,
-      description: formatCurrency(v.amount, { kobo: true }),
+      description: format(v.amount, { kobo: true }),
     })) ?? [],
 )
 
@@ -113,7 +115,7 @@ const MANUAL_DELIVERY_LOCATIONS = computed(
     manualOptions.value?.map((v) => ({
       label: v.location,
       value: v.uid,
-      description: formatCurrency(v.amount, { kobo: true }),
+      description: format(v.amount, { kobo: true }),
     })) ?? [],
 )
 
@@ -951,7 +953,7 @@ const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
                             </span>
                             <span class="inline text-sm font-semibold text-gray-900 lg:hidden">
                               {{
-                                formatCurrency(
+                                format(
                                   (option.courier as any).total_amount ||
                                     (option.courier as any).total ||
                                     0,
@@ -995,7 +997,7 @@ const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
 
                         <span class="ml-auto hidden text-sm font-semibold text-gray-900 lg:inline">
                           {{
-                            formatCurrency(
+                            format(
                               (option.courier as any).total_amount ||
                                 (option.courier as any).total ||
                                 0,

@@ -95,7 +95,7 @@
         </template>
 
         <template #cell:variant_cost_price="{ value }">
-          <span class="text-sm">{{ formatCurrency(Number(value)) }}</span>
+          <span class="text-sm">{{ format(Number(value)) }}</span>
         </template>
 
         <template #cell:reason="{ value }">
@@ -137,7 +137,7 @@ import ProductMovementCard from "./ProductMovementCard.vue"
 import MovementDetailsModal from "./MovementDetailsModal.vue"
 import ListFilterDrawer from "@components/ListFilterDrawer.vue"
 import { getSmartDateLabel } from "@/utils/formatDate"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { useGetProductMovements } from "../api"
 import type { IProductDetails, IInventoryMovement } from "../types"
 import type { TableColumn } from "@components/DataTable.vue"
@@ -149,6 +149,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const { format } = useFormatCurrency()
 
 const showFilter = ref(false)
 const activeFilters = ref<Record<string, string | null>>({})
