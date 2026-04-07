@@ -11,6 +11,7 @@ import { PRODUCT_DIMENSIONS } from "@modules/inventory/constants"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 import { useQueryClient } from "@tanstack/vue-query"
+import { useSettingsStore } from "@modules/settings/store"
 
 interface FormValues {
   name: string
@@ -28,6 +29,7 @@ const emit = defineEmits<{
   close: []
   success: [productUid: string]
 }>()
+const currency = computed(() => useSettingsStore().storeDetails?.currency || "NGN")
 
 // Composables
 const { data: categoriesData } = useGetCategories()
@@ -194,7 +196,12 @@ const onSubmit = () => {
           :options="categoryOptions"
         />
 
-        <FormField type="text" name="price" label="Price" placeholder="e.g. 1000" />
+        <FormField
+          type="text"
+          name="price"
+          :label="`Price (${currency})`"
+          placeholder="e.g. 1000"
+        />
 
         <FormField type="text" name="total_stock" label="Available Stock" placeholder="e.g. 50" />
 

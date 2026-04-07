@@ -4,7 +4,6 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useRouter } from "vue-router"
 import { useMediaQuery } from "@vueuse/core"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
-import { formatCurrency } from "@/utils/format-currency"
 import { toast } from "@/composables/useToast"
 import RecipeMobileCard from "./components/RecipeCard.vue"
 import PageHeader from "@components/PageHeader.vue"
@@ -224,13 +223,6 @@ const statusChipProps = (isActive: boolean) => ({
     ? "bg-green-50 text-green-700 border border-green-200"
     : "bg-gray-100 text-gray-600 border border-gray-200",
 })
-
-const safeDateOnly = (iso?: string | null): string => {
-  if (!iso) return "—"
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return String(iso).slice(0, 10)
-  return d.toISOString().slice(0, 10)
-}
 
 // ── Drawer helpers ─────────────────────────────────────────────────────────────
 
@@ -601,25 +593,8 @@ const recipesWithDuplicateFlag = computed(() => {
               </span>
             </template>
 
-            <template #cell:updated_at="{ item }">
-              <span class="text-sm text-gray-700">{{ safeDateOnly(item.updated_at) }}</span>
-            </template>
-
             <template #cell:output_quantity="{ item }">
               <span class="text-sm text-gray-700 tabular-nums">{{ outputQtyWithUnit(item) }}</span>
-            </template>
-
-            <template #cell:last_cost="{ item }">
-              <span class="text-sm text-gray-700 tabular-nums">
-                <span v-if="loadingDetails && !(String(item.uid) in totalCostByUid)" />
-                <span v-else>
-                  {{
-                    (totalCostByUid[String(item.uid)] ?? 0) > 0
-                      ? formatCurrency(totalCostByUid[String(item.uid)])
-                      : "—"
-                  }}
-                </span>
-              </span>
             </template>
 
             <template #cell:actions="{ item }">

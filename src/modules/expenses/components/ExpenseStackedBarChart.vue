@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { ExpenseDashboardStats } from "../types"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 
 const props = defineProps<{
   category_breakdown?: ExpenseDashboardStats["category_breakdown"]
@@ -16,6 +16,8 @@ const colorPalette = [
   "#85E13A", // green-light-400
   "#B4AAAA", // core-400
 ]
+
+const { format } = useFormatCurrency()
 
 const categoryBreakDown = computed(() => {
   const data = props.category_breakdown ?? []
@@ -39,7 +41,10 @@ const totalAmount = computed(() => {
 
 <template>
   <div
-    :class="['text-core-800 space-y-4 rounded-xl bg-white p-4 lg:h-full lg:shadow', props.class]"
+    :class="[
+      'text-core-800 space-y-4 rounded-xl bg-white p-4 lg:h-full lg:border lg:border-gray-300',
+      props.class,
+    ]"
   >
     <div v-if="props.showLabel" class="text-core-600 text-base font-medium">
       Expense Distribution
@@ -47,7 +52,7 @@ const totalAmount = computed(() => {
 
     <div v-if="props.totalExpense" class="text-center">
       <h3 class="text-core-800 font-outfit! text-center text-4xl font-bold">
-        {{ formatCurrency(totalAmount) }}
+        {{ format(totalAmount) }}
       </h3>
       <p class="text-core-600 mt-1 text-sm">Total Expenses</p>
     </div>
@@ -62,7 +67,7 @@ const totalAmount = computed(() => {
           backgroundColor: category.color,
         }"
         class="transition-all duration-300 hover:opacity-80"
-        :title="`${category.category_name}: ${formatCurrency(category.total_amount)} (${category.percentage.toFixed(1)}%)`"
+        :title="`${category.category_name}: ${format(category.total_amount)} (${category.percentage.toFixed(1)}%)`"
       />
     </div>
 

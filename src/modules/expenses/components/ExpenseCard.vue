@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import Chip from "@/components/Chip.vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import Icon from "@components/Icon.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import type { TExpense } from "../types"
@@ -29,6 +29,8 @@ const props = withDefaults(
 )
 
 const emit = defineEmits(["click", "toggle", "edit", "delete", "void", "markPaid"])
+
+const { format } = useFormatCurrency()
 
 const menuItems = computed(() => {
   return props.customActions?.length
@@ -119,7 +121,7 @@ const menuItems = computed(() => {
 
             <div class="flex items-center justify-end gap-2">
               <span class="text-error-600 text-sm font-semibold">
-                {{ formatCurrency(expense.amount) }}
+                {{ format(expense.amount) }}
               </span>
             </div>
           </div>
