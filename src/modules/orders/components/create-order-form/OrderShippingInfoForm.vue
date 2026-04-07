@@ -66,6 +66,7 @@ const emit = defineEmits<{
   "update:shippingInfo": [info: ShippingInfo]
   openAddAddress: []
 }>()
+const currency = computed(() => useSettingsStore().storeDetails?.currency || "NGN")
 
 const ratesFetched = ref(false)
 
@@ -655,8 +656,6 @@ const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
     </div>
     <p class="mb-4 text-sm">
       Provide the shipping method and address for {{ customerName }}'s order.
-
-      {{ shippingInfo.delivery_method }} - {{ shippingInfo.delivery_type }}
     </p>
 
     <div class="space-y-4">
@@ -1063,7 +1062,7 @@ const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
                 <TextField
                   type="number"
                   name="delivery_fee"
-                  label="Delivery Fee"
+                  :label="`Delivery Fee (${currency})`"
                   placeholder="0.00"
                   :model-value="shippingInfo.delivery_fee"
                   @update:model-value="

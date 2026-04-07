@@ -39,6 +39,7 @@ import { usePremiumAccess } from "@/composables/usePremiumAccess"
 import OrderDetailsDrawer from "../components/OrderDetailsDrawer.vue"
 import StatCard from "@components/StatCard.vue"
 import OrderShipmentTab from "../components/OrderShipmentTab.vue"
+import OrderFiltersDrawer from "../components/OrderFiltersDrawer.vue"
 
 const openCreate = ref(false)
 const openVoid = ref(false)
@@ -99,6 +100,14 @@ const page = ref(1)
 const itemsPerPage = ref(10)
 const searchQuery = ref("")
 const debouncedSearch = useDebouncedRef(searchQuery, 750)
+const activeFilters = ref<Record<string, string>>({})
+
+const activeFilterCount = computed(() => Object.keys(activeFilters.value).length)
+
+const handleApplyFilters = (filters: Record<string, string>) => {
+  activeFilters.value = filters
+  page.value = 1
+}
 
 const computedParams = computed(() => {
   const params: Record<string, string> = {}
@@ -112,6 +121,7 @@ const computedParams = computed(() => {
   }
   params.offset = ((page.value - 1) * itemsPerPage.value).toString()
   params.limit = itemsPerPage.value.toString()
+  Object.assign(params, activeFilters.value)
   return params
 })
 
@@ -512,7 +522,13 @@ const handleDetailsMarkAsPaid = () => {
     </div>
 
     <EmptyState
-      v-if="!orders?.results?.length && status === 'all' && !debouncedSearch && !isPending"
+      v-if="
+        !orders?.results?.length &&
+        status === 'all' &&
+        !debouncedSearch &&
+        !isPending &&
+        !activeFilterCount
+      "
       title="No Orders Yet"
       description="You haven't received any orders. Once you start receiving orders, they will appear here."
       action-label="Add an order"
@@ -556,11 +572,11 @@ const handleDetailsMarkAsPaid = () => {
 
             <AppButton
               icon="filter-lines"
-              variant="outlined"
               size="sm"
               color="alt"
-              class="flex-shrink-0"
+              class="relative flex-shrink-0"
               :label="isMobile ? '' : 'Filter'"
+              :badge="activeFilterCount ? activeFilterCount : ''"
               @click="showFilter = true"
             />
 
@@ -586,7 +602,7 @@ const handleDetailsMarkAsPaid = () => {
           :empty-state="{
             title: 'No Order Found',
             description:
-              searchQuery || status !== 'all'
+              searchQuery || status !== 'all' || activeFilterCount
                 ? 'Try adjusting your filters or search query'
                 : `You haven't received any orders. Once you start receiving orders, they will appear here.`,
           }"
@@ -745,6 +761,12 @@ const handleDetailsMarkAsPaid = () => {
       @fulfill="handleDetailsFulfill"
       @void-order="handleDetailsVoidOrder"
       @delete-order="handleDetailsDeleteOrder"
+    />
+
+    <OrderFiltersDrawer
+      :open="showFilter"
+      @close="showFilter = false"
+      @apply="handleApplyFilters"
     />
   </div>
 </template>

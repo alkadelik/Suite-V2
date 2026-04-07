@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import Drawer from "@components/Drawer.vue"
 import Modal from "@components/Modal.vue"
 import { useMediaQuery } from "@vueuse/core"
@@ -13,6 +13,7 @@ import { clipboardCopy } from "@/utils/others"
 defineProps<{ open: boolean; expense: TExpense }>()
 const emit = defineEmits(["close", "refresh"])
 
+const { format } = useFormatCurrency()
 const isMobile = useMediaQuery("(max-width: 1028px)")
 </script>
 
@@ -28,7 +29,7 @@ const isMobile = useMediaQuery("(max-width: 1028px)")
     <div class="space-y-6">
       <div class="flex flex-col items-center justify-center gap-2">
         <h4 class="text-3xl font-bold md:text-4xl">
-          {{ formatCurrency(Number(expense.amount)) }}
+          {{ format(Number(expense.amount)) }}
         </h4>
         <p class="text-sm font-medium md:text-base">{{ expense.name }}</p>
         <Chip

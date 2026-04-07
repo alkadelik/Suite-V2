@@ -21,12 +21,14 @@ import {
 } from "../api"
 import { TRawMaterial } from "../types"
 import SelectField from "@components/form/SelectField.vue"
+import { useSettingsStore } from "@modules/settings/store"
 
 const props = defineProps<{ open: boolean; material?: TRawMaterial | null }>()
 const emit = defineEmits(["close", "refresh"])
 
 const isMobile = useMediaQuery("(max-width: 1028px)")
 const isEditMode = computed(() => !!props.material)
+const currency = computed(() => useSettingsStore().storeDetails?.currency || "NGN")
 
 const steps = ["Add Material", "Suppliers (optional)"]
 const activeStep = ref(0)
@@ -373,6 +375,24 @@ const goToPrevStep = () => {
                         </div>
                       </div>
                     </template>
+                    <template #no-options="{ search, close }">
+                      <p>
+                        No results found.
+                        <button
+                          class="text-primary-600 ml-1 hover:underline"
+                          @click="
+                            () => {
+                              close()
+                              showAddUnit = 'purchase'
+                              newUnitName = search
+                            }
+                          "
+                        >
+                          Add <span class="font-semibold">"{{ search }}"</span>
+                        </button>
+                        as purchase unit?
+                      </p>
+                    </template>
                   </SelectField>
                 </Field>
               </div>
@@ -412,6 +432,24 @@ const goToPrevStep = () => {
                           <Icon name="add" class="text-primary-600 h-4 w-4" />
                         </div>
                       </div>
+                    </template>
+                    <template #no-options="{ search, close }">
+                      <p>
+                        No results found.
+                        <button
+                          class="text-primary-600 ml-1 hover:underline"
+                          @click="
+                            () => {
+                              close()
+                              showAddUnit = 'production'
+                              newUnitName = search
+                            }
+                          "
+                        >
+                          Add <span class="font-semibold">"{{ search }}"</span>
+                        </button>
+                        as production?
+                      </p>
                     </template>
                   </SelectField>
                 </Field>
@@ -495,7 +533,7 @@ const goToPrevStep = () => {
               <FormField
                 type="number"
                 name="default_cost"
-                label="Default Purchase price"
+                :label="`Default Purchase price (${currency})`"
                 placeholder="e.g. 25"
                 required
               />
