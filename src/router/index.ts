@@ -147,7 +147,8 @@ router.beforeEach((to, from, next) => {
     }
 
     // Redirect away from onboarding if setup is complete
-    if (to.path === "/onboarding") {
+    // Allow access when editing ShipBubble settings (shipbubble=true query)
+    if (to.path === "/onboarding" && !to.query.shipbubble) {
       const { liveStatus } = useSettingsStore()
       if (liveStatus?.completion_percentage === 100) {
         return next({ path: "/dashboard" })
