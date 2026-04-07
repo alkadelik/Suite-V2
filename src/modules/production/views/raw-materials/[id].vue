@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { formatDate } from "@/utils/formatDate"
 import AppButton from "@components/AppButton.vue"
 import BackButton from "@components/BackButton.vue"
@@ -27,6 +27,7 @@ const materialTabs = [
 ]
 
 const route = useRoute()
+const { format } = useFormatCurrency()
 const showEdit = ref(false)
 const showAdjust = ref(false)
 const activeTab = ref("batches")
@@ -52,12 +53,12 @@ const materialStats = computed(() => [
   },
   {
     label: "Avg Cost per Unit",
-    value: `${formatCurrency(material.value?.avg_cost || 0)}/kg`,
+    value: `${format(material.value?.avg_cost || 0)}/kg`,
     icon: "bag",
   },
   {
     label: "Last Purchase Cost",
-    value: `${formatCurrency(material.value?.last_cost || 0)}/kg`,
+    value: `${format(material.value?.last_cost || 0)}/kg`,
     icon: "bag",
     chip: isMobile.value
       ? undefined

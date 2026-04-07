@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { IEODReport } from "@modules/reports/types"
 import { computed } from "vue"
 import { startCase } from "@/utils/format-strings"
 
 const props = defineProps<{ data: IEODReport | null }>()
+const { format } = useFormatCurrency()
 
 const paymentMethods = computed(() => {
   return (props.data?.payments ?? []).map((payment) => ({
@@ -71,7 +72,7 @@ const cashData = computed(() => ({
               </div>
               <!--  -->
               <p class="text-sm font-semibold break-keep">
-                {{ formatCurrency(payment.amount, { kobo: true }) }}
+                {{ format(payment.amount, { kobo: true }) }}
                 <span class="ml-2 text-xs font-normal text-gray-600"
                   >{{ payment.orders }} order{{ payment.orders !== 1 ? "s" : "" }}</span
                 >
@@ -98,35 +99,35 @@ const cashData = computed(() => ({
             <div class="flex items-center justify-between gap-4 px-4 py-5">
               <p class="text-sm font-medium">Digital Payments</p>
               <p class="text-sm font-medium">
-                {{ formatCurrency(cashData.digitalPayments, { kobo: true }) }}
+                {{ format(cashData.digitalPayments, { kobo: true }) }}
               </p>
             </div>
             <!--  -->
             <div class="flex items-center justify-between gap-4 px-4 py-5">
               <p class="text-sm font-medium">Cash Collected</p>
               <p class="text-sm font-medium">
-                {{ formatCurrency(cashData.cashCollected, { kobo: true }) }}
+                {{ format(cashData.cashCollected, { kobo: true }) }}
               </p>
             </div>
             <!--  -->
             <div class="flex items-center justify-between gap-4 px-4 py-5">
               <p class="text-sm font-medium">Refunds Processed</p>
               <p class="text-error-600 text-sm font-medium">
-                {{ formatCurrency(cashData.refundsProcessed, { kobo: true }) }}
+                {{ format(cashData.refundsProcessed, { kobo: true }) }}
               </p>
             </div>
             <!--  -->
             <div class="flex items-center justify-between gap-4 px-4 py-5">
               <p class="text-sm font-medium">Pending Payments</p>
               <p class="text-warning-600 text-sm font-medium">
-                {{ formatCurrency(cashData.pendingPayments, { kobo: true }) }}
+                {{ format(cashData.pendingPayments, { kobo: true }) }}
               </p>
             </div>
             <!--  -->
             <div class="flex items-center justify-between gap-4 px-4 py-5">
               <p class="text-sm font-semibold">Confirmed Revenue</p>
               <p class="text-success-600 text-sm font-semibold">
-                {{ formatCurrency(cashData.confirmedRevenue, { kobo: true }) }}
+                {{ format(cashData.confirmedRevenue, { kobo: true }) }}
               </p>
             </div>
           </div>

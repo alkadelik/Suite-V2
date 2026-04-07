@@ -5,11 +5,12 @@ import { computed } from "vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import { useProductionStore } from "../store"
 import Chip from "@components/Chip.vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { useRouter } from "vue-router"
 
 const props = defineProps<{ material: TRawMaterial; class?: string }>()
 const emit = defineEmits(["click", "toggle", "edit", "adjust", "view"])
+const { format } = useFormatCurrency()
 
 const router = useRouter()
 
@@ -65,14 +66,14 @@ const actionMenus = computed(() => [
       <!--  -->
       <div>
         <p class="text-sm font-medium">
-          {{ formatCurrency(Number(material.last_cost)) }}/{{ material.unit }}
+          {{ format(Number(material.last_cost)) }}/{{ material.unit }}
         </p>
         <p class="text-core-600 text-xs">Last Cost</p>
       </div>
       <!--  -->
       <div>
         <p class="text-sm font-medium">
-          {{ formatCurrency(Number(material.avg_cost)) }}/{{ material.unit }}
+          {{ format(Number(material.avg_cost)) }}/{{ material.unit }}
         </p>
         <p class="text-core-600 text-xs">Avg Cost</p>
       </div>

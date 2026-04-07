@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { formatCurrency, truncateCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import ReportStatCard, { IReportStat } from "../ReportStatCard.vue"
 import { computed } from "vue"
 import DataTable, { TableColumn } from "@components/DataTable.vue"
@@ -35,6 +35,7 @@ ChartJS.register(
 )
 
 const props = defineProps<{ data: IMonthlyReport | null }>()
+const { format, truncate } = useFormatCurrency()
 
 const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
 
@@ -42,7 +43,7 @@ const stats = computed(() => {
   const data: IReportStat[] =
     props.data?.kpi_cards?.map((card) => ({
       label: startCase(card.key),
-      value: truncateCurrency(card.value ?? 0),
+      value: truncate(card.value ?? 0),
       percentage: Number(card.percent_change_vs_previous).toFixed(1) ?? 0,
       // percentageText: card.percentageText ?? "",
       // caption: card.caption ?? "",
@@ -63,7 +64,7 @@ const COLUMNS: TableColumn<TFinancialRow>[] = [
   {
     header: "Amount",
     accessor: "amount",
-    cell: ({ value }) => formatCurrency(Number(value)),
+    cell: ({ value }) => format(Number(value)),
   },
   { header: "% of Revenue", accessor: "percentage", cell: ({ value }) => `${value}%` },
   { header: "vs Last Month", accessor: "vs_last_month", cell: ({ value }) => `${value}%` },
@@ -133,7 +134,7 @@ const weeklyRevenueExpensesOptions: ChartOptions<"bar"> = {
     },
     tooltip: {
       callbacks: {
-        label: (context) => `${context.dataset.label}: ${formatCurrency(Number(context.parsed.y))}`,
+        label: (context) => `${context.dataset.label}: ${format(Number(context.parsed.y))}`,
       },
     },
   },
@@ -187,7 +188,7 @@ const dailyRevenueTrendOptions: ChartOptions<"line"> = {
     tooltip: {
       callbacks: {
         title: (context) => `Day ${context[0].label}`,
-        label: (context) => `Revenue: ${formatCurrency(Number(context.parsed.y))}`,
+        label: (context) => `Revenue: ${format(Number(context.parsed.y))}`,
       },
     },
   },
@@ -270,7 +271,7 @@ const dailyRevenueTrendOptions: ChartOptions<"line"> = {
           class="text-core-600 border-t border-gray-200 px-4 pt-4 text-sm"
         >
           <span class="text-core-800 font-semibold">Tax note:</span> Estimated VAT liability of
-          {{ formatCurrency(data.tax_summary.estimated_vat_liability) }}
+          {{ format(data.tax_summary.estimated_vat_liability) }}
           ({{ data.tax_summary.vat_rate_percent }}% on applicable sales) should be set aside for
           remittance.
         </p>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { formatCurrency, truncateCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import ReportStatCard, { IReportStat } from "../ReportStatCard.vue"
 import { computed, ref } from "vue"
 import ReportInsightCard from "../ReportInsightCard.vue"
@@ -11,6 +11,7 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend, ChartOptions } from "cha
 ChartJS.register(ArcElement, Tooltip, Legend)
 
 const props = defineProps<{ data: IMonthlyReport | null }>()
+const { format, truncate } = useFormatCurrency()
 
 const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
 
@@ -37,7 +38,7 @@ const stats = computed(() => {
     },
     {
       label: "Avg Spend/Customer",
-      value: truncateCurrency(props.data.breakdowns.customers.avg_spend_per_customer),
+      value: truncate(props.data.breakdowns.customers.avg_spend_per_customer),
       caption: "Revenue per customer",
     },
     {
@@ -75,13 +76,13 @@ const regionalSummary = computed(() => {
   const topPercentage = ((topRegion.revenue / totalRegionalRevenue) * 100).toFixed(0)
 
   if (sortedRegions.length === 1) {
-    return `${topRegion.name} accounts for all regional sales (${formatCurrency(topRegion.revenue)}).`
+    return `${topRegion.name} accounts for all regional sales (${format(topRegion.revenue)}).`
   }
 
   const secondRegion = sortedRegions[1]
   const secondPercentage = ((secondRegion.revenue / totalRegionalRevenue) * 100).toFixed(0)
 
-  return `${topRegion.name} leads with ${topPercentage}% of sales (${formatCurrency(topRegion.revenue)}), followed by ${secondRegion.name} at ${secondPercentage}% (${formatCurrency(secondRegion.revenue)}).`
+  return `${topRegion.name} leads with ${topPercentage}% of sales (${format(topRegion.revenue)}), followed by ${secondRegion.name} at ${secondPercentage}% (${format(secondRegion.revenue)}).`
 })
 
 const customerRevenueData = computed(() => {
@@ -148,7 +149,7 @@ const customerChartOptions: ChartOptions<"doughnut"> = {
           const value = context.parsed || 0
           const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0)
           const percentage = ((value / total) * 100).toFixed(1)
-          return ` ${formatCurrency(value)} (${percentage}%)`
+          return ` ${format(value)} (${percentage}%)`
         },
       },
     },
@@ -183,7 +184,7 @@ const customerChartOptions: ChartOptions<"doughnut"> = {
               v-show="!isHoveringChart"
               class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center pb-10"
             >
-              <p class="text-2xl font-bold">{{ truncateCurrency(totalRevenue) }}</p>
+              <p class="text-2xl font-bold">{{ truncate(totalRevenue) }}</p>
               <p class="text-xs text-gray-500">Total Revenue</p>
             </div>
           </div>
@@ -205,7 +206,7 @@ const customerChartOptions: ChartOptions<"doughnut"> = {
             >
               <p class="text-sm font-medium">{{ v.name }}</p>
               <p :class="['text-sm font-medium']">
-                {{ formatCurrency(v.revenue) }}
+                {{ format(v.revenue) }}
               </p>
             </div>
           </div>

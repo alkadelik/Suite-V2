@@ -3,7 +3,7 @@ import { ref, computed, watch } from "vue"
 import Modal from "@components/Modal.vue"
 import AppButton from "@components/AppButton.vue"
 import Icon from "@components/Icon.vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 import { useAdjustMaterialStock } from "../api"
@@ -24,6 +24,7 @@ const emit = defineEmits<{
   close: []
   refresh: []
 }>()
+const { format } = useFormatCurrency()
 
 const selectedMaterial = computed(() => props.material)
 
@@ -228,7 +229,7 @@ watch(adjustmentType, () => {
           type="text"
           name="unit_cost"
           label="unit cost"
-          :placeholder="`e.g. ${formatCurrency(12400)}`"
+          :placeholder="`e.g. ${format(12400)}`"
         />
 
         <FormField

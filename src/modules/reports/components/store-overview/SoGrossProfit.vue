@@ -4,13 +4,14 @@ import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
 import DonutChart from "@components/DonutChart.vue"
 import { SO_GROSS_PROFIT, SO_GROSS_PROFIT_EMPTY } from "../../constants"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 
 const props = defineProps<{ useDummyData: boolean }>()
+const { format } = useFormatCurrency()
 
 const data = computed(() => (props.useDummyData ? SO_GROSS_PROFIT : SO_GROSS_PROFIT_EMPTY))
 
-const displayValue = computed(() => formatCurrency(data.value.value))
+const displayValue = computed(() => format(data.value.value))
 </script>
 
 <template>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import DataTable from "@components/DataTable.vue"
 import type { TableColumn } from "@components/DataTable.vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 
 type UsageRow = {
   date: string
@@ -14,6 +14,7 @@ type UsageRow = {
 }
 
 const props = defineProps<{ rows: UsageRow[] }>()
+const { format } = useFormatCurrency()
 
 const columns: TableColumn<UsageRow>[] = [
   { header: "Date", accessor: "date" },
@@ -27,7 +28,7 @@ const columns: TableColumn<UsageRow>[] = [
   {
     header: "Total Cost",
     accessor: "total_cost",
-    cell: ({ item }) => formatCurrency(Number(item.total_cost)),
+    cell: ({ item }) => format(Number(item.total_cost)),
   },
   { header: "Performed By", accessor: "performed_by" },
 ]

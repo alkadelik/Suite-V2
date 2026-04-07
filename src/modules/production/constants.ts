@@ -1,5 +1,5 @@
 import { TableColumn } from "@components/DataTable.vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { TRawMaterial, TLinkedRecipe, TBatch, TMovement, TRecipes, TProdRun } from "./types"
 import componentPng from "@/assets/images/components.png"
 import ingredientPng from "@/assets/images/ingredients.png"
@@ -62,12 +62,18 @@ export const RECIPES_COLUMN: TableColumn<TRecipes>[] = [
   {
     header: "Last Cost",
     accessor: "last_cost",
-    cell: ({ item }) => formatCurrency(Number(item.last_cost)),
+    cell: ({ item }) => {
+      const { format } = useFormatCurrency()
+      return format(Number(item.last_cost))
+    },
   },
   {
     header: "Avg. Cost",
     accessor: "average_cost",
-    cell: ({ item }) => formatCurrency(Number(item.average_cost)),
+    cell: ({ item }) => {
+      const { format } = useFormatCurrency()
+      return format(Number(item.average_cost))
+    },
   },
   { header: "Actions", accessor: "actions" },
 ]
@@ -82,14 +88,18 @@ export const RAW_MATERIALS_COLUMN: TableColumn<TRawMaterial>[] = [
   {
     header: "Last Cost",
     accessor: "last_cost",
-    cell: ({ item }) =>
-      Number(item.last_cost) ? `${formatCurrency(Number(item.last_cost))}/${item.unit}` : "-",
+    cell: ({ item }) => {
+      const { format } = useFormatCurrency()
+      return Number(item.last_cost) ? `${format(Number(item.last_cost))}/${item.unit}` : "-"
+    },
   },
   {
     header: "Avg. Cost",
     accessor: "average_cost",
-    cell: ({ item }) =>
-      Number(item.last_cost) ? `${formatCurrency(Number(item.avg_cost))}/${item.unit}` : "-",
+    cell: ({ item }) => {
+      const { format } = useFormatCurrency()
+      return Number(item.last_cost) ? `${format(Number(item.avg_cost))}/${item.unit}` : "-"
+    },
   },
   { header: "", accessor: "actions" },
 ]
@@ -107,7 +117,10 @@ export const BATCHES_COLUMN: TableColumn<TBatch>[] = [
   {
     header: "Total Cost",
     accessor: "total_cost",
-    cell: ({ item }) => formatCurrency(Number(item.total_cost)),
+    cell: ({ item }) => {
+      const { format } = useFormatCurrency()
+      return format(Number(item.total_cost))
+    },
   },
   { header: "Source", accessor: "source" },
 ]
@@ -120,7 +133,10 @@ export const USAGE_HISTORY_COLUMN: TableColumn<TMovement>[] = [
   {
     header: "Total Cost",
     accessor: "total_cost",
-    cell: ({ item }) => formatCurrency(Number(item.total_cost)),
+    cell: ({ item }) => {
+      const { format } = useFormatCurrency()
+      return format(Number(item.total_cost))
+    },
   },
   { header: "Performed By", accessor: "performed_by" },
 ]

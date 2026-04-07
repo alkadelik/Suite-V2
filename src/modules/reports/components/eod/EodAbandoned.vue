@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import DataTable from "@components/DataTable.vue"
 import { EOD_ABANDONED_COLUMNS } from "@modules/reports/constants"
 import { IEODReport } from "@modules/reports/types"
@@ -8,6 +8,7 @@ import { computed } from "vue"
 
 const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
 defineProps<{ data: IEODReport | null }>()
+const { format } = useFormatCurrency()
 </script>
 
 <template>
@@ -42,7 +43,7 @@ defineProps<{ data: IEODReport | null }>()
               Yesterday had {{ data?.previous_day_failed_payments?.count || "no" }} failures
               <span v-if="data?.previous_day_failed_payments?.count"
                 >worth
-                {{ formatCurrency(data?.previous_day_failed_payments?.total_failed_amount ?? 0) }}
+                {{ format(data?.previous_day_failed_payments?.total_failed_amount ?? 0) }}
               </span>
             </p>
           </div>
@@ -54,8 +55,7 @@ defineProps<{ data: IEODReport | null }>()
           <h3 class="mb-1 text-sm font-semibold">Abandoned Carts</h3>
           <p class="text-xs">
             {{ data?.abandoned_carts?.count ?? 0 }} carts abandoned &bull;
-            {{ formatCurrency(data?.abandoned_carts?.total_potential_revenue ?? 0) }} potential
-            revenue
+            {{ format(data?.abandoned_carts?.total_potential_revenue ?? 0) }} potential revenue
           </p>
         </div>
         <div>

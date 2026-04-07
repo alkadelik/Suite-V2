@@ -4,15 +4,14 @@ import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
 import InfoBox from "@components/InfoBox.vue"
 import { SO_EBITDA, SO_EBITDA_EMPTY } from "../../constants"
-import { truncateCurrency, formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 
 const props = defineProps<{ useDummyData: boolean }>()
+const { format, truncate } = useFormatCurrency()
 
 const data = computed(() => (props.useDummyData ? SO_EBITDA : SO_EBITDA_EMPTY))
 
-const ebitdaValue = computed(() =>
-  data.value.value > 0 ? truncateCurrency(data.value.value) : formatCurrency(0),
-)
+const ebitdaValue = computed(() => (data.value.value > 0 ? truncate(data.value.value) : format(0)))
 
 const maxBarValue = computed(() => Math.max(...data.value.breakdown.map((item) => item.value), 1))
 
@@ -66,7 +65,7 @@ const expenseItems = computed(() => data.value.breakdown.filter((item) => !item.
           </div>
           <span class="text-success-700 w-[110px] shrink-0 text-right text-sm font-medium">
             <template v-if="revenueItem.value === 0">₦0.00</template>
-            <template v-else>+ {{ formatCurrency(revenueItem.value) }}</template>
+            <template v-else>+ {{ format(revenueItem.value) }}</template>
           </span>
         </div>
 
@@ -88,7 +87,7 @@ const expenseItems = computed(() => data.value.breakdown.filter((item) => !item.
             </div>
             <span class="text-error-600 w-[110px] shrink-0 text-right text-sm font-medium">
               <template v-if="item.value === 0">₦0.00</template>
-              <template v-else>({{ formatCurrency(item.value) }})</template>
+              <template v-else>({{ format(item.value) }})</template>
             </span>
           </div>
         </div>

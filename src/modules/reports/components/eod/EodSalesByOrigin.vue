@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import DataTable, { TableColumn } from "@components/DataTable.vue"
 import { useMediaQuery } from "@vueuse/core"
 import { computed } from "vue"
 import { IEODReport, TEodSalesByOrigin } from "@modules/reports/types"
 
 const props = defineProps<{ data: IEODReport | null }>()
+const { format } = useFormatCurrency()
 
 const COLUMNS: TableColumn<TEodSalesByOrigin>[] = [
   { header: "Channel", accessor: "origin_name" },
@@ -13,7 +14,7 @@ const COLUMNS: TableColumn<TEodSalesByOrigin>[] = [
   {
     header: "Revenue",
     accessor: "revenue",
-    cell: ({ value }) => formatCurrency(Number(value), { kobo: true }),
+    cell: ({ value }) => format(Number(value), { kobo: true }),
   },
   {
     header: "Share",
@@ -48,7 +49,7 @@ const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
         <div class="border-b border-gray-200 px-4 py-3">
           <h3 class="mb-1 text-sm font-semibold">Revenue by Channel</h3>
           <p class="text-xs">
-            {{ totalOrders }} orders &bull; {{ formatCurrency(totalRevenue, { kobo: true }) }} total
+            {{ totalOrders }} orders &bull; {{ format(totalRevenue, { kobo: true }) }} total
           </p>
         </div>
         <div class="flex min-h-[280px] items-center justify-center">

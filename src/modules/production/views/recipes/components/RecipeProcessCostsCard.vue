@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import Icon from "@components/Icon.vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 
 type CostRow = {
   name?: string | null
@@ -18,6 +18,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: "view-note", note?: string | null): void
 }>()
+const { format } = useFormatCurrency()
 
 const rows = computed<CostRow[]>(() =>
   Array.isArray(props.processCosts) ? props.processCosts : [],
@@ -43,7 +44,7 @@ const toNumberSafe = (val: unknown): number | null => {
 const formatNaira = (val: unknown) => {
   const n = toNumberSafe(val)
   if (n == null) return "—"
-  return formatCurrency(n) // your app adds ₦ already
+  return format(n) // your app adds ₦ already
 }
 
 const rowHasNote = (r: CostRow) => Boolean(String(r.notes ?? "").trim())

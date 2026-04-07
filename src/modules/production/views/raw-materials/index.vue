@@ -5,7 +5,7 @@ import StatCard from "@components/StatCard.vue"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, ref, watch } from "vue"
 import { useGetRawMaterials, useGetRawMaterialsStats } from "../../api"
-import { truncateCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import EmptyState from "@components/EmptyState.vue"
 import { componentOptions, RAW_MATERIALS_COLUMN } from "../../constants"
@@ -25,6 +25,7 @@ import { useRouter } from "vue-router"
 import AdjustMaterialStockModal from "@modules/production/components/AdjustMaterialStockModal.vue"
 
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
+const { truncate } = useFormatCurrency()
 
 const showFilter = ref(false)
 const showAddDrawer = ref(false)
@@ -88,7 +89,7 @@ const materialStats = computed(() => [
     : [
         {
           label: "Inventory Value",
-          value: truncateCurrency(stats.value?.inventory_value || 0),
+          value: truncate(stats.value?.inventory_value || 0),
           icon: "bag",
           iconClass: "lg:text-gray-700",
         },
@@ -187,7 +188,7 @@ const onSelect = (option: { label: string; value: string }) => {
             Inventory Value
           </p>
           <p class="text-4xl font-semibold">
-            {{ truncateCurrency(stats?.inventory_value || 0) }}
+            {{ truncate(stats?.inventory_value || 0) }}
           </p>
         </div>
         <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">

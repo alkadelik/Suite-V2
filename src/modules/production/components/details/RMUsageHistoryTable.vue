@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { formatDate } from "@/utils/formatDate"
 import Chip from "@components/Chip.vue"
 import DataTable from "@components/DataTable.vue"
@@ -12,6 +12,7 @@ import { computed, ref } from "vue"
 import RMUsageCard from "./RMUsageCard.vue"
 
 const props = defineProps<{ usage: TMovement[]; material: TRawMaterial }>()
+const { format } = useFormatCurrency()
 
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 
@@ -102,7 +103,7 @@ const onRowClick = (batch: TMovement) => {
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Cost</span>
             <span class="font-medium">{{
-              formatCurrency(Number(selectedHistory.unit_cost) * Number(selectedHistory.quantity))
+              format(Number(selectedHistory.unit_cost) * Number(selectedHistory.quantity))
             }}</span>
           </p>
           <p v-if="selectedHistory.performed_by" class="flex justify-between text-sm">

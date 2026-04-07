@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { formatDate } from "@/utils/formatDate"
 import Chip from "@components/Chip.vue"
 import DataTable from "@components/DataTable.vue"
@@ -13,6 +13,7 @@ import { startCase } from "@/utils/format-strings"
 import RMBatchCard from "./RMBatchCard.vue"
 
 const props = defineProps<{ batches: TBatch[]; material: TRawMaterial }>()
+const { format } = useFormatCurrency()
 
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 
@@ -47,7 +48,7 @@ const onRowClick = (batch: TBatch) => {
           {{ Number(item.remaining_quantity).toLocaleString() }} {{ props.material?.unit }}
         </template>
         <template #cell:unit_cost="{ item }">
-          {{ formatCurrency(Number(item.unit_cost)) }} / {{ props.material?.unit }}
+          {{ format(Number(item.unit_cost)) }} / {{ props.material?.unit }}
         </template>
         <template #cell:source="{ item }">
           <Chip v-if="item.source_type" :label="startCase(item.source_type)" color="blue" />
@@ -112,14 +113,13 @@ const onRowClick = (batch: TBatch) => {
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Unit Cost</span>
             <span class="font-medium"
-              >{{ formatCurrency(Number(selectedBatch.unit_cost)) }} /
-              {{ props.material?.unit }}</span
+              >{{ format(Number(selectedBatch.unit_cost)) }} / {{ props.material?.unit }}</span
             >
           </p>
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Total Cost</span>
             <span class="font-medium">{{
-              formatCurrency(Number(selectedBatch.unit_cost) * Number(selectedBatch.quantity))
+              format(Number(selectedBatch.unit_cost) * Number(selectedBatch.quantity))
             }}</span>
           </p>
         </div>

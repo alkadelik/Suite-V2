@@ -11,7 +11,7 @@ import {
   type RecipeIngredient,
   type RecipeProcessCost,
 } from "../../api"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { toast } from "@/composables/useToast"
 import { useMediaQuery } from "@vueuse/core"
 
@@ -83,6 +83,7 @@ type ApiErrorShape = {
 const isMobile = useMediaQuery("(max-width: 1024px)")
 const route = useRoute()
 const router = useRouter()
+const { format } = useFormatCurrency()
 const productionStore = useProductionStore()
 const { mutateAsync: deleteRecipeMutate } = useDeleteRecipe()
 
@@ -165,7 +166,7 @@ const formatMoney = (value?: number | string | null): string => {
   if (value == null || value === "") return "—"
   const n = typeof value === "number" ? value : Number(value)
   if (!Number.isFinite(n)) return "—"
-  return formatCurrency(n)
+  return format(n)
 }
 
 const rawMaterialsById = computed<Record<string, RawMaterial>>(() => {

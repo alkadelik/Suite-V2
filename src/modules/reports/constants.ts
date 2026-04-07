@@ -9,7 +9,7 @@ import {
   TMonthlyProductRow,
   TStoreOverviewProduct,
 } from "./types"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { startCase } from "@/utils/format-strings"
 import { IReportStat } from "./components/ReportStatCard.vue"
 
@@ -91,7 +91,10 @@ export const EOD_ORDER_COLUMNS: TableColumn<TEodOrders>[] = [
   {
     header: "Amount",
     accessor: "amount",
-    cell: ({ value }) => formatCurrency(Number(value), { kobo: true }),
+    cell: ({ value }) => {
+      const { format } = useFormatCurrency()
+      return format(Number(value), { kobo: true })
+    },
   },
   {
     header: "Payment",
@@ -116,12 +119,18 @@ export const EOD_PRODUCTS_SOLD_COLUMNS: TableColumn<TEodProductsSold>[] = [
   {
     header: "Revenue",
     accessor: "revenue",
-    cell: ({ value }) => formatCurrency(Number(value), { kobo: true }),
+    cell: ({ value }) => {
+      const { format } = useFormatCurrency()
+      return format(Number(value), { kobo: true })
+    },
   },
   {
     header: "Avg. Price",
     accessor: "average_price",
-    cell: ({ value }) => formatCurrency(Number(value), { kobo: true }),
+    cell: ({ value }) => {
+      const { format } = useFormatCurrency()
+      return format(Number(value), { kobo: true })
+    },
   },
   { header: "Stock After", accessor: "stock_remaining" },
   {
@@ -166,7 +175,10 @@ export const EOD_ABANDONED_COLUMNS: TableColumn<TEodAbandoned>[] = [
   {
     header: "Amount",
     accessor: "amount",
-    cell: ({ value }) => formatCurrency(Number(value), { kobo: true }),
+    cell: ({ value }) => {
+      const { format } = useFormatCurrency()
+      return format(Number(value), { kobo: true })
+    },
   },
   {
     header: "Drop-off Point",
@@ -554,13 +566,19 @@ export const SO_TOP_PRODUCT_COLUMNS: TableColumn<TStoreOverviewProduct>[] = [
   {
     header: "Revenue",
     accessor: "revenue",
-    cell: ({ value }) => formatCurrency(Number(value)),
+    cell: ({ value }) => {
+      const { format } = useFormatCurrency()
+      return format(Number(value))
+    },
   },
   { header: "Units Sold", accessor: "units_sold" },
   {
     header: "Avg. Price",
     accessor: "avg_price",
-    cell: ({ value }) => formatCurrency(Number(value)),
+    cell: ({ value }) => {
+      const { format } = useFormatCurrency()
+      return format(Number(value))
+    },
   },
   {
     header: "Margin",

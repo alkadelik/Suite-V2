@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import DataTable from "@components/DataTable.vue"
 import type { TableColumn } from "@components/DataTable.vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 
 type BatchRow = {
   date_added: string
@@ -15,6 +15,7 @@ type BatchRow = {
 }
 
 const props = defineProps<{ rows: BatchRow[] }>()
+const { format } = useFormatCurrency()
 
 const columns: TableColumn<BatchRow>[] = [
   { header: "Date Added", accessor: "date_added" },
@@ -24,12 +25,12 @@ const columns: TableColumn<BatchRow>[] = [
   {
     header: "Unit Cost",
     accessor: "unit_cost",
-    cell: ({ item }) => `${formatCurrency(Number(item.unit_cost))}/${item.unit}`,
+    cell: ({ item }) => `${format(Number(item.unit_cost))}/${item.unit}`,
   },
   {
     header: "Total Cost",
     accessor: "total_cost",
-    cell: ({ item }) => formatCurrency(Number(item.total_cost)),
+    cell: ({ item }) => format(Number(item.total_cost)),
   },
   { header: "Source", accessor: "source" },
 ]

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { startCase } from "@/utils/format-strings"
 import { formatDate } from "@/utils/formatDate"
 import Chip from "@components/Chip.vue"
@@ -12,6 +12,7 @@ const props = defineProps<{
   material?: TRawMaterial
   class?: HTMLAttributes["class"]
 }>()
+const { format } = useFormatCurrency()
 </script>
 
 <template>
@@ -44,7 +45,7 @@ const props = defineProps<{
             </p>
             <span class="text-lg">&bull;</span>
             <p class="text-xs font-medium">
-              {{ formatCurrency(Number(item.unit_cost)) }}
+              {{ format(Number(item.unit_cost)) }}
             </p>
           </div>
         </div>

@@ -1,23 +1,24 @@
 <script setup lang="ts">
 import { computed } from "vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import DataTable, { TableColumn } from "@components/DataTable.vue"
 import { useMediaQuery } from "@vueuse/core"
 import { IEODReport } from "@modules/reports/types"
 import { startCase } from "@/utils/format-strings"
 
 const props = defineProps<{ data: IEODReport | null }>()
+const { format } = useFormatCurrency()
 const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
 
 const stats = computed(() => [
   {
     title: "Total Expenses",
-    value: formatCurrency(props.data?.total_expenses ?? 0, { kobo: true }),
+    value: format(props.data?.total_expenses ?? 0, { kobo: true }),
     subtitle: `${props.data?.expenses_by_category?.length ?? 0} categories`,
   },
   {
     title: "Biggest Line Item",
-    value: formatCurrency(props.data?.expenses_overview?.biggest_expense_amount ?? 0, {
+    value: format(props.data?.expenses_overview?.biggest_expense_amount ?? 0, {
       kobo: true,
     }),
     subtitle: startCase(props.data?.expenses_overview?.biggest_expense_category_name ?? "N/A"),
@@ -25,7 +26,7 @@ const stats = computed(() => [
   {
     title: "Expense-to-Revenue",
     value: `${(props.data?.expenses_overview?.expense_to_revenue_percent ?? 0).toFixed(1)}%`,
-    subtitle: `${formatCurrency(props.data?.total_expenses ?? 0, { kobo: true })} / ${formatCurrency(props.data?.summary?.gross_revenue ?? 0, { kobo: true })}`,
+    subtitle: `${format(props.data?.total_expenses ?? 0, { kobo: true })} / ${format(props.data?.summary?.gross_revenue ?? 0, { kobo: true })}`,
   },
 ])
 
@@ -41,7 +42,7 @@ const COLUMNS: TableColumn<TExpense>[] = [
   {
     header: "Amount",
     accessor: "amount",
-    cell: ({ value }) => formatCurrency(Number(value), { kobo: true }),
+    cell: ({ value }) => format(Number(value), { kobo: true }),
   },
   {
     header: "% of Revenue",
