@@ -136,7 +136,13 @@ watch(
   { immediate: true },
 )
 
-const selectedComponent = computed(() => useProductionStore().selectedComponentOption)
+const selectedComponent = computed(() => {
+  const opt = useProductionStore().selectedComponentOption
+  return {
+    label: opt?.label || "Raw Materials",
+    value: opt?.value === "raw_materials" ? "material" : opt?.value || "material",
+  }
+})
 
 const onSelect = (option: { label: string; value: string }) => {
   useProductionStore().setSelectedComponentOption(option)
@@ -181,7 +187,7 @@ const onSelect = (option: { label: string; value: string }) => {
             Inventory Value
           </p>
           <p class="text-4xl font-semibold">
-            {{ truncateCurrency(stats?.inventory_value || 2400000) }}
+            {{ truncateCurrency(stats?.inventory_value || 0) }}
           </p>
         </div>
         <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
