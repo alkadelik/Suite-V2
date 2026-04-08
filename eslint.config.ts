@@ -9,7 +9,7 @@ import globals from "globals"
 
 export default tseslint.config(
   // Ignore build + tooling files
-  { ignores: ["dist", "coverage", "node_modules", "*.config.*"] },
+  { ignores: ["dist", "coverage", "node_modules", "*.config.*", "e2e"] },
 
   // Base configs
   js.configs.recommended,

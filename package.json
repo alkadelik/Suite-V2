@@ -12,7 +12,11 @@
     "prepare": "husky",
     "version:patch": "npm version patch && git push && git push --tags",
     "version:minor": "npm version minor && git push && git push --tags",
-    "version:major": "npm version major && git push && git push --tags"
+    "version:major": "npm version major && git push && git push --tags",
+    "test:e2e": "playwright test --config e2e/playwright.config.ts",
+    "test:e2e:ui": "playwright test --config e2e/playwright.config.ts --ui",
+    "test:e2e:headed": "playwright test --config e2e/playwright.config.ts --headed",
+    "test:e2e:report": "playwright show-report e2e/playwright-report"
   },
   "dependencies": {
     "@ckpack/vue-color": "^1.6.0",
@@ -47,12 +51,14 @@
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
     "@eslint/js": "^9.33.0",
+    "@playwright/test": "^1.58.2",
     "@types/aos": "^3.0.7",
     "@types/axios": "^0.9.36",
     "@types/node": "^24.3.0",
     "@types/vue-router": "^2.0.0",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vue/tsconfig": "^0.7.0",
+    "dotenv": "^17.2.4",
     "eslint": "^9.33.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
