@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import Chip from "@components/Chip.vue"
 import DataTable from "@components/DataTable.vue"
-import { LINKED_RECIPES_COLUMN } from "@modules/production/constants"
 import RMTableCard from "./RMTableCard.vue"
 import { TLinkedRecipe } from "@modules/production/types"
+import { LINKED_RECIPES_COLUMN } from "@modules/production/constant"
 
 const props = defineProps<{
   recipes: TLinkedRecipe[]

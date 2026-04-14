@@ -6,13 +6,13 @@ import { useUpdateStoreDetails } from "@modules/settings/api"
 import { displayError } from "@/utils/error-handler"
 import { useSettingsStore } from "@modules/settings/store"
 import { toast } from "@/composables/useToast"
-import { recipeNameOptions } from "@modules/production/constants"
+import { componentOptions } from "@modules/production/constant"
 
 const emit = defineEmits(["select"])
 
 const selectedOption = ref<string | null>(null)
 const selectedOptionLabel = computed(() => {
-  const selected = recipeNameOptions.find((option) => option.value === selectedOption.value)
+  const selected = componentOptions.find((option) => option.value === selectedOption.value)
   return selected ? selected.label : ""
 })
 
@@ -21,12 +21,12 @@ const storeId = computed(() => useSettingsStore().storeDetails?.uid || "")
 
 const handleSelect = () => {
   const selected = { label: selectedOptionLabel.value, value: selectedOption.value! }
-  console.log("Selected option:", selected)
   updateStore(
-    { id: storeId.value, body: { recipe_terminology: selected.value } },
+    { id: storeId.value, body: { material_type: selected.value } },
     {
-      onSuccess: () => {
+      onSuccess: (res) => {
         toast.success("Name saved successfully")
+        console.log("res", res)
         emit("select", selected)
       },
       onError: displayError,
@@ -37,27 +37,24 @@ const handleSelect = () => {
 
 <template>
   <div
-    class="flex min-h-[80vh] flex-col items-center justify-center p-4 pb-6 md:rounded-3xl md:bg-white md:pb-0 md:shadow-xs"
+    class="flex min-h-[80vh] flex-col items-center justify-center pb-6 md:rounded-3xl md:bg-white md:pb-0 md:shadow-xs"
   >
     <div class="mx-auto max-w-2xl text-center">
       <h2 class="text-core-900 mb-3 text-xl font-semibold md:text-2xl">
-        Let’s set your preferred terminology.
+        What should we call the items you use?
       </h2>
       <p class="text-core-700 text-sm md:text-base">
-        When you produce an item, you follow a defined structure: what materials are needed, in what
-        quantities, any extra costs (like labor or fuel), and optional steps. This is commonly known
-        as a Recipe, BOM (Bill of Materials), or Formula—depending on your industry.
+        Here’s where you’ll manage everything you use to make your products. Some call them
+        ingredients, others call them materials.
       </p>
 
-      <p class="text-core-700 mt-4 text-sm md:text-base">
-        What would you like us to call it in your workspace?
-      </p>
+      <p class="text-core-700 mt-4 text-sm md:text-base">What works better for you?”</p>
     </div>
 
     <!-- option with radio -->
     <div class="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
       <div
-        v-for="option in recipeNameOptions"
+        v-for="option in componentOptions"
         :key="option.value"
         @click="selectedOption = option.value"
         :class="[

@@ -5,12 +5,12 @@ import Chip from "@components/Chip.vue"
 import DataTable from "@components/DataTable.vue"
 import Drawer from "@components/Drawer.vue"
 import Modal from "@components/Modal.vue"
-import { BATCHES_COLUMN } from "@modules/production/constants"
 import { TBatch, TRawMaterial } from "@modules/production/types"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, ref } from "vue"
 import { startCase } from "@/utils/format-strings"
 import RMBatchCard from "./RMBatchCard.vue"
+import { BATCHES_COLUMN } from "@modules/production/constant"
 
 const props = defineProps<{ batches: TBatch[]; material: TRawMaterial }>()
 const { format } = useFormatCurrency()

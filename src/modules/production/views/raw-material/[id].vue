@@ -10,11 +10,11 @@ import PageHeader from "@components/PageHeader.vue"
 import StatCard from "@components/StatCard.vue"
 import Tabs from "@components/Tabs.vue"
 import { useGetSingleRawMaterial } from "@modules/production/api"
-import AddRawMaterialDrawer from "@modules/production/components/AddRawMaterialDrawer.vue"
-import AdjustMaterialStockModal from "@modules/production/components/AdjustMaterialStockModal.vue"
-import RMBatchesTable from "@modules/production/components/details/RMBatchesTable.vue"
-import RMLinkedRecipesTable from "@modules/production/components/details/RMLinkedRecipesTable.vue"
-import RMUsageHistoryTable from "@modules/production/components/details/RMUsageHistoryTable.vue"
+import AddRawMaterialDrawer from "@modules/production/components/raw-material/AddRawMaterialDrawer.vue"
+import AdjustMaterialStockModal from "@modules/production/components/raw-material/AdjustMaterialStockModal.vue"
+import RMBatchesTable from "@modules/production/components/raw-material/details/RMBatchesTable.vue"
+import RMLinkedRecipesTable from "@modules/production/components/raw-material/details/RMLinkedRecipesTable.vue"
+import RMUsageHistoryTable from "@modules/production/components/raw-material/details/RMUsageHistoryTable.vue"
 import { useProductionStore } from "@modules/production/store"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, onMounted, ref } from "vue"
@@ -32,13 +32,14 @@ const showEdit = ref(false)
 const showAdjust = ref(false)
 const activeTab = ref("batches")
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
-const selectedComponent = computed(() => useProductionStore().selectedComponentOption)
+const materialLabel = computed(() => useProductionStore().componentLabel)
+const materialValue = computed(() => useProductionStore().componentValue)
 
 const { data: material, isPending, refetch } = useGetSingleRawMaterial(route.params.id as string)
 
 const actionMenus = computed(() => [
   {
-    label: `Edit ${selectedComponent.value?.value || "material"}`,
+    label: `Edit ${materialValue.value}`,
     icon: "edit",
     action: () => (showEdit.value = true),
   },
@@ -83,9 +84,9 @@ onMounted(() => {
 
 <template>
   <div class="px-3 lg:px-6 lg:pt-8">
-    <PageHeader v-if="isMobile" :title="`${selectedComponent?.label} Details`" inner />
+    <PageHeader v-if="isMobile" :title="`${materialLabel} Details`" inner />
 
-    <BackButton v-else :label="`Back to ${selectedComponent?.label}`" to="/raw-materials" />
+    <BackButton v-else :label="`Back to ${materialLabel}`" to="/production/raw-materials" />
 
     <div class="mt-4" />
 
@@ -93,7 +94,7 @@ onMounted(() => {
       v-if="isPending || !material"
       :loading="isPending"
       icon="box"
-      title="Loading material details..."
+      :title="`Loading ${materialValue} details...`"
     />
 
     <div v-else>
@@ -113,7 +114,7 @@ onMounted(() => {
                 variant="outlined"
                 icon="dots-vertical"
                 class="!flex-row-reverse"
-                :label="!isMobile ? `Manage ${selectedComponent?.value}` : ''"
+                :label="!isMobile ? `Manage ${materialValue}` : ''"
               />
             </template>
           </DropdownMenu>

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import Icon from "@components/Icon.vue"
-import { TRawMaterial } from "../types"
+import { TRawMaterial } from "../../types"
 import { computed } from "vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
-import { useProductionStore } from "../store"
+import { useProductionStore } from "../../store"
 import Chip from "@components/Chip.vue"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { useRouter } from "vue-router"

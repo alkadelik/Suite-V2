@@ -4,25 +4,23 @@ import SectionHeader from "@components/SectionHeader.vue"
 import StatCard from "@components/StatCard.vue"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, ref, watch } from "vue"
-import { useGetRawMaterials, useGetRawMaterialsStats } from "../../api"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import EmptyState from "@components/EmptyState.vue"
-import { componentOptions, RAW_MATERIALS_COLUMN } from "../../constants"
 import DataTable from "@components/DataTable.vue"
 import Icon from "@components/Icon.vue"
 import Chip from "@components/Chip.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
-import { TRawMaterial } from "../../types"
-import RawMaterialCard from "../../components/RawMaterialCard.vue"
-import SelectComponentName from "../../components/SelectComponentName.vue"
 import { useProductionStore } from "../../store"
 import AppButton from "@components/AppButton.vue"
 import TextField from "@components/form/TextField.vue"
-import AddRawMaterialDrawer from "@modules/production/components/AddRawMaterialDrawer.vue"
 import { useSettingsStore } from "@modules/settings/store"
 import { useRouter } from "vue-router"
-import AdjustMaterialStockModal from "@modules/production/components/AdjustMaterialStockModal.vue"
+import AddRawMaterialDrawer from "@modules/production/components/raw-material/AddRawMaterialDrawer.vue"
+import AdjustMaterialStockModal from "@modules/production/components/raw-material/AdjustMaterialStockModal.vue"
+import { TRawMaterial } from "@modules/production/types"
+import { useGetRawMaterials, useGetRawMaterialsStats } from "@modules/production/api"
+import { componentOptions, RAW_MATERIALS_COLUMN } from "@modules/production/constant"
 
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 const { truncate } = useFormatCurrency()
@@ -79,9 +77,6 @@ const materialStats = computed(() => [
     value: stats.value?.expiring_soon || 0,
     icon: "bag",
     iconClass: "lg:text-gray-700",
-    // chip: stats.value?.expiring_soon
-    //   ? `Worth ${truncateCurrency(stats.value?.expiring_soon_amount || 0)}`
-    //   : undefined,
     chipColor: "pink",
   },
   ...(isMobile.value
@@ -119,7 +114,7 @@ const getActionItems = (item: TRawMaterial) => [
   {
     label: "View usage",
     icon: "eye",
-    action: () => router.push(`/raw-materials/${item.uid}?tab=usage`),
+    action: () => router.push(`/production/raw-materials/${item.uid}?tab=usage`),
   },
 ]
 
@@ -145,22 +140,21 @@ const selectedComponent = computed(() => {
   }
 })
 
+const materialLabel = computed(() => useProductionStore().componentLabel)
+const materialValue = computed(() => useProductionStore().componentValue)
+
 const onSelect = (option: { label: string; value: string }) => {
   useProductionStore().setSelectedComponentOption(option)
 }
 </script>
 
 <template>
-  <div class="px-3 pb-6">
-    <PageHeader
-      v-if="isMobile"
-      :title="selectedComponent?.label || 'Raw Materials'"
-      :count="rawMaterials?.count || 0"
-    />
+  <div class="px-3 pb-6 lg:pt-6">
+    <PageHeader v-if="isMobile" :title="materialLabel" :count="rawMaterials?.count || 0" />
     <SectionHeader
       v-else
-      :title="selectedComponent?.label || 'Raw Materials'"
-      :subtitle="`Manage and organize your ${selectedComponent?.value?.toLowerCase() || 'materials'} efficiently.`"
+      :title="materialLabel"
+      :subtitle="`Manage and organize your ${materialValue} efficiently.`"
     />
     <div class="mt-6" />
 
@@ -169,9 +163,9 @@ const onSelect = (option: { label: string; value: string }) => {
     <div v-else class="flex flex-col gap-8">
       <EmptyState
         v-if="isPending && !rawMaterials?.count"
-        :title="`You don't have any ${selectedComponent.label.toLowerCase()} yet!`"
-        :description="`Start tracking everything you use to make your products by adding your ${selectedComponent.value}.`"
-        :action-label="`Add ${selectedComponent.value}`"
+        :title="`You don't have any ${materialValue} yet!`"
+        :description="`Start tracking everything you use to make your products by adding your ${materialValue}.`"
+        :action-label="`Add ${materialValue}`"
         :loading="isPending"
         action-icon="add"
         @action="() => (showAddDrawer = true)"
@@ -205,7 +199,7 @@ const onSelect = (option: { label: string; value: string }) => {
         >
           <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
             <h3 class="mb-2 hidden items-center gap-1 text-lg font-semibold md:mb-0 lg:flex">
-              {{ "All " + selectedComponent.label }}
+              {{ "All " + materialValue }}
               <Chip v-if="rawMaterials?.count" :label="rawMaterials?.count" />
             </h3>
             <div class="flex items-center gap-2">
@@ -230,7 +224,7 @@ const onSelect = (option: { label: string; value: string }) => {
                 icon="add"
                 size="sm"
                 class="flex-shrink-0"
-                :label="isMobile ? '' : `Add ${selectedComponent.value}`"
+                :label="isMobile ? '' : `Add ${materialValue}`"
                 @click="() => (showAddDrawer = true)"
               />
             </div>
@@ -242,10 +236,10 @@ const onSelect = (option: { label: string; value: string }) => {
             :loading="isFetching"
             :enable-row-selection="false"
             :empty-state="{
-              title: `No ${selectedComponent.label} Found`,
+              title: `No ${materialLabel} Found`,
               description: searchQuery
                 ? 'Try adjusting your filters or search query'
-                : `Start tracking everything you use to make your products by adding your ${selectedComponent.value}.`,
+                : `Start tracking everything you use to make your products by adding your ${materialValue}.`,
             }"
             :show-pagination="true"
             :items-per-page="itemsPerPage"
@@ -253,7 +247,7 @@ const onSelect = (option: { label: string; value: string }) => {
             :total-page-count="Math.ceil((rawMaterials?.count || 0) / itemsPerPage) || 1"
             :server-pagination="true"
             @pagination-change="(d) => (page = d.currentPage)"
-            @row-click="(row) => $router.push(`/raw-materials/${row.uid}`)"
+            @row-click="(row) => $router.push(`/production/raw-materials/${row.uid}`)"
           >
             <template #cell:name="{ item }">
               <div class="flex max-w-64 items-center gap-2 truncate">
@@ -273,7 +267,7 @@ const onSelect = (option: { label: string; value: string }) => {
             <template #mobile="{ item }">
               <RawMaterialCard
                 :material="item"
-                @click="() => $router.push(`/raw-materials/${item.uid}`)"
+                @click="() => $router.push(`/production/raw-materials/${item.uid}`)"
               />
             </template>
             <template #cell:actions="{ item }">

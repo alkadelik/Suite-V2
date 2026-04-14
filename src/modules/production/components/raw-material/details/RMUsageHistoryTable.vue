@@ -5,11 +5,11 @@ import Chip from "@components/Chip.vue"
 import DataTable from "@components/DataTable.vue"
 import Drawer from "@components/Drawer.vue"
 import Modal from "@components/Modal.vue"
-import { USAGE_HISTORY_COLUMN } from "@modules/production/constants"
 import { TMovement, TRawMaterial } from "@modules/production/types"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, ref } from "vue"
 import RMUsageCard from "./RMUsageCard.vue"
+import { USAGE_HISTORY_COLUMN } from "@modules/production/constant"
 
 const props = defineProps<{ usage: TMovement[]; material: TRawMaterial }>()
 const { format } = useFormatCurrency()

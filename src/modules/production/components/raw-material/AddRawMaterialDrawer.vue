@@ -18,17 +18,18 @@ import {
   useEditRawMaterial,
   useGetSuppliers,
   useCreateSupplier,
-} from "../api"
-import { TRawMaterial } from "../types"
+} from "../../api"
+import { TRawMaterial } from "../../types"
 import SelectField from "@components/form/SelectField.vue"
-import { useSettingsStore } from "@modules/settings/store"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
+import { UNITS_OF_MEASURE } from "@modules/production/constant"
 
 const props = defineProps<{ open: boolean; material?: TRawMaterial | null }>()
 const emit = defineEmits(["close", "refresh"])
 
 const isMobile = useMediaQuery("(max-width: 1028px)")
 const isEditMode = computed(() => !!props.material)
-const currency = computed(() => useSettingsStore().storeDetails?.currency || "NGN")
+const { currency } = useFormatCurrency()
 
 const steps = ["Add Material", "Suppliers (optional)"]
 const activeStep = ref(0)
@@ -68,17 +69,7 @@ const supplierOptions = computed(() => {
 })
 
 // Unit options
-const unitOptions = ref([
-  { label: "Kilograms (kg)", value: "kg" },
-  { label: "Grams (g)", value: "g" },
-  { label: "Liters (L)", value: "L" },
-  { label: "Milliliters (ml)", value: "ml" },
-  { label: "Pieces (pcs)", value: "pcs" },
-  { label: "Meters (m)", value: "m" },
-  { label: "Sheets", value: "sheets" },
-  { label: "Bags", value: "bags" },
-  { label: "Boxes", value: "boxes" },
-])
+const unitOptions = ref(UNITS_OF_MEASURE)
 
 // Source of material options
 const sourceOptions = [

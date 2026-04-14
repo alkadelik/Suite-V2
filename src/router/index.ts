@@ -3,7 +3,6 @@ import type { RouteRecordRaw } from "vue-router"
 import { useAuthStore } from "@modules/auth/store"
 import { useSettingsStore } from "@modules/settings/store"
 import { toast } from "@/composables/useToast"
-
 // Layout imports
 // import LandingLayout from "@/layouts/LandingLayout.vue"
 import MainLayout from "@/layouts/MainLayout.vue"
@@ -19,29 +18,15 @@ import ordersRoutes from "@modules/orders/routes"
 import settingsRoutes from "@modules/settings/routes"
 import sharedRoutes from "@modules/shared/routes"
 import expensesRoutes from "@modules/expenses/routes"
-import productionRoutes from "@modules/production/routes"
 import marketingRoutes from "@modules/marketing/routes"
 import { isStaging } from "@/utils/others"
 import reportsRoutes from "@modules/reports/routes"
+import productionRoutes from "@modules/production/routes"
 
 const routes: RouteRecordRaw[] = [
-  // Public pages routes with LandingLayout
-  // {
-  //   path: "/",
-  //   component: LandingLayout,
-  //   children: [...landingRoutes],
-  // },
-  {
-    path: "/",
-    redirect: "/dashboard",
-  },
+  { path: "/", redirect: "/dashboard" },
   // Auth routes with AuthLayout
-  {
-    path: "/",
-    component: AuthLayout,
-    children: [...authRoutes],
-  },
-
+  { path: "/", component: AuthLayout, children: [...authRoutes] },
   // Main app routes with MainLayout - authenticated users only
   {
     path: "/",
@@ -59,14 +44,10 @@ const routes: RouteRecordRaw[] = [
       ...reportsRoutes,
     ],
   },
-  {
-    path: "/",
-    meta: { requiresAuth: true },
-    children: [...settingsRoutes],
-  },
-
+  { path: "/", meta: { requiresAuth: true }, children: [...settingsRoutes] },
+  // payment page
   { path: "/pay/:id", component: () => import("@modules/landing/views/payment-link.vue") },
-
+  // landing pages
   { path: "/dawn", component: () => import("@modules/landing/views/dawn.vue") },
   { path: "/heritage", component: () => import("@modules/landing/views/heritage.vue") },
   { path: "/grace", component: () => import("@modules/landing/views/grace.vue") },
@@ -78,11 +59,7 @@ const routes: RouteRecordRaw[] = [
     path: "/",
     component: MainLayout,
     children: [
-      {
-        path: ":pathMatch(.*)*",
-        name: "NotFound",
-        component: () => import("@modules/404.vue"),
-      },
+      { path: ":pathMatch(.*)*", name: "NotFound", component: () => import("@modules/404.vue") },
     ],
   },
 ]
@@ -176,7 +153,7 @@ router.beforeEach((to, from, next) => {
   }
 
   // prevent access to upcoming features for non-staging environments
-  const upcomingFeaturePaths = ["/raw-materials"]
+  const upcomingFeaturePaths = ["/production"]
 
   if (!isStaging && upcomingFeaturePaths.includes(to.path)) {
     const featureName = to.path.replace("/", "").toUpperCase()
