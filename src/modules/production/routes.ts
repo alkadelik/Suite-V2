@@ -30,7 +30,7 @@ const productionRoutes: RouteRecordRaw[] = [
         meta: { hideAppHeader: true },
       },
       {
-        path: "prod-run",
+        path: "runs",
         name: "ProductionRun",
         component: () => import("./views/prod-run/index.vue"),
         meta: { hideAppHeader: true },

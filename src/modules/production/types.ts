@@ -194,13 +194,49 @@ export interface IRecipeStats {
 // ======= Prod run submodule ========
 
 export type TProdRun = {
-  run_id: string
+  uid: string
+  recipe: string
   output_item_name: string
-  damaged_quantity: number
-  output_quantity: number
-  unit: string
-  status: string
-  ingredient_count: number
-  date_created: string
-  last_cost: number
+  output_unit: string
+  quantity_to_produce: string
+  damaged_quantity: string
+  usable_quantity: string
+  total_cost: string
+  cost_per_unit: string
+  selling_price_per_unit: string
+  status: "draft" | "completed"
+  created_at: string
+  finalized_at: string | null
+}
+
+export interface IProdRunStats {
+  total_runs: number
+  total_units_produced: number
+  total_production_cost: number
+  avg_cost_per_unit: number
+}
+
+export interface IProdRunPayload {
+  recipe_uid: string
+  output_variant_uid?: string
+  quantity_to_produce: string
+  damaged_quantity?: string
+  selling_price_per_unit?: string
+  notes?: string
+  ingredients?: {
+    material_uid: string
+    quantity_required: string
+  }[]
+  process_costs?: {
+    recipe_process_cost_uid: string
+    name: string
+    cost_per_batch: string
+  }[]
+  additional_expenses?: {
+    name: string
+    cost_type: string
+    amount: string
+    notes?: string
+  }[]
+  status?: string
 }

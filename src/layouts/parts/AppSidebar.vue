@@ -227,7 +227,7 @@ const productionItems = computed(() => {
   return [
     { icon: "box", label: componentLabel, to: "/production/raw-materials" },
     { icon: "box", label: recipeLabel, to: "/production/recipes" },
-    { icon: "box", label: "Production run", to: "/production/prod-run" },
+    { icon: "box", label: "Production run", to: "/production/runs" },
   ]
 })
 

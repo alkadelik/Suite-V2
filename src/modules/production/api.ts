@@ -4,8 +4,11 @@ import baseApi, { TPaginatedResponse, useApiQuery } from "@/composables/baseApi"
 import {
   IAdjustStockPayload,
   ICreateMaterialPayload,
+  IProdRunPayload,
+  IProdRunStats,
   IRecipePayload,
   RawMaterialStats,
+  TProdRun,
   TRawMaterial,
 } from "@modules/production/types"
 import { useMutation, useQuery } from "@tanstack/vue-query"
@@ -79,6 +82,7 @@ export function useSearchRawMaterial(search: MaybeRefOrGetter<string>) {
     refetchOnWindowFocus: false,
   })
 }
+
 /** Fetch raw materials statistics */
 export function useGetRawMaterialsStats() {
   return useApiQuery<RawMaterialStats>({
@@ -112,6 +116,24 @@ export function useGetRecipes(
   })
 }
 
+/** search recipe by name */
+export function useSearchRecipe(search: MaybeRefOrGetter<string>) {
+  return useQuery({
+    queryKey: ["recipes", "search", search],
+    queryFn: async () => {
+      const { data } = await baseApi.get<TPaginatedResponse<TRecipe>>(`/recipes/`, {
+        params: {
+          ...(toValue(search) ? { search: toValue(search) } : {}),
+          limit: 10,
+        },
+      })
+      return data.data
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
+  })
+}
+
 /** Fetch recipes statistics */
 export function useGetRecipesStats() {
   return useApiQuery<IRecipeStats>({
@@ -122,10 +144,11 @@ export function useGetRecipesStats() {
 }
 
 /** Fetch single recipe by uid */
-export function useGetSingleRecipe(uid: string) {
+export function useGetSingleRecipe(uid: MaybeRefOrGetter<string>) {
   return useApiQuery<TRecipe>({
-    url: `/recipes/${uid}/`,
-    key: `recipes/${uid}`,
+    url: () => `/recipes/${toValue(uid)}/`,
+    key: () => `recipes/${toValue(uid)}`,
+    enabled: () => !!toValue(uid),
     selectData: true,
   })
 }
@@ -148,5 +171,59 @@ export function useUpdateRecipe() {
 export function useCreateRecipe() {
   return useMutation({
     mutationFn: (body: IRecipePayload) => baseApi.post(`/recipes/`, body),
+  })
+}
+
+// =================================================
+// ========= PROD RUN API ============================
+
+/** Fetch production runs list */
+export function useGetProdRuns(
+  params?: MaybeRefOrGetter<Record<string, string | number | boolean> | undefined>,
+) {
+  return useApiQuery<TPaginatedResponse<TProdRun>["data"]>({
+    url: "/production-runs/",
+    params,
+    key: "prod-run",
+    selectData: true,
+  })
+}
+
+/** Fetch production runs statistics */
+export function useGetProdRunsStats() {
+  return useApiQuery<IProdRunStats>({
+    url: `/production-runs/stats/`,
+    key: `production-runs-stats`,
+    selectData: true,
+  })
+}
+
+/** Fetch single production run by uid */
+export function useGetSingleProdRun(uid: string) {
+  return useApiQuery<TProdRun>({
+    url: `/production-runs/${uid}/`,
+    key: `production-runs/${uid}`,
+    selectData: true,
+  })
+}
+
+/** Delete production run */
+export function useDeleteProdRun() {
+  return useMutation({
+    mutationFn: (uid: string) => baseApi.delete(`/production-runs/${uid}/`),
+  })
+}
+
+/** Update production run partially */
+export function useUpdateProdRun() {
+  return useMutation({
+    mutationFn: ({ uid, body }: { uid: string; body: Partial<IProdRunPayload> }) =>
+      baseApi.patch(`/production-runs/${uid}/`, body),
+  })
+}
+
+export function useCreateProdRun() {
+  return useMutation({
+    mutationFn: (body: IProdRunPayload) => baseApi.post(`/production-runs/`, body),
   })
 }

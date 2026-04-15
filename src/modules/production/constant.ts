@@ -7,6 +7,9 @@ import materialPng from "@/assets/images/materials.png"
 import { formatDate } from "@/utils/formatDate"
 import { startCase } from "@/utils/format-strings"
 
+// =================================================
+// ================ RAW MATERIALS =========================
+
 export const RAW_MATERIALS_COLUMN: TableColumn<TRawMaterial>[] = [
   { header: "Name", accessor: "name" },
   {
@@ -80,55 +83,6 @@ export const LINKED_RECIPES_COLUMN: TableColumn<TLinkedRecipe>[] = [
   },
 ]
 
-export const PRODUCTION_COLUMN: TableColumn<TProdRun>[] = [
-  { header: "Output Id", accessor: "run_id" },
-  { header: "Output Item", accessor: "output_item_name" },
-  { header: "Damaged Qty", accessor: "damaged_quantity" },
-  { header: "Output Quantity", accessor: "output_quantity" },
-  {
-    header: "Ingredient Count",
-    accessor: "ingredient_count",
-    cell: ({ item }) => String(item.ingredient_count ?? "—"),
-  },
-  {
-    header: "Status",
-    accessor: "status",
-    cell: ({ item }) => startCase(item.status as string),
-  },
-  {
-    header: "Date created",
-    accessor: "date_created",
-    cell: ({ item }) => formatDate(item.date_created as string),
-  },
-  { header: "Last Cost", accessor: "last_cost" },
-  { header: "", accessor: "actions" },
-]
-
-export const RECIPES_COLUMN: TableColumn<TRecipe>[] = [
-  { header: "Output Item", accessor: "output_item_name" },
-  { header: "Ingredient Count", accessor: "ingredient_count" },
-  { header: "Cost Processes", accessor: "process_cost_count" },
-  {
-    header: "Status",
-    accessor: "is_active",
-    cell: ({ item }) => (item.is_active ? "Active" : "Disabled"),
-  },
-  {
-    header: "Last Edited",
-    accessor: "updated_at",
-    cell: ({ item }) => formatDate(item.updated_at as string),
-  },
-  // {
-  //   header: "Avg. Cost",
-  //   accessor: "average_cost",
-  //   cell: ({ item }) => {
-  //     const { format } = useFormatCurrency()
-  //     return format(Number(item.average_cost)) + "/" + item.output_unit
-  //   },
-  // },
-  { header: "Actions", accessor: "actions" },
-]
-
 export const componentOptions = [
   {
     label: "Ingredients",
@@ -154,6 +108,46 @@ export const componentOptions = [
     class: "border-purple-200 bg-purple-50",
     image: componentPng,
   },
+]
+
+export const UNITS_OF_MEASURE = [
+  { label: "Kilograms (kg)", value: "kg" },
+  { label: "Grams (g)", value: "g" },
+  { label: "Liters (l)", value: "l" },
+  { label: "Milliliters (ml)", value: "ml" },
+  { label: "Pieces (pcs)", value: "pcs" },
+  { label: "Meters (m)", value: "m" },
+  { label: "Sheets", value: "sheets" },
+  { label: "Bags", value: "bags" },
+  { label: "Boxes", value: "boxes" },
+]
+
+// =================================================
+// ================ RECIPES =========================
+
+export const RECIPES_COLUMN: TableColumn<TRecipe>[] = [
+  { header: "Output Item", accessor: "output_item_name" },
+  { header: "Ingredient Count", accessor: "ingredient_count" },
+  { header: "Cost Processes", accessor: "process_cost_count" },
+  {
+    header: "Status",
+    accessor: "is_active",
+    cell: ({ item }) => (item.is_active ? "Active" : "Disabled"),
+  },
+  {
+    header: "Last Edited",
+    accessor: "updated_at",
+    cell: ({ item }) => formatDate(item.updated_at as string),
+  },
+  // {
+  //   header: "Avg. Cost",
+  //   accessor: "average_cost",
+  //   cell: ({ item }) => {
+  //     const { format } = useFormatCurrency()
+  //     return format(Number(item.average_cost)) + "/" + item.output_unit
+  //   },
+  // },
+  { header: "Actions", accessor: "actions" },
 ]
 
 export const recipeNameOptions = [
@@ -183,14 +177,40 @@ export const recipeNameOptions = [
   },
 ]
 
-export const UNITS_OF_MEASURE = [
-  { label: "Kilograms (kg)", value: "kg" },
-  { label: "Grams (g)", value: "g" },
-  { label: "Liters (l)", value: "l" },
-  { label: "Milliliters (ml)", value: "ml" },
-  { label: "Pieces (pcs)", value: "pcs" },
-  { label: "Meters (m)", value: "m" },
-  { label: "Sheets", value: "sheets" },
-  { label: "Bags", value: "bags" },
-  { label: "Boxes", value: "boxes" },
+// =======================================
+// ================ PRODUCTION RUNS =========================
+
+export const PROD_RUNS_COLUMN: TableColumn<TProdRun>[] = [
+  { header: "Run ID", accessor: "run_id" },
+  { header: "Output Item", accessor: "output_item_name" },
+  { header: "", accessor: "damaged_quantity" },
+  {
+    header: "Output Quantity",
+    accessor: "quantity_to_produce",
+    cell: ({ value }) => parseInt(value as string),
+  },
+  {
+    header: "Usable Quantity",
+    accessor: "usable_quantity",
+    cell: ({ value }) => parseInt(value as string),
+  },
+  {
+    header: "Total Cost",
+    accessor: "last_cost",
+    cell: ({ item }) => {
+      const { format } = useFormatCurrency()
+      return format(Number(item.total_cost), { kobo: true })
+    },
+  },
+  {
+    header: "Status",
+    accessor: "status",
+    cell: ({ item }) => startCase(item.status as string),
+  },
+  {
+    header: "Date created",
+    accessor: "date_created",
+    cell: ({ item }) => formatDate(item.created_at as string),
+  },
+  { header: "", accessor: "actions" },
 ]
