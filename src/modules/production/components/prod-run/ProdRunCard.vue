@@ -30,14 +30,8 @@ const actionMenus = computed(() => [
         },
         {
           label: `Finalise run`,
-          icon: "close-circle",
+          icon: "circle-check",
           action: () => emit("finalise"),
-        },
-        {
-          label: `Delete run`,
-          icon: "trash",
-          danger: true,
-          action: () => emit("delete"),
         },
       ]
     : []),
@@ -84,7 +78,7 @@ const actionMenus = computed(() => [
       </div>
       <!--  -->
       <div>
-        <Chip :label="item.status" :color="item.status === 'completed' ? 'success' : 'warning'" />
+        <Chip :label="item.status" :color="item.status === 'finalized' ? 'success' : 'warning'" />
       </div>
     </div>
   </div>

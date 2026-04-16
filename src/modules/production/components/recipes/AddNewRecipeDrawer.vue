@@ -27,9 +27,8 @@ export type ProcessRow = {
 }
 
 export type BasicDetails = {
-  outputType: "raw-material" | "product"
-  outputItem: string
   outputItemType: "product" | "sub_assembly"
+  outputItem: string
   outputQuantity: number
   unit: string
   notes: string
@@ -55,9 +54,8 @@ const recipeLabel = computed(() => selectedRecipeOption.value?.label || "Recipe"
 
 // ─── Shared state across steps ─────────────────────────────────────────────
 const basicDetails = ref<BasicDetails>({
-  outputType: "raw-material",
+  outputItemType: "product",
   outputItem: "",
-  outputItemType: "sub_assembly",
   outputQuantity: 0,
   unit: "",
   notes: "",
@@ -74,9 +72,8 @@ watch(
     if (!isOpen) return
     activeStep.value = 0
     basicDetails.value = {
-      outputType: "raw-material",
+      outputItemType: "product",
       outputItem: "",
-      outputItemType: "sub_assembly",
       outputQuantity: 0,
       unit: "",
       notes: "",

@@ -354,6 +354,27 @@ export function useGetProductCatalogsInfinite(limit = 20, search?: Ref<string>) 
   })
 }
 
+/** search product catalogs by product name */
+export function useSearchProductCatalogs(search: MaybeRefOrGetter<string>) {
+  return useQuery({
+    queryKey: ["productCatalogs", "search", search],
+    queryFn: async () => {
+      const { data } = await baseApi.get<TPaginatedResponse<IProductCatalogue>>(
+        `/inventory/catalog/`,
+        {
+          params: {
+            ...(toValue(search) ? { search: toValue(search) } : {}),
+            limit: 10,
+          },
+        },
+      )
+      return data.data
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
+  })
+}
+
 export function useGetProductVariants() {
   return useApiQuery<TPaginatedResponse<IProductVariant>["data"]>({
     url: `/inventory/variants/`,

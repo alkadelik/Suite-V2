@@ -193,20 +193,72 @@ export interface IRecipeStats {
 
 // ======= Prod run submodule ========
 
+export type TProdRunFifoBreakdown = {
+  quantity: string
+  batch_uid: string
+  unit_cost: string
+}
+
+export type TProdRunIngredientUsed = {
+  uid: string
+  material_uid: string
+  material_name: string
+  quantity_required: string
+  unit: string
+  available_inventory: number
+  is_sufficient_inventory: boolean
+  missing_quantity: number
+  estimated_cost: string
+  actual_total_cost: string
+  actual_unit_cost: string
+  fifo_breakdown: TProdRunFifoBreakdown[]
+  is_adjusted: boolean
+}
+
+export type TProdRunProcessCostUsed = {
+  uid: string
+  name: string
+  cost_per_batch: string
+  total_cost: number
+  is_adjusted: boolean
+}
+
+export type TProdRunAdditionalExpense = {
+  uid: string
+  name: string
+  cost_type: string
+  amount: string
+  notes: string
+}
+
 export type TProdRun = {
   uid: string
   recipe: string
+  output_product: string | null
+  output_raw_material: string | null
+  output_variant: string | null
   output_item_name: string
   output_unit: string
+  item_type: "product" | "sub_assembly"
   quantity_to_produce: string
   damaged_quantity: string
   usable_quantity: string
+  material_cost_total: string
+  process_cost_total: string
+  extra_cost_total: string
   total_cost: string
   cost_per_unit: string
   selling_price_per_unit: string
-  status: "draft" | "completed"
+  expected_profit_per_unit: string
+  expected_profit_per_batch: string
+  status: "draft" | "finalized"
+  notes: string
   created_at: string
   finalized_at: string | null
+  // detail fields — available when fetching a single prod run
+  ingredients_used?: TProdRunIngredientUsed[]
+  process_costs_used?: TProdRunProcessCostUsed[]
+  additional_expenses?: TProdRunAdditionalExpense[]
 }
 
 export interface IProdRunStats {

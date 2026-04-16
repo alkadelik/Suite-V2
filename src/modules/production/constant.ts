@@ -1,6 +1,14 @@
 import { TableColumn } from "@components/DataTable.vue"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
-import { TRawMaterial, TLinkedRecipe, TBatch, TMovement, TRecipe, TProdRun } from "./types"
+import {
+  TRawMaterial,
+  TLinkedRecipe,
+  TBatch,
+  TMovement,
+  TRecipe,
+  TProdRun,
+  TProdRunIngredientUsed,
+} from "./types"
 import componentPng from "@/assets/images/components.png"
 import ingredientPng from "@/assets/images/ingredients.png"
 import materialPng from "@/assets/images/materials.png"
@@ -213,4 +221,31 @@ export const PROD_RUNS_COLUMN: TableColumn<TProdRun>[] = [
     cell: ({ item }) => formatDate(item.created_at as string),
   },
   { header: "", accessor: "actions" },
+]
+
+export const PROD_RUN_INGREDIENT_COLUMN: TableColumn<TProdRunIngredientUsed>[] = [
+  { header: "Name", accessor: "material_name" },
+  {
+    header: "Quantity Used",
+    accessor: "quantity_required",
+    cell: ({ item }) => `${parseInt(String(item.quantity_required))} ${item.unit}`,
+  },
+  {
+    header: "Average Cost",
+    accessor: "actual_unit_cost",
+    cell: ({ item }) => {
+      const { format } = useFormatCurrency()
+      return Number(item.actual_unit_cost)
+        ? format(Number(item.actual_unit_cost)) + "/" + item.unit
+        : "-"
+    },
+  },
+  {
+    header: "Total Cost",
+    accessor: "actual_total_cost",
+    cell: ({ item }) => {
+      const { format } = useFormatCurrency()
+      return Number(item.actual_total_cost) ? format(Number(item.actual_total_cost)) : "-"
+    },
+  },
 ]
