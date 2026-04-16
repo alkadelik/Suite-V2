@@ -89,7 +89,7 @@ const getActionItems = (item: TRecipe) => [
   {
     label: `View ${recipeLabel.value}`,
     icon: "eye",
-    action: () => router.push(`/recipes/${item.uid}`),
+    action: () => router.push(`/production/recipes/${item.uid}`),
   },
   ...(item.is_active
     ? [

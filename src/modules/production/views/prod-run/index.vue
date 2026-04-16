@@ -14,12 +14,7 @@ import Icon from "@components/Icon.vue"
 import PageHeader from "@components/PageHeader.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import StatCard from "@components/StatCard.vue"
-import {
-  useDeleteProdRun,
-  useGetProdRuns,
-  useGetProdRunsStats,
-  useUpdateProdRun,
-} from "@modules/production/api"
+import { useFinaliseProdRun, useGetProdRuns, useGetProdRunsStats } from "@modules/production/api"
 import CreateProdRunDrawer from "@modules/production/components/prod-run/CreateProdRunDrawer.vue"
 import ProdRunCard from "@modules/production/components/prod-run/ProdRunCard.vue"
 import { PROD_RUNS_COLUMN } from "@modules/production/constant"
@@ -33,7 +28,6 @@ const itemsPerPage = ref(10)
 const searchQuery = ref("")
 const debouncedSearch = useDebouncedRef(searchQuery, 750)
 const selectedProdRun = ref<TProdRun | null>(null)
-const showDeleteModal = ref(false)
 const showCreateModal = ref<"create" | "edit" | "duplicate" | null>(null)
 const showFinaliseModal = ref(false)
 
@@ -112,49 +106,26 @@ const getActionItems = (item: TProdRun) => [
         },
         {
           label: `Finalise run`,
-          icon: "close-circle",
+          icon: "circle-check",
           action: () => (showFinaliseModal.value = true),
-        },
-        {
-          label: `Delete run`,
-          icon: "trash",
-          danger: true,
-          action: () => (showDeleteModal.value = true),
         },
       ]
     : []),
 ]
 
-const { mutate: deleteProdRun, isPending: isDeleting } = useDeleteProdRun()
-const { mutate: updateProdRun, isPending: isUpdating } = useUpdateProdRun()
+const { mutate: finaliseProdRun, isPending: isFinalising } = useFinaliseProdRun()
 
-const confirmDeleteRecipe = () => {
+const onFinaliseRun = () => {
   if (!selectedProdRun.value) return
-  deleteProdRun(selectedProdRun.value.uid, {
+  finaliseProdRun(selectedProdRun.value.uid, {
     onSuccess: () => {
-      toast.success(`Production run deleted successfully`)
-      showDeleteModal.value = false
+      toast.success(`Production run finalised successfully`)
+      showFinaliseModal.value = false
       selectedProdRun.value = null
       refetch()
     },
     onError: displayError,
   })
-}
-
-const onConfirmDisable = () => {
-  if (!selectedProdRun.value) return
-  updateProdRun(
-    { uid: selectedProdRun.value.uid, body: { status: "complete" } },
-    {
-      onSuccess: () => {
-        toast.success(`Production run finalised successfully`)
-        showFinaliseModal.value = false
-        selectedProdRun.value = null
-        refetch()
-      },
-      onError: displayError,
-    },
-  )
 }
 </script>
 
@@ -276,24 +247,13 @@ const onConfirmDisable = () => {
     />
 
     <ConfirmationModal
-      :model-value="showDeleteModal"
-      @update:model-value="() => ((showDeleteModal = false), (selectedProdRun = null))"
-      :loading="isDeleting"
-      :header="'Delete run'"
-      :paragraph="`Are you sure you want to permanently delete this production run?`"
-      @confirm="confirmDeleteRecipe"
-      action-label="Delete"
-      variant="error"
-    />
-
-    <ConfirmationModal
       v-model="showFinaliseModal"
-      :loading="isUpdating"
+      :loading="isFinalising"
       :header="`Finalise production run`"
-      :paragraph="`Are you sure you want to finalise this production run?  `"
-      :action-label="`Finalise`"
-      :variant="'success'"
-      @confirm="onConfirmDisable"
+      :paragraph="`Are you sure you want to finalise this production run?`"
+      action-label="Finalise"
+      variant="success"
+      @confirm="onFinaliseRun"
     />
   </div>
 </template>

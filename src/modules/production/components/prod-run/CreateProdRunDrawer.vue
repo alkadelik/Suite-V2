@@ -113,8 +113,7 @@ const onSubmit = () => {
 
   const payload: IProdRunPayload = {
     recipe_uid: details.recipeUid,
-    output_variant_uid:
-      recipeData.value?.output_product || recipeData.value?.output_raw_material || undefined,
+    output_variant_uid: details.outputVariantUid || undefined,
     quantity_to_produce: String(details.outputQuantity),
     damaged_quantity: String(details.damagedQuantity),
     selling_price_per_unit: String(sellingPriceState.value),

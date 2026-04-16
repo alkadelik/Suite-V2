@@ -6,8 +6,9 @@ export type IngredientRow = {
     unit?: string
     cost_per_unit: number
     kind: string
+    // not in api, added for convenience
     available_stock?: number
-    low_stock?: boolean
+    used_stock?: number
   }
   qty: number
 }
@@ -29,4 +30,5 @@ export type BasicRunDetails = {
   outputQuantity: number
   damagedQuantity: number
   recipeUid: string
+  outputVariantUid?: string
 }

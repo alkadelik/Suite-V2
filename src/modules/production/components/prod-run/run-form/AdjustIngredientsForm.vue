@@ -4,6 +4,7 @@ import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
 import type { IngredientRow } from "../form-types"
 import { computed, ref } from "vue"
+import Chip from "@components/Chip.vue"
 
 const props = defineProps<{
   initialRows: IngredientRow[]
@@ -31,10 +32,6 @@ const quickAdjust = () => {
       ? { ...r, qty: Math.min(r.qty, r.ingredient.available_stock) }
       : r,
   )
-}
-
-const removeRow = (row: IngredientRow) => {
-  ingredientRows.value = ingredientRows.value.filter((r) => r.id !== row.id)
 }
 
 const totalIngredientCost = computed(() => {
@@ -119,60 +116,46 @@ function handleNext() {
                 </span>
               </div>
             </div>
-            <button
-              type="button"
-              class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600"
-              aria-label="Remove ingredient"
-              @click="removeRow(row)"
-            >
-              <span class="text-base leading-none">−</span>
-            </button>
+
+            <span class="text-sm font-medium">
+              {{ formatCurrency(row.ingredient.cost_per_unit * row.qty) }}
+            </span>
           </div>
 
           <!-- Stats grid -->
-          <div class="mt-3 grid grid-cols-3 gap-2 rounded-xl bg-gray-50 p-3">
-            <!-- Required Qty (editable) -->
-            <div class="flex flex-col gap-1">
-              <span class="text-xs text-gray-500">Required qty</span>
-              <input
-                v-model.number="row.qty"
-                type="number"
-                min="0"
-                step="any"
-                class="focus:border-core-500 w-full rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm font-medium text-gray-900 outline-none"
-              />
+          <div class="mt-3 flex items-end gap-2 rounded-xl bg-gray-50 p-3">
+            <div class="grid flex-1 grid-cols-3">
+              <!-- Required Stock -->
+              <div class="flex flex-col items-start gap-1">
+                <Chip color="alt" :label="`${row.qty} ${row.ingredient.unit}`" radius="md" />
+                <span class="text-xs text-gray-500">Required stock</span>
+              </div>
+              <!-- Available Stock  -->
+              <div class="flex flex-col gap-1">
+                <Chip
+                  v-if="row.ingredient.available_stock !== undefined"
+                  color="alt"
+                  :label="`${row.ingredient.available_stock} ${row.ingredient.unit}`"
+                  radius="md"
+                />
+                <span v-else>-</span>
+                <span class="text-xs text-gray-500">Available Stock</span>
+              </div>
+              <!-- Used Stock  -->
+              <div class="flex flex-col gap-1">
+                <Chip
+                  v-if="row.ingredient.used_stock !== undefined"
+                  color="alt"
+                  :label="`${row.ingredient.used_stock} ${row.ingredient.unit}`"
+                  radius="md"
+                />
+                <span v-else>-</span>
+                <span class="text-xs text-gray-500">Used Stock</span>
+              </div>
             </div>
-
-            <!-- Available Stock (read-only) -->
-            <div class="flex flex-col gap-1">
-              <span class="text-xs text-gray-500">Available</span>
-              <span
-                class="pt-1 text-sm font-medium"
-                :class="
-                  row.ingredient.available_stock !== undefined &&
-                  row.qty > row.ingredient.available_stock
-                    ? 'text-red-500'
-                    : 'text-gray-900'
-                "
-              >
-                {{
-                  row.ingredient.available_stock !== undefined
-                    ? `${row.ingredient.available_stock} ${row.ingredient.unit || ""}`
-                    : "—"
-                }}
-              </span>
-            </div>
-
-            <!-- Last Cost (read-only) -->
-            <div class="flex flex-col gap-1">
-              <span class="text-xs text-gray-500">Last cost</span>
-              <span class="pt-1 text-sm font-medium text-gray-900">
-                {{
-                  row.ingredient.cost_per_unit
-                    ? `${formatCurrency(row.ingredient.cost_per_unit)} / ${row.ingredient.unit || "unit"}`
-                    : "—"
-                }}
-              </span>
+            <!-- Edit Button  -->
+            <div class="flex flex-col items-end gap-1">
+              <Icon name="edit" size="16" class="text-gray-500" />
             </div>
           </div>
         </div>

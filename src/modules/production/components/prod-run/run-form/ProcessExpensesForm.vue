@@ -69,7 +69,7 @@ function handleSubmit() {
         <div v-for="row in processRows" :key="row.id" class="flex items-center gap-3 py-3">
           <div class="grid flex-1 grid-cols-2 gap-3">
             <TextField :model-value="row.name" disabled />
-            <TextField :model-value="formatCurrency(Number(row.cost) || 0)" disabled />
+            <TextField v-model="row.cost" type="number" placeholder="0" />
           </div>
           <button
             type="button"

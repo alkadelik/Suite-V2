@@ -5,7 +5,7 @@ import SelectField from "@components/form/SelectField.vue"
 import FormField from "@components/form/FormField.vue"
 import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
-import { useSearchProductVariants } from "@modules/inventory/api"
+import { useSearchProductCatalogs } from "@modules/inventory/api"
 import { useSearchRawMaterial } from "@modules/production/api"
 import type { BasicDetails } from "../AddNewRecipeDrawer.vue"
 import { computed, ref, watch } from "vue"
@@ -26,7 +26,7 @@ const emit = defineEmits<{
 
 // ─── Form validation ─────────────────────────────────────────────────────
 const schema = yup.object({
-  outputType: yup.string().oneOf(["raw-material", "product"]).required(),
+  outputItemType: yup.string().oneOf(["product", "sub_assembly"]).required(),
   // store the full option object so SelectField can display the label
   outputItem: yup
     .object({ label: yup.string().required(), value: yup.string().required() })
@@ -48,7 +48,7 @@ const schema = yup.object({
 const { handleSubmit, values, errors, setFieldValue } = useForm({
   validationSchema: schema,
   initialValues: {
-    outputType: props.initialValues.outputType,
+    outputItemType: props.initialValues.outputItemType,
     outputItem: null as ItemOption | null,
     outputQuantity: props.initialValues.outputQuantity || (undefined as unknown as number),
     unit: null as ItemOption | null,
@@ -60,7 +60,7 @@ const { handleSubmit, values, errors, setFieldValue } = useForm({
 const productSearchInput = ref("")
 const productSearchQuery = useDebouncedRef(productSearchInput, 400)
 const { data: prodSearchResults, isFetching: isSearchingProd } =
-  useSearchProductVariants(productSearchQuery)
+  useSearchProductCatalogs(productSearchQuery)
 
 const productOptions = computed<ItemOption[]>(() => {
   if (!prodSearchResults.value?.results) return []
@@ -84,8 +84,10 @@ const unitOptions = UNITS_OF_MEASURE
 
 // ─── Clear output item when type changes ─────────────────────────────────
 watch(
-  () => values.outputType,
-  () => setFieldValue("outputItem", null),
+  () => values.outputItemType,
+  () => {
+    setFieldValue("outputItem", null)
+  },
 )
 
 // ─── Submit handler ─────────────────────────────────────────────────────
@@ -93,9 +95,8 @@ const handleNext = handleSubmit((formValues) => {
   const item = formValues.outputItem as ItemOption
   const unit = formValues.unit as ItemOption
   emit("next", {
-    outputType: formValues.outputType as "raw-material" | "product",
+    outputItemType: formValues.outputItemType as "product" | "sub_assembly",
     outputItem: item.value,
-    outputItemType: formValues.outputType === "product" ? "product" : "sub_assembly",
     outputQuantity: formValues.outputQuantity,
     unit: unit.value,
     notes: formValues.notes || "",
@@ -112,19 +113,18 @@ const handleNext = handleSubmit((formValues) => {
 
     <div class="mb-4">
       <RadioInputField
-        :model-value="values.outputType"
+        :model-value="values.outputItemType"
         :options="[
-          { label: 'Sub-assembly', value: 'raw-material' },
           { label: 'Product', value: 'product' },
+          { label: 'Sub-assembly', value: 'sub_assembly' },
         ]"
-        size="sm"
-        label="Output Type"
-        @update:model-value="setFieldValue('outputType', $event as 'product' | 'raw-material')"
+        label="Output Item Type"
+        @update:model-value="setFieldValue('outputItemType', $event as 'product' | 'sub_assembly')"
       />
     </div>
 
     <SelectField
-      v-if="values.outputType === 'product'"
+      v-if="values.outputItemType === 'product'"
       :model-value="values.outputItem"
       label="Output Item"
       placeholder="Select output item"
@@ -139,7 +139,7 @@ const handleNext = handleSubmit((formValues) => {
 
     <!-- sub-assembly raw materials only -->
     <SelectField
-      v-else
+      v-if="values.outputItemType === 'sub_assembly'"
       :model-value="values.outputItem"
       label="Output Item (Sub-assembly)"
       placeholder="Select sub-assembly"

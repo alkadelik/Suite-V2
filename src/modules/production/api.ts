@@ -222,6 +222,13 @@ export function useUpdateProdRun() {
   })
 }
 
+/** Finalise production run */
+export function useFinaliseProdRun() {
+  return useMutation({
+    mutationFn: (uid: string) => baseApi.post(`/production-runs/${uid}/finalize/`, {}),
+  })
+}
+
 export function useCreateProdRun() {
   return useMutation({
     mutationFn: (body: IProdRunPayload) => baseApi.post(`/production-runs/`, body),
