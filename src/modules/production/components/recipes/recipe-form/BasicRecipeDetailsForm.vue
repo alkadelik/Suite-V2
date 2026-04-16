@@ -45,16 +45,32 @@ const schema = yup.object({
   notes: yup.string().default(""),
 })
 
-const { handleSubmit, values, errors, setFieldValue } = useForm({
+const { handleSubmit, values, errors, setFieldValue, resetForm } = useForm({
   validationSchema: schema,
   initialValues: {
     outputItemType: props.initialValues.outputItemType,
-    outputItem: null as ItemOption | null,
+    outputItem: (props.initialValues.outputItemOption ?? null) as ItemOption | null,
     outputQuantity: props.initialValues.outputQuantity || (undefined as unknown as number),
-    unit: null as ItemOption | null,
+    unit: (props.initialValues.unitOption ?? null) as ItemOption | null,
     notes: props.initialValues.notes,
   },
 })
+
+// Re-initialize when parent repopulates (e.g. drawer reopens in edit/duplicate mode)
+watch(
+  () => props.initialValues,
+  (iv) => {
+    resetForm({
+      values: {
+        outputItemType: iv.outputItemType,
+        outputItem: (iv.outputItemOption ?? null) as ItemOption | null,
+        outputQuantity: iv.outputQuantity || (undefined as unknown as number),
+        unit: (iv.unitOption ?? null) as ItemOption | null,
+        notes: iv.notes,
+      },
+    })
+  },
+)
 
 // ─── Product search ──────────────────────────────────────────────────────
 const productSearchInput = ref("")

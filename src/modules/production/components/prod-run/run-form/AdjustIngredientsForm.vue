@@ -131,7 +131,7 @@ function handleNext() {
                 <span class="text-xs text-gray-500">Required stock</span>
               </div>
               <!-- Available Stock  -->
-              <div class="flex flex-col gap-1">
+              <div class="flex flex-col items-start gap-1">
                 <Chip
                   v-if="row.ingredient.available_stock !== undefined"
                   color="alt"
@@ -142,7 +142,7 @@ function handleNext() {
                 <span class="text-xs text-gray-500">Available Stock</span>
               </div>
               <!-- Used Stock  -->
-              <div class="flex flex-col gap-1">
+              <div class="flex flex-col items-start gap-1">
                 <Chip
                   v-if="row.ingredient.used_stock !== undefined"
                   color="alt"

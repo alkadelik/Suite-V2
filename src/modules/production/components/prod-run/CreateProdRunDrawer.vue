@@ -28,6 +28,11 @@ const emit = defineEmits(["close", "refresh"])
 const isMobile = computed(() => useMediaQuery("(max-width: 1028px)").value)
 const isEditMode = computed(() => props.mode === "edit" && !!props.run)
 
+const drawerTitle = computed(() => {
+  if (isEditMode.value) return "Edit Run"
+  return "Create Run"
+})
+
 const steps = ["Basic details", "Ingredients", "Process cost", "Economics"]
 const activeStep = ref(0)
 
@@ -53,8 +58,16 @@ const { data: recipeData, isFetching: isLoadingRecipe } = useGetSingleRecipe(
   () => selectedRecipeUid.value,
 )
 
+// Guard flag — prevents the selectedRecipeUid watcher from clearing rows
+// that were just pre-seeded from an existing run (edit / duplicate).
+let skipNextRecipeClear = false
+
 // Seed rows from recipe once per selection; reset on new selection
 watch(selectedRecipeUid, () => {
+  if (skipNextRecipeClear) {
+    skipNextRecipeClear = false
+    return
+  }
   ingredientRowsState.value = []
   processRowsState.value = []
 })
@@ -85,25 +98,66 @@ watch(recipeData, (recipe) => {
   }
 })
 
-// ─── Reset on open ─────────────────────────────────────────────────────────
-watch(
-  () => props.open,
-  (isOpen) => {
-    if (!isOpen) return
-    activeStep.value = 0
-    basicDetails.value = {
-      outputQuantity: 0,
-      damagedQuantity: 0,
-      recipeUid: "",
-    }
+// ─── Reset or populate when drawer opens ─────────────────────────────────
+watch([() => props.open, () => props.run], ([isOpen]) => {
+  if (!isOpen) return
+  activeStep.value = 0
+  isPending.value = false
+
+  if (props.mode === "create" || !props.run) {
+    basicDetails.value = { outputQuantity: 0, damagedQuantity: 0, recipeUid: "" }
     ingredientRowsState.value = []
     processRowsState.value = []
     additionalExpensesState.value = []
     sellingPriceState.value = 0
-    isPending.value = false
     selectedRecipeUid.value = ""
-  },
-)
+    return
+  }
+
+  // edit / duplicate – use fully-hydrated run passed by the caller
+  const run = props.run
+  const recipeLabel = `${run.output_item_name} - ${parseInt(run.quantity_to_produce)}${run.output_unit}`
+
+  basicDetails.value = {
+    outputQuantity: parseInt(run.quantity_to_produce),
+    damagedQuantity: parseInt(run.damaged_quantity),
+    recipeUid: run.recipe,
+    recipeOption: { label: recipeLabel, value: run.recipe },
+    outputVariantUid: run.output_variant || "",
+  }
+
+  ingredientRowsState.value = (run.ingredients_used ?? []).map((ing) => ({
+    id: ing.uid,
+    ingredient: {
+      label: ing.material_name,
+      value: ing.material_uid,
+      unit: ing.unit,
+      cost_per_unit: Number(ing.actual_unit_cost) || 0,
+      kind: "raw_material",
+      available_stock: ing.available_inventory,
+    },
+    qty: Number(ing.quantity_required),
+  }))
+
+  processRowsState.value = (run.process_costs_used ?? []).map((pc) => ({
+    id: pc.uid,
+    name: pc.name,
+    cost: String(pc.cost_per_batch),
+    note: "",
+  }))
+
+  additionalExpensesState.value = (run.additional_expenses ?? []).map((ex) => ({
+    id: ex.uid,
+    name: ex.name,
+    amount: String(ex.amount),
+  }))
+
+  sellingPriceState.value = Number(run.selling_price_per_unit) || 0
+
+  // Set selectedRecipeUid without triggering the clear watcher
+  skipNextRecipeClear = true
+  selectedRecipeUid.value = run.recipe
+})
 
 const { mutate: createProdRun, isPending: isCreating } = useCreateProdRun()
 const { mutate: updateProdRun, isPending: isUpdating } = useUpdateProdRun()
@@ -147,7 +201,7 @@ const onSubmit = () => {
   <component
     :is="isMobile ? Modal : Drawer"
     :open="open"
-    :title="isEditMode ? `Edit Run` : `Create Run`"
+    :title="drawerTitle"
     max-width="2xl"
     variant="fullscreen"
     @close="emit('close')"

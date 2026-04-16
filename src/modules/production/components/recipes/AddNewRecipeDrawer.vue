@@ -4,7 +4,7 @@ import Modal from "@components/Modal.vue"
 import StepperWizard from "@components/StepperWizard.vue"
 import { useProductionStore } from "@modules/production/store"
 import { useMediaQuery } from "@vueuse/core"
-import { ref, computed, watch } from "vue"
+import { ref, computed, watch, capitalize } from "vue"
 import { toast } from "@/composables/useToast"
 import BasicRecipeDetailsForm from "./recipe-form/BasicRecipeDetailsForm.vue"
 import AddIngredientsForm from "./recipe-form/AddIngredientsForm.vue"
@@ -12,6 +12,7 @@ import ProcessCostForm from "./recipe-form/ProcessCostForm.vue"
 import { displayError } from "@/utils/error-handler"
 import { IRecipePayload, TRecipe } from "@modules/production/types"
 import { useCreateRecipe, useUpdateRecipe } from "@modules/production/api"
+import { UNITS_OF_MEASURE } from "@modules/production/constant"
 
 export type IngredientRow = {
   id: string
@@ -29,8 +30,10 @@ export type ProcessRow = {
 export type BasicDetails = {
   outputItemType: "product" | "sub_assembly"
   outputItem: string
+  outputItemOption?: { label: string; value: string } | null
   outputQuantity: number
   unit: string
+  unitOption?: { label: string; value: string } | null
   notes: string
 }
 
@@ -46,11 +49,15 @@ const emit = defineEmits(["close", "refresh"])
 const isMobile = computed(() => useMediaQuery("(max-width: 1028px)").value)
 const isEditMode = computed(() => props.mode === "edit" && !!props.recipe)
 
+const drawerTitle = computed(() => {
+  if (isEditMode.value) return `Edit ${capitalize(recipeNameValue.value)}`
+  return `Add ${capitalize(recipeNameValue.value)}`
+})
+
 const steps = ["Basic details", "Ingredients", "Process cost"]
 const activeStep = ref(0)
 
-const selectedRecipeOption = computed(() => useProductionStore().selectedRecipeOption)
-const recipeLabel = computed(() => selectedRecipeOption.value?.label || "Recipe")
+const recipeNameValue = computed(() => useProductionStore().recipeValue)
 
 // ─── Shared state across steps ─────────────────────────────────────────────
 const basicDetails = ref<BasicDetails>({
@@ -65,12 +72,13 @@ const ingredientRowsState = ref<IngredientRow[]>([])
 const processRowsState = ref<ProcessRow[]>([])
 const isPending = ref(false)
 
-// ─── Reset on open ─────────────────────────────────────────────────────────
-watch(
-  () => props.open,
-  (isOpen) => {
-    if (!isOpen) return
-    activeStep.value = 0
+// ─── Reset or populate when drawer opens ───────────────────────────────────
+watch([() => props.open, () => props.recipe], ([isOpen]) => {
+  if (!isOpen || !props.mode) return
+  activeStep.value = 0
+  isPending.value = false
+
+  if (props.mode === "create" || !props.recipe) {
     basicDetails.value = {
       outputItemType: "product",
       outputItem: "",
@@ -80,10 +88,42 @@ watch(
     }
     ingredientRowsState.value = []
     processRowsState.value = []
-    isPending.value = false
-  },
-)
+    return
+  }
 
+  // edit / duplicate – use fully-hydrated recipe passed by the caller
+  const recipe = props.recipe
+  const itemUid = recipe.output_product || recipe.output_raw_material || ""
+  const unitOption =
+    UNITS_OF_MEASURE.find((u) => u.value === recipe.output_unit) ??
+    (recipe.output_unit ? { label: recipe.output_unit, value: recipe.output_unit } : null)
+  basicDetails.value = {
+    outputItemType: recipe.item_type,
+    outputItem: itemUid,
+    outputItemOption: itemUid ? { label: recipe.output_item_name, value: itemUid } : null,
+    outputQuantity: parseInt(recipe.output_quantity),
+    unit: recipe.output_unit,
+    unitOption,
+    notes: recipe.notes || "",
+  }
+  ingredientRowsState.value = (recipe.ingredients ?? []).map((ing) => ({
+    id: ing.uid,
+    ingredient: {
+      label: ing.material_name,
+      value: ing.material_uid,
+      unit: ing.unit,
+      cost_per_unit: ing.unit_cost,
+      kind: "raw_material" as string,
+    },
+    qty: ing.quantity,
+  }))
+  processRowsState.value = (recipe.process_costs ?? []).map((pc) => ({
+    id: pc.uid,
+    name: pc.name,
+    cost: String(pc.cost_per_batch),
+    note: pc.notes,
+  }))
+})
 const { mutate: createRecipe, isPending: isCreating } = useCreateRecipe()
 const { mutate: updateRecipe, isPending: isUpdating } = useUpdateRecipe()
 
@@ -108,7 +148,9 @@ const onSubmit = () => {
   }
 
   const onSuccess = () => {
-    toast.success(`${recipeLabel.value} ${isEditMode.value ? "updated" : "added"} successfully!`)
+    toast.success(
+      `${capitalize(recipeNameValue.value)} ${isEditMode.value ? "updated" : "added"} successfully!`,
+    )
     emit("close")
     emit("refresh")
   }
@@ -125,7 +167,7 @@ const onSubmit = () => {
   <component
     :is="isMobile ? Modal : Drawer"
     :open="open"
-    :title="isEditMode ? `Edit ${recipeLabel}` : `Add ${recipeLabel}`"
+    :title="drawerTitle"
     max-width="2xl"
     variant="fullscreen"
     @close="emit('close')"

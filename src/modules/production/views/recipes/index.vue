@@ -142,7 +142,6 @@ const confirmDeleteRecipe = () => {
 
 const onConfirmDisable = () => {
   if (!selectedRecipe.value) return
-  console.log("Selected Recipe", selectedRecipe.value.output_item_name)
   updateRecipeFn(
     { uid: selectedRecipe.value.uid, body: { is_active: !selectedRecipe.value.is_active } },
     {

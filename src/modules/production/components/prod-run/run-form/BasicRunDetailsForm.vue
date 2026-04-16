@@ -55,15 +55,30 @@ const schema = yup.object({
     .optional(),
 })
 
-const { handleSubmit, values, errors, setFieldValue } = useForm({
+const { handleSubmit, values, errors, setFieldValue, resetForm } = useForm({
   validationSchema: schema,
   initialValues: {
     outputQuantity: props.initialValues.outputQuantity || (undefined as unknown as number),
     damagedQuantity: props.initialValues.damagedQuantity ?? (undefined as unknown as number),
-    recipe: null as ItemOption | null,
+    recipe: (props.initialValues.recipeOption ?? null) as ItemOption | null,
     outputVariantUid: null as ItemOption | null,
   },
 })
+
+// Re-initialize when parent repopulates (edit/duplicate reopens)
+watch(
+  () => props.initialValues,
+  (iv) => {
+    resetForm({
+      values: {
+        outputQuantity: iv.outputQuantity || (undefined as unknown as number),
+        damagedQuantity: iv.damagedQuantity ?? (undefined as unknown as number),
+        recipe: (iv.recipeOption ?? null) as ItemOption | null,
+        outputVariantUid: null as ItemOption | null,
+      },
+    })
+  },
+)
 
 // ─── Recipe search ───────────────────────────
 const recipeSearchInput = ref("")
@@ -121,6 +136,14 @@ watch(
     }
   },
 )
+
+// ─── Auto-select variant when options load (edit / duplicate pre-populate) ─
+watch(variantOptions, (opts) => {
+  const preselectedUid = props.initialValues.outputVariantUid
+  if (!preselectedUid || values.outputVariantUid) return
+  const match = opts.find((o) => o.value === preselectedUid)
+  if (match) setFieldValue("outputVariantUid", match)
+})
 
 // ─── Submit handler ─────────────────────────────────────────────────────
 const handleNext = handleSubmit((formValues) => {

@@ -30,5 +30,6 @@ export type BasicRunDetails = {
   outputQuantity: number
   damagedQuantity: number
   recipeUid: string
+  recipeOption?: { label: string; value: string } | null
   outputVariantUid?: string
 }
