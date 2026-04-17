@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { startCase } from "@/utils/format-strings"
 import { computed, h } from "vue"
 import Chip from "@components/Chip.vue"
@@ -11,6 +11,7 @@ import { IEODReport, TEodPendingOrder } from "@modules/reports/types"
 
 const isMobile = useMediaQuery("(max-width: 768px)")
 const props = defineProps<{ data: IEODReport | null }>()
+const { format } = useFormatCurrency()
 
 const stats = computed(() => {
   const { fulfillment_metrics, summary } = props.data || {}
@@ -60,7 +61,7 @@ const COLUMNS: TableColumn<TEodPendingOrder>[] = [
   {
     header: "Amount",
     accessor: "amount",
-    cell: ({ value }) => formatCurrency(Number(value)),
+    cell: ({ value }) => format(Number(value)),
   },
   {
     header: "Action",
@@ -122,7 +123,7 @@ const COLUMNS: TableColumn<TEodPendingOrder>[] = [
             <div class="flex items-center justify-between gap-4 px-4 py-5">
               <p class="text-sm font-semibold">Total Shipping Today</p>
               <p class="text-success-700 text-sm font-semibold">
-                {{ formatCurrency(data?.summary?.total_shipping_costs ?? 0, { kobo: true }) }}
+                {{ format(data?.summary?.total_shipping_costs ?? 0, { kobo: true }) }}
               </p>
             </div>
           </div>
@@ -135,10 +136,9 @@ const COLUMNS: TableColumn<TEodPendingOrder>[] = [
           <p class="text-xs">
             {{ data?.pending_orders?.length ?? 0 }} orders carrying over &bull;
             {{
-              formatCurrency(
-                data?.pending_orders?.reduce((sum, order) => sum + order.amount, 0) ?? 0,
-                { kobo: true },
-              )
+              format(data?.pending_orders?.reduce((sum, order) => sum + order.amount, 0) ?? 0, {
+                kobo: true,
+              })
             }}
             at stake
           </p>

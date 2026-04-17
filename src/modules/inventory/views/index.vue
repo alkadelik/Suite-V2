@@ -146,7 +146,9 @@
           </template>
 
           <template #cell:category="{ value }">
-            <Chip :label="String(value) || 'Uncategorized'" icon="tag" color="purple" size="sm" />
+            <div class="max-w-48">
+              <Chip :label="String(value) || 'Uncategorized'" icon="tag" color="purple" size="sm" />
+            </div>
           </template>
 
           <template #cell:sellable_stock="{ value }">
@@ -287,7 +289,8 @@ import InventoryRequests from "../components/InventoryRequests.vue"
 import ReceiveRequestModal from "../components/ReceiveRequestModal.vue"
 import ProductCard from "../components/ProductCard.vue"
 import ManageStockModal from "../components/ManageStockModal.vue"
-import { formatPriceRange, formatCurrency } from "@/utils/format-currency"
+import { formatPriceRange } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { useAuthStore } from "@modules/auth/store"
 import SectionHeader from "@components/SectionHeader.vue"
 import PageHeader from "@components/PageHeader.vue"
@@ -310,6 +313,32 @@ import { useRoute } from "vue-router"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
 import StatCard from "@components/StatCard.vue"
+
+const { format } = useFormatCurrency()
+
+const formatPriceRange = (
+  value: string | number | boolean | Record<string, unknown> | null | undefined,
+): string => {
+  if (!value || typeof value !== "string") return "-"
+
+  // Split the price range string
+  const parts = value.split(" - ")
+  if (parts.length !== 2) return "-"
+
+  const minPrice = parseFloat(parts[0])
+  const maxPrice = parseFloat(parts[1])
+
+  // If prices are invalid
+  if (isNaN(minPrice) || isNaN(maxPrice)) return "-"
+
+  // If min and max are the same, show single price
+  if (minPrice === maxPrice) {
+    return format(minPrice)
+  }
+
+  // Otherwise, show price range
+  return `${format(minPrice)} - ${format(maxPrice)}`
+}
 
 const page = ref(1)
 const itemsPerPage = ref(10)
@@ -487,7 +516,7 @@ const productMetrics = computed(() => {
       ? [
           {
             label: "Stock Value",
-            value: formatCurrency(stats?.total_stock_value ?? 0),
+            value: format(stats?.total_stock_value ?? 0),
             icon: "moneys",
             iconClass: "text-bloom-700",
             percentage: 0,

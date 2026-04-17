@@ -8,7 +8,7 @@ import { toast } from "@/composables/useToast"
 import FormField from "@components/form/FormField.vue"
 import AppButton from "@components/AppButton.vue"
 import { TOrder } from "../types"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import * as yup from "yup"
 
 const props = defineProps<{ open: boolean; order: TOrder; outstanding: number }>()
@@ -21,6 +21,8 @@ const PAYMENT_METHODS = [
 ]
 
 const outstandingAmount = computed(() => props.outstanding)
+
+const { format } = useFormatCurrency()
 
 interface FormValues {
   amount: string
@@ -39,7 +41,7 @@ const { handleSubmit, resetForm } = useForm<FormValues>({
         .positive("Amount must be greater than 0")
         .max(
           outstandingAmount.value,
-          `Amount cannot exceed outstanding balance of ${formatCurrency(outstandingAmount.value)}`,
+          `Amount cannot exceed outstanding balance of ${format(outstandingAmount.value)}`,
         ),
       date: yup.string().required("Date is required"),
       source: yup.object().shape({
@@ -97,7 +99,7 @@ watch(
         name="amount"
         label="Amount Paid"
         placeholder="Enter amount paid"
-        :hint="`Outstanding: ${formatCurrency(outstandingAmount)}`"
+        :hint="`Outstanding: ${format(outstandingAmount)}`"
         required
       />
 

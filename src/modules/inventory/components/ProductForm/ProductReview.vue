@@ -9,7 +9,7 @@
         <div class="flex flex-1 flex-col gap-2">
           <p class="text-core-600 text-xs md:text-sm">Price</p>
           <h4 class="text-2xl font-bold">
-            {{ formatCurrency(parseFloat(variant?.price || "0")) }}
+            {{ format(parseFloat(variant?.price || "0")) }}
           </h4>
         </div>
         <div class="flex flex-1 flex-col gap-2">
@@ -143,7 +143,7 @@
             <!-- Price -->
             <div class="w-24 text-center">
               <span class="text-xs font-semibold">{{
-                formatCurrency(parseFloat(variantItem.price || "0"))
+                format(parseFloat(variantItem.price || "0"))
               }}</span>
             </div>
           </div>
@@ -155,7 +155,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { PRODUCT_DIMENSIONS, PRODUCT_ATTRIBUTES } from "../../constants"
 import Chip from "@components/Chip.vue"
 import { IProductVariant } from "@modules/inventory/types"
@@ -179,6 +179,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const { format } = useFormatCurrency()
 
 // Get the primary variant (first one or default)
 const variant = computed(() => {
@@ -252,10 +253,10 @@ const getPriceRange = (): string => {
   const maxPrice = Math.max(...prices)
 
   if (minPrice === maxPrice) {
-    return formatCurrency(minPrice)
+    return format(minPrice)
   }
 
-  return `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`
+  return `${format(minPrice)} - ${format(maxPrice)}`
 }
 
 // Get total stock for all variants

@@ -225,7 +225,7 @@ import {
 } from "../api"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { getProductAttributesForSelect, findVariantByAttributes } from "@/utils/product-attributes"
 import type {
   IAddStockPayload,
@@ -247,6 +247,7 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+const { format } = useFormatCurrency()
 
 const isMobile = useMediaQuery("(max-width: 768px)")
 const settingsStore = useSettingsStore()
@@ -481,9 +482,9 @@ const displayImage = computed(() => {
 // Get display price
 const displayPrice = computed(() => {
   if (selectedVariant.value) {
-    return formatCurrency(Number(selectedVariant.value.price))
+    return format(Number(selectedVariant.value.price))
   }
-  return formatCurrency(0)
+  return format(0)
 })
 
 // Get stock left

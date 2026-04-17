@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import AppButton from "@components/AppButton.vue"
 import Chip from "@components/Chip.vue"
 import FieldGroupError from "@components/form/FieldGroupError.vue"
@@ -60,6 +60,8 @@ const emit = defineEmits<{
   "update:selectedProducts": [products: IProductCatalogue[]]
 }>()
 const currency = computed(() => useSettingsStore().storeDetails?.currency || "NGN")
+
+const { format } = useFormatCurrency()
 
 const localItems = ref<OrderItem[]>([])
 const selectedVariants = ref<Map<string, VariantItem[]>>(new Map())
@@ -501,14 +503,14 @@ const getProductPriceDisplay = (product: IProductCatalogue) => {
     const maxPrice = Math.max(...prices)
 
     if (minPrice === maxPrice) {
-      return formatCurrency(minPrice)
+      return format(minPrice)
     }
-    return `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`
+    return `${format(minPrice)} - ${format(maxPrice)}`
   }
 
   // For simple products (single variant, no attributes), show the price from backend
   if (product.variants && product.variants.length === 1) {
-    return formatCurrency(parseFloat(product.variants[0].price))
+    return format(parseFloat(product.variants[0].price))
   }
 
   return "Select variant(s)"
@@ -619,7 +621,7 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
                 <!-- display original price here -->
                 <span class="text-core-600 flex items-center gap-1 text-xs">
                   <Icon name="tag" class="h-3 w-3" />
-                  {{ formatCurrency(parseFloat(variantItem.variant.price)) }}
+                  {{ format(parseFloat(variantItem.variant.price)) }}
                 </span>
               </div>
 
@@ -683,7 +685,7 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
       <div class="flex items-center justify-between">
         <p class="text-sm text-gray-600">Total products amount:</p>
         <span class="text-primary-600 text-base font-semibold">
-          {{ formatCurrency(productsTotal) }}
+          {{ format(productsTotal) }}
         </span>
       </div>
       <FieldGroupError v-if="stepError" target="order-product-qty" :error="stepError" />

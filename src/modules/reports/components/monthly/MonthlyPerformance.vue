@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { truncateCurrency, formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import ReportStatCard, { IReportStat } from "../ReportStatCard.vue"
 import { computed } from "vue"
 import ReportInsightCard from "../ReportInsightCard.vue"
@@ -20,6 +20,7 @@ import { IMonthlyReport } from "@modules/reports/types"
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
 const props = defineProps<{ data: IMonthlyReport | null }>()
+const { format, truncate } = useFormatCurrency()
 
 const isMobile = useMediaQuery("(max-width: 768px)")
 
@@ -36,7 +37,7 @@ const stats = computed(() => {
     },
     {
       label: "Avg Order Value",
-      value: truncateCurrency(metrics.average_order_value),
+      value: truncate(metrics.average_order_value),
       note: "Average per order",
     },
     {
@@ -62,7 +63,7 @@ const stats = computed(() => {
     {
       label: "Cart Abandonment",
       value: `${metrics.cart_abandonment_rate}%`,
-      note: `${truncateCurrency(metrics.estimated_lost_revenue_from_abandonment)} lost`,
+      note: `${truncate(metrics.estimated_lost_revenue_from_abandonment)} lost`,
     },
     {
       label: "Discount Impact",
@@ -109,7 +110,7 @@ const revenueByDayOptions: ChartOptions<"bar"> = {
     },
     tooltip: {
       callbacks: {
-        label: (context) => `Revenue: ${formatCurrency(Number(context.parsed.y))}`,
+        label: (context) => `Revenue: ${format(Number(context.parsed.y))}`,
       },
     },
   },

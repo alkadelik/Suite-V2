@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import DonutChart from "@components/DonutChart.vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 
 const props = defineProps<{
   value: number
@@ -9,7 +9,9 @@ const props = defineProps<{
   percentageChange?: number | null
 }>()
 
-const displayValue = computed(() => formatCurrency(props.value))
+const { format } = useFormatCurrency()
+
+const displayValue = computed(() => format(props.value))
 </script>
 
 <template>

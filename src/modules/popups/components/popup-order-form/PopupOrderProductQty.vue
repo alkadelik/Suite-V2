@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import AppButton from "@components/AppButton.vue"
 import Chip from "@components/Chip.vue"
 import FieldGroupError from "@components/form/FieldGroupError.vue"
@@ -52,6 +52,8 @@ const selectedVariants = ref<Map<string, VariantItem[]>>(new Map())
 const validationErrors = ref<ValidationErrors>({})
 const stepError = ref("")
 const showNotes = reactive<Record<string, boolean>>({})
+
+const { format } = useFormatCurrency()
 
 // Toggle this to true to clear notes when hidden
 const CLEAR_NOTE_ON_HIDE = false
@@ -399,9 +401,9 @@ const getProductPriceDisplay = (product: PopupInventory) => {
   const maxPrice = Math.max(...prices)
 
   if (minPrice === maxPrice) {
-    return formatCurrency(minPrice)
+    return format(minPrice)
   }
-  return `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`
+  return `${format(minPrice)} - ${format(maxPrice)}`
 }
 
 // Calculate total quantity across all selected variants
@@ -513,11 +515,11 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
                   class="text-core-300 line-through"
                   style="font-size: 11px"
                 >
-                  {{ formatCurrency(getOriginalPrice(variantItem.variant)!) }}
+                  {{ format(getOriginalPrice(variantItem.variant)!) }}
                 </span>
                 <span class="text-core-600 flex items-center gap-1 text-xs">
                   <Icon name="tag" class="h-3 w-3" />
-                  {{ formatCurrency(parseFloat(variantItem.variant.event_price)) }}
+                  {{ format(parseFloat(variantItem.variant.event_price)) }}
                 </span>
               </div>
               <Chip
@@ -578,7 +580,7 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
       <div class="flex items-center justify-between">
         <p class="text-sm text-gray-600">Total products amount:</p>
         <span class="text-primary-600 text-base font-semibold">
-          {{ formatCurrency(productsTotal) }}
+          {{ format(productsTotal) }}
         </span>
       </div>
       <FieldGroupError v-if="stepError" target="popup-order-product-qty" :error="stepError" />

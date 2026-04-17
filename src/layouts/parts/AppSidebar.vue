@@ -226,12 +226,12 @@ const marketingItems = computed(() => [{ icon: "sms", label: "Email List", to: "
 
 // Production items
 const productionItems = computed(() => {
-  const componentLabel = useProductionStore().componentLabel || "Raw Materials"
-  const recipeLabel = useProductionStore().recipeLabel || "Recipes"
+  const componentLabel = useProductionStore().componentLabel
+  const recipeLabel = useProductionStore().recipeLabel
   return [
-    { icon: "box", label: componentLabel || "Raw materials", to: "/raw-materials" },
-    { icon: "box", label: recipeLabel || "Recipes", to: "/recipes" },
-    { icon: "box", label: "Production run", to: "/production-run" },
+    { icon: "box", label: componentLabel, to: "/production/raw-materials" },
+    { icon: "box", label: recipeLabel, to: "/production/recipes" },
+    { icon: "box", label: "Production run", to: "/production/runs" },
   ]
 })
 

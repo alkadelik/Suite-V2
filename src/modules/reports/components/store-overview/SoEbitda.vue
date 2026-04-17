@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import InfoBox from "@components/InfoBox.vue"
-import { truncateCurrency, formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import type { TEbitdaBreakdownItem } from "../../types"
 
 const props = withDefaults(
@@ -17,9 +17,9 @@ const props = withDefaults(
   },
 )
 
-const ebitdaValue = computed(() =>
-  props.value > 0 ? truncateCurrency(props.value) : formatCurrency(0),
-)
+const { format, truncate } = useFormatCurrency()
+
+const ebitdaValue = computed(() => (props.value > 0 ? truncate(props.value) : format(0)))
 
 const maxBarValue = computed(() => Math.max(...props.breakdown.map((item) => item.value), 1))
 
@@ -67,7 +67,7 @@ const expenseItems = computed(() => props.breakdown.filter((item) => !item.isPos
           </div>
           <span class="text-success-700 w-[110px] shrink-0 text-right text-sm font-medium">
             <template v-if="revenueItem.value === 0">₦0.00</template>
-            <template v-else>+ {{ formatCurrency(revenueItem.value) }}</template>
+            <template v-else>+ {{ format(revenueItem.value) }}</template>
           </span>
         </div>
 
@@ -89,7 +89,7 @@ const expenseItems = computed(() => props.breakdown.filter((item) => !item.isPos
             </div>
             <span class="text-error-600 w-[110px] shrink-0 text-right text-sm font-medium">
               <template v-if="item.value === 0">₦0.00</template>
-              <template v-else>({{ formatCurrency(item.value) }})</template>
+              <template v-else>({{ format(item.value) }})</template>
             </span>
           </div>
         </div>
