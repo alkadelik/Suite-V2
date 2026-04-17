@@ -21,7 +21,7 @@
       />
 
       <!-- Product Info Card -->
-      <div v-if="selectedAction" class="overflow-hidden rounded-xl border border-gray-200 bg-white">
+      <div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div class="flex items-center gap-3 border-b border-gray-200 p-4">
           <!-- Product/Variant Image -->
           <div class="h-14 w-14 flex-shrink-0 overflow-hidden rounded-md bg-gray-200">
@@ -90,7 +90,7 @@
         <template v-if="selectedAction === 'add'">
           <FormField
             name="quantity"
-            label="Quantity"
+            label="Quantity to add"
             type="number"
             placeholder="Enter quantity"
             required
@@ -115,7 +115,7 @@
         <template v-else-if="selectedAction === 'reduce'">
           <FormField
             name="quantity"
-            label="Quantity"
+            label="Quantity to remove"
             type="number"
             placeholder="Enter quantity"
             required
@@ -142,7 +142,7 @@
         <template v-else-if="selectedAction === 'transfer'">
           <FormField
             name="quantity"
-            label="Quantity"
+            label="Quantity to transfer"
             type="number"
             placeholder="Enter quantity"
             required
@@ -169,7 +169,7 @@
         <template v-else-if="selectedAction === 'request'">
           <FormField
             name="quantity"
-            label="Quantity"
+            label="Quantity to request"
             type="number"
             placeholder="Enter quantity"
             required
@@ -200,7 +200,7 @@
         :loading="isPending"
         class="w-full"
         @click="onSubmit"
-        :disabled="!meta.valid || !canSubmit"
+        :disabled="!canSubmit"
       />
     </template>
   </component>
@@ -433,7 +433,7 @@ const getInitialValues = (): FormValues => {
   return initialValues
 }
 
-const { handleSubmit, meta, resetForm, values, setFieldValue } = useForm<FormValues>({
+const { handleSubmit, resetForm, values, setFieldValue } = useForm<FormValues>({
   validationSchema,
   initialValues: getInitialValues(),
   keepValuesOnUnmount: true,

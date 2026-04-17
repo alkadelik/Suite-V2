@@ -6,7 +6,7 @@
       class="mb-10"
     />
 
-    <AppForm :schema="loginSchema" @submit="onSubmit" v-slot="{ meta }" class="space-y-8">
+    <AppForm :schema="loginSchema" @submit="onSubmit" v-slot="{}" class="space-y-8">
       <FormField name="email" label="Email Address" placeholder="example@gmail.com" required />
 
       <FormField name="password" type="password" label="Password" required />
@@ -29,7 +29,6 @@
         :loading="isPending || isCheckingLiveStatus"
         label="Log In"
         class="w-full"
-        :inactive="!meta.valid"
       />
     </AppForm>
 

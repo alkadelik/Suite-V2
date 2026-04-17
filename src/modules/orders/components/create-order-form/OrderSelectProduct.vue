@@ -2,15 +2,17 @@
 import AppButton from "@components/AppButton.vue"
 import Chip from "@components/Chip.vue"
 import EmptyState from "@components/EmptyState.vue"
+import FieldGroupError from "@components/form/FieldGroupError.vue"
 import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
 import ProductSelectionItem from "@components/ProductSelectionItem.vue"
 import { useGetProductCatalogsInfinite } from "@modules/inventory/api"
 import type { IProductCatalogue } from "@modules/inventory/types"
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import AddNewProductModal from "./AddNewProductModal.vue"
 import { useInfinitePagination } from "@/composables/useInfinitePagination"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
+import { scrollToAndFocusValidationTarget } from "@/utils/validations"
 
 const props = withDefaults(
   defineProps<{
@@ -24,6 +26,7 @@ const props = withDefaults(
 
 const searchQuery = ref("")
 const debouncedSearch = useDebouncedRef(searchQuery, 500)
+const selectionError = ref("")
 const emit = defineEmits<{
   next: []
   "update:selectedProducts": [products: IProductCatalogue[]]
@@ -76,13 +79,19 @@ const toggleProductSelection = (product: IProductCatalogue) => {
 }
 
 // Check if next button should be enabled
-const canProceed = computed(() => props.selectedProducts.length > 0)
-
 // Handle next button click
 const handleNext = () => {
-  if (canProceed.value) {
+  if (props.selectedProducts.length > 0) {
+    selectionError.value = ""
     emit("next")
+    return
   }
+
+  selectionError.value = "Select at least one product before continuing."
+  scrollToAndFocusValidationTarget("order-select-product", {
+    behavior: "smooth",
+    block: "start",
+  })
 }
 
 // Get available quantity for a product (sellable_stock - popup_quantity_taken across all variants)
@@ -113,6 +122,15 @@ const handleProductCreated = async (productUid: string) => {
     }
   }
 }
+
+watch(
+  () => props.selectedProducts.length,
+  (selectedCount) => {
+    if (selectedCount > 0) {
+      selectionError.value = ""
+    }
+  },
+)
 </script>
 
 <template>
@@ -146,6 +164,7 @@ const handleProductCreated = async (productUid: string) => {
 
     <!-- Products List -->
     <section
+      data-validation-target="order-select-product"
       ref="scrollContainer"
       v-if="!isPending && products.length > 0"
       :class="
@@ -219,18 +238,26 @@ const handleProductCreated = async (productUid: string) => {
     <div class="h-32" />
 
     <div class="border-core-200 fixed right-0 bottom-0 left-0 border-t bg-white p-4 md:p-6">
-      <div v-if="selectedProducts.length > 0" class="mb-3 flex items-center justify-between">
-        <p class="text-sm text-gray-600">
-          {{ selectedProducts.length }} product{{ selectedProducts.length > 1 ? "s" : "" }} selected
-        </p>
-        <button
-          @click="emit('update:selectedProducts', [])"
-          class="text-primary-600 hover:text-primary-700 text-sm font-medium"
-        >
-          Clear all
-        </button>
+      <div class="flex flex-col gap-3">
+        <FieldGroupError
+          v-if="selectionError"
+          target="order-select-product"
+          :error="selectionError"
+        />
+        <div v-if="selectedProducts.length > 0" class="flex items-center justify-between">
+          <p class="text-sm text-gray-600">
+            {{ selectedProducts.length }} product{{ selectedProducts.length > 1 ? "s" : "" }}
+            selected
+          </p>
+          <button
+            @click="emit('update:selectedProducts', [])"
+            class="text-primary-600 hover:text-primary-700 text-sm font-medium"
+          >
+            Clear all
+          </button>
+        </div>
+        <AppButton label="Next" class="w-full" @click="handleNext" />
       </div>
-      <AppButton label="Next" class="w-full" :disabled="!canProceed" @click="handleNext" />
     </div>
   </div>
 

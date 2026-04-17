@@ -72,7 +72,7 @@ const reportData = computed(() => {
   return latestMonthlyReport.value
 })
 
-const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
+const isMobile = useMediaQuery("(max-width: 1024px)")
 const fullMonth = computed(() =>
   new Date(activeDate.value).toLocaleDateString("en-US", { month: "long" }),
 )

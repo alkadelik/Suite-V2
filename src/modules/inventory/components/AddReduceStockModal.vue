@@ -23,7 +23,7 @@
 
       <FormField
         name="quantity"
-        label="Quantity"
+        :label="type === 'add' ? 'Quantity to add' : 'Quantity to remove'"
         type="number"
         placeholder="Enter quantity"
         required
@@ -73,7 +73,6 @@
         :loading="isPending"
         class="w-full"
         @click="onSubmit"
-        :disabled="!meta.valid"
       />
     </template>
   </Modal>
@@ -137,7 +136,7 @@ interface FormValues {
   loss_type: { label: string; value: string } | null
 }
 
-const { handleSubmit, meta, resetForm } = useForm<FormValues>({
+const { handleSubmit, resetForm } = useForm<FormValues>({
   validationSchema: computed(() =>
     yup.object({
       quantity: yup

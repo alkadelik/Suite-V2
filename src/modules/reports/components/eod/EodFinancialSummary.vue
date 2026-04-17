@@ -6,7 +6,7 @@ import { useMediaQuery } from "@vueuse/core"
 import { IEODReport } from "@modules/reports/types"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 
-const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
+const isMobile = useMediaQuery("(max-width: 768px)")
 const props = defineProps<{ data: IEODReport | null }>()
 const { format } = useFormatCurrency()
 

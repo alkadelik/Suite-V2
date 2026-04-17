@@ -7,14 +7,14 @@ import Drawer from "@components/Drawer.vue"
 import Modal from "@components/Modal.vue"
 import { TMovement, TRawMaterial } from "@modules/production/types"
 import { useMediaQuery } from "@vueuse/core"
-import { computed, ref } from "vue"
+import { ref } from "vue"
 import RMUsageCard from "./RMUsageCard.vue"
 import { USAGE_HISTORY_COLUMN } from "@modules/production/constant"
 
 const props = defineProps<{ usage: TMovement[]; material: TRawMaterial }>()
 const { format } = useFormatCurrency()
 
-const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
+const isMobile = useMediaQuery("(max-width: 1024px)")
 
 const openDetails = ref(false)
 const selectedHistory = ref<TMovement | null>(null)

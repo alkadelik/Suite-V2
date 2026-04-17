@@ -30,4 +30,17 @@ export const updateStoreRoleOptions: (options: IRole[]) => void = (options) => {
 export const CURRENCY_OPTIONS = [
   { label: "Nigerian Naira (NGN)", value: "NGN" },
   { label: "US Dollar (USD)", value: "USD" },
+  { label: "Ghanaian Cedi (GHS)", value: "GHS" },
+  { label: "Kenyan Shilling (KES)", value: "KES" },
+  { label: "British Pound (GBP)", value: "GBP" },
+  { label: "Euro (EUR)", value: "EUR" },
 ]
+
+export const CURRENCY_LABELS: Record<string, string> = {
+  NGN: "Nigerian Naira (NGN)",
+  USD: "US Dollar (USD)",
+  GHS: "Ghanaian Cedi (GHS)",
+  KES: "Kenyan Shilling (KES)",
+  GBP: "British Pound (GBP)",
+  EUR: "Euro (EUR)",
+}

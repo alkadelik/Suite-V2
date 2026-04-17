@@ -18,7 +18,7 @@ const emit = defineEmits<{
   apply: [filters: Record<string, string>]
 }>()
 
-const isMobile = computed(() => useMediaQuery("(max-width: 1028px)").value)
+const isMobile = useMediaQuery("(max-width: 1028px)")
 
 const expenseStore = useExpenseStore()
 const { data: apiCategories } = useGetExpenseCategories(

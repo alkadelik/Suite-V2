@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Modal from "@components/Modal.vue"
-import { computed, ref } from "vue"
+import { ref } from "vue"
 import { useCreateOrderMemo } from "../api"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
@@ -44,7 +44,7 @@ const onSubmit = () => {
   )
 }
 
-const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
+const isMobile = useMediaQuery("(max-width: 1024px)")
 </script>
 
 <template>

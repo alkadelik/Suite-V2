@@ -13,7 +13,7 @@ ChartJS.register(ArcElement, Tooltip, Legend)
 const props = defineProps<{ data: IMonthlyReport | null }>()
 const { format, truncate } = useFormatCurrency()
 
-const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
+const isMobile = useMediaQuery("(max-width: 768px)")
 
 const stats = computed(() => {
   if (!props.data) return []

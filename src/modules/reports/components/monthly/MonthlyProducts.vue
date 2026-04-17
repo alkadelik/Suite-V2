@@ -21,7 +21,7 @@ ChartJS.register(ArcElement, Tooltip, Legend, LinearScale, PointElement)
 const props = defineProps<{ data: IMonthlyReport | null }>()
 const { format } = useFormatCurrency()
 
-const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
+const isMobile = useMediaQuery("(max-width: 768px)")
 const isHoveringChart = ref(false)
 
 const categoryChartData = computed(() => {

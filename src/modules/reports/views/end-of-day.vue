@@ -73,7 +73,7 @@ const reportData = computed(() => {
   return latestEODReport.value
 })
 
-const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
+const isMobile = useMediaQuery("(max-width: 1024px)")
 const storeName = computed(() => useSettingsStore().storeDetails?.name || "Store")
 const activeLocation = computed(() => useSettingsStore().activeLocation?.name || "Location")
 const fullDate = computed(() =>

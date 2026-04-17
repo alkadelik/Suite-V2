@@ -1,0 +1,788 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Weekly Digest</title>
+    <!--[if !mso]><!-->
+    <style type="text/css">
+      @import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap");
+    </style>
+    <!--<![endif]-->
+  </head>
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      font-family: &quot;Outfit&quot;, Arial, Helvetica, sans-serif;
+      color: #312623;
+      background-color: #ffffff;
+    "
+  >
+    <table
+      role="presentation"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      style="border-collapse: collapse"
+    >
+      <tr>
+        <td align="center" style="padding: 16px">
+          <table
+            role="presentation"
+            width="600"
+            cellpadding="0"
+            cellspacing="0"
+            style="border-collapse: collapse; max-width: 600px; width: 100%"
+          >
+            <!-- Header Section (Dark Background) -->
+            <tr>
+              <td style="background-color: #312623; border-radius: 12px; padding: 28px 32px">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="vertical-align: middle">
+                      <img
+                        src="https://res.cloudinary.com/dwwxvzind/image/upload/v1755625250/leyyow-logo-2_ngmjqe.png"
+                        alt="Leyyow"
+                        height="28"
+                        style="display: block"
+                      />
+                    </td>
+                    <td style="text-align: right; vertical-align: middle">
+                      <span
+                        style="
+                          display: inline-block;
+                          border: 1px solid #866f6e;
+                          border-radius: 20px;
+                          padding: 6px 14px;
+                          font-size: 12px;
+                          color: #ffffff;
+                          font-family: &quot;Outfit&quot;, Arial, Helvetica, sans-serif;
+                        "
+                        >{{ week_range }}</span
+                      >
+                    </td>
+                  </tr>
+                  <tr>
+                    <td colspan="2" style="padding-top: 20px">
+                      <p
+                        style="
+                          margin: 0;
+                          font-size: 12px;
+                          letter-spacing: 1px;
+                          color: #ccc8c8;
+                          text-transform: uppercase;
+                          font-family: &quot;Outfit&quot;, Arial, Helvetica, sans-serif;
+                        "
+                      >
+                        GOOD MORNING, {{ first_name }}
+                      </p>
+                      <p
+                        style="
+                          margin: 4px 0 0 0;
+                          font-size: 22px;
+                          font-weight: 700;
+                          color: #ffffff;
+                          font-family: &quot;Outfit&quot;, Arial, Helvetica, sans-serif;
+                        "
+                      >
+                        Your week in <span style="color: #d4a853; font-style: italic">review.</span>
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Highlight Banner -->
+            <tr>
+              <td style="padding-top: 12px">
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  style="
+                    background-color: #3d2f2c;
+                    border-radius: 8px;
+                    font-size: 13px;
+                    color: #ffffff;
+                  "
+                >
+                  <tr>
+                    <td
+                      style="
+                        padding: 12px 20px;
+                        font-family: &quot;Outfit&quot;, Arial, Helvetica, sans-serif;
+                        line-height: 1.5;
+                      "
+                    >
+                      <strong>{{ revenue_highlight }}</strong> {{ best_day_highlight }}
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Total Revenue -->
+            <tr>
+              <td style="padding: 28px 0 8px 0">
+                <p
+                  style="
+                    margin: 0;
+                    font-size: 13px;
+                    color: #866f6e;
+                    font-family: &quot;Outfit&quot;, Arial, Helvetica, sans-serif;
+                  "
+                >
+                  Total Revenue
+                </p>
+                <p
+                  style="
+                    margin: 6px 0 0 0;
+                    font-size: 36px;
+                    font-weight: 800;
+                    color: #312623;
+                    font-family: &quot;Outfit&quot;, Arial, Helvetica, sans-serif;
+                    line-height: 1.1;
+                  "
+                >
+                  {{ total_revenue }}
+                </p>
+                <p
+                  style="
+                    margin: 6px 0 0 0;
+                    font-size: 13px;
+                    color: #866f6e;
+                    font-family: &quot;Outfit&quot;, Arial, Helvetica, sans-serif;
+                  "
+                >
+                  from <strong style="color: #312623">{{ total_orders }} orders</strong> this week
+                </p>
+              </td>
+            </tr>
+
+            <!-- Metrics Grid (2x2) -->
+            <tr>
+              <td style="padding-top: 16px">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                  <!-- Row 1 -->
+                  <tr>
+                    <td width="48%" style="vertical-align: top">
+                      <table
+                        role="presentation"
+                        width="100%"
+                        cellpadding="0"
+                        cellspacing="0"
+                        style="border: 1px solid #e8e2e1; border-radius: 10px"
+                      >
+                        <tr>
+                          <td style="padding: 16px 18px">
+                            <div
+                              style="
+                                width: 28px;
+                                height: 3px;
+                                background-color: #d4a853;
+                                border-radius: 2px;
+                                margin-bottom: 10px;
+                              "
+                            ></div>
+                            <p
+                              style="
+                                margin: 0;
+                                font-size: 12px;
+                                color: #866f6e;
+                                font-family: &quot;Outfit&quot;, Arial, Helvetica, sans-serif;
+                              "
+                            >
+                              Gross Margin
+                            </p>
+                            <p
+                              style="
+                                margin: 6px 0 0 0;
+                                font-size: 24px;
+                                font-weight: 700;
+                                color: #312623;
+                                font-family: &quot;Outfit&quot;, Arial, Helvetica, sans-serif;
+                              "
+                            >
+                              {{ gross_margin }}
+                            </p>
+                            <p
+                              style="
+                                margin: 4px 0 0 0;
+                                font-size: 11px;
+                                color: #866f6e;
+                                font-family: &quot;Outfit&quot;, Arial, Helvetica, sans-serif;
+                              "
+                            >
+                              {{ gross_margin_comparison }}
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                    <td width="4%"></td>
+                    <td width="48%" style="vertical-align: top">
+                      <table
+                        role="presentation"
+                        width="100%"
+                        cellpadding="0"
+                        cellspacing="0"
+                        style="border: 1px solid #e8e2e1; border-radius: 10px"
+                      >
+                        <tr>
+                          <td style="padding: 16px 18px">
+                            <div
+                              style="
+                                width: 28px;
+                                height: 3px;
+                                background-color: #d4a853;
+                                border-radius: 2px;
+                                margin-bottom: 10px;
+                              "
+                            ></div>
+                            <p
+                              style="
+                                margin: 0;
+                                font-size: 12px;
+                                color: #866f6e;
+                                font-family: &quot;Outfit&quot;, Arial, Helvetica, sans-serif;
+                              "
+                            >
+                              Avg. Order Value
+                            </p>
+                            <p
+                              style="
+                                margin: 6px 0 0 0;
+                                font-size: 24px;
+                                font-weight: 700;
+                                color: #312623;
+                                font-family: &quot;Outfit&quot;, Arial, Helvetica, sans-serif;
+                              "
+                            >
+                              {{ avg_order_value }}
+                            </p>
+                            <p
+                              style="
+                                margin: 4px 0 0 0;
+                                font-size: 11px;
+                                color: #866f6e;
+                                font-family: &quot;Outfit&quot;, Arial, Helvetica, sans-serif;
+                              "
+                            >
+                              {{ avg_order_comparison }}
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                  <!-- Spacer Row -->
+                  <tr>
+                    <td colspan="3" height="12"></td>
+                  </tr>
+                  <!-- Row 2 -->
+                  <tr>
+                    <td width="48%" style="vertical-align: top">
+                      <table
+                        role="presentation"
+                        width="100%"
+                        cellpadding="0"
+                        cellspacing="0"
+                        style="border: 1px solid #e8e2e1; border-radius: 10px"
+                      >
+                        <tr>
+                          <td style="padding: 16px 18px">
+                            <div
+                              style="
+                                width: 28px;
+                                height: 3px;
+                                background-color: #d4a853;
+                                border-radius: 2px;
+                                margin-bottom: 10px;
+                              "
+                            ></div>
+                            <p
+                              style="
+                                margin: 0;
+                                font-size: 12px;
+                                color: #866f6e;
+                                font-family: &quot;Outfit&quot;, Arial, Helvetica, sans-serif;
+                              "
+                            >
+                              EBITDA
+                            </p>
+                            <p
+                              style="
+                                margin: 6px 0 0 0;
+                                font-size: 24px;
+                                font-weight: 700;
+                                color: #312623;
+                                font-family: &quot;Outfit&quot;, Arial, Helvetica, sans-serif;
+                              "
+                            >
+                              {{ ebitda }}
+                            </p>
+                            <p
+                              style="
+                                margin: 4px 0 0 0;
+                                font-size: 11px;
+                                color: #866f6e;
+                                font-family: &quot;Outfit&quot;, Arial, Helvetica, sans-serif;
+                              "
+                            >
+                              {{ ebitda_subtitle }}
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                    <td width="4%"></td>
+                    <td width="48%" style="vertical-align: top">
+                      <table
+                        role="presentation"
+                        width="100%"
+                        cellpadding="0"
+                        cellspacing="0"
+                        style="border: 1px solid #e8e2e1; border-radius: 10px"
+                      >
+                        <tr>
+                          <td style="padding: 16px 18px">
+                            <div
+                              style="
+                                width: 28px;
+                                height: 3px;
+                                background-color: #d4a853;
+                                border-radius: 2px;
+                                margin-bottom: 10px;
+                              "
+                            ></div>
+                            <p
+                              style="
+                                margin: 0;
+                                font-size: 12px;
+                                color: #866f6e;
+                                font-family: &quot;Outfit&quot;, Arial, Helvetica, sans-serif;
+                              "
+                            >
+                              Discount Rate
+                            </p>
+                            <p
+                              style="
+                                margin: 6px 0 0 0;
+                                font-size: 24px;
+                                font-weight: 700;
+                                color: #312623;
+                                font-family: &quot;Outfit&quot;, Arial, Helvetica, sans-serif;
+                              "
+                            >
+                              {{ discount_rate }}
+                            </p>
+                            <p
+                              style="
+                                margin: 4px 0 0 0;
+                                font-size: 11px;
+                                color: #866f6e;
+                                font-family: &quot;Outfit&quot;, Arial, Helvetica, sans-serif;
+                              "
+                            >
+                              {{ discount_rate_subtitle }}
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Top 3 Products -->
+            <tr>
+              <td style="padding-top: 32px">
+                <p
+                  style="
+                    margin: 0 0 16px 0;
+                    font-size: 15px;
+                    font-weight: 600;
+                    color: #312623;
+                    font-family: &quot;Outfit&quot;, Arial, Helvetica, sans-serif;
+                  "
+                >
+                  Top 3 Products this week
+                </p>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                  <!-- Product 1 -->
+                  <tr>
+                    <td
+                      style="
+                        padding: 14px 0;
+                        border-bottom: 1px solid #f0eded;
+                        font-family: &quot;Outfit&quot;, Arial, Helvetica, sans-serif;
+                      "
+                    >
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td
+                            width="32"
+                            style="font-size: 13px; color: #866f6e; vertical-align: middle"
+                          >
+                            01
+                          </td>
+                          <td style="font-size: 14px; color: #312623; vertical-align: middle">
+                            {{ top_product_1_name }}
+                          </td>
+                          <td
+                            style="
+                              text-align: right;
+                              font-size: 14px;
+                              font-weight: 600;
+                              color: #312623;
+                              vertical-align: middle;
+                            "
+                          >
+                            {{ top_product_1_revenue }}
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                  <!-- Product 2 -->
+                  <tr>
+                    <td
+                      style="
+                        padding: 14px 0;
+                        border-bottom: 1px solid #f0eded;
+                        font-family: &quot;Outfit&quot;, Arial, Helvetica, sans-serif;
+                      "
+                    >
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td
+                            width="32"
+                            style="font-size: 13px; color: #866f6e; vertical-align: middle"
+                          >
+                            02
+                          </td>
+                          <td style="font-size: 14px; color: #312623; vertical-align: middle">
+                            {{ top_product_2_name }}
+                          </td>
+                          <td
+                            style="
+                              text-align: right;
+                              font-size: 14px;
+                              font-weight: 600;
+                              color: #312623;
+                              vertical-align: middle;
+                            "
+                          >
+                            {{ top_product_2_revenue }}
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                  <!-- Product 3 -->
+                  <tr>
+                    <td
+                      style="
+                        padding: 14px 0;
+                        border-bottom: 1px solid #f0eded;
+                        font-family: &quot;Outfit&quot;, Arial, Helvetica, sans-serif;
+                      "
+                    >
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td
+                            width="32"
+                            style="font-size: 13px; color: #866f6e; vertical-align: middle"
+                          >
+                            03
+                          </td>
+                          <td style="font-size: 14px; color: #312623; vertical-align: middle">
+                            {{ top_product_3_name }}
+                          </td>
+                          <td
+                            style="
+                              text-align: right;
+                              font-size: 14px;
+                              font-weight: 600;
+                              color: #312623;
+                              vertical-align: middle;
+                            "
+                          >
+                            {{ top_product_3_revenue }}
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Low Stock Warning -->
+            <tr>
+              <td style="padding-top: 28px">
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  style="background-color: #fffaeb; border: 1px solid #fedf89; border-radius: 10px"
+                >
+                  <tr>
+                    <td
+                      style="
+                        padding: 18px 20px;
+                        font-family: &quot;Outfit&quot;, Arial, Helvetica, sans-serif;
+                      "
+                    >
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td width="28" style="vertical-align: top; padding-top: 2px">
+                            <span style="font-size: 16px">&#9888;</span>
+                          </td>
+                          <td>
+                            <p style="margin: 0; font-size: 14px; font-weight: 700; color: #93370d">
+                              {{ low_stock_title }}
+                            </p>
+                            <p
+                              style="
+                                margin: 6px 0 0 0;
+                                font-size: 13px;
+                                color: #93370d;
+                                line-height: 1.5;
+                              "
+                            >
+                              {{ low_stock_details }}
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- New Customers -->
+            <tr>
+              <td style="padding-top: 20px">
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  style="border: 1px solid #e8e2e1; border-radius: 10px"
+                >
+                  <tr>
+                    <td
+                      style="
+                        padding: 20px;
+                        font-family: &quot;Outfit&quot;, Arial, Helvetica, sans-serif;
+                      "
+                    >
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td style="vertical-align: top">
+                            <p style="margin: 0; font-size: 13px; font-weight: 600; color: #312623">
+                              New Customers
+                            </p>
+                            <p
+                              style="
+                                margin: 6px 0 0 0;
+                                font-size: 28px;
+                                font-weight: 700;
+                                color: #312623;
+                              "
+                            >
+                              {{ new_customers_count }}
+                            </p>
+                            <p style="margin: 4px 0 0 0; font-size: 12px; color: #866f6e">
+                              joined this week
+                            </p>
+                          </td>
+                          <td style="text-align: right; vertical-align: middle">
+                            <p
+                              style="margin: 0; font-size: 13px; color: #866f6e; font-style: italic"
+                            >
+                              {{ total_customers }} total customers
+                            </p>
+                            <p
+                              style="
+                                margin: 4px 0 0 0;
+                                font-size: 13px;
+                                color: #866f6e;
+                                font-style: italic;
+                              "
+                            >
+                              {{ customers_growth }}
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- View Report CTA -->
+            <tr>
+              <td align="center" style="padding: 32px 0">
+                <a
+                  href="{{ report_url }}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style="
+                    display: inline-block;
+                    background-color: #c4711a;
+                    color: #ffffff;
+                    font-size: 14px;
+                    font-weight: 600;
+                    font-family: &quot;Outfit&quot;, Arial, Helvetica, sans-serif;
+                    text-decoration: none;
+                    padding: 14px 32px;
+                    border-radius: 28px;
+                  "
+                  >View Report &nbsp;&rarr;</a
+                >
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td>
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  style="background-color: #312623; border-radius: 12px"
+                >
+                  <tr>
+                    <td
+                      align="center"
+                      style="
+                        padding: 28px 32px;
+                        font-family: &quot;Outfit&quot;, Arial, Helvetica, sans-serif;
+                      "
+                    >
+                      <!-- Logo -->
+                      <img
+                        src="https://res.cloudinary.com/dwwxvzind/image/upload/v1755625250/leyyow-logo-2_ngmjqe.png"
+                        alt="Leyyow"
+                        height="24"
+                        style="display: block; margin: 0 auto 16px auto"
+                      />
+                      <!-- Social Icons -->
+                      <table
+                        role="presentation"
+                        cellpadding="0"
+                        cellspacing="0"
+                        style="margin: 0 auto 16px auto"
+                      >
+                        <tr>
+                          <td style="padding: 0 6px">
+                            <a
+                              href="https://instagram.com/leyyow"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style="color: #ffffff; text-decoration: none; font-size: 16px"
+                              >&#9675;</a
+                            >
+                          </td>
+                          <td style="padding: 0 6px">
+                            <a
+                              href="https://x.com/leyyow"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style="color: #ffffff; text-decoration: none; font-size: 16px"
+                              >&#9675;</a
+                            >
+                          </td>
+                          <td style="padding: 0 6px">
+                            <a
+                              href="https://linkedin.com/company/leyyow"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style="color: #ffffff; text-decoration: none; font-size: 16px"
+                              >&#9675;</a
+                            >
+                          </td>
+                          <td style="padding: 0 6px">
+                            <a
+                              href="https://wa.me/leyyow"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style="color: #ffffff; text-decoration: none; font-size: 16px"
+                              >&#9675;</a
+                            >
+                          </td>
+                        </tr>
+                      </table>
+                      <!-- Disclaimer -->
+                      <p
+                        style="
+                          margin: 0 0 14px 0;
+                          font-size: 12px;
+                          color: #ccc8c8;
+                          line-height: 1.5;
+                        "
+                      >
+                        You're receiving this because weekly summaries are enabled for your account.
+                      </p>
+                      <!-- Links -->
+                      <table
+                        role="presentation"
+                        cellpadding="0"
+                        cellspacing="0"
+                        style="margin: 0 auto"
+                      >
+                        <tr>
+                          <td>
+                            <a
+                              href="{{ unsubscribe_url }}"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style="
+                                font-size: 12px;
+                                color: #ffffff;
+                                text-decoration: underline;
+                                font-weight: 600;
+                              "
+                              >Unsubscribe</a
+                            >
+                          </td>
+                          <td style="padding: 0 12px; color: #866f6e; font-size: 12px">
+                            &nbsp;&nbsp;
+                          </td>
+                          <td>
+                            <a
+                              href="{{ manage_preferences_url }}"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style="
+                                font-size: 12px;
+                                color: #ffffff;
+                                text-decoration: underline;
+                                font-weight: 600;
+                              "
+                              >Manage preferences</a
+                            >
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

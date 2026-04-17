@@ -30,7 +30,10 @@
               {{ storeDetails?.name }}
             </p>
           </div>
-          <div class="flex min-w-0 items-center gap-2 text-sm text-gray-600">
+          <div
+            v-if="!isInternational"
+            class="flex min-w-0 items-center gap-2 text-sm text-gray-600"
+          >
             <p class="min-w-0 truncate">{{ storefrontUrl }}</p>
             <Icon
               name="copy"
@@ -108,7 +111,7 @@
       />
 
       <!-- Subscription view -->
-      <div class="relative mt-20">
+      <div v-if="!isInternational" class="relative mt-20">
         <div
           :class="['relative isolate flex flex-col gap-1 rounded-3xl p-3 pt-12 text-white']"
           style="
@@ -203,6 +206,7 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
 const expandedGroup = ref<string | null>("sales-suite")
 
 const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
+const isInternational = computed(() => useSettingsStore().isInternational)
 
 // Sales Suite items
 const salesSuiteItems = computed(() =>
@@ -260,7 +264,9 @@ watch(
 )
 
 // Check if setup requirements are complete (regardless of subscription status)
+// International accounts skip storefront-related onboarding entirely
 const setupComplete = computed(() => {
+  if (isInternational.value) return true
   const status = useSettingsStore().liveStatus
   if (status?.completion_percentage === 100) return true
   const missing = status?.missing_requirements || []

@@ -1,3 +1,11 @@
+export interface ICountry {
+  uid: string
+  code: string
+  name: string
+  default_currency_code: string
+  is_international: boolean
+}
+
 export type TCreateAccountPayload = {
   account_number: string
   bank_code: string
