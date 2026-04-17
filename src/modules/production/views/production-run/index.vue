@@ -27,7 +27,7 @@ const { data: runsData, isLoading } = useGetProdRuns(
   computed(() => ({ limit: limit.value, offset: offset.value })),
 )
 
-const allRuns = computed<TProdRun[]>(() => (runsData.value?.results ?? []) as TProdRun[])
+const allRuns = computed<TProdRun[]>(() => runsData.value?.results ?? [])
 const totalCount = computed(() => runsData.value?.count ?? 0)
 
 // ── Drawers ────────────────────────────────────────────────────────────────────
