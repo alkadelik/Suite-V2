@@ -12,7 +12,7 @@
       <AppSidebar
         :mobile-sidebar-open="mobileSidebarOpen"
         @logout="logout = true"
-        @upgrade="setPlanUpgradeModal(true)"
+        @upgrade="!isInternational && setPlanUpgradeModal(true)"
       />
 
       <!-- Main column -->
@@ -100,19 +100,21 @@
   <!--  -->
   <LogoutModal :open="logout" @close="logout = false" />
 
-  <PlansModal :model-value="showPlans" @update:model-value="(val) => setPlanUpgradeModal(val)" />
+  <template v-if="!isInternational">
+    <PlansModal :model-value="showPlans" @update:model-value="(val) => setPlanUpgradeModal(val)" />
+
+    <TrialActivationModal
+      :open="openTrial"
+      :subscription="profile?.subscription || null"
+      @close="closeTrialModal"
+    />
+  </template>
 
   <AddLocationModal
     :open="showAddLocationModal"
     :location="locationForEdit"
     @close="setAddLocationModal(false)"
     @refresh="handleLocationRefresh"
-  />
-
-  <TrialActivationModal
-    :open="openTrial"
-    :subscription="profile?.subscription || null"
-    @close="closeTrialModal"
   />
 
   <MobileMenuDrawer :open="openMore" @close="openMore = false" />
@@ -315,6 +317,7 @@ const { data: categories } = useGetCategories()
 const { data: attributes } = useGetAttributes()
 const { data: profile } = useGetProfile()
 const showPlans = computed(() => useSettingsStore().showPlanUpgradeModal)
+const isInternational = computed(() => useSettingsStore().isInternational)
 const showAddLocationModal = computed(() => useSettingsStore().showAddLocationModal)
 const locationForEdit = computed(() => useSettingsStore().locationForEdit)
 
@@ -350,8 +353,8 @@ watch(
     if (val) {
       updateAuthUser(val)
 
-      // Check if in trial mode
-      if (val.subscription?.trial_mode && storeUid.value) {
+      // Check if in trial mode (skip for international accounts)
+      if (val.subscription?.trial_mode && storeUid.value && !isInternational.value) {
         const daysRemaining = getDaysRemaining(val.subscription?.active_until)
         const dismissalKey = getTrialDismissalKey(storeUid.value)
 

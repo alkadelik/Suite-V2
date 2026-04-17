@@ -165,6 +165,21 @@ router.beforeEach((to, from, next) => {
         return next({ path: "/settings/profile" })
       }
     }
+
+    // Restrict certain pages for international accounts
+    const internationalBlockedPaths = [
+      "/settings/design",
+      "/settings/billing",
+      "/settings/delivery-options",
+    ]
+    if (useSettingsStore().isInternational) {
+      const blocked = internationalBlockedPaths.some(
+        (p) => to.path === p || to.path.startsWith(p + "/"),
+      )
+      if (blocked) {
+        return next({ path: "/settings/profile" })
+      }
+    }
   }
 
   // Handle unauthenticated users

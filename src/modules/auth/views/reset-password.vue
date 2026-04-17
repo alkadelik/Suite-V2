@@ -50,7 +50,7 @@
       </div>
 
       <div v-if="step === 1">
-        <AppForm :schema="schema" @submit="onSubmit" v-slot="{ meta }" class="space-y-8">
+        <AppForm :schema="schema" @submit="onSubmit" v-slot="{}" class="space-y-8">
           <SectionHeader
             title="Reset Password"
             subtitle="Enter your new password to complete reset process."
@@ -74,13 +74,7 @@
             required
           />
 
-          <AppButton
-            type="submit"
-            label="Reset Password"
-            :loading="isPending"
-            :disabled="!meta.valid"
-            class="w-full"
-          />
+          <AppButton type="submit" label="Reset Password" :loading="isPending" class="w-full" />
         </AppForm>
       </div>
     </StepperWizard>

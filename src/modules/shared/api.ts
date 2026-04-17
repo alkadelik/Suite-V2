@@ -16,7 +16,7 @@ import {
   TCreateDeliveryOptionPayload,
   TUpdateDeliveryOptionPayload,
 } from "./types"
-import { IIndustriesApiResponse } from "./types"
+import { IIndustriesApiResponse, ICountry } from "./types"
 
 /** Create bank account  */
 export function useCreateBankAccount() {
@@ -103,6 +103,17 @@ export function useGetStoreIndustries() {
     queryFn: async () => {
       const res = await baseApi.get<IIndustriesApiResponse>("/stores/industries/")
       return res.data
+    },
+  })
+}
+
+/** Get countries for store creation */
+export function useGetCountries() {
+  return useQuery({
+    queryKey: ["countries"],
+    queryFn: async () => {
+      const res = await baseApi.get<{ data: ICountry[] }>("/stores/public/countries/")
+      return res.data.data
     },
   })
 }

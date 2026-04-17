@@ -11,7 +11,10 @@
     </div>
 
     <!-- Page content - always visible -->
-    <div class="grid grid-cols-2 gap-4 lg:grid-cols-5">
+    <div
+      class="grid grid-cols-2 gap-4"
+      :class="productMetrics.length === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'"
+    >
       <StatCard
         v-for="item in productMetrics"
         :key="item.label"
@@ -285,6 +288,7 @@ import ReceiveRequestModal from "../components/ReceiveRequestModal.vue"
 import ProductCard from "../components/ProductCard.vue"
 import ManageStockModal from "../components/ManageStockModal.vue"
 import { formatPriceRange, formatCurrency } from "@/utils/format-currency"
+import { useAuthStore } from "@modules/auth/store"
 import SectionHeader from "@components/SectionHeader.vue"
 import PageHeader from "@components/PageHeader.vue"
 import Tabs from "@components/Tabs.vue"
@@ -466,10 +470,12 @@ const handleRowClick = (clickedProduct: TProduct) => {
   router.push({ name: "Product-Details", params: { uid: clickedProduct.uid } })
 }
 
+const isOwner = computed(() => useAuthStore().user?.roles?.some((r) => r.type === "owner") ?? false)
+
 const productMetrics = computed(() => {
   const stats = productDashboard.value
 
-  return [
+  const cards = [
     {
       label: "Total Products",
       value: stats?.total_products ?? 0,
@@ -477,20 +483,17 @@ const productMetrics = computed(() => {
       iconClass: "text-success-500",
       percentage: 0,
     },
-    {
-      label: "Total Variants",
-      value: stats?.total_variants ?? 0,
-      icon: "box-filled",
-      iconClass: "md:text-green-700",
-      percentage: 0,
-    },
-    {
-      label: "Stock Value",
-      value: formatCurrency(stats?.total_stock_value ?? 0),
-      icon: "moneys",
-      iconClass: "text-bloom-700",
-      percentage: 0,
-    },
+    ...(isOwner.value
+      ? [
+          {
+            label: "Stock Value",
+            value: formatCurrency(stats?.total_stock_value ?? 0),
+            icon: "moneys",
+            iconClass: "text-bloom-700",
+            percentage: 0,
+          },
+        ]
+      : []),
     {
       label: "Low Stock",
       value: stats?.low_stock_count ?? 0,
@@ -499,13 +502,15 @@ const productMetrics = computed(() => {
       percentage: 0,
     },
     {
-      label: "Overstocked",
-      value: stats?.overstocked_count ?? 0,
+      label: "Stale Products",
+      value: stats?.stale_products_count ?? 0,
       icon: "box-filled",
-      iconClass: "md:text-bloom-700",
+      iconClass: "text-error-500",
       percentage: 0,
     },
   ]
+
+  return cards
 })
 
 const getStockStatus = (item: TProduct) => {

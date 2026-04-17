@@ -15,7 +15,7 @@ const emit = defineEmits<{
   apply: [filters: Record<string, string>]
 }>()
 
-const isMobile = computed(() => useMediaQuery("(max-width: 1028px)").value)
+const isMobile = useMediaQuery("(max-width: 1028px)")
 
 // const PAYMENT_STATUS_OPTIONS: { value: string; label: string; color: TChipColor }[] = [
 //   { value: "paid", label: "Paid", color: "success" },

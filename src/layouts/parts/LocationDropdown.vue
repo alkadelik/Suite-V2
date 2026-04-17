@@ -17,6 +17,7 @@ const { setLocations } = settingsStore
 const { requestLocationSwitch } = useLocationSwitch()
 const user = computed(() => useAuthStore().user)
 const isStoreOwner = computed(() => user.value?.roles.some((role) => role.type === "owner"))
+const isInternational = computed(() => useSettingsStore().isInternational)
 
 const { data: locationsData } = useGetLocations(isStoreOwner.value)
 
@@ -120,7 +121,10 @@ const onLocationSelect = (id: string) => {
               <Chip v-if="currentLocation?.is_hq" size="sm" label="HQ" class="w-full" />
             </div>
           </div>
-          <div class="flex min-w-0 items-center gap-2 text-sm text-gray-600">
+          <div
+            v-if="!isInternational"
+            class="flex min-w-0 items-center gap-2 text-sm text-gray-600"
+          >
             <p class="min-w-0 truncate">{{ storefrontUrl }}</p>
             <Icon
               name="copy"

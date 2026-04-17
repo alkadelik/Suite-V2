@@ -31,14 +31,8 @@
         @paste="handlePaste"
         :inputmode="type === 'number' && format ? 'decimal' : undefined"
         @wheel="type === 'number' ? $event.preventDefault() : undefined"
-        @blur="
-          isFocused = false
-          $emit('blur', $event)
-        "
-        @focus="
-          isFocused = true
-          $emit('focus', $event)
-        "
+        @blur="handleBlur"
+        @focus="handleFocus"
         v-bind="$attrs"
       />
 
@@ -149,6 +143,16 @@ const emit = defineEmits<{
 
 const showPassword = ref(false)
 const isFocused = ref(false)
+
+const handleBlur = (event: FocusEvent) => {
+  isFocused.value = false
+  emit("blur", event)
+}
+
+const handleFocus = (event: FocusEvent) => {
+  isFocused.value = true
+  emit("focus", event)
+}
 
 const formatWithCommas = (value: string): string => {
   if (!value) return value

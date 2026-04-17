@@ -7,7 +7,7 @@
     variant="bottom-nav"
     :handle-padding="false"
   >
-    <AppForm :schema="bankAccountSchema" @submit="onSubmit" v-slot="{ meta, values }">
+    <AppForm :schema="bankAccountSchema" @submit="onSubmit" v-slot="{ values }">
       <div class="space-y-4 px-4 py-4 md:space-y-8 md:px-6">
         <div class="flex size-10 items-center justify-center rounded-xl bg-neutral-50 p-2">
           <Icon name="shop-add" size="20" />
@@ -52,7 +52,7 @@
           label="Save Bank Details"
           :loading="isPending"
           class="w-full"
-          :disabled="!meta.valid || !resolvedAccountName || !!errorMsg"
+          :disabled="!resolvedAccountName || !!errorMsg || isResolving"
         />
       </div>
 

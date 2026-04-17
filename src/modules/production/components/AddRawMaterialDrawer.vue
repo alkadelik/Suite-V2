@@ -102,73 +102,74 @@ interface FormValues {
   conversion_name: string
 }
 
-const { handleSubmit, resetForm, values, setFieldValue } = useForm<FormValues>({
-  validationSchema: computed(() =>
-    yup.object({
-      name: yup
-        .string()
-        .required("Material name is required")
-        .min(3, "Name must be at least 3 characters"),
-      unit: yup
-        .object()
-        .shape({ label: yup.string().required(), value: yup.string().required() })
-        .required("Unit of measurement is required"),
-      qty_in_stock: yup
-        .number()
-        .transform((value, originalValue) => (originalValue === "" ? undefined : value))
-        .typeError("Qty in stock must be a number")
-        .required("Qty in stock is required")
-        .min(0, "Qty in stock cannot be negative"),
-      default_cost: yup
-        .number()
-        .transform((value, originalValue) => (originalValue === "" ? undefined : value))
-        .typeError("Default purchase price must be a number")
-        .when("source", {
+const { handleSubmit, resetForm, values, setFieldValue, validateField, setFieldTouched } =
+  useForm<FormValues>({
+    validationSchema: computed(() =>
+      yup.object({
+        name: yup
+          .string()
+          .required("Material name is required")
+          .min(3, "Name must be at least 3 characters"),
+        unit: yup
+          .object()
+          .shape({ label: yup.string().required(), value: yup.string().required() })
+          .required("Unit of measurement is required"),
+        qty_in_stock: yup
+          .number()
+          .transform((value, originalValue) => (originalValue === "" ? undefined : value))
+          .typeError("Qty in stock must be a number")
+          .required("Qty in stock is required")
+          .min(0, "Qty in stock cannot be negative"),
+        default_cost: yup
+          .number()
+          .transform((value, originalValue) => (originalValue === "" ? undefined : value))
+          .typeError("Default purchase price must be a number")
+          .when("source", {
+            is: (source: { value: string }) => source?.value === "supplier",
+            then: (schema) =>
+              schema
+                .required("Default purchase price is required")
+                .min(0, "Default purchase price cannot be negative"),
+            otherwise: (schema) => schema.optional().nullable(),
+          }),
+        source: yup
+          .object()
+          .shape({ label: yup.string().required(), value: yup.string().required() })
+          .required("Source of material is required"),
+        suppliers: yup.array().when("source", {
           is: (source: { value: string }) => source?.value === "supplier",
           then: (schema) =>
             schema
-              .required("Default purchase price is required")
-              .min(0, "Default purchase price cannot be negative"),
-          otherwise: (schema) => schema.optional().nullable(),
+              .min(1, "At least one supplier is required when buying from a supplier")
+              .required("Supplier is required when buying from a supplier"),
+          otherwise: (schema) => schema.optional(),
         }),
-      source: yup
-        .object()
-        .shape({ label: yup.string().required(), value: yup.string().required() })
-        .required("Source of material is required"),
-      suppliers: yup.array().when("source", {
-        is: (source: { value: string }) => source?.value === "supplier",
-        then: (schema) =>
-          schema
-            .min(1, "At least one supplier is required when buying from a supplier")
-            .required("Supplier is required when buying from a supplier"),
-        otherwise: (schema) => schema.optional(),
+        expiry_date: yup.string().optional(),
+        reorder_threshold: yup.string().optional(),
+        notes: yup.string().optional(),
+        production_unit: yup.object().nullable().optional(),
+        conversion_from_qty: yup.string().optional(),
+        conversion_to_qty: yup.string().optional(),
+        conversion_name: yup.string().optional(),
       }),
-      expiry_date: yup.string().optional(),
-      reorder_threshold: yup.string().optional(),
-      notes: yup.string().optional(),
-      production_unit: yup.object().nullable().optional(),
-      conversion_from_qty: yup.string().optional(),
-      conversion_to_qty: yup.string().optional(),
-      conversion_name: yup.string().optional(),
-    }),
-  ),
-  initialValues: {
-    name: "",
-    unit: null,
-    production_unit: null,
-    qty_in_stock: "",
-    default_cost: "",
-    source: null,
-    suppliers: [],
-    expiry_date: "",
-    reorder_threshold: "",
-    notes: "",
-    conversion_from_qty: "1",
-    conversion_to_qty: "",
-    conversion_name: "",
-  },
-  validateOnMount: false,
-})
+    ),
+    initialValues: {
+      name: "",
+      unit: null,
+      production_unit: null,
+      qty_in_stock: "",
+      default_cost: "",
+      source: null,
+      suppliers: [],
+      expiry_date: "",
+      reorder_threshold: "",
+      notes: "",
+      conversion_from_qty: "1",
+      conversion_to_qty: "",
+      conversion_name: "",
+    },
+    validateOnMount: false,
+  })
 
 const { mutate: createMaterial, isPending: isCreating } = useCreateRawMaterial()
 const { mutate: editMaterial, isPending: isEditing } = useEditRawMaterial()
@@ -288,24 +289,39 @@ watch(
   },
 )
 
-const canProceedToStep2 = computed(() => {
-  return (
-    values.name &&
-    values.unit &&
-    values.qty_in_stock &&
-    ((values.source?.value === "supplier" && values.default_cost) ||
-      values.source?.value === "manufacture")
+const validateStepOne = async () => {
+  const stepOneFields: Array<keyof FormValues> = ["name", "unit", "qty_in_stock", "source"]
+
+  if (values.source?.value === "supplier") {
+    stepOneFields.push("default_cost")
+  }
+
+  const validationResults = await Promise.all(
+    stepOneFields.map(async (fieldName) => {
+      setFieldTouched(fieldName, true)
+      const result = (await validateField(fieldName)) as { valid: boolean; errors?: string[] }
+      return { fieldName, result }
+    }),
   )
-})
 
-const canComplete = computed(
-  () =>
-    canProceedToStep2.value &&
-    ((values.source?.value === "supplier" && values.suppliers.length > 0) ||
-      values.source?.value === "manufacture"),
-)
+  const firstInvalid = validationResults.find(({ result }) => !result.valid)
 
-const goToNextStep = () => {
+  if (firstInvalid) {
+    onInvalidSubmit({
+      errors: {
+        [firstInvalid.fieldName]: firstInvalid.result.errors?.[0] || true,
+      },
+    })
+    return false
+  }
+
+  return true
+}
+
+const goToNextStep = async () => {
+  const isValidStep = await validateStepOne()
+  if (!isValidStep) return
+
   activeStep.value = activeStep.value + 1
 }
 
@@ -628,8 +644,7 @@ const goToPrevStep = () => {
           type="submit"
           class="flex-1"
           :loading="isPending"
-          :disabled="!canComplete"
-          :inactive="!canComplete"
+          :disabled="isPending"
           @click="onSubmit"
         />
       </div>
@@ -637,13 +652,7 @@ const goToPrevStep = () => {
     <template v-else #footer>
       <div class="flex gap-3">
         <AppButton label="Cancel" color="alt" class="flex-1" @click="emit('close')" />
-        <AppButton
-          label="Continue"
-          class="flex-1"
-          :disabled="!canProceedToStep2"
-          :inactive="!canProceedToStep2"
-          @click="goToNextStep"
-        />
+        <AppButton label="Continue" class="flex-1" @click="goToNextStep" />
       </div>
     </template>
 

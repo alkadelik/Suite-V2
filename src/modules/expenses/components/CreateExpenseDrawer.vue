@@ -99,7 +99,7 @@ const hasSubCategories = computed(() => {
   return (category?.sub_categories?.length ?? 0) > 0
 })
 
-const isMobile = computed(() => useMediaQuery("(max-width: 1028px)").value)
+const isMobile = useMediaQuery("(max-width: 1028px)")
 
 interface FormValues {
   name: string

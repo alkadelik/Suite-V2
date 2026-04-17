@@ -2,10 +2,11 @@
 import PageHeader from "@components/PageHeader.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import Chip from "@components/Chip.vue"
+import Icon from "@components/Icon.vue"
 import { useMediaQuery } from "@vueuse/core"
-import { computed, ref, watch } from "vue"
-import { SO_SUMMARY_CARDS, SO_SUMMARY_CARDS_EMPTY } from "../constants"
+import { computed } from "vue"
 import { useGetHighlights } from "../api"
+import { formatCurrency } from "@/utils/format-currency"
 
 import SoEbitda from "../components/store-overview/SoEbitda.vue"
 import SoGrossProfit from "../components/store-overview/SoGrossProfit.vue"
@@ -13,21 +14,66 @@ import SoRepeatCustomer from "../components/store-overview/SoRepeatCustomer.vue"
 import SoCustomerGrowth from "../components/store-overview/SoCustomerGrowth.vue"
 import SoTopProducts from "../components/store-overview/SoTopProducts.vue"
 
-// --- DEV TOGGLE: flip to false for empty state ---
-const useDummyData = ref(true)
+const { data: highlights, isPending } = useGetHighlights()
 
-const { data: highlights } = useGetHighlights()
-watch(highlights, (val) => {
-  console.log("highlights response:", val)
+const isMobile = useMediaQuery("(max-width: 1024px)")
+
+const metrics = computed(() => highlights.value?.metrics)
+
+const dateRange = computed(() => {
+  const period = highlights.value?.period
+  if (!period?.start || !period?.end) return ""
+  const fmt = (d: string) =>
+    new Date(d).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+  return `${fmt(period.start)} - ${fmt(period.end)}`
 })
 
-const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
+const summaryCards = computed(() => {
+  const m = metrics.value
+  return [
+    {
+      label: "Average Order Value (AOV)",
+      value: m ? formatCurrency(m.average_order_value) : "₦0",
+    },
+    {
+      label: "Average Items per Sale",
+      value: m ? String(m.average_items_per_sale) : "0",
+    },
+    {
+      label: "Inventory Turnover",
+      value: m?.inventory_turnover != null ? `${m.inventory_turnover}x` : "—",
+    },
+    {
+      label: "Sell-Through Rate",
+      value: m ? `${m.sell_through_rate_percent}%` : "0%",
+    },
+  ]
+})
 
-const dateRange = "February 1 - February 28 2026"
+const ebitdaBreakdown = computed(() => {
+  const items = metrics.value?.ebitda?.breakdown
+  if (!items?.length) return []
+  return items.map((item) => ({
+    label: item.label,
+    value: item.value,
+    color: item.label === "Revenue" ? "bg-success-500" : "bg-error-400",
+    isPositive: item.label === "Revenue",
+  }))
+})
 
-const summaryCards = computed(() =>
-  useDummyData.value ? SO_SUMMARY_CARDS : SO_SUMMARY_CARDS_EMPTY,
-)
+const topProducts = computed(() => {
+  if (!metrics.value?.top_10_products) return []
+  return metrics.value.top_10_products.map((p) => ({
+    rank: p.rank,
+    product_name: p.name,
+    revenue: p.revenue,
+    units_sold: p.units_sold,
+    avg_price: p.avg_price,
+    margin: p.margin,
+    sell_through: p.sell_through,
+    inventory_turnover: p.inventory_turnover ?? 0,
+  }))
+})
 </script>
 
 <template>
@@ -35,16 +81,21 @@ const summaryCards = computed(() =>
     <PageHeader v-if="isMobile" title="Store Overview" />
     <SectionHeader v-else title="Store Overview" :subtitle="dateRange">
       <template #action>
-        <Chip label="Past 30 days" color="warning" />
+        <Chip :label="`Past ${highlights?.period?.days || 30} days`" color="warning" />
       </template>
     </SectionHeader>
 
     <div v-if="isMobile" class="mt-1 flex items-center gap-2">
       <span class="text-core-600 text-sm">{{ dateRange }}</span>
-      <Chip label="Past 30 days" color="warning" size="sm" />
+      <Chip :label="`Past ${highlights?.period?.days || 30} days`" color="warning" size="sm" />
     </div>
 
-    <section class="mt-6 space-y-6">
+    <!-- Loading state -->
+    <div v-if="isPending" class="mt-12 flex items-center justify-center">
+      <Icon name="loader" size="40" class="text-primary-500 animate-spin" />
+    </div>
+
+    <section v-else class="mt-6 space-y-6">
       <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <div
           v-for="card in summaryCards"
@@ -57,22 +108,25 @@ const summaryCards = computed(() =>
         </div>
       </div>
 
-      <SoEbitda :use-dummy-data="useDummyData" />
-      <SoGrossProfit :use-dummy-data="useDummyData" />
+      <SoEbitda
+        :value="metrics?.ebitda?.value || 0"
+        :has-expenses="metrics?.ebitda?.has_expenses || false"
+        :prompt="metrics?.ebitda?.prompt"
+        :percentage-change="metrics?.ebitda?.percentage_change"
+        :breakdown="ebitdaBreakdown"
+      />
+      <SoGrossProfit
+        :value="metrics?.gross_profit?.value || 0"
+        :margin-percent="metrics?.gross_profit?.gross_margin_percent || 0"
+        :percentage-change="metrics?.gross_profit?.percentage_change"
+      />
 
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <SoRepeatCustomer :use-dummy-data="useDummyData" />
-        <SoCustomerGrowth :use-dummy-data="useDummyData" />
+        <SoRepeatCustomer :percent="metrics?.repeat_customer_rate_percent || 0" />
+        <SoCustomerGrowth :percent="metrics?.customer_growth_rate_percent || 0" />
       </div>
 
-      <SoTopProducts :use-dummy-data="useDummyData" />
+      <SoTopProducts :products="topProducts" />
     </section>
-
-    <button
-      @click="useDummyData = !useDummyData"
-      class="fixed bottom-6 left-6 z-50 rounded-full bg-gray-800 px-4 py-2 text-xs font-medium text-white shadow-lg transition hover:bg-gray-700"
-    >
-      {{ useDummyData ? "Show Empty State" : "Show Populated State" }}
-    </button>
   </div>
 </template>

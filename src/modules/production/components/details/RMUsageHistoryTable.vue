@@ -8,12 +8,12 @@ import Modal from "@components/Modal.vue"
 import { USAGE_HISTORY_COLUMN } from "@modules/production/constants"
 import { TMovement, TRawMaterial } from "@modules/production/types"
 import { useMediaQuery } from "@vueuse/core"
-import { computed, ref } from "vue"
+import { ref } from "vue"
 import RMUsageCard from "./RMUsageCard.vue"
 
 const props = defineProps<{ usage: TMovement[]; material: TRawMaterial }>()
 
-const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
+const isMobile = useMediaQuery("(max-width: 1024px)")
 
 const openDetails = ref(false)
 const selectedHistory = ref<TMovement | null>(null)

@@ -58,7 +58,7 @@ interface FormValues {
 
 const adjustmentType = ref<"add" | "remove">("add")
 
-const { handleSubmit, meta, resetForm, values, setFieldValue } = useForm<FormValues>({
+const { handleSubmit, resetForm, values, setFieldValue } = useForm<FormValues>({
   validationSchema: computed(() =>
     yup.object({
       quantity: yup
@@ -250,13 +250,7 @@ watch(adjustmentType, () => {
     </div>
 
     <template #footer>
-      <AppButton
-        label="Adjust Stock"
-        class="w-full"
-        :loading="isAdjusting"
-        :disabled="!meta.valid"
-        @click="onSubmit"
-      />
+      <AppButton label="Adjust Stock" class="w-full" :loading="isAdjusting" @click="onSubmit" />
     </template>
   </Modal>
 </template>

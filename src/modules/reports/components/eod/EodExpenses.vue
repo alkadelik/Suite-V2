@@ -7,7 +7,7 @@ import { IEODReport } from "@modules/reports/types"
 import { startCase } from "@/utils/format-strings"
 
 const props = defineProps<{ data: IEODReport | null }>()
-const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
+const isMobile = useMediaQuery("(max-width: 768px)")
 
 const stats = computed(() => [
   {

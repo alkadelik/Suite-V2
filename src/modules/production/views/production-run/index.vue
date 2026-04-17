@@ -16,7 +16,7 @@ import { useGetProductionRuns } from "@modules/production/api"
 import type { TProdRun, ProdRunStatus, ProductionRunData } from "@modules/production/types"
 
 const router = useRouter()
-const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
+const isMobile = useMediaQuery("(max-width: 1024px)")
 
 // ── API ────────────────────────────────────────────────────────────────────────
 

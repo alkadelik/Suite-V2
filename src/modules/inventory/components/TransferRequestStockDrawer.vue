@@ -84,7 +84,6 @@
           :loading="isPending"
           class="flex-1"
           @click="onSubmit"
-          :disabled="!meta.valid"
         />
       </div>
     </template>
@@ -188,7 +187,7 @@ interface FormValues {
   note: string
 }
 
-const { handleSubmit, meta, resetForm } = useForm<FormValues>({
+const { handleSubmit, resetForm } = useForm<FormValues>({
   validationSchema: yup.object({
     to_location: yup.string().required("Location is required"),
     quantity: yup

@@ -8,13 +8,13 @@ import Modal from "@components/Modal.vue"
 import { BATCHES_COLUMN } from "@modules/production/constants"
 import { TBatch, TRawMaterial } from "@modules/production/types"
 import { useMediaQuery } from "@vueuse/core"
-import { computed, ref } from "vue"
+import { ref } from "vue"
 import { startCase } from "@/utils/format-strings"
 import RMBatchCard from "./RMBatchCard.vue"
 
 const props = defineProps<{ batches: TBatch[]; material: TRawMaterial }>()
 
-const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
+const isMobile = useMediaQuery("(max-width: 1024px)")
 
 const openDetails = ref(false)
 const selectedBatch = ref<TBatch | null>(null)

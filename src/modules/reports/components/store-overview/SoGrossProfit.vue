@@ -1,16 +1,15 @@
 <script setup lang="ts">
 import { computed } from "vue"
-import Chip from "@components/Chip.vue"
-import Icon from "@components/Icon.vue"
 import DonutChart from "@components/DonutChart.vue"
-import { SO_GROSS_PROFIT, SO_GROSS_PROFIT_EMPTY } from "../../constants"
 import { formatCurrency } from "@/utils/format-currency"
 
-const props = defineProps<{ useDummyData: boolean }>()
+const props = defineProps<{
+  value: number
+  marginPercent: number
+  percentageChange?: number | null
+}>()
 
-const data = computed(() => (props.useDummyData ? SO_GROSS_PROFIT : SO_GROSS_PROFIT_EMPTY))
-
-const displayValue = computed(() => formatCurrency(data.value.value))
+const displayValue = computed(() => formatCurrency(props.value))
 </script>
 
 <template>
@@ -26,14 +25,17 @@ const displayValue = computed(() => formatCurrency(data.value.value))
           <span class="text-lg font-normal">₦</span>{{ displayValue.replace("₦", "") }}
         </p>
 
-        <Chip v-if="data.percentageChange > 0" color="success" size="sm" class="mt-3">
-          <Icon name="arrow-up-square" size="14" class="mr-1" />
-          {{ data.percentageChange }}% vs last month
-        </Chip>
+        <p
+          v-if="props.percentageChange != null"
+          class="mt-2 text-sm font-medium"
+          :class="props.percentageChange >= 0 ? 'text-success-600' : 'text-error-600'"
+        >
+          {{ props.percentageChange >= 0 ? "+" : "" }}{{ props.percentageChange }}% vs last period
+        </p>
       </div>
 
       <div class="flex flex-1 items-center justify-center rounded-xl bg-gray-50 p-6 lg:p-8">
-        <DonutChart :percentage="data.marginPercent" label="Gross Margin" color="#22c55e" />
+        <DonutChart :percentage="marginPercent" label="Gross Margin" color="#22c55e" />
       </div>
     </div>
   </section>

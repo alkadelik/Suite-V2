@@ -30,7 +30,7 @@ const totalRevenue = computed(() => {
   return props.data?.sales_by_origin?.reduce((sum, item) => sum + item.revenue, 0) ?? 0
 })
 
-const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
+const isMobile = useMediaQuery("(max-width: 768px)")
 </script>
 
 <template>

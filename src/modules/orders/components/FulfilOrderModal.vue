@@ -130,7 +130,7 @@ const handleModalChange = (isOpen: boolean) => {
   }
 }
 
-const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
+const isMobile = useMediaQuery("(max-width: 1024px)")
 </script>
 
 <template>

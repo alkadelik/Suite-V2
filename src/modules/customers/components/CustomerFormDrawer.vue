@@ -22,7 +22,7 @@
       :schema="schema"
       :initial-values="initialValues"
       @submit="onSubmit"
-      v-slot="{ meta }"
+      v-slot="{}"
       class="flex h-full flex-col"
       :key="formKey"
     >
@@ -105,7 +105,7 @@
           :label="mode === 'add' ? 'Add Customer' : 'Save Changes'"
           :loading="isPending"
           class="w-full"
-          :disabled="!meta.valid || isPending"
+          :disabled="isPending"
         />
       </div>
     </AppForm>

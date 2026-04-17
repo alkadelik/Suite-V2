@@ -13,7 +13,7 @@ const emit = defineEmits<{
   apply: [filters: Record<string, string>]
 }>()
 
-const isMobile = computed(() => useMediaQuery("(max-width: 1028px)").value)
+const isMobile = useMediaQuery("(max-width: 1028px)")
 
 // const ORGANIZER_EVENT_OPTIONS = [
 //   { value: "true", label: "Eventful Only" },

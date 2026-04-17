@@ -20,6 +20,7 @@
           v-model="form"
           :has-variants="hasVariants"
           :disable-variants-toggle="true"
+          :errors="submitAttempted ? currentStepValidation.productDetailsErrors : undefined"
           @update:has-variants="hasVariants = $event"
           @add-category="showAddCategoryModal = true"
         />
@@ -31,6 +32,7 @@
           :product-name="form.name"
           :hide-stock="true"
           :disable-cost-price="true"
+          :errors="submitAttempted ? currentStepValidation.inventoryErrors : undefined"
         />
 
         <!-- Images Edit Mode - Edit product images only -->
@@ -46,7 +48,11 @@
         <!-- Variants Edit Mode (skip product details, start from variants) -->
         <template v-else-if="props.editMode === 'variants'">
           <!-- Step 1 for variants mode: Variants Configuration -->
-          <ProductVariantsForm v-if="step === 1" v-model="variantConfiguration" />
+          <ProductVariantsForm
+            v-if="step === 1"
+            v-model="variantConfiguration"
+            :errors="submitAttempted ? currentStepValidation.variantConfigurationErrors : undefined"
+          />
 
           <!-- Step 2 for variants mode: Inventory & Pricing -->
           <ProductManageCombinationsForm
@@ -58,6 +64,7 @@
             :hide-weight="true"
             :deleted-variants="deletedVariants"
             :use-table-layout="productOriginallyHadVariants"
+            :errors="submitAttempted ? currentStepValidation.inventoryErrors : undefined"
           />
 
           <!-- Step 3 for variants mode: Product Images -->
@@ -73,6 +80,7 @@
             v-model="form"
             :has-variants="hasVariants"
             :disable-variants-toggle="true"
+            :errors="submitAttempted ? currentStepValidation.productDetailsErrors : undefined"
             @update:has-variants="hasVariants = $event"
             @add-category="showAddCategoryModal = true"
           />
@@ -81,6 +89,7 @@
           <ProductVariantsForm
             v-else-if="step === 2 && hasVariants"
             v-model="variantConfiguration"
+            :errors="submitAttempted ? currentStepValidation.variantConfigurationErrors : undefined"
           />
 
           <!-- Step 2/3: Inventory & Pricing -->
@@ -90,6 +99,7 @@
             :product-name="form.name"
             :deleted-variants="deletedVariants"
             :disable-cost-price="true"
+            :errors="submitAttempted ? currentStepValidation.inventoryErrors : undefined"
           />
 
           <!-- Step 3/4: Product Images -->
@@ -119,7 +129,7 @@
           <AppButton
             label="Save Changes"
             :loading="isPending"
-            :disabled="isPending || !canProceed"
+            :disabled="isPending"
             class="w-full"
             form="product-edit-form"
             type="submit"
@@ -139,7 +149,7 @@
           <AppButton
             :label="getSubmitButtonLabel"
             :loading="isPending"
-            :disabled="isPending || !canProceed"
+            :disabled="isPending"
             :class="step === 1 ? 'w-full' : 'flex-1'"
             form="product-edit-form"
             type="submit"
@@ -195,6 +205,7 @@ import { useQueryClient } from "@tanstack/vue-query"
 import ProductEditSkeleton from "./skeletons/ProductEditSkeleton.vue"
 import { useImageConverter } from "@/composables/useImageConverter"
 import { useAuthStore } from "@modules/auth/store"
+import { scrollToAndFocusValidationTarget } from "@/utils/validations"
 
 // Import composables
 import { useProductFormState } from "../composables/useProductFormState"
@@ -251,6 +262,7 @@ const productDetailsRef = ref<{
 } | null>(null)
 
 const showAddCategoryModal = ref(false)
+const submitAttempted = ref(false)
 
 // API mutations
 const { mutate: updateProduct, isPending: isUpdating } = useUpdateProduct()
@@ -331,7 +343,7 @@ const variantConfigHelpers = useVariantConfiguration(
   computed(() => form.name),
 )
 
-const { canProceed, validateAllUIDs } = useVariantValidation({
+const { currentStepValidation, validateAllUIDs } = useVariantValidation({
   form,
   hasVariants,
   variantConfiguration,
@@ -396,6 +408,7 @@ watch(
 
       // Reset deleted variants when drawer opens
       deletedVariants.value = []
+      submitAttempted.value = false
       // Reset original variant UIDs
       originalVariantUids.value.clear()
       // Reset removed image IDs
@@ -408,6 +421,7 @@ watch(
       // Drawer is closing - clear state so reopening triggers a fresh fetch
       expectedProductUid.value = null
       productUidToFetch.value = ""
+      submitAttempted.value = false
     }
   },
   { immediate: true },
@@ -538,7 +552,6 @@ watch(
         category: product.category
           ? { label: product.category_name || "", value: product.category || "" }
           : null,
-        unit: product.unit ? { label: product.unit, value: product.unit } : null,
         images: [...productImages, ...variantImages],
         hasVariants: product.is_variable || false,
         variants:
@@ -680,13 +693,23 @@ watch(
     // When drawer closes, reset step to 1
     if (!isOpen && wasOpen) {
       step.value = 1
+      submitAttempted.value = false
     }
   },
 )
 
+watch(step, () => {
+  submitAttempted.value = false
+})
+
 // Form submission handler
 const handleSubmit = async () => {
-  if (!canProceed.value) return
+  submitAttempted.value = true
+
+  if (!currentStepValidation.value.valid) {
+    scrollToAndFocusValidationTarget(currentStepValidation.value.firstErrorTarget)
+    return
+  }
 
   // Product Details Mode
   if (props.editMode === "product-details") {
@@ -696,7 +719,6 @@ const handleSubmit = async () => {
       story: form.story || "",
       category: form.category?.value as string,
       brand: form.brand || "",
-      unit: form.unit?.value || undefined,
       is_active: true,
       is_variable: hasVariants.value,
       requires_approval: form.requires_approval || false,
@@ -709,6 +731,7 @@ const handleSubmit = async () => {
           toast.success("Product details updated successfully")
           // Invalidate the product query to ensure fresh data on next open
           queryClient.invalidateQueries({ queryKey: ["products"] })
+          submitAttempted.value = false
           resetFormState()
           emit("update:modelValue", false)
           emit("refresh")
@@ -755,6 +778,7 @@ const handleSubmit = async () => {
               `All ${variantDetailsWithUids.value.length} variants updated successfully`,
             )
             queryClient.invalidateQueries({ queryKey: ["products"] })
+            submitAttempted.value = false
             emit("update:modelValue", false)
             emit("refresh")
           },
@@ -779,6 +803,7 @@ const handleSubmit = async () => {
           onSuccess: () => {
             toast.success("Variant updated successfully")
             queryClient.invalidateQueries({ queryKey: ["products"] })
+            submitAttempted.value = false
             emit("update:modelValue", false)
             emit("refresh")
           },
@@ -937,6 +962,7 @@ const handleSubmit = async () => {
 
       // Invalidate the product query to ensure fresh data on next open
       queryClient.invalidateQueries({ queryKey: ["products"] })
+      submitAttempted.value = false
       resetFormState()
       emit("update:modelValue", false)
       emit("refresh")
@@ -1068,6 +1094,7 @@ const handleSubmit = async () => {
 
         // Invalidate the product query to ensure fresh data on next open
         queryClient.invalidateQueries({ queryKey: ["products"] })
+        submitAttempted.value = false
         resetFormState()
         emit("update:modelValue", false)
         emit("refresh")
@@ -1124,6 +1151,7 @@ const handleSubmit = async () => {
 
     const handleProductSuccess = () => {
       toast.success("Product updated successfully")
+      submitAttempted.value = false
       step.value = 1
       hasVariants.value = false
 
@@ -1251,12 +1279,14 @@ const handleSubmit = async () => {
         })
 
         step.value += 1
+        submitAttempted.value = false
       } catch (error) {
         console.error("Failed to process variants:", error)
         displayError(error)
         return
       }
     } else {
+      submitAttempted.value = false
       step.value += 1
     }
   }
@@ -1279,6 +1309,7 @@ const handleBack = () => {
     deletedVariants.value = []
   }
 
+  submitAttempted.value = false
   previousStep()
 }
 

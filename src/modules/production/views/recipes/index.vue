@@ -36,7 +36,7 @@ const productionStore = useProductionStore()
 const router = useRouter()
 const { mutateAsync: deleteRecipeMutate } = useDeleteRecipe()
 
-const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
+const isMobile = useMediaQuery("(max-width: 1024px)")
 
 const showDrawer = ref(false)
 const drawerMode = ref<"create" | "edit">("create")

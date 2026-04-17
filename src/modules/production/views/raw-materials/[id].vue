@@ -30,7 +30,7 @@ const route = useRoute()
 const showEdit = ref(false)
 const showAdjust = ref(false)
 const activeTab = ref("batches")
-const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
+const isMobile = useMediaQuery("(max-width: 1024px)")
 const selectedComponent = computed(() => useProductionStore().selectedComponentOption)
 
 const { data: material, isPending, refetch } = useGetSingleRawMaterial(route.params.id as string)

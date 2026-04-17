@@ -24,7 +24,7 @@ import { useSettingsStore } from "@modules/settings/store"
 import { useRouter } from "vue-router"
 import AdjustMaterialStockModal from "@modules/production/components/AdjustMaterialStockModal.vue"
 
-const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
+const isMobile = useMediaQuery("(max-width: 1024px)")
 
 const showFilter = ref(false)
 const showAddDrawer = ref(false)

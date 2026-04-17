@@ -4,9 +4,8 @@ import DataTable from "@components/DataTable.vue"
 import { EOD_ABANDONED_COLUMNS } from "@modules/reports/constants"
 import { IEODReport } from "@modules/reports/types"
 import { useMediaQuery } from "@vueuse/core"
-import { computed } from "vue"
 
-const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
+const isMobile = useMediaQuery("(max-width: 768px)")
 defineProps<{ data: IEODReport | null }>()
 </script>
 

@@ -64,6 +64,7 @@ const quickActions = computed(() => {
 })
 
 const showPlans = computed(() => useSettingsStore().showPlanUpgradeModal)
+const isInternational = computed(() => useSettingsStore().isInternational)
 
 const { setPlanUpgradeModal } = useSettingsStore()
 </script>
@@ -90,7 +91,10 @@ const { setPlanUpgradeModal } = useSettingsStore()
               <p class="truncate font-medium">{{ storeDetails?.name }}</p>
               <Chip v-if="currentLocation?.is_hq" label="HQ" class="shrink-0" />
             </div>
-            <div class="flex min-w-0 items-center gap-2 text-sm text-gray-600">
+            <div
+              v-if="!isInternational"
+              class="flex min-w-0 items-center gap-2 text-sm text-gray-600"
+            >
               <p class="truncate">{{ storefrontUrl }}</p>
               <Icon
                 name="copy"
@@ -143,6 +147,7 @@ const { setPlanUpgradeModal } = useSettingsStore()
       </div>
 
       <div
+        v-if="!isInternational"
         :class="['relative flex flex-col gap-2 rounded-3xl p-6 text-white']"
         style="
           background: linear-gradient(136.41deg, #1a2a6c -3.7%, #b21f1f 53.98%, #fdbb2d 99.39%);

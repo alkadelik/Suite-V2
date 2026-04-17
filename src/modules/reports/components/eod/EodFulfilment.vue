@@ -9,7 +9,7 @@ import { useMediaQuery } from "@vueuse/core"
 import ReportInsightCard from "../ReportInsightCard.vue"
 import { IEODReport, TEodPendingOrder } from "@modules/reports/types"
 
-const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
+const isMobile = useMediaQuery("(max-width: 768px)")
 const props = defineProps<{ data: IEODReport | null }>()
 
 const stats = computed(() => {
