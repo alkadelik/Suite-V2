@@ -287,6 +287,7 @@ const openStockModal = (
 }
 
 const handleStockSuccess = () => {
+  queryClient.refetchQueries({ queryKey: ["products", uid] })
   queryClient.invalidateQueries({ queryKey: ["products"] })
   refetchMovements()
 }

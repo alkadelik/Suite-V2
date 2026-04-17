@@ -10,7 +10,6 @@
         :id="htmlFor"
         :name="name"
         :placeholder="placeholder"
-        :required="required"
         :disabled="disabled"
         :readonly="readonly"
         :rows="rows"

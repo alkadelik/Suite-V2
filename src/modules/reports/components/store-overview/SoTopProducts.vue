@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { computed } from "vue"
 import DataTable from "@components/DataTable.vue"
 import EmptyState from "@components/EmptyState.vue"
-import { SO_TOP_PRODUCTS, SO_TOP_PRODUCT_COLUMNS } from "../../constants"
+import { SO_TOP_PRODUCT_COLUMNS } from "../../constants"
+import type { TStoreOverviewProduct } from "../../types"
 
-const props = defineProps<{ useDummyData: boolean }>()
-
-const products = computed(() => (props.useDummyData ? SO_TOP_PRODUCTS : []))
+defineProps<{ products: TStoreOverviewProduct[] }>()
 </script>
 
 <template>
@@ -14,7 +12,7 @@ const products = computed(() => (props.useDummyData ? SO_TOP_PRODUCTS : []))
     <div class="border-b border-gray-200 px-5 py-4 md:px-6">
       <h3 class="text-core-800 text-base font-semibold">Top 10 Products by Revenue</h3>
       <p class="text-core-600 mt-1 text-sm">
-        Ranked by total revenue in February 2026 — with sell-through and margin data
+        Ranked by total revenue — with sell-through and margin data
       </p>
     </div>
 

@@ -2,6 +2,7 @@
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import AppButton from "@components/AppButton.vue"
 import Chip from "@components/Chip.vue"
+import FieldGroupError from "@components/form/FieldGroupError.vue"
 import TextField from "@components/form/TextField.vue"
 import SelectField from "@components/form/SelectField.vue"
 import Icon from "@components/Icon.vue"
@@ -11,6 +12,7 @@ import { PopupInventory, PopupInventoryVariant } from "@modules/popups/types"
 import { computed, onMounted, ref, reactive, watch } from "vue"
 import * as yup from "yup"
 import { useMediaQuery } from "@vueuse/core"
+import { scrollToAndFocusValidationTarget } from "@/utils/validations"
 
 interface PopupOrderItem {
   product: PopupInventory
@@ -48,6 +50,7 @@ const emit = defineEmits<{
 const localItems = ref<{ product: PopupInventory; notes?: string }[]>([])
 const selectedVariants = ref<Map<string, VariantItem[]>>(new Map())
 const validationErrors = ref<ValidationErrors>({})
+const stepError = ref("")
 const showNotes = reactive<Record<string, boolean>>({})
 
 const { format } = useFormatCurrency()
@@ -327,18 +330,21 @@ const validateAllItems = async () => {
   return validations.every((isValid) => isValid)
 }
 
-const canProceed = computed(() => {
-  return localItems.value.every((item) => {
-    const variants = selectedVariants.value.get(item.product.uid)
-    if (!variants || variants.length === 0) return false
-    // All variants must have valid quantity and price
-    return variants.every((v) => v.quantity > 0 && v.unit_price > 0)
-  })
-})
-
 const handleNext = async () => {
+  const missingVariants = localItems.value.some((item) => {
+    const variants = selectedVariants.value.get(item.product.uid)
+    return !variants || variants.length === 0
+  })
+
+  if (missingVariants) {
+    stepError.value = "Select at least one variant for each product before continuing."
+    scrollToAndFocusValidationTarget("popup-order-product-qty")
+    return
+  }
+
   const isValid = await validateAllItems()
-  if (isValid && canProceed.value) {
+  if (isValid) {
+    stepError.value = ""
     // Convert selected variants to order items format
     const orderItems: PopupOrderItem[] = []
     for (const item of localItems.value) {
@@ -357,8 +363,27 @@ const handleNext = async () => {
     }
     emit("update:orderItems", orderItems)
     emit("next")
+    return
   }
+
+  stepError.value = "Fix the highlighted quantity or price fields before continuing."
+  scrollToAndFocusValidationTarget("popup-order-product-qty")
 }
+
+watch(
+  [selectedVariants, validationErrors],
+  () => {
+    const hasSelectedVariants = localItems.value.every((item) => {
+      const variants = selectedVariants.value.get(item.product.uid)
+      return variants && variants.length > 0
+    })
+
+    if (hasSelectedVariants && Object.keys(validationErrors.value).length === 0) {
+      stepError.value = ""
+    }
+  },
+  { deep: true },
+)
 
 // Get original price for showing slash-through
 const getOriginalPrice = (variant: PopupInventoryVariant) => {
@@ -399,7 +424,7 @@ const productsTotal = computed(() => {
   return total
 })
 
-const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
+const isMobile = useMediaQuery("(max-width: 1024px)")
 </script>
 
 <template>
@@ -413,7 +438,7 @@ const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
       Select Products <Chip :label="String(localItems.length)" />
     </h3>
 
-    <section class="grid gap-6">
+    <section data-validation-target="popup-order-product-qty" class="grid gap-6">
       <div v-for="item in localItems" :key="item.product.uid" class="rounded-xl bg-white">
         <div class="flex gap-4 p-4">
           <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100">
@@ -558,9 +583,10 @@ const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
           {{ format(productsTotal) }}
         </span>
       </div>
+      <FieldGroupError v-if="stepError" target="popup-order-product-qty" :error="stepError" />
       <div class="flex gap-3">
         <AppButton label="Back" color="alt" class="w-1/3" icon="arrow-left" @click="emit('prev')" />
-        <AppButton label="Next" class="w-2/3" :disabled="!canProceed" @click="handleNext" />
+        <AppButton label="Next" class="w-2/3" @click="handleNext" />
       </div>
     </div>
   </div>

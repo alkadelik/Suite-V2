@@ -1,26 +1,30 @@
 <script setup lang="ts">
 import { computed } from "vue"
-import Chip from "@components/Chip.vue"
-import Icon from "@components/Icon.vue"
 import InfoBox from "@components/InfoBox.vue"
-import { SO_EBITDA, SO_EBITDA_EMPTY } from "../../constants"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
+import type { TEbitdaBreakdownItem } from "../../types"
 
-const props = defineProps<{ useDummyData: boolean }>()
-const { format, truncate } = useFormatCurrency()
-
-const data = computed(() => (props.useDummyData ? SO_EBITDA : SO_EBITDA_EMPTY))
-
-const ebitdaValue = computed(() => (data.value.value > 0 ? truncate(data.value.value) : format(0)))
-
-const maxBarValue = computed(() => Math.max(...data.value.breakdown.map((item) => item.value), 1))
-
-const hasExpenses = computed(() =>
-  data.value.breakdown.some((item) => !item.isPositive && item.value > 0),
+const props = withDefaults(
+  defineProps<{
+    value: number
+    hasExpenses: boolean
+    prompt?: string | null
+    percentageChange?: number | null
+    breakdown?: TEbitdaBreakdownItem[]
+  }>(),
+  {
+    breakdown: () => [],
+  },
 )
 
-const revenueItem = computed(() => data.value.breakdown.find((item) => item.isPositive))
-const expenseItems = computed(() => data.value.breakdown.filter((item) => !item.isPositive))
+const { format, truncate } = useFormatCurrency()
+
+const ebitdaValue = computed(() => (props.value > 0 ? truncate(props.value) : format(0)))
+
+const maxBarValue = computed(() => Math.max(...props.breakdown.map((item) => item.value), 1))
+
+const revenueItem = computed(() => props.breakdown.find((item) => item.isPositive))
+const expenseItems = computed(() => props.breakdown.filter((item) => !item.isPositive))
 </script>
 
 <template>
@@ -36,20 +40,18 @@ const expenseItems = computed(() => data.value.breakdown.filter((item) => !item.
           <span class="text-lg font-normal">₦</span>{{ ebitdaValue.replace("₦", "") }}
         </p>
 
-        <Chip v-if="data.percentageChange > 0" color="success" size="sm" class="mt-3">
-          <Icon name="arrow-up-square" size="14" class="mr-1" />
-          {{ data.percentageChange }}% vs last month
-        </Chip>
+        <p
+          v-if="props.percentageChange != null"
+          class="mt-2 text-sm font-medium"
+          :class="props.percentageChange >= 0 ? 'text-success-600' : 'text-error-600'"
+        >
+          {{ props.percentageChange >= 0 ? "+" : "" }}{{ props.percentageChange }}% vs last period
+        </p>
 
-        <InfoBox
-          v-if="!hasExpenses"
-          variant="warning"
-          message="Add expenses to get a more accurate figure."
-          class="mt-4"
-        />
+        <InfoBox v-if="!hasExpenses && prompt" variant="warning" :message="prompt" class="mt-4" />
       </div>
 
-      <div class="flex-1 rounded-xl bg-gray-50">
+      <div v-if="breakdown.length > 0" class="flex-1 rounded-xl bg-gray-50">
         <!-- Revenue row -->
         <div v-if="revenueItem" class="flex items-center gap-3 p-5 pb-4">
           <span class="text-core-600 w-[110px] shrink-0 text-right text-sm md:w-[130px]">

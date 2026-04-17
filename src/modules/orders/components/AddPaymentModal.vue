@@ -30,7 +30,7 @@ interface FormValues {
   source: { label: string; value: string }
 }
 
-const { handleSubmit, meta, resetForm } = useForm<FormValues>({
+const { handleSubmit, resetForm } = useForm<FormValues>({
   validationSchema: computed(() =>
     yup.object({
       amount: yup
@@ -113,7 +113,7 @@ watch(
         @click="onSubmit"
         class="w-full"
         :loading="isPending"
-        :disabled="!meta.valid || isPending"
+        :disabled="isPending"
       />
     </template>
   </Modal>

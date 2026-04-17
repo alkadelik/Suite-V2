@@ -2,6 +2,7 @@
 import AppButton from "@components/AppButton.vue"
 import FormField from "@components/form/FormField.vue"
 import TextField from "@components/form/TextField.vue"
+import PhoneInput from "@components/form/PhoneInput.vue"
 import SelectField from "@components/form/SelectField.vue"
 import RadioInputField from "@components/form/RadioInputField.vue"
 import GooglePlacesAutocomplete from "@components/GooglePlacesAutocomplete.vue"
@@ -12,6 +13,7 @@ import type { ICustomer } from "@modules/customers/types"
 import type { IShippingCourier } from "@modules/shared/types"
 import { Field } from "vee-validate"
 import { computed, ref, watch } from "vue"
+import { scrollToAndFocusValidationTarget } from "@/utils/validations"
 import {
   ORDER_CHANNELS,
   anonymousCustomer,
@@ -119,8 +121,10 @@ const MANUAL_DELIVERY_LOCATIONS = computed(
     })) ?? [],
 )
 
+const isInternational = computed(() => useSettingsStore().isInternational)
+
 const DELIVERY_METHOD_OPTIONS = computed(() => {
-  const options = [
+  return [
     { label: "Manual", value: "manual", description: "Select your delivery location" },
     { label: "Shipbubble", value: "shipbubble", description: "" },
     { label: "Custom", value: "custom", description: "GIG, Bolt, Gokada, etc" },
@@ -129,6 +133,7 @@ const DELIVERY_METHOD_OPTIONS = computed(() => {
       deliveryDetails.value || {}
     if (x.value === "shipbubble") {
       return (
+        !isInternational.value &&
         shipping_account &&
         delivery_enabled &&
         props.shippingInfo.fulfilment_status === "unfulfilled"
@@ -141,23 +146,27 @@ const DELIVERY_METHOD_OPTIONS = computed(() => {
     }
     return true
   })
-
-  if (options.length === 1) {
-    // Auto-select the only available option
-    const selectedMethod = options[0].value
-    if (props.shippingInfo.delivery_method !== selectedMethod) {
-      emit("update:shippingInfo", {
-        ...props.shippingInfo,
-        ["delivery_method" as keyof ShippingInfo]: selectedMethod,
-      })
-    }
-  }
-
-  return options
 })
 
+// Auto-select delivery method when only one option is available
+watch(
+  DELIVERY_METHOD_OPTIONS,
+  (options) => {
+    if (options.length === 1) {
+      const selectedMethod = options[0].value
+      if (props.shippingInfo.delivery_method !== selectedMethod) {
+        emit("update:shippingInfo", {
+          ...props.shippingInfo,
+          ["delivery_method" as keyof ShippingInfo]: selectedMethod,
+        })
+      }
+    }
+  },
+  { immediate: true },
+)
+
 const DELIVERY_TYPE_OPTIONS = computed(() => {
-  const options = [
+  return [
     { label: "Express", value: "express" },
     { label: "Standard", value: "standard" },
   ].filter((x) => {
@@ -167,20 +176,24 @@ const DELIVERY_TYPE_OPTIONS = computed(() => {
     }
     return true
   })
-
-  if (options.length === 1) {
-    // Auto-select the only available option
-    const selectedType = options[0].value
-    if (props.shippingInfo.delivery_type !== selectedType) {
-      emit("update:shippingInfo", {
-        ...props.shippingInfo,
-        ["delivery_type" as keyof ShippingInfo]: selectedType,
-      })
-    }
-  }
-
-  return options
 })
+
+// Auto-select delivery type when only one option is available
+watch(
+  DELIVERY_TYPE_OPTIONS,
+  (options) => {
+    if (options.length === 1) {
+      const selectedType = options[0].value
+      if (props.shippingInfo.delivery_type !== selectedType) {
+        emit("update:shippingInfo", {
+          ...props.shippingInfo,
+          ["delivery_type" as keyof ShippingInfo]: selectedType,
+        })
+      }
+    }
+  },
+  { immediate: true },
+)
 
 // Remap delivery payment options based on fulfilment status
 const DELIVERY_PAYMENT_OPTIONS = computed(() => {
@@ -211,6 +224,12 @@ const customerName = computed(() => {
 
 // Validation errors for manual delivery
 const validationErrors = ref({ courier: "", delivery_fee: "" })
+const navigationErrors = ref({
+  delivery_type: "",
+  delivery_method: "",
+  express_delivery_option: "",
+  manual_delivery_option: "",
+})
 
 // Yup validation schema for manual delivery
 const manualDeliverySchema = yup.object({
@@ -250,12 +269,7 @@ const onInvalidSubmit = () => {
   )
 
   if (firstErrorFieldName) {
-    const element = document.querySelector(`[name="${firstErrorFieldName}"]`) as HTMLElement
-
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "center" })
-      element.focus()
-    }
+    scrollToAndFocusValidationTarget(firstErrorFieldName)
   }
 }
 
@@ -348,29 +362,55 @@ const canProceed = computed(() => {
 })
 
 const handleNext = async () => {
+  navigationErrors.value = {
+    delivery_type: "",
+    delivery_method: "",
+    express_delivery_option: "",
+    manual_delivery_option: "",
+  }
+
   // Basic canProceed check
   if (!canProceed.value) {
-    // Specific error message for missing delivery type when customer pays merchant
     if (
       props.shippingInfo.fulfilment_method === "delivery" &&
       props.shippingInfo.delivery_payment_option === "customer_pays_merchant" &&
       !props.shippingInfo.delivery_type
     ) {
-      toast.error("Please select a delivery type (Standard or Express) before proceeding.")
+      navigationErrors.value.delivery_type = "Select a delivery type before continuing."
       return
     }
-    // Specific error message for missing delivery method when customer pays merchant and standard delivery
+
     if (
       props.shippingInfo.fulfilment_method === "delivery" &&
       props.shippingInfo.delivery_payment_option === "customer_pays_merchant" &&
       props.shippingInfo.delivery_type === "standard" &&
       !props.shippingInfo.delivery_method
     ) {
-      toast.error(
-        "Please select a delivery method (Manual, Shipbubble, or Custom) before proceeding.",
-      )
+      navigationErrors.value.delivery_method = "Select a delivery method before continuing."
       return
     }
+
+    if (
+      props.shippingInfo.fulfilment_method === "delivery" &&
+      props.shippingInfo.delivery_type === "express" &&
+      !props.shippingInfo.express_delivery_option
+    ) {
+      navigationErrors.value.express_delivery_option =
+        "Select a delivery location before continuing."
+      return
+    }
+
+    if (
+      props.shippingInfo.fulfilment_method === "delivery" &&
+      props.shippingInfo.delivery_type === "standard" &&
+      props.shippingInfo.delivery_method === "manual" &&
+      !props.shippingInfo.manual_delivery_option
+    ) {
+      navigationErrors.value.manual_delivery_option =
+        "Select a delivery location before continuing."
+      return
+    }
+
     toast.error("Please fill in all required fields before proceeding.")
     return
   }
@@ -620,6 +660,9 @@ watch(
 watch(
   () => props.shippingInfo.delivery_method,
   (val) => {
+    navigationErrors.value.delivery_method = ""
+    navigationErrors.value.manual_delivery_option = ""
+
     if (val === "manual") {
       // Clear shipbubble and custom-specific fields
       shipBubbleRates.value = { couriers: [] }
@@ -643,12 +686,38 @@ watch(
   },
 )
 
+watch(
+  () => props.shippingInfo.delivery_type,
+  () => {
+    navigationErrors.value.delivery_type = ""
+    navigationErrors.value.express_delivery_option = ""
+  },
+)
+
+watch(
+  () => props.shippingInfo.express_delivery_option,
+  (value) => {
+    if (value) {
+      navigationErrors.value.express_delivery_option = ""
+    }
+  },
+)
+
+watch(
+  () => props.shippingInfo.manual_delivery_option,
+  (value) => {
+    if (value) {
+      navigationErrors.value.manual_delivery_option = ""
+    }
+  },
+)
+
 const isShippingSetupComplete = computed(() => {
   const liveStatusData = useSettingsStore().liveStatus
   return liveStatusData?.criteria.delivery_options.details?.delivery_enabled
 })
 
-const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
+const isMobile = useMediaQuery("(max-width: 768px)")
 </script>
 
 <template>
@@ -740,6 +809,7 @@ const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
           <RadioInputField
             :options="DELIVERY_TYPE_OPTIONS"
             :modelValue="shippingInfo.delivery_type"
+            :error="navigationErrors.delivery_type"
             @update:modelValue="
               ($event) => {
                 // console.log('Selected delivery type:', $event)
@@ -757,6 +827,7 @@ const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
             :options="EXPRESS_DELIVERY_LOCATIONS"
             :modelValue="shippingInfo.express_delivery_option"
             orientation="vertical"
+            :error="navigationErrors.express_delivery_option"
             @update:modelValue="updateField('express_delivery_option', $event)"
           >
             <template #content="{ option }">
@@ -783,6 +854,7 @@ const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
               :options="DELIVERY_METHOD_OPTIONS"
               :orientation="isMobile ? 'vertical' : 'horizontal'"
               :modelValue="shippingInfo.delivery_method"
+              :error="navigationErrors.delivery_method"
               @update:modelValue="updateField('delivery_method', $event)"
             >
               <template #content="{ option }">
@@ -810,6 +882,7 @@ const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
                 :options="MANUAL_DELIVERY_LOCATIONS"
                 :modelValue="shippingInfo.manual_delivery_option"
                 orientation="vertical"
+                :error="navigationErrors.manual_delivery_option"
                 @update:modelValue="updateField('manual_delivery_option', $event)"
               >
                 <template #content="{ option }">
@@ -848,11 +921,10 @@ const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
 
               <!-- Shipping form when setup is complete -->
               <div v-else class="space-y-3 rounded-lg border border-gray-200 bg-white p-4">
-                <TextField
-                  type="tel"
+                <PhoneInput
                   name="customer_phone"
                   label="Customer Phone"
-                  placeholder="+234 XXX XXX XXXX"
+                  placeholder="XXX XXX XXXX"
                   :modelValue="shippingInfo.customer_phone"
                   @update:modelValue="
                     (value: string) => {
@@ -1140,7 +1212,7 @@ const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
       class="border-core-200 fixed right-0 bottom-0 left-0 flex gap-3 border-t bg-white p-4 md:p-6"
     >
       <AppButton label="Back" color="alt" class="w-1/3" icon="arrow-left" @click="emit('prev')" />
-      <AppButton label="Next" class="w-2/3" :disabled="!canProceed" @click="handleNext" />
+      <AppButton label="Next" class="w-2/3" @click="handleNext" />
     </div>
   </div>
 </template>

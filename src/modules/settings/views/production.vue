@@ -62,7 +62,7 @@ const handleSubmit = () => {
   )
 }
 
-const isSmAndUp = computed(() => useMediaQuery("(min-width: 640px)").value)
+const isSmAndUp = useMediaQuery("(min-width: 640px)")
 </script>
 
 <template>

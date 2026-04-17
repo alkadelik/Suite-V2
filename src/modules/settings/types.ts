@@ -73,7 +73,10 @@ export interface IStoreDetails {
   support_email: string
   support_phone: string
   instagram_handle: string
+  country: string
   currency: string
+  is_international: boolean
+  can_change_currency: boolean
   pickup_location?: string
   pickup_weekday_start_time?: string
   pickup_weekday_end_time?: string

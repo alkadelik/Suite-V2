@@ -131,6 +131,20 @@
       @update:model-value="field.value = $event"
     />
 
+    <!-- Phone Input -->
+    <PhoneInput
+      v-else-if="type === 'tel'"
+      :model-value="field.value"
+      :name="name"
+      :label="hideLabel ? '' : label || startCase(name)"
+      :placeholder="placeholder"
+      :required="isRequired"
+      :disabled="isDisabled"
+      :error="fieldErrors[0]"
+      :size="size"
+      @update:model-value="field.value = $event"
+    />
+
     <!-- Text Field (default for all other types) -->
     <TextField
       v-else
@@ -162,13 +176,14 @@
 import { Field } from "vee-validate"
 import TextField from "./TextField.vue"
 import SelectField from "./SelectField.vue"
+import PhoneInput from "./PhoneInput.vue"
 import SelectTagsField from "./SelectTagsField.vue"
 import TextAreaField from "./TextAreaField.vue"
 import OtpField from "./OtpField.vue"
 import RadioInputField from "./RadioInputField.vue"
 import StepperField from "./StepperField.vue"
 import { startCase } from "@/utils/format-strings"
-import { computed } from "vue"
+import { computed, toRefs } from "vue"
 import FileUploadField from "./FileUploadField.vue"
 import { TChipColor } from "@modules/shared/types"
 import { useMediaQuery } from "@vueuse/core"
@@ -315,9 +330,9 @@ type OptionWithClass = {
 
 // Enhanced normalization function for SelectTagsField
 const normalizedTagOptions = computed<OptionWithClass[]>(() => {
-  if (!options) return []
+  if (!options.value) return []
 
-  return options.map((opt) => {
+  return options.value.map((opt) => {
     // Handle ISelectOption objects
     if (typeof opt === "object" && opt !== null && "label" in opt && "value" in opt) {
       const selectOption = opt as ISelectOption
@@ -373,7 +388,7 @@ const normalizedTagOptions = computed<OptionWithClass[]>(() => {
   })
 })
 
-// Expose props for reactive access in template
+// Use toRefs to preserve reactivity when destructuring props
 const {
   name,
   type,
@@ -399,7 +414,7 @@ const {
   otpLength,
   digitsOnly,
   separator,
-} = props
+} = toRefs(props)
 
 // Computed properties for options and hint text because of dynamic props
 const optionsData = computed(() => props.options ?? [])
