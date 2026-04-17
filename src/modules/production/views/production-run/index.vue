@@ -11,8 +11,8 @@ import DropdownMenu from "@components/DropdownMenu.vue"
 import AppButton from "@components/AppButton.vue"
 import CreateRunDrawer from "./components/ProductionRunDrawer.vue"
 // ProductionRunData imported from types below
-import { PRODUCTION_COLUMN } from "@modules/production/constants"
-import { useGetProductionRuns } from "@modules/production/api"
+import { PROD_RUNS_COLUMN } from "@modules/production/constant"
+import { useGetProdRuns } from "@modules/production/api"
 import type { TProdRun, ProdRunStatus, ProductionRunData } from "@modules/production/types"
 
 const router = useRouter()
@@ -23,7 +23,7 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
 const limit = ref(100)
 const offset = ref(0)
 
-const { data: runsData, isLoading } = useGetProductionRuns(
+const { data: runsData, isLoading } = useGetProdRuns(
   computed(() => ({ limit: limit.value, offset: offset.value })),
 )
 
@@ -321,7 +321,7 @@ const getActionItems = (item: TProdRun) => [
 
         <DataTable
           :data="filteredRuns"
-          :columns="PRODUCTION_COLUMN"
+          :columns="PROD_RUNS_COLUMN"
           :loading="isLoading"
           @row-click="viewRun"
         >
