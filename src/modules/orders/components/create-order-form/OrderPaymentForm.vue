@@ -32,8 +32,6 @@ const emit = defineEmits<{
   next: []
   prev: []
 }>()
-const currency = computed(() => useSettingsStore().storeDetails?.currency || "NGN")
-
 const { format } = useFormatCurrency()
 
 // Use defineModel for two-way binding - cleaner than manual v-model implementation

@@ -268,6 +268,17 @@ export interface IProdRunStats {
   avg_cost_per_unit: number
 }
 
+export type ProdRunStatus = "draft" | "in_progress" | "completed"
+
+export interface ProductionRunData {
+  uid?: string
+  output_item_name?: string
+  recipe_uid?: string
+  quantity_produced?: number
+  quantity_damaged?: number
+  selling_price?: string
+}
+
 export interface IProdRunPayload {
   recipe_uid: string
   output_variant_uid?: string
