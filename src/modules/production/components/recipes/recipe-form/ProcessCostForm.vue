@@ -100,7 +100,14 @@ function handleSubmit() {
             <TextField v-model="row.name" label="Process name" placeholder="e.g Boiling, Labour" />
           </div>
           <div class="col-span-1">
-            <TextField v-model="row.cost" :label="`Cost ${currency}`" placeholder="₦5,000" />
+            <TextField
+              v-model="row.cost"
+              type="number"
+              format="currency"
+              step="0.01"
+              :label="`Cost (${currency})`"
+              placeholder="₦5,000"
+            />
           </div>
         </div>
 
