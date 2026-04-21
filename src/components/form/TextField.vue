@@ -4,86 +4,10 @@
       {{ label }}
       <span v-if="required" class="text-red-500">*</span>
     </label>
-    <div v-if="showSteppers && type === 'number'" class="flex items-center gap-2">
-      <!-- Decrement Button -->
-      <AppButton
-        icon="placeholder"
-        size="sm"
-        type="button"
-        @click.prevent="decrementValue"
-        :disabled="disabled"
-      />
-
-      <div :class="containerClasses" class="flex-1">
-        <!-- Prefix -->
-        <div v-if="prefix" :class="prefixClasses">
-          {{ prefix }}
-        </div>
-
-        <!-- Left Icon -->
-        <div
-          v-if="leftIcon"
-          :class="[prefixClasses, 'flex items-center border-r-0 bg-inherit !pr-0']"
-        >
-          <Icon :name="leftIcon" class="h-4 w-4" />
-        </div>
-
-        <!-- Input -->
-        <input
-          :id="htmlFor"
-          :name="name"
-          :type="actualType"
-          :placeholder="placeholder"
-          :required="required"
-          :disabled="disabled"
-          :readonly="readonly"
-          :class="inputClasses"
-          :value="displayValue"
-          @input="handleInput"
-          @blur="$emit('blur', $event)"
-          @focus="$emit('focus', $event)"
-          v-bind="$attrs"
-        />
-
-        <!-- Right Icon -->
-        <div v-if="rightIcon" class="text-core-400 flex items-center pr-3">
-          <Icon :name="rightIcon" class="h-4 w-4" />
-        </div>
-
-        <!-- Suffix -->
-        <div v-if="suffix" :class="suffixClasses">
-          {{ suffix }}
-        </div>
-      </div>
-
-      <!-- Increment Button -->
-      <AppButton
-        icon="placeholder"
-        size="sm"
-        type="button"
-        @click.prevent="incrementValue"
-        :disabled="disabled"
-      />
-    </div>
-
-    <div v-else :class="containerClasses">
-      <!-- Country Code Prefix for Tel Input -->
-      <div
-        v-if="type === 'tel'"
-        class="flex items-center gap-2 border-r border-gray-200 bg-transparent pr-3 pl-3"
-      >
-        <div
-          class="flex h-4 w-4 items-center justify-center overflow-hidden rounded-full bg-gray-200"
-        >
-          <img src="/images/nigeria.png" alt="Nigerian Flag" class="h-full w-full object-cover" />
-        </div>
-        <span class="text-sm font-medium text-gray-700">+234</span>
-        <Icon name="CaretDown" size="16" class="text-gray-500" />
-      </div>
-
+    <div :class="containerClasses">
       <!-- Prefix -->
-      <div v-else-if="prefix" :class="prefixClasses">
-        {{ prefix }}
+      <div v-if="prefix || format === 'currency'" :class="prefixClasses">
+        {{ format === "currency" ? currencySymbol : prefix }}
       </div>
 
       <!-- Left Icon -->
@@ -97,14 +21,18 @@
         :name="name"
         :type="actualType"
         :placeholder="placeholder"
-        :required="required"
         :disabled="disabled"
         :readonly="readonly"
         :class="inputClasses"
         :value="displayValue"
+        @beforeinput="handleBeforeInput"
         @input="handleInput"
-        @blur="$emit('blur', $event)"
-        @focus="$emit('focus', $event)"
+        @keydown="handleKeydown"
+        @paste="handlePaste"
+        :inputmode="type === 'number' && format ? 'decimal' : undefined"
+        @wheel="type === 'number' ? $event.preventDefault() : undefined"
+        @blur="handleBlur"
+        @focus="handleFocus"
         v-bind="$attrs"
       />
 
@@ -124,8 +52,8 @@
       </div>
 
       <!-- Suffix -->
-      <div v-if="suffix" :class="suffixClasses">
-        {{ suffix }}
+      <div v-if="suffix" :class="suffixClasses" class="max-w-[40%] min-w-0 shrink">
+        <span class="line-clamp-1">{{ suffix }}</span>
       </div>
     </div>
     <div v-if="error" class="mt-1 flex items-center text-sm text-red-600">
@@ -148,7 +76,7 @@
 <script setup lang="ts">
 import { capitalizeFirstChar } from "@/utils/format-strings"
 import Icon from "@components/Icon.vue"
-import AppButton from "@components/AppButton.vue"
+import { useSettingsStore } from "@modules/settings/store"
 import { computed, ref } from "vue"
 
 interface Props {
@@ -194,19 +122,18 @@ interface Props {
   rightIcon?: string
   /** Additional description text below the input */
   description?: string
-  /** Show increment/decrement buttons for number inputs */
-  showSteppers?: boolean
   /** Additional classes for the input element */
   inputClass?: string
   /** Additional classes for the container element */
   containerClass?: string
+  /** Number formatting mode — displays commas, emits raw value */
+  format?: "currency" | "number"
 }
 
 const props = withDefaults(defineProps<Props>(), {
   type: "text",
   variant: "default",
   size: "md",
-  showSteppers: false,
 })
 
 const emit = defineEmits<{
@@ -215,51 +142,135 @@ const emit = defineEmits<{
   focus: [event: FocusEvent]
 }>()
 
+const currencySymbol = computed(() => {
+  const currency = useSettingsStore().storeDetails?.currency || "NGN"
+  const symbols: Record<string, string> = { NGN: "₦", USD: "$", GHS: "₵", KES: "KSh" }
+  return symbols[currency] || currency
+})
+
 const showPassword = ref(false)
+const isFocused = ref(false)
+
+const handleBlur = (event: FocusEvent) => {
+  isFocused.value = false
+  emit("blur", event)
+}
+
+const handleFocus = (event: FocusEvent) => {
+  isFocused.value = true
+  emit("focus", event)
+}
+
+const formatWithCommas = (value: string): string => {
+  if (!value) return value
+  const num = parseFloat(value)
+  if (isNaN(num)) return value
+  const parts = value.split(".")
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+  return parts.join(".")
+}
+
+const stripCommas = (value: string): string => value.replace(/,/g, "")
+
+const sanitizeNumberValue = (value: string): string => {
+  if (!value) return value
+
+  // Allow only digits, decimal point, and minus sign (at the start only)
+  let sanitized = value.replace(/[^0-9.-]/g, "")
+
+  // Ensure only one decimal point
+  const decimalCount = (sanitized.match(/\./g) || []).length
+  if (decimalCount > 1) {
+    const parts = sanitized.split(".")
+    sanitized = parts[0] + "." + parts.slice(1).join("")
+  }
+
+  // Ensure minus sign only at the start
+  if (sanitized.includes("-")) {
+    const minusCount = (sanitized.match(/-/g) || []).length
+    if (minusCount > 1 || sanitized.indexOf("-") > 0) {
+      sanitized = sanitized.replace(/-/g, "")
+    }
+  }
+
+  return sanitized
+}
+
+const handleBeforeInput = (event: Event) => {
+  const inputEvent = event as InputEvent
+  if (props.type !== "number" || !inputEvent.data?.includes(",")) return
+  if (props.format) return // allow commas in formatted mode
+  inputEvent.preventDefault()
+}
+
+const handleKeydown = (event: Event) => {
+  const keyboardEvent = event as KeyboardEvent
+  if (props.type !== "number" || keyboardEvent.key !== ",") return
+  if (props.format) return // allow commas in formatted mode
+  keyboardEvent.preventDefault()
+}
+
+const handlePaste = (event: Event) => {
+  const clipboardEvent = event as ClipboardEvent
+
+  if (props.type !== "number") return
+
+  const pastedText = clipboardEvent.clipboardData?.getData("text") || ""
+
+  if (props.format) {
+    // In formatted mode, strip commas from pasted text and emit raw value
+    clipboardEvent.preventDefault()
+    const target = clipboardEvent.target as HTMLInputElement
+    const rawPasted = stripCommas(pastedText)
+    const currentRaw = stripCommas(target.value)
+    const selectionStart = target.selectionStart ?? currentRaw.length
+    const selectionEnd = target.selectionEnd ?? currentRaw.length
+    const nextValue = sanitizeNumberValue(
+      `${currentRaw.slice(0, selectionStart)}${rawPasted}${currentRaw.slice(selectionEnd)}`,
+    )
+    target.value = formatWithCommas(nextValue)
+    emit("update:modelValue", nextValue)
+    return
+  }
+
+  if (!pastedText.includes(",")) return
+
+  clipboardEvent.preventDefault()
+
+  const target = clipboardEvent.target as HTMLInputElement
+  const currentValue = target.value
+  const selectionStart = target.selectionStart ?? currentValue.length
+  const selectionEnd = target.selectionEnd ?? currentValue.length
+  const nextValue = sanitizeNumberValue(
+    `${currentValue.slice(0, selectionStart)}${pastedText}${currentValue.slice(selectionEnd)}`,
+  )
+
+  target.value = nextValue
+  emit("update:modelValue", nextValue)
+}
 
 const handleInput = (event: Event) => {
   const target = event.target as HTMLInputElement
   let value = target.value
 
-  // For number inputs, allow only valid numeric characters
-  if (props.type === "number" && value) {
-    // Allow only digits, decimal point, and minus sign (at the start only)
-    // Remove any characters that are not digits, decimal point, or minus
-    let sanitized = value.replace(/[^0-9.-]/g, "")
-
-    // Ensure only one decimal point
-    const decimalCount = (sanitized.match(/\./g) || []).length
-    if (decimalCount > 1) {
-      const parts = sanitized.split(".")
-      sanitized = parts[0] + "." + parts.slice(1).join("")
-    }
-
-    // Ensure minus sign only at the start
-    if (sanitized.includes("-")) {
-      const minusCount = (sanitized.match(/-/g) || []).length
-      if (minusCount > 1 || sanitized.indexOf("-") > 0) {
-        sanitized = sanitized.replace(/-/g, "")
-      }
-    }
-
-    value = sanitized
-    target.value = sanitized // Update the input value to reflect the sanitized value
+  // For formatted number inputs, strip commas, sanitize, then reformat display
+  if (props.type === "number" && props.format && value) {
+    const raw = sanitizeNumberValue(stripCommas(value))
+    // Reformat with commas for display while preserving cursor
+    const cursorPos = target.selectionStart ?? 0
+    const commasBefore = (value.slice(0, cursorPos).match(/,/g) || []).length
+    target.value = formatWithCommas(raw)
+    const commasAfter = (target.value.slice(0, cursorPos).match(/,/g) || []).length
+    const newPos = cursorPos + (commasAfter - commasBefore)
+    target.setSelectionRange(newPos, newPos)
+    emit("update:modelValue", raw)
+    return
   }
 
-  // For tel inputs, prefix with +234
-  if (props.type === "tel" && value) {
-    // Remove any existing +234 prefix to avoid duplication
-    value = value.replace(/^\+234\s*/, "")
-    // Remove any non-digit characters
-    value = value.replace(/[^\d]/g, "")
-    // Remove leading 0 if present
-    if (value.startsWith("0")) {
-      value = value.substring(1)
-    }
-    // Add +234 prefix
-    if (value) {
-      value = `+234${value}`
-    }
+  // For number inputs, allow only valid numeric characters
+  if (props.type === "number" && value) {
+    value = sanitizeNumberValue(value)
+    target.value = value
   }
 
   emit("update:modelValue", value)
@@ -269,42 +280,18 @@ const togglePasswordVisibility = () => {
   showPassword.value = !showPassword.value
 }
 
-const incrementValue = () => {
-  let currentValue = 0
-  if (typeof props.modelValue === "number") {
-    currentValue = props.modelValue
-  } else if (typeof props.modelValue === "string" && props.modelValue !== "") {
-    currentValue = parseFloat(props.modelValue)
-  }
-
-  const newValue = currentValue + 1
-  emit("update:modelValue", String(newValue))
-}
-
-const decrementValue = () => {
-  let currentValue = 0
-  if (typeof props.modelValue === "number") {
-    currentValue = props.modelValue
-  } else if (typeof props.modelValue === "string" && props.modelValue !== "") {
-    currentValue = parseFloat(props.modelValue)
-  }
-
-  const newValue = Math.max(0, currentValue - 1) // Prevent negative values
-  emit("update:modelValue", String(newValue))
-}
-
 const htmlFor = computed(() => props.id || props.name || props.label)
 
-const actualType = computed(() =>
-  props.type === "password" && showPassword.value ? "text" : props.type,
-)
+const actualType = computed(() => {
+  if (props.type === "password" && showPassword.value) return "text"
+  if (props.type === "number" && props.format) return "text"
+  return props.type
+})
 
-// For tel inputs, display value without +234 prefix
 const displayValue = computed(() => {
-  if (props.type === "tel" && props.modelValue) {
-    const value = String(props.modelValue)
-    // Remove +234 prefix for display
-    return value.replace(/^\+234/, "")
+  // For formatted number inputs, always show commas
+  if (props.type === "number" && props.format && props.modelValue) {
+    return formatWithCommas(String(props.modelValue))
   }
   return props.modelValue
 })
@@ -360,8 +347,7 @@ const prefixClasses = computed(() => {
 })
 
 const suffixClasses = computed(() => {
-  const baseClasses =
-    "border-core-100 bg-inherit ml-2 flex items-center border-l px-3 text-gray-400"
+  const baseClasses = "border-core-100 bg-inherit ml-2 border-l px-3 text-gray-400"
 
   const sizeClasses = {
     sm: "py-2 text-sm",
@@ -372,3 +358,14 @@ const suffixClasses = computed(() => {
   return [baseClasses, sizeClasses[props.size]].filter(Boolean).join(" ")
 })
 </script>
+
+<style scoped>
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+</style>

@@ -9,8 +9,8 @@ import imageCompression from "browser-image-compression"
 export function useImageConverter() {
   /**
    * Converts and compresses an image file
-   * - HEIC/HEIF files are converted to JPEG first
-   * - AVIF files are converted to JPEG first
+   * - HEIC/HEIF files are converted to WebP first
+   * - AVIF files are converted to WebP first
    * - All images are compressed to max 500KB and 1920px
    * @param file - The original image file
    * @returns Promise resolving to processed file
@@ -28,18 +28,18 @@ export function useImageConverter() {
       const isAvif = file.type === "image/avif" || file.name.toLowerCase().endsWith(".avif")
 
       if (isHeic) {
-        // Convert HEIC to JPEG, then compress
-        const convertedFile = await convertHeicToJpeg(file)
-        return await compressImage(convertedFile)
+        // Convert HEIC to WebP, then compress
+        const convertedFile = await convertHeicToWebp(file)
+        return await compressImageWithConversion(convertedFile, "image/webp")
       }
 
       if (isAvif) {
-        // Convert AVIF to JPEG using browser-image-compression
-        return await compressImageWithConversion(file, "image/jpeg")
+        // Convert AVIF to WebP using browser-image-compression
+        return await compressImageWithConversion(file, "image/webp")
       }
 
-      // For standard formats, just compress
-      return await compressImage(file)
+      // For standard formats (JPG, PNG, etc.), convert to WebP and compress
+      return await compressImageWithConversion(file, "image/webp")
     } catch (error) {
       console.error("Error processing image:", error)
       throw error
@@ -47,25 +47,25 @@ export function useImageConverter() {
   }
 
   /**
-   * Converts HEIC/HEIF image to JPEG format using heic-to library
+   * Converts HEIC/HEIF image to WebP format using heic-to library
    * @param file - HEIC/HEIF image file
-   * @returns Promise resolving to JPEG file
+   * @returns Promise resolving to WebP file
    */
-  const convertHeicToJpeg = async (file: File): Promise<File> => {
+  const convertHeicToWebp = async (file: File): Promise<File> => {
     try {
-      // Convert to JPEG blob using heic-to
+      // Convert to WebP blob using heic-to
       const convertedBlob = await heicTo({
         blob: file,
-        type: "image/jpeg",
+        type: "image/webp",
         quality: 0.9,
       })
 
       // Create new File from blob
       const convertedFile = new File(
         [convertedBlob],
-        file.name.replace(/\.(heic|heif)$/i, ".jpg"), // Rename extension
+        file.name.replace(/\.(heic|heif)$/i, ".webp"), // Rename extension
         {
-          type: "image/jpeg",
+          type: "image/webp",
           lastModified: file.lastModified,
         },
       )
@@ -82,7 +82,7 @@ export function useImageConverter() {
   /**
    * Compresses an image and optionally converts to a different format
    * @param file - Image file to compress
-   * @param fileType - Target file type (e.g., 'image/jpeg')
+   * @param fileType - Target file type (e.g., 'image/webp')
    * @returns Promise resolving to compressed file
    */
   const compressImageWithConversion = async (file: File, fileType?: string): Promise<File> => {
@@ -102,13 +102,13 @@ export function useImageConverter() {
       let fileName = file.name
       if (fileType && fileType !== file.type) {
         // Change extension based on target type
-        const newExt = fileType.split("/")[1] || "jpg"
+        const newExt = fileType.split("/")[1] || "webp"
         fileName = file.name.replace(/\.[^/.]+$/, `.${newExt}`)
       }
 
       // Create File from compressed blob
       const compressedFile = new File([compressedBlob], fileName, {
-        type: fileType || file.type || "image/jpeg",
+        type: fileType || file.type || "image/webp",
         lastModified: file.lastModified,
       })
 
@@ -138,7 +138,7 @@ export function useImageConverter() {
 
       // Create File from compressed blob
       const compressedFile = new File([compressedBlob], file.name, {
-        type: file.type || "image/jpeg",
+        type: file.type || "image/webp",
         lastModified: file.lastModified,
       })
 
@@ -159,11 +159,28 @@ export function useImageConverter() {
     return Promise.all(promises)
   }
 
+  /**
+   * Renames a File to `storename_timestamp.ext` format
+   * @param file - The image file to rename
+   * @param storeName - The store name to use as prefix
+   * @returns A new File with the renamed filename
+   */
+  const renameProductImage = (file: File, storeName: string): File => {
+    const sanitized = storeName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_|_$/g, "")
+    const ext = file.name.includes(".") ? file.name.substring(file.name.lastIndexOf(".")) : ".webp"
+    const newName = `${sanitized}_${Date.now()}${ext}`
+    return new File([file], newName, { type: file.type, lastModified: file.lastModified })
+  }
+
   return {
     convertAndCompressImage,
-    convertHeicToJpeg,
+    convertHeicToWebp,
     compressImageWithConversion,
     compressImage,
     convertAndCompressMultiple,
+    renameProductImage,
   }
 }

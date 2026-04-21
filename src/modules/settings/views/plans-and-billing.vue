@@ -1,16 +1,14 @@
 <template>
   <div>
-    <div class="flex flex-col items-center justify-between md:mb-4 md:flex-row">
-      <SectionHeader
-        title="Plans & Billing"
-        subtitle="Manage your plan, payments, and invoices in one place."
-        class="mb-4"
-      />
-    </div>
+    <SectionHeader
+      title="Plans & Billing"
+      subtitle="Manage your plan, payments, and invoices in one place."
+      class="mb-4"
+    />
 
     <!-- plan details  -->
     <div class="rounded-2xl border border-gray-200">
-      <header class="flex items-center justify-between px-3 py-2.5 md:px-4 md:py-3">
+      <header class="flex items-start justify-between px-3 py-2.5 md:px-4 md:py-3">
         <div class="flex items-center gap-2 md:gap-3">
           <div
             class="bg-primary-100 flex size-10 items-center justify-center rounded-full md:size-12"
@@ -20,14 +18,15 @@
             </div>
           </div>
 
-          <h4 class="text-core-800 text-sm font-medium md:text-lg">Current Plan</h4>
-
-          <Chip color="indigo" :label="currentPlanChipLabel" size="sm" />
+          <div class="inline-flex flex-col gap-1 md:flex-row">
+            <h4 class="text-core-800 text-sm font-medium md:text-lg">Current Plan</h4>
+            <Chip color="indigo" :label="currentPlanChipLabel" size="sm" />
+          </div>
         </div>
 
         <Chip
           showDot
-          :color="currentSubscription?.is_cancelled ? 'cancelled' : 'blue'"
+          :color="currentSubscription?.is_cancelled ? 'cancelled' : 'success'"
           :label="currentSubscription?.is_cancelled ? 'Cancelled' : 'Active'"
           size="sm"
         />
@@ -103,14 +102,14 @@
 
         <!-- Mobile view cell templates -->
         <template #mobile="{ item }">
-          <div class="space-y-2">
+          <div class="bg-core-25 border-core-300 cursor-pointer space-y-2 rounded-2xl border p-4">
             <div class="flex justify-between">
               <div class="space-y-2">
-                <p class="text-core-800 text-sm font-medium">{{ item.user_name }}</p>
+                <p class="text-core-800 text-sm font-medium">{{ item.planName || "N/A" }}</p>
                 <div class="flex items-center gap-2">
-                  <p class="text-core-600 text-xs">{{ item.user_name }}</p>
-                  <div class="bg-core-600 h-1 w-1 rounded-full"></div>
-                  <p class="text-core-600 text-xs">{{ item.date_paid || "Pending" }}</p>
+                  <!-- <p class="text-core-600 text-xs">{{ item.user_name || "--" }}</p> -->
+                  <!-- <div class="bg-core-600 h-1 w-1 rounded-full"></div> -->
+                  <!-- <p class="text-core-600 text-xs">{{ item.date_paid || "Pending" }}</p> -->
                 </div>
                 <Chip
                   :label="String(item.status)"
@@ -149,7 +148,7 @@
 
 <script setup lang="ts">
 import SectionHeader from "@/components/SectionHeader.vue"
-import { ref, computed } from "vue"
+import { ref, computed, watch } from "vue"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
@@ -162,9 +161,19 @@ import CancelSubscriptionModal from "../components/CancelSubscriptionModal.vue"
 import SuccessModal from "@/components/SuccessModal.vue"
 import { getPlanColor } from "../utils"
 import { TChipColor } from "@modules/shared/types"
-import { useGetSubscriptionHistory, useGetPlans, useCancelSubscription } from "../api"
+import {
+  useGetSubscriptionHistory,
+  useGetPlans,
+  useCancelSubscription,
+  useGetSubscription,
+} from "../api"
 import { useAuthStore } from "@modules/auth/store"
 import { displayError } from "@/utils/error-handler"
+
+const { data: subscription } = useGetSubscription()
+watch(subscription, (val) => {
+  console.log("subscription response:", val)
+})
 
 const showPlansModal = ref(false)
 const showCancelModal = ref(false)
@@ -285,13 +294,12 @@ const subscriptions = computed(() => {
 })
 
 const getStatusColor = (status: string): TChipColor => {
+  status = status.toLowerCase()
   const statusColors: Record<string, TChipColor> = {
-    Success: "success",
-    Failed: "error",
-    Pending: "warning",
-    completed: "success",
+    success: "success",
     failed: "error",
     pending: "warning",
+    completed: "success",
   }
   return statusColors[status] || "primary"
 }

@@ -50,10 +50,9 @@
           </div>
           <FormField
             name="quantity"
-            type="number"
+            type="stepper"
             placeholder="Enter quantity"
             required
-            :show-steppers="true"
             :hide-label="true"
           />
         </div>
@@ -85,7 +84,6 @@
           :loading="isPending"
           class="flex-1"
           @click="onSubmit"
-          :disabled="!meta.valid"
         />
       </div>
     </template>
@@ -112,7 +110,7 @@ import type {
 } from "../types"
 import { useSettingsStore } from "@modules/settings/store"
 import Icon from "@components/Icon.vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 
 interface Props {
   open: boolean
@@ -131,6 +129,7 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+const { format } = useFormatCurrency()
 
 const settingsStore = useSettingsStore()
 const { mutate: directTransfer, isPending: isTransferring } = useDirectStockTransfer()
@@ -158,12 +157,12 @@ const productImage = computed(() => {
 const displayPrice = computed(() => {
   if (props.product?.variants && props.product.variants.length === 1) {
     // Single variant - use product price
-    return formatCurrency(Number(props.product.variants[0].price))
+    return format(Number(props.product.variants[0].price))
   } else if (props.variant) {
     // Multiple variants - use variant price
-    return formatCurrency(Number(props.variant.price))
+    return format(Number(props.variant.price))
   }
-  return formatCurrency(0)
+  return format(0)
 })
 
 // Get stock left
@@ -189,7 +188,7 @@ interface FormValues {
   note: string
 }
 
-const { handleSubmit, meta, resetForm } = useForm<FormValues>({
+const { handleSubmit, resetForm } = useForm<FormValues>({
   validationSchema: yup.object({
     to_location: yup.string().required("Location is required"),
     quantity: yup

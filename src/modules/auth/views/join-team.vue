@@ -6,7 +6,7 @@
       class="mb-4"
     />
 
-    <AppForm :schema="validationSchema" @submit="onSubmit" v-slot="{ meta }" class="space-y-5">
+    <AppForm :schema="validationSchema" @submit="onSubmit" v-slot="{}" class="space-y-5">
       <div class="grid grid-cols-2 gap-5">
         <FormField name="first_name" label="First Name" placeholder="e.g. John" required />
         <FormField name="last_name" label="Last Name" placeholder="e.g. Doe" required />
@@ -53,13 +53,7 @@
         </a>
       </p>
 
-      <AppButton
-        type="submit"
-        :loading="isPending"
-        label="Join Team Now"
-        class="w-full"
-        :disabled="!meta.valid"
-      />
+      <AppButton type="submit" :loading="isPending" label="Join Team Now" class="w-full" />
     </AppForm>
 
     <div class="mt-5 pb-4">

@@ -1,46 +1,26 @@
 import { defineStore } from "pinia"
-import { ref } from "vue"
-import { computed } from "vue"
-import { TRawMaterial } from "./types"
+import { computed, ref } from "vue"
 
 export const useProductionStore = defineStore(
   "production",
   () => {
     const selectedComponentOption = ref<{ label: string; value: string } | null>(null)
-    const componentLabel = computed(() => {
-      return selectedComponentOption.value ? selectedComponentOption.value.label : ""
-    })
+    const componentLabel = computed(() => selectedComponentOption.value?.label || "Raw Materials")
     const componentValue = computed(() => {
-      return selectedComponentOption.value ? selectedComponentOption.value.value : ""
+      const value = selectedComponentOption.value?.value
+      return value === "raw_materials" ? "material" : value || "material"
     })
 
     const setSelectedComponentOption = (option: { label: string; value: string }) => {
       selectedComponentOption.value = option
     }
 
-    // Selected material for editing/adjusting
-    const selectedMaterial = ref<TRawMaterial | null>(null)
-    const showEditDrawer = ref(false)
-    const showAdjustStockModal = ref(false)
+    const selectedRecipeOption = ref<{ label: string; value: string } | null>(null)
+    const recipeLabel = computed(() => selectedRecipeOption.value?.label || "")
+    const recipeValue = computed(() => selectedRecipeOption.value?.value || "")
 
-    const openEditMaterial = (material: TRawMaterial) => {
-      selectedMaterial.value = material
-      showEditDrawer.value = true
-    }
-
-    const closeEditMaterial = () => {
-      selectedMaterial.value = null
-      showEditDrawer.value = false
-    }
-
-    const openAdjustStock = (material: TRawMaterial) => {
-      selectedMaterial.value = material
-      showAdjustStockModal.value = true
-    }
-
-    const closeAdjustStock = () => {
-      selectedMaterial.value = null
-      showAdjustStockModal.value = false
+    const setSelectedRecipeOption = (option: { label: string; value: string }) => {
+      selectedRecipeOption.value = option
     }
 
     return {
@@ -48,13 +28,10 @@ export const useProductionStore = defineStore(
       componentLabel,
       componentValue,
       setSelectedComponentOption,
-      selectedMaterial,
-      showEditDrawer,
-      showAdjustStockModal,
-      openEditMaterial,
-      closeEditMaterial,
-      openAdjustStock,
-      closeAdjustStock,
+      selectedRecipeOption,
+      recipeLabel,
+      recipeValue,
+      setSelectedRecipeOption,
     }
   },
   { persist: true },

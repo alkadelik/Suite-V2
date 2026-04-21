@@ -57,7 +57,7 @@
           <div class="space-y-1">
             <p class="text-core-600 text-sm">Unit Cost</p>
             <p class="text-core-800 text-base font-semibold">
-              {{ formatCurrency(Number(movement.variant_price)) }}
+              {{ format(Number(movement.variant_price)) }}
             </p>
           </div>
 
@@ -98,7 +98,7 @@
 import Modal from "@components/Modal.vue"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { toast } from "@/composables/useToast"
 import type { IInventoryMovement } from "../types"
 
@@ -121,6 +121,7 @@ interface Emits {
 }
 
 defineEmits<Emits>()
+const { format } = useFormatCurrency()
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString)

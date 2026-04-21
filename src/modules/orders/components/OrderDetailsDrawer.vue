@@ -3,8 +3,8 @@ import Drawer from "@components/Drawer.vue"
 import Modal from "@components/Modal.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import { useMediaQuery } from "@vueuse/core"
-import { TOrder } from "../types"
-import { formatCurrency } from "@/utils/format-currency"
+import { TOrder, TOrderItem } from "../types"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { formatDate } from "@/utils/formatDate"
 import { startCase } from "@/utils/format-strings"
 import Icon from "@components/Icon.vue"
@@ -41,6 +41,8 @@ const emit = defineEmits([
 
 const isMobile = useMediaQuery("(max-width: 1028px)")
 
+const { format } = useFormatCurrency()
+
 const customerName = computed(() => {
   return props.order.customer_name || "Unknown Customer"
 })
@@ -48,6 +50,18 @@ const customerName = computed(() => {
 const itemsCount = computed(() => {
   return props.order.items.reduce((sum, item) => sum + item.quantity, 0)
 })
+
+const hasDiscount = (item: TOrderItem) => {
+  const original = Number(item.original_price)
+  const unit = Number(item.unit_price)
+  return isFinite(original) && isFinite(unit) && original > 0 && unit < original
+}
+
+const hasMarkup = (item: TOrderItem) => {
+  const original = Number(item.original_price)
+  const unit = Number(item.unit_price)
+  return isFinite(original) && isFinite(unit) && original > 0 && unit > original
+}
 
 const productsTotal = computed(() => {
   return Number(props.order.subtotal)
@@ -212,8 +226,19 @@ const menuItems = computed(() => {
             </div>
           </div>
           <div class="text-right">
-            <span class="text-sm font-medium">
-              {{ formatCurrency(Number(item.total_price)) }}
+            <span
+              v-if="hasDiscount(item) || hasMarkup(item)"
+              class="text-core-400 text-xs line-through"
+            >
+              {{ format(Number(item.original_price) * item.quantity) }}
+            </span>
+            <span class="ml-1 text-sm font-medium">
+              {{ format(Number(item.total_price)) }}
+            </span>
+            <span v-if="hasMarkup(item)" class="text-warning-600 block text-xs">
+              Markup: +{{
+                format((Number(item.unit_price) - Number(item.original_price)) * item.quantity)
+              }}
             </span>
           </div>
         </div>
@@ -243,12 +268,12 @@ const menuItems = computed(() => {
         </p>
         <p class="flex justify-between text-sm">
           <span class="text-core-600">Subtotal</span>
-          <span class="font-medium">{{ formatCurrency(productsTotal, { kobo: true }) }}</span>
+          <span class="font-medium">{{ format(productsTotal, { kobo: true }) }}</span>
         </p>
         <p class="flex justify-between text-sm">
           <span class="text-core-600">Delivery Fee</span>
           <span class="font-medium">{{
-            deliveryFee > 0 ? formatCurrency(deliveryFee, { kobo: true }) : "-"
+            deliveryFee > 0 ? format(deliveryFee, { kobo: true }) : "-"
           }}</span>
         </p>
         <p
@@ -258,21 +283,19 @@ const menuItems = computed(() => {
           <span class="text-core-600"
             >VAT ({{ order.tax_rate_used ? `${+order.tax_rate_used * 100}%` : storeVatRate }})</span
           >
-          <span class="font-medium">{{ formatCurrency(Number(order.tax_amount)) }}</span>
+          <span class="font-medium">{{ format(Number(order.tax_amount)) }}</span>
         </p>
         <p
           v-if="Number(order.discount_amount) > 0"
           class="flex justify-between text-sm text-green-600"
         >
           <span>Discount</span>
-          <span class="font-medium">-{{ formatCurrency(Number(order.discount_amount)) }}</span>
+          <span class="font-medium">-{{ format(Number(order.discount_amount)) }}</span>
         </p>
         <div class="border-core-200 my-2 border-t border-dashed"></div>
         <p class="flex justify-between text-lg font-semibold">
           <span>Total:</span>
-          <span class="text-primary-600">{{
-            formatCurrency(order.total_amount, { kobo: true })
-          }}</span>
+          <span class="text-primary-600">{{ format(order.total_amount, { kobo: true }) }}</span>
         </p>
       </div>
 
@@ -294,12 +317,12 @@ const menuItems = computed(() => {
         </p>
         <p v-if="order.payment_status !== 'unpaid'" class="flex justify-between text-sm">
           <span class="text-core-600">Amount Paid</span>
-          <span class="font-medium">{{ formatCurrency(order.total_paid, { kobo: true }) }}</span>
+          <span class="font-medium">{{ format(order.total_paid, { kobo: true }) }}</span>
         </p>
         <p v-if="order.outstanding_balance > 0" class="flex justify-between text-sm">
           <span class="text-core-600">Outstanding Balance</span>
           <span class="font-medium text-red-600">
-            {{ formatCurrency(order.outstanding_balance, { kobo: true }) }}
+            {{ format(order.outstanding_balance, { kobo: true }) }}
           </span>
         </p>
       </div>

@@ -26,7 +26,13 @@ export function formatCurrency(
   value: number | string = 0,
   { currency = "NGN", kobo = false }: { currency?: string; kobo?: boolean } = {},
 ): string {
-  return new Intl.NumberFormat(currency === "NGN" ? "en-NG" : "en-US", {
+  const localeMap: Record<string, string> = {
+    NGN: "en-NG",
+    USD: "en-US",
+    GHS: "en-GH",
+    KES: "en-KE",
+  }
+  return new Intl.NumberFormat(localeMap[currency] || "en-US", {
     style: "currency",
     currency,
     minimumFractionDigits: kobo ? 2 : 0,
@@ -91,12 +97,18 @@ export function truncateCurrency(
   } else if (absValue >= 1_000_000) {
     suffix = "M"
     divisor = 1_000_000
-  } else if (absValue >= 1_000) {
+  } else if (absValue >= 10_000) {
     suffix = "K"
     divisor = 1_000
   } else {
-    // For values less than 1000, show full number
-    return new Intl.NumberFormat(currency === "NGN" ? "en-NG" : "en-US", {
+    // For values less than 10000, show full number
+    const localeMap: Record<string, string> = {
+      NGN: "en-NG",
+      USD: "en-US",
+      GHS: "en-GH",
+      KES: "en-KE",
+    }
+    return new Intl.NumberFormat(localeMap[currency] || "en-US", {
       style: "currency",
       currency,
       minimumFractionDigits: 0,

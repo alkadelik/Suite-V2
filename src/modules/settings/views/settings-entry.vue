@@ -17,6 +17,10 @@ onMounted(() => {
   }
 })
 
+const isInternational = computed(() => useSettingsStore().isInternational)
+
+const INTERNATIONAL_HIDDEN_LINKS = ["Plans & Billing", "Storefront Design", "Delivery Options"]
+
 const settingsLinks = computed(() =>
   [
     { label: "Profile", path: "/settings/profile", icon: "profile-circle" },
@@ -26,22 +30,25 @@ const settingsLinks = computed(() =>
     { label: "Plans & Billing", path: "/settings/billing", icon: "star-fast" },
     { label: "Locations", path: "/settings/locations", icon: "map" },
     {
-      label: "Design",
+      label: "Storefront Design",
       path: "/settings/design",
       icon: "designtools",
       subLinks: [
         { label: "Themes", path: "/settings/design/themes", icon: "shapes-02" },
         { label: "Theme Settings", path: "/settings/design/theme-settings", icon: "shapes-01" },
         { label: "Landing Page", path: "/settings/design/landing-page", icon: "message-text" },
-        { label: "Pop Up", path: "/settings/design/popup", icon: "information" },
+        // { label: "Pop Up", path: "/settings/design/popup", icon: "information" },
       ],
     },
     { label: "Delivery Options", path: "/settings/delivery-options", icon: "truck-fast-outline" },
-    { label: "Production", path: "/settings/production", icon: "building" },
+    { label: "Production", path: "/settings/production", icon: "building-outline" },
   ].filter((link) => {
     const { activeLocation } = useSettingsStore()
     if (!activeLocation?.is_hq) {
       return ["Profile", "Password"].includes(link.label)
+    }
+    if (isInternational.value && INTERNATIONAL_HIDDEN_LINKS.includes(link.label)) {
+      return false
     }
     return true
   }),
@@ -65,7 +72,10 @@ const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
     >
       <BackButton to="/dashboard" :center-on-mobile="true" />
       <h2 class="mt-3 text-2xl font-bold">Settings</h2>
-      <div class="mx-auto flex min-w-0 items-center gap-2 text-sm text-gray-600 lg:mx-0">
+      <div
+        v-if="!isInternational"
+        class="mx-auto flex min-w-0 items-center gap-2 text-sm text-gray-600 lg:mx-0"
+      >
         <p class="truncate">{{ storefrontUrl }}</p>
         <Icon
           name="copy"

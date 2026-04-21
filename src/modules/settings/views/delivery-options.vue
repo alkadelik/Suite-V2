@@ -11,6 +11,7 @@ import {
   useGetExpressDeliveryOptions,
 } from "@modules/shared/api"
 import { useGetStoreDetails, useUpdateStoreDetails } from "@modules/settings/api"
+import { syncDeliveryFormState } from "@modules/settings/utils/delivery-options-state"
 import ConfigureDeliveryModal from "@modules/shared/components/ConfigureDeliveryModal.vue"
 import ConfigurePickupModal from "@modules/shared/components/ConfigurePickupModal.vue"
 import ManageShipBubbleModal from "@modules/shared/components/ManageShipBubbleModal.vue"
@@ -83,38 +84,24 @@ const showSetupDeliveryPrompt = computed(
   () => !hasShippingAccount.value && !hasManualDeliveries.value,
 )
 
-// Scenario: Has shipping account - show automatic/manual toggle and express section
-const showDeliveryOptions = computed(() => hasShippingAccount.value)
+// Scenario: Has shipping account OR manual deliveries - show delivery options
+const showDeliveryOptions = computed(() => hasShippingAccount.value || hasManualDeliveries.value)
 
 // Watch store details for pickup location and delivery settings
 watch(
   storeDetails,
   (newVal) => {
     if (newVal) {
-      // Pickup location
-      const pickupLocation = newVal.pickup_location
-      const hasPickup = typeof pickupLocation === "string" ? pickupLocation.trim() !== "" : false
-      form.value.allow_pickup = hasPickup
-      originalValues.value.allow_pickup = hasPickup
+      const nextState = syncDeliveryFormState({
+        previousForm: form.value,
+        previousOriginalValues: originalValues.value,
+        previousCurrentDeliveryView: currentDeliveryView.value,
+        nextStoreDetails: newVal,
+      })
 
-      // Automatic delivery enabled
-      form.value.delivery_enabled = newVal.delivery_enabled || false
-      originalValues.value.delivery_enabled = newVal.delivery_enabled || false
-
-      // Manual delivery enabled
-      form.value.manual_delivery_enabled = newVal.manual_delivery_enabled || false
-      originalValues.value.manual_delivery_enabled = newVal.manual_delivery_enabled || false
-
-      // Express delivery enabled
-      form.value.express_delivery_enabled = newVal.express_delivery_enabled || false
-      originalValues.value.express_delivery_enabled = newVal.express_delivery_enabled || false
-
-      // Set initial view based on which is enabled (prefer manual if enabled)
-      if (newVal.manual_delivery_enabled) {
-        currentDeliveryView.value = "manual"
-      } else {
-        currentDeliveryView.value = "automatic"
-      }
+      form.value = nextState.form
+      originalValues.value = nextState.originalValues
+      currentDeliveryView.value = nextState.currentDeliveryView
     }
   },
   { immediate: true },
@@ -133,14 +120,15 @@ const hasChanges = computed(() => {
 // Handle automatic delivery toggle - turn off manual if automatic is turned on
 // Also works like express: if not enabled, opens modal for setup
 const handleAutomaticToggle = (value: boolean) => {
-  if (value && !form.value.delivery_enabled && !originalValues.value.delivery_enabled) {
-    // Automatic delivery not set up, open modal for setup
+  if (value && !hasShippingAccount.value) {
+    // No shipping account set up, open modal for setup
     automaticSetupMode.value = true
     form.value.delivery_enabled = true
     form.value.manual_delivery_enabled = false
-    openDelivery.value = true
+    currentDeliveryView.value = "automatic"
+    openNewDelivery.value = true
   } else {
-    // Has automatic delivery or turning off, just toggle normally
+    // Has shipping account or turning off, just toggle normally
     form.value.delivery_enabled = value
     if (value && form.value.manual_delivery_enabled) {
       form.value.manual_delivery_enabled = false
@@ -425,7 +413,7 @@ const handleRefresh = () => {
                     <h3 class="mb-1 flex items-end gap-2 text-base font-semibold">
                       Allow Managed Delivery?
                       <button
-                        v-if="form.delivery_enabled"
+                        v-if="form.delivery_enabled || hasShippingAccount"
                         type="button"
                         class="text-primary-600 hidden text-sm underline md:block"
                         @click="openDelivery = true"
@@ -437,7 +425,7 @@ const handleRefresh = () => {
                       Let ShipBubble handle the delivery logistics for you.
                     </p>
                     <button
-                      v-if="form.delivery_enabled"
+                      v-if="form.delivery_enabled || hasShippingAccount"
                       type="button"
                       class="text-primary-600 block text-sm font-semibold underline md:hidden"
                       @click="openDelivery = true"
@@ -453,7 +441,7 @@ const handleRefresh = () => {
 
                 <!-- Switch to Manual Delivery Banner -->
                 <div
-                  class="border-primary-600 bg-primary-25 text-warning-700 mt-6 flex cursor-pointer flex-col items-center justify-between gap-3 rounded-lg border px-4 py-6 md:flex-row"
+                  class="border-primary-600 bg-primary-25 text-warning-700 mt-6 flex cursor-pointer flex-col items-center justify-between gap-3 rounded-lg border px-4 py-4 md:flex-row"
                   @click="handleSwitchDeliveryType"
                 >
                   <div class="flex gap-3">
@@ -474,7 +462,7 @@ const handleRefresh = () => {
                     </div>
                   </div>
 
-                  <div class="flex items-center">
+                  <div class="hidden items-center md:flex">
                     <Icon name="arrow-right" size="16" class="text-primary-600" />
                   </div>
                 </div>
@@ -493,7 +481,7 @@ const handleRefresh = () => {
                     <h3 class="mb-1 flex items-end gap-2 text-base font-semibold">
                       Allow Manual Delivery?
                       <button
-                        v-if="hasManualDeliveries"
+                        v-if="form.manual_delivery_enabled || hasManualDeliveries"
                         type="button"
                         class="text-primary-600 hidden text-sm underline md:block"
                         @click="openManualDeliveryModal('manual')"
@@ -505,7 +493,7 @@ const handleRefresh = () => {
                       Manage the delivery of orders to your customers all by yourself.
                     </p>
                     <button
-                      v-if="hasManualDeliveries"
+                      v-if="form.manual_delivery_enabled || hasManualDeliveries"
                       type="button"
                       class="text-primary-600 block text-sm font-semibold underline md:hidden"
                       @click="openManualDeliveryModal('manual')"
@@ -521,7 +509,7 @@ const handleRefresh = () => {
 
                 <!-- Switch to Managed Delivery Banner -->
                 <div
-                  class="border-primary-600 bg-primary-25 text-warning-700 mt-6 flex cursor-pointer flex-col items-center justify-between gap-3 rounded-lg border px-4 py-6 md:flex-row"
+                  class="border-primary-600 bg-primary-25 text-warning-700 mt-6 flex cursor-pointer flex-col items-center justify-between gap-3 rounded-lg border px-4 py-4 md:flex-row"
                   @click="handleSwitchDeliveryType"
                 >
                   <div class="flex gap-3">
@@ -540,7 +528,7 @@ const handleRefresh = () => {
                     </div>
                   </div>
 
-                  <div class="flex items-center">
+                  <div class="hidden items-center md:flex">
                     <Icon name="arrow-right" size="16" class="text-primary-600" />
                   </div>
                 </div>
@@ -576,6 +564,14 @@ const handleRefresh = () => {
                   <p class="text-core-600 text-sm">
                     Offer faster delivery options for customers who need their orders urgently.
                   </p>
+                  <button
+                    v-if="form.express_delivery_enabled || hasExpressDeliveries"
+                    type="button"
+                    class="text-primary-600 block text-sm font-semibold underline md:hidden"
+                    @click="openManualDeliveryModal('express')"
+                  >
+                    Manage locations
+                  </button>
                 </div>
                 <Switch
                   :model-value="form.express_delivery_enabled"

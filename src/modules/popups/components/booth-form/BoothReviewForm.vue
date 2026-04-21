@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { startCase } from "@/utils/format-strings"
 import AppButton from "@components/AppButton.vue"
 import Icon from "@components/Icon.vue"
@@ -53,6 +53,8 @@ const emit = defineEmits<{
   submit: []
 }>()
 
+const { format } = useFormatCurrency()
+
 const customerName = computed(() => {
   if (!props.customer) return "Unknown Customer"
   const firstName = props.customer.first_name || ""
@@ -102,10 +104,10 @@ const itemsCount = computed(() => {
               v-if="item.variant?.original_price && item.variant.original_price !== item.unit_price"
               class="text-core-400 text-xs line-through"
             >
-              {{ formatCurrency(item.quantity * item.variant.original_price) }}
+              {{ format(item.quantity * item.variant.original_price) }}
             </span>
             <span class="ml-1 text-sm font-medium">
-              {{ formatCurrency(Number(item.quantity * item.unit_price)) }}
+              {{ format(Number(item.quantity * item.unit_price)) }}
             </span>
           </div>
         </div>
@@ -135,12 +137,12 @@ const itemsCount = computed(() => {
         </p>
         <p class="flex justify-between text-sm">
           <span class="text-core-600">Subtotal</span>
-          <span class="font-medium">{{ formatCurrency(productsTotal) }}</span>
+          <span class="font-medium">{{ format(productsTotal) }}</span>
         </p>
         <p class="flex justify-between text-sm">
           <span class="text-core-600">Delivery Fee</span>
           <span class="font-medium">{{
-            shippingInfo.delivery_fee > 0 ? formatCurrency(shippingInfo.delivery_fee) : "Free"
+            shippingInfo.delivery_fee > 0 ? format(shippingInfo.delivery_fee) : "Free"
           }}</span>
         </p>
         <p
@@ -148,12 +150,12 @@ const itemsCount = computed(() => {
           class="flex justify-between text-sm text-green-600"
         >
           <span>Discount</span>
-          <span class="font-medium">-{{ formatCurrency(paymentInfo.discount_amount) }}</span>
+          <span class="font-medium">-{{ format(paymentInfo.discount_amount) }}</span>
         </p>
         <div class="border-core-200 my-2 border-t border-dashed"></div>
         <p class="flex justify-between text-lg font-semibold">
           <span>Total:</span>
-          <span class="text-primary-600">{{ formatCurrency(totalAmount) }}</span>
+          <span class="text-primary-600">{{ format(totalAmount) }}</span>
         </p>
       </div>
 
@@ -175,7 +177,7 @@ const itemsCount = computed(() => {
         </p>
         <p v-if="paymentInfo.payment_status !== 'unpaid'" class="flex justify-between text-sm">
           <span class="text-core-600">Amount Paid</span>
-          <span class="font-medium">{{ formatCurrency(paymentInfo.payment_amount) }}</span>
+          <span class="font-medium">{{ format(paymentInfo.payment_amount) }}</span>
         </p>
       </div>
 

@@ -24,34 +24,15 @@ import { useRoute } from "vue-router"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
 import ExpenseCard from "../components/ExpenseCard.vue"
-import { useExpenseStore } from "../store"
 import Icon from "@components/Icon.vue"
 import ExpenseDetailsDrawer from "../components/ExpenseDetailsDrawer.vue"
 import StatCard from "@components/StatCard.vue"
-import { formatCurrency, truncateCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
 import ExpenseStackedBarChart from "../components/ExpenseStackedBarChart.vue"
-import SelectField from "@components/form/SelectField.vue"
-import { calculateDateRange } from "@/utils/formatDate"
+import ExpenseFiltersDrawer from "../components/ExpenseFiltersDrawer.vue"
 
-const PERIODS = [
-  { label: "Last 7 days", value: "last_7_days" },
-  { label: "This month", value: "this_month" },
-  { label: "Last month", value: "last_month" },
-  { label: "Year to date", value: "year_to_date" },
-  { label: "All time", value: "all_time" },
-]
-
-const expenseStore = useExpenseStore()
-const selectedPeriod = computed({
-  get: () => expenseStore.selectedDateRange,
-  set: (value) => expenseStore.setDateRange(value),
-})
-
-const dateRangeParams = computed(() => {
-  const { start_date, end_date } = calculateDateRange(selectedPeriod.value)
-  return { range: "custom", start_date, end_date }
-})
+const { format, truncate } = useFormatCurrency()
 
 const openCreate = ref(false)
 const openDelete = ref(false)
@@ -60,19 +41,36 @@ const openMarkPaid = ref(false)
 const openDetail = ref(false)
 const selectedExpense = ref<TExpense | null>(null)
 
+const currentMonthRange = computed(() => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = now.getMonth()
+  const pad = (n: number) => String(n).padStart(2, "0")
+  const dateAfter = `${year}-${pad(month + 1)}-01`
+  const lastDay = new Date(year, month + 1, 0).getDate()
+  const dateBefore = `${year}-${pad(month + 1)}-${pad(lastDay)}`
+  return { date_after: dateAfter, date_before: dateBefore }
+})
+
+const currentMonthLabel = computed(() =>
+  new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+)
+
+const statsParams = computed(() => currentMonthRange.value)
+
 const {
   data: expenseDashboard,
   isPending: isLoadingStats,
   refetch: refetchStats,
-} = useGetExpenseDashboard(dateRangeParams)
+} = useGetExpenseDashboard(statsParams)
 
-const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
+const isMobile = useMediaQuery("(max-width: 1024px)")
 
 const expenseMetrics = computed(() => {
   const stat = expenseDashboard?.value
 
-  const biggestExpenseCategory = stat?.category_breakdown.length
-    ? stat?.category_breakdown.reduce((prev, current) =>
+  const biggestExpenseCategory = stat?.category_breakdown?.length
+    ? stat.category_breakdown.reduce((prev, current) =>
         current.total_amount > prev.total_amount ? current : prev,
       )
     : null
@@ -81,17 +79,15 @@ const expenseMetrics = computed(() => {
     {
       label: "Total Expenses",
       value: isMobile.value
-        ? truncateCurrency(stat?.current.total_amount || 0)
-        : formatCurrency(stat?.current.total_amount || 0),
+        ? truncate(stat?.current.total_amount || 0)
+        : format(stat?.current.total_amount || 0),
       icon: "wallet-money",
       iconClass: "md:text-green-700",
-      percentage: stat?.change.total_amount_pct,
-      // chip: `${stat?.current.expense_count || 0} records`,
-      // chipColor: "primary",
+      // percentage: stat?.change.total_amount_pct || undefined,
     },
     {
-      label: isMobile.value ? "Biggest Category" : "Biggest Expense Category",
-      value: formatCurrency(biggestExpenseCategory?.total_amount || 0),
+      label: isMobile.value ? "Biggest Category" : "Largest Category",
+      value: format(biggestExpenseCategory?.total_amount || 0),
       chip: biggestExpenseCategory ? biggestExpenseCategory.category_name : "N/A",
       chipColor: "blue",
       icon: "moneys-solid",
@@ -100,29 +96,27 @@ const expenseMetrics = computed(() => {
   ]
 })
 
-const totalExpenseAmount = computed(() => {
-  const total = expenseDashboard.value?.trend?.length
-    ? expenseDashboard.value?.trend?.reduce((acc, curr) => acc + curr.total_expenses, 0)
-    : 0
-  return total || expenseDashboard?.value?.current.total_amount || 0
-})
-
 const showFilter = ref(false)
 
 const page = ref(1)
 const itemsPerPage = ref(10)
 const searchQuery = ref("")
 const debouncedSearch = useDebouncedRef(searchQuery, 750)
+const activeFilters = ref<Record<string, string>>({})
+
+const activeFilterCount = computed(() => Object.keys(activeFilters.value).length)
+
+const handleApplyFilters = (filters: Record<string, string>) => {
+  activeFilters.value = filters
+  page.value = 1
+}
 
 const computedParams = computed(() => {
   const params: Record<string, string> = {}
   if (debouncedSearch.value) params.search = debouncedSearch.value
   params.offset = ((page.value - 1) * itemsPerPage.value).toString()
   params.limit = itemsPerPage.value.toString()
-  // Add date range params
-  params.range = dateRangeParams.value.range
-  params.start_date = dateRangeParams.value.start_date
-  params.end_date = dateRangeParams.value.end_date
+  Object.assign(params, activeFilters.value)
   return params
 })
 
@@ -262,35 +256,23 @@ watch(
   },
   { immediate: true },
 )
-
-// Watch for period changes and trigger refetch
-watch(selectedPeriod, () => {
-  handleRefresh()
-})
 </script>
 
 <template>
-  <div class="px-3 pb-6">
+  <div class="px-3 pt-4 pb-6">
     <PageHeader title="Expenses" :count="expenses?.count" count-label="records" />
 
-    <div class="flex flex-col gap-8">
+    <div class="flex flex-col gap-6">
       <div class="hidden lg:block">
-        <SectionHeader title="Expenses" subtitle="Review your daily performance report.">
-          <template #action>
-            <SelectField
-              v-model="selectedPeriod"
-              left-icon="calendar"
-              :options="PERIODS"
-              class="min-w-40"
-            />
-          </template>
-        </SectionHeader>
+        <SectionHeader title="Expenses" subtitle="Review your expenses." />
       </div>
 
       <EmptyState
-        v-if="!expenses?.results?.length && !debouncedSearch && !isPending"
-        title="You don’t have any expense yet!"
-        description="Your expenses will be automatically added as they come in. You can also add one manually to get started."
+        v-if="
+          !expenses?.results?.length && !debouncedSearch && !isPending && activeFilterCount === 0
+        "
+        :title="`No expenses recorded yet`"
+        :description="`Your expenses will be automatically added as they come in. You can also add one manually to get started.`"
         action-label="Add an expense"
         action-icon="add"
         :loading="isPending"
@@ -306,28 +288,37 @@ watch(selectedPeriod, () => {
       </EmptyState>
 
       <section v-else class="flex flex-col gap-5 lg:gap-8">
-        <div v-if="!isMobile" class="grid-cols-4 gap-4 lg:grid">
-          <StatCard
-            v-for="item in expenseMetrics"
-            :key="item.label"
-            :stat="item"
-            :loading="isLoadingStats"
-          />
-          <ExpenseStackedBarChart
-            v-if="expenseDashboard?.category_breakdown.length"
-            class="col-span-2"
-            show-label
-            :category_breakdown="expenseDashboard?.category_breakdown"
-          />
-        </div>
-
-        <div v-else>
-          <div class="mb-2 flex justify-end">
-            <SelectField v-model="selectedPeriod" :options="PERIODS" />
+        <div
+          v-if="!isMobile && expenseDashboard?.current.total_amount"
+          class="rounded-xl border border-gray-200 bg-white p-4"
+        >
+          <div class="mb-4">
+            <h3 class="text-core-800 flex items-center gap-2 text-base font-medium">
+              Summary <Chip :label="currentMonthLabel" color="blue" />
+            </h3>
+            <p class="text-core-600 mt-1 text-sm">
+              <span> See <b class="text-core-800">Menu > Reports</b> for previous months </span>
+            </p>
           </div>
 
+          <div class="grid-cols-4 gap-4 lg:grid">
+            <StatCard
+              v-for="item in expenseMetrics"
+              :key="item.label"
+              :stat="item"
+              :loading="isLoadingStats"
+            />
+            <ExpenseStackedBarChart
+              class="col-span-2"
+              show-label
+              :category_breakdown="expenseDashboard?.category_breakdown"
+            />
+          </div>
+        </div>
+
+        <div v-if="isMobile && expenseDashboard?.current.total_amount">
           <ExpenseStackedBarChart
-            :total-expense="totalExpenseAmount"
+            :total-expense="expenseDashboard?.current.total_amount || 0"
             :category_breakdown="expenseDashboard?.category_breakdown"
           />
         </div>
@@ -353,8 +344,9 @@ watch(selectedPeriod, () => {
                 icon="filter-lines"
                 size="sm"
                 color="alt"
-                class="flex-shrink-0"
+                class="relative flex-shrink-0"
                 :label="isMobile ? '' : 'Filter'"
+                :badge="activeFilterCount ? activeFilterCount : ''"
                 @click="showFilter = true"
               />
 
@@ -375,9 +367,10 @@ watch(selectedPeriod, () => {
             :enable-row-selection="false"
             :empty-state="{
               title: 'No Expense Found',
-              description: searchQuery
-                ? 'Try adjusting your filters or search query'
-                : `Your expenses will be automatically added as they come in. You can also add one manually to get started.`,
+              description:
+                searchQuery || activeFilterCount
+                  ? 'Try adjusting your filters or search query'
+                  : `Your expenses will be automatically added as they come in. You can also add one manually to get started.`,
             }"
             :row-class="
               (row) => (row.status === 'void' ? 'opacity-70! bg-gray-100! grayscale!' : '')
@@ -430,16 +423,20 @@ watch(selectedPeriod, () => {
               </div>
             </template>
             <template #cell:category_name="{ item }">
-              <Chip :label="item.category_name" color="purple" icon="tag" />
+              <div class="max-w-48">
+                <Chip :label="item.category_name" color="purple" icon="tag" />
+              </div>
             </template>
             <template #cell:sub_category_name="{ item }">
-              <Chip
-                v-if="item.sub_category_name"
-                :label="item.sub_category_name"
-                color="pink"
-                icon="tag"
-              />
-              <span v-else>---</span>
+              <div class="max-w-48">
+                <Chip
+                  v-if="item.sub_category_name"
+                  :label="item.sub_category_name"
+                  color="pink"
+                  icon="tag"
+                />
+                <span v-else>---</span>
+              </div>
             </template>
             <template #cell:status="{ item }">
               <Chip
@@ -550,5 +547,11 @@ watch(selectedPeriod, () => {
         />
       </template>
     </ConfirmationModal>
+
+    <ExpenseFiltersDrawer
+      :open="showFilter"
+      @close="showFilter = false"
+      @apply="handleApplyFilters"
+    />
   </div>
 </template>

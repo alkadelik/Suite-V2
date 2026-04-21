@@ -30,7 +30,10 @@
               {{ storeDetails?.name }}
             </p>
           </div>
-          <div class="flex min-w-0 items-center gap-2 text-sm text-gray-600">
+          <div
+            v-if="!isInternational"
+            class="flex min-w-0 items-center gap-2 text-sm text-gray-600"
+          >
             <p class="min-w-0 truncate">{{ storefrontUrl }}</p>
             <Icon
               name="copy"
@@ -75,12 +78,19 @@
       />
 
       <SidebarGroup
-        v-if="isStaging"
         icon="building"
         label="Production"
         :children="productionItems"
         :is-expanded="expandedGroup === 'production'"
         @toggle="expandedGroup = expandedGroup === 'production' ? null : 'production'"
+      />
+
+      <SidebarGroup
+        icon="chart-breakout-square"
+        label="Reports"
+        :children="reportsItems"
+        :is-expanded="expandedGroup === 'reports'"
+        @toggle="expandedGroup = expandedGroup === 'reports' ? null : 'reports'"
       />
 
       <SidebarLink icon="receipt-text" label="Expenses" to="/expenses" />
@@ -99,7 +109,7 @@
       />
 
       <!-- Subscription view -->
-      <div class="relative mt-20">
+      <div v-if="!isInternational" class="relative mt-20">
         <div
           :class="['relative isolate flex flex-col gap-1 rounded-3xl p-3 pt-12 text-white']"
           style="
@@ -158,24 +168,6 @@
           src="@/assets/images/bloom-plant.png"
           class="absolute -top-8 left-4 h-16"
         />
-
-        <!-- Active plan pill -->
-        <!-- <div
-          v-if="isActive && !isTrial"
-          class="absolute bottom-4 left-4 flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs text-white"
-        >
-          <img
-            v-if="planNameLower === 'bloom'"
-            src="@/assets/images/bloom-plant.png"
-            class="h-6 w-6 rounded-md"
-          />
-          <img
-            v-else-if="planNameLower === 'bud'"
-            src="@/assets/images/bud-plant.png"
-            class="h-6 w-6 rounded-md"
-          />
-          <span>{{ planName }} Plan Active</span>
-        </div> -->
       </div>
     </section>
 
@@ -186,15 +178,15 @@
 <script setup lang="ts">
 import { useAuthStore } from "@modules/auth/store"
 import { useMediaQuery } from "@vueuse/core"
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
 import SidebarLink from "./SidebarLink.vue"
 import SidebarGroup from "./SidebarGroup.vue"
 import LocationDropdown from "./LocationDropdown.vue"
-import { clipboardCopy, isStaging } from "@/utils/others"
+import { clipboardCopy } from "@/utils/others"
 import { useSettingsStore } from "@modules/settings/store"
-import { useRouter } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
 import { useProductionStore } from "@modules/production/store"
 import { useSharedStore } from "@modules/shared/store"
 
@@ -205,12 +197,14 @@ defineProps<{
 defineEmits<{ logout: [value: boolean]; upgrade: [] }>()
 
 const router = useRouter()
+const route = useRoute()
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
 // Track which sidebar group is expanded
 const expandedGroup = ref<string | null>("sales-suite")
 
 const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
+const isInternational = computed(() => useSettingsStore().isInternational)
 
 // Sales Suite items
 const salesSuiteItems = computed(() =>
@@ -230,19 +224,52 @@ const marketingItems = computed(() => [{ icon: "sms", label: "Email List", to: "
 
 // Production items
 const productionItems = computed(() => {
-  const componentLabel = useProductionStore().componentLabel || "Raw Materials"
+  const componentLabel = useProductionStore().componentLabel
+  const recipeLabel = useProductionStore().recipeLabel
   return [
-    { icon: "box", label: componentLabel, to: "/raw-materials" },
-    // Add production-related items here when needed
+    { icon: "box", label: componentLabel, to: "/production/raw-materials" },
+    { icon: "box", label: recipeLabel, to: "/production/recipes" },
+    { icon: "box", label: "Production run", to: "/production/runs" },
   ]
 })
 
-const storeDetails = computed(() => useSettingsStore().storeDetails)
+// reports items
+const reportsItems = computed(() => [
+  { icon: "pie-chart", label: "End of Day", to: "/reports/end-of-day" },
+  { icon: "pie-chart", label: "Monthly", to: "/reports/monthly" },
+  { icon: "pie-chart", label: "Store Overview", to: "/reports/store-overview" },
+])
 
+const storeDetails = computed(() => useSettingsStore().storeDetails)
 const activeLocation = computed(() => useSettingsStore().activeLocation)
 
+// Auto-expand the group containing the current active route
+watch(
+  () => route.path,
+  (path) => {
+    const isMatch = (to: string) => path === to || path.startsWith(to + "/")
+    if (salesSuiteItems.value.some((item) => isMatch(item.to))) {
+      expandedGroup.value = "sales-suite"
+    } else if (marketingItems.value.some((item) => isMatch(item.to))) {
+      expandedGroup.value = "marketing"
+    } else if (productionItems.value.some((item) => isMatch(item.to))) {
+      expandedGroup.value = "production"
+    } else if (reportsItems.value.some((item) => isMatch(item.to))) {
+      expandedGroup.value = "reports"
+    }
+  },
+  { immediate: true },
+)
+
 // Check if setup requirements are complete (regardless of subscription status)
-const setupComplete = computed(() => useSettingsStore().liveStatus?.completion_percentage === 100)
+// International accounts skip storefront-related onboarding entirely
+const setupComplete = computed(() => {
+  if (isInternational.value) return true
+  const status = useSettingsStore().liveStatus
+  if (status?.completion_percentage === 100) return true
+  const missing = status?.missing_requirements || []
+  return missing.every((r) => r === "subscription")
+})
 
 // Subscription derived state
 const subscription = computed(() => useAuthStore().user?.subscription)

@@ -41,6 +41,7 @@ export type TSubscription = {
   transaction_id: string | null
   user_name: string
   store_name: string
+  planName?: string
 }
 
 export interface IInvitePayload {
@@ -72,7 +73,10 @@ export interface IStoreDetails {
   support_email: string
   support_phone: string
   instagram_handle: string
+  country: string
   currency: string
+  is_international: boolean
+  can_change_currency: boolean
   pickup_location?: string
   pickup_weekday_start_time?: string
   pickup_weekday_end_time?: string
@@ -108,6 +112,7 @@ export interface IUpdateStoreDetailsPayload {
   tax_collection_enabled?: boolean
   add_tax_to_product_price?: boolean
   material_type?: string
+  recipe_terminology?: string
 }
 
 export type TIndustry = {

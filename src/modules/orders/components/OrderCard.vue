@@ -2,7 +2,7 @@
 import { computed, ref } from "vue"
 import Chip from "@/components/Chip.vue"
 import { getSmartDateLabel } from "@/utils/formatDate"
-import { formatCurrency, truncateCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { anonymousCustomer, ORDER_PAYMENT_STATUS, orderSourceMap } from "../constants"
 import { pluralize } from "@/utils/pluralize"
 import Icon from "@components/Icon.vue"
@@ -40,6 +40,8 @@ const emit = defineEmits([
   "void-order",
   "delete-order",
 ])
+
+const { format, truncate } = useFormatCurrency()
 
 const isFulfilled = computed(() => {
   return props.order?.fulfilment_status === "fulfilled"
@@ -143,8 +145,8 @@ const outstandingBalance = computed(() => {
             <span class="ml-4 flex-1 text-right text-base font-semibold">
               {{
                 +order.total_amount >= 100000
-                  ? truncateCurrency(+order.total_amount)
-                  : formatCurrency(+order.total_amount, { kobo: true })
+                  ? truncate(+order.total_amount)
+                  : format(+order.total_amount, { kobo: true })
               }}
             </span>
             <DropdownMenu
@@ -205,7 +207,19 @@ const outstandingBalance = computed(() => {
                 {{ item.product_name || "Unknown" }}
               </h4>
               <!-- price -->
-              <span class="text-xs font-medium">{{ formatCurrency(+item.unit_price) }}</span>
+              <span class="text-xs font-medium">
+                <span
+                  v-if="
+                    item.original_price &&
+                    Number(item.original_price) > 0 &&
+                    Number(item.unit_price) < Number(item.original_price)
+                  "
+                  class="text-core-400 mr-1 line-through"
+                >
+                  {{ format(+item.original_price) }}
+                </span>
+                {{ format(+item.unit_price) }}
+              </span>
             </div>
             <div class="flex justify-between gap-1">
               <!-- Variant, note -->
@@ -256,27 +270,25 @@ const outstandingBalance = computed(() => {
             <span>
               Subtotal ({{ order?.items?.length }} {{ pluralize("item", order?.items?.length) }}):
             </span>
-            <span class="text-core-700 font-medium">{{ formatCurrency(+order?.subtotal) }}</span>
+            <span class="text-core-700 font-medium">{{ format(+order?.subtotal) }}</span>
           </p>
           <p
             v-if="order.fulfilment_method === 'delivery'"
             class="text-core-600 flex items-center justify-between gap-1 text-sm"
           >
             <span>Delivery Fee:</span>
-            <span class="text-core-700 font-medium">{{
-              formatCurrency(+order?.delivery_fee)
-            }}</span>
+            <span class="text-core-700 font-medium">{{ format(+order?.delivery_fee) }}</span>
           </p>
           <p class="flex items-center justify-between gap-1 text-base">
             <span class="text-core-700 font-medium"> Total Amount </span>
-            <span class="text-core-700 font-bold">{{ formatCurrency(+order?.total_amount) }}</span>
+            <span class="text-core-700 font-bold">{{ format(+order?.total_amount) }}</span>
           </p>
           <p
             v-if="order?.payment_status === 'partially_paid'"
             class="text-error flex items-center justify-between gap-1 text-sm"
           >
             <span> Outstanding Bal. </span>
-            <span>{{ formatCurrency(outstandingBalance) }}</span>
+            <span>{{ format(outstandingBalance) }}</span>
           </p>
         </div>
       </div>

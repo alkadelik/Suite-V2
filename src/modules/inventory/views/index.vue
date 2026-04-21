@@ -11,7 +11,10 @@
     </div>
 
     <!-- Page content - always visible -->
-    <div class="grid grid-cols-2 gap-4 lg:grid-cols-5">
+    <div
+      class="grid grid-cols-2 gap-4"
+      :class="productMetrics.length === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'"
+    >
       <StatCard
         v-for="item in productMetrics"
         :key="item.label"
@@ -52,18 +55,22 @@
             <AppButton
               icon="filter-lines"
               size="sm"
-              color="alt"
+              :color="productFilterCount ? 'primary' : 'alt'"
+              :variant="productFilterCount ? 'outlined' : 'filled'"
               label="Filter"
-              @click="showFilterDrawer = true"
+              :badge="productFilterCount || undefined"
               class="!hidden md:!inline-flex"
+              @click="showFilterDrawer = true"
             />
             <AppButton
               icon="filter-lines"
               size="sm"
-              color="alt"
+              :color="productFilterCount ? 'primary' : 'alt'"
+              :variant="productFilterCount ? 'outlined' : 'filled'"
               label=""
-              @click="showFilterDrawer = true"
+              :badge="productFilterCount || undefined"
               class="md:hidden"
+              @click="showFilterDrawer = true"
             />
             <AppButton
               v-if="isHQ"
@@ -90,7 +97,7 @@
             !isFetching &&
             filteredProducts.length === 0 &&
             !search &&
-            activeFilters.categories.length === 0 &&
+            activeFilters.category === null &&
             activeFilters.status === null &&
             activeFilters.subCategory === null
           "
@@ -139,7 +146,9 @@
           </template>
 
           <template #cell:category="{ value }">
-            <Chip :label="String(value) || 'Uncategorized'" icon="tag" color="purple" size="sm" />
+            <div class="max-w-48">
+              <Chip :label="String(value) || 'Uncategorized'" icon="tag" color="purple" size="sm" />
+            </div>
           </template>
 
           <template #cell:sellable_stock="{ value }">
@@ -280,7 +289,8 @@ import InventoryRequests from "../components/InventoryRequests.vue"
 import ReceiveRequestModal from "../components/ReceiveRequestModal.vue"
 import ProductCard from "../components/ProductCard.vue"
 import ManageStockModal from "../components/ManageStockModal.vue"
-import { formatPriceRange, formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
+import { useAuthStore } from "@modules/auth/store"
 import SectionHeader from "@components/SectionHeader.vue"
 import PageHeader from "@components/PageHeader.vue"
 import Tabs from "@components/Tabs.vue"
@@ -289,7 +299,6 @@ import {
   useGetProducts,
   useDeleteProduct,
   useGetProduct,
-  useGetCategories,
   useUpdateProduct,
   useGetProductDashboard,
 } from "../api"
@@ -304,23 +313,64 @@ import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
 import StatCard from "@components/StatCard.vue"
 
+const { format } = useFormatCurrency()
+
+const formatPriceRange = (
+  value: string | number | boolean | Record<string, unknown> | null | undefined,
+): string => {
+  if (!value || typeof value !== "string") return "-"
+
+  // Split the price range string
+  const parts = value.split(" - ")
+  if (parts.length !== 2) return "-"
+
+  const minPrice = parseFloat(parts[0])
+  const maxPrice = parseFloat(parts[1])
+
+  // If prices are invalid
+  if (isNaN(minPrice) || isNaN(maxPrice)) return "-"
+
+  // If min and max are the same, show single price
+  if (minPrice === maxPrice) {
+    return format(minPrice)
+  }
+
+  // Otherwise, show price range
+  return `${format(minPrice)} - ${format(maxPrice)}`
+}
+
 const page = ref(1)
 const itemsPerPage = ref(10)
 const search = ref("")
 const debouncedSearch = useDebouncedRef(search, 750)
 
-const combinedParams = computed(() => ({
-  offset: (page.value - 1) * itemsPerPage.value,
-  limit: itemsPerPage.value,
-  ...(debouncedSearch.value ? { name: debouncedSearch.value } : {}),
-}))
+// Active filters
+const activeFilters = ref<{
+  category: string | null
+  status: string | null
+  subCategory: string | null
+}>({
+  category: null,
+  status: null,
+  subCategory: null,
+})
+
+const combinedParams = computed(() => {
+  const params: Record<string, string | number> = {
+    offset: (page.value - 1) * itemsPerPage.value,
+    limit: itemsPerPage.value,
+  }
+  if (debouncedSearch.value) params.name = debouncedSearch.value
+  if (activeFilters.value.category) params.category = activeFilters.value.category
+  if (activeFilters.value.status) params.stock_status = activeFilters.value.status
+  if (activeFilters.value.subCategory) params.variant_type = activeFilters.value.subCategory
+  return params
+})
 
 const { data: products, isFetching, refetch: refetchProducts } = useGetProducts(combinedParams)
 const { data: productDashboard, isPending: isLoadingDashboard } = useGetProductDashboard()
 const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct()
 const { mutate: updateProduct, isPending: isUpdatingProduct } = useUpdateProduct()
-const { data: categories } = useGetCategories()
-
 const queryClient = useQueryClient()
 const settingsStore = useSettingsStore()
 const inventoryStore = useInventoryStore()
@@ -366,16 +416,6 @@ const hasOpenedFilterDrawer = ref(false)
 const product = ref<TProduct | null>(null)
 const showAddCategoryModal = ref(false)
 
-// Active filters
-const activeFilters = ref<{
-  categories: string[]
-  status: string | null
-  subCategory: string | null
-}>({
-  categories: [],
-  status: null,
-  subCategory: null,
-})
 const productEditDrawerRef = ref<{
   setCategoryFromModal: (category: { label: string; value: string }) => void
 } | null>(null)
@@ -458,10 +498,12 @@ const handleRowClick = (clickedProduct: TProduct) => {
   router.push({ name: "Product-Details", params: { uid: clickedProduct.uid } })
 }
 
+const isOwner = computed(() => useAuthStore().user?.roles?.some((r) => r.type === "owner") ?? false)
+
 const productMetrics = computed(() => {
   const stats = productDashboard.value
 
-  return [
+  const cards = [
     {
       label: "Total Products",
       value: stats?.total_products ?? 0,
@@ -469,20 +511,17 @@ const productMetrics = computed(() => {
       iconClass: "text-success-500",
       percentage: 0,
     },
-    {
-      label: "Total Variants",
-      value: stats?.total_variants ?? 0,
-      icon: "box-filled",
-      iconClass: "md:text-green-700",
-      percentage: 0,
-    },
-    {
-      label: "Stock Value",
-      value: formatCurrency(stats?.total_stock_value ?? 0),
-      icon: "moneys",
-      iconClass: "text-bloom-700",
-      percentage: 0,
-    },
+    ...(isOwner.value
+      ? [
+          {
+            label: "Stock Value",
+            value: format(stats?.total_stock_value ?? 0),
+            icon: "moneys",
+            iconClass: "text-bloom-700",
+            percentage: 0,
+          },
+        ]
+      : []),
     {
       label: "Low Stock",
       value: stats?.low_stock_count ?? 0,
@@ -491,13 +530,15 @@ const productMetrics = computed(() => {
       percentage: 0,
     },
     {
-      label: "Overstocked",
-      value: stats?.overstocked_count ?? 0,
+      label: "Stale Products",
+      value: stats?.stale_products_count ?? 0,
       icon: "box-filled",
-      iconClass: "md:text-bloom-700",
+      iconClass: "text-error-500",
       percentage: 0,
     },
   ]
+
+  return cards
 })
 
 const getStockStatus = (item: TProduct) => {
@@ -767,75 +808,24 @@ watch(showFilterDrawer, (isOpen) => {
   }
 })
 
-// Create a mapping of category UID to category name
-const categoryUidToNameMap = computed(() => {
-  const map: Record<string, string> = {}
-  const categoryList = categories.value?.data?.results || []
-  categoryList.forEach((category: { uid: string; name: string }) => {
-    map[category.uid] = category.name
-  })
-  return map
+const productFilterCount = computed(() => {
+  let count = 0
+  if (activeFilters.value.category !== null) count++
+  if (activeFilters.value.status !== null) count++
+  if (activeFilters.value.subCategory !== null) count++
+  return count
 })
 
 // Handle filter application
 const handleApplyFilters = (filters: {
-  categories: string[]
+  category: string | null
   status: string | null
   subCategory: string | null
 }) => {
   activeFilters.value = filters
+  page.value = 1
 }
 
-// Filtered products based on active filters (client-side filters only, search is server-side)
-const filteredProducts = computed(() => {
-  const productResults = products.value?.data?.results || []
-
-  // If no filters are active, return all products
-  const hasActiveFilters =
-    activeFilters.value.categories.length > 0 ||
-    activeFilters.value.status !== null ||
-    activeFilters.value.subCategory !== null
-
-  if (!hasActiveFilters) {
-    return productResults
-  }
-
-  return productResults.filter((product: TProduct) => {
-    // Category filter
-    if (activeFilters.value.categories.length > 0) {
-      // Convert category UIDs to names
-      const selectedCategoryNames = activeFilters.value.categories.map(
-        (uid) => categoryUidToNameMap.value[uid],
-      )
-
-      if (!product.category || !selectedCategoryNames.includes(product.category)) {
-        return false
-      }
-    }
-
-    // Status filter
-    if (activeFilters.value.status !== null) {
-      const isInStock = product.sellable_stock > 0
-      if (activeFilters.value.status === "in_stock" && !isInStock) {
-        return false
-      }
-      if (activeFilters.value.status === "out_of_stock" && isInStock) {
-        return false
-      }
-    }
-
-    // Sub-category filter (simple vs complex)
-    if (activeFilters.value.subCategory !== null) {
-      const isSimple = product.variants_count === 1
-      if (activeFilters.value.subCategory === "simple" && !isSimple) {
-        return false
-      }
-      if (activeFilters.value.subCategory === "complex" && isSimple) {
-        return false
-      }
-    }
-
-    return true
-  })
-})
+// Products from server (filtering is now server-side)
+const filteredProducts = computed(() => products.value?.data?.results || [])
 </script>

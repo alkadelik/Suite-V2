@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AppButton from "@components/AppButton.vue"
 import Chip from "@components/Chip.vue"
+import FieldGroupError from "@components/form/FieldGroupError.vue"
 import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
 import { useGetCustomers } from "@modules/customers/api"
@@ -8,8 +9,9 @@ import AddCustomerModal from "@modules/customers/components/AddCustomerModal.vue
 import CustomerCard from "@modules/customers/components/CustomerCard.vue"
 import { anonymousCustomer } from "@modules/orders/constants"
 import type { ICustomer } from "@modules/customers/types"
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
+import { scrollToAndFocusValidationTarget } from "@/utils/validations"
 
 const props = defineProps<{
   selectedCustomer: ICustomer | null
@@ -23,6 +25,7 @@ const emit = defineEmits<{
 
 const openAdd = ref(false)
 const searchQuery = ref("")
+const selectionError = ref("")
 const debouncedSearch = useDebouncedRef(searchQuery, 750)
 const page = ref(1)
 const itemsPerPage = ref(50)
@@ -45,13 +48,28 @@ const handleAddCustomer = (customer: ICustomer) => {
   openAdd.value = false
 }
 
-const canProceed = computed(() => props.selectedCustomer !== null)
-
 const handleNext = () => {
-  if (canProceed.value) {
+  if (props.selectedCustomer) {
+    selectionError.value = ""
     emit("next")
+    return
   }
+
+  selectionError.value = "Select a customer before continuing."
+  scrollToAndFocusValidationTarget("order-select-customer", {
+    behavior: "smooth",
+    block: "start",
+  })
 }
+
+watch(
+  () => props.selectedCustomer,
+  (selectedCustomer) => {
+    if (selectedCustomer) {
+      selectionError.value = ""
+    }
+  },
+)
 </script>
 
 <template>
@@ -78,7 +96,7 @@ const handleNext = () => {
       </div>
     </div>
 
-    <section class="space-y-4">
+    <section data-validation-target="order-select-customer" class="space-y-4">
       <div
         class="cursor-pointer rounded-xl transition-all"
         :class="
@@ -109,11 +127,24 @@ const handleNext = () => {
 
     <div class="h-24" />
 
-    <div
-      class="border-core-200 fixed right-0 bottom-0 left-0 flex gap-3 border-t bg-white p-4 md:p-6"
-    >
-      <AppButton label="Back" color="alt" class="w-1/3" icon="arrow-left" @click="emit('prev')" />
-      <AppButton label="Next" class="w-2/3" :disabled="!canProceed" @click="handleNext" />
+    <div class="border-core-200 fixed right-0 bottom-0 left-0 border-t bg-white p-4 md:p-6">
+      <div class="flex flex-col gap-3">
+        <FieldGroupError
+          v-if="selectionError"
+          target="order-select-customer"
+          :error="selectionError"
+        />
+        <div class="flex gap-3">
+          <AppButton
+            label="Back"
+            color="alt"
+            class="w-1/3"
+            icon="arrow-left"
+            @click="emit('prev')"
+          />
+          <AppButton label="Next" class="w-2/3" @click="handleNext" />
+        </div>
+      </div>
     </div>
 
     <!-- Add Customer Modal -->

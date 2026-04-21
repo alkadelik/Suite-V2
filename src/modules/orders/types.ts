@@ -8,11 +8,15 @@ export type TOrderItem = {
   product_name: string
   popup_inventory: string | null
   quantity: number
+  original_price?: string | null
   unit_price: string
   total_price: string
+  total_cost?: string | null
   fulfilment_status: "unfulfilled" | "fulfilled"
   qty_fulfilled: number
   notes: string
+  attributes?: string | null
+  product_images?: string | null
 }
 
 export type TOrder = {

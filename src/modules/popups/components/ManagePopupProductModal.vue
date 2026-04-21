@@ -6,7 +6,7 @@ import AppButton from "@components/AppButton.vue"
 import Icon from "@components/Icon.vue"
 import Chip from "@components/Chip.vue"
 import TextField from "@components/form/TextField.vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { PopupInventory } from "@modules/popups/types"
 import { useUpdatePopupProduct } from "@modules/popups/api"
 import { useGetProductCatalogs } from "@modules/inventory/api"
@@ -41,6 +41,8 @@ const emit = defineEmits<{
 }>()
 
 const route = useRoute()
+
+const { format } = useFormatCurrency()
 
 // Fetch all products to get the full product details with all variants
 const { data: productsResponse } = useGetProductCatalogs()
@@ -238,7 +240,7 @@ const closeModal = () => {
               <Chip color="primary" :label="item.variant_name" size="sm" />
               <span class="text-core-600 flex items-center gap-1 text-xs">
                 <Icon name="tag" class="h-3 w-3" />
-                {{ formatCurrency(item.original_price) }}
+                {{ format(item.original_price) }}
               </span>
             </div>
             <Chip
@@ -265,10 +267,11 @@ const closeModal = () => {
               v-model="item.event_price"
               name="event_price"
               type="number"
+              format="currency"
+              step="0.01"
               label="Event Price"
               placeholder="e.g. 59.99"
               :min="0"
-              step="0.01"
               :error="validationErrors[item.uid]?.event_price"
               @input="validateVariantItem(item)"
             />

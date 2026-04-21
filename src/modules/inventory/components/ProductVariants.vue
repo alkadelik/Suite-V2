@@ -6,6 +6,7 @@
       </h3>
       <div class="flex items-center gap-2">
         <TextField
+          v-model="search"
           left-icon="search-lg"
           size="md"
           class="flex-1"
@@ -14,11 +15,23 @@
         <AppButton
           icon="filter-lines"
           size="sm"
-          color="alt"
+          :color="activeFilterCount ? 'primary' : 'alt'"
+          :variant="activeFilterCount ? 'outlined' : 'filled'"
           label="Filter"
+          :badge="activeFilterCount || undefined"
           class="!hidden md:!inline-flex"
+          @click="showFilter = true"
         />
-        <AppButton icon="filter-lines" size="sm" color="alt" label="" class="md:hidden" />
+        <AppButton
+          icon="filter-lines"
+          size="sm"
+          :color="activeFilterCount ? 'primary' : 'alt'"
+          :variant="activeFilterCount ? 'outlined' : 'filled'"
+          label=""
+          :badge="activeFilterCount || undefined"
+          class="md:hidden"
+          @click="showFilter = true"
+        />
         <AppButton
           icon="add"
           size="sm"
@@ -30,11 +43,24 @@
       </div>
     </div>
 
+    <ListFilterDrawer
+      v-model="showFilter"
+      :filter-groups="filterGroups"
+      @apply="handleApplyFilters"
+    />
+
     <DataTable
-      :data="product.variants || []"
+      :data="variants"
       :columns="variantColumns"
       :loading="loading"
       :show-pagination="false"
+      :empty-state="{
+        title: 'No results match this filter',
+        description: 'Try adjusting or clearing your filters.',
+        actionLabel: 'Clear Filter',
+        actionIcon: 'x-close',
+      }"
+      @empty-action="clearFilters"
     >
       <template #cell:image="{ item }">
         <ProductAvatar :url="item.image || undefined" size="sm" shape="rounded" />
@@ -53,7 +79,7 @@
       </template>
 
       <template #cell:price="{ value }">
-        <span class="text-core-600 text-sm font-semibold">{{ formatCurrency(Number(value)) }}</span>
+        <span class="text-core-600 text-sm font-semibold">{{ format(Number(value)) }}</span>
       </template>
 
       <template #cell:sellable_stock="{ value }">
@@ -94,6 +120,7 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed } from "vue"
 import Icon from "@components/Icon.vue"
 import Chip from "@components/Chip.vue"
 import DataTable from "@components/DataTable.vue"
@@ -102,9 +129,13 @@ import AppButton from "@components/AppButton.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import ProductAvatar from "@components/ProductAvatar.vue"
 import ProductVariantCard from "./ProductVariantCard.vue"
-import { formatCurrency } from "@/utils/format-currency"
+import ListFilterDrawer from "@components/ListFilterDrawer.vue"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
+import { useDebouncedRef } from "@/composables/useDebouncedRef"
+import { useGetVariantsByProduct } from "../api"
 import type { IProductDetails, IProductVariantDetails } from "../types"
 import type { TableColumn } from "@components/DataTable.vue"
+import type { FilterGroup } from "@components/ListFilterDrawer.vue"
 
 interface Props {
   product: IProductDetails
@@ -114,7 +145,6 @@ interface Props {
     icon: string
     action: () => void
   }>
-  loading?: boolean
 }
 
 interface Emits {
@@ -122,6 +152,48 @@ interface Emits {
   (e: "add-variant"): void
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 defineEmits<Emits>()
+const { format } = useFormatCurrency()
+
+const search = ref("")
+const debouncedSearch = useDebouncedRef(search, 750)
+const showFilter = ref(false)
+const activeFilters = ref<Record<string, string | null>>({})
+
+const variantParams = computed(() => {
+  const params: Record<string, string> = { product: props.product.uid }
+  if (debouncedSearch.value) params.search = debouncedSearch.value
+  if (activeFilters.value.stock_status) params.stock_status = activeFilters.value.stock_status
+  return params
+})
+
+const { data: variantsData, isFetching: loading } = useGetVariantsByProduct(variantParams)
+const variants = computed(() => variantsData.value?.data?.results || props.product.variants || [])
+
+const filterGroups: FilterGroup[] = [
+  {
+    key: "stock_status",
+    label: "Stock Status",
+    options: [
+      { value: "in_stock", label: "In Stock", color: "success", showDot: true },
+      { value: "low_stock", label: "Low Stock", color: "warning", showDot: true },
+      { value: "out_of_stock", label: "Out of Stock", color: "error", showDot: true },
+      { value: "overstocked", label: "Overstocked", color: "primary", showDot: true },
+    ],
+  },
+]
+
+const activeFilterCount = computed(() => {
+  return Object.values(activeFilters.value).filter((v) => v !== null && v !== undefined).length
+})
+
+const handleApplyFilters = (filters: Record<string, string | null>) => {
+  activeFilters.value = filters
+}
+
+const clearFilters = () => {
+  activeFilters.value = {}
+  search.value = ""
+}
 </script>

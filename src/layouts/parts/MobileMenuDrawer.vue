@@ -7,6 +7,7 @@ import Drawer from "@components/Drawer.vue"
 import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
 import { useAuthStore } from "@modules/auth/store"
+import { useProductionStore } from "@modules/production/store"
 import PlansModal from "@modules/settings/components/PlansModal.vue"
 import { useSettingsStore } from "@modules/settings/store"
 import { useSharedStore } from "@modules/shared/store"
@@ -20,6 +21,8 @@ const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
 const storeDetails = computed(() => useSettingsStore().storeDetails)
 const currentLocation = computed(() => useSettingsStore().activeLocation)
 const user = computed(() => useAuthStore().user)
+const recipeLabel = computed(() => useProductionStore().recipeLabel)
+const componentLabel = computed(() => useProductionStore().componentLabel)
 
 const isHQ = computed(() => currentLocation.value?.is_hq ?? true)
 
@@ -30,24 +33,16 @@ const quickActions = computed(() => {
     { label: "Customers", icon: "people", to: "/customers" },
     { label: "Popups", icon: "calendar-tick", to: "/popups", hqOnly: true },
     { label: "Expenses", icon: "receipt-text", to: "/expenses" },
-    {
-      label: "Reports",
-      icon: "pie-chart",
-      action: () => toast.info("This module is coming soon!", { title: "Reports" }),
-    },
+    { label: "EOD Reports", icon: "pie-chart", to: "/reports/eod" },
+    { label: "Monthly Reports", icon: "pie-chart", to: "/reports/monthly" },
     {
       label: "Discounts",
       icon: "tag",
       action: () => toast.info("This module is coming soon!", { title: "Discounts" }),
     },
     { label: "Email List", icon: "sms", to: "/email-list" },
-    { label: "Raw Materials", icon: "box", to: "/raw-materials" },
-    {
-      label: "Recipes",
-      icon: "box",
-      // to: "/recipes",
-      action: () => toast.info("This module is coming soon!", { title: "Recipes" }),
-    },
+    { label: componentLabel.value, icon: "box", to: "/production/raw-materials" },
+    { label: recipeLabel.value, icon: "box", to: "/production/recipes" },
     {
       label: "Support",
       icon: "life-buoy",
@@ -67,6 +62,7 @@ const quickActions = computed(() => {
 })
 
 const showPlans = computed(() => useSettingsStore().showPlanUpgradeModal)
+const isInternational = computed(() => useSettingsStore().isInternational)
 
 const { setPlanUpgradeModal } = useSettingsStore()
 </script>
@@ -93,7 +89,10 @@ const { setPlanUpgradeModal } = useSettingsStore()
               <p class="truncate font-medium">{{ storeDetails?.name }}</p>
               <Chip v-if="currentLocation?.is_hq" label="HQ" class="shrink-0" />
             </div>
-            <div class="flex min-w-0 items-center gap-2 text-sm text-gray-600">
+            <div
+              v-if="!isInternational"
+              class="flex min-w-0 items-center gap-2 text-sm text-gray-600"
+            >
               <p class="truncate">{{ storefrontUrl }}</p>
               <Icon
                 name="copy"
@@ -146,6 +145,7 @@ const { setPlanUpgradeModal } = useSettingsStore()
       </div>
 
       <div
+        v-if="!isInternational"
         :class="['relative flex flex-col gap-2 rounded-3xl p-6 text-white']"
         style="
           background: linear-gradient(136.41deg, #1a2a6c -3.7%, #b21f1f 53.98%, #fdbb2d 99.39%);

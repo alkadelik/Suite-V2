@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import Icon from "@components/Icon.vue"
 import { PopupEvent } from "../types"
 import DropdownMenu from "@components/DropdownMenu.vue"
@@ -23,6 +23,8 @@ const emit = defineEmits<{
   (e: "edit"): void
   (e: "delete"): void
 }>()
+
+const { format } = useFormatCurrency()
 
 const formatDate = (dateStr: string) => {
   const date = new Date(dateStr)
@@ -63,9 +65,7 @@ const menuActions = computed(() => [
       </h3>
       <span class="ml-auto" />
       <span class="text-base font-semibold">
-        {{
-          Number(event.participation_fee) ? formatCurrency(event.participation_fee || 0) : "Free"
-        }}
+        {{ Number(event.participation_fee) ? format(event.participation_fee || 0) : "Free" }}
       </span>
       <DropdownMenu v-if="event.status !== 'closed'" :items="menuActions" />
       <span v-else class="px-2" />

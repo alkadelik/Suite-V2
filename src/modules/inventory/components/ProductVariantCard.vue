@@ -13,7 +13,7 @@
               size="sm"
             />
           </div>
-          <p class="text-sm font-semibold">{{ formatCurrency(Number(variant.price)) }}</p>
+          <p class="text-sm font-semibold">{{ format(Number(variant.price)) }}</p>
         </div>
       </div>
       <DropdownMenu
@@ -54,7 +54,7 @@ import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import ProductAvatar from "@components/ProductAvatar.vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import type { IProductVariantDetails } from "../types"
 
 interface Props {
@@ -70,4 +70,5 @@ interface Props {
 }
 
 defineProps<Props>()
+const { format } = useFormatCurrency()
 </script>

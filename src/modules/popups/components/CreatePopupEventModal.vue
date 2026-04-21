@@ -13,9 +13,11 @@ import { useCreatePopup, useUpdatePopup } from "../api"
 import { validationSchema } from "../schemas"
 import { useMediaQuery } from "@vueuse/core"
 import Drawer from "@components/Drawer.vue"
+import { useSettingsStore } from "@modules/settings/store"
 
 const emit = defineEmits<{ (e: "close"): void; (e: "refresh", popup: PopupEvent): void }>()
 const props = defineProps<{ open: boolean; event?: PopupEvent | null; isEditMode?: boolean }>()
+const currency = computed(() => useSettingsStore().storeDetails?.currency || "NGN")
 
 const { mutate: createEvent, isPending: isCreating } = useCreatePopup()
 const { mutate: updateEvent, isPending: isUpdating } = useUpdatePopup()
@@ -94,7 +96,7 @@ const prepareFormData = (currentData: Partial<PopupPayload>): FormData => {
 }
 
 // Initialize VeeValidate form - start with empty values
-const { handleSubmit, resetForm, meta } = useForm({
+const { handleSubmit, resetForm } = useForm({
   validationSchema: validationSchema,
 })
 
@@ -188,7 +190,13 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
 
       <FormField name="event_address" required />
 
-      <FormField name="participation_fee" type="number" />
+      <FormField
+        :label="`Participation Fee (${currency})`"
+        name="participation_fee"
+        type="number"
+        format="currency"
+        step="0.01"
+      />
 
       <FormField name="description" label="Description (optional)" type="textarea" :rows="4" />
 
@@ -207,7 +215,6 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
         <AppButton
           class="w-full"
           :label="buttonLabel"
-          :inactive="!meta.valid"
           :loading="isLoading"
           @click="onSubmit"
           size="lg"

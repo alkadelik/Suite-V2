@@ -11,7 +11,10 @@
           >
             <BackButton to="/dashboard" />
             <h2 class="mt-3 text-2xl font-bold">Settings</h2>
-            <div class="flex min-w-0 items-center gap-2 text-sm text-gray-600">
+            <div
+              v-if="!isInternational"
+              class="flex min-w-0 items-center gap-2 text-sm text-gray-600"
+            >
               <p class="truncate">{{ storefrontUrl }}</p>
               <Icon
                 name="copy"
@@ -26,7 +29,7 @@
             v-if="route.path !== '/settings'"
             label="Back"
             to="/settings"
-            class="mb-4 flex-shrink-0 md:hidden"
+            class="mb-3 flex-shrink-0 md:hidden"
           />
 
           <!-- Main content area with sidebar and scrollable content -->
@@ -55,7 +58,7 @@
             </aside>
 
             <!-- Scrollable main content -->
-            <main class="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+            <main class="min-h-0 flex-1 overflow-y-auto px-3 md:py-3">
               <router-view />
             </main>
           </div>
@@ -64,7 +67,11 @@
     </Container>
 
     <!--  -->
-    <PlansModal :model-value="showPlans" @update:model-value="(val) => setPlanUpgradeModal(val)" />
+    <PlansModal
+      v-if="!isInternational"
+      :model-value="showPlans"
+      @update:model-value="(val) => setPlanUpgradeModal(val)"
+    />
 
     <AddLocationModal
       :open="showAddLocationModal"
@@ -113,6 +120,10 @@ watch(
   { immediate: true },
 )
 
+const isInternational = computed(() => useSettingsStore().isInternational)
+
+const INTERNATIONAL_HIDDEN_LINKS = ["Plans & Billing", "Storefront Design", "Delivery Options"]
+
 const LINKS = computed(() =>
   [
     { label: "Profile", path: "/settings/profile" },
@@ -129,6 +140,9 @@ const LINKS = computed(() =>
     const { activeLocation } = useSettingsStore()
     if (!activeLocation?.is_hq) {
       return ["Profile", "Password"].includes(link.label)
+    }
+    if (isInternational.value && INTERNATIONAL_HIDDEN_LINKS.includes(link.label)) {
+      return false
     }
     return true
   }),

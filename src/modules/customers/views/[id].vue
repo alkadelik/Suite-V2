@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from "vue"
 import CustomerCard from "../components/CustomerCard.vue"
 import Tabs from "@/components/Tabs.vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import SummaryCard from "@/components/SummaryCards.vue"
 import Chip from "@components/Chip.vue"
 import { formatDate } from "../utils/dateFormatter"
@@ -22,6 +22,7 @@ import { orderSourceMap } from "../constants"
 
 const route = useRoute()
 const router = useRouter()
+const { format } = useFormatCurrency()
 
 const customerId = computed(() => route.params.id as string)
 
@@ -52,12 +53,12 @@ const summaryStats = computed(() => [
   },
   {
     label: "Total Spend",
-    value: formatCurrency(Number(customer.value?.total_spent) || 0),
+    value: format(Number(customer.value?.total_spent) || 0),
     icon: "money-add",
   },
   {
     label: "Total Credit",
-    value: formatCurrency(Number(customer.value?.total_credits) || 0),
+    value: format(Number(customer.value?.total_credits) || 0),
     icon: "coin",
   },
   {
@@ -92,7 +93,7 @@ const ORDER_COLUMNS: TableColumn<(typeof enrichedOrders.value)[number]>[] = [
   {
     header: "Amount",
     accessor: "total_amount",
-    cell: ({ value }) => formatCurrency(Number(value)),
+    cell: ({ value }) => format(Number(value)),
   },
   { header: "Status", accessor: "payment_status" },
   { header: "Fulfilled", accessor: "fulfilment_status" },

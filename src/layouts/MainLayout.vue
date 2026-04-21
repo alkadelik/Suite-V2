@@ -12,7 +12,7 @@
       <AppSidebar
         :mobile-sidebar-open="mobileSidebarOpen"
         @logout="logout = true"
-        @upgrade="setPlanUpgradeModal(true)"
+        @upgrade="!isInternational && setPlanUpgradeModal(true)"
       />
 
       <!-- Main column -->
@@ -100,19 +100,21 @@
   <!--  -->
   <LogoutModal :open="logout" @close="logout = false" />
 
-  <PlansModal :model-value="showPlans" @update:model-value="(val) => setPlanUpgradeModal(val)" />
+  <template v-if="!isInternational">
+    <PlansModal :model-value="showPlans" @update:model-value="(val) => setPlanUpgradeModal(val)" />
+
+    <TrialActivationModal
+      :open="openTrial"
+      :subscription="profile?.subscription || null"
+      @close="closeTrialModal"
+    />
+  </template>
 
   <AddLocationModal
     :open="showAddLocationModal"
     :location="locationForEdit"
     @close="setAddLocationModal(false)"
     @refresh="handleLocationRefresh"
-  />
-
-  <TrialActivationModal
-    :open="openTrial"
-    :subscription="profile?.subscription || null"
-    @close="closeTrialModal"
   />
 
   <MobileMenuDrawer :open="openMore" @close="openMore = false" />
@@ -138,6 +140,8 @@
     @dismiss="dismissNotification"
     @close="closeAllNotifications"
   />
+
+  <!-- <WhatsNewModal :open="whatNew" @close="whatNew = false" /> -->
 </template>
 
 <script setup lang="ts">
@@ -174,6 +178,7 @@ import {
   useMarkNotificationAsRead,
 } from "@modules/shared/api"
 import type { INotification } from "@modules/shared/types"
+// import WhatsNewModal from "@components/WhatsNewModal.vue"
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
 const mobileSidebarOpen = ref(false)
@@ -181,6 +186,7 @@ const logout = ref(false)
 const openMore = ref(false)
 const openActions = ref(false)
 const showNotification = ref(false)
+// const whatNew = ref(true)
 
 // Fetch notifications from API
 const { data: notificationsData, refetch: refetchNotifications } = useGetNotifications()
@@ -311,6 +317,7 @@ const { data: categories } = useGetCategories()
 const { data: attributes } = useGetAttributes()
 const { data: profile } = useGetProfile()
 const showPlans = computed(() => useSettingsStore().showPlanUpgradeModal)
+const isInternational = computed(() => useSettingsStore().isInternational)
 const showAddLocationModal = computed(() => useSettingsStore().showAddLocationModal)
 const locationForEdit = computed(() => useSettingsStore().locationForEdit)
 
@@ -346,8 +353,8 @@ watch(
     if (val) {
       updateAuthUser(val)
 
-      // Check if in trial mode
-      if (val.subscription?.trial_mode && storeUid.value) {
+      // Check if in trial mode (skip for international accounts)
+      if (val.subscription?.trial_mode && storeUid.value && !isInternational.value) {
         const daysRemaining = getDaysRemaining(val.subscription?.active_until)
         const dismissalKey = getTrialDismissalKey(storeUid.value)
 

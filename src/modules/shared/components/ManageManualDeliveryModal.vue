@@ -43,6 +43,8 @@
                 placeholder="e.g 5800"
                 class="min-w-0 flex-1"
                 type="number"
+                format="currency"
+                step="0.01"
               />
               <AppButton
                 label="-"
@@ -89,6 +91,8 @@ import {
   useDeleteManualDeliveryOption,
   useDeleteExpressDeliveryOption,
 } from "@modules/shared/api"
+import { useUpdateStoreDetails } from "@modules/settings/api"
+import { useAuthStore } from "@modules/auth/store"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 
@@ -150,6 +154,8 @@ const { mutateAsync: updateManual } = useUpdateManualDeliveryOption()
 const { mutateAsync: updateExpress } = useUpdateExpressDeliveryOption()
 const { mutateAsync: deleteManual } = useDeleteManualDeliveryOption()
 const { mutateAsync: deleteExpress } = useDeleteExpressDeliveryOption()
+const { mutate: updateStoreDetails } = useUpdateStoreDetails()
+const storeUid = useAuthStore().user?.store_uid || ""
 
 const isLoading = computed(() =>
   props.mode === "express" ? isLoadingExpress.value : isLoadingManual.value,
@@ -258,6 +264,13 @@ const handleSave = async () => {
 
     // Clear pending deletions after successful save
     pendingDeletions.value = []
+
+    // Enable the corresponding delivery flag on the store
+    const enableFlag =
+      props.mode === "express"
+        ? { express_delivery_enabled: true }
+        : { manual_delivery_enabled: true }
+    updateStoreDetails({ id: storeUid, body: enableFlag })
 
     toast.success(
       `${props.mode === "express" ? "Express" : "Manual"} delivery settings saved successfully`,

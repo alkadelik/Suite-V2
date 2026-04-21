@@ -6,7 +6,12 @@ import {
   TExpenseCategoryResponse,
   TExpenseResponse,
 } from "./types"
-import baseApi, { TApiPromise, TPaginatedResponse, useApiQuery } from "@/composables/baseApi"
+import baseApi, {
+  TApiPromise,
+  TPaginatedResponse,
+  TQueryArg,
+  useApiQuery,
+} from "@/composables/baseApi"
 import { MaybeRefOrGetter } from "vue"
 
 /** Create expense api request */
@@ -18,9 +23,7 @@ export function useCreateExpense() {
 }
 
 /** Fetch expenses */
-export function useGetExpenses(
-  params?: MaybeRefOrGetter<Record<string, string | number | boolean> | undefined>,
-) {
+export function useGetExpenses(params?: TQueryArg["params"]) {
   return useApiQuery<TExpenseResponse>({
     url: "/expenses/",
     params,
@@ -30,9 +33,7 @@ export function useGetExpenses(
 }
 
 /** Fetch expense statistics */
-export function useGetExpenseDashboard(
-  params?: MaybeRefOrGetter<Record<string, string | number | boolean> | undefined>,
-) {
+export function useGetExpenseDashboard(params?: TQueryArg["params"]) {
   return useApiQuery<ExpenseDashboardStats>({
     url: `/expenses/stats/`,
     params,

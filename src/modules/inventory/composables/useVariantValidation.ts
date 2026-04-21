@@ -2,42 +2,79 @@ import { computed, type Ref } from "vue"
 import type { IVariantConfiguration, IProductForm } from "./useProductFormState"
 import type { IProductVariant } from "../types"
 
-/**
- * Variant Validation Options
- */
 interface IVariantValidationOptions {
-  /** Form state containing product details */
   form: IProductForm
-  /** Whether product has variants */
   hasVariants: Ref<boolean>
-  /** Variant configuration array */
   variantConfiguration: Ref<IVariantConfiguration[]>
-  /** Variants array */
   variants: Ref<IProductVariant[]>
-  /** Current step in multi-step form */
   step: Ref<number>
-  /** Edit mode (optional, for edit drawer) */
   editMode?: string
 }
 
-/**
- * Composable for variant and form validation
- *
- * Architectural decisions:
- * - Computed properties for reactive validation
- * - No side effects - pure validation logic
- * - Comprehensive validation covering all form states
- * - Explicit validation rules for maintainability
- *
- * @param options - Validation configuration options
- * @returns Validation computed properties
- */
+export interface IProductDetailsValidationErrors {
+  name?: string
+  category?: string
+}
+
+export interface IVariantConfigurationFieldErrors {
+  name?: string
+  customName?: string
+  values?: string
+}
+
+export interface IVariantConfigurationValidationErrors {
+  global?: string
+  variants: IVariantConfigurationFieldErrors[]
+}
+
+export interface IInventoryVariantValidationErrors {
+  opening_stock?: string
+  cost_price?: string
+  price?: string
+}
+
+export interface IInventoryValidationErrors {
+  weight?: string
+  dimensions?: string
+  dimensionFields: {
+    height?: string
+    length?: string
+    width?: string
+  }
+  variants: IInventoryVariantValidationErrors[]
+}
+
+export interface ICurrentProductStepValidation {
+  valid: boolean
+  firstErrorTarget?: string
+  productDetailsErrors: IProductDetailsValidationErrors
+  variantConfigurationErrors: IVariantConfigurationValidationErrors
+  inventoryErrors: IInventoryValidationErrors
+}
+
+const EMPTY_PRODUCT_DETAILS_ERRORS = (): IProductDetailsValidationErrors => ({})
+
+const EMPTY_VARIANT_CONFIGURATION_ERRORS = (
+  count: number,
+): IVariantConfigurationValidationErrors => ({
+  global: undefined,
+  variants: Array.from({ length: count }, () => ({})),
+})
+
+const EMPTY_INVENTORY_ERRORS = (count: number): IInventoryValidationErrors => ({
+  weight: undefined,
+  dimensions: undefined,
+  dimensionFields: {
+    height: undefined,
+    length: undefined,
+    width: undefined,
+  },
+  variants: Array.from({ length: count }, () => ({})),
+})
+
 export function useVariantValidation(options: IVariantValidationOptions) {
   const { form, hasVariants, variantConfiguration, variants, step, editMode } = options
 
-  /**
-   * Helper: Get variant value (handles object/string types)
-   */
   const getVariantValue = (variant: IVariantConfiguration): string => {
     if (!variant?.name) return ""
 
@@ -48,9 +85,6 @@ export function useVariantValidation(options: IVariantValidationOptions) {
     return variant.name
   }
 
-  /**
-   * Helper: Get variant display name
-   */
   const getVariantDisplayName = (variant: IVariantConfiguration): string => {
     if (!variant) return ""
 
@@ -63,9 +97,6 @@ export function useVariantValidation(options: IVariantValidationOptions) {
     return variantValue
   }
 
-  /**
-   * Helper: Get variant final name for comparison
-   */
   const getVariantFinalName = (variant: IVariantConfiguration): string => {
     if (!variant) return ""
 
@@ -78,9 +109,6 @@ export function useVariantValidation(options: IVariantValidationOptions) {
     return variantValue.toLowerCase()
   }
 
-  /**
-   * Helper: Get minimum values required for variant
-   */
   const getMinimumValuesRequired = (index: number): number => {
     if (variantConfiguration.value.length === 1 || index === 0) {
       return 2
@@ -88,12 +116,76 @@ export function useVariantValidation(options: IVariantValidationOptions) {
     return 1
   }
 
-  /**
-   * Validate variant configuration
-   * Checks for duplicate names and required values
-   */
-  const isVariantConfigurationValid = computed<boolean>(() => {
-    // Check for duplicate names
+  const isValidPositiveNumber = (value: string): boolean => {
+    if (!value || value.trim() === "") return false
+    const num = parseFloat(value)
+    return !isNaN(num) && isFinite(num) && num > 0
+  }
+
+  const isValidNonNegativeNumber = (value: string): boolean => {
+    if (!value || value.trim() === "") return false
+    const num = parseFloat(value)
+    return !isNaN(num) && isFinite(num) && num >= 0
+  }
+
+  const isValidNonNegativeInteger = (value: string): boolean => {
+    if (!value || value.trim() === "") return false
+    const num = Number(value)
+    return Number.isInteger(num) && num >= 0
+  }
+
+  const buildProductDetailsValidation = (): ICurrentProductStepValidation => {
+    const errors = EMPTY_PRODUCT_DETAILS_ERRORS()
+    let firstErrorTarget: string | undefined
+
+    if (!form.name.trim()) {
+      errors.name = "Enter a product name."
+      firstErrorTarget = "product_name"
+    }
+
+    if (!form.category) {
+      errors.category = "Select a product category."
+      firstErrorTarget ??= "product_category"
+    }
+
+    return {
+      valid: !errors.name && !errors.category,
+      firstErrorTarget,
+      productDetailsErrors: errors,
+      variantConfigurationErrors: EMPTY_VARIANT_CONFIGURATION_ERRORS(
+        variantConfiguration.value.length,
+      ),
+      inventoryErrors: EMPTY_INVENTORY_ERRORS(variants.value.length),
+    }
+  }
+
+  const buildVariantConfigurationValidation = (): ICurrentProductStepValidation => {
+    const errors = EMPTY_VARIANT_CONFIGURATION_ERRORS(variantConfiguration.value.length)
+    let firstErrorTarget: string | undefined
+
+    variantConfiguration.value.forEach((variant, index) => {
+      const variantValue = getVariantValue(variant)
+      const displayName = getVariantDisplayName(variant)
+      const minimumRequired = getMinimumValuesRequired(index)
+
+      if (!variantValue) {
+        errors.variants[index].name = "Select an option type."
+        firstErrorTarget ??= `variant-name-${index}`
+        return
+      }
+
+      if (variantValue === "custom_type" && !variant.customName?.trim()) {
+        errors.variants[index].customName = "Enter an option name."
+        firstErrorTarget ??= `variant-custom-name-${index}`
+      }
+
+      if (displayName && variant.values.length < minimumRequired) {
+        const plural = minimumRequired > 1 ? "options" : "option"
+        errors.variants[index].values = `Add at least ${minimumRequired} variant ${plural}.`
+        firstErrorTarget ??= `variant-values-${index}`
+      }
+    })
+
     const names = variantConfiguration.value
       .map((variant) => getVariantFinalName(variant))
       .filter((name) => name && typeof name === "string" && name.trim() !== "")
@@ -101,155 +193,177 @@ export function useVariantValidation(options: IVariantValidationOptions) {
     const duplicateNames = names.filter((name, index) => names.indexOf(name) !== index)
 
     if (duplicateNames.length > 0) {
-      return false
-    }
+      errors.global =
+        "Variant names must be unique. Please choose different names for your variants."
 
-    // Check if all variants are complete
-    for (let i = 0; i < variantConfiguration.value.length; i++) {
-      const variant = variantConfiguration.value[i]
-      const displayName = getVariantDisplayName(variant)
-      const minimumRequired = getMinimumValuesRequired(i)
+      if (!firstErrorTarget) {
+        const duplicateIndex = variantConfiguration.value.findIndex((variant) => {
+          const finalName = getVariantFinalName(variant)
+          return finalName && duplicateNames.includes(finalName)
+        })
 
-      // Variant must have display name
-      if (!displayName) {
-        return false
-      }
-
-      // Variant must have sufficient values
-      if (variant.values.length < minimumRequired) {
-        return false
+        firstErrorTarget =
+          duplicateIndex >= 0 ? `variant-name-${duplicateIndex}` : "variant-configuration"
       }
     }
 
-    return true
-  })
+    const hasErrors =
+      !!errors.global || errors.variants.some((variant) => Object.values(variant).some(Boolean))
 
-  /**
-   * Helper: Validate a numeric string is a valid positive number
-   */
-  const isValidPositiveNumber = (value: string): boolean => {
-    if (!value || value.trim() === "") return false
-    const num = parseFloat(value)
-    return !isNaN(num) && isFinite(num) && num > 0
+    return {
+      valid: !hasErrors,
+      firstErrorTarget,
+      productDetailsErrors: EMPTY_PRODUCT_DETAILS_ERRORS(),
+      variantConfigurationErrors: errors,
+      inventoryErrors: EMPTY_INVENTORY_ERRORS(variants.value.length),
+    }
   }
 
-  /**
-   * Helper: Validate a numeric string is a valid non-negative number
-   */
-  const isValidNonNegativeNumber = (value: string): boolean => {
-    if (!value || value.trim() === "") return false
-    const num = parseFloat(value)
-    return !isNaN(num) && isFinite(num) && num >= 0
-  }
+  const buildInventoryValidation = (config: {
+    requireStock: boolean
+    requirePrice: boolean
+    requireWeight: boolean
+    requireDimensions: boolean
+  }): ICurrentProductStepValidation => {
+    const errors = EMPTY_INVENTORY_ERRORS(variants.value.length)
+    let firstErrorTarget: string | undefined
 
-  /**
-   * Validate a single variant for required fields
-   * Price, stock, and dimensions must be filled and valid
-   * Cost price must not exceed selling price
-   */
-  const isVariantValid = (variant: IProductVariant): boolean => {
-    if (!variant) return false
+    const firstVariant = variants.value[0]
 
-    // Validate selling price
-    if (!isValidPositiveNumber(variant.price)) return false
-
-    // Validate cost price (if provided, must be valid and not exceed selling price)
-    if (variant.cost_price && variant.cost_price.trim() !== "") {
-      if (!isValidNonNegativeNumber(variant.cost_price)) return false
-      const costPrice = parseFloat(variant.cost_price)
-      const sellingPrice = parseFloat(variant.price)
-      if (costPrice > sellingPrice) return false
+    if (config.requireWeight && !isValidPositiveNumber(firstVariant?.weight || "")) {
+      errors.weight = "Select a product weight to generate dimensions."
+      firstErrorTarget = "product-weight"
     }
 
-    // Validate stock (non-negative integer)
-    if (!variant.opening_stock || variant.opening_stock.trim() === "") return false
-    const stock = parseInt(variant.opening_stock, 10)
-    if (isNaN(stock) || stock < 0) return false
+    if (config.requireDimensions) {
+      const height = firstVariant?.height || ""
+      const length = firstVariant?.length || ""
+      const width = firstVariant?.width || ""
 
-    // Validate dimensions
-    if (!isValidPositiveNumber(variant.height)) return false
-    if (!isValidPositiveNumber(variant.length)) return false
-    if (!isValidPositiveNumber(variant.width)) return false
-    if (!isValidPositiveNumber(variant.weight)) return false
+      if (!isValidPositiveNumber(height)) {
+        errors.dimensionFields.height = "Enter a valid height."
+        firstErrorTarget ??= "product-dimensions"
+      }
 
-    return true
-  }
+      if (!isValidPositiveNumber(length)) {
+        errors.dimensionFields.length = "Enter a valid length."
+        firstErrorTarget ??= "product-dimensions"
+      }
 
-  /**
-   * Validate all variants in array
-   */
-  const areVariantsValid = computed<boolean>(() => {
-    if (!variants.value || variants.value.length === 0) {
-      return false
+      if (!isValidPositiveNumber(width)) {
+        errors.dimensionFields.width = "Enter a valid width."
+        firstErrorTarget ??= "product-dimensions"
+      }
+
+      if (!height && !length && !width) {
+        // All dimensions empty — show group-level error only
+        errors.dimensions = "Enter valid product dimensions before continuing."
+        errors.dimensionFields = { height: undefined, length: undefined, width: undefined }
+      }
     }
 
-    return variants.value.every((variant) => isVariantValid(variant))
-  })
+    variants.value.forEach((variant, index) => {
+      if (config.requireStock && !isValidNonNegativeInteger(variant.opening_stock)) {
+        errors.variants[index].opening_stock = "Enter a valid stock quantity."
+        firstErrorTarget ??= `variant-opening-stock-${index}`
+      }
 
-  /**
-   * Main validation: Can proceed to next step or submit
-   * Handles different steps and edit modes
-   */
-  const canProceed = computed<boolean>(() => {
-    // Variants edit mode
+      if (variant.cost_price && variant.cost_price.trim() !== "") {
+        if (!isValidNonNegativeNumber(variant.cost_price)) {
+          errors.variants[index].cost_price = "Enter a valid cost price."
+          firstErrorTarget ??= `variant-cost-price-${index}`
+        }
+      }
+
+      if (config.requirePrice && !isValidNonNegativeNumber(variant.price)) {
+        errors.variants[index].price = "Enter a valid selling price."
+        firstErrorTarget ??= `variant-price-${index}`
+      }
+    })
+
+    const hasErrors =
+      !!errors.weight ||
+      !!errors.dimensions ||
+      Object.values(errors.dimensionFields).some(Boolean) ||
+      errors.variants.some((variant) => Object.values(variant).some(Boolean))
+
+    return {
+      valid: !hasErrors,
+      firstErrorTarget,
+      productDetailsErrors: EMPTY_PRODUCT_DETAILS_ERRORS(),
+      variantConfigurationErrors: EMPTY_VARIANT_CONFIGURATION_ERRORS(
+        variantConfiguration.value.length,
+      ),
+      inventoryErrors: errors,
+    }
+  }
+
+  const currentStepValidation = computed<ICurrentProductStepValidation>(() => {
+    if (editMode === "product-details") {
+      return buildProductDetailsValidation()
+    }
+
+    if (editMode === "variant-details") {
+      return buildInventoryValidation({
+        requireStock: false,
+        requirePrice: true,
+        requireWeight: true,
+        requireDimensions: true,
+      })
+    }
+
     if (editMode === "variants") {
       if (step.value === 1) {
-        return isVariantConfigurationValid.value
-      } else if (step.value === 2) {
-        // In variants edit mode, price/stock/dimensions are hidden,
-        // so only check that variants exist
-        return variants.value.length > 0
+        return buildVariantConfigurationValidation()
       }
-      // Step 3 (images) is optional
-      return true
+
+      return {
+        valid: variants.value.length > 0,
+        firstErrorTarget: variants.value.length > 0 ? undefined : "variant-configuration",
+        productDetailsErrors: EMPTY_PRODUCT_DETAILS_ERRORS(),
+        variantConfigurationErrors: EMPTY_VARIANT_CONFIGURATION_ERRORS(
+          variantConfiguration.value.length,
+        ),
+        inventoryErrors: EMPTY_INVENTORY_ERRORS(variants.value.length),
+      }
     }
 
-    // Product details mode (edit drawer)
-    if (editMode === "product-details") {
-      return form.name.trim() !== "" && form.category !== null
-    }
-
-    // Variant details mode (edit drawer)
-    if (editMode === "variant-details") {
-      return areVariantsValid.value
-    }
-
-    // Images mode (edit drawer) - always valid
-    if (editMode === "images") {
-      return true
-    }
-
-    // Full create/edit mode
     if (step.value === 1) {
-      // Step 1: Product details
-      return form.name.trim() !== "" && form.category !== null
-    } else if (step.value === 2 && hasVariants.value) {
-      // Step 2: Variant configuration (if has variants)
-      return isVariantConfigurationValid.value
-    } else if (
-      (step.value === 2 && !hasVariants.value) ||
-      (step.value === 3 && hasVariants.value)
-    ) {
-      // Step 2/3: Inventory & pricing
-      return areVariantsValid.value
+      return buildProductDetailsValidation()
     }
 
-    // Default: allow progression
-    return true
+    if (step.value === 2 && hasVariants.value) {
+      return buildVariantConfigurationValidation()
+    }
+
+    if ((step.value === 2 && !hasVariants.value) || (step.value === 3 && hasVariants.value)) {
+      return buildInventoryValidation({
+        requireStock: true,
+        requirePrice: true,
+        requireWeight: true,
+        requireDimensions: true,
+      })
+    }
+
+    return {
+      valid: true,
+      firstErrorTarget: undefined,
+      productDetailsErrors: EMPTY_PRODUCT_DETAILS_ERRORS(),
+      variantConfigurationErrors: EMPTY_VARIANT_CONFIGURATION_ERRORS(
+        variantConfiguration.value.length,
+      ),
+      inventoryErrors: EMPTY_INVENTORY_ERRORS(variants.value.length),
+    }
   })
 
-  /**
-   * Validate all UIDs are present after processing
-   * Ensures API calls succeeded before proceeding
-   */
+  const canProceed = computed<boolean>(() => currentStepValidation.value.valid)
+
   const validateAllUIDs = (): boolean => {
     for (const variant of variantConfiguration.value) {
-      // Skip empty variants
       if (variant.values.length === 0) {
         continue
       }
 
-      // Check all values have UIDs
       for (const value of variant.values) {
         const isObject =
           typeof value === "object" && value !== null && "label" in value && "value" in value
@@ -266,19 +380,8 @@ export function useVariantValidation(options: IVariantValidationOptions) {
   }
 
   return {
-    // Validation state
-    isVariantConfigurationValid,
-    areVariantsValid,
     canProceed,
-
-    // Validation methods
-    isVariantValid,
+    currentStepValidation,
     validateAllUIDs,
-
-    // Helper methods (exposed for external use)
-    getVariantValue,
-    getVariantDisplayName,
-    getVariantFinalName,
-    getMinimumValuesRequired,
   }
 }
