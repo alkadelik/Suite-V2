@@ -207,7 +207,19 @@ const outstandingBalance = computed(() => {
                 {{ item.product_name || "Unknown" }}
               </h4>
               <!-- price -->
-              <span class="text-xs font-medium">{{ format(+item.unit_price) }}</span>
+              <span class="text-xs font-medium">
+                <span
+                  v-if="
+                    item.original_price &&
+                    Number(item.original_price) > 0 &&
+                    Number(item.unit_price) < Number(item.original_price)
+                  "
+                  class="text-core-400 mr-1 line-through"
+                >
+                  {{ format(+item.original_price) }}
+                </span>
+                {{ format(+item.unit_price) }}
+              </span>
             </div>
             <div class="flex justify-between gap-1">
               <!-- Variant, note -->
