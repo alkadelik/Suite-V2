@@ -1135,6 +1135,8 @@ const isMobile = useMediaQuery("(max-width: 768px)")
 
                 <TextField
                   type="number"
+                  format="currency"
+                  step="0.01"
                   name="delivery_fee"
                   :label="`Delivery Fee (${currency})`"
                   placeholder="0.00"
@@ -1147,7 +1149,6 @@ const isMobile = useMediaQuery("(max-width: 768px)")
                   "
                   :error="validationErrors.delivery_fee"
                   :min="0"
-                  step="0.01"
                   required
                 />
               </div>

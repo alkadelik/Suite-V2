@@ -42,6 +42,30 @@ const newSupplierName = ref("")
 const showAddUnit = ref<"purchase" | "production" | null>(null)
 const newUnitName = ref("")
 
+// conversion direction
+const conversionFlipped = ref(false)
+
+const POPULAR_CONVERSIONS: Record<string, string> = {
+  "kg-g": "1000",
+  "g-kg": "0.001",
+  "l-ml": "1000",
+  "ml-l": "0.001",
+  "m-cm": "100",
+  "cm-m": "0.01",
+  "m-mm": "1000",
+  "mm-m": "0.001",
+  "cm-mm": "10",
+  "mm-cm": "0.1",
+  "g-mg": "1000",
+  "mg-g": "0.001",
+  "kg-mg": "1000000",
+  "mg-kg": "0.000001",
+  "l-cl": "100",
+  "cl-l": "0.01",
+  "cl-ml": "10",
+  "ml-cl": "0.1",
+}
+
 const createNewUnit = () => {
   const unit = newUnitName.value.trim()
   const newUnit = { label: unit, value: unit.toLowerCase().replace(/\s+/g, "_") }
@@ -194,14 +218,31 @@ const createNewSupplier = () => {
   )
 }
 
+const showConversionSection = computed(
+  () =>
+    !!values.unit?.value &&
+    !!values.production_unit?.value &&
+    values.unit.value !== values.production_unit.value,
+)
+
+const switchConversion = () => {
+  const fromQty = values.conversion_from_qty
+  const toQty = values.conversion_to_qty
+  setFieldValue("conversion_from_qty", toQty || "1")
+  setFieldValue("conversion_to_qty", fromQty || "1")
+  conversionFlipped.value = !conversionFlipped.value
+}
+
 const buildConversion = (values: FormValues) => {
-  const fromUnit = values.unit?.value
-  const toUnit = values.production_unit?.value
+  const purchaseUnit = values.unit?.value
+  const productionUnit = values.production_unit?.value
   const fromQty = values.conversion_from_qty
   const toQty = values.conversion_to_qty
 
-  if (!fromUnit || !toUnit || !fromQty || !toQty) return undefined
+  if (!purchaseUnit || !productionUnit || !fromQty || !toQty) return undefined
 
+  const fromUnit = conversionFlipped.value ? productionUnit : purchaseUnit
+  const toUnit = conversionFlipped.value ? purchaseUnit : productionUnit
   const rate = (Number(toQty) / Number(fromQty)).toString()
   const name = values.conversion_name || `${fromUnit} to ${toUnit}`
 
@@ -245,12 +286,24 @@ const onSubmit = handleSubmit((values) => {
   }
 }, onInvalidSubmit)
 
+// Prefill popular conversions when units change
+watch([() => values.unit, () => values.production_unit], ([newUnit, newProdUnit]) => {
+  if (newUnit?.value && newProdUnit?.value && newUnit.value !== newProdUnit.value) {
+    conversionFlipped.value = false
+    const key = `${newUnit.value}-${newProdUnit.value}`
+    const popular = POPULAR_CONVERSIONS[key]
+    setFieldValue("conversion_from_qty", "1")
+    setFieldValue("conversion_to_qty", popular ?? "")
+  }
+})
+
 // Reset form or populate with material data when drawer opens
 watch(
   () => props.open,
   (isOpen) => {
     if (isOpen) {
       activeStep.value = 0
+      conversionFlipped.value = false
       if (isEditMode.value && props.material) {
         // Populate form with material data
         resetForm({
@@ -462,10 +515,7 @@ const goToPrevStep = () => {
                 </Field>
               </div>
 
-              <div
-                v-if="values.unit?.value && values.production_unit?.value"
-                class="rounded-md bg-gray-200 p-4"
-              >
+              <div v-if="showConversionSection" class="rounded-md bg-gray-200 p-4">
                 <p class="mb-3 flex items-center gap-1 text-sm font-medium">
                   Conversion Rate <Icon name="information" />
                 </p>
@@ -475,9 +525,10 @@ const goToPrevStep = () => {
                       name="conversion_from_qty"
                       type="number"
                       label="From Unit Qty"
-                      :suffix="values.unit.label"
+                      :suffix="
+                        conversionFlipped ? values.production_unit?.label : values.unit?.label
+                      "
                       placeholder="e.g. 1"
-                      readonly
                     />
                   </div>
                   <AppButton
@@ -485,13 +536,16 @@ const goToPrevStep = () => {
                     variant="outlined"
                     size="sm"
                     class="mb-1 flex-shrink-0"
+                    @click.prevent="switchConversion"
                   />
                   <div class="min-w-0 flex-1">
                     <FormField
                       name="conversion_to_qty"
                       type="number"
                       label="To Unit Qty"
-                      :suffix="values.production_unit.label"
+                      :suffix="
+                        conversionFlipped ? values.unit?.label : values.production_unit?.label
+                      "
                       placeholder="e.g. 12"
                     />
                   </div>
@@ -540,6 +594,8 @@ const goToPrevStep = () => {
               <FormField
                 type="number"
                 name="default_cost"
+                format="currency"
+                step="0.01"
                 :label="`Default Purchase price (${currency})`"
                 placeholder="e.g. 25"
                 required

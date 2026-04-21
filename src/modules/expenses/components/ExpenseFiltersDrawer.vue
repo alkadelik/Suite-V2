@@ -179,6 +179,8 @@ const clearFilters = () => {
             label="Min Amount"
             placeholder="e.g. 500"
             type="number"
+            format="currency"
+            step="0.01"
             left-icon="wallet-money"
           />
           <TextField
@@ -186,6 +188,8 @@ const clearFilters = () => {
             label="Max Amount"
             placeholder="e.g. 50,000"
             type="number"
+            format="currency"
+            step="0.01"
             left-icon="wallet-money"
           />
         </div>

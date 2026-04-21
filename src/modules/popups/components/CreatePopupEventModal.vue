@@ -194,6 +194,8 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
         :label="`Participation Fee (${currency})`"
         name="participation_fee"
         type="number"
+        format="currency"
+        step="0.01"
       />
 
       <FormField name="description" label="Description (optional)" type="textarea" :rows="4" />

@@ -371,8 +371,10 @@ const handleAddFromSearch = (search: string, close: () => void) => {
 
       <div class="sm:col-span-2">
         <FormField
-          type="number"
           name="amount"
+          type="number"
+          format="currency"
+          step="0.01"
           :label="`Amount (${currency})`"
           placeholder="e.g. 12,500"
           required
