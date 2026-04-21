@@ -267,10 +267,11 @@ const closeModal = () => {
               v-model="item.event_price"
               name="event_price"
               type="number"
+              format="currency"
+              step="0.01"
               label="Event Price"
               placeholder="e.g. 59.99"
               :min="0"
-              step="0.01"
               :error="validationErrors[item.uid]?.event_price"
               @input="validateVariantItem(item)"
             />

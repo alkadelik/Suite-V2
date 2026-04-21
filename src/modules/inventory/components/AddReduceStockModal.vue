@@ -34,6 +34,8 @@
           name="unit_cost"
           label="Unit Cost"
           type="number"
+          format="currency"
+          step="0.01"
           placeholder="Enter unit cost"
           required
         />

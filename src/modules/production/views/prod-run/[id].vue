@@ -173,21 +173,25 @@ const onFinaliseRun = () => {
               </div>
             </section>
 
-            <!-- <section class="mt-6">
+            <section v-if="prodRun.additional_expenses?.length" class="mt-6">
               <h4 class="text-core-700 mb-2">Additional Expenses</h4>
               <div class="divide-y divide-gray-200 rounded-xl bg-gray-50 px-4">
-                <div v-for="v in 4" :key="v" class="flex justify-between py-4 text-sm">
+                <div
+                  v-for="exp in prodRun.additional_expenses"
+                  :key="exp.uid"
+                  class="flex justify-between py-4 text-sm"
+                >
                   <p>
-                    <span class="font-medium">Chill Roasting {{ v }}</span>
+                    <span class="font-medium">{{ exp.name }}</span>
                   </p>
                   <p class="space-x-1">
-                    <span class="font-medium">{{ format(4000) }}</span>
-                    <Icon v-if="true" name="note" class="text-primary-600" />
+                    <span class="font-medium">{{ format(exp.amount, { kobo: true }) }}</span>
+                    <Icon v-if="false" name="note" class="text-primary-600" />
                     <span v-else class="px-2"></span>
                   </p>
                 </div>
               </div>
-            </section> -->
+            </section>
           </div>
 
           <!--  -->

@@ -237,11 +237,12 @@ watch(
             :model-value="paymentInfo.payment_amount"
             name="order-payment-amount"
             type="number"
+            format="currency"
+            step="0.01"
             label="Amount Paid"
             placeholder="0.00"
             :min="0"
             :max="totalAmount"
-            step="0.01"
             required
             :error="submitAttempted ? paymentErrors.payment_amount : ''"
             @update:model-value="paymentInfo.payment_amount = $event"

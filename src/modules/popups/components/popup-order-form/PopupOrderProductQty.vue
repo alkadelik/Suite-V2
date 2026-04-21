@@ -545,10 +545,11 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
                 v-model="variantItem.unit_price"
                 name="price"
                 type="number"
+                format="currency"
+                step="0.01"
                 label="Unit Price"
                 placeholder="e.g. 59.99"
                 :min="0"
-                step="0.01"
                 :error="validationErrors[variantItem.variant.uid]?.unit_price"
                 @blur="validateVariantItem(variantItem)"
               />

@@ -10,6 +10,7 @@ import type {
   AdditionalExpenseRow,
   BasicRunDetails,
 } from "../form-types"
+import TextField from "@components/form/TextField.vue"
 
 const props = defineProps<{
   loading: boolean
@@ -92,12 +93,13 @@ const estimationVerdict = computed(() => {
 
     <div class="bg-primary-25 border-primary-200 mt-6 rounded-xl border p-4">
       <span class="text-core-600 mb-1 block text-sm">Selling Price per Unit</span>
-      <input
+      <TextField
         v-model.number="sellingPrice"
         type="number"
-        min="0"
-        class="w-full bg-transparent text-lg font-semibold outline-none"
+        format="currency"
+        step="0.01"
         placeholder="0"
+        min="0"
       />
     </div>
 

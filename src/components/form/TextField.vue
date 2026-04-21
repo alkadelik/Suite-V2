@@ -6,8 +6,8 @@
     </label>
     <div :class="containerClasses">
       <!-- Prefix -->
-      <div v-if="prefix" :class="prefixClasses">
-        {{ prefix }}
+      <div v-if="prefix || format === 'currency'" :class="prefixClasses">
+        {{ format === "currency" ? currencySymbol : prefix }}
       </div>
 
       <!-- Left Icon -->
@@ -76,6 +76,7 @@
 <script setup lang="ts">
 import { capitalizeFirstChar } from "@/utils/format-strings"
 import Icon from "@components/Icon.vue"
+import { useSettingsStore } from "@modules/settings/store"
 import { computed, ref } from "vue"
 
 interface Props {
@@ -140,6 +141,12 @@ const emit = defineEmits<{
   blur: [event: FocusEvent]
   focus: [event: FocusEvent]
 }>()
+
+const currencySymbol = computed(() => {
+  const currency = useSettingsStore().storeDetails?.currency || "NGN"
+  const symbols: Record<string, string> = { NGN: "₦", USD: "$", GHS: "₵", KES: "KSh" }
+  return symbols[currency] || currency
+})
 
 const showPassword = ref(false)
 const isFocused = ref(false)
