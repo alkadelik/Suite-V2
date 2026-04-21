@@ -33,7 +33,7 @@ const quickActions = computed(() => {
     { label: "Customers", icon: "people", to: "/customers" },
     { label: "Popups", icon: "calendar-tick", to: "/popups", hqOnly: true },
     { label: "Expenses", icon: "receipt-text", to: "/expenses" },
-    { label: "EOD Reports", icon: "pie-chart", to: "/reports/eod" },
+    { label: "EOD Reports", icon: "pie-chart", to: "/reports/end-of-day" },
     { label: "Monthly Reports", icon: "pie-chart", to: "/reports/monthly" },
     {
       label: "Discounts",
