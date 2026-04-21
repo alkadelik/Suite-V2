@@ -78,7 +78,6 @@
       />
 
       <SidebarGroup
-        v-if="isStaging"
         icon="building"
         label="Production"
         :children="productionItems"
@@ -87,7 +86,6 @@
       />
 
       <SidebarGroup
-        v-if="isStaging"
         icon="chart-breakout-square"
         label="Reports"
         :children="reportsItems"
@@ -186,7 +184,7 @@ import AppButton from "@components/AppButton.vue"
 import SidebarLink from "./SidebarLink.vue"
 import SidebarGroup from "./SidebarGroup.vue"
 import LocationDropdown from "./LocationDropdown.vue"
-import { clipboardCopy, isStaging } from "@/utils/others"
+import { clipboardCopy } from "@/utils/others"
 import { useSettingsStore } from "@modules/settings/store"
 import { useRoute, useRouter } from "vue-router"
 import { useProductionStore } from "@modules/production/store"
