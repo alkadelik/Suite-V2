@@ -18,6 +18,7 @@ import { useReportsStore } from "../store"
 import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
 import { useSettingsStore } from "@modules/settings/store"
+import { toast } from "@/composables/useToast"
 
 const now = new Date()
 const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
@@ -89,6 +90,18 @@ const dateRange = computed(() => {
 const activeSection = ref("summary")
 
 const handleGenerate = () => {
+  const createdAt = settingsStore.storeDetails?.created_at
+  if (createdAt) {
+    const daysSinceCreation = (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24)
+    if (daysSinceCreation < 31) {
+      toast.error(
+        "Your store needs at least 31 days of activity before generating a Monthly report.",
+        { title: "Not Enough Data" },
+      )
+      return
+    }
+  }
+
   const [year, month] = activeDate.value.split("-").map(Number)
 
   generateMonthlyReport(
