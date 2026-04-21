@@ -33,11 +33,11 @@ const summaryCards = computed(() => {
   return [
     {
       label: "Average Order Value (AOV)",
-      value: m ? formatCurrency(m.average_order_value) : "₦0",
+      value: m?.average_order_value != null ? formatCurrency(m.average_order_value) : "₦0",
     },
     {
       label: "Average Items per Sale",
-      value: m ? String(m.average_items_per_sale) : "0",
+      value: m?.average_items_per_sale != null ? String(m.average_items_per_sale) : "0",
     },
     {
       label: "Inventory Turnover",
@@ -45,7 +45,7 @@ const summaryCards = computed(() => {
     },
     {
       label: "Sell-Through Rate",
-      value: m ? `${m.sell_through_rate_percent}%` : "0%",
+      value: m?.sell_through_rate_percent != null ? `${m.sell_through_rate_percent}%` : "0%",
     },
   ]
 })

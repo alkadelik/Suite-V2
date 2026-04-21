@@ -3,7 +3,7 @@ import Drawer from "@components/Drawer.vue"
 import Modal from "@components/Modal.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import { useMediaQuery } from "@vueuse/core"
-import { TOrder } from "../types"
+import { TOrder, TOrderItem } from "../types"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { formatDate } from "@/utils/formatDate"
 import { startCase } from "@/utils/format-strings"
@@ -50,6 +50,18 @@ const customerName = computed(() => {
 const itemsCount = computed(() => {
   return props.order.items.reduce((sum, item) => sum + item.quantity, 0)
 })
+
+const hasDiscount = (item: TOrderItem) => {
+  const original = Number(item.original_price)
+  const unit = Number(item.unit_price)
+  return isFinite(original) && isFinite(unit) && original > 0 && unit < original
+}
+
+const hasMarkup = (item: TOrderItem) => {
+  const original = Number(item.original_price)
+  const unit = Number(item.unit_price)
+  return isFinite(original) && isFinite(unit) && original > 0 && unit > original
+}
 
 const productsTotal = computed(() => {
   return Number(props.order.subtotal)
@@ -214,8 +226,19 @@ const menuItems = computed(() => {
             </div>
           </div>
           <div class="text-right">
-            <span class="text-sm font-medium">
+            <span
+              v-if="hasDiscount(item) || hasMarkup(item)"
+              class="text-core-400 text-xs line-through"
+            >
+              {{ format(Number(item.original_price) * item.quantity) }}
+            </span>
+            <span class="ml-1 text-sm font-medium">
               {{ format(Number(item.total_price)) }}
+            </span>
+            <span v-if="hasMarkup(item)" class="text-warning-600 block text-xs">
+              Markup: +{{
+                format((Number(item.unit_price) - Number(item.original_price)) * item.quantity)
+              }}
             </span>
           </div>
         </div>
