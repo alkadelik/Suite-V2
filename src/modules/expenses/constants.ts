@@ -1,8 +1,8 @@
 import type { TExpense } from "./types"
 import { TableColumn } from "@components/DataTable.vue"
 import { getSmartDateLabel } from "@/utils/formatDate"
-import { formatCurrency } from "@/utils/format-currency"
 import { TChipColor } from "@modules/shared/types"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 
 export const EXPENSE_COLUMN: TableColumn<TExpense>[] = [
   { header: "Name", accessor: "name" },
@@ -11,7 +11,10 @@ export const EXPENSE_COLUMN: TableColumn<TExpense>[] = [
   {
     header: "Amount",
     accessor: "amount",
-    cell: ({ value }) => formatCurrency(Number(value), { kobo: true }),
+    cell: ({ value }) => {
+      const { format } = useFormatCurrency()
+      return format(Number(value), { kobo: true })
+    },
   },
   {
     header: "Date",

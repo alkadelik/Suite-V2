@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import AppButton from "@components/AppButton.vue"
 import Chip from "@components/Chip.vue"
+import FieldGroupError from "@components/form/FieldGroupError.vue"
 import TextField from "@components/form/TextField.vue"
 import SelectField from "@components/form/SelectField.vue"
 import Icon from "@components/Icon.vue"
@@ -12,6 +13,8 @@ import * as yup from "yup"
 import TextAreaField from "@components/form/TextAreaField.vue"
 import { useMediaQuery } from "@vueuse/core"
 import { toast } from "@/composables/useToast"
+import { useSettingsStore } from "@modules/settings/store"
+import { scrollToAndFocusValidationTarget } from "@/utils/validations"
 
 interface OrderItem {
   product: IProductCatalogue
@@ -56,6 +59,9 @@ const emit = defineEmits<{
   "update:orderItems": [items: OrderItem[]]
   "update:selectedProducts": [products: IProductCatalogue[]]
 }>()
+const currency = computed(() => useSettingsStore().storeDetails?.currency || "NGN")
+
+const { format } = useFormatCurrency()
 
 const localItems = ref<OrderItem[]>([])
 const selectedVariants = ref<Map<string, VariantItem[]>>(new Map())
@@ -71,6 +77,7 @@ interface ValidationErrors {
   }
 }
 const validationErrors = ref<ValidationErrors>({})
+const stepError = ref("")
 
 // Check if a product needs variant selection (has multiple variants OR has attributes)
 const needsVariantSelection = (product: IProductCatalogue) => {
@@ -417,18 +424,21 @@ const validateAllItems = async () => {
   return validations.every((isValid) => isValid)
 }
 
-const canProceed = computed(() => {
-  return localItems.value.every((item) => {
-    const variants = selectedVariants.value.get(item.product.uid)
-    if (!variants || variants.length === 0) return false
-    // All variants must have valid quantity and price
-    return variants.every((v) => v.quantity > 0 && v.unit_price > 0)
-  })
-})
-
 const handleNext = async () => {
+  const missingVariants = localItems.value.some((item) => {
+    const variants = selectedVariants.value.get(item.product.uid)
+    return !variants || variants.length === 0
+  })
+
+  if (missingVariants) {
+    stepError.value = "Select at least one variant for each product before continuing."
+    scrollToAndFocusValidationTarget("order-product-qty")
+    return
+  }
+
   const isValid = await validateAllItems()
-  if (isValid && canProceed.value) {
+  if (isValid) {
+    stepError.value = ""
     // Convert selected variants to order items format
     const orderItems: OrderItem[] = []
     for (const item of localItems.value) {
@@ -448,6 +458,7 @@ const handleNext = async () => {
     emit("update:orderItems", orderItems)
     emit("next")
   } else {
+    stepError.value = "Fix the highlighted quantity or price fields before continuing."
     // Get the first validation error to show and scroll to it
     const firstErrorKey = Object.keys(validationErrors.value)[0]
     if (firstErrorKey) {
@@ -468,6 +479,21 @@ const handleNext = async () => {
   }
 }
 
+watch(
+  [selectedVariants, validationErrors],
+  () => {
+    const hasSelectedVariants = localItems.value.every((item) => {
+      const variants = selectedVariants.value.get(item.product.uid)
+      return variants && variants.length > 0
+    })
+
+    if (hasSelectedVariants && Object.keys(validationErrors.value).length === 0) {
+      stepError.value = ""
+    }
+  },
+  { deep: true },
+)
+
 // Get price display for products (shows original backend prices only)
 const getProductPriceDisplay = (product: IProductCatalogue) => {
   // If product has multiple variants, ALWAYS show price range from backend
@@ -477,14 +503,14 @@ const getProductPriceDisplay = (product: IProductCatalogue) => {
     const maxPrice = Math.max(...prices)
 
     if (minPrice === maxPrice) {
-      return formatCurrency(minPrice)
+      return format(minPrice)
     }
-    return `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`
+    return `${format(minPrice)} - ${format(maxPrice)}`
   }
 
   // For simple products (single variant, no attributes), show the price from backend
   if (product.variants && product.variants.length === 1) {
-    return formatCurrency(parseFloat(product.variants[0].price))
+    return format(parseFloat(product.variants[0].price))
   }
 
   return "Select variant(s)"
@@ -508,7 +534,7 @@ const productsTotal = computed(() => {
   return total
 })
 
-const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
+const isMobile = useMediaQuery("(max-width: 1024px)")
 </script>
 
 <template>
@@ -522,7 +548,7 @@ const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
       Select Products <Chip :label="String(localItems.length)" />
     </h3>
 
-    <section class="grid gap-6">
+    <section data-validation-target="order-product-qty" class="grid gap-6">
       <div v-for="item in localItems" :key="item.product.uid" class="rounded-xl bg-white">
         <div class="flex gap-4 p-4">
           <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100">
@@ -595,7 +621,7 @@ const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
                 <!-- display original price here -->
                 <span class="text-core-600 flex items-center gap-1 text-xs">
                   <Icon name="tag" class="h-3 w-3" />
-                  {{ formatCurrency(parseFloat(variantItem.variant.price)) }}
+                  {{ format(parseFloat(variantItem.variant.price)) }}
                 </span>
               </div>
 
@@ -623,10 +649,11 @@ const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
                 v-model="variantItem.unit_price"
                 name="price"
                 type="number"
-                label="Unit Price"
+                format="currency"
+                step="0.01"
+                :label="`Unit Price (${currency})`"
                 placeholder="e.g. 59.99"
                 :min="0"
-                step="0.01"
                 :error="validationErrors[variantItem.variant.uid]?.unit_price"
                 :data-variant="variantItem.variant.uid"
                 @blur="validateVariantItem(variantItem)"
@@ -659,12 +686,13 @@ const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
       <div class="flex items-center justify-between">
         <p class="text-sm text-gray-600">Total products amount:</p>
         <span class="text-primary-600 text-base font-semibold">
-          {{ formatCurrency(productsTotal) }}
+          {{ format(productsTotal) }}
         </span>
       </div>
+      <FieldGroupError v-if="stepError" target="order-product-qty" :error="stepError" />
       <div class="flex gap-3">
         <AppButton label="Back" color="alt" class="w-1/3" icon="arrow-left" @click="emit('prev')" />
-        <AppButton label="Next" class="w-2/3" :disabled="!canProceed" @click="handleNext" />
+        <AppButton label="Next" class="w-2/3" @click="handleNext" />
       </div>
     </div>
   </div>

@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import AppButton from "@components/AppButton.vue"
-import FormField from "@components/form/FormField.vue"
+import FieldGroupError from "@components/form/FieldGroupError.vue"
 import RadioInputField from "@components/form/RadioInputField.vue"
+import SelectField from "@components/form/SelectField.vue"
+import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
 import { ORDER_PAYMENT_METHODS, ORDER_PAYMENT_STATUS } from "@modules/orders/constants"
 import { useMediaQuery } from "@vueuse/core"
-import { computed, watch, onMounted } from "vue"
+import { watch, onMounted, ref } from "vue"
+import { scrollToAndFocusValidationTarget } from "@/utils/validations"
 
 interface PaymentInfo {
   payment_status: "unpaid" | "paid" | "partially_paid"
@@ -29,9 +32,15 @@ const emit = defineEmits<{
   next: []
   prev: []
 }>()
+const { format } = useFormatCurrency()
 
 // Use defineModel for two-way binding - cleaner than manual v-model implementation
 const paymentInfo = defineModel<PaymentInfo>("paymentInfo", { required: true })
+const submitAttempted = ref(false)
+const paymentErrors = ref({
+  payment_source: "",
+  payment_amount: "",
+})
 
 // Initialize payment amount on mount if status is paid
 onMounted(() => {
@@ -76,27 +85,66 @@ watch(
   },
 )
 
-const canProceed = computed(() => {
+const validatePaymentStep = () => {
+  paymentErrors.value = {
+    payment_source: "",
+    payment_amount: "",
+  }
+
+  if (
+    paymentInfo.value.payment_status === "paid" ||
+    paymentInfo.value.payment_status === "partially_paid"
+  ) {
+    if (!paymentInfo.value.payment_source) {
+      paymentErrors.value.payment_source = "Select how the customer paid."
+    }
+  }
+
   if (paymentInfo.value.payment_status === "partially_paid") {
-    return (
-      Number(paymentInfo.value.payment_amount) > 0 &&
-      Number(paymentInfo.value.payment_amount) < props.totalAmount &&
-      !!paymentInfo.value.payment_source
-    )
+    const amount = Number(paymentInfo.value.payment_amount)
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      paymentErrors.value.payment_amount = "Enter an amount greater than 0."
+    } else if (amount >= props.totalAmount) {
+      paymentErrors.value.payment_amount =
+        "Partial payment must be less than the total order amount."
+    }
   }
-  if (paymentInfo.value.payment_status === "paid") {
-    return !!paymentInfo.value.payment_source
-  }
-  return true
-})
+
+  return !paymentErrors.value.payment_source && !paymentErrors.value.payment_amount
+}
 
 const handleNext = () => {
-  if (canProceed.value) {
+  submitAttempted.value = true
+
+  if (validatePaymentStep()) {
     emit("next")
+    return
   }
+
+  if (paymentErrors.value.payment_source) {
+    scrollToAndFocusValidationTarget("order-payment-source")
+    return
+  }
+
+  scrollToAndFocusValidationTarget("order-payment-amount")
 }
 
 const isMobile = useMediaQuery("(max-width: 768px)")
+
+watch(
+  () => [
+    paymentInfo.value.payment_status,
+    paymentInfo.value.payment_source,
+    paymentInfo.value.payment_amount,
+    props.totalAmount,
+  ],
+  () => {
+    if (submitAttempted.value) {
+      validatePaymentStep()
+    }
+  },
+)
 </script>
 
 <template>
@@ -107,23 +155,6 @@ const isMobile = useMediaQuery("(max-width: 768px)")
     <p class="mb-4 text-sm">Record full, partial, or unpaid amounts.</p>
 
     <div class="space-y-4">
-      <div v-if="false" class="rounded-xl bg-white p-4">
-        <h3 class="mb-4 text-sm font-medium">Discount</h3>
-        <div class="space-y-4">
-          <FormField
-            type="text"
-            name="coupon_code"
-            label="Coupon Code"
-            placeholder="e.g. LLY-QRTXY"
-            v-model="paymentInfo.coupon_code"
-          />
-
-          <div class="flex justify-end">
-            <AppButton size="sm" variant="outlined" label="Apply Code" class="w-full md:w-auto" />
-          </div>
-        </div>
-      </div>
-
       <!-- Order Summary -->
       <div class="border-core-300 bg-core-25 space-y-3 rounded-xl border p-4">
         <h4 class="text-sm font-medium">Order Summary</h4>
@@ -133,7 +164,7 @@ const isMobile = useMediaQuery("(max-width: 768px)")
         </p>
         <p class="flex justify-between text-sm">
           <span class="text-core-600">Total products amount</span>
-          <span class="font-medium">{{ formatCurrency(productsTotal, { kobo: true }) }}</span>
+          <span class="font-medium">{{ format(productsTotal, { kobo: true }) }}</span>
         </p>
         <p class="flex justify-between text-sm">
           <span class="text-core-600"
@@ -143,12 +174,12 @@ const isMobile = useMediaQuery("(max-width: 768px)")
             ></span
           >
           <span class="font-medium" :class="{ 'font-normal! line-through': isFreeShipping }">
-            {{ deliveryFee > 0 ? formatCurrency(deliveryFee, { kobo: true }) : "-" }}
+            {{ deliveryFee > 0 ? format(deliveryFee, { kobo: true }) : "-" }}
           </span>
         </p>
         <p v-if="vatAmount > 0" class="flex justify-between text-sm">
           <span class="text-core-600">VAT (7.5%)</span>
-          <span class="font-medium">{{ formatCurrency(vatAmount, { kobo: true }) }}</span>
+          <span class="font-medium">{{ format(vatAmount, { kobo: true }) }}</span>
         </p>
         <p
           v-if="paymentInfo.discount_amount > 0"
@@ -156,17 +187,17 @@ const isMobile = useMediaQuery("(max-width: 768px)")
         >
           <span>Discount</span>
           <span class="font-medium"
-            >-{{ formatCurrency(paymentInfo.discount_amount, { kobo: true }) }}</span
+            >-{{ format(paymentInfo.discount_amount, { kobo: true }) }}</span
           >
         </p>
         <div class="border-core-200 my-2 border-t border-dashed"></div>
         <div class="flex justify-between text-lg font-semibold">
           <span>Total:</span>
           <div class="text-right">
-            <span class="text-primary-600">{{ formatCurrency(totalAmount, { kobo: true }) }}</span>
+            <span class="text-primary-600">{{ format(totalAmount, { kobo: true }) }}</span>
             <br />
             <span class="text-core-600 text-sm font-normal line-through" v-if="isFreeShipping">
-              {{ formatCurrency(totalAmount + deliveryFee, { kobo: true }) }}
+              {{ format(totalAmount + deliveryFee, { kobo: true }) }}
             </span>
           </div>
         </div>
@@ -185,38 +216,61 @@ const isMobile = useMediaQuery("(max-width: 768px)")
       </div>
 
       <div v-if="paymentInfo.payment_status !== 'unpaid'" class="space-y-6 rounded-xl bg-white p-4">
-        <FormField
-          type="select"
-          :options="ORDER_PAYMENT_METHODS"
-          name="payment_source"
-          label="Payment Mode"
-          v-model="paymentInfo.payment_source"
-          required
-        />
+        <div data-validation-target="order-payment-source">
+          <SelectField
+            :model-value="paymentInfo.payment_source"
+            :options="ORDER_PAYMENT_METHODS"
+            label="Payment Mode"
+            required
+            :error="submitAttempted ? paymentErrors.payment_source : ''"
+            @update:model-value="
+              paymentInfo.payment_source = $event as PaymentInfo['payment_source']
+            "
+          />
+        </div>
 
-        <FormField
-          type="number"
-          name="payment_amount"
-          label="Amount Paid"
-          placeholder="0.00"
-          v-model.number="paymentInfo.payment_amount"
-          :min="0"
-          :max="totalAmount"
-          step="0.01"
-          required
-          :readonly="paymentInfo.payment_status === 'paid'"
-          :disabled="paymentInfo.payment_status === 'paid'"
-        />
+        <div
+          v-if="paymentInfo.payment_status === 'partially_paid'"
+          data-validation-target="order-payment-amount"
+        >
+          <TextField
+            :model-value="paymentInfo.payment_amount"
+            name="order-payment-amount"
+            type="number"
+            format="currency"
+            step="0.01"
+            label="Amount Paid"
+            placeholder="0.00"
+            :min="0"
+            :max="totalAmount"
+            required
+            :error="submitAttempted ? paymentErrors.payment_amount : ''"
+            @update:model-value="paymentInfo.payment_amount = $event"
+          />
+        </div>
       </div>
     </div>
 
     <div class="h-24" />
 
-    <div
-      class="border-core-200 fixed right-0 bottom-0 left-0 flex gap-3 border-t bg-white p-4 md:p-6"
-    >
-      <AppButton label="Back" color="alt" class="w-1/3" icon="arrow-left" @click="emit('prev')" />
-      <AppButton label="Next" class="w-2/3" :disabled="!canProceed" @click="handleNext" />
+    <div class="border-core-200 fixed right-0 bottom-0 left-0 border-t bg-white p-4 md:p-6">
+      <div class="flex flex-col gap-3">
+        <FieldGroupError
+          v-if="submitAttempted && (paymentErrors.payment_source || paymentErrors.payment_amount)"
+          target="order-payment-source"
+          :error="paymentErrors.payment_source || paymentErrors.payment_amount"
+        />
+        <div class="flex gap-3">
+          <AppButton
+            label="Back"
+            color="alt"
+            class="w-1/3"
+            icon="arrow-left"
+            @click="emit('prev')"
+          />
+          <AppButton label="Next" class="w-2/3" @click="handleNext" />
+        </div>
+      </div>
     </div>
   </div>
 </template>

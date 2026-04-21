@@ -1,5 +1,5 @@
 import { TableColumn } from "@components/DataTable.vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { PopupEvent, PopupInventory } from "./types"
 import { getSmartDateLabel } from "@/utils/formatDate"
 import { TOrder } from "@modules/orders/types"
@@ -9,7 +9,10 @@ export const POPUP_COLUMN: TableColumn<PopupEvent>[] = [
   {
     header: "Fee",
     accessor: "participation_fee",
-    cell: ({ value }) => (Number(value) ? formatCurrency(value as number) : "Free"),
+    cell: ({ value }) => {
+      const { format } = useFormatCurrency()
+      return Number(value) ? format(value as number) : "Free"
+    },
   },
   { header: "Sales", accessor: "items_sold_count" },
   { header: "Status", accessor: "status" },
@@ -55,7 +58,10 @@ export const POPUP_ORDER_COLUMNS: TableColumn<TOrder>[] = [
   {
     header: "Amount",
     accessor: "total_amount",
-    cell: ({ value }) => formatCurrency(Number(value), { kobo: true }),
+    cell: ({ value }) => {
+      const { format } = useFormatCurrency()
+      return format(Number(value), { kobo: true })
+    },
   },
   { header: "Status", accessor: "payment_status" },
   { header: "Fulfilled", accessor: "fulfilment_status" },
@@ -81,15 +87,14 @@ export const getInventoryVisibility = (item: PopupInventory) => {
 }
 
 export const getPopupPriceRange = (item: PopupInventory) => {
+  const { format } = useFormatCurrency()
   const prices = item.variants?.map((variant) => Number(variant.event_price)) || []
 
   const minPrice = Math.min(...prices)
   const maxPrice = Math.max(...prices)
 
   const value =
-    minPrice === maxPrice
-      ? formatCurrency(minPrice)
-      : `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`
+    minPrice === maxPrice ? format(minPrice) : `${format(minPrice)} - ${format(maxPrice)}`
 
   return value
 }

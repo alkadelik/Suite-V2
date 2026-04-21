@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import DataTable, { TableColumn } from "@components/DataTable.vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import ReportInsightCard from "../ReportInsightCard.vue"
 import { computed, ref } from "vue"
 import { useMediaQuery } from "@vueuse/core"
@@ -19,8 +19,9 @@ import { IMonthlyReport } from "@modules/reports/types"
 ChartJS.register(ArcElement, Tooltip, Legend, LinearScale, PointElement)
 
 const props = defineProps<{ data: IMonthlyReport | null }>()
+const { format } = useFormatCurrency()
 
-const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
+const isMobile = useMediaQuery("(max-width: 768px)")
 const isHoveringChart = ref(false)
 
 const categoryChartData = computed(() => {
@@ -105,7 +106,7 @@ const categoryChartOptions: ChartOptions<"doughnut"> = {
           const value = context.parsed || 0
           const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0)
           const percentage = ((value / total) * 100).toFixed(1)
-          return `${label}: ${formatCurrency(value)} (${percentage}%)`
+          return `${label}: ${format(value)} (${percentage}%)`
         },
       },
     },
@@ -164,12 +165,12 @@ type TProductRow = {
 const COLUMNS: TableColumn<TProductRow>[] = [
   { header: "#", accessor: "sn" },
   { header: "Product", accessor: "product_name" },
-  { header: "Revenue", accessor: "amount", cell: ({ value }) => formatCurrency(Number(value)) },
+  { header: "Revenue", accessor: "amount", cell: ({ value }) => format(Number(value)) },
   { header: "Units Sold", accessor: "units_sold" },
   {
     header: "Avg. Price",
     accessor: "avg_price",
-    cell: ({ value }) => formatCurrency(Number(value)),
+    cell: ({ value }) => format(Number(value)),
   },
   { header: "Margin", accessor: "margin", cell: ({ value }) => `${value}%` },
   { header: "Sell-Through", accessor: "sell_through", cell: ({ value }) => `${value}%` },

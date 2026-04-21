@@ -107,6 +107,9 @@
                 placeholder="e.g solesnshades, smile socks"
                 class="w-full rounded-md border border-[#D7D5D5] px-2 py-3 text-sm placeholder:text-sm placeholder:text-black/60 focus:border-black/60 focus:outline-none"
               />
+              <p v-if="businessNameHasNumbers" class="mt-1 text-xs text-red-500">
+                Business name cannot contain numbers (ShipBubble requirement)
+              </p>
             </div>
 
             <div>
@@ -358,9 +361,12 @@ const authForm = computed({
   set: (val) => emit("update:authForm", val),
 })
 
+const businessNameHasNumbers = computed(() => /\d/.test(authForm.value.business_name))
+
 // In edit mode, form is always valid (all fields are optional)
 // In create mode, all fields are required
 const authFormIsValid = computed(() => {
+  if (businessNameHasNumbers.value) return false
   if (isEditMode.value) {
     // In edit mode, form is valid as long as at least one field has a value
     // or if nothing has changed (user can just click Next to proceed)

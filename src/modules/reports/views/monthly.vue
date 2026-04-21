@@ -19,9 +19,10 @@ import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
 import { useSettingsStore } from "@modules/settings/store"
 
-const lastMonth = new Date()
-lastMonth.setMonth(lastMonth.getMonth() - 1)
-const activeDate = ref(lastMonth.toISOString().slice(0, 7))
+const now = new Date()
+const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+const lastMonthStr = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, "0")}`
+const activeDate = ref(lastMonthStr)
 
 const reportsStore = useReportsStore()
 const settingsStore = useSettingsStore()
@@ -71,7 +72,7 @@ const reportData = computed(() => {
   return latestMonthlyReport.value
 })
 
-const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
+const isMobile = useMediaQuery("(max-width: 1024px)")
 const fullMonth = computed(() =>
   new Date(activeDate.value).toLocaleDateString("en-US", { month: "long" }),
 )
@@ -132,7 +133,7 @@ const STEPS = computed(() => [
           type="month"
           size="sm"
           v-model="activeDate"
-          :max="lastMonth.toISOString().slice(0, 7)"
+          :max="lastMonthStr"
           :min="storeCreatedDate"
         />
       </template>

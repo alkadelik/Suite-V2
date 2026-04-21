@@ -26,19 +26,21 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), { variant: "main" })
 const chipColor = computed(() => (props.stat.chipColor as TChipColor) || "blue")
+
+const isLoading = computed(() => props.loading)
 </script>
 
 <template>
   <div
     :class="[
-      'rounded-xl border lg:shadow',
+      'rounded-xl border',
       variant === 'alt'
         ? 'border-primary-200 bg-primary-25 p-4'
-        : 'border-primary-200 bg-primary-25 p-3 pb-2 lg:border-0 lg:bg-white lg:p-5 lg:pb-3',
+        : 'border-primary-200 bg-primary-25 p-3 pb-2 lg:border-gray-300 lg:bg-white lg:p-5 lg:pb-3',
     ]"
   >
     <!-- Loading skeleton -->
-    <div v-if="loading" class="animate-pulse">
+    <div v-if="isLoading" class="animate-pulse">
       <div :class="['flex gap-2', 'flex-row items-center']">
         <div :class="{ 'flex items-center justify-between': true }">
           <!-- Icon skeleton -->
@@ -69,9 +71,14 @@ const chipColor = computed(() => (props.stat.chipColor as TChipColor) || "blue")
 
     <template v-else>
       <!-- title -->
-      <div :class="['flex gap-2', 'flex-col md:flex-row md:items-center']">
-        <div :class="{ 'flex flex-1 flex-col gap-2 md:flex-row md:items-center md:gap-4': true }">
-          <div
+      <div :class="['flex gap-2', 'flex-col overflow-hidden md:flex-row md:items-center']">
+        <div
+          :class="{
+            'flex flex-1 flex-col gap-2 md:gap-4': true,
+            'md:flex-row md:items-center': stat.percentage !== undefined && variant !== 'alt',
+          }"
+        >
+          <span
             :class="[
               'size-10 items-center justify-center rounded-xl',
               variant === 'alt' ? 'bg-core-200 flex' : 'hidden bg-gray-100 lg:flex',
@@ -79,20 +86,20 @@ const chipColor = computed(() => (props.stat.chipColor as TChipColor) || "blue")
             ]"
           >
             <Icon :name="stat.icon" size="24" />
-          </div>
+          </span>
           <span
             :class="variant === 'alt' ? 'hidden' : 'inline lg:hidden'"
             class="border-primary-600 w-8 rounded-full border-t-2"
           />
 
-          <!-- percentage -->
-          <h3 class="!font-outfit text-core-600 line-clamp-1 flex-1 text-sm md:text-base">
+          <!-- label -->
+          <h3 class="!font-outfit text-core-600 line-clamp-1 text-sm md:text-base">
             {{ stat.label }}
           </h3>
 
           <div
             v-if="stat.percentage && variant !== 'alt'"
-            class="hidden items-center gap-1 lg:inline-flex"
+            class="ml-auto hidden items-center gap-1 lg:inline-flex"
             :class="stat.percentage > 0 ? 'text-success-600' : 'text-error-600'"
           >
             <Icon

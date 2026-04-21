@@ -7,7 +7,7 @@ import { computed, ref } from "vue"
 import { useGetOrderPaymentHistory } from "../api"
 import { TOrder } from "../types"
 import AddPaymentModal from "./AddPaymentModal.vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import Modal from "@components/Modal.vue"
 import { useMediaQuery } from "@vueuse/core"
 import EmptyState from "@components/EmptyState.vue"
@@ -31,6 +31,8 @@ const id = computed(() => props.order.uid)
 const { data: paymentHistory, isLoading, refetch } = useGetOrderPaymentHistory(id)
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
+
+const { format } = useFormatCurrency()
 
 const handleRefresh = () => {
   refetch()
@@ -75,19 +77,19 @@ const paymentHistoryLists = computed(() => {
           <div>
             <h3 class="text-core-900 !font-outfit mb-0.5 text-sm font-normal">Order Total</h3>
             <p class="text-lg font-medium text-gray-900">
-              {{ formatCurrency(paymentHistory?.total_amount || 0) }}
+              {{ format(paymentHistory?.total_amount || 0) }}
             </p>
           </div>
           <div>
             <h3 class="text-core-900 !font-outfit mb-0.5 text-sm font-normal">Total Paid</h3>
             <p class="text-lg font-medium text-green-800">
-              {{ formatCurrency(paymentHistory?.total_paid || 0) }}
+              {{ format(paymentHistory?.total_paid || 0) }}
             </p>
           </div>
           <div>
             <h3 class="text-core-900 !font-outfit mb-0.5 text-sm !font-normal">Outstanding</h3>
             <p class="text-lg font-medium text-red-600">
-              {{ formatCurrency(paymentHistory?.outstanding_balance || 0) }}
+              {{ format(paymentHistory?.outstanding_balance || 0) }}
             </p>
           </div>
         </div>
@@ -114,7 +116,7 @@ const paymentHistoryLists = computed(() => {
         >
           <div class="flex justify-between gap-2">
             <h3 class="text-core-900 text-sm font-medium">
-              {{ formatCurrency(payment.amount) }}
+              {{ format(payment.amount) }}
             </h3>
             <span class="capitalize">{{ payment.source }}</span>
           </div>
