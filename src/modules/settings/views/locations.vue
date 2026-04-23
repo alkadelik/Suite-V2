@@ -144,7 +144,7 @@ const hasBloomAccess = computed(() => {
 
 // Handle add location click - check for Bloom plan access
 const handleAddLocation = () => {
-  if (!hasBloomAccess.value) {
+  if (!hasBloomAccess.value && !settingsStore.isInternational) {
     settingsStore.setPlanUpgradeModal(true)
     return
   }

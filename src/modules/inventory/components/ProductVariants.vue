@@ -79,7 +79,7 @@
       </template>
 
       <template #cell:price="{ value }">
-        <span class="text-core-600 text-sm font-semibold">{{ formatCurrency(Number(value)) }}</span>
+        <span class="text-core-600 text-sm font-semibold">{{ format(Number(value)) }}</span>
       </template>
 
       <template #cell:sellable_stock="{ value }">
@@ -130,7 +130,7 @@ import DropdownMenu from "@components/DropdownMenu.vue"
 import ProductAvatar from "@components/ProductAvatar.vue"
 import ProductVariantCard from "./ProductVariantCard.vue"
 import ListFilterDrawer from "@components/ListFilterDrawer.vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import { useGetVariantsByProduct } from "../api"
 import type { IProductDetails, IProductVariantDetails } from "../types"
@@ -154,6 +154,7 @@ interface Emits {
 
 const props = defineProps<Props>()
 defineEmits<Emits>()
+const { format } = useFormatCurrency()
 
 const search = ref("")
 const debouncedSearch = useDebouncedRef(search, 750)

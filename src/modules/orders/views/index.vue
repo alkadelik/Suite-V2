@@ -31,7 +31,7 @@ import FulfilOrderModal from "../components/FulfilOrderModal.vue"
 import OrderMemoDrawer from "../components/OrderMemoDrawer.vue"
 import OrderPaymentDrawer from "../components/OrderPaymentDrawer.vue"
 import Tabs from "@components/Tabs.vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { useRoute, useRouter } from "vue-router"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import ProductAvatar from "@components/ProductAvatar.vue"
@@ -52,6 +52,8 @@ const openMarkPaid = ref(false)
 const selectedOrder = ref<TOrder | null>(null)
 const status = ref(ORDER_STATUS_TAB[0].key)
 
+const { format } = useFormatCurrency()
+
 const {
   data: orderDashboard,
   isPending: isLoadingStats,
@@ -71,14 +73,14 @@ const orderMetrics = computed(() => {
     },
     {
       label: "Receivables",
-      value: formatCurrency(current?.total_outstanding || 0),
+      value: format(current?.total_outstanding || 0),
       icon: "user-octagon",
       iconClass: "md:text-bloom-700",
       percentage: change?.total_outstanding_pct || 0,
     },
     {
       label: "Volume",
-      value: formatCurrency(current?.total_amount || 0),
+      value: format(current?.total_amount || 0),
       icon: "user-circle-add",
       iconClass: "md:text-bloom-700",
       percentage: change?.total_amount_pct || 0,

@@ -15,7 +15,7 @@ const emit = defineEmits<{
   apply: [filters: Record<string, string>]
 }>()
 
-const isMobile = computed(() => useMediaQuery("(max-width: 1028px)").value)
+const isMobile = useMediaQuery("(max-width: 1028px)")
 
 // const PAYMENT_STATUS_OPTIONS: { value: string; label: string; color: TChipColor }[] = [
 //   { value: "paid", label: "Paid", color: "success" },
@@ -171,6 +171,8 @@ const clearFilters = () => {
             label="Min Amount"
             placeholder="e.g. 500"
             type="number"
+            format="currency"
+            step="0.01"
             left-icon="wallet-money"
           />
           <TextField
@@ -178,6 +180,8 @@ const clearFilters = () => {
             label="Max Amount"
             placeholder="e.g. 50,000"
             type="number"
+            format="currency"
+            step="0.01"
             left-icon="wallet-money"
           />
         </div>

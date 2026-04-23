@@ -37,7 +37,11 @@ defineProps<{
       class="mt-1 flex items-center gap-1"
       :class="Number(stat.percentage) > 0 ? 'text-success-600' : 'text-error-600'"
     >
-      <Icon name="arrow-up-square" size="20" :class="'rotate-180'" />
+      <Icon
+        name="arrow-up-square"
+        size="20"
+        :class="{ 'rotate-180': Number(stat.percentage) <= 0 }"
+      />
       <span
         class="text-sm font-medium"
         :class="Number(stat.percentage) > 0 ? 'text-success-600' : 'text-error-600'"

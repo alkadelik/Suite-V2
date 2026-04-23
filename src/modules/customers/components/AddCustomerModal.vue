@@ -1,6 +1,6 @@
 <template>
   <Modal :open="open" title="Add Customer" max-width="xl" body-class="!p-0" @close="emit('close')">
-    <AppForm :schema="schema" @submit="onSubmit" v-slot="{ meta }" class="flex h-full flex-col">
+    <AppForm :schema="schema" @submit="onSubmit" v-slot="{}" class="flex h-full flex-col">
       <div class="m flex-1 space-y-4 px-4 py-4 md:px-6">
         <div class="grid grid-cols-2 gap-4 md:gap-6">
           <FormField name="first_name" label="First Name" type="text" placeholder="e.g. Adebola" />
@@ -34,7 +34,7 @@
           label="Add Customer"
           :loading="isPending"
           class="w-full"
-          :disabled="!meta.valid || isPending"
+          :disabled="isPending"
         />
       </div>
     </AppForm>

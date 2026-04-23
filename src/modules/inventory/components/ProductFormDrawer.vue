@@ -18,18 +18,24 @@
           ref="productDetailsRef"
           v-model="form"
           :has-variants="hasVariants"
+          :errors="submitAttempted ? currentStepValidation.productDetailsErrors : undefined"
           @update:has-variants="hasVariants = $event"
           @add-category="showAddCategoryModal = true"
         />
 
         <!-- Step 2: Variants Configuration (only if hasVariants is true) -->
-        <ProductVariantsForm v-else-if="step === 2 && hasVariants" v-model="variantConfiguration" />
+        <ProductVariantsForm
+          v-else-if="step === 2 && hasVariants"
+          v-model="variantConfiguration"
+          :errors="submitAttempted ? currentStepValidation.variantConfigurationErrors : undefined"
+        />
 
         <!-- Step 2/3: Inventory & Pricing -->
         <ProductManageCombinationsForm
           v-else-if="(step === 2 && !hasVariants) || (step === 3 && hasVariants)"
           v-model="variants"
           :product-name="form.name"
+          :errors="submitAttempted ? currentStepValidation.inventoryErrors : undefined"
         />
 
         <!-- Step 3/4: Product Images -->
@@ -59,7 +65,7 @@
           <AppButton
             :label="getSubmitButtonLabel"
             :loading="isPending"
-            :disabled="isPending || !canProceed"
+            :disabled="isPending"
             :class="step === 1 ? 'w-full' : 'flex-1'"
             form="product-form"
             type="submit"
@@ -101,6 +107,7 @@ import { useQueryClient } from "@tanstack/vue-query"
 import { htmlToMarkdown } from "@/utils/html-to-markdown"
 import { useImageConverter } from "@/composables/useImageConverter"
 import { useAuthStore } from "@modules/auth/store"
+import { scrollToAndFocusValidationTarget } from "@/utils/validations"
 
 // Import composables
 import { useProductFormState } from "../composables/useProductFormState"
@@ -132,6 +139,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<Emits>()
 
 const showAddCategoryModal = ref(false)
+const submitAttempted = ref(false)
 
 // Ref to ProductDetailsForm component
 const productDetailsRef = ref<{
@@ -175,7 +183,7 @@ const variantConfigHelpers = useVariantConfiguration(
   computed(() => form.name),
 )
 
-const { canProceed, validateAllUIDs } = useVariantValidation({
+const { currentStepValidation, validateAllUIDs } = useVariantValidation({
   form,
   hasVariants,
   variantConfiguration,
@@ -218,6 +226,7 @@ watch(
   (isOpen) => {
     if (isOpen) {
       resetFormState()
+      submitAttempted.value = false
     }
   },
   { immediate: true },
@@ -225,6 +234,7 @@ watch(
 
 // Watch for step changes to scroll to top
 watch(step, () => {
+  submitAttempted.value = false
   const drawerContent = document.querySelector(".drawer-body")
   if (drawerContent) {
     drawerContent.scrollTo({ top: 0, behavior: "smooth" })
@@ -233,7 +243,12 @@ watch(step, () => {
 
 // Form submission handler
 const handleSubmit = async () => {
-  if (!canProceed.value) return
+  submitAttempted.value = true
+
+  if (!currentStepValidation.value.valid) {
+    scrollToAndFocusValidationTarget(currentStepValidation.value.firstErrorTarget)
+    return
+  }
 
   if (isLastStep.value) {
     // Format product data according to API schema
@@ -243,7 +258,6 @@ const handleSubmit = async () => {
       story: form.story || "",
       category: form.category?.value as string,
       brand: form.brand || "",
-      unit: form.unit?.value || undefined,
       is_active: true,
       is_variable: hasVariants.value,
       requires_approval: form.requires_approval || false,
@@ -401,6 +415,7 @@ const handleSubmit = async () => {
       await queryClient.invalidateQueries({ queryKey: ["products"] })
 
       // Reset form state only after all uploads complete
+      submitAttempted.value = false
       step.value = 1
       hasVariants.value = false
       resetFormState()
@@ -440,6 +455,7 @@ const handleSubmit = async () => {
         })
 
         // Move to next step
+        submitAttempted.value = false
         step.value += 1
       } catch (error) {
         console.error("Failed to process variants:", error)
@@ -448,6 +464,7 @@ const handleSubmit = async () => {
       }
     } else {
       // Regular step progression
+      submitAttempted.value = false
       step.value += 1
     }
   }
@@ -455,6 +472,7 @@ const handleSubmit = async () => {
 
 // Back button handler
 const handleBack = () => {
+  submitAttempted.value = false
   previousStep()
 }
 

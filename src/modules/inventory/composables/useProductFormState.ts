@@ -9,7 +9,6 @@ export interface IProductForm {
   name: string
   description: string
   category: { label: string; value: string } | null
-  unit: { label: string; value: string } | null
   images: Array<File | string | null>
   story: string
   brand: string
@@ -43,7 +42,6 @@ export function useProductFormState() {
     name: "",
     description: "",
     category: null,
-    unit: null,
     images: [],
     story: "",
     brand: "",
@@ -108,7 +106,6 @@ export function useProductFormState() {
       name: "",
       description: "",
       category: null,
-      unit: null,
       images: [],
       story: "",
       brand: "",
@@ -128,7 +125,6 @@ export function useProductFormState() {
       name: "",
       description: "",
       category: null,
-      unit: null,
       images: [],
       story: "",
       brand: "",
@@ -155,7 +151,6 @@ export function useProductFormState() {
     description?: string
     story?: string
     brand?: string
-    unit?: { label: string; value: string } | null
     requires_approval?: boolean
     category?: { label: string; value: string } | null
     images?: Array<File | string | null>
@@ -169,7 +164,6 @@ export function useProductFormState() {
     if (data.brand !== undefined) form.brand = data.brand
     if (data.requires_approval !== undefined) form.requires_approval = data.requires_approval
     if (data.category !== undefined) form.category = data.category
-    if (data.unit !== undefined) form.unit = data.unit
     if (data.images !== undefined) form.images = data.images
     // Set variants before hasVariants to prevent watcher from clearing variants
     if (data.variants !== undefined) variants.value = data.variants

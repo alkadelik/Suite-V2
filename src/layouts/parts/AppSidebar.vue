@@ -30,7 +30,10 @@
               {{ storeDetails?.name }}
             </p>
           </div>
-          <div class="flex min-w-0 items-center gap-2 text-sm text-gray-600">
+          <div
+            v-if="!isInternational"
+            class="flex min-w-0 items-center gap-2 text-sm text-gray-600"
+          >
             <p class="min-w-0 truncate">{{ storefrontUrl }}</p>
             <Icon
               name="copy"
@@ -75,7 +78,6 @@
       />
 
       <SidebarGroup
-        v-if="isStaging"
         icon="building"
         label="Production"
         :children="productionItems"
@@ -84,7 +86,6 @@
       />
 
       <SidebarGroup
-        v-if="isStaging"
         icon="chart-breakout-square"
         label="Reports"
         :children="reportsItems"
@@ -108,7 +109,7 @@
       />
 
       <!-- Subscription view -->
-      <div class="relative mt-20">
+      <div v-if="!isInternational" class="relative mt-20">
         <div
           :class="['relative isolate flex flex-col gap-1 rounded-3xl p-3 pt-12 text-white']"
           style="
@@ -183,7 +184,7 @@ import AppButton from "@components/AppButton.vue"
 import SidebarLink from "./SidebarLink.vue"
 import SidebarGroup from "./SidebarGroup.vue"
 import LocationDropdown from "./LocationDropdown.vue"
-import { clipboardCopy, isStaging } from "@/utils/others"
+import { clipboardCopy } from "@/utils/others"
 import { useSettingsStore } from "@modules/settings/store"
 import { useRoute, useRouter } from "vue-router"
 import { useProductionStore } from "@modules/production/store"
@@ -203,6 +204,7 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
 const expandedGroup = ref<string | null>("sales-suite")
 
 const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
+const isInternational = computed(() => useSettingsStore().isInternational)
 
 // Sales Suite items
 const salesSuiteItems = computed(() =>
@@ -222,12 +224,12 @@ const marketingItems = computed(() => [{ icon: "sms", label: "Email List", to: "
 
 // Production items
 const productionItems = computed(() => {
-  const componentLabel = useProductionStore().componentLabel || "Raw Materials"
-  const recipeLabel = useProductionStore().recipeLabel || "Recipes"
+  const componentLabel = useProductionStore().componentLabel
+  const recipeLabel = useProductionStore().recipeLabel
   return [
-    { icon: "box", label: componentLabel || "Raw materials", to: "/raw-materials" },
-    { icon: "box", label: recipeLabel || "Recipes", to: "/recipes" },
-    { icon: "box", label: "Production run", to: "/production-run" },
+    { icon: "box", label: componentLabel, to: "/production/raw-materials" },
+    { icon: "box", label: recipeLabel, to: "/production/recipes" },
+    { icon: "box", label: "Production run", to: "/production/runs" },
   ]
 })
 
@@ -260,7 +262,9 @@ watch(
 )
 
 // Check if setup requirements are complete (regardless of subscription status)
+// International accounts skip storefront-related onboarding entirely
 const setupComplete = computed(() => {
+  if (isInternational.value) return true
   const status = useSettingsStore().liveStatus
   if (status?.completion_percentage === 100) return true
   const missing = status?.missing_requirements || []

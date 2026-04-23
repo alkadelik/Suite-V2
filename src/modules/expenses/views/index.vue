@@ -64,7 +64,7 @@ const {
   refetch: refetchStats,
 } = useGetExpenseDashboard(statsParams)
 
-const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
+const isMobile = useMediaQuery("(max-width: 1024px)")
 
 const expenseMetrics = computed(() => {
   const stat = expenseDashboard?.value

@@ -96,7 +96,7 @@ const prepareFormData = (currentData: Partial<PopupPayload>): FormData => {
 }
 
 // Initialize VeeValidate form - start with empty values
-const { handleSubmit, resetForm, meta } = useForm({
+const { handleSubmit, resetForm } = useForm({
   validationSchema: validationSchema,
 })
 
@@ -194,6 +194,8 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
         :label="`Participation Fee (${currency})`"
         name="participation_fee"
         type="number"
+        format="currency"
+        step="0.01"
       />
 
       <FormField name="description" label="Description (optional)" type="textarea" :rows="4" />
@@ -213,7 +215,6 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
         <AppButton
           class="w-full"
           :label="buttonLabel"
-          :inactive="!meta.valid"
           :loading="isLoading"
           @click="onSubmit"
           size="lg"

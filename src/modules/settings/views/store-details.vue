@@ -173,6 +173,7 @@ const watchStoreNameForSlug = (storeName: string) => {
             :options="CURRENCY_OPTIONS"
             placeholder="NGN"
             required
+            :disabled="true"
           />
 
           <FormField

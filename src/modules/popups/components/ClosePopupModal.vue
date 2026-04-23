@@ -4,7 +4,7 @@ import { useClosePopupEvent, useGetPopupEventById } from "../api"
 import { displayError } from "@/utils/error-handler"
 import Icon from "@components/Icon.vue"
 import { computed } from "vue"
-import { truncateCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { formatDate } from "../constants"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
 import StatCard from "@components/StatCard.vue"
@@ -14,6 +14,8 @@ const props = withDefaults(
   { hasFullDetails: true },
 )
 const emit = defineEmits(["close", "refresh"])
+
+const { truncate } = useFormatCurrency()
 
 // Only fetch details when not already provided
 const shouldFetch = computed(() => !props.hasFullDetails && props.open)
@@ -51,7 +53,7 @@ const stats = computed(() => {
     {
       icon: "shopping-cart",
       label: "Total Sales",
-      value: truncateCurrency(data.total_sales_amount || 0),
+      value: truncate(data.total_sales_amount || 0),
       valueText: "",
       chip: data.total_orders ? `${data.total_orders || 0} items sold` : "",
     },

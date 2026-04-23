@@ -201,6 +201,15 @@ export function useInitializeSubscription() {
   })
 }
 
+/** get current subscription */
+export function useGetSubscription() {
+  return useApiQuery<unknown>({
+    url: "/billings/subscriptions/",
+    key: "subscription",
+    selectData: true,
+  })
+}
+
 /** cancel subscription */
 export function useCancelSubscription() {
   const queryClient = useQueryClient()

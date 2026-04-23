@@ -76,3 +76,68 @@ export const checkIfDateIsPast = (date: CheckIfDateIsPastParams["date"]): boolea
   const today = new Date()
   return new Date(date) < today
 }
+
+export type DateRangeType =
+  | "last_7_days"
+  | "this_month"
+  | "last_month"
+  | "year_to_date"
+  | "all_time"
+
+export interface DateRangeResult {
+  start_date: string
+  end_date: string
+}
+
+/**
+ * Calculate start and end dates based on the selected date range
+ * @param rangeType - The type of date range to calculate
+ * @returns Object with range="custom", start_date, and end_date in YYYY-MM-DD format
+ */
+export function calculateDateRange(rangeType: DateRangeType): DateRangeResult {
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  let startDate: Date
+  let endDate: Date = today
+
+  switch (rangeType) {
+    case "last_7_days":
+      startDate = new Date(today)
+      startDate.setDate(startDate.getDate() - 7)
+      break
+
+    case "this_month":
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+      break
+
+    case "last_month":
+      startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+      endDate = new Date(now.getFullYear(), now.getMonth(), 0) // Last day of previous month
+      break
+
+    case "year_to_date":
+      startDate = new Date(now.getFullYear(), 0, 1) // January 1st of current year
+      break
+
+    case "all_time":
+      // For all_time, we set a very early start date (e.g., 10 years ago)
+      startDate = new Date(now.getFullYear() - 10, 0, 1)
+      break
+
+    default:
+      startDate = new Date(today)
+      startDate.setDate(startDate.getDate() - 7)
+  }
+
+  return {
+    start_date: formatDateToYYYYMMDD(startDate),
+    end_date: formatDateToYYYYMMDD(endDate),
+  }
+}
+
+/**
+ * Format date to YYYY-MM-DD format
+ */
+function formatDateToYYYYMMDD(date: Date): string {
+  return date.toLocaleDateString("en-CA") // Format as YYYY-MM-DD
+}

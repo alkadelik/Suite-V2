@@ -99,7 +99,7 @@ const hasSubCategories = computed(() => {
   return (category?.sub_categories?.length ?? 0) > 0
 })
 
-const isMobile = computed(() => useMediaQuery("(max-width: 1028px)").value)
+const isMobile = useMediaQuery("(max-width: 1028px)")
 
 interface FormValues {
   name: string
@@ -371,8 +371,10 @@ const handleAddFromSearch = (search: string, close: () => void) => {
 
       <div class="sm:col-span-2">
         <FormField
-          type="number"
           name="amount"
+          type="number"
+          format="currency"
+          step="0.01"
           :label="`Amount (${currency})`"
           placeholder="e.g. 12,500"
           required

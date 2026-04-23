@@ -117,7 +117,7 @@ import { computed } from "vue"
 import Icon from "@components/Icon.vue"
 import Chip from "@components/Chip.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import type { TProduct } from "../types"
 
 interface Props {
@@ -136,6 +136,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const { format } = useFormatCurrency()
 
 const stockStatus = computed(() => {
   if (props.product.sellable_stock === 0) {
@@ -154,12 +155,12 @@ const formattedPrice = computed(() => {
     const [minPrice, maxPrice] = props.product.price.split(" - ").map((p) => Number(p.trim()))
 
     if (minPrice === maxPrice) {
-      return formatCurrency(minPrice)
+      return format(minPrice)
     }
 
-    return `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`
+    return `${format(minPrice)} - ${format(maxPrice)}`
   }
 
-  return formatCurrency(Number(props.product.price))
+  return format(Number(props.product.price))
 })
 </script>

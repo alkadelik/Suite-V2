@@ -57,7 +57,7 @@ const onUpdatePassword = (values: TPasswordValues) => {
       <AppForm
         @submit="onUpdatePassword"
         :schema="validSchema"
-        v-slot="{ meta }"
+        v-slot="{}"
         class="border-core-100 mt-6 rounded-2xl border bg-white"
       >
         <div class="grid gap-6 p-6">
@@ -91,12 +91,7 @@ const onUpdatePassword = (values: TPasswordValues) => {
         </div>
 
         <div class="border-core-100 flex justify-end gap-6 border-t px-6 py-4">
-          <AppButton
-            type="submit"
-            label="Update Password"
-            :loading="isPending"
-            :inactive="!meta.valid"
-          />
+          <AppButton type="submit" label="Update Password" :loading="isPending" />
         </div>
       </AppForm>
     </section>

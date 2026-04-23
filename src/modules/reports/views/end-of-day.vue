@@ -24,6 +24,7 @@ import { useGenerateEODReport, useGetLatestEODReport } from "../api"
 import { useReportsStore } from "../store"
 import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
+import { toast } from "@/composables/useToast"
 
 const yesterday = new Date()
 yesterday.setDate(yesterday.getDate() - 1)
@@ -73,7 +74,7 @@ const reportData = computed(() => {
   return latestEODReport.value
 })
 
-const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
+const isMobile = useMediaQuery("(max-width: 1024px)")
 const storeName = computed(() => useSettingsStore().storeDetails?.name || "Store")
 const activeLocation = computed(() => useSettingsStore().activeLocation?.name || "Location")
 const fullDate = computed(() =>
@@ -129,12 +130,23 @@ onBeforeUnmount(() => {
 })
 
 const handleGenerateReport = () => {
+  const createdAt = settingsStore.storeDetails?.created_at
+  if (createdAt) {
+    const hoursSinceCreation = (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60)
+    if (hoursSinceCreation < 36) {
+      toast.error(
+        "Your store needs at least 36 hours of activity before generating an End of Day report.",
+        { title: "Not Enough Data" },
+      )
+      return
+    }
+  }
+
   generateEODReport(
     { date: activeDate.value },
     {
       onSuccess: (res) => {
         const responseData = res.data.data
-        console.log("Generate EOD Report response:", responseData)
         // Check if report is still generating
         if (responseData.status === "generating") {
           reportsStore.setGeneratingEODReport({
