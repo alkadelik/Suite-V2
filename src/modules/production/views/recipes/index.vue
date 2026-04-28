@@ -182,7 +182,7 @@ const formatWithUnit = (item: TRecipe) => {
 
     <div v-else class="flex flex-col gap-8">
       <EmptyState
-        v-if="isPending && !recipes?.count && !searchQuery"
+        v-if="!recipes?.count && !searchQuery.length"
         :title="`You don't have any recipe yet!`"
         :description="`Start tracking everything you use to make your products by adding your recipe`"
         :action-label="`Add ${selectedComponent.value}`"
