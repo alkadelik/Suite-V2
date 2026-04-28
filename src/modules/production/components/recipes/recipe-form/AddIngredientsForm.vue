@@ -188,9 +188,15 @@ function handleNext() {
                 >
                   <span class="text-lg leading-none">−</span>
                 </button>
-                <span class="min-w-6 text-center text-sm font-medium text-gray-900">
-                  {{ row.qty }}
-                </span>
+                <input
+                  type="number"
+                  min="0"
+                  :value="row.qty"
+                  class="w-10 [appearance:textfield] bg-transparent text-center text-sm font-medium text-gray-900 outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  @input="
+                    row.qty = Math.max(0, parseInt(($event.target as HTMLInputElement).value) || 0)
+                  "
+                />
                 <button
                   type="button"
                   class="flex h-7 w-7 items-center justify-center rounded-lg text-gray-700 hover:bg-gray-50"
