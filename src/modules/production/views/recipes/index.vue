@@ -96,7 +96,7 @@ const getActionItems = (item: TRecipe) => [
         {
           label: `Edit ${recipeLabel.value}`,
           icon: "edit",
-          action: () => (showCreateModal.value = "edit"),
+          action: () => router.push(`/production/recipes/${item.uid}?action=edit`),
         },
         {
           label: `Duplicate ${recipeLabel.value}`,
@@ -252,7 +252,11 @@ const formatWithUnit = (item: TRecipe) => {
               <div class="flex items-center gap-2">
                 <span class="text-sm text-gray-700">{{ item.output_item_name }}</span>
                 <Chip v-if="formatWithUnit(item)" color="blue" :label="formatWithUnit(item)" />
-                <Chip v-if="item.item_type === 'sub_assembly'" color="purple" />
+                <Chip
+                  v-if="item.item_type === 'sub_assembly'"
+                  label="sub-assembly"
+                  color="purple"
+                />
               </div>
             </template>
 
