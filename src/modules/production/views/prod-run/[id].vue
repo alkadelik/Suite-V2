@@ -153,7 +153,13 @@ const onFinaliseRun = () => {
               </span>
               <h3 class="!font-outfit truncate font-medium">Process Cost/Expenses</h3>
               <span class="ml-auto" />
-              <button type="button" class="text-primary-600 text-sm underline">View note</button>
+              <button
+                v-if="prodRun.notes"
+                type="button"
+                class="text-primary-600 flex-shrink-0 text-sm underline"
+              >
+                View note
+              </button>
             </div>
 
             <section class="mt-4 divide-y divide-gray-200 rounded-xl bg-gray-50 px-4">

@@ -570,7 +570,7 @@ const goToPrevStep = () => {
                 name="default_cost"
                 format="currency"
                 step="0.01"
-                :label="`Default Purchase price (${currency})`"
+                :label="`Price per ${values.unit?.value || 'Unit'} (${currency})`"
                 placeholder="e.g. 25"
                 required
               />

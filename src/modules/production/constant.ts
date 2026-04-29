@@ -121,7 +121,7 @@ export const componentOptions = [
 export const UNITS_OF_MEASURE = [
   { label: "Kilograms (kg)", value: "kg" },
   { label: "Grams (g)", value: "g" },
-  { label: "Liters (l)", value: "l" },
+  { label: "Liters (L)", value: "L" },
   { label: "Milliliters (ml)", value: "ml" },
   { label: "Pieces (pcs)", value: "pcs" },
   { label: "Meters (m)", value: "m" },
