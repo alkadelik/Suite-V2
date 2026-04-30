@@ -255,14 +255,31 @@ const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 // Computed property for pagination pages
 const paginationPages = computed(() => {
   const totalPages = table.value.getPageCount()
+  const currentPage = pagination.value.pageIndex + 1
   const pages: (number | string)[] = []
 
-  if (totalPages <= 4) {
+  if (totalPages <= 5) {
     for (let i = 1; i <= totalPages; i++) {
       pages.push(i)
     }
   } else {
-    pages.push(1, 2, "...", totalPages - 1, totalPages)
+    pages.push(1)
+
+    if (currentPage > 3) {
+      pages.push("...")
+    }
+
+    const start = Math.max(2, currentPage - 1)
+    const end = Math.min(totalPages - 1, currentPage + 1)
+    for (let i = start; i <= end; i++) {
+      pages.push(i)
+    }
+
+    if (currentPage < totalPages - 2) {
+      pages.push("...")
+    }
+
+    pages.push(totalPages)
   }
 
   return pages
@@ -478,7 +495,7 @@ const getRowClasses = (row: T) => {
             v-else
             size="xs"
             color="alt"
-            :variant="page === table.getState().pagination.pageIndex + 1 ? 'outlined' : 'text'"
+            :variant="page === pagination.pageIndex + 1 ? 'outlined' : 'text'"
             @click="table.setPageIndex(Number(page) - 1)"
             class="px-3 py-1"
           >
