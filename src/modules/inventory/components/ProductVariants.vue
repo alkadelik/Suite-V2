@@ -33,13 +33,13 @@
           @click="showFilter = true"
         />
         <AppButton
-          icon="add"
+          icon="edit"
           size="sm"
           label="Manage Variants"
           class="!hidden md:!inline-flex"
           @click="$emit('add-variant')"
         />
-        <AppButton icon="add" size="sm" label="" class="md:hidden" @click="$emit('add-variant')" />
+        <AppButton icon="edit" size="sm" label="" class="md:hidden" @click="$emit('add-variant')" />
       </div>
     </div>
 
@@ -179,7 +179,6 @@ const filterGroups: FilterGroup[] = [
       { value: "in_stock", label: "In Stock", color: "success", showDot: true },
       { value: "low_stock", label: "Low Stock", color: "warning", showDot: true },
       { value: "out_of_stock", label: "Out of Stock", color: "error", showDot: true },
-      { value: "overstocked", label: "Overstocked", color: "primary", showDot: true },
     ],
   },
 ]

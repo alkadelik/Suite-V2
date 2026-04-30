@@ -228,6 +228,7 @@
     <ProductFormDrawer
       v-if="showProductFormDrawer"
       v-model="showProductFormDrawer"
+      :source-product-uid="productUidForDuplicate"
       @refresh="refetchProducts"
     />
     <ProductEditDrawer
@@ -290,7 +291,7 @@ import ReceiveRequestModal from "../components/ReceiveRequestModal.vue"
 import ProductCard from "../components/ProductCard.vue"
 import ManageStockModal from "../components/ManageStockModal.vue"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
-import { useAuthStore } from "@modules/auth/store"
+import { useUserRoles } from "@/composables/useUserRoles"
 import SectionHeader from "@components/SectionHeader.vue"
 import PageHeader from "@components/PageHeader.vue"
 import Tabs from "@components/Tabs.vue"
@@ -422,6 +423,8 @@ const productEditDrawerRef = ref<{
 
 // Manage stock modal state
 const showManageStockModal = ref(false)
+// LYW-2443: holds the source product UID when "Duplicate Product" is clicked
+const productUidForDuplicate = ref<string | null>(null)
 const editMode = ref<"product-details" | "variant-details" | "variants" | "images">(
   "product-details",
 )
@@ -498,7 +501,7 @@ const handleRowClick = (clickedProduct: TProduct) => {
   router.push({ name: "Product-Details", params: { uid: clickedProduct.uid } })
 }
 
-const isOwner = computed(() => useAuthStore().user?.roles?.some((r) => r.type === "owner") ?? false)
+const { canViewStockValue } = useUserRoles()
 
 const productMetrics = computed(() => {
   const stats = productDashboard.value
@@ -511,7 +514,7 @@ const productMetrics = computed(() => {
       iconClass: "text-success-500",
       percentage: 0,
     },
-    ...(isOwner.value
+    ...(canViewStockValue.value
       ? [
           {
             label: "Stock Value",
@@ -700,7 +703,9 @@ const handleAction = (
   } else if (action === "view") {
     router.push({ name: "Product-Details", params: { uid: item.uid } })
   } else if (action === "duplicate") {
-    toast.info("Duplicate functionality coming soon")
+    if (!checkPremiumAccess()) return
+    productUidForDuplicate.value = item.uid
+    showProductFormDrawer.value = true
   }
 }
 
@@ -787,8 +792,11 @@ watch(
 )
 
 watch(showProductFormDrawer, (isOpen) => {
-  if (!isOpen && route.query.create === "true") {
-    router.replace({ name: "Inventory", query: {} })
+  if (!isOpen) {
+    productUidForDuplicate.value = null
+    if (route.query.create === "true") {
+      router.replace({ name: "Inventory", query: {} })
+    }
   }
 })
 
