@@ -62,7 +62,7 @@
     <!-- Navigation -->
     <section class="space-y-1 px-4 py-2">
       <SidebarGroup
-        icon="shopping-cart"
+        icon="shopping-cart-outline"
         label="Sales Suite"
         :children="salesSuiteItems"
         :is-expanded="expandedGroup === 'sales-suite'"
@@ -70,7 +70,7 @@
       />
 
       <SidebarGroup
-        icon="trend-up"
+        icon="trend-up-outline"
         label="Marketing"
         :children="marketingItems"
         :is-expanded="expandedGroup === 'marketing'"
@@ -78,7 +78,7 @@
       />
 
       <SidebarGroup
-        icon="building"
+        icon="building-outline"
         label="Production"
         :children="productionItems"
         :is-expanded="expandedGroup === 'production'"
@@ -227,9 +227,9 @@ const productionItems = computed(() => {
   const componentLabel = useProductionStore().componentLabel
   const recipeLabel = useProductionStore().recipeLabel
   return [
-    { icon: "box", label: componentLabel, to: "/production/raw-materials" },
-    { icon: "box", label: recipeLabel, to: "/production/recipes" },
-    { icon: "box", label: "Production run", to: "/production/runs" },
+    { icon: "archive", label: componentLabel, to: "/production/raw-materials" },
+    { icon: "clipboard-text-outline", label: recipeLabel, to: "/production/recipes" },
+    { icon: "chart", label: "Production run", to: "/production/runs" },
   ]
 })
 
