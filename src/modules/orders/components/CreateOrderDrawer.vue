@@ -262,6 +262,7 @@ const onCreateOrder = () => {
         delete deliveryFields.delivery_address
       } else if (delivery_method === "custom") {
         // Custom delivery: send courier name and delivery_fee
+        deliveryFields.delivery_method = "custom"
         deliveryFields.delivery_fee = shippingInfo.value.delivery_fee
         deliveryFields.courier = shippingInfo.value.courier
           ? {

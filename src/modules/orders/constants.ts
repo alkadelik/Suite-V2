@@ -96,10 +96,10 @@ export const ORDER_STATUS_TAB = [
 ]
 
 export const orderSourceMap: Record<string, string> = {
-  internal: "Internal",
-  storefront: "Storefront",
-  popup_storefront: "Popup",
-  popup_internal: "Popup Internal",
+  internal: "Manual Sale",
+  storefront: "Website",
+  popup_storefront: "Popup Website",
+  popup_internal: "Manual Popup Sale",
 }
 
 export const SAMPLE_SHIPMENTS: TShipment[] = [

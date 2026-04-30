@@ -32,4 +32,6 @@ export type BasicRunDetails = {
   recipeUid: string
   recipeOption?: { label: string; value: string } | null
   outputVariantUid?: string
+  outputItemType?: "product" | "sub_assembly"
+  variantPrice?: number
 }

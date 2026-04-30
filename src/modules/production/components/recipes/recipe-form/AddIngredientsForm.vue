@@ -8,9 +8,12 @@ import { useSearchRawMaterial } from "@modules/production/api"
 import type { IngredientRow } from "../AddNewRecipeDrawer.vue"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, ref } from "vue"
+import Chip from "@components/Chip.vue"
 
 const props = defineProps<{
   initialRows: IngredientRow[]
+  excludeUid?: string
+  outputItemDetails: { name: string; qty: number; unit: string; type: "product" | "sub_assembly" }
 }>()
 
 const emit = defineEmits<{
@@ -28,13 +31,15 @@ const { data: matSearchResults, isFetching: isSearchingMat } = useSearchRawMater
 
 const materialOptions = computed(() => {
   if (!matSearchResults.value?.results) return []
-  return matSearchResults.value.results.map((material) => ({
-    label: material.name,
-    value: material.uid || "",
-    unit: material.unit || "",
-    cost_per_unit: Number(material.last_cost || material.avg_cost || 0),
-    kind: (material.is_sub_assembly ? "sub_assembly" : "raw_material") as string,
-  }))
+  return matSearchResults.value.results
+    .filter((material) => !props.excludeUid || material.uid !== props.excludeUid)
+    .map((material) => ({
+      label: material.name,
+      value: material.uid || "",
+      unit: material.unit || "",
+      cost_per_unit: Number(material.last_cost || material.avg_cost || 0),
+      kind: (material.is_sub_assembly ? "sub_assembly" : "raw_material") as string,
+    }))
 })
 
 // ─── Ingredient rows ────────────────────────────────────────────────────
@@ -115,6 +120,27 @@ function handleNext() {
     </div>
     <p class="mb-4 text-sm">Add Ingredients</p>
 
+    <div class="border-core-300 bg-core-25 my-4 rounded-xl border p-4 py-3">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white">
+            <Icon name="box" class="h-5 w-5 text-gray-400" />
+          </div>
+          <div class="flex-1">
+            <h4 class="flex items-center gap-2 text-sm font-medium">
+              {{ outputItemDetails.name }}
+              <Chip
+                v-if="outputItemDetails.type === 'sub_assembly'"
+                label="Sub-assembly"
+                color="purple"
+              />
+            </h4>
+          </div>
+        </div>
+        <Chip :label="`${outputItemDetails.qty} ${outputItemDetails.unit}`" />
+      </div>
+    </div>
+
     <!-- full raw material lists -->
     <SelectField
       :model-value="selectedOptions"
@@ -188,9 +214,15 @@ function handleNext() {
                 >
                   <span class="text-lg leading-none">−</span>
                 </button>
-                <span class="min-w-6 text-center text-sm font-medium text-gray-900">
-                  {{ row.qty }}
-                </span>
+                <input
+                  type="number"
+                  min="0"
+                  :value="row.qty"
+                  class="w-10 [appearance:textfield] bg-transparent text-center text-sm font-medium text-gray-900 outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  @input="
+                    row.qty = Math.max(0, parseInt(($event.target as HTMLInputElement).value) || 0)
+                  "
+                />
                 <button
                   type="button"
                   class="flex h-7 w-7 items-center justify-center rounded-lg text-gray-700 hover:bg-gray-50"

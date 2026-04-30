@@ -58,6 +58,7 @@ export const TEAMS_COLUMN: TableColumn<TTeam>[] = [
     },
   },
   { header: "Roles", accessor: "role" },
+  { header: "Status", accessor: "status" },
   { header: "", accessor: "action" },
 ]
 

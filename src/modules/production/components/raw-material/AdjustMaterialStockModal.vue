@@ -176,7 +176,7 @@ watch(adjustmentType, () => {
       >
         <p>
           <span class="font-semibold">Material:</span>
-          {{ selectedMaterial.name }} &bullet; {{ selectedMaterial.unit }}
+          {{ selectedMaterial.name }}
         </p>
         <p>
           <span class="font-semibold">Current Stock:</span>
