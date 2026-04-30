@@ -188,6 +188,16 @@ const STEPS = computed(() => [
       </template>
     </SectionHeader>
 
+    <div v-if="isMobile" class="flex justify-end pt-4">
+      <TextField
+        type="date"
+        size="sm"
+        v-model="activeDate"
+        :max="yesterday.toISOString().slice(0, 10)"
+        :min="storeCreatedDate"
+      />
+    </div>
+
     <EmptyState
       v-if="!reportData || isCurrentDayGenerating || isPending || isFetching"
       :title="`${fullDate.split(', ')[1]} Report`"
