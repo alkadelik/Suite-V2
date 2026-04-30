@@ -11,7 +11,10 @@
     <IconHeader icon-name="shop-add" :title="getHeaderTitle" :subtext="getHeaderText" />
 
     <form id="product-form" @submit.prevent="handleSubmit" class="min-h-full">
-      <div>
+      <!-- LYW-2443: skeleton while the source product is being fetched -->
+      <ProductEditSkeleton v-if="isLoadingDuplicate" />
+
+      <div v-else>
         <!-- Step 1: Product Details -->
         <ProductDetailsForm
           v-if="step === 1"
@@ -93,18 +96,20 @@ import ProductManageCombinationsForm from "./ProductForm/ProductManageCombinatio
 import ProductImagesForm from "./ProductForm/ProductImagesForm.vue"
 import ProductVariantsForm from "./ProductForm/ProductVariantsForm.vue"
 import AddCategoryModal from "./AddCategoryModal.vue"
+import ProductEditSkeleton from "./skeletons/ProductEditSkeleton.vue"
 import {
   useCreateProduct,
   useCreateAttribute,
   useCreateAttributeValues,
   useAddProductImage,
   useUpdateVariantImage,
+  useGetProduct,
 } from "../api"
 import baseApi from "@/composables/baseApi"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
 import { useQueryClient } from "@tanstack/vue-query"
-import { htmlToMarkdown } from "@/utils/html-to-markdown"
+import { htmlToMarkdown, markdownToHtml } from "@/utils/html-to-markdown"
 import { useImageConverter } from "@/composables/useImageConverter"
 import { useAuthStore } from "@modules/auth/store"
 import { scrollToAndFocusValidationTarget } from "@/utils/validations"
@@ -123,6 +128,11 @@ interface Props {
   modelValue: boolean
   /** Loading state for async operations */
   loading?: boolean
+  /** UID of a product to duplicate. When set, the form is prefilled with that
+   *  product's data: name suffixed with " (Copy)", opening stock reset to 0,
+   *  images left blank for the user to re-upload (carry-over is gated on a
+   *  CORS config on the DO Spaces bucket — see prefillFromSource). */
+  sourceProductUid?: string | null
 }
 
 interface Emits {
@@ -134,6 +144,7 @@ interface Emits {
 
 const props = withDefaults(defineProps<Props>(), {
   loading: false,
+  sourceProductUid: null,
 })
 
 const emit = defineEmits<Emits>()
@@ -158,7 +169,8 @@ const { mutateAsync: updateVariantImage, isPending: isUpdatingVariantImage } =
   useUpdateVariantImage()
 
 // Composables
-const { form, hasVariants, variants, variantConfiguration, resetFormState } = useProductFormState()
+const { form, hasVariants, variants, variantConfiguration, resetFormState, populateFormState } =
+  useProductFormState()
 
 const queryClient = useQueryClient()
 const { renameProductImage } = useImageConverter()
@@ -204,7 +216,8 @@ const isPending = computed(() => {
     isCreatingAttribute.value ||
     isCreatingAttributeValues.value ||
     isAddingProductImages.value ||
-    isUpdatingVariantImage.value
+    isUpdatingVariantImage.value ||
+    isPreparingDuplicateImages.value
   )
 })
 
@@ -220,16 +233,222 @@ const handleCategoryCreated = (category: { label: string; value: string }) => {
   }
 }
 
-// Watch for drawer opening to reset form
+// LYW-2443: fetch the source product when in duplicate mode
+const sourceUidRef = computed(() => props.sourceProductUid || "")
+const { data: sourceProductData, isFetching: isFetchingSource } = useGetProduct(sourceUidRef, {
+  enabled: computed(() => !!props.sourceProductUid && props.modelValue),
+})
+
+// While true, fetching source images and converting them to File objects.
+// Used to keep the skeleton visible during this phase and to gate the submit
+// button via isPending.
+const isPreparingDuplicateImages = ref(false)
+
+// Show a loading state in the drawer body while we wait for source data on
+// first open AND while we're converting source image URLs to File objects.
+// Once both finish (or for a non-duplicate flow), we render the prefilled form.
+const isLoadingDuplicate = computed(
+  () =>
+    !!props.sourceProductUid &&
+    props.modelValue &&
+    ((isFetchingSource.value && !sourceProductData.value) || isPreparingDuplicateImages.value),
+)
+
+/**
+ * Build the populate payload from a fetched source product. Extracted so it
+ * can be invoked both from the sourceProductData watcher (when data arrives
+ * async) and from the modelValue watcher (when data is already cached on a
+ * subsequent open of the same source product).
+ */
+const prefillFromSource = (data: typeof sourceProductData.value) => {
+  if (!data?.data || !props.modelValue || !props.sourceProductUid) return
+  const src = data.data
+
+  // Image carry-over is temporarily disabled: the source images are served
+  // from a DigitalOcean Spaces bucket that doesn't return CORS headers, so
+  // `fetch()` can't read them in the browser. Once CORS is configured on the
+  // bucket, swap `images: []` for `images: [...productImages, ...variantImages]`
+  // (the URL gatherers below) and the existing convertSourceImagesToFiles
+  // pipeline takes over without further changes.
+  //
+  // const productImages =
+  //   src.images && src.images.length > 0
+  //     ? [
+  //         ...src.images
+  //           .slice()
+  //           .sort((a, b) => a.sort_order - b.sort_order)
+  //           .slice(0, 5)
+  //           .map((img) => img.image),
+  //         ...Array(Math.max(0, 5 - src.images.length)).fill(null),
+  //       ]
+  //     : Array(5).fill(null)
+  // const variantImages =
+  //   src.variants && src.variants.length > 0
+  //     ? src.variants.map((variant) => variant.image || null)
+  //     : []
+
+  populateFormState({
+    name: `${src.name || ""} (Copy)`,
+    description: markdownToHtml(src.description || ""),
+    story: src.story || "",
+    brand: src.brand || "",
+    requires_approval: src.requires_approval || false,
+    category: src.category ? { label: src.category_name || "", value: src.category } : null,
+    images: [], // see CORS note above; user uploads images manually for now
+    hasVariants: src.is_variable || false,
+    variants:
+      src.variants?.map((variant) => ({
+        name: variant.name || "",
+        sku: "", // Force a new SKU on submit
+        price: variant.price || "",
+        promo_price: variant.promo_price || "",
+        promo_expiry: variant.promo_expiry || "",
+        cost_price: variant.cost_price || "",
+        weight: variant.weight || "",
+        length: variant.length || "",
+        width: variant.width || "",
+        height: variant.height || "",
+        reorder_point:
+          variant.reorder_point !== null && variant.reorder_point !== undefined
+            ? variant.reorder_point.toString()
+            : "",
+        max_stock:
+          variant.max_stock !== null && variant.max_stock !== undefined
+            ? variant.max_stock.toString()
+            : "",
+        opening_stock: "0",
+        is_active: variant.is_active ?? true,
+        is_default: variant.is_default ?? false,
+        batch_number: "",
+        expiry_date: variant.expiry_date || "",
+        attributes: variant.attributes || [],
+      })) || undefined,
+    variantConfiguration:
+      src.is_variable && src.variants && src.variants.length > 1
+        ? (() => {
+            const attributeMap = new Map<
+              string,
+              {
+                attributeUid: string
+                attributeName: string
+                values: Map<string, string>
+              }
+            >()
+            src.variants.forEach((variant) => {
+              variant.attributes.forEach((attr) => {
+                if (!attributeMap.has(attr.attribute)) {
+                  attributeMap.set(attr.attribute, {
+                    attributeUid: attr.attribute,
+                    attributeName: attr.attribute_name,
+                    values: new Map(),
+                  })
+                }
+                attributeMap.get(attr.attribute)!.values.set(attr.value, attr.attribute_value)
+              })
+            })
+            return Array.from(attributeMap.values()).map((attrData) => ({
+              name: { label: attrData.attributeName, value: attrData.attributeUid },
+              customName: "",
+              values: Array.from(attrData.values.entries()).map(([valueUid, valueName]) => ({
+                label: valueName,
+                value: valueUid,
+              })),
+            }))
+          })()
+        : undefined,
+  })
+}
+
+/**
+ * LYW-2443: convert any URL-string entries in `form.images` to File objects
+ * by fetching each URL and wrapping its blob. Runs in parallel.
+ *
+ * The image upload endpoint accepts only File via FormData, so this MUST run
+ * before submit. We do it eagerly right after prefill (while the skeleton is
+ * still visible) rather than on submit so the user has clear visibility:
+ *   - If a URL can't be fetched (CORS, network, server-side error page), the
+ *     slot drops to null. The user sees the blank slot in step 3/4 and can
+ *     re-upload manually.
+ *   - We toast a single summary if any failed, so the user knows.
+ */
+const convertSourceImagesToFiles = async (): Promise<void> => {
+  const tasks: Array<Promise<{ index: number; ok: boolean }>> = []
+  for (let i = 0; i < form.images.length; i++) {
+    const img = form.images[i]
+    if (typeof img !== "string" || !img) continue
+    const index = i
+    const url = img
+    tasks.push(
+      (async () => {
+        try {
+          const response = await fetch(url)
+          if (!response.ok) throw new Error(`HTTP ${response.status}`)
+          const blob = await response.blob()
+          // Reject anything that isn't actually an image (e.g. a CORS-redirect
+          // HTML error page that returned 200).
+          if (!blob.type.startsWith("image/")) {
+            throw new Error(`Unexpected MIME type: ${blob.type || "unknown"}`)
+          }
+          const filename = url.split("/").pop()?.split("?")[0] || `duplicate-image-${index}.jpg`
+          form.images[index] = new File([blob], filename, { type: blob.type })
+          return { index, ok: true }
+        } catch (err) {
+          console.warn(`[LYW-2443] Failed to carry over source image at index ${index}:`, err)
+          form.images[index] = null
+          return { index, ok: false }
+        }
+      })(),
+    )
+  }
+  if (tasks.length === 0) return
+  const results = await Promise.all(tasks)
+  const failed = results.filter((r) => !r.ok).length
+  if (failed > 0) {
+    toast.info(
+      failed === results.length
+        ? "Source product images couldn't be carried over. Please upload them on the Images step."
+        : `${failed} of ${results.length} source image${results.length === 1 ? "" : "s"} couldn't be carried over. Please re-upload missing slots on the Images step.`,
+    )
+  }
+}
+
+/**
+ * Run prefill + (when in duplicate mode) eager image conversion. Keeping this
+ * single function ensures the skeleton stays visible until everything is ready.
+ */
+const runPrefillAndConvertImages = async (data: typeof sourceProductData.value) => {
+  if (!data?.data || !props.modelValue || !props.sourceProductUid) return
+  prefillFromSource(data)
+  isPreparingDuplicateImages.value = true
+  try {
+    await convertSourceImagesToFiles()
+  } finally {
+    isPreparingDuplicateImages.value = false
+  }
+}
+
+// Reset form on drawer open, then re-apply prefill if cached source data is
+// already available (handles the case where useGetProduct returns cached data
+// synchronously and the data watcher doesn't fire on subsequent opens).
 watch(
   () => props.modelValue,
   (isOpen) => {
-    if (isOpen) {
-      resetFormState()
-      submitAttempted.value = false
+    if (!isOpen) return
+    resetFormState()
+    submitAttempted.value = false
+    if (props.sourceProductUid && sourceProductData.value) {
+      void runPrefillAndConvertImages(sourceProductData.value)
     }
   },
   { immediate: true },
+)
+
+// When source product data arrives async (cache miss), prefill + convert.
+watch(
+  () => sourceProductData.value,
+  (data) => {
+    void runPrefillAndConvertImages(data)
+  },
 )
 
 // Watch for step changes to scroll to top
@@ -251,6 +470,13 @@ const handleSubmit = async () => {
   }
 
   if (isLastStep.value) {
+    // Defensive: if a source-image conversion is somehow still in flight (the
+    // skeleton normally prevents the user reaching submit, but reactivity is
+    // async), wait for it before proceeding so we never submit a string URL.
+    while (isPreparingDuplicateImages.value) {
+      await new Promise((resolve) => setTimeout(resolve, 50))
+    }
+
     // Format product data according to API schema
     const payload: IProductFormPayload = {
       name: form.name,

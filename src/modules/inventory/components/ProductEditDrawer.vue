@@ -777,10 +777,13 @@ const handleSubmit = async () => {
             toast.success(
               `All ${variantDetailsWithUids.value.length} variants updated successfully`,
             )
-            queryClient.invalidateQueries({ queryKey: ["products"] })
-            submitAttempted.value = false
-            emit("update:modelValue", false)
-            emit("refresh")
+            // LYW-2442: force a refetch (not just invalidate) so the parent
+            // details overview reflects the new price without a page reload.
+            void queryClient.refetchQueries({ queryKey: ["products"] }).finally(() => {
+              submitAttempted.value = false
+              emit("update:modelValue", false)
+              emit("refresh")
+            })
           },
           onError: displayError,
         },
@@ -802,10 +805,12 @@ const handleSubmit = async () => {
         {
           onSuccess: () => {
             toast.success("Variant updated successfully")
-            queryClient.invalidateQueries({ queryKey: ["products"] })
-            submitAttempted.value = false
-            emit("update:modelValue", false)
-            emit("refresh")
+            // LYW-2442: force a refetch so price changes show without reload.
+            void queryClient.refetchQueries({ queryKey: ["products"] }).finally(() => {
+              submitAttempted.value = false
+              emit("update:modelValue", false)
+              emit("refresh")
+            })
           },
           onError: displayError,
         },

@@ -289,6 +289,11 @@ const openStockModal = (
 const handleStockSuccess = () => {
   queryClient.refetchQueries({ queryKey: ["products", uid] })
   queryClient.invalidateQueries({ queryKey: ["products"] })
+  // The Variants tab uses a separate query (`useGetVariantsByProduct` →
+  // `["product-variants-filtered", params]`), which the products invalidation
+  // doesn't reach. Refetch it explicitly so stock changes show without a page
+  // reload.
+  queryClient.refetchQueries({ queryKey: ["product-variants-filtered"] })
   refetchMovements()
 }
 

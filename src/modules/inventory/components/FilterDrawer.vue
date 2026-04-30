@@ -135,7 +135,6 @@ const statusOptions = [
   { value: "in_stock", label: "In Stock", color: "success" as const },
   { value: "out_of_stock", label: "Out of Stock", color: "error" as const },
   { value: "low_stock", label: "Low Stock", color: "warning" as const },
-  { value: "overstocked", label: "Overstocked", color: "primary" as const },
 ]
 
 // Selected status state
