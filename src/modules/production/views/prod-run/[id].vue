@@ -86,7 +86,7 @@ const onFinaliseRun = () => {
 
 <template>
   <div class="px-3 pb-6 lg:px-6 lg:pt-8">
-    <PageHeader v-if="isMobile" :title="`Run Details`" inner />
+    <PageHeader v-if="isMobile" :title="`Run Details`" inner back-link="/production/runs" />
 
     <BackButton v-else :label="`Back to Runs`" to="/production/runs" />
 
@@ -214,40 +214,9 @@ const onFinaliseRun = () => {
               <Chip
                 icon="danger"
                 color="error"
-                :label="`${parseInt(prodRun.damaged_quantity)} units`"
+                :label="`${parseInt(prodRun.damaged_quantity)} ${prodRun.output_unit}`"
               />
             </div>
-
-            <!-- <section class="mt-6">
-              <h4 class="text-core-700 mb-2">Reason(s) Recorded</h4>
-              <div class="divide-y divide-gray-200 rounded-xl bg-gray-50 px-4">
-                <div v-for="v in 1" :key="v" class="flex justify-between py-4 text-sm">
-                  <p>
-                    <span class="font-medium">Chill Roasting {{ v }}</span>
-                  </p>
-                  <p class="space-x-1">
-                    <span class="font-medium">{{ format(4000) }}</span>
-                    <Icon v-if="false" name="note" class="text-primary-600" />
-                    <span v-else class="px-2"></span>
-                  </p>
-                </div>
-              </div>
-            </section>
-            <section class="mt-6">
-              <h4 class="text-core-700 mb-2">Cost Impact</h4>
-              <div class="divide-y divide-gray-200 rounded-xl bg-gray-50 px-4">
-                <div v-for="v in 1" :key="v" class="flex justify-between py-4 text-sm">
-                  <p>
-                    <span class="font-medium">Chill Roasting {{ v }}</span>
-                  </p>
-                  <p class="space-x-1">
-                    <span class="font-medium">{{ format(4000) }}</span>
-                    <Icon v-if="false" name="note" class="text-primary-600" />
-                    <span v-else class="px-2"></span>
-                  </p>
-                </div>
-              </div>
-            </section> -->
           </div>
         </div>
 

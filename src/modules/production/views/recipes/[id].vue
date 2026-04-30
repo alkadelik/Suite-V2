@@ -141,7 +141,12 @@ watch(
 
 <template>
   <div class="px-3 lg:px-6 lg:pt-8">
-    <PageHeader v-if="isMobile" :title="`${startCase(recipeValue)} Details`" inner />
+    <PageHeader
+      v-if="isMobile"
+      :title="`${startCase(recipeValue)} Details`"
+      inner
+      backLink="/production/recipes"
+    />
 
     <BackButton v-else :label="`Back to ${startCase(recipeLabel)}`" to="/production/recipes" />
 
