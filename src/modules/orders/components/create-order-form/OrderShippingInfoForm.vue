@@ -12,7 +12,7 @@ import EmptyState from "@components/EmptyState.vue"
 import type { ICustomer } from "@modules/customers/types"
 import type { IShippingCourier } from "@modules/shared/types"
 import { Field } from "vee-validate"
-import { computed, ref, watch } from "vue"
+import { computed, ref, watch, onMounted } from "vue"
 import { scrollToAndFocusValidationTarget } from "@/utils/validations"
 import {
   ORDER_CHANNELS,
@@ -148,22 +148,8 @@ const DELIVERY_METHOD_OPTIONS = computed(() => {
   })
 })
 
-// Auto-select delivery method when only one option is available
-watch(
-  DELIVERY_METHOD_OPTIONS,
-  (options) => {
-    if (options.length === 1) {
-      const selectedMethod = options[0].value
-      if (props.shippingInfo.delivery_method !== selectedMethod) {
-        emit("update:shippingInfo", {
-          ...props.shippingInfo,
-          ["delivery_method" as keyof ShippingInfo]: selectedMethod,
-        })
-      }
-    }
-  },
-  { immediate: true },
-)
+// Auto-select delivery method: pick the only option, or default to 'custom' when type is set and method is empty
+// (handled via localDeliveryMethod — see above)
 
 const DELIVERY_TYPE_OPTIONS = computed(() => {
   return [
@@ -178,22 +164,57 @@ const DELIVERY_TYPE_OPTIONS = computed(() => {
   })
 })
 
-// Auto-select delivery type when only one option is available
-watch(
-  DELIVERY_TYPE_OPTIONS,
-  (options) => {
-    if (options.length === 1) {
-      const selectedType = options[0].value
-      if (props.shippingInfo.delivery_type !== selectedType) {
-        emit("update:shippingInfo", {
-          ...props.shippingInfo,
-          ["delivery_type" as keyof ShippingInfo]: selectedType,
-        })
-      }
-    }
-  },
-  { immediate: true },
+const defaultDeliveryType = (): ShippingInfo["delivery_type"] => {
+  const opts = DELIVERY_TYPE_OPTIONS.value
+  const raw = opts.find((o) => o.value === "standard")?.value ?? opts[0]?.value ?? ""
+  return raw as ShippingInfo["delivery_type"]
+}
+
+const defaultDeliveryMethod = (): ShippingInfo["delivery_method"] => {
+  const opts = DELIVERY_METHOD_OPTIONS.value
+  if (opts.length === 1) return opts[0].value as ShippingInfo["delivery_method"]
+  const raw = opts.find((o) => o.value === "custom")?.value ?? opts[0]?.value ?? ""
+  return raw as ShippingInfo["delivery_method"]
+}
+
+const localDeliveryType = ref<ShippingInfo["delivery_type"]>(
+  props.shippingInfo.delivery_type || defaultDeliveryType(),
 )
+const localDeliveryMethod = ref<ShippingInfo["delivery_method"]>(
+  props.shippingInfo.delivery_method || defaultDeliveryMethod(),
+)
+
+// Re-apply defaults whenever the parent resets the shipping info (e.g. form reset)
+watch(
+  () => props.shippingInfo,
+  (info) => {
+    localDeliveryType.value = info.delivery_type || defaultDeliveryType()
+    localDeliveryMethod.value = info.delivery_method || defaultDeliveryMethod()
+  },
+)
+
+// Emit local delivery type/method changes to parent immediately
+watch(localDeliveryType, (val) => {
+  if (val !== props.shippingInfo.delivery_type) {
+    emit("update:shippingInfo", { ...props.shippingInfo, delivery_type: val })
+  }
+})
+watch(localDeliveryMethod, (val) => {
+  if (val !== props.shippingInfo.delivery_method) {
+    emit("update:shippingInfo", { ...props.shippingInfo, delivery_method: val })
+  }
+})
+
+// On mount, push initial defaults to parent if not already set
+onMounted(() => {
+  if (!props.shippingInfo.delivery_type || !props.shippingInfo.delivery_method) {
+    emit("update:shippingInfo", {
+      ...props.shippingInfo,
+      delivery_type: localDeliveryType.value,
+      delivery_method: localDeliveryMethod.value,
+    })
+  }
+})
 
 // Remap delivery payment options based on fulfilment status
 const DELIVERY_PAYMENT_OPTIONS = computed(() => {
@@ -319,27 +340,27 @@ const canProceed = computed(() => {
 
     // For customer pays merchant, delivery type is mandatory
     if (props.shippingInfo.delivery_payment_option === "customer_pays_merchant") {
-      if (!props.shippingInfo.delivery_type) {
+      if (!localDeliveryType.value) {
         return false
       }
       // If standard delivery is selected, delivery method is mandatory
-      if (props.shippingInfo.delivery_type === "standard" && !props.shippingInfo.delivery_method) {
+      if (localDeliveryType.value === "standard" && !localDeliveryMethod.value) {
         return false
       }
     }
 
     // For merchant pays options, validate based on delivery type and method
-    if (props.shippingInfo.delivery_type === "express") {
+    if (localDeliveryType.value === "express") {
       // Express delivery requires express_delivery_option selection (UID)
       return !!props.shippingInfo.express_delivery_option
     }
 
     // Standard delivery validation based on method
-    if (props.shippingInfo.delivery_type === "standard") {
-      if (props.shippingInfo.delivery_method === "manual") {
+    if (localDeliveryType.value === "standard") {
+      if (localDeliveryMethod.value === "manual") {
         // Manual requires manual_delivery_option selection (UID)
         return !!props.shippingInfo.manual_delivery_option
-      } else if (props.shippingInfo.delivery_method === "shipbubble") {
+      } else if (localDeliveryMethod.value === "shipbubble") {
         // Shipbubble requires address, email, phone, and courier selection
         return (
           props.shippingInfo.delivery_address &&
@@ -347,7 +368,7 @@ const canProceed = computed(() => {
           props.shippingInfo.customer_phone.trim().length > 0 &&
           props.shippingInfo.courier
         )
-      } else if (props.shippingInfo.delivery_method === "custom") {
+      } else if (localDeliveryMethod.value === "custom") {
         // Custom requires courier name, delivery fee, and address
         return (
           props.shippingInfo.courier &&
@@ -374,7 +395,7 @@ const handleNext = async () => {
     if (
       props.shippingInfo.fulfilment_method === "delivery" &&
       props.shippingInfo.delivery_payment_option === "customer_pays_merchant" &&
-      !props.shippingInfo.delivery_type
+      !localDeliveryType.value
     ) {
       navigationErrors.value.delivery_type = "Select a delivery type before continuing."
       return
@@ -383,8 +404,8 @@ const handleNext = async () => {
     if (
       props.shippingInfo.fulfilment_method === "delivery" &&
       props.shippingInfo.delivery_payment_option === "customer_pays_merchant" &&
-      props.shippingInfo.delivery_type === "standard" &&
-      !props.shippingInfo.delivery_method
+      localDeliveryType.value === "standard" &&
+      !localDeliveryMethod.value
     ) {
       navigationErrors.value.delivery_method = "Select a delivery method before continuing."
       return
@@ -392,7 +413,7 @@ const handleNext = async () => {
 
     if (
       props.shippingInfo.fulfilment_method === "delivery" &&
-      props.shippingInfo.delivery_type === "express" &&
+      localDeliveryType.value === "express" &&
       !props.shippingInfo.express_delivery_option
     ) {
       navigationErrors.value.express_delivery_option =
@@ -402,8 +423,8 @@ const handleNext = async () => {
 
     if (
       props.shippingInfo.fulfilment_method === "delivery" &&
-      props.shippingInfo.delivery_type === "standard" &&
-      props.shippingInfo.delivery_method === "manual" &&
+      localDeliveryType.value === "standard" &&
+      localDeliveryMethod.value === "manual" &&
       !props.shippingInfo.manual_delivery_option
     ) {
       navigationErrors.value.manual_delivery_option =
@@ -428,8 +449,8 @@ const handleNext = async () => {
   // Validate shipbubble delivery
   if (
     props.shippingInfo.fulfilment_method === "delivery" &&
-    props.shippingInfo.delivery_type === "standard" &&
-    props.shippingInfo.delivery_method === "shipbubble"
+    localDeliveryType.value === "standard" &&
+    localDeliveryMethod.value === "shipbubble"
   ) {
     const isValid = await validateFetchRates()
     if (!isValid) {
@@ -446,8 +467,8 @@ const handleNext = async () => {
   // Validate custom delivery fields
   if (
     props.shippingInfo.fulfilment_method === "delivery" &&
-    props.shippingInfo.delivery_type === "standard" &&
-    props.shippingInfo.delivery_method === "custom"
+    localDeliveryType.value === "standard" &&
+    localDeliveryMethod.value === "custom"
   ) {
     const isValid = await validateManualDelivery()
     if (!isValid) {
@@ -579,7 +600,7 @@ const handleUpdateCourier = (courierId: string) => {
 watch(
   () => props.shippingInfo.express_delivery_option,
   (newVal) => {
-    if (newVal && props.shippingInfo.delivery_type === "express") {
+    if (newVal && localDeliveryType.value === "express") {
       const location = expressOptions.value?.find((v) => v.uid === newVal)
       if (location) {
         updateField("delivery_fee", location.amount)
@@ -592,7 +613,7 @@ watch(
 watch(
   () => props.shippingInfo.manual_delivery_option,
   (newVal) => {
-    if (newVal && props.shippingInfo.delivery_method === "manual") {
+    if (newVal && localDeliveryMethod.value === "manual") {
       const location = manualOptions.value?.find((v) => v.uid === newVal)
       if (location) {
         updateField("delivery_fee", location.amount)
@@ -605,7 +626,7 @@ watch(
 watch(
   () => props.shippingInfo.delivery_address,
   (newVal, oldVal) => {
-    if (newVal && newVal !== oldVal && props.shippingInfo.delivery_method === "shipbubble") {
+    if (newVal && newVal !== oldVal && localDeliveryMethod.value === "shipbubble") {
       shipBubbleRates.value = { couriers: [] }
       fetchShippingRates()
     }
@@ -657,42 +678,36 @@ watch(
 )
 
 // Reset delivery fields when switching delivery method (standard only)
-watch(
-  () => props.shippingInfo.delivery_method,
-  (val) => {
-    navigationErrors.value.delivery_method = ""
-    navigationErrors.value.manual_delivery_option = ""
+watch(localDeliveryMethod, (val) => {
+  navigationErrors.value.delivery_method = ""
+  navigationErrors.value.manual_delivery_option = ""
 
-    if (val === "manual") {
-      // Clear shipbubble and custom-specific fields
-      shipBubbleRates.value = { couriers: [] }
-      updateField("shipping_rate_token", "")
-      updateField("courier", "")
-      // updateField("delivery_fee", 0)
-      shippingRateErrors.value = { email: "", phone: "", address: "" }
-      validationErrors.value = { courier: "", delivery_fee: "" }
-    } else if (val === "custom") {
-      // Clear shipbubble and manual-specific fields
-      shipBubbleRates.value = { couriers: [] }
-      updateField("manual_delivery_option", "")
-      shippingRateErrors.value = { email: "", phone: "", address: "" }
-      validationErrors.value = { courier: "", delivery_fee: "" }
-    } else if (val === "shipbubble") {
-      // Clear custom and manual-specific fields
-      updateField("courier", "")
-      updateField("manual_delivery_option", "")
-      validationErrors.value = { courier: "", delivery_fee: "" }
-    }
-  },
-)
+  if (val === "manual") {
+    // Clear shipbubble and custom-specific fields
+    shipBubbleRates.value = { couriers: [] }
+    updateField("shipping_rate_token", "")
+    updateField("courier", "")
+    // updateField("delivery_fee", 0)
+    shippingRateErrors.value = { email: "", phone: "", address: "" }
+    validationErrors.value = { courier: "", delivery_fee: "" }
+  } else if (val === "custom") {
+    // Clear shipbubble and manual-specific fields
+    shipBubbleRates.value = { couriers: [] }
+    updateField("manual_delivery_option", "")
+    shippingRateErrors.value = { email: "", phone: "", address: "" }
+    validationErrors.value = { courier: "", delivery_fee: "" }
+  } else if (val === "shipbubble") {
+    // Clear custom and manual-specific fields
+    updateField("courier", "")
+    updateField("manual_delivery_option", "")
+    validationErrors.value = { courier: "", delivery_fee: "" }
+  }
+})
 
-watch(
-  () => props.shippingInfo.delivery_type,
-  () => {
-    navigationErrors.value.delivery_type = ""
-    navigationErrors.value.express_delivery_option = ""
-  },
-)
+watch(localDeliveryType, () => {
+  navigationErrors.value.delivery_type = ""
+  navigationErrors.value.express_delivery_option = ""
+})
 
 watch(
   () => props.shippingInfo.express_delivery_option,
@@ -796,6 +811,8 @@ const isMobile = useMediaQuery("(max-width: 768px)")
         />
       </div>
 
+      {{ DELIVERY_TYPE_OPTIONS }}
+
       <template
         v-if="
           shippingInfo.fulfilment_method === 'delivery' &&
@@ -808,19 +825,14 @@ const isMobile = useMediaQuery("(max-width: 768px)")
           <hr class="mb-4 border-gray-300" />
           <RadioInputField
             :options="DELIVERY_TYPE_OPTIONS"
-            :modelValue="shippingInfo.delivery_type"
+            :modelValue="localDeliveryType"
             :error="navigationErrors.delivery_type"
-            @update:modelValue="
-              ($event) => {
-                // console.log('Selected delivery type:', $event)
-                updateField('delivery_type', $event)
-              }
-            "
+            @update:modelValue="(val) => (localDeliveryType = val as ShippingInfo['delivery_type'])"
           />
         </div>
 
         <!-- express delivery location -->
-        <div v-if="shippingInfo.delivery_type === 'express'" class="my-6 rounded-xl bg-white p-4">
+        <div v-if="localDeliveryType === 'express'" class="my-6 rounded-xl bg-white p-4">
           <h3 class="mb-4 text-sm font-medium">Select your delivery location</h3>
           <hr class="mb-4 border-gray-300" />
           <RadioInputField
@@ -844,7 +856,7 @@ const isMobile = useMediaQuery("(max-width: 768px)")
         </div>
 
         <!-- for standard delivery -->
-        <div v-if="shippingInfo.delivery_type === 'standard'" class="rounded-xl bg-white p-4">
+        <div v-if="localDeliveryType === 'standard'" class="rounded-xl bg-white p-4">
           <h3 class="mb-4 text-sm font-medium">Delivery Method</h3>
           <hr class="mb-4 border-gray-300" />
           <div class="space-y-4">
@@ -853,9 +865,11 @@ const isMobile = useMediaQuery("(max-width: 768px)")
               label=""
               :options="DELIVERY_METHOD_OPTIONS"
               :orientation="isMobile ? 'vertical' : 'horizontal'"
-              :modelValue="shippingInfo.delivery_method"
+              :modelValue="localDeliveryMethod"
               :error="navigationErrors.delivery_method"
-              @update:modelValue="updateField('delivery_method', $event)"
+              @update:modelValue="
+                (val) => (localDeliveryMethod = val as ShippingInfo['delivery_method'])
+              "
             >
               <template #content="{ option }">
                 <div class="flex flex-1 flex-col gap-1.5">
@@ -876,7 +890,7 @@ const isMobile = useMediaQuery("(max-width: 768px)")
             </RadioInputField>
 
             <!-- Manual Delivery Location Selection -->
-            <template v-if="shippingInfo.delivery_method === 'manual'">
+            <template v-if="localDeliveryMethod === 'manual'">
               <hr class="my-4 border-gray-300" />
               <RadioInputField
                 :options="MANUAL_DELIVERY_LOCATIONS"
@@ -899,7 +913,7 @@ const isMobile = useMediaQuery("(max-width: 768px)")
             </template>
 
             <!-- ShipBubble Delivery -->
-            <template v-if="shippingInfo.delivery_method === 'shipbubble'">
+            <template v-if="localDeliveryMethod === 'shipbubble'">
               <!-- Empty State when shipping is not set up -->
               <EmptyState
                 v-if="!isShippingSetupComplete"
@@ -1115,7 +1129,7 @@ const isMobile = useMediaQuery("(max-width: 768px)")
             </template>
 
             <!-- Custom Delivery -->
-            <template v-if="shippingInfo.delivery_method === 'custom'">
+            <template v-if="localDeliveryMethod === 'custom'">
               <div class="grid grid-cols-1 gap-3">
                 <TextField
                   type="text"
@@ -1163,8 +1177,7 @@ const isMobile = useMediaQuery("(max-width: 768px)")
             shippingInfo.delivery_payment_option !== 'customer_pays_courier' &&
             (shippingInfo.delivery_type === 'express' ||
               (shippingInfo.delivery_type === 'standard' &&
-                (shippingInfo.delivery_method === 'manual' ||
-                  shippingInfo.delivery_method === 'custom')))
+                (localDeliveryMethod === 'manual' || localDeliveryMethod === 'custom')))
           "
           class="my-6 rounded-xl bg-white p-4"
         >
