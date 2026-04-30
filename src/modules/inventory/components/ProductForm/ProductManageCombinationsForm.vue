@@ -198,6 +198,14 @@
               "
               @blur="handleStockBlur(index, $event)"
             />
+            <button
+              v-if="index === 0 && variants.length > 1 && variant.opening_stock"
+              type="button"
+              class="text-primary-600 mt-1 block w-full truncate text-[10px] underline"
+              @click="applyToAll('opening_stock', variant.opening_stock)"
+            >
+              Apply to all
+            </button>
           </div>
 
           <!-- Cost Price Input -->
@@ -219,6 +227,16 @@
               "
               @blur="handleCostPriceBlur(index, $event)"
             />
+            <button
+              v-if="
+                index === 0 && variants.length > 1 && !props.disableCostPrice && variant.cost_price
+              "
+              type="button"
+              class="text-primary-600 mt-1 block w-full truncate text-[10px] underline"
+              @click="applyToAll('cost_price', variant.cost_price)"
+            >
+              Apply to all
+            </button>
           </div>
 
           <!-- Selling Price Input -->
@@ -238,6 +256,14 @@
               @update:model-value="updateVariantField(index, 'price', removeLeadingZeros($event))"
               @blur="handlePriceBlur(index, $event)"
             />
+            <button
+              v-if="index === 0 && variants.length > 1 && !props.disablePrice && variant.price"
+              type="button"
+              class="text-primary-600 mt-1 block w-full truncate text-[10px] underline"
+              @click="applyToAll('price', variant.price)"
+            >
+              Apply to all
+            </button>
           </div>
         </div>
       </div>
@@ -284,6 +310,14 @@
               "
               @blur="handleStockBlur(index, $event)"
             />
+            <button
+              v-if="index === 0 && variants.length > 1 && variant.opening_stock"
+              type="button"
+              class="text-primary-600 mt-1 text-xs underline"
+              @click="applyToAll('opening_stock', variant.opening_stock)"
+            >
+              Apply to all
+            </button>
           </div>
 
           <!-- Cost Price -->
@@ -306,6 +340,16 @@
               "
               @blur="handleCostPriceBlur(index, $event)"
             />
+            <button
+              v-if="
+                index === 0 && variants.length > 1 && !props.disableCostPrice && variant.cost_price
+              "
+              type="button"
+              class="text-primary-600 mt-1 text-xs underline"
+              @click="applyToAll('cost_price', variant.cost_price)"
+            >
+              Apply to all
+            </button>
           </div>
 
           <!-- Selling Price -->
@@ -326,6 +370,14 @@
               @update:model-value="updateVariantField(index, 'price', removeLeadingZeros($event))"
               @blur="handlePriceBlur(index, $event)"
             />
+            <button
+              v-if="index === 0 && variants.length > 1 && !props.disablePrice && variant.price"
+              type="button"
+              class="text-primary-600 mt-1 text-xs underline"
+              @click="applyToAll('price', variant.price)"
+            >
+              Apply to all
+            </button>
             <p v-if="costPriceWarnings[index]" class="mt-1 text-xs text-amber-600">
               {{ costPriceWarnings[index] }}
             </p>
@@ -459,10 +511,33 @@ const currencySymbol = computed(() => {
   return symbols[currency] || currency
 })
 
+/**
+ * Parse a price-shaped value, tolerating thousands separators and stray
+ * whitespace. `parseFloat("1,000")` returns 1, which caused LYW-2508 — the
+ * warning fired with cost=10, sell=1,000 because sell parsed to 1.
+ */
+const parsePrice = (val: string | number | null | undefined): number => {
+  if (val === null || val === undefined) return NaN
+  const str = (typeof val === "number" ? val.toString() : val).trim().replace(/[^\d.-]/g, "")
+  if (!str) return NaN
+  return parseFloat(str)
+}
+
 const costPriceWarnings = computed(() => {
-  return variants.value.map((v) => {
-    const cost = parseFloat(v.cost_price)
-    const sell = parseFloat(v.price)
+  return variants.value.map((v, i) => {
+    const cost = parsePrice(v.cost_price)
+    const sell = parsePrice(v.price)
+    // TEMP LYW-2508 INVESTIGATION: log raw values so the source of any
+    // comma-formatted prices can be traced. Remove once confirmed clean.
+    if (
+      typeof v.cost_price === "string" &&
+      (v.cost_price.includes(",") || /\s/.test(v.cost_price))
+    ) {
+      console.warn(`[LYW-2508] variant[${i}].cost_price contains separators:`, v.cost_price)
+    }
+    if (typeof v.price === "string" && (v.price.includes(",") || /\s/.test(v.price))) {
+      console.warn(`[LYW-2508] variant[${i}].price contains separators:`, v.price)
+    }
     if (isFinite(cost) && isFinite(sell) && cost > 0 && sell > 0 && sell < cost) {
       return "Note: Selling price is lower than cost price"
     }
@@ -619,6 +694,20 @@ const updateVariantField = (index: number, field: keyof IProductVariant, value: 
     }
     emit("update:modelValue", updatedVariants)
   }
+}
+
+/**
+ * LYW-2509: copy a field's value from the first variant to every other variant,
+ * overwriting whatever the others hold. Used by the "Apply to all" link shown
+ * below each price/cost/stock field on the first variant.
+ */
+const applyToAll = (field: "opening_stock" | "cost_price" | "price", value: string) => {
+  if (!props.modelValue || props.modelValue.length < 2) return
+  const updatedVariants = props.modelValue.map((variant, index) => {
+    if (index === 0) return variant
+    return { ...variant, [field]: value }
+  })
+  emit("update:modelValue", updatedVariants)
 }
 
 // Update global dimensions and apply to all variants
