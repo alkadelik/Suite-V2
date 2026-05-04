@@ -138,10 +138,10 @@
             <p class="mb-4 text-sm">Get advanced tools to manage every aspect of your business.</p>
           </template>
 
+          <!--  v-if="isTrial || planNameLower !== 'bloom'" -->
           <AppButton
-            v-if="isTrial || planNameLower !== 'bloom'"
             color="alt"
-            label="Upgrade"
+            :label="planCtaLabel"
             class="w-full flex-row-reverse"
             icon="star"
             @click="$emit('upgrade')"
@@ -279,6 +279,10 @@ const isActive = computed(() => !!subscription.value?.is_active)
 
 const planName = computed(() => subscription.value?.plan_name ?? "")
 const planNameLower = computed(() => planName.value.toLowerCase())
+const planCtaLabel = computed(() => {
+  if (isTrial.value) return "Upgrade"
+  return planNameLower.value === "burst" ? "Subscribed" : "Upgrade"
+})
 
 const formattedEnds = computed(() => {
   const until = subscription.value?.active_until

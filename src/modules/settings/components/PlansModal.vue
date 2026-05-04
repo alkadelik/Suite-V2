@@ -1,7 +1,7 @@
 <template>
   <Modal
     :open="modelValue"
-    title="Upgrade Plan"
+    title="Choose a plan"
     max-width="6xl"
     @close="emit('update:modelValue', false)"
     :variant="isMobile ? 'fullscreen' : 'centered'"
@@ -65,12 +65,11 @@
     </div>
 
     <!-- Plans Display -->
-    <div
-      v-else-if="bloomPlan"
-      class="flex w-full flex-col space-y-6 rounded-2xl border border-gray-200 bg-white p-4 lg:flex-row lg:space-y-0 lg:space-x-6"
-    >
+    <div v-else-if="processedPlans.length > 0" class="grid w-full gap-6 lg:grid-cols-2">
       <div
-        class="flex flex-1 flex-col justify-between gap-10 rounded-2xl border border-gray-200 bg-gray-50 p-5"
+        v-for="plan in processedPlans"
+        :key="plan.name"
+        class="flex flex-col justify-between gap-10 rounded-2xl border border-gray-200 bg-gray-50 p-5"
       >
         <div>
           <div class="mb-3 flex flex-col items-start gap-4">
@@ -80,37 +79,42 @@
               </div>
             </div>
 
-            <Chip color="success" label="🪴 Bloom" />
+            <Chip
+              :color="
+                plan.name === 'Burst' ? 'purple' : plan.name === 'Bloom' ? 'success' : 'primary'
+              "
+              :label="plan.name === 'Bloom' ? '🪴 Bloom' : plan.name"
+            />
           </div>
 
-          <p class="text-core-700 mt-4">{{ bloomPlan.description }}</p>
+          <p class="text-core-700 mt-4">{{ plan.description }}</p>
         </div>
 
         <div class="flex flex-col gap-8">
           <h2 class="text-2xl font-semibold text-gray-900">
-            {{ formatCurrency(bloomPlan.currentPrice, { kobo: false }) }}
-            <span class="text-sm font-normal text-gray-500"
-              >/{{ activeTab === "monthly" ? "month" : "year" }}</span
-            >
+            {{ formatCurrency(plan.currentPrice, { kobo: false }) }}
+            <span class="text-sm font-normal text-gray-500">
+              /{{ activeTab === "monthly" ? "month" : "year" }}
+            </span>
           </h2>
           <AppButton
-            :label="isSubscribedToBloom ? 'Subscribed' : 'Upgrade'"
+            :label="getPlanActionLabel(plan)"
             size="lg"
-            :disabled="isSubscribedToBloom || isInitializing"
-            :loading="loadingPlanId === bloomPlan.uid"
-            @click="handlePlanAction(bloomPlan)"
+            :disabled="isPlanActionDisabled(plan)"
+            :loading="loadingPlanId === plan.uid && isInitializing"
+            @click="handlePlanAction(plan)"
           />
         </div>
-      </div>
 
-      <div class="flex h-full flex-1 flex-col justify-center p-6">
-        <h4 class="!font-outfit text-lg font-semibold text-gray-900">Features</h4>
-        <ul class="mt-4 space-y-3">
-          <li v-for="feature in planFeatures.Bloom" :key="feature" class="flex items-start gap-3">
-            <Icon name="check" size="20" class="mt-1 flex-shrink-0 text-gray-400" />
-            <span class="text-gray-700">{{ feature }}</span>
-          </li>
-        </ul>
+        <div>
+          <h4 class="!font-outfit text-lg font-semibold text-gray-900">Features</h4>
+          <ul class="mt-4 space-y-3">
+            <li v-for="feature in plan.features" :key="feature" class="flex items-start gap-3">
+              <Icon name="check" size="20" class="mt-1 flex-shrink-0 text-gray-400" />
+              <span class="text-gray-700">{{ feature }}</span>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   </Modal>
@@ -146,12 +150,13 @@ const loadingPlanId = ref<string | null>(null)
 
 const user = computed(() => authStore.user)
 
-// Check if user is already subscribed to Bloom
-const isSubscribedToBloom = computed(() => {
-  const subscription = user.value?.subscription
-  if (!subscription || !subscription.is_active) return false
-  if (subscription.trial_mode) return false
-  return subscription.plan_name?.toLowerCase() === "bloom"
+const currentPlanOrder = computed(() => {
+  const planName = user.value?.subscription?.plan_name?.toLowerCase()
+  if (!planName || !user.value?.subscription?.is_active) return null
+  if (planName === "bud") return 1
+  if (planName === "bloom") return 2
+  if (planName === "burst") return 3
+  return null
 })
 
 const tabs = ref([
@@ -280,8 +285,8 @@ const processedPlans = computed((): ProcessedPlan[] => {
       active:
         user.value?.subscription?.plan_name === planGroup.name &&
         !user.value?.subscription?.trial_mode,
-      highlighted: planGroup.name === "Bloom",
-      chipText: planGroup.name === "Bloom" ? "Leyyow's Choice" : null,
+      highlighted: planGroup.name === "Burst",
+      chipText: planGroup.name === "Burst" ? "Leyyow's Choice" : null,
       planOrder,
       currentPrice: activePlanData?.price || 0,
     }
@@ -292,17 +297,25 @@ const processedPlans = computed((): ProcessedPlan[] => {
     plans = plans.filter((plan) => plan.name !== "Bud")
   }
 
-  // Filter out Burst plan - only show Bud and Bloom
-  plans = plans.filter((plan) => plan.name !== "Burst")
-
   // Sort by plan order
   return plans.sort((a, b) => a.planOrder - b.planOrder)
 })
 
 // Get only the Bloom plan
-const bloomPlan = computed((): ProcessedPlan | null => {
-  return processedPlans.value.find((plan) => plan.name === "Bloom") || null
-})
+const getPlanActionLabel = (plan: ProcessedPlan): string => {
+  if (plan.active) return "Subscribed"
+
+  const currentOrder = currentPlanOrder.value
+  if (!currentOrder) {
+    return "Upgrade"
+  }
+
+  return currentOrder > plan.planOrder ? "Downgrade" : "Upgrade"
+}
+
+const isPlanActionDisabled = (plan: ProcessedPlan): boolean => {
+  return plan.active || isInitializing.value
+}
 
 // Handle plan upgrade/downgrade action
 const handlePlanAction = (plan: ProcessedPlan): void => {

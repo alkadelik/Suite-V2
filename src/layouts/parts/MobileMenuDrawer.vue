@@ -111,6 +111,12 @@ const quickActionGroups = computed<ActionGroup[]>(() => {
 const showPlans = computed(() => useSettingsStore().showPlanUpgradeModal)
 const isInternational = computed(() => useSettingsStore().isInternational)
 
+const currentPlanName = computed(() => user.value?.subscription?.plan_name?.toLowerCase() ?? "")
+const planCtaLabel = computed(() => {
+  if (user.value?.subscription?.trial_mode) return "Upgrade"
+  return currentPlanName.value === "burst" ? "Subscribed" : "Upgrade"
+})
+
 const { setPlanUpgradeModal } = useSettingsStore()
 </script>
 
@@ -242,7 +248,7 @@ const { setPlanUpgradeModal } = useSettingsStore()
         </div>
         <AppButton
           color="alt"
-          label="Upgrade"
+          :label="planCtaLabel"
           class="w-full flex-row-reverse"
           icon="star"
           @click="setPlanUpgradeModal(true)"
