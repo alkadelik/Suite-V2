@@ -293,9 +293,9 @@ const processedPlans = computed((): ProcessedPlan[] => {
   })
 
   // Filter out Bud plan if hideBud is true
-  if (props.hideBud) {
-    plans = plans.filter((plan) => plan.name !== "Bud")
-  }
+  // if (props.hideBud) {
+  plans = plans.filter((plan) => plan.name !== "Bud")
+  // }
 
   // Sort by plan order
   return plans.sort((a, b) => a.planOrder - b.planOrder)
