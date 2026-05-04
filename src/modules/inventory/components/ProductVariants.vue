@@ -19,7 +19,7 @@
           :variant="activeFilterCount ? 'outlined' : 'filled'"
           label="Filter"
           :badge="activeFilterCount || undefined"
-          class="!hidden md:!inline-flex"
+          class="!hidden flex-shrink-0 md:!inline-flex"
           @click="showFilter = true"
         />
         <AppButton
@@ -29,25 +29,26 @@
           :variant="activeFilterCount ? 'outlined' : 'filled'"
           label=""
           :badge="activeFilterCount || undefined"
-          class="md:hidden"
+          class="flex-shrink-0 md:hidden"
           @click="showFilter = true"
+        />
+        <AppButton
+          icon="edit"
+          size="sm"
+          label="Manage Variants"
+          class="!hidden flex-shrink-0 md:!inline-flex"
+          @click="$emit('add-variant')"
         />
         <AppButton
           icon="add"
           size="sm"
-          label="Manage Variants"
-          class="!hidden md:!inline-flex"
+          label=""
+          class="flex-shrink-0 md:hidden"
           @click="$emit('add-variant')"
         />
-        <AppButton icon="add" size="sm" label="" class="md:hidden" @click="$emit('add-variant')" />
+        <AppButton icon="edit" size="sm" label="" class="md:hidden" @click="$emit('add-variant')" />
       </div>
     </div>
-
-    <ListFilterDrawer
-      v-model="showFilter"
-      :filter-groups="filterGroups"
-      @apply="handleApplyFilters"
-    />
 
     <DataTable
       :data="variants"
@@ -116,6 +117,12 @@
         <ProductVariantCard :variant="item" :variant-action-items="variantActionItems(item)" />
       </template>
     </DataTable>
+
+    <ListFilterDrawer
+      v-model="showFilter"
+      :filter-groups="filterGroups"
+      @apply="handleApplyFilters"
+    />
   </div>
 </template>
 
@@ -179,7 +186,6 @@ const filterGroups: FilterGroup[] = [
       { value: "in_stock", label: "In Stock", color: "success", showDot: true },
       { value: "low_stock", label: "Low Stock", color: "warning", showDot: true },
       { value: "out_of_stock", label: "Out of Stock", color: "error", showDot: true },
-      { value: "overstocked", label: "Overstocked", color: "primary", showDot: true },
     ],
   },
 ]

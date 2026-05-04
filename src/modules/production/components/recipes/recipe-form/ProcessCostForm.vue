@@ -6,10 +6,12 @@ import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
 import type { ProcessRow } from "../AddNewRecipeDrawer.vue"
 import { ref } from "vue"
+import Chip from "@components/Chip.vue"
 
 const props = defineProps<{
   initialRows: ProcessRow[]
   loading: boolean
+  outputItemDetails: { name: string; qty: number; unit: string; type: "product" | "sub_assembly" }
 }>()
 
 const emit = defineEmits<{
@@ -61,6 +63,27 @@ function handleSubmit() {
       <Icon name="box" size="28" />
     </div>
     <p class="mb-4 text-sm">Add Process Costs</p>
+
+    <div class="border-core-300 bg-core-25 my-4 rounded-xl border p-4 py-3">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white">
+            <Icon name="box" class="h-5 w-5 text-gray-400" />
+          </div>
+          <div class="flex-1">
+            <h4 class="flex items-center gap-2 text-sm font-medium">
+              {{ outputItemDetails.name }}
+              <Chip
+                v-if="outputItemDetails.type === 'sub_assembly'"
+                label="Sub-assembly"
+                color="purple"
+              />
+            </h4>
+          </div>
+        </div>
+        <Chip :label="`${outputItemDetails.qty} ${outputItemDetails.unit}`" />
+      </div>
+    </div>
 
     <div class="space-y-4">
       <div

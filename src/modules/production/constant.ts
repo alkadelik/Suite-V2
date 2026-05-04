@@ -121,7 +121,7 @@ export const componentOptions = [
 export const UNITS_OF_MEASURE = [
   { label: "Kilograms (kg)", value: "kg" },
   { label: "Grams (g)", value: "g" },
-  { label: "Liters (l)", value: "l" },
+  { label: "Liters (L)", value: "L" },
   { label: "Milliliters (ml)", value: "ml" },
   { label: "Pieces (pcs)", value: "pcs" },
   { label: "Meters (m)", value: "m" },
@@ -189,18 +189,20 @@ export const recipeNameOptions = [
 // ================ PRODUCTION RUNS =========================
 
 export const PROD_RUNS_COLUMN: TableColumn<TProdRun>[] = [
-  { header: "Run ID", accessor: "run_id" },
+  // { header: "Run ID", accessor: "run_id" },
   { header: "Output Item", accessor: "output_item_name" },
-  { header: "", accessor: "damaged_quantity" },
+  // { header: "", accessor: "damaged_quantity" },
   {
     header: "Output Quantity",
     accessor: "quantity_to_produce",
-    cell: ({ value }) => parseInt(value as string),
+    cell: ({ item }) =>
+      parseInt(item.quantity_to_produce as string).toLocaleString() + item.output_unit,
   },
   {
     header: "Usable Quantity",
     accessor: "usable_quantity",
-    cell: ({ value }) => parseInt(value as string),
+    cell: ({ item }) =>
+      parseInt(item.usable_quantity as string).toLocaleString() + item.output_unit,
   },
   {
     header: "Total Cost",

@@ -20,7 +20,7 @@
             :variant="activeFilterCount ? 'outlined' : 'filled'"
             label="Filter"
             :badge="activeFilterCount || undefined"
-            class="!hidden md:!inline-flex"
+            class="!hidden flex-shrink-0 md:!inline-flex"
             @click="showFilter = true"
           />
           <AppButton
@@ -30,17 +30,11 @@
             :variant="activeFilterCount ? 'outlined' : 'filled'"
             label=""
             :badge="activeFilterCount || undefined"
-            class="md:hidden"
+            class="flex-shrink-0 md:hidden"
             @click="showFilter = true"
           />
         </div>
       </div>
-
-      <ListFilterDrawer
-        v-model="showFilter"
-        :filter-groups="filterGroups"
-        @apply="handleApplyFilters"
-      />
 
       <DataTable
         :data="orders"
@@ -84,6 +78,12 @@
         </template>
       </DataTable>
     </div>
+
+    <ListFilterDrawer
+      v-model="showFilter"
+      :filter-groups="filterGroups"
+      @apply="handleApplyFilters"
+    />
   </div>
 </template>
 

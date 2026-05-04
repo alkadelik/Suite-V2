@@ -12,6 +12,7 @@ import { computed, h, HTMLAttributes, onMounted, ref, useSlots, watch, type VNod
 import Icon from "./Icon.vue"
 import AppButton from "./AppButton.vue"
 import EmptyState from "./EmptyState.vue"
+import { useMediaQuery } from "@vueuse/core"
 
 // Type definitions
 export interface TableColumn<T = Record<string, unknown>> {
@@ -249,43 +250,36 @@ watch(rowSelection, (newVal) => {
   emit("row-selection-change", selected)
 })
 
+const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
+
 // Computed property for pagination pages
 const paginationPages = computed(() => {
-  const currentPage = table.value.getState().pagination.pageIndex + 1
   const totalPages = table.value.getPageCount()
+  const currentPage = pagination.value.pageIndex + 1
   const pages: (number | string)[] = []
 
-  if (totalPages <= 7) {
-    // Show all pages if 7 or fewer
+  if (totalPages <= 5) {
     for (let i = 1; i <= totalPages; i++) {
       pages.push(i)
     }
   } else {
-    // Always show first page
     pages.push(1)
 
-    if (currentPage <= 4) {
-      // Current page is near the beginning
-      for (let i = 2; i <= 5; i++) {
-        pages.push(i)
-      }
+    if (currentPage > 3) {
       pages.push("...")
-      pages.push(totalPages)
-    } else if (currentPage >= totalPages - 3) {
-      // Current page is near the end
-      pages.push("...")
-      for (let i = totalPages - 4; i <= totalPages; i++) {
-        pages.push(i)
-      }
-    } else {
-      // Current page is in the middle
-      pages.push("...")
-      for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-        pages.push(i)
-      }
-      pages.push("...")
-      pages.push(totalPages)
     }
+
+    const start = Math.max(2, currentPage - 1)
+    const end = Math.min(totalPages - 1, currentPage + 1)
+    for (let i = start; i <= end; i++) {
+      pages.push(i)
+    }
+
+    if (currentPage < totalPages - 2) {
+      pages.push("...")
+    }
+
+    pages.push(totalPages)
   }
 
   return pages
@@ -486,10 +480,11 @@ const getRowClasses = (row: T) => {
       <AppButton
         size="xs"
         color="alt"
+        class="shrink-0"
         @click="table.previousPage()"
         :disabled="!table.getCanPreviousPage()"
         icon="arrow-narrow-left"
-        label="Previous"
+        :label="isMobile ? '' : 'Previous'"
       />
 
       <!-- Page numbers -->
@@ -500,7 +495,7 @@ const getRowClasses = (row: T) => {
             v-else
             size="xs"
             color="alt"
-            :variant="page === table.getState().pagination.pageIndex + 1 ? 'outlined' : 'text'"
+            :variant="page === pagination.pageIndex + 1 ? 'outlined' : 'text'"
             @click="table.setPageIndex(Number(page) - 1)"
             class="px-3 py-1"
           >
@@ -516,8 +511,8 @@ const getRowClasses = (row: T) => {
         :disabled="!table.getCanNextPage()"
         @click="() => table.nextPage()"
         icon="arrow-right"
-        class="flex-row-reverse"
-        label="Next"
+        class="shrink-0 flex-row-reverse"
+        :label="isMobile ? '' : 'Next'"
       />
     </div>
   </div>

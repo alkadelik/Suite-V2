@@ -9,7 +9,7 @@ import EmptyState from "@components/EmptyState.vue"
 import PageHeader from "@components/PageHeader.vue"
 import StatCard from "@components/StatCard.vue"
 import Tabs from "@components/Tabs.vue"
-import { useGetSingleRawMaterial } from "@modules/production/api"
+import { useGetSingleRawMaterial, useDeleteRawMaterial } from "@modules/production/api"
 import AddRawMaterialDrawer from "@modules/production/components/raw-material/AddRawMaterialDrawer.vue"
 import AdjustMaterialStockModal from "@modules/production/components/raw-material/AdjustMaterialStockModal.vue"
 import RMBatchesTable from "@modules/production/components/raw-material/details/RMBatchesTable.vue"
@@ -18,7 +18,10 @@ import RMUsageHistoryTable from "@modules/production/components/raw-material/det
 import { useProductionStore } from "@modules/production/store"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, onMounted, ref } from "vue"
-import { useRoute } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
+import ConfirmationModal from "@components/ConfirmationModal.vue"
+import { displayError } from "@/utils/error-handler"
+import { toast } from "@/composables/useToast"
 
 const materialTabs = [
   { title: "Batches", key: "batches" },
@@ -27,15 +30,30 @@ const materialTabs = [
 ]
 
 const route = useRoute()
+const router = useRouter()
 const { format } = useFormatCurrency()
 const showEdit = ref(false)
 const showAdjust = ref(false)
+const showDelete = ref(false)
 const activeTab = ref("batches")
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 const materialLabel = computed(() => useProductionStore().componentLabel)
 const materialValue = computed(() => useProductionStore().componentValue)
 
 const { data: material, isPending, refetch } = useGetSingleRawMaterial(route.params.id as string)
+const { mutate: deleteRawMaterial, isPending: isDeleting } = useDeleteRawMaterial()
+
+const handleDelete = () => {
+  if (!material.value) return
+  deleteRawMaterial(material.value.uid, {
+    onSuccess: () => {
+      showDelete.value = false
+      toast.success(`${materialLabel.value} deleted successfully`)
+      router.replace("/production/raw-materials")
+    },
+    onError: displayError,
+  })
+}
 
 const actionMenus = computed(() => [
   {
@@ -44,6 +62,12 @@ const actionMenus = computed(() => [
     action: () => (showEdit.value = true),
   },
   { label: "Adjust stock", icon: "box", action: () => (showAdjust.value = true) },
+  {
+    label: `Delete ${materialValue.value}`,
+    icon: "trash",
+    class: "!text-error-600",
+    action: () => (showDelete.value = true),
+  },
 ])
 
 const materialStats = computed(() => [
@@ -84,7 +108,12 @@ onMounted(() => {
 
 <template>
   <div class="px-3 lg:px-6 lg:pt-8">
-    <PageHeader v-if="isMobile" :title="`${materialLabel} Details`" inner />
+    <PageHeader
+      v-if="isMobile"
+      :title="`${materialLabel} Details`"
+      inner
+      backLink="/production/raw-materials"
+    />
 
     <BackButton v-else :label="`Back to ${materialLabel}`" to="/production/raw-materials" />
 
@@ -153,6 +182,15 @@ onMounted(() => {
         :material="material"
         @close="showAdjust = false"
         @refresh="refetch"
+      />
+
+      <ConfirmationModal
+        :header="`Delete ${materialLabel}`"
+        :paragraph="`Are you sure you want to delete '${material.name}'? This cannot be undone.`"
+        v-model="showDelete"
+        variant="error"
+        :loading="isDeleting"
+        @confirm="handleDelete"
       />
     </div>
   </div>

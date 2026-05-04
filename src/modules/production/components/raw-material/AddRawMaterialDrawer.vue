@@ -10,6 +10,7 @@ import { useMediaQuery } from "@vueuse/core"
 import { Field, useForm } from "vee-validate"
 import * as yup from "yup"
 import { watch, computed, ref } from "vue"
+import { useQueryClient } from "@tanstack/vue-query"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 import { onInvalidSubmit } from "@/utils/validations"
@@ -19,12 +20,16 @@ import {
   useGetSuppliers,
   useCreateSupplier,
 } from "../../api"
-import { TRawMaterial } from "../../types"
+import { TRawMaterial, type TConversion } from "../../types"
 import SelectField from "@components/form/SelectField.vue"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { UNITS_OF_MEASURE } from "@modules/production/constant"
 
-const props = defineProps<{ open: boolean; material?: TRawMaterial | null }>()
+const props = defineProps<{
+  open: boolean
+  mode?: "create" | "edit" | null
+  material?: TRawMaterial | null
+}>()
 const emit = defineEmits(["close", "refresh"])
 
 const isMobile = useMediaQuery("(max-width: 1028px)")
@@ -37,6 +42,7 @@ const activeStep = ref(0)
 // Supplier management
 const showAddSupplier = ref(false)
 const newSupplierName = ref("")
+const queryClient = useQueryClient()
 
 // unit management
 const showAddUnit = ref<"purchase" | "production" | null>(null)
@@ -134,7 +140,9 @@ const { handleSubmit, resetForm, values, setFieldValue, validateField, setFieldT
           .min(0, "Qty in stock cannot be negative"),
         default_cost: yup
           .number()
-          .transform((value, originalValue) => (originalValue === "" ? undefined : value))
+          .transform((_, originalValue) =>
+            originalValue === "" ? undefined : Number(String(originalValue).replace(/,/g, "")),
+          )
           .typeError("Default purchase price must be a number")
           .when("source", {
             is: (source: { value: string }) => source?.value === "supplier",
@@ -206,6 +214,8 @@ const createNewSupplier = () => {
           ...currentSuppliers,
           { label: supplierUid.name, value: supplierUid.uid },
         ])
+        // Invalidate the suppliers cache so the new supplier appears in future selections
+        queryClient.invalidateQueries({ queryKey: ["raw-materials-suppliers"] })
         // Close modal and reset
         showAddSupplier.value = false
         newSupplierName.value = ""
@@ -248,10 +258,11 @@ const onSubmit = handleSubmit((values) => {
   const payload = {
     name: values.name,
     unit: values.unit?.value || "",
-    default_cost: values.default_cost,
     qty_in_stock: values.qty_in_stock,
     is_sub_assembly: values.source?.value === "manufacture",
-    ...(values.source?.value === "supplier" ? { default_cost: values.default_cost } : {}),
+    ...(values.source?.value === "supplier"
+      ? { default_cost: Number(values.default_cost.replace(/[^0-9.]/g, "")) }
+      : {}),
     ...(values.suppliers.length ? { suppliers: values.suppliers.map((x) => x.value) } : {}),
     ...(values.expiry_date ? { expiry_date: values.expiry_date } : {}),
     ...(values.reorder_threshold ? { reorder_threshold: values.reorder_threshold } : {}),
@@ -289,20 +300,45 @@ watch(
   (isOpen) => {
     if (isOpen) {
       activeStep.value = 0
-      if (isEditMode.value && props.material) {
+      if (props.mode === "edit" && props.material) {
         // Populate form with material data
+        const activeConversion: TConversion | undefined = props.material.conversions?.find(
+          (c) => c.is_active && c.from_unit !== c.to_unit,
+        )
+        const productionUnit = activeConversion
+          ? { label: activeConversion.to_unit, value: activeConversion.to_unit }
+          : { label: props.material.unit, value: props.material.unit }
+
+        const prefillSuppliers =
+          props.material.suppliers?.map((s) => ({ label: s.name, value: s.uid })) ?? []
+
         resetForm({
           values: {
             name: props.material.name,
             unit: { label: props.material.unit, value: props.material.unit },
-            production_unit: null,
+            production_unit: productionUnit,
             qty_in_stock: props.material.current_stock.toString(),
             source: props.material.is_sub_assembly ? sourceOptions[1] : sourceOptions[0],
             default_cost: props.material.avg_cost.toString(),
-            suppliers: props.material.suppliers?.map((supplier) => ({
-              label: supplier.name,
-              value: supplier.uid,
-            })),
+            suppliers: prefillSuppliers,
+            expiry_date: props.material.expiry_date ?? "",
+            reorder_threshold: props.material.reorder_threshold?.toString() ?? "",
+            notes: props.material.notes ?? "",
+            conversion_from_qty: "1",
+            conversion_to_qty: activeConversion ? activeConversion.rate : "",
+            conversion_name: activeConversion ? activeConversion.name : "",
+          },
+        })
+      } else {
+        resetForm({
+          values: {
+            name: "",
+            unit: null,
+            production_unit: null,
+            qty_in_stock: "",
+            default_cost: "",
+            source: null,
+            suppliers: [],
             expiry_date: "",
             reorder_threshold: "",
             notes: "",
@@ -311,8 +347,6 @@ watch(
             conversion_name: "",
           },
         })
-      } else {
-        resetForm()
       }
     }
   },
@@ -390,13 +424,25 @@ const goToPrevStep = () => {
               required
             />
 
+            <FormField
+              type="select"
+              name="source"
+              label="Do you make or buy this?"
+              placeholder="Select source"
+              :options="sourceOptions"
+              value-key="value"
+              label-key="label"
+              required
+              :placement="isMobile ? 'top' : 'auto'"
+            />
+
             <section class="border-core-300 space-y-4 border-y border-dashed py-3">
               <div>
                 <Field v-slot="{ field, errors: fieldErrors }" name="unit">
                   <SelectField
                     v-bind="field"
                     :model-value="field.value"
-                    :label="`What unit do you buy this in?`"
+                    :label="`What unit do you ${values.source?.value === 'manufacture' ? 'produce' : 'buy'} this in?`"
                     placeholder="Select unit"
                     :options="unitOptions"
                     searchable
@@ -495,7 +541,8 @@ const goToPrevStep = () => {
 
               <div v-if="showConversionSection" class="rounded-md bg-gray-200 p-4">
                 <p class="mb-3 flex items-center gap-1 text-sm font-medium">
-                  How many {{ values.unit?.label }} equal {{ values.production_unit?.label }}?
+                  How do you convert {{ values.unit?.label.toLowerCase() }} to
+                  {{ values.production_unit?.label.toLowerCase() }}?
                 </p>
                 <div class="flex items-end gap-2">
                   <div class="min-w-0 flex-1">
@@ -537,18 +584,6 @@ const goToPrevStep = () => {
               />
             </div>
 
-            <FormField
-              type="select"
-              name="source"
-              label="Source of material"
-              placeholder="Select source"
-              :options="sourceOptions"
-              value-key="value"
-              label-key="label"
-              required
-              :placement="isMobile ? 'top' : 'auto'"
-            />
-
             <div
               v-if="values.source?.value === 'manufacture'"
               class="bg-primary-25 text-warning-700 border-warning-300 flex items-center gap-3 rounded-xl border px-3 py-3 md:px-6"
@@ -570,7 +605,7 @@ const goToPrevStep = () => {
                 name="default_cost"
                 format="currency"
                 step="0.01"
-                :label="`Default Purchase price (${currency})`"
+                :label="`Price per ${values.unit?.value || 'Unit'} (${currency})`"
                 placeholder="e.g. 25"
                 required
               />
@@ -639,8 +674,9 @@ const goToPrevStep = () => {
               <FormField
                 type="text"
                 name="reorder_threshold"
-                label="Reorder Threshold (optional)"
+                :label="`Reorder Threshold (optional)`"
                 placeholder="Enter reorder threshold"
+                :suffix="values.unit?.label"
               />
             </div>
 

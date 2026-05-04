@@ -52,8 +52,8 @@ export const EXPORT_PERIOD_OPTIONS = [
 ]
 
 export const orderSourceMap: Record<string, string> = {
-  internal: "Internal",
-  storefront: "Storefront",
-  popup_storefront: "Popup",
-  popup_internal: "Popup Internal",
+  internal: "Manual Sale",
+  storefront: "Website",
+  popup_storefront: "Popup Website",
+  popup_internal: "Manual Popup Sale",
 }

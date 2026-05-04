@@ -337,7 +337,7 @@ const outstandingBalance = computed(() => {
             <Chip
               dense
               variant="outlined"
-              :icon="order.source === 'internal' ? 'clipboard-text' : 'global'"
+              :icon="order.source?.includes('internal') ? 'clipboard-text' : 'global'"
               :label="orderSourceMap[order.source] || order.source"
             />
           </div>

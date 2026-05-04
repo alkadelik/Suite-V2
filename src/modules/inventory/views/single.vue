@@ -1,6 +1,6 @@
 <template>
   <div class="text-core-800 p-4 py-8">
-    <PageHeader title="Product Details" inner />
+    <PageHeader title="Product Details" inner back-link="/inventory" />
 
     <ProductDetailsSkeleton v-if="isPending" />
 
@@ -289,6 +289,11 @@ const openStockModal = (
 const handleStockSuccess = () => {
   queryClient.refetchQueries({ queryKey: ["products", uid] })
   queryClient.invalidateQueries({ queryKey: ["products"] })
+  // The Variants tab uses a separate query (`useGetVariantsByProduct` →
+  // `["product-variants-filtered", params]`), which the products invalidation
+  // doesn't reach. Refetch it explicitly so stock changes show without a page
+  // reload.
+  queryClient.refetchQueries({ queryKey: ["product-variants-filtered"] })
   refetchMovements()
 }
 
