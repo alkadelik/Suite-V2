@@ -172,7 +172,7 @@ function handleNext() {
         <div
           v-for="row in visibleIngredientRows"
           :key="row.id"
-          class="rounded-2xl border border-gray-200 bg-white px-3 py-2"
+          class="rounded-2xl border border-gray-200 bg-white px-4 py-3"
         >
           <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
             <div class="flex min-w-0 items-center gap-3">
@@ -182,14 +182,22 @@ function handleNext() {
                 <Icon name="blur" size="18" />
               </span>
               <div class="flex min-w-0 flex-col">
-                <p class="truncate text-sm font-medium text-gray-900">
-                  {{ row.ingredient.label }}
-                </p>
-                <div
-                  v-if="row.ingredient.kind === 'sub_assembly'"
-                  class="mt-1 flex items-center gap-2"
-                >
-                  <Chip size="sm" label="Sub-assembly" />
+                <div class="flex min-w-0 items-center gap-2">
+                  <p class="truncate text-sm font-medium text-gray-900">
+                    {{ row.ingredient.label }}
+                  </p>
+                  <Chip
+                    v-if="row.ingredient.kind === 'sub_assembly'"
+                    color="purple"
+                    label="Sub-assembly"
+                    size="sm"
+                  />
+                </div>
+                <div v-if="row.ingredient.cost_per_unit" class="mt-1 flex items-center gap-2">
+                  <Chip
+                    :label="`${formatCurrency(row.ingredient.cost_per_unit || 0)}/${row.ingredient.unit || 'unit'}`"
+                    size="sm"
+                  />
                 </div>
               </div>
             </div>

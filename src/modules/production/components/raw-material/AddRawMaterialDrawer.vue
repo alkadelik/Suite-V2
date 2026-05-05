@@ -610,6 +610,7 @@ const handleAddFromSearch = (search: string, close: () => void) => {
 
             <div v-else>
               <FormField
+                v-if="mode !== 'edit'"
                 type="number"
                 name="default_cost"
                 format="currency"
