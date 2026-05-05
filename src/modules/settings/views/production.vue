@@ -43,7 +43,7 @@ watch(
 const handleSubmit = () => {
   const body = {
     material_type: selectedRawMaterial.value,
-    recipe_terminology: selectedRecipeName.value,
+    recipe_terminology: selectedRecipeName.value?.toLowerCase(),
   }
   updateStore(
     { id: storeId.value, body },

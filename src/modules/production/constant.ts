@@ -169,7 +169,7 @@ export const recipeNameOptions = [
   },
   {
     label: "BOM (Bill of Materials)",
-    value: "bom",
+    value: "BOM",
     desc: "Common for manufacturing & assembly",
     examples: "e.g. fabric, plastic bottles, packaging",
     class: "border-blue-200 bg-blue-50",
