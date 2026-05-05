@@ -811,8 +811,6 @@ const isMobile = useMediaQuery("(max-width: 768px)")
         />
       </div>
 
-      {{ DELIVERY_TYPE_OPTIONS }}
-
       <template
         v-if="
           shippingInfo.fulfilment_method === 'delivery' &&
