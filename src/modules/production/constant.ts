@@ -23,7 +23,7 @@ export const RAW_MATERIALS_COLUMN: TableColumn<TRawMaterial>[] = [
   {
     header: "Stock",
     accessor: "stock",
-    cell: ({ item }) => Number(item.current_stock).toLocaleString() + item.unit,
+    cell: ({ item }) => Number(item.current_stock).toLocaleString() + " " + item.unit,
   },
   {
     header: "Last Cost",

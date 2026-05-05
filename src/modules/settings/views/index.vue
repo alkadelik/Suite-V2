@@ -67,12 +67,6 @@
     </Container>
 
     <!--  -->
-    <PlansModal
-      v-if="!isInternational"
-      :model-value="showPlans"
-      @update:model-value="(val) => setPlanUpgradeModal(val)"
-    />
-
     <AddLocationModal
       :open="showAddLocationModal"
       :location="locationForEdit"
@@ -91,7 +85,6 @@ import BackButton from "@components/BackButton.vue"
 import { useRoute } from "vue-router"
 import { useSettingsStore } from "../store"
 import { computed, ref, watch } from "vue"
-import PlansModal from "../components/PlansModal.vue"
 import AddLocationModal from "../components/AddLocationModal.vue"
 import { useGetLiveStatus, useGetRoles } from "@modules/shared/api"
 import { updateStoreRoleOptions } from "@modules/shared/constants"
@@ -148,8 +141,8 @@ const LINKS = computed(() =>
   }),
 )
 
-const { setPlanUpgradeModal, setAddLocationModal, setLocationForEdit } = useSettingsStore()
-const showPlans = computed(() => useSettingsStore().showPlanUpgradeModal)
+const settingsStore = useSettingsStore()
+const { setAddLocationModal, setLocationForEdit } = settingsStore
 const showAddLocationModal = computed(() => useSettingsStore().showAddLocationModal)
 const locationForEdit = computed(() => useSettingsStore().locationForEdit)
 const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)

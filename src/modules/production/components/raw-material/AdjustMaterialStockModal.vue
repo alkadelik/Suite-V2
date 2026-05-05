@@ -17,12 +17,13 @@ import { onInvalidSubmit } from "@/utils/validations"
 interface Props {
   open: boolean
   material: TRawMaterial | null
+  addOnly?: boolean
 }
 
 const props = defineProps<Props>()
 const emit = defineEmits<{
   close: []
-  refresh: []
+  refresh: [quantity?: number]
 }>()
 const { format } = useFormatCurrency()
 
@@ -81,7 +82,11 @@ const { handleSubmit, resetForm, values, setFieldValue } = useForm<FormValues>({
         }),
       unit_cost: yup
         .number()
-        .transform((value, originalValue) => (originalValue === "" ? undefined : value))
+        .transform((value, originalValue) => {
+          if (originalValue === "" || originalValue === undefined) return undefined
+          const stripped = String(originalValue).replace(/,/g, "")
+          return isNaN(Number(stripped)) ? value : Number(stripped)
+        })
         .typeError("unit cost must be a number")
         .required("unit cost is required")
         .positive("unit cost must be greater than 0"),
@@ -139,7 +144,7 @@ const onSubmit = handleSubmit((values) => {
     {
       onSuccess: () => {
         toast.success("Stock adjusted successfully")
-        emit("refresh")
+        emit("refresh", Number(values.quantity))
         closeModal()
       },
       onError: displayError,
@@ -153,10 +158,19 @@ const closeModal = () => {
   emit("close")
 }
 
-// Watch adjustment type changes to reset reason
 watch(adjustmentType, () => {
   setFieldValue("reason", null)
 })
+
+watch(
+  selectedMaterial,
+  (material) => {
+    if (material?.avg_cost) {
+      setFieldValue("unit_cost", parseInt(String(material.avg_cost)).toString())
+    }
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -180,11 +194,15 @@ watch(adjustmentType, () => {
         </p>
         <p>
           <span class="font-semibold">Current Stock:</span>
-          {{ Number(selectedMaterial.current_stock).toLocaleString() }}{{ selectedMaterial.unit }}
+          {{ Number(selectedMaterial.current_stock).toLocaleString() }} {{ selectedMaterial.unit }}
         </p>
       </div>
 
-      <RadioInputField v-model="adjustmentType" :options="adjustmentTypeOptions" />
+      <RadioInputField
+        v-if="!props.addOnly"
+        v-model="adjustmentType"
+        :options="adjustmentTypeOptions"
+      />
 
       <!-- Adjustment Form -->
       <div class="space-y-4 border-t border-gray-200 pt-4">
@@ -226,9 +244,10 @@ watch(adjustmentType, () => {
         </div>
 
         <FormField
-          type="text"
+          type="number"
+          format="currency"
           name="unit_cost"
-          label="unit cost"
+          :label="`Unit Cost (${format(selectedMaterial.avg_cost || 0)}/${selectedMaterial.unit})`"
           :placeholder="`e.g. ${format(12400)}`"
         />
 

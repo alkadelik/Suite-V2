@@ -12,6 +12,8 @@ export const useSettingsStore = defineStore(
     const locations = ref<TLocation[] | null>(null)
     const activeLocation = ref<TLocation | null>(null)
     const showPlanUpgradeModal = ref(false)
+    const showPlanLimitModal = ref(false)
+    const showMobileMenu = ref(false)
     const showAddLocationModal = ref(false)
     const locationForEdit = ref<TLocation | null>(null)
     const storeDetails = ref<IStoreDetails | null>(null)
@@ -39,6 +41,15 @@ export const useSettingsStore = defineStore(
       showPlanUpgradeModal.value = value
     }
 
+    const setPlanLimitModal = (value: boolean) => {
+      showPlanLimitModal.value = value
+      if (value) showMobileMenu.value = false
+    }
+
+    const setMobileMenu = (value: boolean) => {
+      showMobileMenu.value = value
+    }
+
     const setAddLocationModal = (value: boolean) => {
       showAddLocationModal.value = value
     }
@@ -62,6 +73,10 @@ export const useSettingsStore = defineStore(
       setActiveLocation,
       showPlanUpgradeModal,
       setPlanUpgradeModal,
+      showPlanLimitModal,
+      setPlanLimitModal,
+      showMobileMenu,
+      setMobileMenu,
       showAddLocationModal,
       setAddLocationModal,
       locationForEdit,

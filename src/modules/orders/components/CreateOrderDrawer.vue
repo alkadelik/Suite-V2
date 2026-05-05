@@ -25,6 +25,7 @@ import { useMediaQuery } from "@vueuse/core"
 import Modal from "@components/Modal.vue"
 import { handlePayStackPayment, loadPaystackScript } from "../utilities"
 import { useSettingsStore } from "@modules/settings/store"
+import ConfirmationModal from "@components/ConfirmationModal.vue"
 
 const props = defineProps({
   open: { type: Boolean, required: true },
@@ -418,6 +419,21 @@ watch(
   { immediate: true },
 )
 
+const confirmClose = ref(false)
+
+const handleClose = () => {
+  if (activeStep.value >= 1) {
+    confirmClose.value = true
+  } else {
+    emit("close")
+  }
+}
+
+const forceClose = () => {
+  confirmClose.value = false
+  emit("close")
+}
+
 // reset form when drawer is closed
 watch(
   () => props.open,
@@ -434,7 +450,7 @@ watch(
     :title="isPopupOrder ? 'Add Popup Order' : 'Create Order'"
     max-width="2xl"
     variant="fullscreen"
-    @close="emit('close')"
+    @close="handleClose"
   >
     <StepperWizard v-model="activeStep" :steps="steps" :showIndicators="false">
       <template #default="{ step, onPrev, onNext }">
@@ -522,6 +538,17 @@ watch(
           :is-free-shipping="shippingInfo.delivery_payment_option === 'free_shipping'"
           @prev="onPrev"
           @submit="onCreateOrder"
+        />
+
+        <!--  -->
+        <ConfirmationModal
+          v-model="confirmClose"
+          header="Discard Order?"
+          paragraph="You have unsaved progress on this order. Closing now will lose everything you've entered."
+          action-label="Discard"
+          variant="warning"
+          info-message="This action cannot be reversed."
+          @confirm="forceClose"
         />
       </template>
     </StepperWizard>

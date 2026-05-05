@@ -13,6 +13,7 @@ import AdjustIngredientsForm from "./run-form/AdjustIngredientsForm.vue"
 import ProcessExpensesForm from "./run-form/ProcessExpensesForm.vue"
 import ProdEconomicsForm from "./run-form/ProdEconomicsForm.vue"
 import type { IngredientRow, ProcessRow, AdditionalExpenseRow, BasicRunDetails } from "./form-types"
+import ConfirmationModal from "@components/ConfirmationModal.vue"
 
 export type { IngredientRow, ProcessRow, AdditionalExpenseRow, BasicRunDetails }
 
@@ -195,6 +196,21 @@ const onSubmit = () => {
     createProdRun(payload, { onSuccess, onError: displayError })
   }
 }
+
+const confirmClose = ref(false)
+
+const handleClose = () => {
+  if (activeStep.value >= 1) {
+    confirmClose.value = true
+  } else {
+    emit("close")
+  }
+}
+
+const forceClose = () => {
+  confirmClose.value = false
+  emit("close")
+}
 </script>
 
 <template>
@@ -204,7 +220,7 @@ const onSubmit = () => {
     :title="drawerTitle"
     max-width="2xl"
     variant="fullscreen"
-    @close="emit('close')"
+    @close="handleClose"
   >
     <StepperWizard v-model="activeStep" :steps="steps" :showIndicators="false">
       <template #default="{ step, onPrev, onNext }">
@@ -223,7 +239,7 @@ const onSubmit = () => {
               onNext()
             }
           "
-          @close="emit('close')"
+          @close="handleClose"
         />
         <!-- step 1: ingredients -->
         <AdjustIngredientsForm
@@ -267,6 +283,17 @@ const onSubmit = () => {
               onSubmit()
             }
           "
+        />
+
+        <!--  -->
+        <ConfirmationModal
+          v-model="confirmClose"
+          header="Discard Production Run?"
+          paragraph="You have unsaved progress on this production run. Closing now will lose everything you've entered."
+          action-label="Discard"
+          variant="warning"
+          info-message="This action cannot be reversed."
+          @confirm="forceClose"
         />
       </template>
     </StepperWizard>

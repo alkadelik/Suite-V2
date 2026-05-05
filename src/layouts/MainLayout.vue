@@ -101,8 +101,6 @@
   <LogoutModal :open="logout" @close="logout = false" />
 
   <template v-if="!isInternational">
-    <PlansModal :model-value="showPlans" @update:model-value="(val) => setPlanUpgradeModal(val)" />
-
     <TrialActivationModal
       :open="openTrial"
       :subscription="profile?.subscription || null"
@@ -163,7 +161,6 @@ import {
   updateProductAttributeOptions,
 } from "@modules/inventory/constants"
 import { ICategoriesApiResponse, IProductAttributesApiResponse } from "@modules/inventory/types"
-import PlansModal from "@modules/settings/components/PlansModal.vue"
 import AddLocationModal from "@modules/settings/components/AddLocationModal.vue"
 import TrialActivationModal from "@modules/shared/components/TrialActivationModal.vue"
 import MobileMenuDrawer from "./parts/MobileMenuDrawer.vue"
@@ -183,7 +180,6 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
 
 const mobileSidebarOpen = ref(false)
 const logout = ref(false)
-const openMore = ref(false)
 const openActions = ref(false)
 const showNotification = ref(false)
 // const whatNew = ref(true)
@@ -309,14 +305,24 @@ const actionMenuItems = computed(() => {
   return allActions.filter((action) => !action.hqOnly || isHQ.value)
 })
 
-const { setPlanUpgradeModal, setAddLocationModal, setLocationForEdit, setLiveStatus } =
-  useSettingsStore()
+const settingsStore = useSettingsStore()
+const {
+  setPlanUpgradeModal,
+  setAddLocationModal,
+  setLocationForEdit,
+  setLiveStatus,
+  setMobileMenu,
+} = settingsStore
+
+const openMore = computed({
+  get: () => settingsStore.showMobileMenu,
+  set: (val) => setMobileMenu(val),
+})
 const { updateAuthUser } = useAuthStore()
 
 const { data: categories } = useGetCategories()
 const { data: attributes } = useGetAttributes()
 const { data: profile } = useGetProfile()
-const showPlans = computed(() => useSettingsStore().showPlanUpgradeModal)
 const isInternational = computed(() => useSettingsStore().isInternational)
 const showAddLocationModal = computed(() => useSettingsStore().showAddLocationModal)
 const locationForEdit = computed(() => useSettingsStore().locationForEdit)
