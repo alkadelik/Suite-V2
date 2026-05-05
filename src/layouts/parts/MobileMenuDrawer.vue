@@ -8,7 +8,6 @@ import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
 import { useAuthStore } from "@modules/auth/store"
 import { useProductionStore } from "@modules/production/store"
-import PlansModal from "@modules/settings/components/PlansModal.vue"
 import { useSettingsStore } from "@modules/settings/store"
 import { useSharedStore } from "@modules/shared/store"
 import { computed, ref } from "vue"
@@ -108,8 +107,8 @@ const quickActionGroups = computed<ActionGroup[]>(() => {
     .filter((group) => group.items.length > 0)
 })
 
-const showPlans = computed(() => useSettingsStore().showPlanUpgradeModal)
-const isInternational = computed(() => useSettingsStore().isInternational)
+const settingsStore = useSettingsStore()
+const isInternational = computed(() => settingsStore.isInternational)
 
 const currentPlanName = computed(() => user.value?.subscription?.plan_name?.toLowerCase() ?? "")
 const planCtaLabel = computed(() => {
@@ -117,7 +116,7 @@ const planCtaLabel = computed(() => {
   return currentPlanName.value === "burst" ? "Subscribed" : "Upgrade"
 })
 
-const { setPlanUpgradeModal } = useSettingsStore()
+const { setPlanUpgradeModal } = settingsStore
 </script>
 
 <template>
@@ -261,11 +260,5 @@ const { setPlanUpgradeModal } = useSettingsStore()
 
       <div class="py-10" />
     </Drawer>
-
-    <!--  -->
-    <PlansModal
-      :model-value="showPlans"
-      @update:model-value="(val: boolean) => setPlanUpgradeModal(val)"
-    />
   </div>
 </template>
