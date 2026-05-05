@@ -82,11 +82,9 @@ const { handleSubmit, resetForm, values, setFieldValue } = useForm<FormValues>({
         }),
       unit_cost: yup
         .number()
-        .transform((value, originalValue) => {
-          if (originalValue === "" || originalValue === undefined) return undefined
-          const stripped = String(originalValue).replace(/,/g, "")
-          return isNaN(Number(stripped)) ? value : Number(stripped)
-        })
+        .transform((_, originalValue) =>
+          originalValue === "" ? undefined : Number(String(originalValue).replace(/,/g, "")),
+        )
         .typeError("unit cost must be a number")
         .required("unit cost is required")
         .positive("unit cost must be greater than 0"),
@@ -247,7 +245,7 @@ watch(
           type="number"
           format="currency"
           name="unit_cost"
-          :label="`Unit Cost (${format(selectedMaterial.avg_cost || 0)}/${selectedMaterial.unit})`"
+          :label="`Unit Cost`"
           :placeholder="`e.g. ${format(12400)}`"
         />
 

@@ -271,7 +271,9 @@ const validateVariantItem = async (variantItem: VariantItem) => {
       .max(maxAvailable, `Only ${maxAvailable} available in stock`),
     unit_price: yup
       .number()
-      .transform((value, originalValue) => (originalValue === "" ? undefined : value))
+      .transform((_, originalValue) =>
+        originalValue === "" ? undefined : Number(String(originalValue).replace(/,/g, "")),
+      )
       .typeError("Price must be a number")
       .required("Price is required")
       .positive("Price must be greater than 0")

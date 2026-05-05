@@ -122,7 +122,9 @@ const { handleSubmit, resetForm, values, setFieldValue } = useForm<FormValues>({
         .min(3, "Name must be at least 3 characters"),
       amount: yup
         .number()
-        .transform((value, originalValue) => (originalValue === "" ? undefined : value))
+        .transform((_, originalValue) =>
+          originalValue === "" ? undefined : Number(String(originalValue).replace(/,/g, "")),
+        )
         .typeError("Amount must be a number")
         .required("Amount is required")
         .positive("Amount must be greater than 0"),

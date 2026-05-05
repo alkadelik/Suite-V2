@@ -35,7 +35,9 @@ const { handleSubmit, resetForm } = useForm<FormValues>({
     yup.object({
       amount: yup
         .number()
-        .transform((value, originalValue) => (originalValue === "" ? undefined : value))
+        .transform((_, originalValue) =>
+          originalValue === "" ? undefined : Number(String(originalValue).replace(/,/g, "")),
+        )
         .typeError("Amount must be a number")
         .required("Amount is required")
         .positive("Amount must be greater than 0")
