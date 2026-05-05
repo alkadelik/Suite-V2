@@ -11,7 +11,7 @@ import AddIngredientsForm from "./recipe-form/AddIngredientsForm.vue"
 import ProcessCostForm from "./recipe-form/ProcessCostForm.vue"
 import { displayError } from "@/utils/error-handler"
 import { IRecipePayload, TRecipe } from "@modules/production/types"
-import { useCreateRecipe, useUpdateRecipe } from "@modules/production/api"
+import { useCreateRecipe, useUpdateRecipe, useGetSingleRecipe } from "@modules/production/api"
 import { UNITS_OF_MEASURE } from "@modules/production/constant"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
 
@@ -42,6 +42,7 @@ export type RecipeDrawerProps = {
   open: boolean
   recipe?: TRecipe | null
   mode: "create" | "edit" | "duplicate" | null
+  hasFullDetails?: boolean // if true, expects recipe prop to be fully hydrated with all details (for edit mode). if false, will fetch details using uid (for duplicate mode)
 }
 
 const props = withDefaults(defineProps<RecipeDrawerProps>(), { mode: "create" })
@@ -73,27 +74,7 @@ const ingredientRowsState = ref<IngredientRow[]>([])
 const processRowsState = ref<ProcessRow[]>([])
 const isPending = ref(false)
 
-// ─── Reset or populate when drawer opens ───────────────────────────────────
-watch([() => props.open, () => props.recipe], ([isOpen]) => {
-  if (!isOpen || !props.mode) return
-  activeStep.value = 0
-  isPending.value = false
-
-  if (props.mode === "create" || !props.recipe) {
-    basicDetails.value = {
-      outputItemType: "product",
-      outputItem: "",
-      outputQuantity: 0,
-      unit: "",
-      notes: "",
-    }
-    ingredientRowsState.value = []
-    processRowsState.value = []
-    return
-  }
-
-  // edit / duplicate – use fully-hydrated recipe passed by the caller
-  const recipe = props.recipe
+const seedFromRecipe = (recipe: TRecipe) => {
   const itemUid = recipe.output_product || recipe.output_raw_material || ""
   const unitOption =
     UNITS_OF_MEASURE.find((u) => u.value?.toLowerCase() === recipe.output_unit?.toLowerCase()) ??
@@ -124,6 +105,41 @@ watch([() => props.open, () => props.recipe], ([isOpen]) => {
     cost: String(pc.cost_per_batch),
     note: pc.notes,
   }))
+}
+
+// Fetch full recipe when hasFullDetails is false (e.g. edit from list without hydrated data)
+const fetchUid = computed(() =>
+  !props.hasFullDetails && props.open && isEditMode.value ? (props.recipe?.uid ?? "") : "",
+)
+const { data: fetchedRecipe, isFetching: isLoadingRecipe } = useGetSingleRecipe(fetchUid)
+
+watch(fetchedRecipe, (recipe) => {
+  if (recipe) seedFromRecipe(recipe)
+})
+
+// ─── Reset or populate when drawer opens ───────────────────────────────────
+watch([() => props.open, () => props.recipe], ([isOpen]) => {
+  if (!isOpen || !props.mode) return
+  activeStep.value = 0
+  isPending.value = false
+
+  if (props.mode === "create" || !props.recipe) {
+    basicDetails.value = {
+      outputItemType: "product",
+      outputItem: "",
+      outputQuantity: 0,
+      unit: "",
+      notes: "",
+    }
+    ingredientRowsState.value = []
+    processRowsState.value = []
+    return
+  }
+
+  // Only seed immediately if the caller guarantees full details
+  if (props.hasFullDetails) {
+    seedFromRecipe(props.recipe)
+  }
 })
 const { mutate: createRecipe, isPending: isCreating } = useCreateRecipe()
 const { mutate: updateRecipe, isPending: isUpdating } = useUpdateRecipe()
@@ -190,68 +206,74 @@ const forceClose = () => {
   >
     <StepperWizard v-model="activeStep" :steps="steps" :showIndicators="false">
       <template #default="{ step, onPrev, onNext }">
-        <!-- step 0: basic details -->
-        <BasicRecipeDetailsForm
-          v-if="step == 0"
-          :initial-values="basicDetails"
-          :is-edit-mode="isEditMode"
-          @next="
-            (details: BasicDetails) => {
-              basicDetails = details
-              onNext()
-            }
-          "
-          @close="handleClose"
-        />
-        <!-- step 1: ingredients -->
-        <AddIngredientsForm
-          v-if="step == 1"
-          :initial-rows="ingredientRowsState"
-          :exclude-uid="basicDetails.outputItem"
-          :output-item-details="{
-            name: basicDetails.outputItemOption?.label || '',
-            qty: basicDetails.outputQuantity,
-            unit: basicDetails.unit,
-            type: basicDetails.outputItemType,
-          }"
-          @next="
-            (rows: IngredientRow[]) => {
-              ingredientRowsState = rows
-              onNext()
-            }
-          "
-          @prev="onPrev"
-        />
-        <!-- step 2: process cost -->
-        <ProcessCostForm
-          v-if="step == 2"
-          :initial-rows="processRowsState"
-          :loading="isCreating || isUpdating"
-          :output-item-details="{
-            name: basicDetails.outputItemOption?.label || '',
-            qty: basicDetails.outputQuantity,
-            unit: basicDetails.unit,
-            type: basicDetails.outputItemType,
-          }"
-          @prev="onPrev"
-          @submit="
-            (rows: ProcessRow[]) => {
-              processRowsState = rows
-              onSubmit()
-            }
-          "
-        />
+        <!-- loading skeleton while fetching full recipe details -->
+        <div v-if="isLoadingRecipe" class="space-y-4 p-4">
+          <div v-for="n in 4" :key="n" class="h-12 animate-pulse rounded-xl bg-gray-100" />
+        </div>
 
-        <!--  -->
-        <ConfirmationModal
-          v-model="confirmClose"
-          header="Discard Recipe?"
-          paragraph="You have unsaved progress on this recipe. Closing now will lose everything you've entered."
-          action-label="Discard"
-          variant="warning"
-          info-message="This action cannot be reversed."
-          @confirm="forceClose"
-        />
+        <template v-else>
+          <!-- step 0: basic details -->
+          <BasicRecipeDetailsForm
+            v-if="step == 0"
+            :initial-values="basicDetails"
+            :is-edit-mode="isEditMode"
+            @next="
+              (details: BasicDetails) => {
+                basicDetails = details
+                onNext()
+              }
+            "
+            @close="handleClose"
+          />
+          <!-- step 1: ingredients -->
+          <AddIngredientsForm
+            v-if="step == 1"
+            :initial-rows="ingredientRowsState"
+            :exclude-uid="basicDetails.outputItem"
+            :output-item-details="{
+              name: basicDetails.outputItemOption?.label || '',
+              qty: basicDetails.outputQuantity,
+              unit: basicDetails.unit,
+              type: basicDetails.outputItemType,
+            }"
+            @next="
+              (rows: IngredientRow[]) => {
+                ingredientRowsState = rows
+                onNext()
+              }
+            "
+            @prev="onPrev"
+          />
+          <!-- step 2: process cost -->
+          <ProcessCostForm
+            v-if="step == 2"
+            :initial-rows="processRowsState"
+            :loading="isCreating || isUpdating"
+            :output-item-details="{
+              name: basicDetails.outputItemOption?.label || '',
+              qty: basicDetails.outputQuantity,
+              unit: basicDetails.unit,
+              type: basicDetails.outputItemType,
+            }"
+            @prev="onPrev"
+            @submit="
+              (rows: ProcessRow[]) => {
+                processRowsState = rows
+                onSubmit()
+              }
+            "
+          />
+
+          <ConfirmationModal
+            v-model="confirmClose"
+            header="Discard Recipe?"
+            paragraph="You have unsaved progress on this recipe. Closing now will lose everything you've entered."
+            action-label="Discard"
+            variant="warning"
+            info-message="This action cannot be reversed."
+            @confirm="forceClose"
+          />
+        </template>
       </template>
     </StepperWizard>
   </component>

@@ -263,6 +263,7 @@ watch(
         :open="!!showCreateModal"
         :mode="showCreateModal"
         :recipe="recipe"
+        has-full-details
         @close="
           () => {
             showCreateModal = null

@@ -96,7 +96,7 @@ const getActionItems = (item: TRecipe) => [
         {
           label: `Edit ${recipeLabel.value}`,
           icon: "edit",
-          action: () => router.push(`/production/recipes/${item.uid}?action=edit`),
+          action: () => (showCreateModal.value = "edit"),
         },
         {
           label: `Duplicate ${recipeLabel.value}`,
@@ -272,7 +272,13 @@ const formatWithUnit = (item: TRecipe) => {
             </template>
 
             <template #mobile="{ item }">
-              <RecipeCard :recipe="item" @click="$router.push(`/production/recipes/${item.uid}`)" />
+              <RecipeCard
+                @toggle="selectedRecipe = item"
+                @duplicate="showCreateModal = 'duplicate'"
+                @edit="showCreateModal = 'edit'"
+                :recipe="item"
+                @click="$router.push(`/production/recipes/${item.uid}`)"
+              />
             </template>
           </DataTable>
         </div>
@@ -282,6 +288,7 @@ const formatWithUnit = (item: TRecipe) => {
     <AddNewRecipeDrawer
       :open="!!showCreateModal"
       :mode="showCreateModal"
+      :has-full-details="false"
       :recipe="selectedRecipe"
       @close="showCreateModal = null"
       @refresh="refetch"
