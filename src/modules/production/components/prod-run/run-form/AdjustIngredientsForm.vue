@@ -5,6 +5,8 @@ import AppButton from "@components/AppButton.vue"
 import type { IngredientRow } from "../form-types"
 import { computed, ref } from "vue"
 import Chip from "@components/Chip.vue"
+import AdjustMaterialStockModal from "../../raw-material/AdjustMaterialStockModal.vue"
+import type { TRawMaterial } from "@/modules/production/types"
 
 const props = defineProps<{
   initialRows: IngredientRow[]
@@ -43,6 +45,36 @@ const totalIngredientCost = computed(() => {
 })
 
 const canProceed = computed(() => ingredientRows.value.some((r) => r.qty > 0))
+
+const adjustModalOpen = ref(false)
+const selectedMaterial = ref<TRawMaterial | null>(null)
+
+function openAdjustModal(row: IngredientRow) {
+  selectedMaterial.value = {
+    uid: row.ingredient.value,
+    name: row.ingredient.label,
+    unit: row.ingredient.unit || "",
+    current_stock: row.ingredient.available_stock ?? 0,
+    is_sub_assembly: row.ingredient.kind === "sub_assembly",
+    avg_cost: row.ingredient.cost_per_unit,
+    last_cost: row.ingredient.cost_per_unit,
+    low_stock: false,
+    created_at: "",
+  }
+  adjustModalOpen.value = true
+}
+
+function onAdjustRefresh(quantity: number) {
+  console.log("Adjust refresh called with quantity:", quantity)
+  if (selectedMaterial.value) {
+    const uid = selectedMaterial.value.uid
+    const row = ingredientRows.value.find((r) => r.ingredient.value === uid)
+    if (row) {
+      row.ingredient.available_stock = (row.ingredient.available_stock || 0) + quantity
+    }
+  }
+  adjustModalOpen.value = false
+}
 
 function handleNext() {
   emit("next", [...ingredientRows.value])
@@ -155,7 +187,9 @@ function handleNext() {
             </div>
             <!-- Edit Button  -->
             <div class="flex flex-col items-end gap-1">
-              <Icon name="edit" size="16" class="text-gray-500" />
+              <button type="button" @click="openAdjustModal(row)">
+                <Icon name="edit" size="16" class="text-gray-500" />
+              </button>
             </div>
           </div>
         </div>
@@ -181,5 +215,13 @@ function handleNext() {
         <AppButton label="Continue" class="w-2/3" type="submit" :disabled="!canProceed" />
       </div>
     </div>
+
+    <AdjustMaterialStockModal
+      :open="adjustModalOpen"
+      :material="selectedMaterial"
+      add-only
+      @close="adjustModalOpen = false"
+      @refresh="(qty) => onAdjustRefresh(qty)"
+    />
   </form>
 </template>
