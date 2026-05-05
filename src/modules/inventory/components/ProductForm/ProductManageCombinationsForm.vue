@@ -225,7 +225,7 @@
               @update:model-value="
                 updateVariantField(index, 'cost_price', removeLeadingZeros($event))
               "
-              @blur="handleCostPriceBlur(index, $event)"
+              @blur="handleCostPriceBlur(index)"
             />
             <button
               v-if="
@@ -254,7 +254,7 @@
               :disabled="props.disablePrice"
               :error="props.errors?.variants?.[index]?.price"
               @update:model-value="updateVariantField(index, 'price', removeLeadingZeros($event))"
-              @blur="handlePriceBlur(index, $event)"
+              @blur="handlePriceBlur(index)"
             />
             <button
               v-if="index === 0 && variants.length > 1 && !props.disablePrice && variant.price"
@@ -338,7 +338,7 @@
               @update:model-value="
                 updateVariantField(index, 'cost_price', removeLeadingZeros($event))
               "
-              @blur="handleCostPriceBlur(index, $event)"
+              @blur="handleCostPriceBlur(index)"
             />
             <button
               v-if="
@@ -368,7 +368,7 @@
               :disabled="props.disablePrice"
               :error="props.errors?.variants?.[index]?.price"
               @update:model-value="updateVariantField(index, 'price', removeLeadingZeros($event))"
-              @blur="handlePriceBlur(index, $event)"
+              @blur="handlePriceBlur(index)"
             />
             <button
               v-if="index === 0 && variants.length > 1 && !props.disablePrice && variant.price"
@@ -768,9 +768,9 @@ const handleStockBlur = (currentIndex: number, event: Event) => {
 }
 
 // Handle cost price blur - auto-fill other variants if they're empty
-const handleCostPriceBlur = (currentIndex: number, event: Event) => {
-  const target = event.target as HTMLInputElement
-  const value = target.value.trim()
+const handleCostPriceBlur = (currentIndex: number) => {
+  // Read raw value from the variant model (not the DOM, which contains formatted commas)
+  const value = (props.modelValue[currentIndex]?.cost_price || "").trim()
 
   if (!value || value === "0") return
 
@@ -794,9 +794,9 @@ const handleCostPriceBlur = (currentIndex: number, event: Event) => {
 }
 
 // Handle price blur - auto-fill other variants if they're empty
-const handlePriceBlur = (currentIndex: number, event: Event) => {
-  const target = event.target as HTMLInputElement
-  const value = target.value.trim()
+const handlePriceBlur = (currentIndex: number) => {
+  // Read raw value from the variant model (not the DOM, which contains formatted commas)
+  const value = (props.modelValue[currentIndex]?.price || "").trim()
 
   if (!value || value === "0") return
 
