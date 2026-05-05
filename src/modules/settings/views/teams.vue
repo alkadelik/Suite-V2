@@ -201,7 +201,7 @@
       info-message="You can reverse this action by reactivating the member."
       variant="warning"
       :loading="isSuspending"
-      @suspend="handleSuspendMember"
+      @confirm="handleSuspendMember"
     />
   </div>
 </template>

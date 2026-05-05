@@ -19,27 +19,28 @@ import { useRouter } from "vue-router"
 import AddRawMaterialDrawer from "@modules/production/components/raw-material/AddRawMaterialDrawer.vue"
 import AdjustMaterialStockModal from "@modules/production/components/raw-material/AdjustMaterialStockModal.vue"
 import { TRawMaterial } from "@modules/production/types"
-import { useGetRawMaterials, useGetRawMaterialsStats } from "@modules/production/api"
+import {
+  useGetRawMaterials,
+  useGetRawMaterialsStats,
+  useDeleteRawMaterial,
+} from "@modules/production/api"
 import { componentOptions, RAW_MATERIALS_COLUMN } from "@modules/production/constant"
+import RawMaterialCard from "@modules/production/components/raw-material/RawMaterialCard.vue"
+import ConfirmationModal from "@components/ConfirmationModal.vue"
+import { displayError } from "@/utils/error-handler"
+import SelectComponentName from "@modules/production/components/raw-material/SelectComponentName.vue"
+import { toast } from "@/composables/useToast"
 
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 const { truncate } = useFormatCurrency()
 
 const showFilter = ref(false)
-const showAddDrawer = ref(false)
+const showAddDrawer = ref<null | "edit" | "create">(null)
+const showDelete = ref(false)
 const showAdjustStockModal = ref(false)
 const selectedMaterial = ref<TRawMaterial | null>(null)
 const page = ref(1)
 
-// Refresh function for material updates
-const refreshMaterials = () => {
-  // Force refetch of materials data
-  const currentPage = page.value
-  page.value = 0
-  setTimeout(() => {
-    page.value = currentPage
-  }, 0)
-}
 const itemsPerPage = ref(10)
 const searchQuery = ref("")
 const debouncedSearch = useDebouncedRef(searchQuery, 750)
@@ -52,8 +53,8 @@ const computedParams = computed(() => {
   return params
 })
 
-const { data: rawMaterials, isPending, isFetching } = useGetRawMaterials(computedParams)
-const { data: stats, isLoading: isLoadingStats } = useGetRawMaterialsStats()
+const { data: rawMaterials, isPending, isFetching, refetch } = useGetRawMaterials(computedParams)
+const { data: stats, isLoading: isLoadingStats, refetch: refetchStats } = useGetRawMaterialsStats()
 
 const materialStats = computed(() => [
   ...(isMobile.value
@@ -93,14 +94,18 @@ const materialStats = computed(() => [
 
 const router = useRouter()
 
+const handleRefresh = () => {
+  refetch()
+  refetchStats()
+}
+
 const getActionItems = (item: TRawMaterial) => [
   {
     label: "Edit material",
     icon: "edit",
     action: () => {
-      console.log("Edit", item)
       selectedMaterial.value = item
-      showAddDrawer.value = true
+      showAddDrawer.value = "edit"
     },
   },
   {
@@ -115,6 +120,15 @@ const getActionItems = (item: TRawMaterial) => [
     label: "View usage",
     icon: "eye",
     action: () => router.push(`/production/raw-materials/${item.uid}?tab=usage`),
+  },
+  {
+    label: "Delete material",
+    icon: "trash",
+    class: "!text-error-600",
+    action: () => {
+      selectedMaterial.value = item
+      showDelete.value = true
+    },
   },
 ]
 
@@ -146,6 +160,22 @@ const materialValue = computed(() => useProductionStore().componentValue)
 const onSelect = (option: { label: string; value: string }) => {
   useProductionStore().setSelectedComponentOption(option)
 }
+
+const { mutate: deleteRawMaterial, isPending: isDeleting } = useDeleteRawMaterial()
+
+const handleDelete = () => {
+  if (selectedMaterial.value) {
+    deleteRawMaterial(selectedMaterial.value.uid, {
+      onSuccess: () => {
+        showDelete.value = false
+        selectedMaterial.value = null
+        toast.success(`${materialLabel.value} deleted successfully`)
+        handleRefresh()
+      },
+      onError: displayError,
+    })
+  }
+}
 </script>
 
 <template>
@@ -162,13 +192,13 @@ const onSelect = (option: { label: string; value: string }) => {
 
     <div v-else class="flex flex-col gap-8">
       <EmptyState
-        v-if="isPending && !rawMaterials?.count"
+        v-if="!rawMaterials?.count && !searchQuery"
         :title="`You don't have any ${materialValue} yet!`"
         :description="`Start tracking everything you use to make your products by adding your ${materialValue}.`"
         :action-label="`Add ${materialValue}`"
         :loading="isPending"
         action-icon="add"
-        @action="() => (showAddDrawer = true)"
+        @action="() => (showAddDrawer = 'create')"
       >
         <template #image>
           <img src="@/assets/images/empty-material.svg?url" class="mx-auto mb-4" />
@@ -225,7 +255,7 @@ const onSelect = (option: { label: string; value: string }) => {
                 size="sm"
                 class="flex-shrink-0"
                 :label="isMobile ? '' : `Add ${materialValue}`"
-                @click="() => (showAddDrawer = true)"
+                @click="() => (showAddDrawer = 'create')"
               />
             </div>
           </div>
@@ -233,7 +263,7 @@ const onSelect = (option: { label: string; value: string }) => {
           <DataTable
             :data="rawMaterials?.results ?? []"
             :columns="RAW_MATERIALS_COLUMN"
-            :loading="isFetching"
+            :loading="isFetching || isPending"
             :enable-row-selection="false"
             :empty-state="{
               title: `No ${materialLabel} Found`,
@@ -268,6 +298,24 @@ const onSelect = (option: { label: string; value: string }) => {
               <RawMaterialCard
                 :material="item"
                 @click="() => $router.push(`/production/raw-materials/${item.uid}`)"
+                @edit="
+                  () => {
+                    selectedMaterial = item
+                    showAddDrawer = 'edit'
+                  }
+                "
+                @adjust="
+                  () => {
+                    selectedMaterial = item
+                    showAdjustStockModal = true
+                  }
+                "
+                @delete="
+                  () => {
+                    selectedMaterial = item
+                    showDelete = true
+                  }
+                "
               />
             </template>
             <template #cell:actions="{ item }">
@@ -280,15 +328,16 @@ const onSelect = (option: { label: string; value: string }) => {
     <!--  -->
 
     <AddRawMaterialDrawer
-      :open="showAddDrawer"
-      :material="selectedMaterial"
+      :open="showAddDrawer !== null"
+      :mode="showAddDrawer"
+      :material="showAddDrawer === 'edit' ? selectedMaterial : null"
       @close="
         () => {
-          showAddDrawer = false
+          showAddDrawer = null
           selectedMaterial = null
         }
       "
-      @refresh="refreshMaterials"
+      @refresh="handleRefresh"
     />
 
     <AdjustMaterialStockModal
@@ -300,7 +349,17 @@ const onSelect = (option: { label: string; value: string }) => {
           selectedMaterial = null
         }
       "
-      @refresh="refreshMaterials"
+      @refresh="handleRefresh"
+    />
+
+    <ConfirmationModal
+      :header="`Delete ${materialValue}`"
+      :paragraph="`Are you sure you want to delete '${selectedMaterial?.name}'? This action cannot be undone.`"
+      v-model="showDelete"
+      @close="showDelete = false"
+      variant="error"
+      :loading="isDeleting"
+      @confirm="handleDelete"
     />
   </div>
 </template>

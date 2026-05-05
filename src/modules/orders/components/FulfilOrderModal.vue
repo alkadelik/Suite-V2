@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AppButton from "@components/AppButton.vue"
 import Modal from "@components/Modal.vue"
+import ConfirmationModal from "@components/ConfirmationModal.vue"
 import { TOrderItem } from "../types"
 import Icon from "@components/Icon.vue"
 import Chip from "@components/Chip.vue"
@@ -59,9 +60,12 @@ const canFulfill = computed(() => Object.values(itemQuantities.value).some((qty)
 const { mutate: markAllFulfilled, isPending: isMarkingAll } = useMarkAllFulfilled()
 const { mutate: partiallyFulfill, isPending: isFulfilling } = usePartiallyFulfill()
 
+const showConfirmAll = ref(false)
+
 const handleMarkAll = () => {
   markAllFulfilled(props.orderId, {
     onSuccess: () => {
+      showConfirmAll.value = false
       toast.success("All items marked as fulfilled")
       emit("refresh")
       emit("close")
@@ -161,7 +165,7 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
         size="sm"
         :loading="isMarkingAll"
         :disabled="isMarkingAll"
-        @click="handleMarkAll"
+        @click="showConfirmAll = true"
       />
     </div>
 
@@ -228,6 +232,16 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
         <p class="text-core-400 text-xs">This order has been completely fulfilled</p>
       </div>
     </div>
+
+    <ConfirmationModal
+      v-model="showConfirmAll"
+      header="Fulfill All Items"
+      paragraph="This will mark all unfulfilled items in this order as fulfilled. This action cannot be undone."
+      action-label="Fulfill All"
+      variant="warning"
+      :loading="isMarkingAll"
+      @confirm="handleMarkAll"
+    />
 
     <template #footer>
       <div class="flex gap-2">

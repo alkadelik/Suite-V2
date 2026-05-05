@@ -9,7 +9,7 @@ import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { useRouter } from "vue-router"
 
 const props = defineProps<{ material: TRawMaterial; class?: string }>()
-const emit = defineEmits(["click", "toggle", "edit", "adjust", "view"])
+const emit = defineEmits(["click", "toggle", "edit", "adjust", "view", "delete"])
 const { format } = useFormatCurrency()
 
 const router = useRouter()
@@ -33,6 +33,12 @@ const actionMenus = computed(() => [
     action: () => {
       router.push(`/${props.material.uid}?tab=usage`)
     },
+  },
+  {
+    label: "Delete material",
+    icon: "trash",
+    class: "!text-error-600",
+    action: () => emit("delete"),
   },
 ])
 </script>

@@ -95,7 +95,7 @@ watch([() => props.open, () => props.recipe], ([isOpen]) => {
   const recipe = props.recipe
   const itemUid = recipe.output_product || recipe.output_raw_material || ""
   const unitOption =
-    UNITS_OF_MEASURE.find((u) => u.value === recipe.output_unit) ??
+    UNITS_OF_MEASURE.find((u) => u.value?.toLowerCase() === recipe.output_unit?.toLowerCase()) ??
     (recipe.output_unit ? { label: recipe.output_unit, value: recipe.output_unit } : null)
   basicDetails.value = {
     outputItemType: recipe.item_type,
@@ -178,6 +178,7 @@ const onSubmit = () => {
         <BasicRecipeDetailsForm
           v-if="step == 0"
           :initial-values="basicDetails"
+          :is-edit-mode="isEditMode"
           @next="
             (details: BasicDetails) => {
               basicDetails = details
@@ -190,6 +191,13 @@ const onSubmit = () => {
         <AddIngredientsForm
           v-if="step == 1"
           :initial-rows="ingredientRowsState"
+          :exclude-uid="basicDetails.outputItem"
+          :output-item-details="{
+            name: basicDetails.outputItemOption?.label || '',
+            qty: basicDetails.outputQuantity,
+            unit: basicDetails.unit,
+            type: basicDetails.outputItemType,
+          }"
           @next="
             (rows: IngredientRow[]) => {
               ingredientRowsState = rows
@@ -203,6 +211,12 @@ const onSubmit = () => {
           v-if="step == 2"
           :initial-rows="processRowsState"
           :loading="isCreating || isUpdating"
+          :output-item-details="{
+            name: basicDetails.outputItemOption?.label || '',
+            qty: basicDetails.outputQuantity,
+            unit: basicDetails.unit,
+            type: basicDetails.outputItemType,
+          }"
           @prev="onPrev"
           @submit="
             (rows: ProcessRow[]) => {

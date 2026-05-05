@@ -39,6 +39,17 @@ export type TMovement = {
   performed_by?: string
 }
 
+export type TConversion = {
+  uid: string
+  from_unit: string
+  to_unit: string
+  rate: string
+  name: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
 export type TRawMaterial = {
   uid: string
   name: string
@@ -56,6 +67,7 @@ export type TRawMaterial = {
   created_at: string
   updated_at?: string
   suppliers?: TSupplier[]
+  conversions?: TConversion[]
   batches?: TBatch[]
   movements?: TMovement[]
 }
@@ -108,7 +120,7 @@ export interface ICreateMaterialPayload {
   name: string
   unit: string
   qty_in_stock: string
-  default_cost: string
+  default_cost?: string | number
   is_sub_assembly: boolean
   suppliers?: string[]
   expiry_date?: string

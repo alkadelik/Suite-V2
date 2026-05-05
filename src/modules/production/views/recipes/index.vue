@@ -96,7 +96,7 @@ const getActionItems = (item: TRecipe) => [
         {
           label: `Edit ${recipeLabel.value}`,
           icon: "edit",
-          action: () => (showCreateModal.value = "edit"),
+          action: () => router.push(`/production/recipes/${item.uid}?action=edit`),
         },
         {
           label: `Duplicate ${recipeLabel.value}`,
@@ -182,7 +182,7 @@ const formatWithUnit = (item: TRecipe) => {
 
     <div v-else class="flex flex-col gap-8">
       <EmptyState
-        v-if="isPending && !recipes?.count && !searchQuery"
+        v-if="!recipes?.count && !searchQuery.length"
         :title="`You don't have any recipe yet!`"
         :description="`Start tracking everything you use to make your products by adding your recipe`"
         :action-label="`Add ${selectedComponent.value}`"
@@ -252,7 +252,11 @@ const formatWithUnit = (item: TRecipe) => {
               <div class="flex items-center gap-2">
                 <span class="text-sm text-gray-700">{{ item.output_item_name }}</span>
                 <Chip v-if="formatWithUnit(item)" color="blue" :label="formatWithUnit(item)" />
-                <Chip v-if="item.item_type === 'sub_assembly'" color="purple" />
+                <Chip
+                  v-if="item.item_type === 'sub_assembly'"
+                  label="sub-assembly"
+                  color="purple"
+                />
               </div>
             </template>
 

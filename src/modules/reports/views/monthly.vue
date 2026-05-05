@@ -152,6 +152,16 @@ const STEPS = computed(() => [
       </template>
     </SectionHeader>
 
+    <div v-if="isMobile" class="flex justify-end pt-4">
+      <TextField
+        type="month"
+        size="sm"
+        v-model="activeDate"
+        :max="lastMonthStr"
+        :min="storeCreatedDate"
+      />
+    </div>
+
     <EmptyState
       v-if="!reportData || isCurrentMonthGenerating || isPending || isFetching"
       :title="`${fullMonth} Sales Report`"

@@ -330,10 +330,10 @@ const saveSlide = (index: number, slideId: string) => {
 
   const formData = new FormData()
   formData.append("section", props.heroSection.uid)
-  if (slide.title) formData.append("title", slide.title)
-  if (slide.subtitle) formData.append("content", slide.subtitle)
-  if (slide.cta_button_text) formData.append("cta_text", slide.cta_button_text)
-  if (slide.cta_button_link) formData.append("cta_link", slide.cta_button_link.value)
+  if (slide.title != null) formData.append("title", slide.title)
+  if (slide.subtitle != null) formData.append("content", slide.subtitle)
+  if (slide.cta_button_text != null) formData.append("cta_text", slide.cta_button_text)
+  if (slide.cta_button_link != null) formData.append("cta_link", slide.cta_button_link.value)
   if (slide.hero_media && typeof slide.hero_media !== "string") {
     formData.append("media", slide.hero_media)
   }

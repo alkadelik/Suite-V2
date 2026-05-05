@@ -101,6 +101,13 @@ export function useGetSingleRawMaterial(id: string) {
   })
 }
 
+/** Delete raw material */
+export function useDeleteRawMaterial() {
+  return useMutation({
+    mutationFn: (uid: string) => baseApi.delete(`/raw-materials/${uid}/`),
+  })
+}
+
 // =================================================
 // ========= RECIPES API ============================
 

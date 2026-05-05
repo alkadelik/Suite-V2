@@ -20,7 +20,7 @@
             :variant="activeFilterCount ? 'outlined' : 'filled'"
             label="Filter"
             :badge="activeFilterCount || undefined"
-            class="!hidden md:!inline-flex"
+            class="!hidden flex-shrink-0 md:!inline-flex"
             @click="showFilter = true"
           />
           <AppButton
@@ -30,19 +30,18 @@
             :variant="activeFilterCount ? 'outlined' : 'filled'"
             label=""
             :badge="activeFilterCount || undefined"
-            class="md:hidden"
+            class="flex-shrink-0 md:hidden"
             @click="showFilter = true"
           />
-          <AppButton icon="share-06" size="sm" label="Export" class="!hidden md:!inline-flex" />
-          <AppButton icon="share-06" size="sm" label="" class="md:hidden" />
+          <AppButton
+            icon="share-06"
+            size="sm"
+            label="Export"
+            class="!hidden flex-shrink-0 md:!inline-flex"
+          />
+          <AppButton icon="share-06" size="sm" label="" class="flex-shrink-0 md:hidden" />
         </div>
       </div>
-
-      <ListFilterDrawer
-        v-model="showFilter"
-        :filter-groups="filterGroups"
-        @apply="handleApplyFilters"
-      />
 
       <DataTable
         :data="movements"
@@ -123,6 +122,12 @@
       :show-sku="product.variants.length > 1"
       :variant-info="selectedMovement ? getVariantFromId(selectedMovement.variant) : undefined"
       @close="showMovementModal = false"
+    />
+
+    <ListFilterDrawer
+      v-model="showFilter"
+      :filter-groups="filterGroups"
+      @apply="handleApplyFilters"
     />
   </div>
 </template>

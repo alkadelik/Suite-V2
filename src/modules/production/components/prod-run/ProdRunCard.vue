@@ -49,15 +49,16 @@ const actionMenus = computed(() => [
       </span>
       <div class="flex flex-1 justify-between">
         <div>
-          <h3 class="!font-outfit truncate font-medium">{{ item.uid }}</h3>
-          <p>
-            <span> {{ item.output_item_name }} </span>
-            <span class="mx-2">&bull;</span>
-            <span class="text-error-600">
-              {{ item.damaged_quantity }}
-              <Icon name="information" class="ml-1" />
+          <h3 class="!font-outfit truncate font-medium">{{ item.output_item_name }}</h3>
+          <!-- <p>
+            <span
+              v-if="parseInt(item.damaged_quantity)"
+              class="text-error-600 inline-flex items-center"
+            >
+              {{ parseInt(item.damaged_quantity) + item.output_unit }}
+              <Icon name="danger" class="ml-1" size="16" />
             </span>
-          </p>
+          </p> -->
         </div>
         <span>{{ format(item.cost_per_unit || 0) }}</span>
       </div>
@@ -67,18 +68,24 @@ const actionMenus = computed(() => [
     <div class="flex justify-between p-5 pb-3">
       <div>
         <p class="text-sm font-medium">
-          {{ parseInt(item.quantity_to_produce).toLocaleString() }}
+          {{ parseInt(item.quantity_to_produce).toLocaleString() + item.output_unit }}
         </p>
         <p class="text-core-600 text-xs">Output Quantity</p>
       </div>
       <!--  -->
       <div>
-        <p class="text-sm font-medium">{{ item.usable_quantity }}</p>
+        <p class="text-sm font-medium">
+          {{ parseInt(item.usable_quantity).toLocaleString() + item.output_unit }}
+        </p>
         <p class="text-core-600 text-xs">Usable Quantity</p>
       </div>
       <!--  -->
       <div>
-        <Chip :label="item.status" :color="item.status === 'finalized' ? 'success' : 'warning'" />
+        <Chip
+          :label="item.status"
+          class="capitalize"
+          :color="item.status === 'finalized' ? 'success' : 'warning'"
+        />
       </div>
     </div>
   </div>

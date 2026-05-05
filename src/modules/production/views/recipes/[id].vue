@@ -17,7 +17,7 @@ import { useDeleteRecipe, useGetSingleRecipe, useUpdateRecipe } from "@modules/p
 import AddNewRecipeDrawer from "@modules/production/components/recipes/AddNewRecipeDrawer.vue"
 import { useProductionStore } from "@modules/production/store"
 import { useMediaQuery } from "@vueuse/core"
-import { capitalize, computed, ref } from "vue"
+import { capitalize, computed, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 
 const route = useRoute()
@@ -122,11 +122,31 @@ const onConfirmDisable = () => {
     },
   )
 }
+
+const pendingAction = route.query.action as string | undefined
+if (pendingAction) {
+  router.replace({ query: { ...route.query, action: undefined } })
+}
+
+watch(
+  recipe,
+  (data) => {
+    if (data && pendingAction === "edit") {
+      showCreateModal.value = "edit"
+    }
+  },
+  { once: true },
+)
 </script>
 
 <template>
   <div class="px-3 lg:px-6 lg:pt-8">
-    <PageHeader v-if="isMobile" :title="`${startCase(recipeValue)} Details`" inner />
+    <PageHeader
+      v-if="isMobile"
+      :title="`${startCase(recipeValue)} Details`"
+      inner
+      backLink="/production/recipes"
+    />
 
     <BackButton v-else :label="`Back to ${startCase(recipeLabel)}`" to="/production/recipes" />
 
@@ -211,7 +231,13 @@ const onConfirmDisable = () => {
             </span>
             <h3 class="!font-outfit truncate font-medium">Process Cost/Expenses</h3>
             <span class="ml-auto" />
-            <button type="button" class="text-primary-600 text-sm underline">View note</button>
+            <button
+              v-if="recipe.notes"
+              type="button"
+              class="text-primary-600 flex-shrink-0 text-sm underline"
+            >
+              View note
+            </button>
           </div>
           <div class="mt-4 divide-y divide-gray-200 rounded-xl bg-gray-50 px-4">
             <div
@@ -237,7 +263,12 @@ const onConfirmDisable = () => {
         :open="!!showCreateModal"
         :mode="showCreateModal"
         :recipe="recipe"
-        @close="showCreateModal = null"
+        @close="
+          () => {
+            showCreateModal = null
+            router.replace({ query: undefined })
+          }
+        "
         @refresh="refetch"
       />
 

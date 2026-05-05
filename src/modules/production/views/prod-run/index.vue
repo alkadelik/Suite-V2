@@ -10,7 +10,6 @@ import DataTable from "@components/DataTable.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import EmptyState from "@components/EmptyState.vue"
 import TextField from "@components/form/TextField.vue"
-import Icon from "@components/Icon.vue"
 import PageHeader from "@components/PageHeader.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import StatCard from "@components/StatCard.vue"
@@ -207,17 +206,6 @@ const onFinaliseRun = () => {
             :loading="isFetching"
             @row-click="(row) => $router.push(`/production/runs/${row.uid}`)"
           >
-            <template #cell:damaged_quantity="{ item }">
-              <span
-                v-if="item.damaged_quantity"
-                class="text-error-600 inline-flex items-center gap-1 font-medium"
-              >
-                {{ parseInt(item.damaged_quantity) }}
-                <Icon name="danger" />
-              </span>
-              <span v-else>-</span>
-            </template>
-
             <template #cell:status="{ item }">
               <Chip
                 :label="item.status"

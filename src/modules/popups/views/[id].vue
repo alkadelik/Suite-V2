@@ -82,7 +82,7 @@ const storeDetails = computed(() => useSettingsStore().storeDetails)
 </script>
 
 <template>
-  <PageHeader title="Popup Details" inner />
+  <PageHeader title="Popup Details" inner back-link="/popups" />
 
   <div class="hidden p-4 pb-0 md:inline-block">
     <BackButton label="Back to Popups" to="/popups" />

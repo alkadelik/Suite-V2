@@ -13,10 +13,11 @@ import { useForm } from "vee-validate"
 import * as yup from "yup"
 import { UNITS_OF_MEASURE } from "@modules/production/constant"
 
-type ItemOption = { label: string; value: string }
+type ItemOption = { label: string; value: string; item?: Record<string, unknown> }
 
 const props = defineProps<{
   initialValues: BasicDetails
+  isEditMode?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -78,9 +79,13 @@ const productSearchQuery = useDebouncedRef(productSearchInput, 400)
 const { data: prodSearchResults, isFetching: isSearchingProd } =
   useSearchProductCatalogs(productSearchQuery)
 
-const productOptions = computed<ItemOption[]>(() => {
+const productOptions = computed(() => {
   if (!prodSearchResults.value?.results) return []
-  return prodSearchResults.value.results.map((p) => ({ label: p.name, value: p.uid || "" }))
+  return prodSearchResults.value.results.map((p) => ({
+    label: p.name,
+    value: p.uid || "",
+    item: p,
+  }))
 })
 
 // ─── Raw material search (sub-assemblies only) ───────────────────────────
@@ -92,17 +97,34 @@ const materialOptions = computed<ItemOption[]>(() => {
   if (!matSearchResults.value?.results) return []
   return matSearchResults.value.results
     .filter((m) => m.is_sub_assembly)
-    .map((m) => ({ label: m.name, value: m.uid || "" }))
+    .map((m) => ({ label: m.name, value: m.uid || "", item: m }))
 })
 
 // ─── Unit options ─────────────────────────────────────────────────────────
 const unitOptions = UNITS_OF_MEASURE
+
+// ─── Auto-fill unit from selected output item ────────────────────────────
+const selectedItemUnit = computed<string | null>(() => {
+  const selected = values.outputItem
+  if (!selected?.item) return null
+  return (selected.item.unit as string) || null
+})
+
+const unitIsLocked = computed(() => !!selectedItemUnit.value)
+
+watch(selectedItemUnit, (unit) => {
+  if (unit) {
+    const match = UNITS_OF_MEASURE.find((u) => u.value === unit)
+    setFieldValue("unit", match ?? { label: unit, value: unit })
+  }
+})
 
 // ─── Clear output item when type changes ─────────────────────────────────
 watch(
   () => values.outputItemType,
   () => {
     setFieldValue("outputItem", null)
+    setFieldValue("unit", null)
   },
 )
 
@@ -113,8 +135,10 @@ const handleNext = handleSubmit((formValues) => {
   emit("next", {
     outputItemType: formValues.outputItemType as "product" | "sub_assembly",
     outputItem: item.value,
+    outputItemOption: { label: item.label, value: item.value },
     outputQuantity: formValues.outputQuantity,
     unit: unit.value,
+    unitOption: { label: unit.label, value: unit.value },
     notes: formValues.notes || "",
   })
 })
@@ -135,6 +159,7 @@ const handleNext = handleSubmit((formValues) => {
           { label: 'Sub-assembly', value: 'sub_assembly' },
         ]"
         label="Output Item Type"
+        :disabled="isEditMode"
         @update:model-value="setFieldValue('outputItemType', $event as 'product' | 'sub_assembly')"
       />
     </div>
@@ -149,6 +174,7 @@ const handleNext = handleSubmit((formValues) => {
       :loading="isSearchingProd"
       searchable
       required
+      :disabled="isEditMode"
       @update:model-value="setFieldValue('outputItem', $event as ItemOption)"
       @search-change="productSearchInput = $event"
     />
@@ -164,6 +190,7 @@ const handleNext = handleSubmit((formValues) => {
       :loading="isSearchingMat"
       searchable
       required
+      :disabled="isEditMode"
       @update:model-value="setFieldValue('outputItem', $event as ItemOption)"
       @search-change="matSearchInput = $event"
     />
@@ -182,6 +209,7 @@ const handleNext = handleSubmit((formValues) => {
       label="Unit"
       placeholder="e.g. kg, liters, pieces"
       :options="unitOptions"
+      :disabled="unitIsLocked"
       required
     />
 

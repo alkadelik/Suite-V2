@@ -62,7 +62,7 @@
     <!-- Navigation -->
     <section class="space-y-1 px-4 py-2">
       <SidebarGroup
-        icon="shopping-cart"
+        icon="shopping-cart-outline"
         label="Sales Suite"
         :children="salesSuiteItems"
         :is-expanded="expandedGroup === 'sales-suite'"
@@ -70,7 +70,7 @@
       />
 
       <SidebarGroup
-        icon="trend-up"
+        icon="trend-up-outline"
         label="Marketing"
         :children="marketingItems"
         :is-expanded="expandedGroup === 'marketing'"
@@ -78,7 +78,7 @@
       />
 
       <SidebarGroup
-        icon="building"
+        icon="building-outline"
         label="Production"
         :children="productionItems"
         :is-expanded="expandedGroup === 'production'"
@@ -138,10 +138,10 @@
             <p class="mb-4 text-sm">Get advanced tools to manage every aspect of your business.</p>
           </template>
 
+          <!--  v-if="isTrial || planNameLower !== 'bloom'" -->
           <AppButton
-            v-if="isTrial || planNameLower !== 'bloom'"
             color="alt"
-            label="Upgrade"
+            :label="planCtaLabel"
             class="w-full flex-row-reverse"
             icon="star"
             @click="$emit('upgrade')"
@@ -227,9 +227,9 @@ const productionItems = computed(() => {
   const componentLabel = useProductionStore().componentLabel
   const recipeLabel = useProductionStore().recipeLabel
   return [
-    { icon: "box", label: componentLabel, to: "/production/raw-materials" },
-    { icon: "box", label: recipeLabel, to: "/production/recipes" },
-    { icon: "box", label: "Production run", to: "/production/runs" },
+    { icon: "archive", label: componentLabel, to: "/production/raw-materials" },
+    { icon: "clipboard-text-outline", label: recipeLabel, to: "/production/recipes" },
+    { icon: "chart", label: "Production run", to: "/production/runs" },
   ]
 })
 
@@ -279,6 +279,10 @@ const isActive = computed(() => !!subscription.value?.is_active)
 
 const planName = computed(() => subscription.value?.plan_name ?? "")
 const planNameLower = computed(() => planName.value.toLowerCase())
+const planCtaLabel = computed(() => {
+  if (isTrial.value) return "Upgrade"
+  return planNameLower.value === "burst" ? "Subscribed" : "Upgrade"
+})
 
 const formattedEnds = computed(() => {
   const until = subscription.value?.active_until

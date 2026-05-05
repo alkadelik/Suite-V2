@@ -118,11 +118,12 @@ const { data: productData, isFetching: isLoadingVariants } = useGetProduct(
   { enabled: () => !!selectedProductUid.value },
 )
 
-const variantOptions = computed<{ label: string; value: string }[]>(() => {
+const variantOptions = computed<{ label: string; value: string; price?: number }[]>(() => {
   if (!productData.value?.data?.variants) return []
   return productData.value.data.variants.map((v) => ({
     label: v.name?.split(productData.value.data.name + " - ")?.[1] || v.name,
     value: v.uid,
+    price: v.price ? Number(v.price) : undefined,
   }))
 })
 
@@ -148,12 +149,18 @@ watch(variantOptions, (opts) => {
 // ─── Submit handler ─────────────────────────────────────────────────────
 const handleNext = handleSubmit((formValues) => {
   const recipe = formValues.recipe as ItemOption
-  const variant = formValues.outputVariantUid
+  const variant = formValues.outputVariantUid as {
+    label: string
+    value: string
+    price?: number
+  } | null
   emit("next", {
     outputQuantity: formValues.outputQuantity,
     damagedQuantity: formValues.damagedQuantity,
     recipeUid: recipe.value,
     outputVariantUid: variant?.value || "",
+    outputItemType: recipe.item_type,
+    variantPrice: variant?.price,
   })
 })
 </script>

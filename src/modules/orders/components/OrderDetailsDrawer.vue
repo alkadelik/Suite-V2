@@ -71,6 +71,10 @@ const deliveryFee = computed(() => {
   return Number(props.order.delivery_fee)
 })
 
+const isFreeShipping = computed(() => {
+  return props.order.fulfilment_method === "delivery"
+})
+
 // Get store's default VAT rate as fallback
 const storeVatRate = computed(() => {
   const rate = useSettingsStore().storeDetails?.tax_rate
@@ -271,8 +275,11 @@ const menuItems = computed(() => {
           <span class="font-medium">{{ format(productsTotal, { kobo: true }) }}</span>
         </p>
         <p class="flex justify-between text-sm">
-          <span class="text-core-600">Delivery Fee</span>
-          <span class="font-medium">{{
+          <span class="text-core-600"
+            >Delivery Fee
+            <span v-if="isFreeShipping" class="text-primary-600 text-xs">(Free Shipping)</span>
+          </span>
+          <span class="font-medium" :class="{ 'font-normal! line-through': isFreeShipping }">{{
             deliveryFee > 0 ? format(deliveryFee, { kobo: true }) : "-"
           }}</span>
         </p>
@@ -293,10 +300,16 @@ const menuItems = computed(() => {
           <span class="font-medium">-{{ format(Number(order.discount_amount)) }}</span>
         </p>
         <div class="border-core-200 my-2 border-t border-dashed"></div>
-        <p class="flex justify-between text-lg font-semibold">
+        <div class="flex justify-between text-lg font-semibold">
           <span>Total:</span>
-          <span class="text-primary-600">{{ format(order.total_amount, { kobo: true }) }}</span>
-        </p>
+          <div class="text-right">
+            <span class="text-primary-600">{{ format(order.total_amount, { kobo: true }) }}</span>
+            <br />
+            <span class="text-core-600 text-sm font-normal line-through" v-if="isFreeShipping">
+              {{ format(Number(order.total_amount) + deliveryFee, { kobo: true }) }}
+            </span>
+          </div>
+        </div>
       </div>
 
       <!-- Payment Information -->
