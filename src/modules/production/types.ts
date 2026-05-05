@@ -158,8 +158,7 @@ export type TRecipe = {
   is_active: boolean
   created_at: string
   updated_at: string
-  // not in api yet
-  last_used_in_production?: string
+  last_used?: string
 }
 
 export type TRecipeIngredient = {

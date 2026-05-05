@@ -50,12 +50,10 @@ const recipeStats = computed(() => [
   },
   {
     label: "Last Used in Production",
-    value: recipe.value?.last_used_in_production
-      ? formatDate(recipe.value?.last_used_in_production)
-      : "N/A",
+    value: recipe.value?.last_used ? formatDate(recipe.value?.last_used) : "N/A",
     icon: "bag",
-    chip: recipe.value?.last_used_in_production ? "x77 times" : undefined,
-    chipColor: "blue",
+    // chip: recipe.value?.last_used ? "x77 times" : undefined,
+    // chipColor: "blue",
   },
 ])
 
