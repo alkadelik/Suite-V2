@@ -13,6 +13,7 @@ import { displayError } from "@/utils/error-handler"
 import { IRecipePayload, TRecipe } from "@modules/production/types"
 import { useCreateRecipe, useUpdateRecipe } from "@modules/production/api"
 import { UNITS_OF_MEASURE } from "@modules/production/constant"
+import ConfirmationModal from "@components/ConfirmationModal.vue"
 
 export type IngredientRow = {
   id: string
@@ -161,6 +162,21 @@ const onSubmit = () => {
     createRecipe(payload, { onSuccess, onError: displayError })
   }
 }
+
+const confirmClose = ref(false)
+
+const handleClose = () => {
+  if (activeStep.value >= 1) {
+    confirmClose.value = true
+  } else {
+    emit("close")
+  }
+}
+
+const forceClose = () => {
+  confirmClose.value = false
+  emit("close")
+}
 </script>
 
 <template>
@@ -170,7 +186,7 @@ const onSubmit = () => {
     :title="drawerTitle"
     max-width="2xl"
     variant="fullscreen"
-    @close="emit('close')"
+    @close="handleClose"
   >
     <StepperWizard v-model="activeStep" :steps="steps" :showIndicators="false">
       <template #default="{ step, onPrev, onNext }">
@@ -185,7 +201,7 @@ const onSubmit = () => {
               onNext()
             }
           "
-          @close="emit('close')"
+          @close="handleClose"
         />
         <!-- step 1: ingredients -->
         <AddIngredientsForm
@@ -224,6 +240,17 @@ const onSubmit = () => {
               onSubmit()
             }
           "
+        />
+
+        <!--  -->
+        <ConfirmationModal
+          v-model="confirmClose"
+          header="Discard Recipe?"
+          paragraph="You have unsaved progress on this recipe. Closing now will lose everything you've entered."
+          action-label="Discard"
+          variant="warning"
+          info-message="This action cannot be reversed."
+          @confirm="forceClose"
         />
       </template>
     </StepperWizard>
