@@ -172,6 +172,7 @@ onMounted(() => {
 
       <AddRawMaterialDrawer
         :open="showEdit"
+        mode="edit"
         :material="material"
         @close="showEdit = false"
         @refresh="refetch"
@@ -181,7 +182,7 @@ onMounted(() => {
         :open="showAdjust"
         :material="material"
         @close="showAdjust = false"
-        @refresh="refetch"
+        @refresh="() => refetch()"
       />
 
       <ConfirmationModal

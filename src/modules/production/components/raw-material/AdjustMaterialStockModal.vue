@@ -23,7 +23,7 @@ interface Props {
 const props = defineProps<Props>()
 const emit = defineEmits<{
   close: []
-  refresh: [quantity: number]
+  refresh: [quantity?: number]
 }>()
 const { format } = useFormatCurrency()
 

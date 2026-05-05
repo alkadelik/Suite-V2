@@ -301,29 +301,31 @@ watch(
     if (isOpen) {
       activeStep.value = 0
       if (props.mode === "edit" && props.material) {
+        const item = props.material
         // Populate form with material data
-        const activeConversion: TConversion | undefined = props.material.conversions?.find(
+        const activeConversion: TConversion | undefined = item.conversions?.find(
           (c) => c.is_active && c.from_unit !== c.to_unit,
         )
         const productionUnit = activeConversion
           ? { label: activeConversion.to_unit, value: activeConversion.to_unit }
-          : { label: props.material.unit, value: props.material.unit }
+          : { label: item.unit, value: item.unit }
 
-        const prefillSuppliers =
-          props.material.suppliers?.map((s) => ({ label: s.name, value: s.uid })) ?? []
+        const prefillSuppliers = item.suppliers?.map((s) => ({ label: s.name, value: s.uid })) ?? []
 
         resetForm({
           values: {
-            name: props.material.name,
-            unit: { label: props.material.unit, value: props.material.unit },
+            name: item.name,
+            unit: { label: item.unit, value: item.unit },
             production_unit: productionUnit,
-            qty_in_stock: props.material.current_stock.toString(),
-            source: props.material.is_sub_assembly ? sourceOptions[1] : sourceOptions[0],
-            default_cost: props.material.avg_cost.toString(),
+            qty_in_stock: item.current_stock.toString(),
+            source: item.is_sub_assembly ? sourceOptions[1] : sourceOptions[0],
+            default_cost: item.avg_cost.toString(),
             suppliers: prefillSuppliers,
-            expiry_date: props.material.expiry_date ?? "",
-            reorder_threshold: props.material.reorder_threshold?.toString() ?? "",
-            notes: props.material.notes ?? "",
+            expiry_date: item.expiry_date ?? "",
+            reorder_threshold: item.reorder_threshold
+              ? parseInt(String(item.reorder_threshold)).toString()
+              : "",
+            notes: item.notes ?? "",
             conversion_from_qty: "1",
             conversion_to_qty: activeConversion ? activeConversion.rate : "",
             conversion_name: activeConversion ? activeConversion.name : "",
@@ -403,7 +405,7 @@ const handleAddFromSearch = (search: string, close: () => void) => {
   <component
     :is="isMobile ? Modal : Drawer"
     :open="open"
-    :title="isEditMode ? 'Edit Material' : 'Add Material'"
+    :title="isEditMode ? `Edit ${props.material?.name || 'Material'}` : 'Add Material'"
     max-width="2xl"
     variant="fullscreen"
     @close="emit('close')"
