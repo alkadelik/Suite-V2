@@ -9,10 +9,9 @@ import TextField from "@components/form/TextField.vue"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { PopupInventory } from "@modules/popups/types"
 import { useUpdatePopupProduct } from "@modules/popups/api"
-import { useGetProductCatalogs } from "@modules/inventory/api"
+import { useGetProduct } from "@modules/inventory/api"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
-import type { IProductCatalogue } from "@modules/inventory/types"
 import * as yup from "yup"
 import { getPopupPriceRange } from "../constants"
 
@@ -44,8 +43,11 @@ const route = useRoute()
 
 const { format } = useFormatCurrency()
 
-// Fetch all products to get the full product details with all variants
-const { data: productsResponse } = useGetProductCatalogs()
+// Fetch full product by uid — only when modal is open
+const { data: fullProduct, isFetching: isLoadingProduct } = useGetProduct(
+  () => props.selectedProduct?.uid ?? "",
+  { enabled: () => props.open && !!props.selectedProduct?.uid },
+)
 
 // Local state for managing the variants
 const variantItems = ref<VariantItem[]>([])
@@ -60,35 +62,22 @@ interface ValidationErrors {
 }
 const validationErrors = ref<ValidationErrors>({})
 
-// Find the full product from the catalogue
-const fullProduct = computed<IProductCatalogue | undefined>(() => {
-  if (!props.selectedProduct || !productsResponse.value) return undefined
-
-  const products = productsResponse.value.results || []
-  return products.find((p: IProductCatalogue) => p.uid === props.selectedProduct?.uid)
-})
-
-// Initialize variant items when modal opens
 const initializeVariants = () => {
   if (!props.selectedProduct || !fullProduct.value) return
 
-  // Map through all variants in the selected product
   variantItems.value = props.selectedProduct.variants.map((popupVariant) => {
-    // Find the corresponding variant in the main catalogue to get accurate stock info
-    const catalogueVariant = fullProduct.value?.variants?.find((v) => v.sku === popupVariant.sku)
+    const catalogueVariant = fullProduct.value?.data?.variants?.find(
+      (v) => v.sku === popupVariant.sku,
+    )
 
-    // Calculate available stock from main catalogue
     const sellableStock = Number(catalogueVariant?.sellable_stock ?? 0)
     const popupQtyTaken = Number(catalogueVariant?.popup_quantity_taken ?? 0)
     const currentPopupQuantity = Number(popupVariant.quantity)
-
-    // Available stock = sellable_stock - popup_quantity_taken + current_popup_quantity
-    // We add back the current popup quantity because it's already included in popup_quantity_taken
     const availableStock = sellableStock - popupQtyTaken + currentPopupQuantity
 
     return {
-      uid: popupVariant.uid, // This is the popup_inventory variant uid
-      popup_inventory_uid: popupVariant.popup_inventory_uid, // This is the main popup inventory product uid
+      uid: popupVariant.uid,
+      popup_inventory_uid: popupVariant.popup_inventory_uid,
       variant_sku: popupVariant.sku,
       variant_name: popupVariant.name,
       quantity: popupVariant.quantity,
@@ -103,13 +92,14 @@ const initializeVariants = () => {
   validationErrors.value = {}
 }
 
-// Watch for modal open/close
+watch(fullProduct, (product) => {
+  if (product) initializeVariants()
+})
+
 watch(
   () => props.open,
   (isOpen) => {
-    if (isOpen) {
-      initializeVariants()
-    } else {
+    if (!isOpen) {
       variantItems.value = []
       validationErrors.value = {}
     }
@@ -133,7 +123,9 @@ const validateVariantItem = async (item: VariantItem) => {
       .max(maxAvailable, `Only ${maxAvailable} available in stock`),
     event_price: yup
       .number()
-      .transform((value, originalValue) => (originalValue === "" ? undefined : value))
+      .transform((_, originalValue) =>
+        originalValue === "" ? undefined : Number(String(originalValue).replace(/,/g, "")),
+      )
       .typeError("Price must be a number")
       .required("Price is required")
       .min(0, "Price must be at least 0"),
@@ -234,7 +226,25 @@ const closeModal = () => {
 
       <!-- Variant Details -->
       <div class="space-y-3">
-        <div v-for="item in variantItems" :key="item.uid" class="rounded-xl bg-white">
+        <!-- Loading skeleton -->
+        <template v-if="isLoadingProduct">
+          <div
+            v-for="n in selectedProduct.variants.length || 2"
+            :key="n"
+            class="rounded-xl bg-white p-3"
+          >
+            <div class="mb-3 flex items-center justify-between">
+              <div class="h-6 w-32 animate-pulse rounded-full bg-gray-200" />
+              <div class="h-6 w-20 animate-pulse rounded-full bg-gray-200" />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="h-10 animate-pulse rounded-lg bg-gray-200" />
+              <div class="h-10 animate-pulse rounded-lg bg-gray-200" />
+            </div>
+          </div>
+        </template>
+
+        <div v-else v-for="item in variantItems" :key="item.uid" class="rounded-xl bg-white">
           <div class="flex items-center justify-between p-3">
             <div class="flex items-center gap-2">
               <Chip color="primary" :label="item.variant_name" size="sm" />
@@ -280,7 +290,7 @@ const closeModal = () => {
       </div>
 
       <!-- Info message -->
-      <div class="bg-core-50 rounded-lg p-3">
+      <div v-if="!isLoadingProduct" class="bg-core-50 rounded-lg p-3">
         <p class="text-core-600 text-xs">
           <Icon name="info-circle" class="mr-1 inline h-3 w-3" />
           Quantities are validated against available stock in your main inventory.
