@@ -8,7 +8,7 @@ import AppButton from "@components/AppButton.vue"
 import { useSearchProductCatalogs } from "@modules/inventory/api"
 import { useSearchRawMaterial } from "@modules/production/api"
 import type { BasicDetails } from "../AddNewRecipeDrawer.vue"
-import { computed, ref, watch } from "vue"
+import { computed, nextTick, ref, watch } from "vue"
 import { useForm } from "vee-validate"
 import * as yup from "yup"
 import { UNITS_OF_MEASURE } from "@modules/production/constant"
@@ -57,10 +57,13 @@ const { handleSubmit, values, errors, setFieldValue, resetForm } = useForm({
   },
 })
 
+let isResetting = false
+
 // Re-initialize when parent repopulates (e.g. drawer reopens in edit/duplicate mode)
 watch(
   () => props.initialValues,
   (iv) => {
+    isResetting = true
     resetForm({
       values: {
         outputItemType: iv.outputItemType,
@@ -69,6 +72,9 @@ watch(
         unit: (iv.unitOption ?? null) as ItemOption | null,
         notes: iv.notes,
       },
+    })
+    nextTick(() => {
+      isResetting = false
     })
   },
 )
@@ -119,10 +125,11 @@ watch(selectedItemUnit, (unit) => {
   }
 })
 
-// ─── Clear output item when type changes ─────────────────────────────────
+// ─── Clear output item when type changes (skip during programmatic reset) ────
 watch(
   () => values.outputItemType,
   () => {
+    if (isResetting) return
     setFieldValue("outputItem", null)
     setFieldValue("unit", null)
   },

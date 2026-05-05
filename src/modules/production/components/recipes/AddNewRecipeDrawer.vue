@@ -10,14 +10,24 @@ import BasicRecipeDetailsForm from "./recipe-form/BasicRecipeDetailsForm.vue"
 import AddIngredientsForm from "./recipe-form/AddIngredientsForm.vue"
 import ProcessCostForm from "./recipe-form/ProcessCostForm.vue"
 import { displayError } from "@/utils/error-handler"
-import { IRecipePayload, TRecipe } from "@modules/production/types"
+import { IRecipePayload, TConversion, TRecipe } from "@modules/production/types"
 import { useCreateRecipe, useUpdateRecipe, useGetSingleRecipe } from "@modules/production/api"
+import { convertQtyToPurchaseUnit } from "@modules/production/utils"
 import { UNITS_OF_MEASURE } from "@modules/production/constant"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
 
 export type IngredientRow = {
   id: string
-  ingredient: { label: string; value: string; unit?: string; cost_per_unit: number; kind: string }
+  ingredient: {
+    label: string
+    value: string
+    unit: string
+    cost_per_unit: number
+    kind: string
+    conversions?: TConversion[]
+    base_unit?: string
+    base_cost_per_unit?: number
+  }
   qty: number
 }
 
@@ -114,6 +124,7 @@ const fetchUid = computed(() =>
 const { data: fetchedRecipe, isFetching: isLoadingRecipe } = useGetSingleRecipe(fetchUid)
 
 watch(fetchedRecipe, (recipe) => {
+  console.log("Fetched recipe:", recipe)
   if (recipe) seedFromRecipe(recipe)
 })
 
@@ -148,7 +159,13 @@ const onSubmit = () => {
   const details = basicDetails.value
   const ingredients: IRecipePayload["ingredients"] = ingredientRowsState.value
     .filter((r) => r.qty > 0)
-    .map((r) => ({ material_uid: r.ingredient.value, quantity: r.qty }))
+    .map((r) => ({
+      material_uid: r.ingredient.value,
+      quantity: convertQtyToPurchaseUnit(r.qty, {
+        unit: r.ingredient.base_unit || r.ingredient.unit || "",
+        conversions: r.ingredient.conversions,
+      }),
+    }))
 
   const processCosts: IRecipePayload["process_costs"] = processRowsState.value
     .filter((p) => p.name.trim())
@@ -208,7 +225,7 @@ const forceClose = () => {
       <template #default="{ step, onPrev, onNext }">
         <!-- loading skeleton while fetching full recipe details -->
         <div v-if="isLoadingRecipe" class="space-y-4 p-4">
-          <div v-for="n in 4" :key="n" class="h-12 animate-pulse rounded-xl bg-gray-100" />
+          <div v-for="n in 6" :key="n" class="h-12 animate-pulse rounded-xl bg-gray-200" />
         </div>
 
         <template v-else>

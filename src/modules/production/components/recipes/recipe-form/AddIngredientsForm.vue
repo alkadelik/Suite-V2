@@ -5,6 +5,8 @@ import SelectField from "@components/form/SelectField.vue"
 import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
 import { useSearchRawMaterial } from "@modules/production/api"
+import { convertQtyToPurchaseUnit, getPurchaseUnit } from "@modules/production/utils"
+import type { TConversion } from "@modules/production/types"
 import type { IngredientRow } from "../AddNewRecipeDrawer.vue"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, ref } from "vue"
@@ -40,6 +42,7 @@ const materialOptions = computed(() => {
       unit: material.unit || "",
       cost_per_unit: Number(material.last_cost || material.avg_cost || 0),
       kind: (material.is_sub_assembly ? "sub_assembly" : "raw_material") as string,
+      conversions: material.conversions || [],
     }))
 })
 
@@ -57,11 +60,14 @@ const selectedOptions = computed<MatOption[]>(() =>
     unit: r.ingredient.unit || "",
     cost_per_unit: r.ingredient.cost_per_unit,
     kind: r.ingredient.kind,
+    conversions: r.ingredient.conversions || [],
   })),
 )
 
 function onSelectChange(newVal: unknown) {
   const selected = (Array.isArray(newVal) ? newVal : []) as MatOption[]
+
+  console.log("Selected options:", selected)
 
   const newVals = new Set(selected.map((o) => String(o.value)))
 
@@ -80,6 +86,7 @@ function onSelectChange(newVal: unknown) {
           unit: String(opt.unit || ""),
           cost_per_unit: Number(opt.cost_per_unit || 0),
           kind: String(opt.kind || "raw_material"),
+          conversions: opt.conversions,
         },
         qty: 1,
       })
@@ -93,19 +100,35 @@ const visibleIngredientRows = computed(() => {
   return ingredientRows.value.filter((r) => r.ingredient.label.toLowerCase().includes(q))
 })
 
-// const incQty = (row: IngredientRow) => (row.qty += 1)
-// const decQty = (row: IngredientRow) => (row.qty = Math.max(0, row.qty - 1))
 const removeRow = (row: IngredientRow) => {
   ingredientRows.value = ingredientRows.value.filter((r) => r.id !== row.id)
 }
 
 const totalIngredientCost = computed(() => {
-  const total = ingredientRows.value.reduce(
-    (sum, row) => sum + (row.ingredient.cost_per_unit || 0) * row.qty,
-    0,
-  )
-  return formatCurrency(total as number)
+  const total = ingredientRows.value.reduce((sum, row) => {
+    const baseCost = row.ingredient.base_cost_per_unit ?? row.ingredient.cost_per_unit ?? 0
+    const qty = convertQtyToPurchaseUnit(Number(row.qty), {
+      unit: row.ingredient.base_unit || row.ingredient.unit || "",
+      conversions: (row.ingredient.conversions ?? []) as TConversion[],
+    })
+    return sum + baseCost * qty
+  }, 0)
+  return formatCurrency(Number(total))
 })
+
+function rowPurchaseUnit(row: IngredientRow) {
+  return getPurchaseUnit({
+    unit: row.ingredient.base_unit || row.ingredient.unit || "",
+    conversions: (row.ingredient.conversions ?? []) as TConversion[],
+  })
+}
+
+function rowCostPerPurchaseUnit(row: IngredientRow) {
+  const firstConversion = (row.ingredient.conversions ?? [])[0]
+  if (!firstConversion) return row.ingredient.cost_per_unit || 0
+  const baseCost = row.ingredient.base_cost_per_unit ?? row.ingredient.cost_per_unit ?? 0
+  return baseCost / Number(firstConversion.rate)
+}
 
 const canProceed = computed(() => ingredientRows.value.some((r) => r.qty > 0))
 
@@ -195,7 +218,7 @@ function handleNext() {
                 </div>
                 <div v-if="row.ingredient.cost_per_unit" class="mt-1 flex items-center gap-2">
                   <Chip
-                    :label="`${formatCurrency(row.ingredient.cost_per_unit || 0)}/${row.ingredient.unit || 'unit'}`"
+                    :label="`${formatCurrency(rowCostPerPurchaseUnit(row))}/${rowPurchaseUnit(row)}`"
                     size="sm"
                   />
                 </div>
@@ -206,7 +229,7 @@ function handleNext() {
               <TextField
                 v-model="row.qty"
                 type="number"
-                :prefix="row.ingredient.unit"
+                :prefix="rowPurchaseUnit(row)"
                 class="w-full"
               />
 
