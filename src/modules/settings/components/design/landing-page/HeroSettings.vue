@@ -55,6 +55,7 @@
 
                 <div class="flex justify-between border-t border-gray-200 pt-4">
                   <AppButton
+                    v-if="heroSlides.length > 1"
                     type="button"
                     label="Remove Slide"
                     icon="trash"
@@ -316,10 +317,6 @@ const saveSlide = (index: number, slideId: string) => {
 
   if (!slide) {
     return toast.error("Slide data not found")
-  }
-
-  if (!slide.hero_media) {
-    return toast.error("Please upload media (image or video) for the slide")
   }
 
   if (!props.heroSection?.uid) {
