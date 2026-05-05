@@ -9,6 +9,7 @@ import type { IngredientRow } from "../AddNewRecipeDrawer.vue"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, ref } from "vue"
 import Chip from "@components/Chip.vue"
+import TextField from "@components/form/TextField.vue"
 
 const props = defineProps<{
   initialRows: IngredientRow[]
@@ -92,8 +93,8 @@ const visibleIngredientRows = computed(() => {
   return ingredientRows.value.filter((r) => r.ingredient.label.toLowerCase().includes(q))
 })
 
-const incQty = (row: IngredientRow) => (row.qty += 1)
-const decQty = (row: IngredientRow) => (row.qty = Math.max(0, row.qty - 1))
+// const incQty = (row: IngredientRow) => (row.qty += 1)
+// const decQty = (row: IngredientRow) => (row.qty = Math.max(0, row.qty - 1))
 const removeRow = (row: IngredientRow) => {
   ingredientRows.value = ingredientRows.value.filter((r) => r.id !== row.id)
 }
@@ -171,66 +172,35 @@ function handleNext() {
         <div
           v-for="row in visibleIngredientRows"
           :key="row.id"
-          class="rounded-2xl border border-gray-200 bg-white px-4 py-3"
+          class="rounded-2xl border border-gray-200 bg-white px-3 py-2"
         >
-          <div :class="isMobile ? 'flex flex-col gap-3' : 'flex items-center justify-between'">
+          <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
             <div class="flex min-w-0 items-center gap-3">
-              <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
+              <span
+                class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gray-100"
+              >
                 <Icon name="blur" size="18" />
               </span>
               <div class="flex min-w-0 flex-col">
-                <div class="flex min-w-0 items-center gap-2">
-                  <p class="truncate text-sm font-medium text-gray-900">
-                    {{ row.ingredient.label }}
-                  </p>
-                  <span
-                    v-if="row.ingredient.kind === 'sub_assembly'"
-                    class="inline-flex rounded-full border border-purple-200 bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700"
-                  >
-                    Sub-assembly
-                  </span>
-                </div>
-                <div class="mt-1 flex items-center gap-2">
-                  <span
-                    v-if="row.ingredient.cost_per_unit"
-                    class="inline-flex rounded-full border border-[#FDBA74] bg-[#FFF7ED] px-2 py-1 text-xs font-medium text-[#9A3412]"
-                  >
-                    {{ formatCurrency(row.ingredient.cost_per_unit || 0) }} /
-                    {{ row.ingredient.unit || "unit" }}
-                  </span>
+                <p class="truncate text-sm font-medium text-gray-900">
+                  {{ row.ingredient.label }}
+                </p>
+                <div
+                  v-if="row.ingredient.kind === 'sub_assembly'"
+                  class="mt-1 flex items-center gap-2"
+                >
+                  <Chip size="sm" label="Sub-assembly" />
                 </div>
               </div>
             </div>
 
             <div class="flex items-center gap-3" :class="isMobile ? 'w-full justify-between' : ''">
-              <div
-                class="flex items-center gap-2 rounded-xl border border-[#FDBA74] bg-white px-3 py-2"
-                :class="isMobile ? 'flex-1 justify-between' : ''"
-              >
-                <button
-                  type="button"
-                  class="flex h-7 w-7 items-center justify-center rounded-lg text-gray-700 hover:bg-gray-50"
-                  @click="decQty(row)"
-                >
-                  <span class="text-lg leading-none">−</span>
-                </button>
-                <input
-                  type="number"
-                  min="0"
-                  :value="row.qty"
-                  class="w-10 [appearance:textfield] bg-transparent text-center text-sm font-medium text-gray-900 outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                  @input="
-                    row.qty = Math.max(0, parseInt(($event.target as HTMLInputElement).value) || 0)
-                  "
-                />
-                <button
-                  type="button"
-                  class="flex h-7 w-7 items-center justify-center rounded-lg text-gray-700 hover:bg-gray-50"
-                  @click="incQty(row)"
-                >
-                  <span class="text-lg leading-none">+</span>
-                </button>
-              </div>
+              <TextField
+                v-model="row.qty"
+                type="number"
+                :prefix="row.ingredient.unit"
+                class="w-full"
+              />
 
               <button
                 type="button"
