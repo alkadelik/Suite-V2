@@ -34,8 +34,8 @@ const onRowClick = (batch: TMovement) => {
         :loading="false"
         :enable-row-selection="false"
         :empty-state="{
-          title: `No Usage History Available`,
-          description: `Start tracking your usage history by adding them to the system.`,
+          title: `No Logs Available`,
+          description: `Start tracking your logs by adding them to the system.`,
         }"
         :show-pagination="false"
         @row-click="onRowClick"
@@ -66,7 +66,7 @@ const onRowClick = (batch: TMovement) => {
     <component
       :is="isMobile ? Modal : Drawer"
       :open="openDetails"
-      title="Usage History Details"
+      title="Log Details"
       max-width="2xl"
       variant="fullscreen"
       @close="openDetails = false"

@@ -25,7 +25,7 @@ import { toast } from "@/composables/useToast"
 
 const materialTabs = [
   { title: "Batches", key: "batches" },
-  { title: "Usage History", key: "usage" },
+  { title: "Logs", key: "usage" },
   { title: "Linked Recipes", key: "recipes" },
 ]
 
