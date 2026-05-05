@@ -59,7 +59,7 @@ export interface ConfirmationModalProps {
   /** Paragraph text for the modal */
   paragraph?: string
   /** Loading state for the action button */
-  loading: boolean
+  loading?: boolean
   /**
    * The modal variant affecting colors and styling
    * - warning: Yellow/orange color scheme for warnings (default)
