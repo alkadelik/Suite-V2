@@ -391,6 +391,12 @@ const goToNextStep = async () => {
 const goToPrevStep = () => {
   activeStep.value = activeStep.value - 1
 }
+
+const handleAddFromSearch = (search: string, close: () => void) => {
+  showAddSupplier.value = true
+  newSupplierName.value = search
+  close()
+}
 </script>
 
 <template>
@@ -579,6 +585,7 @@ const goToPrevStep = () => {
                 type="number"
                 name="qty_in_stock"
                 label="Quantity in Stock"
+                :suffix="values.unit?.label"
                 placeholder="e.g. 25"
                 required
               />
@@ -606,6 +613,7 @@ const goToPrevStep = () => {
                 format="currency"
                 step="0.01"
                 :label="`Price per ${values.unit?.value || 'Unit'} (${currency})`"
+                :suffix="values.unit?.label"
                 placeholder="e.g. 25"
                 required
               />
@@ -656,6 +664,18 @@ const goToPrevStep = () => {
                         <Icon name="add" class="text-primary-600 h-4 w-4" />
                       </div>
                     </div>
+                  </template>
+                  <template #no-options="{ search, close }">
+                    <p>
+                      No results found.
+                      <button
+                        class="text-primary-600 ml-1 hover:underline"
+                        @click="handleAddFromSearch(search, close)"
+                      >
+                        Add <span class="font-semibold">"{{ search }}"</span>
+                      </button>
+                      as a supplier?
+                    </p>
                   </template>
                 </SelectField>
               </Field>
