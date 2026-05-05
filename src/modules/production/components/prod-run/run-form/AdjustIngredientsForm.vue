@@ -221,7 +221,7 @@ function handleNext() {
       :material="selectedMaterial"
       add-only
       @close="adjustModalOpen = false"
-      @refresh="(qty) => onAdjustRefresh(qty)"
+      @refresh="(qty) => onAdjustRefresh(qty as number)"
     />
   </form>
 </template>
