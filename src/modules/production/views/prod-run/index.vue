@@ -137,8 +137,6 @@ const onFinaliseRun = () => {
       :subtitle="`Track and manage all production activity and costing.`"
     />
 
-    <div class="mt-6" />
-
     <div class="flex flex-col gap-8">
       <EmptyState
         v-if="!prodRuns?.count && !searchQuery"

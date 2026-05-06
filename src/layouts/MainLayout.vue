@@ -1,12 +1,5 @@
 <template>
   <div class="bg-white lg:bg-gray-50">
-    <!-- Mobile overlay -->
-    <!-- <div
-        v-if="isMobile && mobileSidebarOpen"
-        class="fixed inset-0 z-30 bg-black/40 lg:hidden"
-        @click="mobileSidebarOpen = false"
-      /> -->
-
     <div class="flex h-[100dvh] overflow-hidden lg:h-screen">
       <!-- Sidebar -->
       <AppSidebar
@@ -19,7 +12,7 @@
       <div
         :class="[
           'flex h-full flex-1 flex-col overflow-hidden transition-all duration-200',
-          showAppHeader || isInner ? 'pt-14' : 'pt-20',
+          showAppHeader || isInner ? 'pt-14' : 'pt-16',
           sidebarPadding,
           isMobile && !showAppHeader && isInner ? 'pb-0' : 'pb-16 lg:pb-2',
         ]"

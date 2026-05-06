@@ -23,6 +23,7 @@ type ItemOption = {
 
 const props = defineProps<{
   initialValues: BasicRunDetails
+  isEditMode?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -131,6 +132,7 @@ const variantOptions = computed<{ label: string; value: string; price?: number }
 watch(
   () => values.recipe,
   (recipe) => {
+    if (props.isEditMode) return
     setFieldValue("outputVariantUid", null)
     if (recipe && typeof recipe === "object" && "value" in recipe) {
       emit("recipe-change", String(recipe.value))
@@ -179,6 +181,7 @@ const handleNext = handleSubmit((formValues) => {
       :options="recipeOptions"
       :error="errors.recipe ? String(errors.recipe) : undefined"
       :loading="isSearchingRecipe"
+      :disabled="isEditMode"
       searchable
       required
       @update:model-value="setFieldValue('recipe', $event as ItemOption)"
