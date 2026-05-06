@@ -21,8 +21,6 @@ import { useCreateOrder } from "../api"
 import { toast } from "@/composables/useToast"
 import type { IShippingCourier } from "@modules/shared/types"
 import type { PopupInventory } from "@modules/popups/types"
-import { useMediaQuery } from "@vueuse/core"
-import Modal from "@components/Modal.vue"
 import { handlePayStackPayment, loadPaystackScript } from "../utilities"
 import { useSettingsStore } from "@modules/settings/store"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
@@ -391,8 +389,6 @@ const resetForm = () => {
   productViewMode.value = "grid"
 }
 
-const isMobile = useMediaQuery("(max-width: 1028px)")
-
 // load paystack script on mounted
 onMounted(() => {
   loadPaystackScript()
@@ -444,8 +440,7 @@ watch(
 </script>
 
 <template>
-  <component
-    :is="isMobile ? Modal : Drawer"
+  <Drawer
     :open="open"
     :title="isPopupOrder ? 'Add Popup Order' : 'Create Order'"
     max-width="2xl"
@@ -552,7 +547,7 @@ watch(
         />
       </template>
     </StepperWizard>
-  </component>
+  </Drawer>
 
   <!-- Add Customer Address Modal (outside drawer to avoid nesting) -->
   <OrderAddCustomerAddress

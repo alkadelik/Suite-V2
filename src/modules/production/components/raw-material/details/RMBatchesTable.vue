@@ -4,18 +4,14 @@ import { formatDate } from "@/utils/formatDate"
 import Chip from "@components/Chip.vue"
 import DataTable from "@components/DataTable.vue"
 import Drawer from "@components/Drawer.vue"
-import Modal from "@components/Modal.vue"
 import { TBatch, TRawMaterial } from "@modules/production/types"
-import { useMediaQuery } from "@vueuse/core"
 import { ref } from "vue"
 import { startCase } from "@/utils/format-strings"
 import RMBatchCard from "./RMBatchCard.vue"
 import { BATCHES_COLUMN } from "@modules/production/constant"
 
-const props = defineProps<{ batches: TBatch[]; material: TRawMaterial }>()
+const props = defineProps<{ material: TRawMaterial }>()
 const { format } = useFormatCurrency()
-
-const isMobile = useMediaQuery("(max-width: 1024px)")
 
 const openDetails = ref(false)
 const selectedBatch = ref<TBatch | null>(null)
@@ -30,7 +26,7 @@ const onRowClick = (batch: TBatch) => {
   <div>
     <div class="space-y-4 overflow-hidden rounded-xl border-gray-200 md:border md:bg-white">
       <DataTable
-        :data="props.batches ?? []"
+        :data="material.batches ?? []"
         :columns="BATCHES_COLUMN"
         :loading="false"
         :enable-row-selection="false"
@@ -61,14 +57,7 @@ const onRowClick = (batch: TBatch) => {
     </div>
 
     <!-- Details -->
-    <component
-      :is="isMobile ? Modal : Drawer"
-      :open="openDetails"
-      title="Batch Details"
-      max-width="2xl"
-      variant="fullscreen"
-      @close="openDetails = false"
-    >
+    <Drawer :open="openDetails" title="Batch Details" max-width="2xl" @close="openDetails = false">
       <div v-if="selectedBatch" class="space-y-6">
         <div class="flex flex-col items-center justify-center gap-2">
           <h4 class="text-3xl font-bold md:text-4xl">
@@ -136,6 +125,6 @@ const onRowClick = (batch: TBatch) => {
           </p>
         </div>
       </div>
-    </component>
+    </Drawer>
   </div>
 </template>

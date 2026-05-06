@@ -82,13 +82,10 @@ export const USAGE_HISTORY_COLUMN: TableColumn<TMovement>[] = [
 ]
 
 export const LINKED_RECIPES_COLUMN: TableColumn<TLinkedRecipe>[] = [
-  { header: "Item", accessor: "item" },
-  { header: "Type", accessor: "type" },
-  {
-    header: "Quantity per Batch",
-    accessor: "quantity_per_batch",
-    cell: ({ item }) => `${item.quantity_per_batch}/${item.unit}`,
-  },
+  { header: "Output Item", accessor: "output_item_name" },
+  { header: "Type", accessor: "item_type" },
+  { header: "Qty per Batch", accessor: "quantity_per_batch" },
+  { header: "Actions", accessor: "actions" },
 ]
 
 export const componentOptions = [

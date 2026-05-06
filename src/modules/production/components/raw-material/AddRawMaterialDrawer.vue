@@ -402,12 +402,10 @@ const handleAddFromSearch = (search: string, close: () => void) => {
 </script>
 
 <template>
-  <component
-    :is="isMobile ? Modal : Drawer"
+  <Drawer
     :open="open"
     :title="isEditMode ? `Edit ${props.material?.name || 'Material'}` : 'Add Material'"
     max-width="2xl"
-    variant="fullscreen"
     @close="emit('close')"
   >
     <StepperWizard v-model="activeStep" :steps="steps" :showIndicators="false">
@@ -800,5 +798,5 @@ const handleAddFromSearch = (search: string, close: () => void) => {
         </div>
       </template>
     </Modal>
-  </component>
+  </Drawer>
 </template>

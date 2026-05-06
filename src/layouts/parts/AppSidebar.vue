@@ -21,7 +21,7 @@
     <!-- Store Info -->
     <div class="bg-gray-50 px-4 py-4">
       <div class="mb-3 flex items-center gap-2">
-        <div class="bg-core-200 flex size-10 items-center justify-center rounded-xl">
+        <div class="bg-core-200 flex size-10 shrink-0 items-center justify-center rounded-xl">
           <Icon name="shop" class="text-primary-800" size="24" />
         </div>
         <div class="min-w-0">

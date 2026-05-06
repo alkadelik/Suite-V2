@@ -157,15 +157,15 @@ onMounted(() => {
       <section class="mt-8">
         <Tabs :tabs="materialTabs" v-model="activeTab" header-class="mb-3 md:mb-0">
           <template #batches>
-            <RMBatchesTable :batches="material?.batches ?? []" :material="material" />
+            <RMBatchesTable :material="material" />
           </template>
 
           <template #usage>
-            <RMUsageHistoryTable :usage="material?.movements ?? []" :material="material" />
+            <RMUsageHistoryTable :material="material" />
           </template>
 
           <template #recipes>
-            <RMLinkedRecipesTable :recipes="[]" :material="material" />
+            <RMLinkedRecipesTable :material="material" />
           </template>
         </Tabs>
       </section>

@@ -126,6 +126,23 @@ export function useGetProducts(
   })
 }
 
+/** search inventory products */
+export function useSearchProducts(query: MaybeRefOrGetter<string>) {
+  return useQuery({
+    queryKey: ["products", "search", query],
+    queryFn: async () => {
+      const search = toValue(query)
+      const { data } = await baseApi.get<TPaginatedResponse<IProductCatalogue>>(
+        `/inventory/products/`,
+        { params: { ...(search ? { search } : {}), limit: 10 } },
+      )
+      return data.data
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
+  })
+}
+
 /** Fetch order statistics */
 export function useGetProductDashboard() {
   return useApiQuery<IProductStats>({

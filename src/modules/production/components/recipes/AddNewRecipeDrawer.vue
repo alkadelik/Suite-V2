@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import Drawer from "@components/Drawer.vue"
-import Modal from "@components/Modal.vue"
 import StepperWizard from "@components/StepperWizard.vue"
 import { useProductionStore } from "@modules/production/store"
-import { useMediaQuery } from "@vueuse/core"
 import { ref, computed, watch, capitalize } from "vue"
 import { toast } from "@/composables/useToast"
 import BasicRecipeDetailsForm from "./recipe-form/BasicRecipeDetailsForm.vue"
@@ -57,8 +55,6 @@ export type RecipeDrawerProps = {
 
 const props = withDefaults(defineProps<RecipeDrawerProps>(), { mode: "create" })
 const emit = defineEmits(["close", "refresh"])
-
-const isMobile = computed(() => useMediaQuery("(max-width: 1028px)").value)
 const isEditMode = computed(() => props.mode === "edit" && !!props.recipe)
 
 const drawerTitle = computed(() => {
@@ -161,10 +157,12 @@ const onSubmit = () => {
     .filter((r) => r.qty > 0)
     .map((r) => ({
       material_uid: r.ingredient.value,
-      quantity: convertQtyToPurchaseUnit(r.qty, {
-        unit: r.ingredient.base_unit || r.ingredient.unit || "",
-        conversions: r.ingredient.conversions,
-      }),
+      quantity: parseFloat(
+        convertQtyToPurchaseUnit(r.qty, {
+          unit: r.ingredient.base_unit || r.ingredient.unit || "",
+          conversions: r.ingredient.conversions,
+        }).toFixed(2),
+      ),
     }))
 
   const processCosts: IRecipePayload["process_costs"] = processRowsState.value
@@ -213,14 +211,7 @@ const forceClose = () => {
 </script>
 
 <template>
-  <component
-    :is="isMobile ? Modal : Drawer"
-    :open="open"
-    :title="drawerTitle"
-    max-width="2xl"
-    variant="fullscreen"
-    @close="handleClose"
-  >
+  <Drawer :open="open" :title="drawerTitle" max-width="2xl" @close="handleClose">
     <StepperWizard v-model="activeStep" :steps="steps" :showIndicators="false">
       <template #default="{ step, onPrev, onNext }">
         <!-- loading skeleton while fetching full recipe details -->
@@ -293,5 +284,5 @@ const forceClose = () => {
         </template>
       </template>
     </StepperWizard>
-  </component>
+  </Drawer>
 </template>

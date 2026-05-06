@@ -2,7 +2,6 @@
 import AppButton from "@components/AppButton.vue"
 import FormField from "@components/form/FormField.vue"
 import Icon from "@components/Icon.vue"
-import Modal from "@components/Modal.vue"
 import { ref, computed, watch } from "vue"
 import { useForm } from "vee-validate"
 import { toast } from "@/composables/useToast"
@@ -11,7 +10,6 @@ import { onInvalidSubmit } from "@/utils/validations"
 import { PopupEvent, PopupPayload } from "../types"
 import { useCreatePopup, useUpdatePopup } from "../api"
 import { validationSchema } from "../schemas"
-import { useMediaQuery } from "@vueuse/core"
 import Drawer from "@components/Drawer.vue"
 import { useSettingsStore } from "@modules/settings/store"
 
@@ -159,13 +157,10 @@ watch(
   },
   { immediate: false },
 )
-
-const isMobile = useMediaQuery("(max-width: 1024px)")
 </script>
 
 <template>
-  <component
-    :is="isMobile ? Modal : Drawer"
+  <Drawer
     :open="open"
     variant="fullscreen"
     @close="emit('close')"
@@ -222,5 +217,5 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
         />
       </div>
     </template>
-  </component>
+  </Drawer>
 </template>

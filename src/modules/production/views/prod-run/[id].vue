@@ -296,6 +296,7 @@ const onFinaliseRun = () => {
         :open="!!showCreateModal"
         :mode="showCreateModal"
         :run="prodRun"
+        :has-full-details="true"
         @close="showCreateModal = null"
         @refresh="refetch"
       />

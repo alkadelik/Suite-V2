@@ -314,7 +314,7 @@ import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
 import StatCard from "@components/StatCard.vue"
 
-const { format } = useFormatCurrency()
+const { format, truncate } = useFormatCurrency()
 
 const formatPriceRange = (
   value: string | number | boolean | Record<string, unknown> | null | undefined,
@@ -518,7 +518,7 @@ const productMetrics = computed(() => {
       ? [
           {
             label: "Stock Value",
-            value: format(stats?.total_stock_value ?? 0),
+            value: truncate(stats?.total_stock_value ?? 0),
             icon: "moneys",
             iconClass: "text-bloom-700",
             percentage: 0,

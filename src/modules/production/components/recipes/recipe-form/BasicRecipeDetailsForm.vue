@@ -5,7 +5,7 @@ import SelectField from "@components/form/SelectField.vue"
 import FormField from "@components/form/FormField.vue"
 import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
-import { useSearchProductCatalogs } from "@modules/inventory/api"
+import { useSearchProducts } from "@modules/inventory/api"
 import { useSearchRawMaterial } from "@modules/production/api"
 import type { BasicDetails } from "../AddNewRecipeDrawer.vue"
 import { computed, nextTick, ref, watch } from "vue"
@@ -83,7 +83,7 @@ watch(
 const productSearchInput = ref("")
 const productSearchQuery = useDebouncedRef(productSearchInput, 400)
 const { data: prodSearchResults, isFetching: isSearchingProd } =
-  useSearchProductCatalogs(productSearchQuery)
+  useSearchProducts(productSearchQuery)
 
 const productOptions = computed(() => {
   if (!prodSearchResults.value?.results) return []

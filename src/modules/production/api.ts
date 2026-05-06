@@ -206,10 +206,11 @@ export function useGetProdRunsStats() {
 }
 
 /** Fetch single production run by uid */
-export function useGetSingleProdRun(uid: string) {
+export function useGetSingleProdRun(uid: MaybeRefOrGetter<string>) {
   return useApiQuery<TProdRun>({
-    url: `/production-runs/${uid}/`,
-    key: `production-runs/${uid}`,
+    url: () => `/production-runs/${toValue(uid)}/`,
+    key: () => `production-runs/${toValue(uid)}`,
+    enabled: () => !!toValue(uid),
     selectData: true,
   })
 }
