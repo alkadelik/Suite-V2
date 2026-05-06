@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import Drawer from "@components/Drawer.vue"
-import Modal from "@components/Modal.vue"
-import { useMediaQuery } from "@vueuse/core"
 import { TExpense } from "../types"
 import Chip from "@components/Chip.vue"
 import { formatDate } from "@/utils/formatDate"
@@ -14,12 +12,10 @@ defineProps<{ open: boolean; expense: TExpense }>()
 const emit = defineEmits(["close", "refresh"])
 
 const { format } = useFormatCurrency()
-const isMobile = useMediaQuery("(max-width: 1028px)")
 </script>
 
 <template>
-  <component
-    :is="isMobile ? Modal : Drawer"
+  <Drawer
     :open="open"
     title="Expense Details"
     max-width="2xl"
@@ -89,5 +85,5 @@ const isMobile = useMediaQuery("(max-width: 1028px)")
         </p>
       </div>
     </div>
-  </component>
+  </Drawer>
 </template>

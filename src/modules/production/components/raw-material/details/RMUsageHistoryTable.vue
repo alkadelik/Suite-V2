@@ -4,17 +4,13 @@ import { formatDate } from "@/utils/formatDate"
 import Chip from "@components/Chip.vue"
 import DataTable from "@components/DataTable.vue"
 import Drawer from "@components/Drawer.vue"
-import Modal from "@components/Modal.vue"
 import { TMovement, TRawMaterial } from "@modules/production/types"
-import { useMediaQuery } from "@vueuse/core"
 import { ref } from "vue"
 import RMUsageCard from "./RMUsageCard.vue"
 import { USAGE_HISTORY_COLUMN } from "@modules/production/constant"
 
 const props = defineProps<{ usage: TMovement[]; material: TRawMaterial }>()
 const { format } = useFormatCurrency()
-
-const isMobile = useMediaQuery("(max-width: 1024px)")
 
 const openDetails = ref(false)
 const selectedHistory = ref<TMovement | null>(null)
@@ -63,8 +59,7 @@ const onRowClick = (batch: TMovement) => {
     </div>
 
     <!-- Details -->
-    <component
-      :is="isMobile ? Modal : Drawer"
+    <Drawer
       :open="openDetails"
       title="Log Details"
       max-width="2xl"
@@ -124,6 +119,6 @@ const onRowClick = (batch: TMovement) => {
           </p>
         </div>
       </div>
-    </component>
+    </Drawer>
   </div>
 </template>

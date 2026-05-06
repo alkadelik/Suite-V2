@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import Drawer from "@components/Drawer.vue"
-import Modal from "@components/Modal.vue"
 import StepperWizard from "@components/StepperWizard.vue"
-import { useMediaQuery } from "@vueuse/core"
 import { ref, computed, watch } from "vue"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
@@ -32,11 +30,12 @@ export type RecipeDrawerProps = {
 const props = withDefaults(defineProps<RecipeDrawerProps>(), { mode: "create" })
 const emit = defineEmits(["close", "refresh"])
 
-const isMobile = computed(() => useMediaQuery("(max-width: 1028px)").value)
 const isEditMode = computed(() => props.mode === "edit" && !!props.run)
 
 const drawerTitle = computed(() => {
-  if (isEditMode.value) return "Edit Run"
+  if (isEditMode.value && props.run) {
+    return `Edit Run - ${props.run.output_item_name} - ${parseInt(props.run.quantity_to_produce)} ${props.run.output_unit}`
+  }
   return "Create Run"
 })
 
@@ -75,8 +74,9 @@ const { data: recipeData, isFetching: isLoadingRecipe } = useGetSingleRecipe(
 let skipNextRecipeClear = false
 
 // Seed rows from recipe once per selection; reset on new selection
+// Skip clearing in edit mode — the recipe is fixed and rows are seeded from the run
 watch(selectedRecipeUid, () => {
-  if (skipNextRecipeClear) {
+  if (skipNextRecipeClear || isEditMode.value) {
     skipNextRecipeClear = false
     return
   }
@@ -257,8 +257,7 @@ const forceClose = () => {
 </script>
 
 <template>
-  <component
-    :is="isMobile ? Modal : Drawer"
+  <Drawer
     :open="open"
     :title="drawerTitle"
     max-width="2xl"
@@ -277,6 +276,7 @@ const forceClose = () => {
           <BasicRunDetailsForm
             v-if="step == 0"
             :initial-values="basicDetails"
+            :is-edit-mode="isEditMode"
             @recipe-change="
               (uid: string) => {
                 selectedRecipeUid = uid
@@ -340,5 +340,5 @@ const forceClose = () => {
         </template>
       </template>
     </StepperWizard>
-  </component>
+  </Drawer>
 </template>

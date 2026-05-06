@@ -8,8 +8,6 @@ import { useGetOrderPaymentHistory } from "../api"
 import { TOrder } from "../types"
 import AddPaymentModal from "./AddPaymentModal.vue"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
-import Modal from "@components/Modal.vue"
-import { useMediaQuery } from "@vueuse/core"
 import EmptyState from "@components/EmptyState.vue"
 
 // Props & Emits
@@ -30,8 +28,6 @@ const id = computed(() => props.order.uid)
 
 const { data: paymentHistory, isLoading, refetch } = useGetOrderPaymentHistory(id)
 
-const isMobile = useMediaQuery("(max-width: 1024px)")
-
 const { format } = useFormatCurrency()
 
 const handleRefresh = () => {
@@ -47,8 +43,7 @@ const paymentHistoryLists = computed(() => {
 <template>
   <div>
     <!-- Drawer -->
-    <component
-      :is="isMobile ? Modal : Drawer"
+    <Drawer
       variant="fullscreen"
       :open="open"
       title="Order Payment"
@@ -142,7 +137,7 @@ const paymentHistoryLists = computed(() => {
           />
         </div>
       </div>
-    </component>
+    </Drawer>
 
     <!-- Create Payment Modal -->
     <AddPaymentModal

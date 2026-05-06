@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import Drawer from "@components/Drawer.vue"
-import Modal from "@components/Modal.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
-import { useMediaQuery } from "@vueuse/core"
 import { TOrder, TOrderItem } from "../types"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { formatDate } from "@/utils/formatDate"
@@ -38,8 +36,6 @@ const emit = defineEmits([
   "void-order",
   "delete-order",
 ])
-
-const isMobile = useMediaQuery("(max-width: 1028px)")
 
 const { format } = useFormatCurrency()
 
@@ -152,13 +148,7 @@ const menuItems = computed(() => {
 </script>
 
 <template>
-  <component
-    :is="isMobile ? Modal : Drawer"
-    :open="open"
-    max-width="2xl"
-    variant="fullscreen"
-    @close="emit('close')"
-  >
+  <Drawer :open="open" max-width="2xl" variant="fullscreen" @close="emit('close')">
     <template #header>
       <div class="flex items-center justify-between px-6 py-4">
         <h2 class="text-core-800 text-lg font-semibold">
@@ -400,5 +390,5 @@ const menuItems = computed(() => {
         </div>
       </div>
     </div>
-  </component>
+  </Drawer>
 </template>

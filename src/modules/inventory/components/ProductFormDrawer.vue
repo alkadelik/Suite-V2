@@ -1,8 +1,6 @@
 <template>
-  <component
-    :is="isMobile ? Modal : Drawer"
+  <Drawer
     max-width="2xl"
-    variant="fullscreen"
     :open="modelValue"
     title="Add Product"
     :position="drawerPosition"
@@ -82,7 +80,7 @@
       :teleport="false"
       @success="handleCategoryCreated"
     />
-  </component>
+  </Drawer>
 </template>
 
 <script setup lang="ts">
@@ -120,8 +118,6 @@ import { useVariantConfiguration } from "../composables/useVariantConfiguration"
 import { useVariantValidation } from "../composables/useVariantValidation"
 import { useVariantProcessing } from "../composables/useVariantProcessing"
 import { useProductDrawerUtilities } from "../composables/useProductDrawerUtilities"
-import { useMediaQuery } from "@vueuse/core"
-import Modal from "@components/Modal.vue"
 
 interface Props {
   /** Whether the drawer is open/visible */
@@ -156,8 +152,6 @@ const submitAttempted = ref(false)
 const productDetailsRef = ref<{
   setCategory: (category: { label: string; value: string }) => void
 } | null>(null)
-
-const isMobile = useMediaQuery("(max-width: 1024px)")
 
 // API mutations
 const { mutateAsync: createProductAsync, isPending: isCreating } = useCreateProduct()

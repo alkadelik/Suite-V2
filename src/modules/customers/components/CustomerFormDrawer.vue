@@ -1,7 +1,5 @@
 <template>
-  <component
-    :is="isMobile ? Modal : Drawer"
-    variant="fullscreen"
+  <Drawer
     :open="modelValue"
     :title="mode === 'add' ? 'Add New Customer' : 'Edit Customer'"
     :position="drawerPosition"
@@ -109,7 +107,7 @@
         />
       </div>
     </AppForm>
-  </component>
+  </Drawer>
 </template>
 
 <script setup lang="ts">
@@ -126,7 +124,6 @@ import { useCreateCustomer, useUpdateCustomer } from "../api"
 import { displayError } from "@/utils/error-handler"
 import { useAuthStore } from "@modules/auth/store"
 import { formatPhoneNumber } from "@/utils/others"
-import Modal from "@components/Modal.vue"
 import { useMediaQuery } from "@vueuse/core"
 
 const isMobile = useMediaQuery("(max-width: 1024px)")

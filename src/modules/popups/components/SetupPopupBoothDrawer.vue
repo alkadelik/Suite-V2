@@ -13,8 +13,6 @@ import { useRoute } from "vue-router"
 import { displayError } from "@/utils/error-handler"
 import { AddProductsPayload } from "../types"
 import { toast } from "@/composables/useToast"
-import Modal from "@components/Modal.vue"
-import { useMediaQuery } from "@vueuse/core"
 
 interface OrderItem {
   product: IProductCatalogue
@@ -110,8 +108,6 @@ const onSubmitBooth = () => {
   )
 }
 
-const isMobile = useMediaQuery("(max-width: 1028px)")
-
 // Clear orderItems when going back to step 0 to ensure fresh initialization
 watch(activeStep, (newStep, oldStep) => {
   if (newStep === 0 && oldStep === 1) {
@@ -121,8 +117,7 @@ watch(activeStep, (newStep, oldStep) => {
 </script>
 
 <template>
-  <component
-    :is="isMobile ? Modal : Drawer"
+  <Drawer
     :open="open"
     variant="fullscreen"
     title="Setup Booth"
@@ -242,5 +237,5 @@ watch(activeStep, (newStep, oldStep) => {
         </div>
       </template>
     </StepperWizard>
-  </component>
+  </Drawer>
 </template>

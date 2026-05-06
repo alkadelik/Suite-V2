@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import Modal from "@components/Modal.vue"
 import { ref } from "vue"
 import { useCreateOrderMemo } from "../api"
 import { displayError } from "@/utils/error-handler"
@@ -9,7 +8,6 @@ import SelectField from "@components/form/SelectField.vue"
 import TextField from "@components/form/TextField.vue"
 import AppButton from "@components/AppButton.vue"
 import TextAreaField from "@components/form/TextAreaField.vue"
-import { useMediaQuery } from "@vueuse/core"
 import Drawer from "@components/Drawer.vue"
 
 const props = defineProps<{ open: boolean; orderId: string }>()
@@ -43,13 +41,10 @@ const onSubmit = () => {
     },
   )
 }
-
-const isMobile = useMediaQuery("(max-width: 1024px)")
 </script>
 
 <template>
-  <component
-    :is="isMobile ? Modal : Drawer"
+  <Drawer
     :open="open"
     title="Create Memo"
     max-width="2xl"
@@ -100,5 +95,5 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
         :disabled="!memoForm.title || !memoForm.content"
       />
     </template>
-  </component>
+  </Drawer>
 </template>
