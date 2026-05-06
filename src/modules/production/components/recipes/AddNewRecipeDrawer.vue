@@ -161,10 +161,12 @@ const onSubmit = () => {
     .filter((r) => r.qty > 0)
     .map((r) => ({
       material_uid: r.ingredient.value,
-      quantity: convertQtyToPurchaseUnit(r.qty, {
-        unit: r.ingredient.base_unit || r.ingredient.unit || "",
-        conversions: r.ingredient.conversions,
-      }),
+      quantity: parseFloat(
+        convertQtyToPurchaseUnit(r.qty, {
+          unit: r.ingredient.base_unit || r.ingredient.unit || "",
+          conversions: r.ingredient.conversions,
+        }).toFixed(2),
+      ),
     }))
 
   const processCosts: IRecipePayload["process_costs"] = processRowsState.value
