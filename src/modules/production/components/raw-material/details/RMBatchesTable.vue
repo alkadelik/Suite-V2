@@ -10,7 +10,7 @@ import { startCase } from "@/utils/format-strings"
 import RMBatchCard from "./RMBatchCard.vue"
 import { BATCHES_COLUMN } from "@modules/production/constant"
 
-const props = defineProps<{ batches: TBatch[]; material: TRawMaterial }>()
+const props = defineProps<{ material: TRawMaterial }>()
 const { format } = useFormatCurrency()
 
 const openDetails = ref(false)
@@ -26,7 +26,7 @@ const onRowClick = (batch: TBatch) => {
   <div>
     <div class="space-y-4 overflow-hidden rounded-xl border-gray-200 md:border md:bg-white">
       <DataTable
-        :data="props.batches ?? []"
+        :data="material.batches ?? []"
         :columns="BATCHES_COLUMN"
         :loading="false"
         :enable-row-selection="false"

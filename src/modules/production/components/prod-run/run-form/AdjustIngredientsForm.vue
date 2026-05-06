@@ -170,12 +170,12 @@ function handleNext() {
               </span>
               <div class="flex min-w-0 items-center gap-2">
                 <p class="truncate text-sm font-medium text-gray-900">{{ row.ingredient.label }}</p>
-                <span
+                <Chip
                   v-if="row.ingredient.kind === 'sub_assembly'"
-                  class="inline-flex shrink-0 rounded-full border border-purple-200 bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700"
-                >
-                  Sub-assembly
-                </span>
+                  color="purple"
+                  label="Sub-assembly"
+                  size="sm"
+                />
               </div>
             </div>
 
@@ -185,11 +185,15 @@ function handleNext() {
           </div>
 
           <!-- Stats grid -->
-          <div class="mt-3 flex items-end gap-2 rounded-xl bg-gray-50 p-3">
+          <div class="mt-3 flex items-end gap-2 border-t border-dashed border-gray-200 pt-3">
             <div class="grid flex-1 grid-cols-3">
               <!-- Required Stock -->
               <div class="flex flex-col items-start gap-1">
-                <Chip color="alt" :label="`${row.qty} ${row.ingredient.unit}`" radius="md" />
+                <Chip
+                  color="alt"
+                  :label="`${parseFloat(row.qty.toFixed(2))} ${row.ingredient.unit}`"
+                  radius="md"
+                />
                 <span class="text-xs text-gray-500">Required stock</span>
               </div>
               <!-- Available Stock  -->
@@ -207,7 +211,7 @@ function handleNext() {
               <div class="flex flex-col items-start gap-1">
                 <Chip
                   color="alt"
-                  :label="`${row.ingredient.used_stock ?? row.qty} ${row.ingredient.unit}`"
+                  :label="`${parseFloat((row.ingredient.used_stock ?? row.qty).toFixed(2))} ${row.ingredient.unit}`"
                   radius="md"
                 />
                 <span class="text-xs text-gray-500">Used Stock</span>

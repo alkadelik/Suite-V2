@@ -35,7 +35,7 @@ export interface ChipProps {
    * The chip size
    * - sm: 24px height
    * - md: 32px height (default)
-   * @default "md"
+   * @default "sm"
    */
   size?: "sm" | "md"
 

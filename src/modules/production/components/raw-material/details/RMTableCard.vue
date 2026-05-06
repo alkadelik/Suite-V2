@@ -5,10 +5,16 @@ const props = defineProps<{
   class?: string
   icon?: string
 }>()
+const emit = defineEmits<{
+  (e: "click"): void
+}>()
 </script>
 
 <template>
-  <div :class="['border-warning-200 cursor-pointer rounded-xl border', props.class]">
+  <div
+    @click="emit('click')"
+    :class="['border-warning-200 cursor-pointer rounded-xl border', props.class]"
+  >
     <div class="bg-warning-50 flex items-center gap-2.5 rounded-t-xl p-2">
       <span class="bg-warning-100 flex size-10 items-center justify-center rounded-xl">
         <Icon :name="props.icon || 'calendar2'" :size="24" class="text-primary-700" />

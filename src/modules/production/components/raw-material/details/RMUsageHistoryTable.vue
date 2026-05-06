@@ -9,7 +9,7 @@ import { ref } from "vue"
 import RMUsageCard from "./RMUsageCard.vue"
 import { USAGE_HISTORY_COLUMN } from "@modules/production/constant"
 
-const props = defineProps<{ usage: TMovement[]; material: TRawMaterial }>()
+const props = defineProps<{ material: TRawMaterial }>()
 const { format } = useFormatCurrency()
 
 const openDetails = ref(false)
@@ -25,7 +25,7 @@ const onRowClick = (batch: TMovement) => {
   <div>
     <div class="space-y-4 overflow-hidden rounded-xl border-gray-200 md:border md:bg-white">
       <DataTable
-        :data="props.usage ?? []"
+        :data="material?.movements ?? []"
         :columns="USAGE_HISTORY_COLUMN"
         :loading="false"
         :enable-row-selection="false"
