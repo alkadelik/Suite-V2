@@ -169,6 +169,8 @@ export type TRecipeIngredient = {
   unit: string
   unit_cost: number
   estimated_cost: number
+  available_stock?: number
+  used_stock?: number
 }
 
 export type TRecipeProcessCost = {

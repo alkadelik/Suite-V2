@@ -2,11 +2,14 @@
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
+import Modal from "@components/Modal.vue"
 import type { IngredientRow } from "../form-types"
 import { computed, ref } from "vue"
+import { useRouter } from "vue-router"
 import Chip from "@components/Chip.vue"
-import AdjustMaterialStockModal from "../../raw-material/AdjustMaterialStockModal.vue"
-import type { TRawMaterial } from "@/modules/production/types"
+import TextField from "@components/form/TextField.vue"
+// import AdjustMaterialStockModal from "../../raw-material/AdjustMaterialStockModal.vue"
+// import type { TRawMaterial } from "@/modules/production/types"
 
 const props = defineProps<{
   initialRows: IngredientRow[]
@@ -19,22 +22,29 @@ const emit = defineEmits<{
 }>()
 
 const { format: formatCurrency } = useFormatCurrency()
+const router = useRouter()
 
-const ingredientRows = ref<IngredientRow[]>([...props.initialRows])
+const goToMaterials = () => router.push({ name: "RawMaterials" })
+
+const isInsufficient = (row: IngredientRow) =>
+  row.ingredient.available_stock !== undefined && row.qty > row.ingredient.available_stock
+
+// Prefill used_stock with required qty if not already set
+const ingredientRows = ref<IngredientRow[]>(
+  props.initialRows.map((r) => ({
+    ...r,
+    ingredient: {
+      ...r.ingredient,
+      used_stock: r.ingredient.used_stock ?? r.qty,
+    },
+  })),
+)
 
 const insufficientRows = computed(() =>
   ingredientRows.value.filter(
     (r) => r.ingredient.available_stock !== undefined && r.qty > r.ingredient.available_stock,
   ),
 )
-
-const quickAdjust = () => {
-  ingredientRows.value = ingredientRows.value.map((r) =>
-    r.ingredient.available_stock !== undefined
-      ? { ...r, qty: Math.min(r.qty, r.ingredient.available_stock) }
-      : r,
-  )
-}
 
 const totalIngredientCost = computed(() => {
   const total = ingredientRows.value.reduce(
@@ -46,35 +56,51 @@ const totalIngredientCost = computed(() => {
 
 const canProceed = computed(() => ingredientRows.value.some((r) => r.qty > 0))
 
-const adjustModalOpen = ref(false)
-const selectedMaterial = ref<TRawMaterial | null>(null)
+// ─── Edit used stock modal ────────────────────────────────────────────────
+const editModalOpen = ref(false)
+const editingRow = ref<IngredientRow | null>(null)
+const editUsedStock = ref(0)
 
-function openAdjustModal(row: IngredientRow) {
-  selectedMaterial.value = {
-    uid: row.ingredient.value,
-    name: row.ingredient.label,
-    unit: row.ingredient.unit || "",
-    current_stock: row.ingredient.available_stock ?? 0,
-    is_sub_assembly: row.ingredient.kind === "sub_assembly",
-    avg_cost: row.ingredient.cost_per_unit,
-    last_cost: row.ingredient.cost_per_unit,
-    low_stock: false,
-    created_at: "",
-  }
-  adjustModalOpen.value = true
+function openEditModal(row: IngredientRow) {
+  editingRow.value = row
+  editUsedStock.value = row.ingredient.used_stock ?? row.qty
+  editModalOpen.value = true
 }
 
-function onAdjustRefresh(quantity: number) {
-  console.log("Adjust refresh called with quantity:", quantity)
-  if (selectedMaterial.value) {
-    const uid = selectedMaterial.value.uid
-    const row = ingredientRows.value.find((r) => r.ingredient.value === uid)
-    if (row) {
-      row.ingredient.available_stock = (row.ingredient.available_stock || 0) + quantity
-    }
-  }
-  adjustModalOpen.value = false
+function saveUsedStock() {
+  if (!editingRow.value) return
+  const row = ingredientRows.value.find((r) => r.id === editingRow.value!.id)
+  if (row) row.ingredient.used_stock = editUsedStock.value
+  editModalOpen.value = false
 }
+
+// ─── Adjust stock (commented out — may be needed later) ──────────────────
+// const adjustModalOpen = ref(false)
+// const selectedMaterial = ref<TRawMaterial | null>(null)
+//
+// function openAdjustModal(row: IngredientRow) {
+//   selectedMaterial.value = {
+//     uid: row.ingredient.value,
+//     name: row.ingredient.label,
+//     unit: row.ingredient.unit || "",
+//     current_stock: row.ingredient.available_stock ?? 0,
+//     is_sub_assembly: row.ingredient.kind === "sub_assembly",
+//     avg_cost: row.ingredient.cost_per_unit,
+//     last_cost: row.ingredient.cost_per_unit,
+//     low_stock: false,
+//     created_at: "",
+//   }
+//   adjustModalOpen.value = true
+// }
+//
+// function onAdjustRefresh(quantity: number) {
+//   if (selectedMaterial.value) {
+//     const uid = selectedMaterial.value.uid
+//     const row = ingredientRows.value.find((r) => r.ingredient.value === uid)
+//     if (row) row.ingredient.available_stock = (row.ingredient.available_stock || 0) + quantity
+//   }
+//   adjustModalOpen.value = false
+// }
 
 function handleNext() {
   emit("next", [...ingredientRows.value])
@@ -118,9 +144,9 @@ function handleNext() {
         <button
           type="button"
           class="text-sm font-medium text-amber-700 underline hover:no-underline"
-          @click="quickAdjust"
+          @click="goToMaterials"
         >
-          Quick Adjust
+          Go to Materials
         </button>
       </div>
 
@@ -128,7 +154,11 @@ function handleNext() {
         <div
           v-for="row in ingredientRows"
           :key="row.id"
-          class="rounded-2xl border border-gray-200 bg-white px-4 py-3"
+          :class="
+            isInsufficient(row)
+              ? 'border-error-200 bg-error-50 rounded-2xl border px-4 py-3'
+              : 'rounded-2xl border border-gray-200 bg-white px-4 py-3'
+          "
         >
           <!-- Name row -->
           <div class="flex items-center justify-between gap-3">
@@ -166,7 +196,7 @@ function handleNext() {
               <div class="flex flex-col items-start gap-1">
                 <Chip
                   v-if="row.ingredient.available_stock !== undefined"
-                  color="alt"
+                  :color="isInsufficient(row) ? 'error' : 'alt'"
                   :label="`${row.ingredient.available_stock} ${row.ingredient.unit}`"
                   radius="md"
                 />
@@ -176,18 +206,16 @@ function handleNext() {
               <!-- Used Stock  -->
               <div class="flex flex-col items-start gap-1">
                 <Chip
-                  v-if="row.ingredient.used_stock !== undefined"
                   color="alt"
-                  :label="`${row.ingredient.used_stock} ${row.ingredient.unit}`"
+                  :label="`${row.ingredient.used_stock ?? row.qty} ${row.ingredient.unit}`"
                   radius="md"
                 />
-                <span v-else>-</span>
                 <span class="text-xs text-gray-500">Used Stock</span>
               </div>
             </div>
-            <!-- Edit Button  -->
+            <!-- Edit Button -->
             <div class="flex flex-col items-end gap-1">
-              <button type="button" @click="openAdjustModal(row)">
+              <button type="button" @click="openEditModal(row)">
                 <Icon name="edit" size="16" class="text-gray-500" />
               </button>
             </div>
@@ -216,6 +244,52 @@ function handleNext() {
       </div>
     </div>
 
+    <!-- Edit Used Stock Modal -->
+    <Modal
+      :open="editModalOpen"
+      :title="`Edit Used Stock — ${editingRow?.ingredient.label}`"
+      max-width="lg"
+      variant="bottom-nav"
+      @close="editModalOpen = false"
+    >
+      <div v-if="editingRow" class="grid grid-cols-2 gap-3">
+        <!-- Used stock input — spans both columns -->
+        <div class="col-span-2 rounded-xl border border-gray-200 bg-white p-4">
+          <label class="mb-2 block text-sm font-medium text-gray-700">
+            Used Stock ({{ editingRow.ingredient.unit }})
+          </label>
+          <TextField
+            v-model.number="editUsedStock"
+            type="number"
+            :suffix="editingRow.ingredient.unit"
+          />
+        </div>
+
+        <!-- Available stock -->
+        <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+          <p class="text-xs text-gray-500">Available Stock</p>
+          <p class="mt-1 text-lg font-semibold text-gray-900">
+            {{ editingRow.ingredient.available_stock ?? "—" }}
+            <span class="text-sm font-normal text-gray-500">{{ editingRow.ingredient.unit }}</span>
+          </p>
+        </div>
+
+        <!-- Required stock -->
+        <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+          <p class="text-xs text-gray-500">Required Stock</p>
+          <p class="mt-1 text-lg font-semibold text-gray-900">
+            {{ editingRow.qty }}
+            <span class="text-sm font-normal text-gray-500">{{ editingRow.ingredient.unit }}</span>
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <AppButton label="Save" class="w-full" @click="saveUsedStock" />
+      </template>
+    </Modal>
+
+    <!-- AdjustMaterialStockModal (commented out — may be needed later)
     <AdjustMaterialStockModal
       :open="adjustModalOpen"
       :material="selectedMaterial"
@@ -223,5 +297,6 @@ function handleNext() {
       @close="adjustModalOpen = false"
       @refresh="(qty) => onAdjustRefresh(qty as number)"
     />
+    -->
   </form>
 </template>
