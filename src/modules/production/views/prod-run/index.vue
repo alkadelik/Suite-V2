@@ -230,6 +230,7 @@ const onFinaliseRun = () => {
       :open="!!showCreateModal"
       :mode="showCreateModal"
       :run="selectedProdRun"
+      :has-full-details="false"
       @close="showCreateModal = null"
       @refresh="refetch"
     />
