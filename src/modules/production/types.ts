@@ -70,6 +70,7 @@ export type TRawMaterial = {
   conversions?: TConversion[]
   batches?: TBatch[]
   movements?: TMovement[]
+  linked_recipes?: TLinkedRecipe[]
 }
 
 export interface RawMaterialPayload {
@@ -102,10 +103,13 @@ export type TUsageHistory = {
 }
 
 export type TLinkedRecipe = {
-  item: string
-  type: string
+  output_item_name: string
+  output_quantity: string
+  output_unit: string
+  item_type: "product" | "sub_assembly"
   quantity_per_batch: number
-  unit: string
+  uid: string
+  is_active: boolean
 }
 
 export interface IConversionPayload {
