@@ -127,18 +127,23 @@ const seedFromRun = (run: TProdRun) => {
     outputVariantUid: run.output_variant || "",
   }
 
-  ingredientRowsState.value = (run.ingredients_used ?? []).map((ing) => ({
-    id: ing.uid,
-    ingredient: {
-      label: ing.material_name,
-      value: ing.material_uid,
-      unit: ing.unit,
-      cost_per_unit: Number(ing.actual_unit_cost) || 0,
-      kind: "raw_material",
-      available_stock: ing.available_inventory,
-    },
-    qty: Number(ing.quantity_required),
-  }))
+  ingredientRowsState.value = (run.ingredients_used ?? []).map((ing) => {
+    const qty = Number(ing.quantity_required)
+    const actualUnitCost = Number(ing.actual_unit_cost)
+    const estimatedUnitCost = qty > 0 ? Number(ing.estimated_cost) / qty : 0
+    return {
+      id: ing.uid,
+      ingredient: {
+        label: ing.material_name,
+        value: ing.material_uid,
+        unit: ing.unit,
+        cost_per_unit: actualUnitCost || estimatedUnitCost,
+        kind: "raw_material",
+        available_stock: ing.available_inventory,
+      },
+      qty,
+    }
+  })
 
   processRowsState.value = (run.process_costs_used ?? []).map((pc) => ({
     id: pc.uid,

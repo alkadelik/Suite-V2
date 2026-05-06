@@ -160,6 +160,7 @@ const handleNext = handleSubmit((formValues) => {
     outputQuantity: formValues.outputQuantity,
     damagedQuantity: formValues.damagedQuantity,
     recipeUid: recipe.value,
+    recipeOption: { label: recipe.label, value: recipe.value },
     outputVariantUid: variant?.value || "",
     outputItemType: recipe.item_type,
     variantPrice: variant?.price,
