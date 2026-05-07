@@ -134,7 +134,7 @@ export function useSearchProducts(query: MaybeRefOrGetter<string>) {
       const search = toValue(query)
       const { data } = await baseApi.get<TPaginatedResponse<IProductCatalogue>>(
         `/inventory/products/`,
-        { params: { ...(search ? { search } : {}), limit: 10 } },
+        { params: { ...(search ? { search } : {}), limit: 20 } },
       )
       return data.data
     },
@@ -381,7 +381,7 @@ export function useSearchProductCatalogs(search: MaybeRefOrGetter<string>) {
         {
           params: {
             ...(toValue(search) ? { search: toValue(search) } : {}),
-            limit: 10,
+            limit: 20,
           },
         },
       )
@@ -434,7 +434,7 @@ export function useSearchProductVariants(search: MaybeRefOrGetter<string>) {
         {
           params: {
             ...(toValue(search) ? { search: toValue(search) } : {}),
-            limit: 10,
+            limit: 20,
           },
         },
       )

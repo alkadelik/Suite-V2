@@ -175,6 +175,7 @@ export type TRecipeIngredient = {
   estimated_cost: number
   available_stock?: number
   used_stock?: number
+  conversions?: TConversion[]
 }
 
 export type TRecipeProcessCost = {
@@ -230,6 +231,7 @@ export type TProdRunIngredientUsed = {
   actual_unit_cost: string
   fifo_breakdown: TProdRunFifoBreakdown[]
   is_adjusted: boolean
+  conversions?: TConversion[]
 }
 
 export type TProdRunProcessCostUsed = {
@@ -306,6 +308,7 @@ export interface IProdRunPayload {
   ingredients?: {
     material_uid: string
     quantity_required: string
+    quantity_used?: string
   }[]
   process_costs?: {
     recipe_process_cost_uid: string

@@ -4,6 +4,11 @@ import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
 import Modal from "@components/Modal.vue"
 import type { IngredientRow } from "../form-types"
+import {
+  convertQtyToUsageUnit,
+  convertQtyToPurchaseUnit,
+  getProdUsageUnit,
+} from "@modules/production/utils"
 import { computed, ref } from "vue"
 import { useRouter } from "vue-router"
 import Chip from "@components/Chip.vue"
@@ -27,7 +32,9 @@ const router = useRouter()
 const goToMaterials = () => router.push({ name: "RawMaterials" })
 
 const isInsufficient = (row: IngredientRow) =>
-  row.ingredient.available_stock !== undefined && row.qty > row.ingredient.available_stock
+  row.ingredient.available_stock !== undefined &&
+  row.ingredient.used_stock !== undefined &&
+  row.ingredient.used_stock > row.ingredient.available_stock
 
 // Prefill used_stock with required qty if not already set
 const ingredientRows = ref<IngredientRow[]>(
@@ -40,11 +47,7 @@ const ingredientRows = ref<IngredientRow[]>(
   })),
 )
 
-const insufficientRows = computed(() =>
-  ingredientRows.value.filter(
-    (r) => r.ingredient.available_stock !== undefined && r.qty > r.ingredient.available_stock,
-  ),
-)
+const insufficientRows = computed(() => ingredientRows.value.filter((r) => isInsufficient(r)))
 
 const totalIngredientCost = computed(() => {
   const total = ingredientRows.value.reduce(
@@ -54,7 +57,9 @@ const totalIngredientCost = computed(() => {
   return formatCurrency(total)
 })
 
-const canProceed = computed(() => ingredientRows.value.some((r) => r.qty > 0))
+const canProceed = computed(
+  () => ingredientRows.value.some((r) => r.qty > 0) && !insufficientRows.value.length,
+)
 
 // ─── Edit used stock modal ────────────────────────────────────────────────
 const editModalOpen = ref(false)
@@ -63,14 +68,14 @@ const editUsedStock = ref(0)
 
 function openEditModal(row: IngredientRow) {
   editingRow.value = row
-  editUsedStock.value = row.ingredient.used_stock ?? row.qty
+  editUsedStock.value = convertQtyToUsageUnit(row.ingredient.used_stock ?? row.qty, row.ingredient)
   editModalOpen.value = true
 }
 
 function saveUsedStock() {
   if (!editingRow.value) return
   const row = ingredientRows.value.find((r) => r.id === editingRow.value!.id)
-  if (row) row.ingredient.used_stock = editUsedStock.value
+  if (row) row.ingredient.used_stock = convertQtyToPurchaseUnit(editUsedStock.value, row.ingredient)
   editModalOpen.value = false
 }
 
@@ -191,7 +196,7 @@ function handleNext() {
               <div class="flex flex-col items-start gap-1">
                 <Chip
                   color="alt"
-                  :label="`${parseFloat(row.qty.toFixed(2))} ${row.ingredient.unit}`"
+                  :label="`${parseFloat(convertQtyToUsageUnit(row.qty, row.ingredient).toFixed(2))} ${getProdUsageUnit(row.ingredient)}`"
                   radius="md"
                 />
                 <span class="text-xs text-gray-500">Required stock</span>
@@ -201,7 +206,7 @@ function handleNext() {
                 <Chip
                   v-if="row.ingredient.available_stock !== undefined"
                   :color="isInsufficient(row) ? 'error' : 'alt'"
-                  :label="`${row.ingredient.available_stock} ${row.ingredient.unit}`"
+                  :label="`${convertQtyToUsageUnit(row.ingredient.available_stock, row.ingredient)} ${getProdUsageUnit(row.ingredient)}`"
                   radius="md"
                 />
                 <span v-else>-</span>
@@ -211,7 +216,7 @@ function handleNext() {
               <div class="flex flex-col items-start gap-1">
                 <Chip
                   color="alt"
-                  :label="`${parseFloat((row.ingredient.used_stock ?? row.qty).toFixed(2))} ${row.ingredient.unit}`"
+                  :label="`${parseFloat(convertQtyToUsageUnit(row.ingredient.used_stock ?? row.qty, row.ingredient).toFixed(2))} ${getProdUsageUnit(row.ingredient)}`"
                   radius="md"
                 />
                 <span class="text-xs text-gray-500">Used Stock</span>
@@ -260,12 +265,12 @@ function handleNext() {
         <!-- Used stock input — spans both columns -->
         <div class="col-span-2 rounded-xl border border-gray-200 bg-white p-4">
           <label class="mb-2 block text-sm font-medium text-gray-700">
-            Used Stock ({{ editingRow.ingredient.unit }})
+            Used Stock ({{ getProdUsageUnit(editingRow.ingredient) }})
           </label>
           <TextField
             v-model.number="editUsedStock"
             type="number"
-            :suffix="editingRow.ingredient.unit"
+            :suffix="getProdUsageUnit(editingRow.ingredient)"
           />
         </div>
 
@@ -273,8 +278,17 @@ function handleNext() {
         <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
           <p class="text-xs text-gray-500">Available Stock</p>
           <p class="mt-1 text-lg font-semibold text-gray-900">
-            {{ editingRow.ingredient.available_stock ?? "—" }}
-            <span class="text-sm font-normal text-gray-500">{{ editingRow.ingredient.unit }}</span>
+            {{
+              editingRow.ingredient.available_stock !== undefined
+                ? convertQtyToUsageUnit(
+                    editingRow.ingredient.available_stock,
+                    editingRow.ingredient,
+                  )
+                : "—"
+            }}
+            <span class="text-sm font-normal text-gray-500">
+              {{ getProdUsageUnit(editingRow.ingredient) }}
+            </span>
           </p>
         </div>
 
@@ -282,8 +296,10 @@ function handleNext() {
         <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
           <p class="text-xs text-gray-500">Required Stock</p>
           <p class="mt-1 text-lg font-semibold text-gray-900">
-            {{ editingRow.qty }}
-            <span class="text-sm font-normal text-gray-500">{{ editingRow.ingredient.unit }}</span>
+            {{ convertQtyToUsageUnit(editingRow.qty, editingRow.ingredient) }}
+            <span class="text-sm font-normal text-gray-500">
+              {{ getProdUsageUnit(editingRow.ingredient) }}
+            </span>
           </p>
         </div>
       </div>

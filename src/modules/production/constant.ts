@@ -14,6 +14,7 @@ import ingredientPng from "@/assets/images/ingredients.png"
 import materialPng from "@/assets/images/materials.png"
 import { formatDate } from "@/utils/formatDate"
 import { startCase } from "@/utils/format-strings"
+import { convertQtyToUsageUnit, getProdUsageUnit } from "./utils"
 
 // =================================================
 // ================ RAW MATERIALS =========================
@@ -187,22 +188,22 @@ export const recipeNameOptions = [
 
 export const PROD_RUNS_COLUMN: TableColumn<TProdRun>[] = [
   // { header: "Run ID", accessor: "run_id" },
-  { header: "Output Item", accessor: "output_item_name" },
-  // { header: "", accessor: "damaged_quantity" },
+  { header: "Item", accessor: "output_item_name" },
+  // { header: "Variant", accessor: "output_variant" },
   {
-    header: "Output Quantity",
+    header: "Quantity",
     accessor: "quantity_to_produce",
     cell: ({ item }) =>
       parseInt(item.quantity_to_produce as string).toLocaleString() + item.output_unit,
   },
+  // {
+  //   header: "Usable Quantity",
+  //   accessor: "usable_quantity",
+  //   cell: ({ item }) =>
+  //     parseInt(item.usable_quantity as string).toLocaleString() + item.output_unit,
+  // },
   {
-    header: "Usable Quantity",
-    accessor: "usable_quantity",
-    cell: ({ item }) =>
-      parseInt(item.usable_quantity as string).toLocaleString() + item.output_unit,
-  },
-  {
-    header: "Total Cost",
+    header: "Cost",
     accessor: "last_cost",
     cell: ({ item }) => {
       const { format } = useFormatCurrency()
@@ -215,9 +216,9 @@ export const PROD_RUNS_COLUMN: TableColumn<TProdRun>[] = [
     cell: ({ item }) => startCase(item.status as string),
   },
   {
-    header: "Date created",
-    accessor: "date_created",
-    cell: ({ item }) => formatDate(item.created_at as string),
+    header: "Date Finalized",
+    accessor: "finalized_at",
+    cell: ({ item }) => (item.finalized_at ? formatDate(item.finalized_at as string) : "-"),
   },
   { header: "", accessor: "actions" },
 ]
@@ -227,7 +228,10 @@ export const PROD_RUN_INGREDIENT_COLUMN: TableColumn<TProdRunIngredientUsed>[] =
   {
     header: "Quantity Used",
     accessor: "quantity_required",
-    cell: ({ item }) => `${parseInt(String(item.quantity_required))} ${item.unit}`,
+    cell: ({ item }) => {
+      const ing = item as TProdRunIngredientUsed
+      return `${parseFloat(convertQtyToUsageUnit(Number(ing.quantity_required), ing).toFixed(2))} ${getProdUsageUnit(ing)}`
+    },
   },
   {
     header: "Average Cost",

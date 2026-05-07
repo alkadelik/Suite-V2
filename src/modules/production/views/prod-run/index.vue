@@ -212,6 +212,18 @@ const onFinaliseRun = () => {
               />
             </template>
 
+            <template #cell:output_item_name="{ item }">
+              <div class="flex items-center gap-2">
+                <span class="text-sm text-gray-700">{{ item.output_item_name }}</span>
+                <Chip
+                  v-if="item.output_variant"
+                  :label="item.output_variant"
+                  color="primary"
+                  radius="md"
+                />
+              </div>
+            </template>
+
             <template #cell:actions="{ item }">
               <DropdownMenu :items="getActionItems(item)" @toggle="selectedProdRun = item" />
             </template>
@@ -237,7 +249,9 @@ const onFinaliseRun = () => {
       v-model="showFinaliseModal"
       :loading="isFinalising"
       :header="`Finalise production run`"
-      :paragraph="`Are you sure you want to finalise this production run?`"
+      :paragraph="`Are you sure you want to finalise this production run? This will add ${parseInt(selectedProdRun?.quantity_to_produce!)} ${selectedProdRun?.output_unit} of ${
+        selectedProdRun?.output_item_name
+      } to your inventory.`"
       action-label="Finalise"
       variant="success"
       @confirm="onFinaliseRun"

@@ -73,7 +73,7 @@ export function useSearchRawMaterial(search: MaybeRefOrGetter<string>) {
       const { data } = await baseApi.get<TPaginatedResponse<TRawMaterial>>(`/raw-materials/`, {
         params: {
           ...(toValue(search) ? { search: toValue(search) } : {}),
-          limit: 10,
+          limit: 20,
         },
       })
       return data.data
@@ -131,7 +131,7 @@ export function useSearchRecipe(search: MaybeRefOrGetter<string>) {
       const { data } = await baseApi.get<TPaginatedResponse<TRecipe>>(`/recipes/`, {
         params: {
           ...(toValue(search) ? { search: toValue(search) } : {}),
-          limit: 10,
+          limit: 20,
         },
       })
       return data.data
