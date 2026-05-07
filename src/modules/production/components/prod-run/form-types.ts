@@ -1,11 +1,14 @@
+import { TConversion } from "@modules/production/types"
+
 export type IngredientRow = {
   id: string
   ingredient: {
     label: string
     value: string
-    unit?: string
+    unit: string
     cost_per_unit: number
     kind: string
+    conversions?: TConversion[]
     // not in api, added for convenience
     available_stock?: number
     used_stock?: number

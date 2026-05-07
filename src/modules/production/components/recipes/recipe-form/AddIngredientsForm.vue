@@ -5,7 +5,7 @@ import SelectField from "@components/form/SelectField.vue"
 import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
 import { useSearchRawMaterial } from "@modules/production/api"
-import { convertQtyToPurchaseUnit, getPurchaseUnit } from "@modules/production/utils"
+import { convertQtyToUsageUnit, getProdUsageUnit } from "@modules/production/utils"
 import type { TConversion } from "@modules/production/types"
 import type { IngredientRow } from "../AddNewRecipeDrawer.vue"
 import { useMediaQuery } from "@vueuse/core"
@@ -107,7 +107,7 @@ const removeRow = (row: IngredientRow) => {
 const totalIngredientCost = computed(() => {
   const total = ingredientRows.value.reduce((sum, row) => {
     const baseCost = row.ingredient.base_cost_per_unit ?? row.ingredient.cost_per_unit ?? 0
-    const qty = convertQtyToPurchaseUnit(Number(row.qty), {
+    const qty = convertQtyToUsageUnit(Number(row.qty), {
       unit: row.ingredient.base_unit || row.ingredient.unit || "",
       conversions: (row.ingredient.conversions ?? []) as TConversion[],
     })
@@ -117,7 +117,7 @@ const totalIngredientCost = computed(() => {
 })
 
 function rowPurchaseUnit(row: IngredientRow) {
-  return getPurchaseUnit({
+  return getProdUsageUnit({
     unit: row.ingredient.base_unit || row.ingredient.unit || "",
     conversions: (row.ingredient.conversions ?? []) as TConversion[],
   })

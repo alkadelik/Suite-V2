@@ -10,7 +10,7 @@ import ProcessCostForm from "./recipe-form/ProcessCostForm.vue"
 import { displayError } from "@/utils/error-handler"
 import { IRecipePayload, TConversion, TRecipe } from "@modules/production/types"
 import { useCreateRecipe, useUpdateRecipe, useGetSingleRecipe } from "@modules/production/api"
-import { convertQtyToPurchaseUnit } from "@modules/production/utils"
+import { convertQtyToUsageUnit } from "@modules/production/utils"
 import { UNITS_OF_MEASURE } from "@modules/production/constant"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
 
@@ -158,10 +158,12 @@ const onSubmit = () => {
     .map((r) => ({
       material_uid: r.ingredient.value,
       quantity: parseFloat(
-        convertQtyToPurchaseUnit(r.qty, {
-          unit: r.ingredient.base_unit || r.ingredient.unit || "",
-          conversions: r.ingredient.conversions,
-        }).toFixed(2),
+        Number(
+          convertQtyToUsageUnit(r.qty, {
+            unit: r.ingredient.base_unit || r.ingredient.unit || "",
+            conversions: r.ingredient.conversions,
+          }),
+        ).toFixed(2),
       ),
     }))
 

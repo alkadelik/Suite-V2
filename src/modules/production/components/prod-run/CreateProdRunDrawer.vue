@@ -102,6 +102,7 @@ watch(recipeData, (recipe) => {
         cost_per_unit: ing.unit_cost,
         kind: "raw_material",
         available_stock: ing.available_stock,
+        conversions: ing.conversions,
       },
       qty: ing.quantity,
     }))
@@ -210,7 +211,10 @@ const onSubmit = () => {
     notes: "",
     ingredients: ingredientRowsState.value
       .filter((r) => r.qty > 0)
-      .map((r) => ({ material_uid: r.ingredient.value, quantity_required: String(r.qty) })),
+      .map((r) => ({
+        material_uid: r.ingredient.value,
+        quantity_required: parseFloat(String(r.ingredient.used_stock)).toFixed(2),
+      })),
     process_costs: processRowsState.value
       .filter((p) => p.name.trim())
       .map((p) => ({ recipe_process_cost_uid: p.id, name: p.name, cost_per_batch: p.cost })),
