@@ -102,6 +102,7 @@ const seedFromRecipe = (recipe: TRecipe) => {
       unit: ing.unit,
       cost_per_unit: ing.unit_cost,
       kind: "raw_material" as string,
+      conversions: ing.conversions,
     },
     qty: ing.quantity,
   }))

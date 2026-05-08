@@ -212,7 +212,10 @@ function handleNext() {
                     size="sm"
                   />
                 </div>
-                <div v-if="row.ingredient.cost_per_unit" class="mt-1 flex items-center gap-2">
+                <div
+                  v-if="row.ingredient.kind !== 'sub_assembly'"
+                  class="mt-1 flex items-center gap-2"
+                >
                   <Chip
                     :label="`${formatCurrency(rowCostPerUsageUnit(row))}/${rowUsageUnit(row)}`"
                     size="sm"
