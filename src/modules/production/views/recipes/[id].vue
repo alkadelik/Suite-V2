@@ -16,7 +16,6 @@ import StatCard from "@components/StatCard.vue"
 import { useDeleteRecipe, useGetSingleRecipe, useUpdateRecipe } from "@modules/production/api"
 import AddNewRecipeDrawer from "@modules/production/components/recipes/AddNewRecipeDrawer.vue"
 import { useProductionStore } from "@modules/production/store"
-import { convertQtyToPurchaseUnit, getProdUsageUnit } from "@modules/production/utils"
 import { useMediaQuery } from "@vueuse/core"
 import { capitalize, computed, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
@@ -213,10 +212,7 @@ watch(
             >
               <p class="space-x-1">
                 <span class="font-medium">{{ ingr.material_name }}</span>
-                <span
-                  >({{ convertQtyToPurchaseUnit(ingr.quantity, ingr) }}
-                  {{ getProdUsageUnit(ingr) }})</span
-                >
+                <span>({{ parseFloat(ingr.quantity.toFixed(2)) }} {{ ingr.unit }})</span>
               </p>
               <p>
                 <span class="font-medium">{{ format(ingr.estimated_cost) }}</span>

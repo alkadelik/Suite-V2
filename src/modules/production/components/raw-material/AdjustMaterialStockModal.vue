@@ -13,6 +13,11 @@ import RadioInputField from "@components/form/RadioInputField.vue"
 import FormField from "@components/form/FormField.vue"
 import { Field, useForm } from "vee-validate"
 import { onInvalidSubmit } from "@/utils/validations"
+import {
+  convertNumToPurchaseUnit,
+  convertNumToUsageUnit,
+  getPurchaseUnit,
+} from "@modules/production/utils"
 
 interface Props {
   open: boolean
@@ -86,7 +91,7 @@ const { handleSubmit, resetForm, values, setFieldValue } = useForm<FormValues>({
           originalValue === "" ? undefined : Number(String(originalValue).replace(/,/g, "")),
         )
         .typeError("unit cost must be a number")
-        .required("unit cost is required")
+        .optional()
         .positive("unit cost must be greater than 0"),
       reason: yup
         .object()
@@ -127,12 +132,17 @@ const decrementQuantity = () => {
 
 // Save adjustment
 const onSubmit = handleSubmit((values) => {
+  console.log("HElloo")
   if (!selectedMaterial.value) return
+  console.log("After")
 
   const payload = {
     movement_type: adjustmentType.value,
-    quantity: Number(values.quantity),
-    unit_cost: Number(values.unit_cost),
+    quantity: convertNumToUsageUnit(+values.quantity, selectedMaterial.value),
+    unit_cost:
+      adjustmentType.value === "add"
+        ? convertNumToPurchaseUnit(+values.unit_cost.replace(/,/g, ""), selectedMaterial.value)
+        : null,
     reason: values.reason!.value,
     notes: values.notes || "",
   }
@@ -164,7 +174,10 @@ watch(
   selectedMaterial,
   (material) => {
     if (material?.avg_cost) {
-      setFieldValue("unit_cost", parseInt(String(material.avg_cost)).toString())
+      setFieldValue(
+        "unit_cost",
+        String(convertNumToUsageUnit(+material.avg_cost, material).toLocaleString()),
+      )
     }
   },
   { immediate: true },
@@ -192,7 +205,12 @@ watch(
         </p>
         <p>
           <span class="font-semibold">Current Stock:</span>
-          {{ Number(selectedMaterial.current_stock).toLocaleString() }} {{ selectedMaterial.unit }}
+          {{
+            Number(
+              convertNumToPurchaseUnit(selectedMaterial.current_stock, selectedMaterial),
+            ).toLocaleString()
+          }}
+          {{ getPurchaseUnit(selectedMaterial) }}
         </p>
       </div>
 
@@ -205,7 +223,13 @@ watch(
       <!-- Adjustment Form -->
       <div class="space-y-4 border-t border-gray-200 pt-4">
         <div>
-          <label class="mb-2 block text-sm font-medium text-gray-700">Quantity</label>
+          <label class="mb-2 block text-sm font-medium text-gray-700"
+            >Quantity ({{
+              convertNumToUsageUnit(+values.quantity || 0, selectedMaterial) +
+              " " +
+              selectedMaterial.unit
+            }})</label
+          >
           <div
             class="flex items-center justify-between gap-6 rounded-2xl border border-gray-200 bg-white p-3"
           >
@@ -225,7 +249,7 @@ watch(
                   placeholder="0"
                 />
               </Field>
-              <span class="text-gray-500">({{ selectedMaterial.unit }})</span>
+              <span class="text-gray-500">({{ getPurchaseUnit(selectedMaterial) }})</span>
             </div>
 
             <button
@@ -242,10 +266,11 @@ watch(
         </div>
 
         <FormField
+          v-if="adjustmentType === 'add'"
           type="number"
           format="currency"
           name="unit_cost"
-          :label="`Unit Cost`"
+          :label="`Unit Cost per ${getPurchaseUnit(selectedMaterial)}`"
           :placeholder="`e.g. ${format(12400)}`"
         />
 

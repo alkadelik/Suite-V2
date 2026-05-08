@@ -7,6 +7,7 @@ import { useProductionStore } from "../../store"
 import Chip from "@components/Chip.vue"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { useRouter } from "vue-router"
+import { getPurchaseUnit } from "@modules/production/utils"
 
 const props = defineProps<{ material: TRawMaterial; class?: string }>()
 const emit = defineEmits(["click", "toggle", "edit", "adjust", "view", "delete"])
@@ -65,21 +66,21 @@ const actionMenus = computed(() => [
     <div class="flex justify-between p-5 pb-3">
       <div>
         <p class="text-sm font-medium">
-          {{ Number(material.current_stock).toLocaleString() + material.unit }}
+          {{ Number(material.current_stock).toLocaleString() + getPurchaseUnit(material) }}
         </p>
         <p class="text-core-600 text-xs">Stock</p>
       </div>
       <!--  -->
       <div>
         <p class="text-sm font-medium">
-          {{ format(Number(material.last_cost)) }}/{{ material.unit }}
+          {{ format(Number(material.last_cost)) }}/{{ getPurchaseUnit(material) }}
         </p>
         <p class="text-core-600 text-xs">Last Cost</p>
       </div>
       <!--  -->
       <div>
         <p class="text-sm font-medium">
-          {{ format(Number(material.avg_cost)) }}/{{ material.unit }}
+          {{ format(Number(material.avg_cost)) }}/{{ getPurchaseUnit(material) }}
         </p>
         <p class="text-core-600 text-xs">Avg Cost</p>
       </div>

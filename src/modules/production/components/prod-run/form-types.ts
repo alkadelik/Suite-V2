@@ -33,7 +33,12 @@ export type BasicRunDetails = {
   outputQuantity: number
   damagedQuantity: number
   recipeUid: string
-  recipeOption?: { label: string; value: string } | null
+  recipeOption?: {
+    label: string
+    value: string
+    item_type?: string
+    output_product?: string | null
+  } | null
   outputVariantUid?: string
   outputItemType?: "product" | "sub_assembly"
   variantPrice?: number

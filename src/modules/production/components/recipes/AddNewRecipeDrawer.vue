@@ -10,7 +10,6 @@ import ProcessCostForm from "./recipe-form/ProcessCostForm.vue"
 import { displayError } from "@/utils/error-handler"
 import { IRecipePayload, TConversion, TRecipe } from "@modules/production/types"
 import { useCreateRecipe, useUpdateRecipe, useGetSingleRecipe } from "@modules/production/api"
-import { convertQtyToUsageUnit } from "@modules/production/utils"
 import { UNITS_OF_MEASURE } from "@modules/production/constant"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
 
@@ -158,14 +157,7 @@ const onSubmit = () => {
     .filter((r) => r.qty > 0)
     .map((r) => ({
       material_uid: r.ingredient.value,
-      quantity: parseFloat(
-        Number(
-          convertQtyToUsageUnit(r.qty, {
-            unit: r.ingredient.base_unit || r.ingredient.unit || "",
-            conversions: r.ingredient.conversions,
-          }),
-        ).toFixed(2),
-      ),
+      quantity: r.qty,
     }))
 
   const processCosts: IRecipePayload["process_costs"] = processRowsState.value

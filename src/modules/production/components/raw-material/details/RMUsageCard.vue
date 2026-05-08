@@ -4,6 +4,7 @@ import { formatDate } from "@/utils/formatDate"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
 import { TMovement, TRawMaterial } from "@modules/production/types"
+import { convertNumToPurchaseUnit, getPurchaseUnit } from "@modules/production/utils"
 import { HTMLAttributes } from "vue"
 
 const props = defineProps<{
@@ -31,16 +32,20 @@ const { format } = useFormatCurrency()
             <div class="flex items-center justify-end gap-2">
               <span
                 :class="item.movement_type === 'add' ? 'text-success-600' : 'text-error-600'"
-                class="text-success-600 text-sm font-semibold"
+                class="text-sm font-semibold"
               >
-                {{ format(Number(item.unit_cost)) }}
-                ({{ Number(item.quantity).toLocaleString() + " " + props.material?.unit }})
+                {{ format(item.total_cost) }}
+                ({{
+                  convertNumToPurchaseUnit(+item.quantity, props.material!).toLocaleString() +
+                  " " +
+                  getPurchaseUnit(props.material!)
+                }})
               </span>
             </div>
           </div>
           <div class="flex items-center gap-2 text-sm">
             <!-- status -->
-            <Chip :label="item.reason" color="blue" />
+            <Chip :label="item.reason" color="blue" class="capitalize" />
 
             <!-- date -->
             <p class="ml-auto pl-4 text-xs font-medium">

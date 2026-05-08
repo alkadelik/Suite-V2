@@ -8,6 +8,7 @@ import { TMovement, TRawMaterial } from "@modules/production/types"
 import { ref } from "vue"
 import RMUsageCard from "./RMUsageCard.vue"
 import { USAGE_HISTORY_COLUMN } from "@modules/production/constant"
+import { convertNumToPurchaseUnit, getPurchaseUnit } from "@modules/production/utils"
 
 const props = defineProps<{ material: TRawMaterial }>()
 const { format } = useFormatCurrency()
@@ -37,7 +38,8 @@ const onRowClick = (batch: TMovement) => {
         @row-click="onRowClick"
       >
         <template #cell:quantity="{ item }">
-          {{ Number(item.quantity).toLocaleString() }} {{ props.material?.unit }}
+          {{ convertNumToPurchaseUnit(+item.quantity, props.material).toLocaleString() }}
+          {{ getPurchaseUnit(props.material) }}
         </template>
         <template #cell:reason="{ item }">
           <Chip :label="item.reason" color="blue" />
@@ -53,7 +55,11 @@ const onRowClick = (batch: TMovement) => {
         </template>
 
         <template #mobile="{ item }">
-          <RMUsageCard :item="item" :material="props.material" />
+          <RMUsageCard
+            :item="item"
+            class="border-b border-gray-200 pb-4!"
+            :material="props.material"
+          />
         </template>
       </DataTable>
     </div>
@@ -76,7 +82,10 @@ const onRowClick = (batch: TMovement) => {
             radius="md"
           />
           <h4 class="text-3xl font-bold md:text-4xl">
-            {{ Number(selectedHistory.quantity).toLocaleString() }} {{ props.material?.unit }}
+            {{
+              convertNumToPurchaseUnit(+selectedHistory.quantity, props.material).toLocaleString()
+            }}
+            {{ getPurchaseUnit(props.material) }}
           </h4>
           <p class="text-sm font-medium md:text-base">
             {{ formatDate(new Date(selectedHistory.created_at)) }}
@@ -91,15 +100,17 @@ const onRowClick = (batch: TMovement) => {
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Quantity</span>
             <span class="font-medium capitalize"
-              >{{ Number(selectedHistory.quantity).toLocaleString() }}
-              {{ props.material?.unit }}</span
+              >{{
+                Number(
+                  convertNumToPurchaseUnit(+selectedHistory.quantity, props.material),
+                ).toLocaleString()
+              }}
+              {{ getPurchaseUnit(props.material) }}</span
             >
           </p>
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Cost</span>
-            <span class="font-medium">{{
-              format(Number(selectedHistory.unit_cost) * Number(selectedHistory.quantity))
-            }}</span>
+            <span class="font-medium">{{ format(Number(selectedHistory.total_cost)) }}</span>
           </p>
           <p v-if="selectedHistory.performed_by" class="flex justify-between text-sm">
             <span class="text-core-600">Performed By</span>

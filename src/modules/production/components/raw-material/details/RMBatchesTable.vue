@@ -9,6 +9,11 @@ import { ref } from "vue"
 import { startCase } from "@/utils/format-strings"
 import RMBatchCard from "./RMBatchCard.vue"
 import { BATCHES_COLUMN } from "@modules/production/constant"
+import {
+  convertNumToPurchaseUnit,
+  convertNumToUsageUnit,
+  getPurchaseUnit,
+} from "@modules/production/utils"
 
 const props = defineProps<{ material: TRawMaterial }>()
 const { format } = useFormatCurrency()
@@ -38,20 +43,23 @@ const onRowClick = (batch: TBatch) => {
         @row-click="onRowClick"
       >
         <template #cell:quantity_added="{ item }">
-          {{ Number(item.quantity).toLocaleString() }} {{ props.material?.unit }}
+          {{ convertNumToPurchaseUnit(+item.quantity, material).toLocaleString() }}
+          {{ getPurchaseUnit(material) }}
         </template>
         <template #cell:quantity_left="{ item }">
-          {{ Number(item.remaining_quantity).toLocaleString() }} {{ props.material?.unit }}
+          {{ convertNumToPurchaseUnit(+item.remaining_quantity, material).toLocaleString() }}
+          {{ getPurchaseUnit(material) }}
         </template>
         <template #cell:unit_cost="{ item }">
-          {{ format(Number(item.unit_cost)) }} / {{ props.material?.unit }}
+          {{ format(+convertNumToUsageUnit(+item.unit_cost, material)) }} /
+          {{ getPurchaseUnit(material) }}
         </template>
         <template #cell:source="{ item }">
           <Chip v-if="item.source_type" :label="startCase(item.source_type)" color="blue" />
           <span v-else>N/A</span>
         </template>
         <template #mobile="{ item }">
-          <RMBatchCard class="border-b border-gray-200 py-4!" :item="item" :material="material" />
+          <RMBatchCard class="border-b border-gray-200 pb-4!" :item="item" :material="material" />
         </template>
       </DataTable>
     </div>
@@ -61,7 +69,8 @@ const onRowClick = (batch: TBatch) => {
       <div v-if="selectedBatch" class="space-y-6">
         <div class="flex flex-col items-center justify-center gap-2">
           <h4 class="text-3xl font-bold md:text-4xl">
-            {{ Number(selectedBatch.quantity).toLocaleString() }} {{ props.material?.unit }}
+            {{ convertNumToPurchaseUnit(+selectedBatch.quantity, props.material).toLocaleString() }}
+            {{ getPurchaseUnit(props.material) }}
           </h4>
           <p class="text-sm font-medium md:text-base">
             {{ formatDate(new Date(selectedBatch.date_added)) }}
@@ -88,28 +97,34 @@ const onRowClick = (batch: TBatch) => {
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Quantity Added</span>
             <span class="font-medium capitalize"
-              >{{ Number(selectedBatch.quantity).toLocaleString() }}
-              {{ props.material?.unit }}</span
+              >{{
+                convertNumToPurchaseUnit(+selectedBatch.quantity, props.material).toLocaleString()
+              }}
+              {{ getPurchaseUnit(props.material) }}</span
             >
           </p>
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Quantity Left</span>
             <span class="font-medium capitalize"
-              >{{ Number(selectedBatch.remaining_quantity).toLocaleString() }}
-              {{ props.material?.unit }}</span
+              >{{
+                convertNumToPurchaseUnit(
+                  +selectedBatch.remaining_quantity,
+                  props.material,
+                ).toLocaleString()
+              }}
+              {{ getPurchaseUnit(props.material) }}</span
             >
           </p>
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Unit Cost</span>
             <span class="font-medium"
-              >{{ format(Number(selectedBatch.unit_cost)) }} / {{ props.material?.unit }}</span
+              >{{ format(+convertNumToUsageUnit(+selectedBatch.unit_cost, material)) }} /
+              {{ getPurchaseUnit(material) }}</span
             >
           </p>
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Total Cost</span>
-            <span class="font-medium">{{
-              format(Number(selectedBatch.unit_cost) * Number(selectedBatch.quantity))
-            }}</span>
+            <span class="font-medium">{{ format(selectedBatch.total_cost) }}</span>
           </p>
         </div>
 
