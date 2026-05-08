@@ -9,6 +9,7 @@ import { ref } from "vue"
 import RMUsageCard from "./RMUsageCard.vue"
 import { USAGE_HISTORY_COLUMN } from "@modules/production/constant"
 import { convertNumToPurchaseUnit, getPurchaseUnit } from "@modules/production/utils"
+import { floatDecimal } from "@/utils/others"
 
 const props = defineProps<{ material: TRawMaterial }>()
 const { format } = useFormatCurrency()
@@ -38,11 +39,11 @@ const onRowClick = (batch: TMovement) => {
         @row-click="onRowClick"
       >
         <template #cell:quantity="{ item }">
-          {{ convertNumToPurchaseUnit(+item.quantity, props.material).toLocaleString() }}
+          {{ floatDecimal(convertNumToPurchaseUnit(+item.quantity, props.material)) }}
           {{ getPurchaseUnit(props.material) }}
         </template>
         <template #cell:reason="{ item }">
-          <Chip :label="item.reason" color="blue" />
+          <Chip :label="item.reason" color="blue" class="capitalize" />
         </template>
         <template #cell:movement_type="{ item }">
           <Chip
@@ -59,6 +60,7 @@ const onRowClick = (batch: TMovement) => {
             :item="item"
             class="border-b border-gray-200 pb-4!"
             :material="props.material"
+            @click="onRowClick(item)"
           />
         </template>
       </DataTable>
@@ -82,9 +84,7 @@ const onRowClick = (batch: TMovement) => {
             radius="md"
           />
           <h4 class="text-3xl font-bold md:text-4xl">
-            {{
-              convertNumToPurchaseUnit(+selectedHistory.quantity, props.material).toLocaleString()
-            }}
+            {{ floatDecimal(convertNumToPurchaseUnit(+selectedHistory.quantity, props.material)) }}
             {{ getPurchaseUnit(props.material) }}
           </h4>
           <p class="text-sm font-medium md:text-base">
@@ -95,15 +95,13 @@ const onRowClick = (batch: TMovement) => {
         <div class="border-core-300 bg-core-25 my-6 space-y-3 rounded-xl border p-4">
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Reason</span>
-            <Chip :label="selectedHistory.reason" color="blue" />
+            <Chip :label="selectedHistory.reason" color="blue" class="capitalize" />
           </p>
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Quantity</span>
             <span class="font-medium capitalize"
               >{{
-                Number(
-                  convertNumToPurchaseUnit(+selectedHistory.quantity, props.material),
-                ).toLocaleString()
+                floatDecimal(convertNumToPurchaseUnit(+selectedHistory.quantity, props.material))
               }}
               {{ getPurchaseUnit(props.material) }}</span
             >

@@ -4,6 +4,7 @@ import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 import { startCase } from "@/utils/format-strings"
 import { formatDate } from "@/utils/formatDate"
+import { floatDecimal } from "@/utils/others"
 import AppButton from "@components/AppButton.vue"
 import BackButton from "@components/BackButton.vue"
 import Chip from "@components/Chip.vue"
@@ -212,7 +213,7 @@ watch(
             >
               <p class="space-x-1">
                 <span class="font-medium">{{ ingr.material_name }}</span>
-                <span>({{ parseFloat(ingr.quantity.toFixed(2)) }} {{ ingr.unit }})</span>
+                <span>({{ floatDecimal(ingr.quantity) }} {{ ingr.unit }})</span>
               </p>
               <p>
                 <span class="font-medium">{{ format(ingr.estimated_cost) }}</span>

@@ -14,6 +14,7 @@ import {
   convertNumToUsageUnit,
   getPurchaseUnit,
 } from "@modules/production/utils"
+import { floatDecimal } from "@/utils/others"
 
 const props = defineProps<{ material: TRawMaterial }>()
 const { format } = useFormatCurrency()
@@ -31,7 +32,7 @@ const onRowClick = (batch: TBatch) => {
   <div>
     <div class="space-y-4 overflow-hidden rounded-xl border-gray-200 md:border md:bg-white">
       <DataTable
-        :data="material.batches ?? []"
+        :data="material.batches ? [...material.batches].reverse() : []"
         :columns="BATCHES_COLUMN"
         :loading="false"
         :enable-row-selection="false"
@@ -43,11 +44,11 @@ const onRowClick = (batch: TBatch) => {
         @row-click="onRowClick"
       >
         <template #cell:quantity_added="{ item }">
-          {{ convertNumToPurchaseUnit(+item.quantity, material).toLocaleString() }}
+          {{ floatDecimal(convertNumToPurchaseUnit(+item.quantity, material)) }}
           {{ getPurchaseUnit(material) }}
         </template>
         <template #cell:quantity_left="{ item }">
-          {{ convertNumToPurchaseUnit(+item.remaining_quantity, material).toLocaleString() }}
+          {{ floatDecimal(convertNumToPurchaseUnit(+item.remaining_quantity, material)) }}
           {{ getPurchaseUnit(material) }}
         </template>
         <template #cell:unit_cost="{ item }">
@@ -59,7 +60,17 @@ const onRowClick = (batch: TBatch) => {
           <span v-else>N/A</span>
         </template>
         <template #mobile="{ item }">
-          <RMBatchCard class="border-b border-gray-200 pb-4!" :item="item" :material="material" />
+          <RMBatchCard
+            @click="
+              () => {
+                selectedBatch = item
+                openDetails = true
+              }
+            "
+            class="border-b border-gray-200 pb-4!"
+            :item="item"
+            :material="material"
+          />
         </template>
       </DataTable>
     </div>
@@ -69,7 +80,7 @@ const onRowClick = (batch: TBatch) => {
       <div v-if="selectedBatch" class="space-y-6">
         <div class="flex flex-col items-center justify-center gap-2">
           <h4 class="text-3xl font-bold md:text-4xl">
-            {{ convertNumToPurchaseUnit(+selectedBatch.quantity, props.material).toLocaleString() }}
+            {{ floatDecimal(convertNumToPurchaseUnit(+selectedBatch.quantity, props.material)) }}
             {{ getPurchaseUnit(props.material) }}
           </h4>
           <p class="text-sm font-medium md:text-base">
@@ -98,7 +109,7 @@ const onRowClick = (batch: TBatch) => {
             <span class="text-core-600">Quantity Added</span>
             <span class="font-medium capitalize"
               >{{
-                convertNumToPurchaseUnit(+selectedBatch.quantity, props.material).toLocaleString()
+                floatDecimal(convertNumToPurchaseUnit(+selectedBatch.quantity, props.material))
               }}
               {{ getPurchaseUnit(props.material) }}</span
             >
@@ -107,10 +118,9 @@ const onRowClick = (batch: TBatch) => {
             <span class="text-core-600">Quantity Left</span>
             <span class="font-medium capitalize"
               >{{
-                convertNumToPurchaseUnit(
-                  +selectedBatch.remaining_quantity,
-                  props.material,
-                ).toLocaleString()
+                floatDecimal(
+                  convertNumToPurchaseUnit(+selectedBatch.remaining_quantity, props.material),
+                )
               }}
               {{ getPurchaseUnit(props.material) }}</span
             >

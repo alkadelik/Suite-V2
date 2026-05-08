@@ -29,6 +29,7 @@ import {
 } from "@modules/production/utils"
 import { UNITS_OF_MEASURE } from "@modules/production/constant"
 import { startCase } from "@/utils/format-strings"
+import { floatDecimal } from "@/utils/others"
 
 const route = useRoute()
 const router = useRouter()
@@ -85,7 +86,7 @@ const materialStats = computed(() => {
   return [
     {
       label: "Current Stock",
-      value: `${convertNumToPurchaseUnit(item.current_stock || 0, item)} ${getPurchaseUnit(item)}`,
+      value: `${floatDecimal(convertNumToPurchaseUnit(item.current_stock || 0, item))} ${getPurchaseUnit(item)}`,
       icon: "bag",
     },
     {

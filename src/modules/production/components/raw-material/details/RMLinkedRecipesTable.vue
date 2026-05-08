@@ -53,11 +53,6 @@ defineProps<{ material: TRawMaterial }>()
               <Chip :label="`${parseInt(item.output_quantity)} ${item.output_unit}`" />
             </template>
             <template #body>
-              <div>
-                <p class="text-sm font-medium">--</p>
-                <p class="text-core-600 text-xs">Qty per batch</p>
-              </div>
-
               <Chip
                 :label="item.item_type"
                 class="capitalize"

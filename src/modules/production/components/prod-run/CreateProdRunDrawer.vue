@@ -17,6 +17,7 @@ import ProcessExpensesForm from "./run-form/ProcessExpensesForm.vue"
 import ProdEconomicsForm from "./run-form/ProdEconomicsForm.vue"
 import type { IngredientRow, ProcessRow, AdditionalExpenseRow, BasicRunDetails } from "./form-types"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
+import { floatDecimal } from "@/utils/others"
 
 export type { IngredientRow, ProcessRow, AdditionalExpenseRow, BasicRunDetails }
 
@@ -213,7 +214,7 @@ const onSubmit = () => {
       .filter((r) => r.qty > 0)
       .map((r) => ({
         material_uid: r.ingredient.value,
-        quantity_required: parseFloat(String(r.ingredient.used_stock)).toFixed(2),
+        quantity_required: floatDecimal(r.ingredient.used_stock!).toString(),
       })),
     process_costs: processRowsState.value
       .filter((p) => p.name.trim())

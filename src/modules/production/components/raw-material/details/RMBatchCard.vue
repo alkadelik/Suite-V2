@@ -2,6 +2,7 @@
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { startCase } from "@/utils/format-strings"
 import { formatDate } from "@/utils/formatDate"
+import { floatDecimal } from "@/utils/others"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
 import { TBatch, TRawMaterial } from "@modules/production/types"
@@ -13,11 +14,13 @@ const props = defineProps<{
   material?: TRawMaterial
   class?: HTMLAttributes["class"]
 }>()
+const emit = defineEmits<{ click: [] }>()
+
 const { format } = useFormatCurrency()
 </script>
 
 <template>
-  <div :class="['cursor-pointer bg-transparent py-2.5', props.class]">
+  <div @click="emit('click')" :class="['cursor-pointer bg-transparent py-2.5', props.class]">
     <div>
       <div class="flex items-center gap-3">
         <span class="bg-core-200 relative flex size-12 items-center justify-center rounded-xl">
@@ -33,7 +36,7 @@ const { format } = useFormatCurrency()
             <div class="flex items-center justify-end gap-2">
               <span class="text-success-600 text-sm font-semibold">
                 {{
-                  convertNumToPurchaseUnit(+item.quantity, props.material!).toLocaleString() +
+                  floatDecimal(convertNumToPurchaseUnit(+item.quantity, props.material!)) +
                   " " +
                   getPurchaseUnit(props.material!)
                 }}

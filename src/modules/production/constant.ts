@@ -15,6 +15,7 @@ import materialPng from "@/assets/images/materials.png"
 import { formatDate } from "@/utils/formatDate"
 import { startCase } from "@/utils/format-strings"
 import { convertNumToPurchaseUnit, convertNumToUsageUnit, getPurchaseUnit } from "./utils"
+import { floatDecimal } from "@/utils/others"
 
 // =================================================
 // ================ RAW MATERIALS =========================
@@ -25,7 +26,7 @@ export const RAW_MATERIALS_COLUMN: TableColumn<TRawMaterial>[] = [
     header: "Stock",
     accessor: "stock",
     cell: ({ item }) =>
-      convertNumToPurchaseUnit(+item.current_stock, item as TRawMaterial) +
+      floatDecimal(convertNumToPurchaseUnit(+item.current_stock, item as TRawMaterial)) +
       " " +
       getPurchaseUnit(item as TRawMaterial),
   },
@@ -92,7 +93,6 @@ export const USAGE_HISTORY_COLUMN: TableColumn<TMovement>[] = [
 export const LINKED_RECIPES_COLUMN: TableColumn<TLinkedRecipe>[] = [
   { header: "Output Item", accessor: "output_item_name" },
   { header: "Type", accessor: "item_type" },
-  { header: "Qty per Batch", accessor: "quantity_per_batch" },
   { header: "Actions", accessor: "actions" },
 ]
 
@@ -237,7 +237,7 @@ export const PROD_RUN_INGREDIENT_COLUMN: TableColumn<TProdRunIngredientUsed>[] =
     accessor: "quantity_required",
     cell: ({ item }) => {
       const ing = item as TProdRunIngredientUsed
-      return `${parseFloat(Number(ing.quantity_required).toFixed(2))} ${item.unit}`
+      return `${floatDecimal(ing.quantity_required)} ${item.unit}`
     },
   },
   {
