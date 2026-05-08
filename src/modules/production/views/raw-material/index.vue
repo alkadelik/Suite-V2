@@ -192,7 +192,7 @@ const handleDelete = () => {
 
     <div v-else class="flex flex-col gap-8">
       <EmptyState
-        v-if="!rawMaterials?.count && !searchQuery"
+        v-if="!rawMaterials?.count && !searchQuery && page === 1"
         :title="`You don't have any ${materialValue} yet!`"
         :description="`Start tracking everything you use to make your products by adding your ${materialValue}.`"
         :action-label="`Add ${materialValue}`"

@@ -139,7 +139,7 @@ const onFinaliseRun = () => {
 
     <div class="flex flex-col gap-8">
       <EmptyState
-        v-if="!prodRuns?.count && !searchQuery"
+        v-if="!prodRuns?.count && !searchQuery && page === 1"
         :title="`You don't have any production runs yet!`"
         :description="`When you complete a run, it will appear here along with your full cost breakdown.`"
         :action-label="`Add production run`"
@@ -202,6 +202,12 @@ const onFinaliseRun = () => {
             :data="prodRuns?.results ?? []"
             :columns="PROD_RUNS_COLUMN"
             :loading="isFetching"
+            :show-pagination="true"
+            :items-per-page="itemsPerPage"
+            :total-items-count="prodRuns?.count || 0"
+            :total-page-count="Math.ceil((prodRuns?.count || 0) / itemsPerPage) || 1"
+            :server-pagination="true"
+            @pagination-change="(d) => (page = d.currentPage)"
             @row-click="(row) => $router.push(`/production/runs/${row.uid}`)"
           >
             <template #cell:status="{ item }">
