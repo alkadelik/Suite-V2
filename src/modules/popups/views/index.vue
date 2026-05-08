@@ -62,10 +62,15 @@ const handleAction = (action: string, item: PopupEvent) => {
   if (action === "close") openClose.value = true
 }
 
+const page = ref(1)
+const itemsPerPage = ref(10)
+
 const computedFilters = computed(() => {
   const filters: Record<string, string> = {}
   if (status.value && status.value !== "all") filters.status = status.value
   if (debouncedSearch.value) filters.search = debouncedSearch.value
+  filters.offset = ((debouncedSearch.value ? 1 : page.value - 1) * itemsPerPage.value).toString()
+  filters.limit = itemsPerPage.value.toString()
   Object.assign(filters, activeFilters.value)
   return filters
 })
@@ -267,9 +272,14 @@ const getMenuAction = (item: PopupEvent) => {
         <DataTable
           :data="popupEvents?.results ?? []"
           :columns="POPUP_COLUMN"
-          :show-pagination="true"
           fix-last-column
           :loading="isPending || isFetching"
+          :show-pagination="true"
+          :items-per-page="itemsPerPage"
+          :total-items-count="popupEvents?.count || 0"
+          :total-page-count="Math.ceil((popupEvents?.count || 0) / itemsPerPage) || 1"
+          :server-pagination="true"
+          @pagination-change="(d) => (page = d.currentPage)"
           :empty-state="{
             title: 'No Popup Found',
             description:

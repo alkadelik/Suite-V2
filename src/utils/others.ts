@@ -22,3 +22,13 @@ export const formatPhoneNumber = (phone: string) => {
 
 /** Checks whether app is in staging environment  */
 export const isStaging = String(import.meta.env.VITE_API_BASE_URL).includes("bpi")
+
+/**
+ * Converts a value to x decimal places and floats it
+ * @param value
+ * @param fractionDigits
+ * @returns
+ */
+export const floatDecimal = (value: number | string, fractionDigits: number = 2) => {
+  return parseFloat(Number(value).toFixed(fractionDigits))
+}

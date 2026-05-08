@@ -245,8 +245,8 @@ const buildConversion = (values: FormValues) => {
   const name = values.conversion_name || `${purchaseUnit} to ${productionUnit}`
 
   return {
-    from_unit: purchaseUnit,
-    to_unit: productionUnit,
+    from_unit: productionUnit,
+    to_unit: purchaseUnit,
     rate,
     name,
     is_active: true,
@@ -256,14 +256,24 @@ const buildConversion = (values: FormValues) => {
 const onSubmit = handleSubmit((values) => {
   const conversion = buildConversion(values)
 
+  const qty_in_stock: string = conversion
+    ? String(Number(values.qty_in_stock) * Number(conversion.rate))
+    : values.qty_in_stock
+
+  // unit cost for each material is stored in purchase unit, so convert if needed
+  let default_cost = null
+  if (values.source?.value === "supplier") {
+    default_cost =
+      Number(values.default_cost.replace(/[^0-9.]/g, "")) /
+      (conversion ? Number(conversion.rate) : 1)
+  }
+
   const payload = {
     name: values.name,
-    unit: values.unit?.value || "",
-    qty_in_stock: values.qty_in_stock,
+    unit: values.production_unit?.value || "",
+    qty_in_stock,
     is_sub_assembly: values.source?.value === "manufacture",
-    ...(values.source?.value === "supplier"
-      ? { default_cost: Number(values.default_cost.replace(/[^0-9.]/g, "")) }
-      : {}),
+    ...(default_cost ? { default_cost } : {}),
     ...(values.suppliers.length ? { suppliers: values.suppliers.map((x) => x.value) } : {}),
     ...(values.expiry_date ? { expiry_date: values.expiry_date } : {}),
     ...(values.reorder_threshold ? { reorder_threshold: values.reorder_threshold } : {}),
@@ -325,11 +335,15 @@ watch(
         resetForm({
           values: {
             name: item.name,
-            unit: { label: startCase(item.unit), value: item.unit },
-            production_unit: productionUnit,
-            qty_in_stock: item.current_stock.toString(),
+            unit: productionUnit,
+            production_unit: { label: startCase(item.unit), value: item.unit },
+            qty_in_stock: activeConversion
+              ? String(item.current_stock / Number(activeConversion.rate))
+              : item.current_stock.toString(),
             source: item.is_sub_assembly ? sourceOptions[1] : sourceOptions[0],
-            default_cost: item.avg_cost.toString(),
+            default_cost: activeConversion
+              ? String(item.avg_cost * Number(activeConversion.rate))
+              : item.avg_cost.toString(),
             suppliers: prefillSuppliers,
             expiry_date: item.expiry_date ?? "",
             reorder_threshold: item.reorder_threshold

@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { formatDate } from "@/utils/formatDate"
+import { floatDecimal } from "@/utils/others"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
 import { TMovement, TRawMaterial } from "@modules/production/types"
+import { convertNumToPurchaseUnit, getPurchaseUnit } from "@modules/production/utils"
 import { HTMLAttributes } from "vue"
 
 const props = defineProps<{
@@ -11,11 +13,13 @@ const props = defineProps<{
   material?: TRawMaterial
   class?: HTMLAttributes["class"]
 }>()
+const emit = defineEmits<{ click: [] }>()
+
 const { format } = useFormatCurrency()
 </script>
 
 <template>
-  <div :class="['cursor-pointer bg-transparent py-2.5', props.class]">
+  <div @click="emit('click')" :class="['cursor-pointer bg-transparent py-2.5', props.class]">
     <div>
       <div class="flex items-center gap-3">
         <span class="bg-core-200 relative flex size-12 items-center justify-center rounded-xl">
@@ -31,16 +35,20 @@ const { format } = useFormatCurrency()
             <div class="flex items-center justify-end gap-2">
               <span
                 :class="item.movement_type === 'add' ? 'text-success-600' : 'text-error-600'"
-                class="text-success-600 text-sm font-semibold"
+                class="text-sm font-semibold"
               >
-                {{ format(Number(item.unit_cost)) }}
-                ({{ Number(item.quantity).toLocaleString() + " " + props.material?.unit }})
+                {{ format(item.total_cost) }}
+                ({{
+                  floatDecimal(convertNumToPurchaseUnit(+item.quantity, props.material!)) +
+                  " " +
+                  getPurchaseUnit(props.material!)
+                }})
               </span>
             </div>
           </div>
           <div class="flex items-center gap-2 text-sm">
             <!-- status -->
-            <Chip :label="item.reason" color="blue" />
+            <Chip :label="item.reason" color="blue" class="capitalize" />
 
             <!-- date -->
             <p class="ml-auto pl-4 text-xs font-medium">

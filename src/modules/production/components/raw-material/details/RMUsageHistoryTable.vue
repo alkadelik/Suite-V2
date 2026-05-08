@@ -8,6 +8,8 @@ import { TMovement, TRawMaterial } from "@modules/production/types"
 import { ref } from "vue"
 import RMUsageCard from "./RMUsageCard.vue"
 import { USAGE_HISTORY_COLUMN } from "@modules/production/constant"
+import { convertNumToPurchaseUnit, getPurchaseUnit } from "@modules/production/utils"
+import { floatDecimal } from "@/utils/others"
 
 const props = defineProps<{ material: TRawMaterial }>()
 const { format } = useFormatCurrency()
@@ -37,10 +39,11 @@ const onRowClick = (batch: TMovement) => {
         @row-click="onRowClick"
       >
         <template #cell:quantity="{ item }">
-          {{ Number(item.quantity).toLocaleString() }} {{ props.material?.unit }}
+          {{ floatDecimal(convertNumToPurchaseUnit(+item.quantity, props.material)) }}
+          {{ getPurchaseUnit(props.material) }}
         </template>
         <template #cell:reason="{ item }">
-          <Chip :label="item.reason" color="blue" />
+          <Chip :label="item.reason" color="blue" class="capitalize" />
         </template>
         <template #cell:movement_type="{ item }">
           <Chip
@@ -53,7 +56,12 @@ const onRowClick = (batch: TMovement) => {
         </template>
 
         <template #mobile="{ item }">
-          <RMUsageCard :item="item" :material="props.material" />
+          <RMUsageCard
+            :item="item"
+            class="border-b border-gray-200 pb-4!"
+            :material="props.material"
+            @click="onRowClick(item)"
+          />
         </template>
       </DataTable>
     </div>
@@ -76,7 +84,8 @@ const onRowClick = (batch: TMovement) => {
             radius="md"
           />
           <h4 class="text-3xl font-bold md:text-4xl">
-            {{ Number(selectedHistory.quantity).toLocaleString() }} {{ props.material?.unit }}
+            {{ floatDecimal(convertNumToPurchaseUnit(+selectedHistory.quantity, props.material)) }}
+            {{ getPurchaseUnit(props.material) }}
           </h4>
           <p class="text-sm font-medium md:text-base">
             {{ formatDate(new Date(selectedHistory.created_at)) }}
@@ -86,20 +95,20 @@ const onRowClick = (batch: TMovement) => {
         <div class="border-core-300 bg-core-25 my-6 space-y-3 rounded-xl border p-4">
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Reason</span>
-            <Chip :label="selectedHistory.reason" color="blue" />
+            <Chip :label="selectedHistory.reason" color="blue" class="capitalize" />
           </p>
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Quantity</span>
             <span class="font-medium capitalize"
-              >{{ Number(selectedHistory.quantity).toLocaleString() }}
-              {{ props.material?.unit }}</span
+              >{{
+                floatDecimal(convertNumToPurchaseUnit(+selectedHistory.quantity, props.material))
+              }}
+              {{ getPurchaseUnit(props.material) }}</span
             >
           </p>
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Cost</span>
-            <span class="font-medium">{{
-              format(Number(selectedHistory.unit_cost) * Number(selectedHistory.quantity))
-            }}</span>
+            <span class="font-medium">{{ format(Number(selectedHistory.total_cost)) }}</span>
           </p>
           <p v-if="selectedHistory.performed_by" class="flex justify-between text-sm">
             <span class="text-core-600">Performed By</span>

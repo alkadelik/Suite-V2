@@ -69,7 +69,7 @@ const computedParams = computed(() => {
   if (activeFilters.value.source) params.source = activeFilters.value.source
   if (activeFilters.value.created_after) params.created_after = activeFilters.value.created_after
   if (activeFilters.value.created_before) params.created_before = activeFilters.value.created_before
-  params.offset = ((page.value - 1) * itemsPerPage.value).toString()
+  params.offset = ((debouncedSearch.value ? 1 : page.value - 1) * itemsPerPage.value).toString()
   params.limit = itemsPerPage.value.toString()
   return params
 })

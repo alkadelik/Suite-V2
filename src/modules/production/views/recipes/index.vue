@@ -51,7 +51,7 @@ const onSelect = (option: { label: string; value: string }) => {
 const computedParams = computed(() => {
   const params: Record<string, string> = {}
   if (debouncedSearch.value) params.search = debouncedSearch.value
-  params.offset = ((page.value - 1) * itemsPerPage.value).toString()
+  params.offset = ((debouncedSearch.value ? 1 : page.value - 1) * itemsPerPage.value).toString()
   params.limit = itemsPerPage.value.toString()
   return params
 })
@@ -182,7 +182,7 @@ const formatWithUnit = (item: TRecipe) => {
 
     <div v-else class="flex flex-col gap-8">
       <EmptyState
-        v-if="!recipes?.count && !searchQuery.length"
+        v-if="!recipes?.count && !searchQuery.length && page === 1"
         :title="`You don't have any recipe yet!`"
         :description="`Start tracking everything you use to make your products by adding your recipe`"
         :action-label="`Add ${selectedComponent.value}`"
@@ -246,6 +246,12 @@ const formatWithUnit = (item: TRecipe) => {
             :columns="RECIPES_COLUMN"
             :loading="isFetching"
             :row-class="(row) => (!row.is_active ? 'opacity-50' : '')"
+            :show-pagination="true"
+            :items-per-page="itemsPerPage"
+            :total-items-count="recipes?.count || 0"
+            :total-page-count="Math.ceil((recipes?.count || 0) / itemsPerPage) || 1"
+            :server-pagination="true"
+            @pagination-change="(d) => (page = d.currentPage)"
             @row-click="(row) => $router.push(`/production/recipes/${row.uid}`)"
           >
             <template #cell:output_item_name="{ item }">

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
-import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 import AppButton from "@components/AppButton.vue"
@@ -12,8 +11,7 @@ import EmptyState from "@components/EmptyState.vue"
 import TextField from "@components/form/TextField.vue"
 import PageHeader from "@components/PageHeader.vue"
 import SectionHeader from "@components/SectionHeader.vue"
-import StatCard from "@components/StatCard.vue"
-import { useFinaliseProdRun, useGetProdRuns, useGetProdRunsStats } from "@modules/production/api"
+import { useFinaliseProdRun, useGetProdRuns } from "@modules/production/api"
 import CreateProdRunDrawer from "@modules/production/components/prod-run/CreateProdRunDrawer.vue"
 import ProdRunCard from "@modules/production/components/prod-run/ProdRunCard.vue"
 import { PROD_RUNS_COLUMN } from "@modules/production/constant"
@@ -32,58 +30,16 @@ const showFinaliseModal = ref(false)
 
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 const router = useRouter()
-const { format } = useFormatCurrency()
 
 const computedParams = computed(() => {
   const params: Record<string, string> = {}
   if (debouncedSearch.value) params.search = debouncedSearch.value
-  params.offset = ((page.value - 1) * itemsPerPage.value).toString()
+  params.offset = (((debouncedSearch.value ? 1 : page.value) - 1) * itemsPerPage.value).toString()
   params.limit = itemsPerPage.value.toString()
   return params
 })
 
 const { data: prodRuns, isPending, isFetching, refetch } = useGetProdRuns(computedParams)
-const { data: stats, isLoading: isLoadingStats } = useGetProdRunsStats()
-
-const prodRunStats = computed(() => [
-  {
-    label: "Total Runs",
-    value: stats.value?.total_runs || 0,
-    icon: "bag",
-    iconClass: "lg:text-gray-700",
-  },
-  ...(isMobile.value
-    ? []
-    : [
-        {
-          label: "Total Units Produced",
-          value: stats.value?.total_units_produced || 0,
-          icon: "bag",
-          iconClass: "lg:text-gray-700",
-        },
-      ]),
-  {
-    label: "Total Production Cost",
-    value: stats.value?.total_production_cost || 0,
-    icon: "bag",
-    iconClass: "lg:text-gray-700",
-    chip:
-      isMobile.value && stats.value?.avg_cost_per_unit
-        ? `${format(stats.value?.avg_cost_per_unit)} avg`
-        : undefined,
-    chipColor: "purple",
-  },
-  ...(isMobile.value
-    ? []
-    : [
-        {
-          label: "Avg Cost per Unit",
-          value: format(stats.value?.avg_cost_per_unit || 0),
-          icon: "bag",
-          iconClass: "lg:text-gray-700",
-        },
-      ]),
-])
 
 const getActionItems = (item: TProdRun) => [
   {
@@ -139,7 +95,7 @@ const onFinaliseRun = () => {
 
     <div class="flex flex-col gap-8">
       <EmptyState
-        v-if="!prodRuns?.count && !searchQuery"
+        v-if="!prodRuns?.count && !searchQuery && page === 1"
         :title="`You don't have any production runs yet!`"
         :description="`When you complete a run, it will appear here along with your full cost breakdown.`"
         :action-label="`Add production run`"
@@ -153,17 +109,8 @@ const onFinaliseRun = () => {
       </EmptyState>
 
       <section v-else class="flex flex-col gap-5 lg:gap-8">
-        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatCard
-            v-for="item in prodRunStats"
-            :key="item.label"
-            :stat="item"
-            :loading="isLoadingStats"
-          />
-        </div>
-
         <div
-          class="space-y-4 overflow-hidden rounded-xl border-gray-200 pt-3 md:border md:bg-white"
+          class="space-y-4 overflow-hidden rounded-xl border-gray-200 pt-3 md:border md:bg-white lg:mt-6"
         >
           <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
             <h3 class="mb-2 hidden items-center gap-1 text-lg font-semibold md:mb-0 lg:flex">
@@ -202,6 +149,12 @@ const onFinaliseRun = () => {
             :data="prodRuns?.results ?? []"
             :columns="PROD_RUNS_COLUMN"
             :loading="isFetching"
+            :show-pagination="true"
+            :items-per-page="itemsPerPage"
+            :total-items-count="prodRuns?.count || 0"
+            :total-page-count="Math.ceil((prodRuns?.count || 0) / itemsPerPage) || 1"
+            :server-pagination="true"
+            @pagination-change="(d) => (page = d.currentPage)"
             @row-click="(row) => $router.push(`/production/runs/${row.uid}`)"
           >
             <template #cell:status="{ item }">

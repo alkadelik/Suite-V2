@@ -22,12 +22,14 @@ import { useRoute, useRouter } from "vue-router"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
-
-const materialTabs = [
-  { title: "Batches", key: "batches" },
-  { title: "Logs", key: "usage" },
-  { title: "Linked Recipes", key: "recipes" },
-]
+import {
+  convertNumToPurchaseUnit,
+  convertNumToUsageUnit,
+  getPurchaseUnit,
+} from "@modules/production/utils"
+import { UNITS_OF_MEASURE } from "@modules/production/constant"
+import { startCase } from "@/utils/format-strings"
+import { floatDecimal } from "@/utils/others"
 
 const route = useRoute()
 const router = useRouter()
@@ -36,6 +38,13 @@ const showEdit = ref(false)
 const showAdjust = ref(false)
 const showDelete = ref(false)
 const activeTab = ref("batches")
+
+const materialTabs = computed(() => [
+  { title: "Batches", key: "batches" },
+  { title: "Logs", key: "usage" },
+  { title: isMobile.value ? " Recipes" : "Linked Recipes", key: "recipes" },
+])
+
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 const materialLabel = computed(() => useProductionStore().componentLabel)
 const materialValue = computed(() => useProductionStore().componentValue)
@@ -70,39 +79,50 @@ const actionMenus = computed(() => [
   },
 ])
 
-const materialStats = computed(() => [
-  {
-    label: "Current Stock",
-    value: `${material.value?.current_stock?.toLocaleString() ?? 0} ${material.value?.unit || ""}`,
-    icon: "bag",
-  },
-  {
-    label: "Avg Cost per Unit",
-    value: `${format(material.value?.avg_cost || 0)}/kg`,
-    icon: "bag",
-  },
-  {
-    label: "Last Purchase Cost",
-    value: `${format(material.value?.last_cost || 0)}/kg`,
-    icon: "bag",
-    chip: isMobile.value
-      ? undefined
-      : material.value?.last_cost_date
-        ? formatDate(new Date(material.value.last_cost_date))
-        : undefined,
-    chipColor: "blue",
-  },
-  {
-    label: "Stock Level",
-    value: undefined,
-    icon: "bag",
-    chip: material?.value?.low_stock ? "Low" : "Good",
-    chipColor: material?.value?.low_stock ? "warning" : "success",
-  },
-])
+const materialStats = computed(() => {
+  const item = material.value
+  if (!item) return []
+
+  return [
+    {
+      label: "Current Stock",
+      value: `${floatDecimal(convertNumToPurchaseUnit(item.current_stock || 0, item))} ${getPurchaseUnit(item)}`,
+      icon: "bag",
+    },
+    {
+      label: "Avg Cost per Unit",
+      value: `${format(+convertNumToUsageUnit(+item.avg_cost, item))}/${getPurchaseUnit(item)}`,
+      icon: "bag",
+    },
+    {
+      label: "Last Purchase Cost",
+      value: `${format(+convertNumToUsageUnit(+item.last_cost, item))}/${getPurchaseUnit(item)}`,
+      icon: "bag",
+      chip: isMobile.value
+        ? undefined
+        : item.last_cost_date
+          ? formatDate(new Date(item.last_cost_date))
+          : undefined,
+      chipColor: "blue",
+    },
+    {
+      label: "Stock Level",
+      value: undefined,
+      icon: "bag",
+      chip: item.low_stock ? "Low" : "Good",
+      chipColor: item.low_stock ? "warning" : "success",
+    },
+  ]
+})
 
 onMounted(() => {
   activeTab.value = route.query.tab ? String(route.query.tab) : "batches"
+})
+
+const getUnitLabel = computed(() => {
+  if (!material.value) return ""
+  const found = UNITS_OF_MEASURE.find((u) => u.value === getPurchaseUnit(material.value))
+  return found ? found.label : startCase(getPurchaseUnit(material.value))
 })
 </script>
 
@@ -132,7 +152,7 @@ onMounted(() => {
           <h2 class="mb-4 text-2xl font-semibold capitalize">{{ material.name }}</h2>
           <div class="flex gap-1">
             <Chip v-if="material.is_sub_assembly" label="Sub-assembly" color="purple" />
-            <Chip :label="`Unit - ${material.unit}`" color="success" />
+            <Chip :label="getUnitLabel" color="blue" />
           </div>
         </div>
 
