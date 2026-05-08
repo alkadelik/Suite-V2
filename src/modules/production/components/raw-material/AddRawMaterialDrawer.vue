@@ -9,7 +9,7 @@ import Icon from "@components/Icon.vue"
 import { useMediaQuery } from "@vueuse/core"
 import { Field, useForm } from "vee-validate"
 import * as yup from "yup"
-import { watch, computed, ref } from "vue"
+import { watch, computed, ref, nextTick } from "vue"
 import { useQueryClient } from "@tanstack/vue-query"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
@@ -24,6 +24,7 @@ import { TRawMaterial, type TConversion } from "../../types"
 import SelectField from "@components/form/SelectField.vue"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { UNITS_OF_MEASURE } from "@modules/production/constant"
+import { startCase } from "@/utils/format-strings"
 
 const props = defineProps<{
   open: boolean
@@ -307,15 +308,24 @@ watch(
           (c) => c.is_active && c.from_unit !== c.to_unit,
         )
         const productionUnit = activeConversion
-          ? { label: activeConversion.to_unit, value: activeConversion.to_unit }
-          : { label: item.unit, value: item.unit }
+          ? { label: startCase(activeConversion.to_unit), value: activeConversion.to_unit }
+          : { label: startCase(item.unit), value: item.unit }
+
+        // Ensure custom units not in the standard list are available for the SelectField
+        const ensureUnit = (unitValue: string) => {
+          if (!unitOptions.value.find((o) => o.value === unitValue)) {
+            unitOptions.value.push({ label: startCase(unitValue), value: unitValue })
+          }
+        }
+        ensureUnit(item.unit)
+        if (activeConversion) ensureUnit(activeConversion.to_unit)
 
         const prefillSuppliers = item.suppliers?.map((s) => ({ label: s.name, value: s.uid })) ?? []
 
         resetForm({
           values: {
             name: item.name,
-            unit: { label: item.unit, value: item.unit },
+            unit: { label: startCase(item.unit), value: item.unit },
             production_unit: productionUnit,
             qty_in_stock: item.current_stock.toString(),
             source: item.is_sub_assembly ? sourceOptions[1] : sourceOptions[0],
@@ -327,10 +337,17 @@ watch(
               : "",
             notes: item.notes ?? "",
             conversion_from_qty: "1",
-            conversion_to_qty: activeConversion ? activeConversion.rate : "",
-            conversion_name: activeConversion ? activeConversion.name : "",
+            conversion_to_qty: "",
+            conversion_name: "",
           },
         })
+        if (activeConversion) {
+          nextTick(() => {
+            setFieldValue("conversion_from_qty", "1")
+            setFieldValue("conversion_to_qty", String(parseInt(activeConversion.rate)))
+            setFieldValue("conversion_name", activeConversion.name)
+          })
+        }
       } else {
         resetForm({
           values: {
