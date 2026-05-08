@@ -5,7 +5,7 @@ import SelectField from "@components/form/SelectField.vue"
 import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
 import { useSearchRawMaterial } from "@modules/production/api"
-import { convertQtyToUsageUnit, getProdUsageUnit } from "@modules/production/utils"
+import { getProdUsageUnit } from "@modules/production/utils"
 import type { TConversion } from "@modules/production/types"
 import type { IngredientRow } from "../AddNewRecipeDrawer.vue"
 import { useMediaQuery } from "@vueuse/core"
@@ -106,24 +106,20 @@ const removeRow = (row: IngredientRow) => {
 
 const totalIngredientCost = computed(() => {
   const total = ingredientRows.value.reduce((sum, row) => {
-    const baseCost = row.ingredient.base_cost_per_unit ?? row.ingredient.cost_per_unit ?? 0
-    const qty = convertQtyToUsageUnit(Number(row.qty), {
-      unit: row.ingredient.base_unit || row.ingredient.unit || "",
-      conversions: (row.ingredient.conversions ?? []) as TConversion[],
-    })
-    return sum + baseCost * qty
+    const baseCost = rowCostPerUsageUnit(row) || 0
+    return sum + baseCost * row.qty
   }, 0)
   return formatCurrency(Number(total))
 })
 
-function rowPurchaseUnit(row: IngredientRow) {
+function rowUsageUnit(row: IngredientRow) {
   return getProdUsageUnit({
     unit: row.ingredient.base_unit || row.ingredient.unit || "",
     conversions: (row.ingredient.conversions ?? []) as TConversion[],
   })
 }
 
-function rowCostPerPurchaseUnit(row: IngredientRow) {
+function rowCostPerUsageUnit(row: IngredientRow) {
   const firstConversion = (row.ingredient.conversions ?? [])[0]
   if (!firstConversion) return row.ingredient.cost_per_unit || 0
   const baseCost = row.ingredient.base_cost_per_unit ?? row.ingredient.cost_per_unit ?? 0
@@ -218,7 +214,7 @@ function handleNext() {
                 </div>
                 <div v-if="row.ingredient.cost_per_unit" class="mt-1 flex items-center gap-2">
                   <Chip
-                    :label="`${formatCurrency(rowCostPerPurchaseUnit(row))}/${rowPurchaseUnit(row)}`"
+                    :label="`${formatCurrency(rowCostPerUsageUnit(row))}/${rowUsageUnit(row)}`"
                     size="sm"
                   />
                 </div>
@@ -229,7 +225,7 @@ function handleNext() {
               <TextField
                 v-model="row.qty"
                 type="number"
-                :prefix="rowPurchaseUnit(row)"
+                :prefix="rowUsageUnit(row)"
                 class="w-full"
               />
 
