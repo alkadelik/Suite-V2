@@ -25,7 +25,6 @@ import { TRawMaterial, type TConversion } from "../../types"
 import SelectField from "@components/form/SelectField.vue"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { UNITS_OF_MEASURE } from "@modules/production/constant"
-import { startCase } from "@/utils/format-strings"
 import { floatDecimal } from "@/utils/others"
 
 const props = defineProps<{
@@ -314,12 +313,12 @@ const seedFromMaterial = (item: TRawMaterial) => {
     (c) => c.is_active && c.from_unit !== c.to_unit,
   )
   const productionUnit = activeConversion
-    ? { label: startCase(activeConversion.to_unit), value: activeConversion.to_unit }
-    : { label: startCase(item.unit), value: item.unit }
+    ? { label: activeConversion.to_unit, value: activeConversion.to_unit }
+    : { label: item.unit, value: item.unit }
 
   const ensureUnit = (unitValue: string) => {
     if (!unitOptions.value.find((o) => o.value === unitValue)) {
-      unitOptions.value.push({ label: startCase(unitValue), value: unitValue })
+      unitOptions.value.push({ label: unitValue, value: unitValue })
     }
   }
   ensureUnit(item.unit)
@@ -331,7 +330,7 @@ const seedFromMaterial = (item: TRawMaterial) => {
     values: {
       name: item.name,
       unit: productionUnit,
-      production_unit: { label: startCase(item.unit), value: item.unit },
+      production_unit: { label: item.unit, value: item.unit },
       qty_in_stock: activeConversion
         ? floatDecimal(item.current_stock / Number(activeConversion.rate)).toString()
         : item.current_stock.toString(),
