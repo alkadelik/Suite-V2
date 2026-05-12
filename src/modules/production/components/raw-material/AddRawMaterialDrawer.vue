@@ -265,7 +265,8 @@ const onSubmit = handleSubmit((values) => {
 
   // unit cost for each material is stored in purchase unit, so convert if needed
   let default_cost = null
-  if (values.source?.value === "supplier") {
+  const is_sub_assembly = values.source?.value === "manufacture"
+  if (!is_sub_assembly || (is_sub_assembly && values.qty_in_stock)) {
     default_cost = floatDecimal(
       Number(values.default_cost.replace(/[^0-9.]/g, "")) / (conversion ? +conversion.rate : 1),
     )
@@ -275,7 +276,7 @@ const onSubmit = handleSubmit((values) => {
     name: values.name,
     unit: values.production_unit?.value || "",
     qty_in_stock,
-    is_sub_assembly: values.source?.value === "manufacture",
+    is_sub_assembly,
     ...(default_cost ? { default_cost } : {}),
     ...(values.suppliers.length ? { suppliers: values.suppliers.map((x) => x.value) } : {}),
     ...(values.expiry_date ? { expiry_date: values.expiry_date } : {}),
@@ -420,7 +421,10 @@ watch(
 const validateStepOne = async () => {
   const stepOneFields: Array<keyof FormValues> = ["name", "unit", "qty_in_stock", "source"]
 
-  if (values.source?.value === "supplier") {
+  if (
+    values.source?.value === "supplier" ||
+    (values.qty_in_stock && values.source?.value === "manufacture")
+  ) {
     stepOneFields.push("default_cost")
   }
 
@@ -668,24 +672,9 @@ const handleAddFromSearch = (search: string, close: () => void) => {
               />
             </div>
 
-            <div
-              v-if="values.source?.value === 'manufacture'"
-              class="bg-primary-25 text-warning-700 border-warning-300 flex items-center gap-3 rounded-xl border px-3 py-3 md:px-6"
-            >
-              <span
-                class="border-primary-200 ring-primary-100 flex size-8 flex-shrink-0 items-center justify-center rounded-full border-2 ring-2 ring-offset-2"
-              >
-                <Icon name="info-circle" size="20" />
-              </span>
-              <div class="text-sm">
-                <p class="font-medium">This Material is a Sub-assembly</p>
-                <p>This will be the name displayed in the inventory</p>
-              </div>
-            </div>
-
-            <div v-else>
+            <div v-if="mode !== 'edit'">
               <FormField
-                v-if="mode !== 'edit'"
+                v-if="values.qty_in_stock || values.source?.value === 'supplier'"
                 type="number"
                 name="default_cost"
                 format="currency"
@@ -695,6 +684,21 @@ const handleAddFromSearch = (search: string, close: () => void) => {
                 placeholder="e.g. 25"
                 required
               />
+
+              <div
+                v-if="values.source?.value === 'manufacture'"
+                class="bg-primary-25 text-warning-700 border-warning-300 mt-6 flex items-center gap-3 rounded-xl border px-3 py-3 md:px-6"
+              >
+                <span
+                  class="border-primary-200 ring-primary-100 flex size-8 flex-shrink-0 items-center justify-center rounded-full border-2 ring-2 ring-offset-2"
+                >
+                  <Icon name="info-circle" size="20" />
+                </span>
+                <div class="text-sm">
+                  <p class="font-medium">This Material is a Sub-assembly</p>
+                  <p>This will be the name displayed in the inventory</p>
+                </div>
+              </div>
             </div>
           </form>
         </div>
