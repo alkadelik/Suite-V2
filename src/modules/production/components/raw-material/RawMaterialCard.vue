@@ -7,7 +7,12 @@ import { useProductionStore } from "../../store"
 import Chip from "@components/Chip.vue"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { useRouter } from "vue-router"
-import { getPurchaseUnit } from "@modules/production/utils"
+import {
+  convertNumToPurchaseUnit,
+  convertNumToUsageUnit,
+  getPurchaseUnit,
+} from "@modules/production/utils"
+import { floatDecimal } from "@/utils/others"
 
 const props = defineProps<{ material: TRawMaterial; class?: string }>()
 const emit = defineEmits(["click", "toggle", "edit", "adjust", "view", "delete"])
@@ -63,24 +68,35 @@ const actionMenus = computed(() => [
       />
       <DropdownMenu :items="actionMenus" @toggle="emit('toggle')" />
     </div>
-    <div class="flex justify-between p-5 pb-3">
-      <div>
-        <p class="text-sm font-medium">
-          {{ Number(material.current_stock).toLocaleString() + getPurchaseUnit(material) }}
+    <div class="flex justify-between gap-3 overflow-hidden p-3 pt-5">
+      <div class="min-w-0">
+        <p class="truncate text-sm font-medium">
+          {{ floatDecimal(convertNumToPurchaseUnit(+material.current_stock, material)) }}
+          {{ getPurchaseUnit(material) }}
         </p>
         <p class="text-core-600 text-xs">Stock</p>
       </div>
       <!--  -->
-      <div>
-        <p class="text-sm font-medium">
-          {{ format(Number(material.last_cost)) }}/{{ getPurchaseUnit(material) }}
+      <div class="min-w-0">
+        <p class="truncate text-sm font-medium">
+          {{
+            +material.last_cost
+              ? `${format(
+                  +convertNumToUsageUnit(+material.last_cost, material),
+                )}/${getPurchaseUnit(material)}`
+              : "-"
+          }}
         </p>
         <p class="text-core-600 text-xs">Last Cost</p>
       </div>
       <!--  -->
-      <div>
-        <p class="text-sm font-medium">
-          {{ format(Number(material.avg_cost)) }}/{{ getPurchaseUnit(material) }}
+      <div class="min-w-0">
+        <p class="truncate text-sm font-medium">
+          {{
+            +material.avg_cost
+              ? `${format(+convertNumToUsageUnit(+material.avg_cost, material))}/${getPurchaseUnit(material)}`
+              : "-"
+          }}
         </p>
         <p class="text-core-600 text-xs">Avg Cost</p>
       </div>
