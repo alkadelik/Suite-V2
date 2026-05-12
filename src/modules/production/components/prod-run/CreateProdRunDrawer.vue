@@ -315,6 +315,7 @@ const forceClose = () => {
           <ProcessExpensesForm
             v-if="step == 2"
             :initial-rows="processRowsState"
+            :initial-expenses="additionalExpensesState"
             @prev="onPrev"
             @submit="
               (remainingProcessRows: ProcessRow[], additionalExpenses: AdditionalExpenseRow[]) => {
