@@ -93,10 +93,11 @@ export function useGetRawMaterialsStats() {
 }
 
 /** Fetch single raw material by ID */
-export function useGetSingleRawMaterial(id: string) {
+export function useGetSingleRawMaterial(id: MaybeRefOrGetter<string>) {
   return useApiQuery<TRawMaterial>({
-    url: `/raw-materials/${id}/`,
-    key: `raw-materials/${id}`,
+    url: () => `/raw-materials/${toValue(id)}/`,
+    key: () => `raw-materials/${toValue(id)}`,
+    enabled: () => !!toValue(id),
     selectData: true,
   })
 }

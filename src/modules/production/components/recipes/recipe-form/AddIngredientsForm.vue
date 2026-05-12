@@ -237,6 +237,8 @@ function handleNext() {
       </div>
     </div>
 
+    <div class="py-16" />
+
     <div
       class="border-core-200 fixed right-0 bottom-0 left-0 space-y-2 border-t bg-white p-4 md:p-6"
     >
