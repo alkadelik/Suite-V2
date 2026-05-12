@@ -30,7 +30,7 @@ const { format } = useFormatCurrency()
         <div class="flex flex-1 flex-col gap-2 truncate">
           <div class="flex justify-between">
             <h4 class="truncate text-left text-sm font-semibold capitalize">
-              B{{ item.uid.slice(0, 8) }}
+              {{ formatDate(item.date_added) }}
             </h4>
 
             <div class="flex items-center justify-end gap-2">
@@ -47,12 +47,7 @@ const { format } = useFormatCurrency()
             <!-- status -->
             <Chip v-if="item.source_type" :label="startCase(item.source_type)" color="blue" />
 
-            <!-- date -->
-            <p class="ml-auto pl-4 text-xs font-medium">
-              {{ formatDate(item.date_added) }}
-            </p>
-            <span class="text-lg">&bull;</span>
-            <p class="text-xs font-medium">
+            <p class="ml-auto text-xs font-medium">
               {{ format(item.total_cost) }}
             </p>
           </div>
