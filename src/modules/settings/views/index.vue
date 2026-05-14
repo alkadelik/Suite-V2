@@ -115,7 +115,12 @@ watch(
 
 const isInternational = computed(() => useSettingsStore().isInternational)
 
-const INTERNATIONAL_HIDDEN_LINKS = ["Plans & Billing", "Storefront Design", "Delivery Options"]
+const INTERNATIONAL_HIDDEN_LINKS = [
+  "Plans & Billing",
+  "Storefront Design",
+  "Delivery Options",
+  "Domains",
+]
 
 const LINKS = computed(() =>
   [
@@ -127,6 +132,7 @@ const LINKS = computed(() =>
     { label: "Locations", path: "/settings/locations" },
     { label: "Taxes", path: "/settings/taxes" },
     { label: "Storefront Design", path: "/settings/design" },
+    { label: "Domains", path: "/settings/domains" },
     { label: "Delivery Options", path: "/settings/delivery-options" },
     { label: "Production", path: "/settings/production" },
   ].filter((link) => {
