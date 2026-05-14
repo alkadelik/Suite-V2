@@ -14,10 +14,11 @@ import {
   IThemeSettings,
   ThemeSection,
   IVersionHistory,
+  TCustomDomain,
 } from "./types"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query"
 import { IkycInfo, IUser } from "@modules/auth/types"
-import type { Ref } from "vue"
+import { computed, toValue, type MaybeRefOrGetter, type Ref } from "vue"
 
 /** get user profile */
 export function useGetProfile() {
@@ -373,6 +374,89 @@ export function useGetVersionHistory(storefrontUid: Ref<string> | string) {
     enabled: () => {
       const uid = typeof storefrontUid === "string" ? storefrontUid : storefrontUid.value
       return !!uid
+    },
+  })
+}
+
+// --- Custom domains ---
+
+type TCustomDomainList = {
+  count: number
+  next: string | null
+  previous: string | null
+  results: TCustomDomain[]
+}
+
+/** List the store's custom domain(s) — expected to be 0 or 1. */
+export function useGetCustomDomains(enabled = true) {
+  return useApiQuery<TCustomDomainList>({
+    url: "/storefront/custom-domain/",
+    key: "custom-domains",
+    selectData: true,
+    enabled,
+  })
+}
+
+/**
+ * Retrieve / poll a single custom domain.
+ * Pass `refetchInterval` (number ms, `false`, or a getter) to poll during verification.
+ */
+export function useGetCustomDomain(
+  uid: MaybeRefOrGetter<string>,
+  options?: {
+    enabled?: MaybeRefOrGetter<boolean>
+    refetchInterval?: number | false | (() => number | false)
+  },
+) {
+  return useQuery<TCustomDomain>({
+    queryKey: computed(() => ["custom-domain", toValue(uid)]),
+    queryFn: async () => {
+      const { data } = await baseApi.get(`/storefront/custom-domain/${toValue(uid)}/`)
+      // API responses are wrapped in `{ data: ... }`.
+      return (
+        data && typeof data === "object" && "data" in data ? data.data : data
+      ) as TCustomDomain
+    },
+    enabled:
+      options?.enabled !== undefined
+        ? computed(() => toValue(options.enabled))
+        : computed(() => !!toValue(uid)),
+    refetchInterval: options?.refetchInterval,
+    retry: false,
+    refetchOnWindowFocus: false,
+  })
+}
+
+/** Register a custom domain. Response body: `{ data: TCustomDomain }`. */
+export function useCreateCustomDomain() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { domain: string }) => baseApi.post("/storefront/custom-domain/", body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["custom-domains"] })
+    },
+  })
+}
+
+/** Re-trigger DNS verification (also used for "Retry" / "Refresh records"). */
+export function useVerifyCustomDomain() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (uid: string) => baseApi.post(`/storefront/custom-domain/${uid}/verify/`, {}),
+    onSuccess: (_data, uid) => {
+      queryClient.invalidateQueries({ queryKey: ["custom-domain", uid] })
+      queryClient.invalidateQueries({ queryKey: ["custom-domains"] })
+    },
+  })
+}
+
+/** Disconnect (also removes the domain from Vercel). */
+export function useDeleteCustomDomain() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (uid: string) => baseApi.delete(`/storefront/custom-domain/${uid}/`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["custom-domains"] })
     },
   })
 }

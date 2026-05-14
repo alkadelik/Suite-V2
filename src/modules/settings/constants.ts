@@ -1,5 +1,12 @@
 import { TableColumn } from "@components/DataTable.vue"
-import { IStoreTheme, TLocation, TSubscription, TTeam } from "./types"
+import {
+  IStoreTheme,
+  TLocation,
+  TSubscription,
+  TTeam,
+  TCustomDomainStatus,
+  TDnsRecord,
+} from "./types"
 
 export const LOCATION_COLUMNS: TableColumn<TLocation>[] = [
   { header: "Name", accessor: "name" },
@@ -144,4 +151,122 @@ export const STORE_THEMES: IStoreTheme[] = [
     preview_image: "/images/themes/bloom.png",
     in_use: false,
   },
+]
+
+// --- Domains ---
+
+export type TChipColor = "primary" | "success" | "warning" | "error" | "alt" | "blue" | "purple"
+
+export const DNS_RECORD_COLUMNS: TableColumn<TDnsRecord>[] = [
+  { header: "Host", accessor: "host", class: "min-w-[72px]" },
+  { header: "Type", accessor: "type", class: "min-w-[80px]" },
+  { header: "Value", accessor: "value", class: "min-w-[220px]" },
+  { header: "Status", accessor: "status", class: "min-w-[150px]" },
+  { header: "", accessor: "action", class: "min-w-[48px]" },
+]
+
+/** Status → chips + optional setup banner shown on the card and detail page. */
+export const DOMAIN_STATUS_META: Record<
+  TCustomDomainStatus,
+  {
+    chips: { label: string; color: TChipColor }[]
+    banner?: { title: string; message: string }
+  }
+> = {
+  PENDING: {
+    chips: [
+      { label: "Connected", color: "purple" },
+      { label: "SSL Inactive", color: "alt" },
+      { label: "Missing records", color: "warning" },
+    ],
+    banner: {
+      title: "Finish setting up your domain",
+      message:
+        "We couldn't detect your DNS records yet. Add the required records in your domain provider to connect your domain.",
+    },
+  },
+  VERIFYING: {
+    chips: [
+      { label: "Connected", color: "purple" },
+      { label: "SSL Inactive", color: "alt" },
+      { label: "Pending", color: "warning" },
+    ],
+    banner: {
+      title: "Verifying your domain",
+      message: "We're checking your DNS records. This usually takes a few minutes.",
+    },
+  },
+  ACTIVE: {
+    chips: [
+      { label: "Connected", color: "purple" },
+      { label: "SSL Active", color: "success" },
+      { label: "All Records Correct", color: "blue" },
+    ],
+  },
+  FAILED: {
+    chips: [
+      { label: "Connection Failed", color: "error" },
+      { label: "SSL Inactive", color: "alt" },
+      { label: "Missing records", color: "warning" },
+    ],
+    banner: {
+      title: "Connection failed",
+      message:
+        "We couldn't verify your DNS records. Add the required records in your domain provider and try again.",
+    },
+  },
+}
+
+export const HOW_IT_WORKS_STEPS = [
+  {
+    step: 1,
+    title: "Enter your domain",
+    description: "Type your domain and we'll show you exactly what to add",
+    duration: "1 min",
+  },
+  {
+    step: 2,
+    title: "Add DNS records",
+    description: "Copy the records into your registrar's DNS settings",
+    duration: "5 min",
+  },
+  {
+    step: 3,
+    title: "We verify each one",
+    description: "Watch each record confirm in real time — or simply close the tab",
+    duration: "30–60 min",
+  },
+  {
+    step: 4,
+    title: "Your domain goes live",
+    description: "We email you when it's done — SSL active, www redirect on",
+    duration: "Done",
+  },
+]
+
+export const DNS_INSTRUCTION_STEPS = [
+  "Sign in to your domain registrar and open your domain's DNS settings.",
+  "Add a new record for each row in the table above (Host, Type, Value).",
+  "Save your changes — DNS updates can take up to 48 hours, but usually finish within a few minutes.",
+  "Come back here and continue to the next step to verify the connection.",
+]
+
+export const DOMAIN_BENEFITS = [
+  "Free SSL certificate — included and auto-renewed",
+  "Works with any registrar — GoDaddy, Cloudflare and more",
+  "Step-by-step guidance for your provider",
+  "We'll email you when it's live — you don't need to wait",
+]
+
+/** "Get A Domain" has no destination yet — keep the button rendered but inert. */
+export const GET_A_DOMAIN_ENABLED = false
+
+/**
+ * Fallback fixture used when the backend hasn't populated `dns_records` yet.
+ * Remove once the live API reliably returns DNS records.
+ */
+export const MOCK_DNS_RECORDS: TDnsRecord[] = [
+  { host: "@", type: "A", value: "64.225.111.78", status: "not_found" },
+  { host: "www", type: "CNAME", value: "shop.your-domain.com", status: "not_found" },
+  { host: "@", type: "TXT", value: "leyyow-verify=abc123", status: "not_found" },
 ]
