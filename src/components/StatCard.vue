@@ -33,7 +33,7 @@ const isLoading = computed(() => props.loading)
 <template>
   <div
     :class="[
-      'rounded-xl border',
+      'overflow-hidden rounded-xl border',
       variant === 'alt'
         ? 'border-primary-200 bg-primary-25 p-4'
         : 'border-primary-200 bg-primary-25 p-3 pb-2 lg:border-gray-300 lg:bg-white lg:p-5 lg:pb-3',
@@ -41,7 +41,7 @@ const isLoading = computed(() => props.loading)
   >
     <!-- Loading skeleton -->
     <div v-if="isLoading" class="animate-pulse">
-      <div :class="['flex gap-2', 'flex-row items-center']">
+      <div :class="['flex gap-2', 'flex-col items-start']">
         <div :class="{ 'flex items-center justify-between': true }">
           <!-- Icon skeleton -->
           <div
@@ -74,7 +74,7 @@ const isLoading = computed(() => props.loading)
       <div :class="['flex gap-2', 'flex-col overflow-hidden md:flex-row md:items-center']">
         <div
           :class="{
-            'flex flex-1 flex-col gap-2 md:gap-4': true,
+            'flex min-w-0 flex-1 flex-col gap-2 overflow-hidden md:gap-4': true,
             'md:flex-row md:items-center': stat.percentage !== undefined && variant !== 'alt',
           }"
         >
@@ -93,7 +93,7 @@ const isLoading = computed(() => props.loading)
           />
 
           <!-- label -->
-          <h3 class="!font-outfit text-core-600 line-clamp-1 text-sm md:text-base">
+          <h3 class="!font-outfit text-core-600 w-full max-w-full truncate text-sm md:text-base">
             {{ stat.label }}
           </h3>
 
@@ -114,9 +114,9 @@ const isLoading = computed(() => props.loading)
       <!-- value -->
       <div
         class="flex items-center justify-between gap-6"
-        :class="variant === 'alt' ? 'mt-2' : 'mt-4'"
+        :class="variant === 'alt' ? 'mt-2' : 'mt-2'"
       >
-        <p v-if="stat.value !== undefined" class="text-core-800">
+        <p v-if="stat.value !== undefined" class="text-core-800 min-w-0 truncate">
           <span class="text-lg font-semibold md:text-xl">{{ stat.value }}</span>
           <span v-if="stat.valueText" class="text-sm">{{ " " + stat.valueText }}</span>
         </p>

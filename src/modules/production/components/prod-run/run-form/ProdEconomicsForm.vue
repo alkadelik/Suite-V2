@@ -11,6 +11,7 @@ import type {
   BasicRunDetails,
 } from "../form-types"
 import TextField from "@components/form/TextField.vue"
+import { useMediaQuery } from "@vueuse/core"
 
 const props = defineProps<{
   loading: boolean
@@ -19,10 +20,14 @@ const props = defineProps<{
   processRows: ProcessRow[]
   additionalExpenses: AdditionalExpenseRow[]
 }>()
-const emit = defineEmits<{ (e: "prev"): void; (e: "submit", sellingPrice: number): void }>()
+const emit = defineEmits<{
+  (e: "prev"): void
+  (e: "submit", sellingPrice: number, status: string): void
+}>()
 
 const { format } = useFormatCurrency()
 const showEstimator = ref(false)
+const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
 
 const outputItemType = computed(() => props.initialValues.outputItemType)
 const isProduct = computed(() => outputItemType.value === "product")
@@ -134,13 +139,25 @@ const estimationVerdict = computed(() => {
     </div>
 
     <div class="border-core-200 fixed right-0 bottom-0 left-0 border-t bg-white p-4 md:p-6">
-      <div class="mt-6 flex gap-3">
-        <AppButton variant="outlined" label="Back" class="w-1/3" @click="emit('prev')" />
+      <div class="mt-3 flex gap-2">
+        <AppButton
+          color="alt"
+          icon="arrow-left"
+          :label="isMobile ? '' : 'Back'"
+          class="flex-shrink-0"
+          @click="emit('prev')"
+        />
+        <AppButton
+          variant="outlined"
+          label="Save as Draft"
+          class="flex-1"
+          @click="emit('submit', sellingPrice, 'draft')"
+        />
         <AppButton
           label="Create Run"
-          class="w-2/3"
+          class="w-2/5"
           :loading="loading"
-          @click="emit('submit', sellingPrice)"
+          @click="emit('submit', sellingPrice, 'finalized')"
         />
       </div>
     </div>

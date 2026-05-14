@@ -8,6 +8,7 @@ import { computed, ref } from "vue"
 
 const props = defineProps<{
   initialRows: ProcessRow[]
+  initialExpenses?: AdditionalExpenseRow[]
 }>()
 
 const emit = defineEmits<{
@@ -30,7 +31,7 @@ const makeEmptyExpense = (): AdditionalExpenseRow => ({
   amount: "",
 })
 
-const additionalExpenses = ref<AdditionalExpenseRow[]>([])
+const additionalExpenses = ref<AdditionalExpenseRow[]>([...(props.initialExpenses ?? [])])
 
 const addExpense = () => additionalExpenses.value.push(makeEmptyExpense())
 const removeExpense = (row: AdditionalExpenseRow) => {

@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
+import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
 import Modal from "@components/Modal.vue"
+import SelectField from "@components/form/SelectField.vue"
 import type { IngredientRow } from "../form-types"
+import { useSearchRawMaterial } from "@modules/production/api"
 import { computed, ref } from "vue"
 import Chip from "@components/Chip.vue"
 import TextField from "@components/form/TextField.vue"
@@ -98,8 +101,58 @@ function saveUsedStock() {
 //   adjustModalOpen.value = false
 // }
 
+// ─── Add ingredient modal ─────────────────────────────────────────────────
+const addModalOpen = ref(false)
+const addSearchInput = ref("")
+const addSearchQuery = useDebouncedRef(addSearchInput, 400)
+const { data: addSearchResults, isFetching: isSearchingAdd } = useSearchRawMaterial(addSearchQuery)
+const addSelectedMaterial = ref<IngredientRow["ingredient"] | null>(null)
+const addQty = ref<number | undefined>(undefined)
+
+const addMaterialOptions = computed(() => {
+  if (!addSearchResults.value?.results) return []
+  return addSearchResults.value.results
+    .filter((m) => !ingredientRows.value.find((r) => r.ingredient.value === m.uid))
+    .map((m) => ({
+      label: m.name,
+      value: m.uid || "",
+      unit: m.unit || "",
+      cost_per_unit: Number(m.last_cost || m.avg_cost || 0),
+      kind: (m.is_sub_assembly ? "sub_assembly" : "raw_material") as string,
+      conversions: m.conversions || [],
+      available_stock: m.current_stock,
+    }))
+})
+
+function confirmAddIngredient() {
+  if (!addSelectedMaterial.value || !addQty.value) return
+  const mat = addSelectedMaterial.value
+  ingredientRows.value.push({
+    id: `${mat.value}-${Date.now()}`,
+    ingredient: {
+      label: mat.label,
+      value: mat.value,
+      unit: mat.unit,
+      cost_per_unit: mat.cost_per_unit,
+      kind: mat.kind,
+      conversions: mat.conversions as IngredientRow["ingredient"]["conversions"],
+      available_stock: mat.available_stock,
+      used_stock: addQty.value,
+    },
+    qty: addQty.value,
+  })
+  addModalOpen.value = false
+  addSelectedMaterial.value = null
+  addSearchInput.value = ""
+  addQty.value = undefined
+}
+
 function handleNext() {
   emit("next", [...ingredientRows.value])
+}
+
+function updateSelectedMat(evt: unknown) {
+  addSelectedMaterial.value = evt as IngredientRow["ingredient"]
 }
 </script>
 
@@ -225,6 +278,15 @@ function handleNext() {
           No ingredients found for this recipe.
         </div>
       </div>
+
+      <button
+        type="button"
+        class="text-primary-600 mt-3 flex items-center gap-1 text-sm font-medium hover:underline"
+        @click="addModalOpen = true"
+      >
+        <Icon name="add" size="16" />
+        Add Ingredient
+      </button>
     </template>
 
     <div class="h-40" />
@@ -302,5 +364,44 @@ function handleNext() {
       @refresh="(qty) => onAdjustRefresh(qty as number)"
     />
     -->
+
+    <!-- Add Ingredient Modal -->
+    <Modal
+      :open="addModalOpen"
+      title="Add Ingredient"
+      max-width="lg"
+      variant="bottom-nav"
+      @close="addModalOpen = false"
+    >
+      <div class="space-y-4">
+        <SelectField
+          :model-value="addSelectedMaterial"
+          label="Search material"
+          placeholder="Type to search..."
+          :options="addMaterialOptions"
+          searchable
+          :loading="isSearchingAdd"
+          @update:model-value="updateSelectedMat"
+          @search-change="addSearchInput = $event"
+        />
+        <TextField
+          v-if="addSelectedMaterial"
+          v-model.number="addQty"
+          type="number"
+          label="Quantity"
+          :suffix="addSelectedMaterial.unit"
+          placeholder="e.g. 5"
+        />
+      </div>
+
+      <template #footer>
+        <AppButton
+          label="Add"
+          class="w-full"
+          :disabled="!addSelectedMaterial || !addQty"
+          @click="confirmAddIngredient"
+        />
+      </template>
+    </Modal>
   </form>
 </template>

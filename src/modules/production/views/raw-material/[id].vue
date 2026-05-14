@@ -194,6 +194,7 @@ const getUnitLabel = computed(() => {
         :open="showEdit"
         mode="edit"
         :material="material"
+        has-full-details
         @close="showEdit = false"
         @refresh="refetch"
       />

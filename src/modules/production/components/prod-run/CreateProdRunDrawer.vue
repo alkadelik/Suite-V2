@@ -20,6 +20,7 @@ import ConfirmationModal from "@components/ConfirmationModal.vue"
 import { floatDecimal } from "@/utils/others"
 
 export type { IngredientRow, ProcessRow, AdditionalExpenseRow, BasicRunDetails }
+type RunStatus = "draft" | "finalized"
 
 export type RecipeDrawerProps = {
   open: boolean
@@ -200,7 +201,7 @@ watch([() => props.open, () => props.run], ([isOpen]) => {
 const { mutate: createProdRun, isPending: isCreating } = useCreateProdRun()
 const { mutate: updateProdRun, isPending: isUpdating } = useUpdateProdRun()
 
-const onSubmit = () => {
+const onSubmit = (status: RunStatus) => {
   const details = basicDetails.value
 
   const payload: IProdRunPayload = {
@@ -222,6 +223,8 @@ const onSubmit = () => {
     additional_expenses: additionalExpensesState.value
       .filter((a) => a.name.trim())
       .map((a) => ({ name: a.name, cost_type: "other", amount: a.amount, notes: "" })),
+    //
+    status,
   }
 
   const onSuccess = () => {
@@ -312,6 +315,7 @@ const forceClose = () => {
           <ProcessExpensesForm
             v-if="step == 2"
             :initial-rows="processRowsState"
+            :initial-expenses="additionalExpensesState"
             @prev="onPrev"
             @submit="
               (remainingProcessRows: ProcessRow[], additionalExpenses: AdditionalExpenseRow[]) => {
@@ -331,9 +335,9 @@ const forceClose = () => {
             :loading="isCreating || isUpdating"
             @prev="onPrev"
             @submit="
-              (price: number) => {
+              (price: number, status: string) => {
                 sellingPriceState = price
-                onSubmit()
+                onSubmit(status as RunStatus)
               }
             "
           />

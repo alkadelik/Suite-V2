@@ -19,17 +19,19 @@ import {
   useEditRawMaterial,
   useGetSuppliers,
   useCreateSupplier,
+  useGetSingleRawMaterial,
 } from "../../api"
 import { TRawMaterial, type TConversion } from "../../types"
 import SelectField from "@components/form/SelectField.vue"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { UNITS_OF_MEASURE } from "@modules/production/constant"
-import { startCase } from "@/utils/format-strings"
+import { floatDecimal } from "@/utils/others"
 
 const props = defineProps<{
   open: boolean
   mode?: "create" | "edit" | null
   material?: TRawMaterial | null
+  hasFullDetails?: boolean
 }>()
 const emit = defineEmits(["close", "refresh"])
 
@@ -262,17 +264,18 @@ const onSubmit = handleSubmit((values) => {
 
   // unit cost for each material is stored in purchase unit, so convert if needed
   let default_cost = null
-  if (values.source?.value === "supplier") {
-    default_cost =
-      Number(values.default_cost.replace(/[^0-9.]/g, "")) /
-      (conversion ? Number(conversion.rate) : 1)
+  const is_sub_assembly = values.source?.value === "manufacture"
+  if (!is_sub_assembly || (is_sub_assembly && values.qty_in_stock)) {
+    default_cost = floatDecimal(
+      Number(values.default_cost.replace(/[^0-9.]/g, "")) / (conversion ? +conversion.rate : 1),
+    )
   }
 
   const payload = {
     name: values.name,
     unit: values.production_unit?.value || "",
     qty_in_stock,
-    is_sub_assembly: values.source?.value === "manufacture",
+    is_sub_assembly,
     ...(default_cost ? { default_cost } : {}),
     ...(values.suppliers.length ? { suppliers: values.suppliers.map((x) => x.value) } : {}),
     ...(values.expiry_date ? { expiry_date: values.expiry_date } : {}),
@@ -305,82 +308,111 @@ watch([() => values.unit, () => values.production_unit], ([newUnit, newProdUnit]
   }
 })
 
+const seedFromMaterial = (item: TRawMaterial) => {
+  const activeConversion: TConversion | undefined = item.conversions?.find(
+    (c) => c.is_active && c.from_unit !== c.to_unit,
+  )
+  const productionUnit = activeConversion
+    ? { label: activeConversion.to_unit, value: activeConversion.to_unit }
+    : { label: item.unit, value: item.unit }
+
+  const ensureUnit = (unitValue: string) => {
+    if (!unitOptions.value.find((o) => o.value === unitValue)) {
+      unitOptions.value.push({ label: unitValue, value: unitValue })
+    }
+  }
+  ensureUnit(item.unit)
+  if (activeConversion) ensureUnit(activeConversion.to_unit)
+
+  const prefillSuppliers = item.suppliers?.map((s) => ({ label: s.name, value: s.uid })) ?? []
+
+  resetForm({
+    values: {
+      name: item.name,
+      unit: productionUnit,
+      production_unit: { label: item.unit, value: item.unit },
+      qty_in_stock: activeConversion
+        ? floatDecimal(item.current_stock / Number(activeConversion.rate)).toString()
+        : item.current_stock.toString(),
+      source: item.is_sub_assembly ? sourceOptions[1] : sourceOptions[0],
+      default_cost: activeConversion
+        ? String(item.avg_cost * Number(activeConversion.rate))
+        : item.avg_cost.toString(),
+      suppliers: prefillSuppliers,
+      expiry_date: item.expiry_date ?? "",
+      reorder_threshold: item.reorder_threshold
+        ? parseInt(String(item.reorder_threshold)).toString()
+        : "",
+      notes: item.notes ?? "",
+      conversion_from_qty: "1",
+      conversion_to_qty: "",
+      conversion_name: "",
+    },
+  })
+  if (activeConversion) {
+    nextTick(() => {
+      setFieldValue("conversion_from_qty", "1")
+      setFieldValue("conversion_to_qty", String(parseInt(activeConversion.rate)))
+      setFieldValue("conversion_name", activeConversion.name)
+    })
+  }
+}
+
+// Fetch full material when hasFullDetails is false
+const fetchUid = computed(() =>
+  !props.hasFullDetails && props.open && props.mode === "edit" && props.material
+    ? props.material.uid
+    : "",
+)
+const { data: fetchedMaterial, isFetching: isLoadingMaterial } = useGetSingleRawMaterial(fetchUid)
+
+const unitsLocked = computed(
+  () => !!props.material?.linked_recipes?.length || !!fetchedMaterial.value?.linked_recipes?.length,
+)
+
+// immediate: true handles the case where TanStack Query returns cached data without a change event
+watch(fetchedMaterial, (material) => {
+  if (material && fetchUid.value) seedFromMaterial(material)
+})
+
+const emptyForm = () =>
+  resetForm({
+    values: {
+      name: "",
+      unit: null,
+      production_unit: null,
+      qty_in_stock: "",
+      default_cost: "",
+      source: null,
+      suppliers: [],
+      expiry_date: "",
+      reorder_threshold: "",
+      notes: "",
+      conversion_from_qty: "1",
+      conversion_to_qty: "",
+      conversion_name: "",
+    },
+  })
+
 // Reset form or populate with material data when drawer opens
 watch(
   () => props.open,
   (isOpen) => {
-    if (isOpen) {
-      activeStep.value = 0
-      if (props.mode === "edit" && props.material) {
-        const item = props.material
-        // Populate form with material data
-        const activeConversion: TConversion | undefined = item.conversions?.find(
-          (c) => c.is_active && c.from_unit !== c.to_unit,
-        )
-        const productionUnit = activeConversion
-          ? { label: startCase(activeConversion.to_unit), value: activeConversion.to_unit }
-          : { label: startCase(item.unit), value: item.unit }
-
-        // Ensure custom units not in the standard list are available for the SelectField
-        const ensureUnit = (unitValue: string) => {
-          if (!unitOptions.value.find((o) => o.value === unitValue)) {
-            unitOptions.value.push({ label: startCase(unitValue), value: unitValue })
-          }
-        }
-        ensureUnit(item.unit)
-        if (activeConversion) ensureUnit(activeConversion.to_unit)
-
-        const prefillSuppliers = item.suppliers?.map((s) => ({ label: s.name, value: s.uid })) ?? []
-
-        resetForm({
-          values: {
-            name: item.name,
-            unit: productionUnit,
-            production_unit: { label: startCase(item.unit), value: item.unit },
-            qty_in_stock: activeConversion
-              ? String(item.current_stock / Number(activeConversion.rate))
-              : item.current_stock.toString(),
-            source: item.is_sub_assembly ? sourceOptions[1] : sourceOptions[0],
-            default_cost: activeConversion
-              ? String(item.avg_cost * Number(activeConversion.rate))
-              : item.avg_cost.toString(),
-            suppliers: prefillSuppliers,
-            expiry_date: item.expiry_date ?? "",
-            reorder_threshold: item.reorder_threshold
-              ? parseInt(String(item.reorder_threshold)).toString()
-              : "",
-            notes: item.notes ?? "",
-            conversion_from_qty: "1",
-            conversion_to_qty: "",
-            conversion_name: "",
-          },
-        })
-        if (activeConversion) {
-          nextTick(() => {
-            setFieldValue("conversion_from_qty", "1")
-            setFieldValue("conversion_to_qty", String(parseInt(activeConversion.rate)))
-            setFieldValue("conversion_name", activeConversion.name)
-          })
-        }
+    if (!isOpen) return
+    activeStep.value = 0
+    if (props.mode === "edit" && props.material) {
+      if (props.hasFullDetails) {
+        seedFromMaterial(props.material)
       } else {
-        resetForm({
-          values: {
-            name: "",
-            unit: null,
-            production_unit: null,
-            qty_in_stock: "",
-            default_cost: "",
-            source: null,
-            suppliers: [],
-            expiry_date: "",
-            reorder_threshold: "",
-            notes: "",
-            conversion_from_qty: "1",
-            conversion_to_qty: "",
-            conversion_name: "",
-          },
-        })
+        // Clear stale data first; if TanStack already has this material cached,
+        // seed immediately — otherwise the fetchedMaterial watcher handles it
+        emptyForm()
+        if (fetchedMaterial.value?.uid === props.material.uid) {
+          seedFromMaterial(fetchedMaterial.value)
+        }
       }
+    } else {
+      emptyForm()
     }
   },
 )
@@ -388,7 +420,10 @@ watch(
 const validateStepOne = async () => {
   const stepOneFields: Array<keyof FormValues> = ["name", "unit", "qty_in_stock", "source"]
 
-  if (values.source?.value === "supplier") {
+  if (
+    values.source?.value === "supplier" ||
+    (values.qty_in_stock && values.source?.value === "manufacture")
+  ) {
     stepOneFields.push("default_cost")
   }
 
@@ -441,8 +476,13 @@ const handleAddFromSearch = (search: string, close: () => void) => {
   >
     <StepperWizard v-model="activeStep" :steps="steps" :showIndicators="false">
       <template #default="{ step }">
+        <!-- loading skeleton while fetching full material details -->
+        <div v-if="isLoadingMaterial" class="space-y-4 p-4">
+          <div v-for="n in 6" :key="n" class="h-12 animate-pulse rounded-xl bg-gray-200" />
+        </div>
+
         <!-- Step 1: Material Details -->
-        <div v-show="step === 0">
+        <div v-show="step === 0 && !isLoadingMaterial">
           <div>
             <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
               <icon :name="isEditMode ? 'edit' : 'shop-add'" size="28" />
@@ -484,6 +524,7 @@ const handleAddFromSearch = (search: string, close: () => void) => {
                     :options="unitOptions"
                     searchable
                     required
+                    :disabled="unitsLocked"
                     :error="fieldErrors[0]"
                     @update:model-value="field.value = $event"
                   >
@@ -535,6 +576,7 @@ const handleAddFromSearch = (search: string, close: () => void) => {
                     :options="unitOptions"
                     searchable
                     required
+                    :disabled="unitsLocked"
                     :error="fieldErrors[0]"
                     @update:model-value="field.value = $event"
                   >
@@ -581,6 +623,12 @@ const handleAddFromSearch = (search: string, close: () => void) => {
                   How do you convert {{ values.unit?.label.toLowerCase() }} to
                   {{ values.production_unit?.label.toLowerCase() }}?
                 </p>
+                <p v-if="unitsLocked" class="mb-3 text-xs text-amber-600">
+                  Units and conversion are locked because this material is used in
+                  {{ props.material?.linked_recipes?.length }} recipe{{
+                    (props.material?.linked_recipes?.length ?? 0) > 1 ? "s" : ""
+                  }}.
+                </p>
                 <div class="flex items-end gap-2">
                   <div class="min-w-0 flex-1">
                     <FormField
@@ -589,6 +637,7 @@ const handleAddFromSearch = (search: string, close: () => void) => {
                       :label="values.unit?.label"
                       :suffix="values.unit?.label"
                       placeholder="e.g. 1"
+                      :disabled="unitsLocked"
                     />
                   </div>
                   <AppButton
@@ -596,7 +645,6 @@ const handleAddFromSearch = (search: string, close: () => void) => {
                     variant="outlined"
                     size="sm"
                     class="mb-1 flex-shrink-0 hover:cursor-default! focus:ring-0!"
-                    :disabled="false"
                   />
                   <div class="min-w-0 flex-1">
                     <FormField
@@ -605,6 +653,7 @@ const handleAddFromSearch = (search: string, close: () => void) => {
                       :label="values.production_unit?.label"
                       :suffix="values.production_unit?.label"
                       placeholder="e.g. 12"
+                      :disabled="unitsLocked"
                     />
                   </div>
                 </div>
@@ -622,24 +671,9 @@ const handleAddFromSearch = (search: string, close: () => void) => {
               />
             </div>
 
-            <div
-              v-if="values.source?.value === 'manufacture'"
-              class="bg-primary-25 text-warning-700 border-warning-300 flex items-center gap-3 rounded-xl border px-3 py-3 md:px-6"
-            >
-              <span
-                class="border-primary-200 ring-primary-100 flex size-8 flex-shrink-0 items-center justify-center rounded-full border-2 ring-2 ring-offset-2"
-              >
-                <Icon name="info-circle" size="20" />
-              </span>
-              <div class="text-sm">
-                <p class="font-medium">This Material is a Sub-assembly</p>
-                <p>This will be the name displayed in the inventory</p>
-              </div>
-            </div>
-
-            <div v-else>
+            <div v-if="mode !== 'edit'">
               <FormField
-                v-if="mode !== 'edit'"
+                v-if="values.qty_in_stock || values.source?.value === 'supplier'"
                 type="number"
                 name="default_cost"
                 format="currency"
@@ -649,6 +683,21 @@ const handleAddFromSearch = (search: string, close: () => void) => {
                 placeholder="e.g. 25"
                 required
               />
+
+              <div
+                v-if="values.source?.value === 'manufacture'"
+                class="bg-primary-25 text-warning-700 border-warning-300 mt-6 flex items-center gap-3 rounded-xl border px-3 py-3 md:px-6"
+              >
+                <span
+                  class="border-primary-200 ring-primary-100 flex size-8 flex-shrink-0 items-center justify-center rounded-full border-2 ring-2 ring-offset-2"
+                >
+                  <Icon name="info-circle" size="20" />
+                </span>
+                <div class="text-sm">
+                  <p class="font-medium">This Material is a Sub-assembly</p>
+                  <p>This will be the name displayed in the inventory</p>
+                </div>
+              </div>
             </div>
           </form>
         </div>
