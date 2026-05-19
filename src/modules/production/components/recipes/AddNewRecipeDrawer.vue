@@ -36,6 +36,7 @@ export type ProcessRow = {
 }
 
 export type BasicDetails = {
+  name?: string
   outputItemType: "product" | "sub_assembly"
   outputItem: string
   outputItemOption?: { label: string; value: string } | null
@@ -85,6 +86,7 @@ const seedFromRecipe = (recipe: TRecipe) => {
     UNITS_OF_MEASURE.find((u) => u.value?.toLowerCase() === recipe.output_unit?.toLowerCase()) ??
     (recipe.output_unit ? { label: recipe.output_unit, value: recipe.output_unit } : null)
   basicDetails.value = {
+    name: recipe.name || "",
     outputItemType: recipe.item_type,
     outputItem: itemUid,
     outputItemOption: itemUid ? { label: recipe.output_item_name, value: itemUid } : null,
@@ -165,6 +167,7 @@ const onSubmit = () => {
     .map((p) => ({ name: p.name, cost_per_batch: p.cost, notes: p.note }))
 
   const payload: IRecipePayload = {
+    name: details.name || undefined,
     output_item_type: details.outputItemType,
     output_item_uid: details.outputItem,
     output_quantity: details.outputQuantity,

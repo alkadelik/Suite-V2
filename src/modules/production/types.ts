@@ -144,6 +144,7 @@ export interface IAdjustStockPayload {
 
 export type TRecipe = {
   uid: string
+  name?: string
   output_product?: string | null
   output_raw_material?: string | null
   output_item_name: string
@@ -186,6 +187,7 @@ export type TRecipeProcessCost = {
 }
 
 export interface IRecipePayload {
+  name?: string
   output_item_type: "product" | "sub_assembly"
   output_item_uid: string
   output_quantity: string | number

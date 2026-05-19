@@ -12,6 +12,7 @@ import { computed, nextTick, ref, watch } from "vue"
 import { useForm } from "vee-validate"
 import * as yup from "yup"
 import { UNITS_OF_MEASURE } from "@modules/production/constant"
+import { useSharedStore } from "@modules/shared/store"
 
 type ItemOption = { label: string; value: string; item?: Record<string, unknown> }
 
@@ -25,8 +26,11 @@ const emit = defineEmits<{
   (e: "close"): void
 }>()
 
+const sharedStore = useSharedStore()
+
 // ─── Form validation ─────────────────────────────────────────────────────
 const schema = yup.object({
+  name: yup.string().optional().default(""),
   outputItemType: yup.string().oneOf(["product", "sub_assembly"]).required(),
   // store the full option object so SelectField can display the label
   outputItem: yup
@@ -49,6 +53,7 @@ const schema = yup.object({
 const { handleSubmit, values, errors, setFieldValue, resetForm } = useForm({
   validationSchema: schema,
   initialValues: {
+    name: props.initialValues.name || "",
     outputItemType: props.initialValues.outputItemType,
     outputItem: (props.initialValues.outputItemOption ?? null) as ItemOption | null,
     outputQuantity: props.initialValues.outputQuantity || (undefined as unknown as number),
@@ -66,6 +71,7 @@ watch(
     isResetting = true
     resetForm({
       values: {
+        name: iv.name || "",
         outputItemType: iv.outputItemType,
         outputItem: (iv.outputItemOption ?? null) as ItemOption | null,
         outputQuantity: iv.outputQuantity || (undefined as unknown as number),
@@ -116,7 +122,7 @@ const selectedItemUnit = computed<string | null>(() => {
   return (selected.item.unit as string) || null
 })
 
-const unitIsLocked = computed(() => !!selectedItemUnit.value)
+const unitIsLocked = computed(() => !!selectedItemUnit.value || props.isEditMode)
 
 watch(selectedItemUnit, (unit) => {
   if (unit) {
@@ -140,6 +146,7 @@ const handleNext = handleSubmit((formValues) => {
   const item = formValues.outputItem as ItemOption
   const unit = formValues.unit as ItemOption
   emit("next", {
+    name: formValues.name || "",
     outputItemType: formValues.outputItemType as "product" | "sub_assembly",
     outputItem: item.value,
     outputItemOption: { label: item.label, value: item.value },
@@ -152,11 +159,18 @@ const handleNext = handleSubmit((formValues) => {
 </script>
 
 <template>
-  <form @submit.prevent="handleNext" class="flex flex-col gap-4">
+  <form @submit.prevent="handleNext" class="flex flex-col gap-5">
     <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
       <Icon name="box" size="28" />
     </div>
     <p class="mb-4 text-sm">Basic Recipe Details</p>
+
+    <FormField
+      name="name"
+      label="Recipe Name (optional)"
+      placeholder="e.g. Vanila Cake"
+      :required="false"
+    />
 
     <div class="mb-4">
       <RadioInputField
@@ -181,6 +195,7 @@ const handleNext = handleSubmit((formValues) => {
       :loading="isSearchingProd"
       searchable
       required
+      :hint="isEditMode ? 'Output item cannot be changed in EDIT mode' : undefined"
       :disabled="isEditMode"
       @update:model-value="setFieldValue('outputItem', $event as ItemOption)"
       @search-change="productSearchInput = $event"
@@ -202,22 +217,37 @@ const handleNext = handleSubmit((formValues) => {
       @search-change="matSearchInput = $event"
     />
 
+    <div>
+      <FormField
+        name="unit"
+        type="select"
+        label="Unit"
+        placeholder="e.g. kg, liters, pieces"
+        :options="unitOptions"
+        :disabled="unitIsLocked"
+        required
+        :hint="isEditMode ? 'Unit cannot be changed in EDIT mode' : undefined"
+      />
+      <p v-if="selectedItemUnit" class="mt-1 text-sm text-gray-500">
+        Unit cannot be changed once a recipe has been used in a production run.
+        <button
+          type="button"
+          class="text-primary-600 underline"
+          @click="sharedStore.openSupportModal()"
+        >
+          Contact support
+        </button>
+        to make changes.
+      </p>
+    </div>
+
     <FormField
       name="outputQuantity"
       type="number"
       label="Output Quantity"
       placeholder="e.g. 100"
       required
-    />
-
-    <FormField
-      name="unit"
-      type="select"
-      label="Unit"
-      placeholder="e.g. kg, liters, pieces"
-      :options="unitOptions"
-      :disabled="unitIsLocked"
-      required
+      :suffix="values.unit?.value"
     />
 
     <FormField name="notes" type="textarea" label="Notes (optional)" />

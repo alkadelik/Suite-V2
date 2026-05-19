@@ -140,8 +140,8 @@ export const UNITS_OF_MEASURE = [
 
 export const RECIPES_COLUMN: TableColumn<TRecipe>[] = [
   { header: "Output Item", accessor: "output_item_name" },
+  { header: "Optional Name", accessor: "name" },
   { header: "Ingredient Count", accessor: "ingredient_count" },
-  // { header: "Cost Processes", accessor: "process_cost_count" },
   {
     header: "Status",
     accessor: "is_active",
