@@ -19,6 +19,7 @@ type ItemOption = {
   output_quantity?: number | string
   item_type?: "product" | "sub_assembly"
   output_product?: string | null
+  unit?: string
 }
 
 const props = defineProps<{
@@ -95,12 +96,13 @@ const recipeOptions = computed<ItemOption[]>(() => {
       const qty = parseInt(m.output_quantity)
       const unit = m.output_unit || ""
       return {
-        label: `${m.output_item_name} - ${qty}${unit}`,
+        label: `${m.name ? `${m.name} - ${m.output_item_name}` : m.output_item_name} - ${qty}${unit}`,
         value: m.uid || "",
         output_quantity: qty + unit,
-        name: m.output_item_name,
+        name: m.name ? `${m.name} - ${m.output_item_name}` : m.output_item_name,
         item_type: m.item_type,
         output_product: m.output_product,
+        unit,
       }
     }) as ItemOption[]
 })
@@ -223,6 +225,7 @@ const handleNext = handleSubmit((formValues) => {
       label="Quantity Produced (including damages)"
       placeholder="e.g. 100"
       required
+      :suffix="values.recipe ? values.recipe.unit : undefined"
     />
 
     <FormField
@@ -231,6 +234,7 @@ const handleNext = handleSubmit((formValues) => {
       label="Quantity Damaged"
       placeholder="e.g. 10"
       required
+      :suffix="values.recipe ? values.recipe.unit : undefined"
     />
 
     <div class="h-40" />

@@ -256,6 +256,9 @@ const formatWithUnit = (item: TRecipe) => {
           >
             <template #cell:output_item_name="{ item }">
               <div class="flex items-center gap-2">
+                <span class="text-sm text-gray-700" v-if="item.name">
+                  {{ item.name + " - " }}
+                </span>
                 <span class="text-sm text-gray-700">{{ item.output_item_name }}</span>
                 <Chip v-if="formatWithUnit(item)" color="blue" :label="formatWithUnit(item)" />
                 <Chip

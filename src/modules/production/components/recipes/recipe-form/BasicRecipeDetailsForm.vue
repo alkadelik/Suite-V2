@@ -221,7 +221,7 @@ const handleNext = handleSubmit((formValues) => {
       <FormField
         name="unit"
         type="select"
-        label="Unit"
+        label="Unit of Measurement"
         placeholder="e.g. kg, liters, pieces"
         :options="unitOptions"
         :disabled="unitIsLocked"
