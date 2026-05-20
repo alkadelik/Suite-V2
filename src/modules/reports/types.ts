@@ -48,6 +48,60 @@ export type TStoreOverviewProduct = {
   inventory_turnover: number
 }
 
+export interface IHighlightsResponse {
+  period: {
+    start: string
+    end: string
+    days: number
+  }
+  site_analytics: {
+    visits: number
+    unique_visitors: number
+    product_views: number
+    carts_created: number
+    checkouts_started: number
+    orders_completed: number
+    abandoned_carts: number
+    cart_conversion_rate_percent: number | null
+  }
+  metrics: {
+    ebitda: {
+      value: number
+      percentage_change: number | null
+      has_expenses: boolean
+      prompt?: string | null
+      breakdown: Array<{
+        label: string
+        value: number
+      }>
+    }
+    gross_profit: {
+      value: number
+      gross_margin_percent: number
+      percentage_change: number | null
+    }
+    average_order_value: number
+    average_items_per_sale: number
+    inventory_turnover: number | null
+    sell_through_rate_percent: number
+    repeat_customer_rate_percent: number
+    customer_growth_rate_percent: number
+    top_10_products: Array<{
+      rank: number
+      product_uid: string
+      name: string
+      revenue: number
+      units_sold: number
+      avg_price: number
+      margin: number
+      sell_through: number
+      inventory_turnover: number | null
+    }>
+    cash_on_hand: number | null
+    discount_rate_percent: number | null
+  }
+}
+
 export type TMonthlyProductRow = {
   sn: number
   product_name: string

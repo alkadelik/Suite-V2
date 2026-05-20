@@ -7,7 +7,6 @@ import SelectField from "@components/form/SelectField.vue"
 import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
 import Modal from "@components/Modal.vue"
-import { useMediaQuery } from "@vueuse/core"
 import { Field } from "vee-validate"
 import {
   useCreateExpense,
@@ -24,9 +23,11 @@ import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 import { onInvalidSubmit } from "@/utils/validations"
 import { TExpense } from "../types"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 
 const props = defineProps<{ open: boolean; expense?: TExpense | null }>()
 const emit = defineEmits(["close", "refresh"])
+const { currency } = useFormatCurrency()
 
 const expenseStore = useExpenseStore()
 
@@ -97,8 +98,6 @@ const hasSubCategories = computed(() => {
   return (category?.sub_categories?.length ?? 0) > 0
 })
 
-const isMobile = computed(() => useMediaQuery("(max-width: 1028px)").value)
-
 interface FormValues {
   name: string
   amount: string
@@ -120,7 +119,9 @@ const { handleSubmit, resetForm, values, setFieldValue } = useForm<FormValues>({
         .min(3, "Name must be at least 3 characters"),
       amount: yup
         .number()
-        .transform((value, originalValue) => (originalValue === "" ? undefined : value))
+        .transform((_, originalValue) =>
+          originalValue === "" ? undefined : Number(String(originalValue).replace(/,/g, "")),
+        )
         .typeError("Amount must be a number")
         .required("Amount is required")
         .positive("Amount must be greater than 0"),
@@ -330,15 +331,19 @@ watch(
     }
   },
 )
+
+const handleAddFromSearch = (search: string, close: () => void) => {
+  showCreateVendorModal.value = true
+  newVendorName.value = search
+  close()
+}
 </script>
 
 <template>
-  <component
-    :is="isMobile ? Modal : Drawer"
+  <Drawer
     :open="open"
     :title="isEditMode ? 'Edit Expense' : 'Create Expense'"
     max-width="2xl"
-    variant="fullscreen"
     @close="emit('close')"
   >
     <div>
@@ -362,7 +367,15 @@ watch(
       </div>
 
       <div class="sm:col-span-2">
-        <FormField type="number" name="amount" label="Amount" placeholder="e.g. 12,500" required />
+        <FormField
+          name="amount"
+          type="number"
+          format="currency"
+          step="0.01"
+          :label="`Amount (${currency})`"
+          placeholder="e.g. 12,500"
+          required
+        />
       </div>
 
       <div>
@@ -406,6 +419,7 @@ watch(
             value-key="value"
             label-key="label"
             :error="fieldErrors[0]"
+            searchable
             @update:model-value="field.value = $event"
           >
             <template #prepend="{ close }">
@@ -423,6 +437,18 @@ watch(
                   <Icon name="add" class="text-primary-600 h-4 w-4" />
                 </div>
               </div>
+            </template>
+            <template #no-options="{ search, close }">
+              <p>
+                No results found.
+                <button
+                  class="text-primary-600 ml-1 hover:underline"
+                  @click="handleAddFromSearch(search, close)"
+                >
+                  Add <span class="font-semibold">"{{ search }}"</span>
+                </button>
+                as vendor?
+              </p>
             </template>
           </SelectField>
         </Field>
@@ -528,5 +554,5 @@ watch(
         </div>
       </template>
     </Modal>
-  </component>
+  </Drawer>
 </template>

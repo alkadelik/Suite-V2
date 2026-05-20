@@ -2,14 +2,13 @@ import Chip from "@components/Chip.vue"
 import { TableColumn } from "@components/DataTable.vue"
 import { h } from "vue"
 import {
-  TEbitdaBreakdownItem,
   TEodAbandoned,
   TEodOrders,
   TEodProductsSold,
   TMonthlyProductRow,
   TStoreOverviewProduct,
 } from "./types"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { startCase } from "@/utils/format-strings"
 import { IReportStat } from "./components/ReportStatCard.vue"
 
@@ -91,7 +90,10 @@ export const EOD_ORDER_COLUMNS: TableColumn<TEodOrders>[] = [
   {
     header: "Amount",
     accessor: "amount",
-    cell: ({ value }) => formatCurrency(Number(value), { kobo: true }),
+    cell: ({ value }) => {
+      const { format } = useFormatCurrency()
+      return format(Number(value), { kobo: true })
+    },
   },
   {
     header: "Payment",
@@ -116,12 +118,18 @@ export const EOD_PRODUCTS_SOLD_COLUMNS: TableColumn<TEodProductsSold>[] = [
   {
     header: "Revenue",
     accessor: "revenue",
-    cell: ({ value }) => formatCurrency(Number(value), { kobo: true }),
+    cell: ({ value }) => {
+      const { format } = useFormatCurrency()
+      return format(Number(value), { kobo: true })
+    },
   },
   {
     header: "Avg. Price",
     accessor: "average_price",
-    cell: ({ value }) => formatCurrency(Number(value), { kobo: true }),
+    cell: ({ value }) => {
+      const { format } = useFormatCurrency()
+      return format(Number(value), { kobo: true })
+    },
   },
   { header: "Stock After", accessor: "stock_remaining" },
   {
@@ -166,7 +174,10 @@ export const EOD_ABANDONED_COLUMNS: TableColumn<TEodAbandoned>[] = [
   {
     header: "Amount",
     accessor: "amount",
-    cell: ({ value }) => formatCurrency(Number(value), { kobo: true }),
+    cell: ({ value }) => {
+      const { format } = useFormatCurrency()
+      return format(Number(value), { kobo: true })
+    },
   },
   {
     header: "Drop-off Point",
@@ -391,162 +402,7 @@ export const MONTHLY_TOP_PRODUCTS: TMonthlyProductRow[] = [
   },
 ]
 
-export const SO_SUMMARY_CARDS = [
-  { icon: "moneys", label: "Average Order Value (AOV)", value: "₦18,400" },
-  { icon: "box", label: "Average Items per Sale", value: "3.2" },
-  { icon: "refresh-circle", label: "Inventory Turnover", value: "4.1x" },
-  { icon: "trend-up", label: "Sell-Through Rate", value: "68%" },
-]
-
-export const SO_SUMMARY_CARDS_EMPTY = [
-  { icon: "moneys", label: "Average Order Value (AOV)", value: "₦0" },
-  { icon: "box", label: "Average Items per Sale", value: "0" },
-  { icon: "refresh-circle", label: "Inventory Turnover", value: "0" },
-  { icon: "trend-up", label: "Sell-Through Rate", value: "0%" },
-]
-
-export const SO_EBITDA = {
-  value: 2520000,
-  percentageChange: 11.3,
-  breakdown: [
-    { label: "Revenue", value: 8000000, color: "bg-success-500", isPositive: true },
-    { label: "Cost of Goods Sold", value: 4200000, color: "bg-error-400", isPositive: false },
-    { label: "Expenses", value: 1100000, color: "bg-warning-400", isPositive: false },
-    { label: "Shipping", value: 180000, color: "bg-blue-400", isPositive: false },
-  ] as TEbitdaBreakdownItem[],
-}
-
-export const SO_EBITDA_EMPTY = {
-  value: 0,
-  percentageChange: 0,
-  breakdown: [
-    { label: "Revenue", value: 0, color: "bg-success-500", isPositive: true },
-    { label: "Cost of Goods Sold", value: 0, color: "bg-error-400", isPositive: false },
-    { label: "Expenses", value: 0, color: "bg-warning-400", isPositive: false },
-    { label: "Shipping", value: 0, color: "bg-blue-400", isPositive: false },
-  ] as TEbitdaBreakdownItem[],
-}
-
-export const SO_GROSS_PROFIT = {
-  value: 850000,
-  marginPercent: 42,
-  percentageChange: 11.3,
-}
-
-export const SO_GROSS_PROFIT_EMPTY = {
-  value: 0,
-  marginPercent: 0,
-  percentageChange: 0,
-}
-
-export const SO_REPEAT_CUSTOMER = { percent: 27 }
-export const SO_REPEAT_CUSTOMER_EMPTY = { percent: 0 }
-
-export const SO_CUSTOMER_GROWTH = { percent: 12 }
-export const SO_CUSTOMER_GROWTH_EMPTY = { percent: 0 }
-
-export const SO_TOP_PRODUCTS: TStoreOverviewProduct[] = [
-  {
-    rank: 1,
-    product_name: "Ankara Wrap Dress — Floral",
-    revenue: 842000,
-    units_sold: 68,
-    avg_price: 12382,
-    margin: 58,
-    sell_through: 89,
-    inventory_turnover: 5.2,
-  },
-  {
-    rank: 2,
-    product_name: "Ankara Midi Skirt — Geo Print",
-    revenue: 624000,
-    units_sold: 78,
-    avg_price: 8000,
-    margin: 54,
-    sell_through: 82,
-    inventory_turnover: 4.8,
-  },
-  {
-    rank: 3,
-    product_name: "Adire Bucket Hat",
-    revenue: 518000,
-    units_sold: 148,
-    avg_price: 3500,
-    margin: 62,
-    sell_through: 94,
-    inventory_turnover: 6.1,
-  },
-  {
-    rank: 4,
-    product_name: "Linen Wide-Leg Trousers",
-    revenue: 445000,
-    units_sold: 52,
-    avg_price: 8558,
-    margin: 46,
-    sell_through: 71,
-    inventory_turnover: 3.9,
-  },
-  {
-    rank: 5,
-    product_name: "Beaded Statement Necklace",
-    revenue: 387000,
-    units_sold: 86,
-    avg_price: 4500,
-    margin: 71,
-    sell_through: 78,
-    inventory_turnover: 4.2,
-  },
-  {
-    rank: 6,
-    product_name: "Dashiki Crop Top",
-    revenue: 342000,
-    units_sold: 57,
-    avg_price: 6000,
-    margin: 48,
-    sell_through: 65,
-    inventory_turnover: 3.4,
-  },
-  {
-    rank: 7,
-    product_name: 'Cotton Tote — "Lagos Life"',
-    revenue: 298000,
-    units_sold: 149,
-    avg_price: 2000,
-    margin: 68,
-    sell_through: 91,
-    inventory_turnover: 5.8,
-  },
-  {
-    rank: 8,
-    product_name: "Agbada Set — Men's Classic",
-    revenue: 276000,
-    units_sold: 12,
-    avg_price: 23000,
-    margin: 42,
-    sell_through: 48,
-    inventory_turnover: 2.1,
-  },
-  {
-    rank: 9,
-    product_name: "Stretch Denim Jacket",
-    revenue: 214000,
-    units_sold: 24,
-    avg_price: 8917,
-    margin: 34,
-    sell_through: 52,
-    inventory_turnover: 2.4,
-  },
-  {
-    rank: 10,
-    product_name: "Handwoven Raffia Sandals",
-    revenue: 198000,
-    units_sold: 33,
-    avg_price: 6000,
-    margin: 51,
-    sell_through: 67,
-    inventory_turnover: 3.2,
-  },
-]
+// ─── Store Overview Table Columns ────────────────────────────────────────
 
 export const SO_TOP_PRODUCT_COLUMNS: TableColumn<TStoreOverviewProduct>[] = [
   { header: "#", accessor: "rank" },
@@ -554,13 +410,19 @@ export const SO_TOP_PRODUCT_COLUMNS: TableColumn<TStoreOverviewProduct>[] = [
   {
     header: "Revenue",
     accessor: "revenue",
-    cell: ({ value }) => formatCurrency(Number(value)),
+    cell: ({ value }) => {
+      const { format } = useFormatCurrency()
+      return format(Number(value))
+    },
   },
   { header: "Units Sold", accessor: "units_sold" },
   {
     header: "Avg. Price",
     accessor: "avg_price",
-    cell: ({ value }) => formatCurrency(Number(value)),
+    cell: ({ value }) => {
+      const { format } = useFormatCurrency()
+      return format(Number(value))
+    },
   },
   {
     header: "Margin",

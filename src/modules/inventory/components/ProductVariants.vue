@@ -19,7 +19,7 @@
           :variant="activeFilterCount ? 'outlined' : 'filled'"
           label="Filter"
           :badge="activeFilterCount || undefined"
-          class="!hidden md:!inline-flex"
+          class="!hidden flex-shrink-0 md:!inline-flex"
           @click="showFilter = true"
         />
         <AppButton
@@ -29,25 +29,26 @@
           :variant="activeFilterCount ? 'outlined' : 'filled'"
           label=""
           :badge="activeFilterCount || undefined"
-          class="md:hidden"
+          class="flex-shrink-0 md:hidden"
           @click="showFilter = true"
+        />
+        <AppButton
+          icon="edit"
+          size="sm"
+          label="Manage Variants"
+          class="!hidden flex-shrink-0 md:!inline-flex"
+          @click="$emit('add-variant')"
         />
         <AppButton
           icon="add"
           size="sm"
-          label="Manage Variants"
-          class="!hidden md:!inline-flex"
+          label=""
+          class="flex-shrink-0 md:hidden"
           @click="$emit('add-variant')"
         />
-        <AppButton icon="add" size="sm" label="" class="md:hidden" @click="$emit('add-variant')" />
+        <AppButton icon="edit" size="sm" label="" class="md:hidden" @click="$emit('add-variant')" />
       </div>
     </div>
-
-    <ListFilterDrawer
-      v-model="showFilter"
-      :filter-groups="filterGroups"
-      @apply="handleApplyFilters"
-    />
 
     <DataTable
       :data="variants"
@@ -79,7 +80,7 @@
       </template>
 
       <template #cell:price="{ value }">
-        <span class="text-core-600 text-sm font-semibold">{{ formatCurrency(Number(value)) }}</span>
+        <span class="text-core-600 text-sm font-semibold">{{ format(Number(value)) }}</span>
       </template>
 
       <template #cell:sellable_stock="{ value }">
@@ -116,6 +117,12 @@
         <ProductVariantCard :variant="item" :variant-action-items="variantActionItems(item)" />
       </template>
     </DataTable>
+
+    <ListFilterDrawer
+      v-model="showFilter"
+      :filter-groups="filterGroups"
+      @apply="handleApplyFilters"
+    />
   </div>
 </template>
 
@@ -130,7 +137,7 @@ import DropdownMenu from "@components/DropdownMenu.vue"
 import ProductAvatar from "@components/ProductAvatar.vue"
 import ProductVariantCard from "./ProductVariantCard.vue"
 import ListFilterDrawer from "@components/ListFilterDrawer.vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import { useGetVariantsByProduct } from "../api"
 import type { IProductDetails, IProductVariantDetails } from "../types"
@@ -154,6 +161,7 @@ interface Emits {
 
 const props = defineProps<Props>()
 defineEmits<Emits>()
+const { format } = useFormatCurrency()
 
 const search = ref("")
 const debouncedSearch = useDebouncedRef(search, 750)
@@ -178,7 +186,6 @@ const filterGroups: FilterGroup[] = [
       { value: "in_stock", label: "In Stock", color: "success", showDot: true },
       { value: "low_stock", label: "Low Stock", color: "warning", showDot: true },
       { value: "out_of_stock", label: "Out of Stock", color: "error", showDot: true },
-      { value: "overstocked", label: "Overstocked", color: "primary", showDot: true },
     ],
   },
 ]

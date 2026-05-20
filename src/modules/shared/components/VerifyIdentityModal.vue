@@ -7,7 +7,7 @@
     variant="bottom-nav"
     :handle-padding="false"
   >
-    <AppForm :schema="identityVerificationSchema" @submit="onSubmit" v-slot="{ meta }">
+    <AppForm :schema="identityVerificationSchema" @submit="onSubmit" v-slot="{}">
       <div class="space-y-4 px-4 py-4 md:space-y-8 md:px-6">
         <div class="space-y-4">
           <div class="flex size-10 items-center justify-center rounded-xl bg-neutral-50 p-2">
@@ -50,13 +50,7 @@
           />
 
           <div class="flex justify-end">
-            <AppButton
-              type="submit"
-              label="Submit"
-              :loading="isPending"
-              :disabled="!meta.valid"
-              class="w-full md:w-40"
-            />
+            <AppButton type="submit" label="Submit" :loading="isPending" class="w-full md:w-40" />
           </div>
         </div>
       </div>

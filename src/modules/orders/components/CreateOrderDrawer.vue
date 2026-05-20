@@ -21,10 +21,9 @@ import { useCreateOrder } from "../api"
 import { toast } from "@/composables/useToast"
 import type { IShippingCourier } from "@modules/shared/types"
 import type { PopupInventory } from "@modules/popups/types"
-import { useMediaQuery } from "@vueuse/core"
-import Modal from "@components/Modal.vue"
 import { handlePayStackPayment, loadPaystackScript } from "../utilities"
 import { useSettingsStore } from "@modules/settings/store"
+import ConfirmationModal from "@components/ConfirmationModal.vue"
 
 const props = defineProps({
   open: { type: Boolean, required: true },
@@ -262,6 +261,7 @@ const onCreateOrder = () => {
         delete deliveryFields.delivery_address
       } else if (delivery_method === "custom") {
         // Custom delivery: send courier name and delivery_fee
+        deliveryFields.delivery_method = "custom"
         deliveryFields.delivery_fee = shippingInfo.value.delivery_fee
         deliveryFields.courier = shippingInfo.value.courier
           ? {
@@ -389,8 +389,6 @@ const resetForm = () => {
   productViewMode.value = "grid"
 }
 
-const isMobile = useMediaQuery("(max-width: 1028px)")
-
 // load paystack script on mounted
 onMounted(() => {
   loadPaystackScript()
@@ -417,6 +415,21 @@ watch(
   { immediate: true },
 )
 
+const confirmClose = ref(false)
+
+const handleClose = () => {
+  if (activeStep.value >= 1) {
+    confirmClose.value = true
+  } else {
+    emit("close")
+  }
+}
+
+const forceClose = () => {
+  confirmClose.value = false
+  emit("close")
+}
+
 // reset form when drawer is closed
 watch(
   () => props.open,
@@ -427,13 +440,12 @@ watch(
 </script>
 
 <template>
-  <component
-    :is="isMobile ? Modal : Drawer"
+  <Drawer
     :open="open"
     :title="isPopupOrder ? 'Add Popup Order' : 'Create Order'"
     max-width="2xl"
     variant="fullscreen"
-    @close="emit('close')"
+    @close="handleClose"
   >
     <StepperWizard v-model="activeStep" :steps="steps" :showIndicators="false">
       <template #default="{ step, onPrev, onNext }">
@@ -522,9 +534,20 @@ watch(
           @prev="onPrev"
           @submit="onCreateOrder"
         />
+
+        <!--  -->
+        <ConfirmationModal
+          v-model="confirmClose"
+          header="Discard Order?"
+          paragraph="You have unsaved progress on this order. Closing now will lose everything you've entered."
+          action-label="Discard"
+          variant="warning"
+          info-message="This action cannot be reversed."
+          @confirm="forceClose"
+        />
       </template>
     </StepperWizard>
-  </component>
+  </Drawer>
 
   <!-- Add Customer Address Modal (outside drawer to avoid nesting) -->
   <OrderAddCustomerAddress

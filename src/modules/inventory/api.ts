@@ -126,6 +126,23 @@ export function useGetProducts(
   })
 }
 
+/** search inventory products */
+export function useSearchProducts(query: MaybeRefOrGetter<string>) {
+  return useQuery({
+    queryKey: ["products", "search", query],
+    queryFn: async () => {
+      const search = toValue(query)
+      const { data } = await baseApi.get<TPaginatedResponse<IProductCatalogue>>(
+        `/inventory/products/`,
+        { params: { ...(search ? { search } : {}), limit: 20 } },
+      )
+      return data.data
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
+  })
+}
+
 /** Fetch order statistics */
 export function useGetProductDashboard() {
   return useApiQuery<IProductStats>({
@@ -354,6 +371,27 @@ export function useGetProductCatalogsInfinite(limit = 20, search?: Ref<string>) 
   })
 }
 
+/** search product catalogs by product name */
+export function useSearchProductCatalogs(search: MaybeRefOrGetter<string>) {
+  return useQuery({
+    queryKey: ["productCatalogs", "search", search],
+    queryFn: async () => {
+      const { data } = await baseApi.get<TPaginatedResponse<IProductCatalogue>>(
+        `/inventory/catalog/`,
+        {
+          params: {
+            ...(toValue(search) ? { search: toValue(search) } : {}),
+            limit: 20,
+          },
+        },
+      )
+      return data.data
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
+  })
+}
+
 export function useGetProductVariants() {
   return useApiQuery<TPaginatedResponse<IProductVariant>["data"]>({
     url: `/inventory/variants/`,
@@ -396,7 +434,7 @@ export function useSearchProductVariants(search: MaybeRefOrGetter<string>) {
         {
           params: {
             ...(toValue(search) ? { search: toValue(search) } : {}),
-            limit: 10,
+            limit: 20,
           },
         },
       )

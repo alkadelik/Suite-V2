@@ -12,15 +12,9 @@
       subtitle="Enter your email to receive instructions on how to reset your password."
     />
 
-    <AppForm :schema="schema" @submit="onSubmit" v-slot="{ meta }" class="space-y-8">
+    <AppForm :schema="schema" @submit="onSubmit" v-slot="{}" class="space-y-8">
       <FormField name="email" label="Email" placeholder="abc@gmail.com" required />
-      <AppButton
-        type="submit"
-        label="Next"
-        :loading="isPending"
-        class="w-full"
-        :disabled="!meta.valid"
-      />
+      <AppButton type="submit" label="Next" :loading="isPending" class="w-full" />
     </AppForm>
   </div>
 </template>

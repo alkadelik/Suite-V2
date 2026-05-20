@@ -5,7 +5,7 @@
         <Icon name="tag" class="h-4 w-4" /> Total Sales
       </p>
       <h3 class="text-core-800 text-2xl font-semibold md:text-3xl">
-        {{ formatCurrency(product.amount_sold) }}
+        {{ format(product.amount_sold) }}
       </h3>
       <div class="flex items-center gap-2">
         <p class="text-core-600 text-xs md:text-sm">vs. 0 last wk</p>
@@ -94,39 +94,13 @@
         </div>
       </div>
     </div>
-
-    <!-- <div class="mt-6">
-      <h3 class="text-core-700 mb-4 text-lg font-semibold md:text-xl">Product Promos</h3>
-      <div class="border-primary-700 bg-primary-25 mt-4 flex gap-2 rounded-xl border p-4 md:gap-5">
-        <div class="flex flex-1 flex-col justify-between gap-2 md:gap-3">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center justify-between gap-2">
-              <h5 class="text-core-400 text-lg font-semibold line-through md:text-xl">
-                {{ formatCurrency(5000) }}
-              </h5>
-              <h5 class="text-core-800 text-xl font-semibold md:text-2xl">
-                {{ formatCurrency(4000) }}
-              </h5>
-            </div>
-          </div>
-          <p class="text-core-700 inline-flex items-center gap-1 text-sm md:text-base">
-            <Icon name="calendar" class="text-core-700 inline" size="16" /> Ends Sept 30, 2025
-          </p>
-          <div class="flex gap-2">
-            <Chip color="success" label="Active" showDot />
-            <Chip color="blue" icon="tag" :label="`${formatCurrency(5000)} off`" />
-            <Chip color="purple" icon="box-outline" label="Product Only" />
-          </div>
-        </div>
-      </div>
-    </div> -->
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue"
 import PageSummaryCards from "@components/PageSummaryCards.vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { markdownToHtml } from "@/utils/html-to-markdown"
 import type { IProductDetails, IProductVariantDetails } from "../types"
 import Icon from "@components/Icon.vue"
@@ -156,6 +130,7 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+const { format } = useFormatCurrency()
 
 const settingsStore = useSettingsStore()
 const isHQ = computed(() => settingsStore.activeLocation?.is_hq ?? true)
@@ -165,20 +140,20 @@ const productPrice = computed(() => {
 
   const variants = props.product.variants
   if (variants.length === 1) {
-    return formatCurrency(Number(variants[0].price))
+    return format(Number(variants[0].price))
   }
 
   const prices = variants.map((v) => Number(v.price))
   const uniquePrices = [...new Set(prices)]
 
   if (uniquePrices.length === 1) {
-    return formatCurrency(uniquePrices[0])
+    return format(uniquePrices[0])
   }
 
   const minPrice = Math.min(...prices)
   const maxPrice = Math.max(...prices)
 
-  return `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`
+  return `${format(minPrice)} - ${format(maxPrice)}`
 })
 
 // Check if variants have varying weights

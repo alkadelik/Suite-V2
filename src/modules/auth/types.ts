@@ -34,6 +34,7 @@ export interface IUser {
   address?: string | null
   state?: string | null
   country?: string | null
+  is_international?: boolean
   store?: {
     business_name: string
     address: string
@@ -94,6 +95,7 @@ export interface IStoreFormData {
   name: string
   slug: string
   industry: { label: string; value: string }
+  country: { label: string; value: string }
   currency: { label: string; value: string }
 }
 
@@ -101,7 +103,9 @@ export interface ICreateStorePayload {
   name: string
   industry: string
   slug: string
+  country: string
   currency: string
+  is_international: boolean
 }
 
 export interface IStoreApiResponse {

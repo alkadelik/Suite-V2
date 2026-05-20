@@ -7,7 +7,7 @@
     variant="bottom-nav"
     :handle-padding="false"
   >
-    <AppForm :schema="schema" @submit="onSubmit" v-slot="{ meta, values }">
+    <AppForm :schema="schema" @submit="onSubmit" v-slot="{ values }">
       <div class="space-y-4 px-4 py-4 md:space-y-8 md:px-6">
         <div class="space-y-4">
           <div class="flex size-10 items-center justify-center rounded-xl bg-neutral-50 p-2">
@@ -62,13 +62,7 @@
       </div>
 
       <div class="space-y-3 bg-white px-6 py-4">
-        <AppButton
-          type="submit"
-          label="Send CSV to my email"
-          :loading="isPending"
-          class="w-full"
-          :disabled="!meta.valid"
-        />
+        <AppButton type="submit" label="Send CSV to my email" :loading="isPending" class="w-full" />
       </div>
     </AppForm>
   </Modal>

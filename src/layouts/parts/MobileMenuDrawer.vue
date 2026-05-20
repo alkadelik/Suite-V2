@@ -7,7 +7,7 @@ import Drawer from "@components/Drawer.vue"
 import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
 import { useAuthStore } from "@modules/auth/store"
-import PlansModal from "@modules/settings/components/PlansModal.vue"
+import { useProductionStore } from "@modules/production/store"
 import { useSettingsStore } from "@modules/settings/store"
 import { useSharedStore } from "@modules/shared/store"
 import { computed, ref } from "vue"
@@ -20,52 +20,103 @@ const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
 const storeDetails = computed(() => useSettingsStore().storeDetails)
 const currentLocation = computed(() => useSettingsStore().activeLocation)
 const user = computed(() => useAuthStore().user)
+const recipeLabel = computed(() => useProductionStore().recipeLabel)
+const componentLabel = computed(() => useProductionStore().componentLabel)
 
 const isHQ = computed(() => currentLocation.value?.is_hq ?? true)
 
 const searchQuery = ref("")
 
-const quickActions = computed(() => {
-  const allActions = [
-    { label: "Customers", icon: "people", to: "/customers" },
-    { label: "Popups", icon: "calendar-tick", to: "/popups", hqOnly: true },
-    { label: "Expenses", icon: "receipt-text", to: "/expenses" },
-    { label: "EOD Reports", icon: "pie-chart", to: "/reports/eod" },
-    { label: "Monthly Reports", icon: "pie-chart", to: "/reports/monthly" },
+type Action = {
+  label: string
+  icon: string
+  to?: string
+  hqOnly?: boolean
+  action?: () => void
+}
+
+type ActionGroup = {
+  label: string
+  items: Action[]
+}
+
+const quickActionGroups = computed<ActionGroup[]>(() => {
+  const groups: ActionGroup[] = [
     {
-      label: "Discounts",
-      icon: "tag",
-      action: () => toast.info("This module is coming soon!", { title: "Discounts" }),
-    },
-    { label: "Email List", icon: "sms", to: "/email-list" },
-    { label: "Raw Materials", icon: "box", to: "/raw-materials" },
-    {
-      label: "Recipes",
-      icon: "box",
-      // to: "/recipes",
-      action: () => toast.info("This module is coming soon!", { title: "Recipes" }),
+      label: "Sales Suite",
+      items: [
+        { label: "Customers", icon: "people", to: "/customers" },
+        { label: "Popups", icon: "calendar-tick", to: "/popups", hqOnly: true },
+      ],
     },
     {
-      label: "Support",
-      icon: "life-buoy",
-      action: () => {
-        emit("close")
-        useSharedStore().openSupportModal()
-      },
+      label: "Marketing",
+      items: [{ label: "Email List", icon: "sms", to: "/email-list" }],
     },
-    { label: "Settings", icon: "setting", to: "/settings" },
+    {
+      label: "Production",
+      items: [
+        { label: componentLabel.value, icon: "archive", to: "/production/raw-materials" },
+        { label: recipeLabel.value, icon: "clipboard-text-outline", to: "/production/recipes" },
+        { label: "Runs", icon: "chart", to: "/production/runs" },
+      ],
+    },
+    {
+      label: "Reports",
+      items: [
+        { label: "End of Day", icon: "pie-chart", to: "/reports/end-of-day" },
+        { label: "Monthly", icon: "pie-chart", to: "/reports/monthly" },
+      ],
+    },
+    {
+      label: "Accounting",
+      items: [
+        { label: "Expenses", icon: "receipt-text", to: "/expenses" },
+        {
+          label: "Discounts",
+          icon: "tag",
+          action: () => toast.info("This module is coming soon!", { title: "Discounts" }),
+        },
+      ],
+    },
+    {
+      label: "Help & Settings",
+      items: [
+        {
+          label: "Support",
+          icon: "life-buoy",
+          action: () => {
+            emit("close")
+            useSharedStore().openSupportModal()
+          },
+        },
+        { label: "Settings", icon: "setting", to: "/settings" },
+      ],
+    },
   ]
 
-  const filteredActions = allActions.filter((action) =>
-    action.label.toLowerCase().includes(searchQuery.value.toLowerCase()),
-  )
-
-  return filteredActions.filter((action) => !action.hqOnly || isHQ.value)
+  return groups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter(
+        (item) =>
+          item.label.toLowerCase().includes(searchQuery.value.toLowerCase()) &&
+          (!item.hqOnly || isHQ.value),
+      ),
+    }))
+    .filter((group) => group.items.length > 0)
 })
 
-const showPlans = computed(() => useSettingsStore().showPlanUpgradeModal)
+const settingsStore = useSettingsStore()
+const isInternational = computed(() => settingsStore.isInternational)
 
-const { setPlanUpgradeModal } = useSettingsStore()
+const currentPlanName = computed(() => user.value?.subscription?.plan_name?.toLowerCase() ?? "")
+const planCtaLabel = computed(() => {
+  if (user.value?.subscription?.trial_mode) return "Upgrade"
+  return currentPlanName.value === "burst" ? "Subscribed" : "Upgrade"
+})
+
+const { setPlanUpgradeModal } = settingsStore
 </script>
 
 <template>
@@ -90,7 +141,10 @@ const { setPlanUpgradeModal } = useSettingsStore()
               <p class="truncate font-medium">{{ storeDetails?.name }}</p>
               <Chip v-if="currentLocation?.is_hq" label="HQ" class="shrink-0" />
             </div>
-            <div class="flex min-w-0 items-center gap-2 text-sm text-gray-600">
+            <div
+              v-if="!isInternational"
+              class="flex min-w-0 items-center gap-2 text-sm text-gray-600"
+            >
               <p class="truncate">{{ storefrontUrl }}</p>
               <Icon
                 name="copy"
@@ -114,35 +168,55 @@ const { setPlanUpgradeModal } = useSettingsStore()
             container-class="bg-white!"
           />
         </div>
-        <div class="grid grid-cols-2 gap-3 overflow-y-auto p-3 pt-2">
+        <div class="flex flex-col gap-2.5 overflow-y-auto p-3 pt-2">
           <div
-            v-for="action in quickActions"
-            :key="action.label"
-            class="border-primary-200 text-primary-700 cursor-pointer rounded-xl border bg-white px-2 py-3 text-center"
-            @click="
-              () => {
-                if (action.action) {
-                  action.action()
-                } else {
-                  $router.push(action.to)
-                  $emit('close')
-                }
-              }
-            "
+            v-if="quickActionGroups.length === 0"
+            class="flex flex-col items-center gap-2 py-10 text-center"
           >
-            <div class="mb-1 flex items-center">
+            <Icon name="search-lg" size="32" class="text-gray-300" />
+            <p class="text-sm font-medium text-gray-500">No results for "{{ searchQuery }}"</p>
+            <p class="text-xs text-gray-400">Try a different search term</p>
+          </div>
+          <div
+            v-for="group in quickActionGroups"
+            :key="group.label"
+            class="rounded-2xl border border-gray-100 bg-white p-3"
+          >
+            <p class="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase">
+              {{ group.label }}
+            </p>
+            <div class="grid grid-cols-3 gap-2">
               <div
-                class="border-core-200 bg-bloom-50 mx-auto flex size-8 items-center justify-center rounded-full border p-2"
+                v-for="action in group.items"
+                :key="action.label"
+                class="border-primary-200 text-primary-700 cursor-pointer rounded-xl border bg-white px-2 py-3 text-center"
+                @click="
+                  () => {
+                    if (action.action) {
+                      action.action()
+                    } else {
+                      $router.push(action.to!)
+                      $emit('close')
+                    }
+                  }
+                "
               >
-                <Icon :name="action.icon" size="24" />
+                <div class="mb-1 flex items-center">
+                  <div
+                    class="border-core-200 bg-bloom-50 mx-auto flex size-8 items-center justify-center rounded-full border p-2"
+                  >
+                    <Icon :name="action.icon" size="24" />
+                  </div>
+                </div>
+                <span class="text-xs font-medium md:text-base">{{ action.label }}</span>
               </div>
             </div>
-            <span class="text-xs font-medium md:text-base">{{ action.label }}</span>
           </div>
         </div>
       </div>
 
       <div
+        v-if="!isInternational"
         :class="['relative flex flex-col gap-2 rounded-3xl p-6 text-white']"
         style="
           background: linear-gradient(136.41deg, #1a2a6c -3.7%, #b21f1f 53.98%, #fdbb2d 99.39%);
@@ -173,7 +247,7 @@ const { setPlanUpgradeModal } = useSettingsStore()
         </div>
         <AppButton
           color="alt"
-          label="Upgrade"
+          :label="planCtaLabel"
           class="w-full flex-row-reverse"
           icon="star"
           @click="setPlanUpgradeModal(true)"
@@ -186,11 +260,5 @@ const { setPlanUpgradeModal } = useSettingsStore()
 
       <div class="py-10" />
     </Drawer>
-
-    <!--  -->
-    <PlansModal
-      :model-value="showPlans"
-      @update:model-value="(val: boolean) => setPlanUpgradeModal(val)"
-    />
   </div>
 </template>

@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import ReportStatCard from "../ReportStatCard.vue"
 import { IEODReport } from "@modules/reports/types"
 import { computed } from "vue"
 
 const props = defineProps<{ data: IEODReport | null }>()
+const { format } = useFormatCurrency()
 
 const stats = computed(() => [
   {
@@ -25,7 +26,7 @@ const stats = computed(() => [
   },
   {
     label: "Returning Revenue",
-    value: formatCurrency(props.data?.customers?.returning_revenue ?? 0, { kobo: true }),
+    value: format(props.data?.customers?.returning_revenue ?? 0, { kobo: true }),
     icon: "moneys-solid",
     caption: `${props.data?.customers?.returning_revenue_percent?.toFixed(1) ?? 0}% of total revenue`,
   },

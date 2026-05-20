@@ -7,8 +7,6 @@ import { ref } from "vue"
 import { useGetOrderMemos } from "../api"
 import { TOrder } from "../types"
 import AddMemoModal from "./AddMemoModal.vue"
-import { useMediaQuery } from "@vueuse/core"
-import Modal from "@components/Modal.vue"
 
 // Props & Emits
 const props = defineProps<{ open: boolean; order: TOrder }>()
@@ -42,14 +40,11 @@ const openCreateMemoModal = () => {
 }
 
 const { data: memosData, refetch } = useGetOrderMemos(props.order.uid)
-
-const isMobile = useMediaQuery("(max-width: 1024px)")
 </script>
 
 <template>
   <div>
-    <component
-      :is="isMobile ? Modal : Drawer"
+    <Drawer
       variant="fullscreen"
       :open="open"
       title="Order Memos"
@@ -137,7 +132,7 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
           />
         </div>
       </div>
-    </component>
+    </Drawer>
 
     <!-- Create Memo Modal -->
     <AddMemoModal

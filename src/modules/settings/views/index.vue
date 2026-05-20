@@ -3,15 +3,18 @@
     <AppHeader show-logo :is-live="isLive" @logout="logout = true" />
 
     <Container class="flex min-h-0 flex-1 overflow-hidden">
-      <div class="flex min-h-0 flex-1 rounded-xl bg-white p-4 pb-0 2xl:px-8">
+      <div class="flex min-h-0 min-w-0 flex-1 rounded-xl bg-white p-4 pb-0 2xl:px-8">
         <!-- Fixed Header Section -->
-        <div class="flex min-h-0 flex-1 flex-col">
+        <div class="flex min-h-0 min-w-0 flex-1 flex-col">
           <header
             class="mb-4 hidden flex-shrink-0 border-b border-gray-200 pb-4 md:block md:text-left"
           >
             <BackButton to="/dashboard" />
             <h2 class="mt-3 text-2xl font-bold">Settings</h2>
-            <div class="flex min-w-0 items-center gap-2 text-sm text-gray-600">
+            <div
+              v-if="!isInternational"
+              class="flex min-w-0 items-center gap-2 text-sm text-gray-600"
+            >
               <p class="truncate">{{ storefrontUrl }}</p>
               <Icon
                 name="copy"
@@ -23,7 +26,7 @@
           </header>
 
           <BackButton
-            v-if="route.path !== '/settings'"
+            v-if="route.path !== '/settings' && !route.path.startsWith('/settings/domains/')"
             label="Back"
             to="/settings"
             class="mb-3 flex-shrink-0 md:hidden"
@@ -55,7 +58,7 @@
             </aside>
 
             <!-- Scrollable main content -->
-            <main class="min-h-0 flex-1 overflow-y-auto px-3 md:py-3">
+            <main class="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-3 md:py-3">
               <router-view />
             </main>
           </div>
@@ -64,8 +67,6 @@
     </Container>
 
     <!--  -->
-    <PlansModal :model-value="showPlans" @update:model-value="(val) => setPlanUpgradeModal(val)" />
-
     <AddLocationModal
       :open="showAddLocationModal"
       :location="locationForEdit"
@@ -84,7 +85,6 @@ import BackButton from "@components/BackButton.vue"
 import { useRoute } from "vue-router"
 import { useSettingsStore } from "../store"
 import { computed, ref, watch } from "vue"
-import PlansModal from "../components/PlansModal.vue"
 import AddLocationModal from "../components/AddLocationModal.vue"
 import { useGetLiveStatus, useGetRoles } from "@modules/shared/api"
 import { updateStoreRoleOptions } from "@modules/shared/constants"
@@ -113,6 +113,15 @@ watch(
   { immediate: true },
 )
 
+const isInternational = computed(() => useSettingsStore().isInternational)
+
+const INTERNATIONAL_HIDDEN_LINKS = [
+  "Plans & Billing",
+  "Storefront Design",
+  "Delivery Options",
+  "Domains",
+]
+
 const LINKS = computed(() =>
   [
     { label: "Profile", path: "/settings/profile" },
@@ -123,6 +132,7 @@ const LINKS = computed(() =>
     { label: "Locations", path: "/settings/locations" },
     { label: "Taxes", path: "/settings/taxes" },
     { label: "Storefront Design", path: "/settings/design" },
+    { label: "Domains", path: "/settings/domains" },
     { label: "Delivery Options", path: "/settings/delivery-options" },
     { label: "Production", path: "/settings/production" },
   ].filter((link) => {
@@ -130,12 +140,15 @@ const LINKS = computed(() =>
     if (!activeLocation?.is_hq) {
       return ["Profile", "Password"].includes(link.label)
     }
+    if (isInternational.value && INTERNATIONAL_HIDDEN_LINKS.includes(link.label)) {
+      return false
+    }
     return true
   }),
 )
 
-const { setPlanUpgradeModal, setAddLocationModal, setLocationForEdit } = useSettingsStore()
-const showPlans = computed(() => useSettingsStore().showPlanUpgradeModal)
+const settingsStore = useSettingsStore()
+const { setAddLocationModal, setLocationForEdit } = settingsStore
 const showAddLocationModal = computed(() => useSettingsStore().showAddLocationModal)
 const locationForEdit = computed(() => useSettingsStore().locationForEdit)
 const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)

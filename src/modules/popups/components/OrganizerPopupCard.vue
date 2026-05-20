@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import Icon from "@components/Icon.vue"
 import { EventfulPopup } from "../types"
 import { formatDate } from "@/utils/formatDate"
@@ -14,6 +14,8 @@ const props = withDefaults(
   }>(),
   { showImage: true, showPrice: true },
 )
+
+const { format } = useFormatCurrency()
 </script>
 
 <template>
@@ -29,7 +31,7 @@ const props = withDefaults(
       />
 
       <div class="absolute top-2 left-0 rounded-r bg-white px-2 py-1 text-sm font-semibold shadow">
-        {{ Number(event.participant_fee) ? formatCurrency(Number(event.participant_fee)) : "Free" }}
+        {{ Number(event.participant_fee) ? format(Number(event.participant_fee)) : "Free" }}
       </div>
 
       <img src="/images/logos/leyyow-icon.svg?url" class="absolute right-1 bottom-1 h-8 w-8" />

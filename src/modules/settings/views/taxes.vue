@@ -32,7 +32,9 @@ const hasBloomAccess = computed(() => {
 })
 
 const handleUpgradeClick = () => {
-  settingsStore.setPlanUpgradeModal(true)
+  if (!settingsStore.isInternational) {
+    settingsStore.setPlanUpgradeModal(true)
+  }
 }
 
 const storeUid = computed(() => authStore.user?.store_uid || "")

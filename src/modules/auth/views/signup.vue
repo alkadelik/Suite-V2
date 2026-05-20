@@ -6,7 +6,7 @@
       class="mb-4"
     />
 
-    <AppForm :schema="validationSchema" @submit="onSubmit" v-slot="{ meta }" class="space-y-5">
+    <AppForm :schema="validationSchema" @submit="onSubmit" v-slot="{}" class="space-y-5">
       <div class="grid grid-cols-2 gap-5">
         <FormField name="first_name" label="First Name" placeholder="e.g. John" required />
         <FormField name="last_name" label="Last Name" placeholder="e.g. Doe" />
@@ -55,13 +55,7 @@
         </a>
       </p>
 
-      <AppButton
-        type="submit"
-        :loading="isPending"
-        label="Create Account"
-        class="w-full"
-        :disabled="!meta.valid"
-      />
+      <AppButton type="submit" :loading="isPending" label="Create Account" class="w-full" />
     </AppForm>
 
     <div class="mt-5 pb-4">
@@ -125,7 +119,9 @@ const onSubmit = (values: TSignupPayload) => {
       authStore.setAuthUser({ ...user, email: values.email, store_slug: "" })
       toast.success("Signup successful!")
       // check for redirect query param
-      router.push(`/confirm-email?email=${values.email}${redirectStr.value.replace("?", "&")}`)
+      router.push(
+        `/confirm-email?email=${encodeURIComponent(values.email)}${redirectStr.value.replace("?", "&")}`,
+      )
     },
     onError: displayError,
   })

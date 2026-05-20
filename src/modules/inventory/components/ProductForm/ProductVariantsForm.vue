@@ -1,8 +1,8 @@
 <template>
-  <div class="text-core-800 space-y-4 text-left">
+  <div data-validation-target="variant-configuration" class="text-core-800 space-y-4 text-left">
     <!-- Global Error Messages -->
-    <div v-if="globalErrorMessage" class="mt-1 text-xs text-red-700">
-      {{ globalErrorMessage }}
+    <div v-if="resolvedGlobalErrorMessage" class="mt-1 text-xs text-red-700">
+      {{ resolvedGlobalErrorMessage }}
     </div>
 
     <!-- Dynamic Variants Loop -->
@@ -23,39 +23,55 @@
         </button>
       </div>
       <div class="space-y-4 p-4">
-        <SelectField
-          label="Select Option Type"
-          placeholder="e.g. Size, Color, Material"
-          :options="getFilteredAttributes(index)"
-          v-model="variant.name"
-          value-key="value"
-          label-key="label"
-          @update:model-value="
-            (value) =>
-              onVariantNameChange(index, value as string | number | Record<string, unknown> | null)
-          "
-        />
+        <div :data-validation-target="`variant-name-${index}`">
+          <SelectField
+            label="Select Option Type"
+            placeholder="e.g. Size, Color, Material"
+            :options="getFilteredAttributes(index)"
+            v-model="variant.name"
+            value-key="value"
+            label-key="label"
+            :error="props.errors?.variants?.[index]?.name"
+            @update:model-value="
+              (value) =>
+                onVariantNameChange(
+                  index,
+                  value as string | number | Record<string, unknown> | null,
+                )
+            "
+          />
+        </div>
 
         <!-- Custom option input -->
-        <TextField
+        <div
           v-if="getVariantValue(index) === 'custom_type'"
-          label="Option Name"
-          v-model="variant.customName"
-          placeholder="Enter custom option name"
-          @input="(event: Event) => handleCustomNameInput(event, index)"
-        />
+          :data-validation-target="`variant-custom-name-${index}`"
+        >
+          <TextField
+            label="Option Name"
+            v-model="variant.customName"
+            placeholder="Enter custom option name"
+            :error="props.errors?.variants?.[index]?.customName"
+            @input="(event: Event) => handleCustomNameInput(event, index)"
+          />
+        </div>
 
-        <InputTagsField
+        <div
           v-if="getVariantDisplayName(index)"
-          :label="`Enter at least ${getMinimumValuesRequired(index)} ${getVariantDisplayName(index).toLowerCase()}${getVariantDisplayName(index).toLowerCase().endsWith('s') ? '' : 's'}`"
-          :placeholder="`Enter a ${getVariantDisplayName(index).toLowerCase()}`"
-          v-model="variant.values"
-          :is-weight-attribute="isWeightAttribute(index)"
-        />
+          :data-validation-target="`variant-values-${index}`"
+        >
+          <InputTagsField
+            :label="`Enter at least ${getMinimumValuesRequired(index)} ${getVariantDisplayName(index).toLowerCase()}${getVariantDisplayName(index).toLowerCase().endsWith('s') ? '' : 's'}`"
+            :placeholder="`Enter a ${getVariantDisplayName(index).toLowerCase()}`"
+            v-model="variant.values"
+            :error="props.errors?.variants?.[index]?.values || undefined"
+            :is-weight-attribute="isWeightAttribute(index)"
+          />
+        </div>
 
         <!-- Individual variant error messages -->
-        <div v-if="getVariantErrorMessage(index)" class="mt-1 text-xs text-red-700">
-          {{ getVariantErrorMessage(index) }}
+        <div v-if="resolvedVariantErrorMessage(index)" class="mt-1 text-xs text-red-700">
+          {{ resolvedVariantErrorMessage(index) }}
         </div>
       </div>
     </div>
@@ -82,6 +98,13 @@ import Icon from "@components/Icon.vue"
 import { computed, ref } from "vue"
 import { PRODUCT_ATTRIBUTES, isWeightAttributeUid } from "@modules/inventory/constants"
 import { useTextTransform } from "@/composables/useTextTransform"
+import type { IVariantConfigurationValidationErrors } from "../../composables/useVariantValidation"
+
+interface Props {
+  errors?: IVariantConfigurationValidationErrors
+}
+
+const props = defineProps<Props>()
 
 // Composables
 const { handleCapitalizedInput } = useTextTransform()
@@ -262,6 +285,11 @@ const getVariantErrorMessage = (index: number) => {
   return ""
 }
 
+const resolvedVariantErrorMessage = (index: number) => {
+  if (props.errors?.variants?.[index]?.values) return ""
+  return getVariantErrorMessage(index)
+}
+
 // Global error messages (for cross-variant validation)
 const globalErrorMessage = computed(() => {
   if (!variants.value) return ""
@@ -293,6 +321,8 @@ const globalErrorMessage = computed(() => {
   return ""
 })
 
+const resolvedGlobalErrorMessage = computed(() => props.errors?.global || globalErrorMessage.value)
+
 // Computed property to disable add variant button
 const disableAddVariant = computed(() => {
   if (!variants.value) return true
@@ -315,7 +345,7 @@ const disableAddVariant = computed(() => {
   }
 
   // Check for duplicate names
-  if (globalErrorMessage.value) {
+  if (resolvedGlobalErrorMessage.value) {
     return true
   }
 

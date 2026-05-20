@@ -148,7 +148,7 @@
 
 <script setup lang="ts">
 import SectionHeader from "@/components/SectionHeader.vue"
-import { ref, computed } from "vue"
+import { ref, computed, watch } from "vue"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
@@ -161,9 +161,19 @@ import CancelSubscriptionModal from "../components/CancelSubscriptionModal.vue"
 import SuccessModal from "@/components/SuccessModal.vue"
 import { getPlanColor } from "../utils"
 import { TChipColor } from "@modules/shared/types"
-import { useGetSubscriptionHistory, useGetPlans, useCancelSubscription } from "../api"
+import {
+  useGetSubscriptionHistory,
+  useGetPlans,
+  useCancelSubscription,
+  useGetSubscription,
+} from "../api"
 import { useAuthStore } from "@modules/auth/store"
 import { displayError } from "@/utils/error-handler"
+
+const { data: subscription } = useGetSubscription()
+watch(subscription, (val) => {
+  console.log("subscription response:", val)
+})
 
 const showPlansModal = ref(false)
 const showCancelModal = ref(false)

@@ -1,11 +1,7 @@
 <script setup lang="ts">
-import { computed } from "vue"
 import DonutChart from "@components/DonutChart.vue"
-import { SO_REPEAT_CUSTOMER, SO_REPEAT_CUSTOMER_EMPTY } from "../../constants"
 
-const props = defineProps<{ useDummyData: boolean }>()
-
-const data = computed(() => (props.useDummyData ? SO_REPEAT_CUSTOMER : SO_REPEAT_CUSTOMER_EMPTY))
+defineProps<{ percent: number }>()
 </script>
 
 <template>
@@ -20,7 +16,7 @@ const data = computed(() => (props.useDummyData ? SO_REPEAT_CUSTOMER : SO_REPEAT
     <hr class="border-gray-200" />
 
     <div class="flex justify-center p-6 lg:p-8">
-      <DonutChart :percentage="data.percent" label="Repeated Customer Purchase" color="#3b82f6" />
+      <DonutChart :percentage="percent" label="Repeated Customer Purchase" color="#3b82f6" />
     </div>
   </section>
 </template>

@@ -20,7 +20,7 @@
             :variant="activeFilterCount ? 'outlined' : 'filled'"
             label="Filter"
             :badge="activeFilterCount || undefined"
-            class="!hidden md:!inline-flex"
+            class="!hidden flex-shrink-0 md:!inline-flex"
             @click="showFilter = true"
           />
           <AppButton
@@ -30,19 +30,18 @@
             :variant="activeFilterCount ? 'outlined' : 'filled'"
             label=""
             :badge="activeFilterCount || undefined"
-            class="md:hidden"
+            class="flex-shrink-0 md:hidden"
             @click="showFilter = true"
           />
-          <AppButton icon="share-06" size="sm" label="Export" class="!hidden md:!inline-flex" />
-          <AppButton icon="share-06" size="sm" label="" class="md:hidden" />
+          <AppButton
+            icon="share-06"
+            size="sm"
+            label="Export"
+            class="!hidden flex-shrink-0 md:!inline-flex"
+          />
+          <AppButton icon="share-06" size="sm" label="" class="flex-shrink-0 md:hidden" />
         </div>
       </div>
-
-      <ListFilterDrawer
-        v-model="showFilter"
-        :filter-groups="filterGroups"
-        @apply="handleApplyFilters"
-      />
 
       <DataTable
         :data="movements"
@@ -95,7 +94,7 @@
         </template>
 
         <template #cell:variant_cost_price="{ value }">
-          <span class="text-sm">{{ formatCurrency(Number(value)) }}</span>
+          <span class="text-sm">{{ format(Number(value)) }}</span>
         </template>
 
         <template #cell:reason="{ value }">
@@ -124,6 +123,12 @@
       :variant-info="selectedMovement ? getVariantFromId(selectedMovement.variant) : undefined"
       @close="showMovementModal = false"
     />
+
+    <ListFilterDrawer
+      v-model="showFilter"
+      :filter-groups="filterGroups"
+      @apply="handleApplyFilters"
+    />
   </div>
 </template>
 
@@ -137,7 +142,7 @@ import ProductMovementCard from "./ProductMovementCard.vue"
 import MovementDetailsModal from "./MovementDetailsModal.vue"
 import ListFilterDrawer from "@components/ListFilterDrawer.vue"
 import { getSmartDateLabel } from "@/utils/formatDate"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { useGetProductMovements } from "../api"
 import type { IProductDetails, IInventoryMovement } from "../types"
 import type { TableColumn } from "@components/DataTable.vue"
@@ -149,6 +154,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const { format } = useFormatCurrency()
 
 const showFilter = ref(false)
 const activeFilters = ref<Record<string, string | null>>({})

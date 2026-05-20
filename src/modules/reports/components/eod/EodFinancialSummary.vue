@@ -4,10 +4,11 @@ import { computed } from "vue"
 import ReportStatCard from "../ReportStatCard.vue"
 import { useMediaQuery } from "@vueuse/core"
 import { IEODReport } from "@modules/reports/types"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 
-const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
+const isMobile = useMediaQuery("(max-width: 768px)")
 const props = defineProps<{ data: IEODReport | null }>()
+const { format } = useFormatCurrency()
 
 const stats = computed(() => {
   const { summary, summary_comparison } = props.data || {}
@@ -20,37 +21,37 @@ const stats = computed(() => {
   const data = [
     {
       label: "Gross Revenue",
-      value: formatCurrency(summary?.gross_revenue ?? 0),
+      value: format(summary?.gross_revenue ?? 0),
       caption: `${summary?.order_count ?? 0} orders`,
       percentage: summary_comparison?.gross_revenue_percent_change ?? 0,
     },
     {
       label: "Refunds",
-      value: formatCurrency(summary?.total_refunds ?? 0),
+      value: format(summary?.total_refunds ?? 0),
       // caption: `${summary?.total_refunds ?? 0} orders`,
       percentage: undefined,
     },
     {
       label: "Discounts",
-      value: formatCurrency(summary?.total_discounts ?? 0),
+      value: format(summary?.total_discounts ?? 0),
       // caption: `${summary?.discount_count ?? 0} orders`,
       // percentage: summary_comparison?.discounts_percent_change ?? 0,
     },
     {
       label: "Shipping Costs",
-      value: formatCurrency(summary?.total_shipping_costs ?? 0),
+      value: format(summary?.total_shipping_costs ?? 0),
       // caption: `${summary?.shipping_count ?? 0} orders`,
       percentage: undefined,
     },
     {
       label: "Net Revenue",
-      value: formatCurrency(summary?.net_revenue ?? 0),
+      value: format(summary?.net_revenue ?? 0),
       // caption: `${summary?.net_margin ?? 0}% net margin`,
       percentage: summary_comparison?.net_revenue_percent_change ?? 0,
     },
     {
       label: "Avg Order Value",
-      value: formatCurrency(summary?.average_order_value ?? 0),
+      value: format(summary?.average_order_value ?? 0),
       caption: `${averageOrderMargin}% net margin`,
       percentage: undefined,
     },

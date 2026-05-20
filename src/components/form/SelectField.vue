@@ -99,7 +99,7 @@
 
             <!-- Options List -->
             <div class="max-h-48 overflow-auto">
-              <slot name="prepend" :close="closeDropdown" />
+              <slot v-if="!search" name="prepend" :close="closeDropdown" />
 
               <!-- Loading state -->
               <div
@@ -174,10 +174,12 @@
               <slot name="append" :close="closeDropdown" />
 
               <div
-                v-if="!loading && filteredOptions.length === 0 && !$slots.prepend"
+                v-if="!loading && filteredOptions.length === 0"
                 class="text-core-400 px-4 py-3 text-center text-sm"
               >
-                {{ noOptionsText }}
+                <slot name="no-options" :search="search" :close="closeDropdown">
+                  {{ noOptionsText }}
+                </slot>
               </div>
             </div>
 

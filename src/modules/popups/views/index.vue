@@ -25,6 +25,7 @@ import PopupCreatedSuccessModal from "../components/PopupCreatedSuccessModal.vue
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
 import ClosePopupModal from "../components/ClosePopupModal.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
+import PopupFiltersDrawer from "../components/PopupFiltersDrawer.vue"
 
 const TABS = [
   { title: "All", key: "" },
@@ -46,6 +47,13 @@ const openClose = ref(false)
 const selectedPopup = ref<PopupEvent | null>(null)
 
 const isMobile = useMediaQuery("(max-width: 768px)")
+const activeFilters = ref<Record<string, string>>({})
+
+const activeFilterCount = computed(() => Object.keys(activeFilters.value).length)
+
+const handleApplyFilters = (filters: Record<string, string>) => {
+  activeFilters.value = filters
+}
 
 const handleAction = (action: string, item: PopupEvent) => {
   selectedPopup.value = item
@@ -54,10 +62,16 @@ const handleAction = (action: string, item: PopupEvent) => {
   if (action === "close") openClose.value = true
 }
 
+const page = ref(1)
+const itemsPerPage = ref(10)
+
 const computedFilters = computed(() => {
   const filters: Record<string, string> = {}
   if (status.value && status.value !== "all") filters.status = status.value
   if (debouncedSearch.value) filters.search = debouncedSearch.value
+  filters.offset = ((debouncedSearch.value ? 1 : page.value - 1) * itemsPerPage.value).toString()
+  filters.limit = itemsPerPage.value.toString()
+  Object.assign(filters, activeFilters.value)
   return filters
 })
 const { data: popupEvents, isPending, isFetching, refetch } = useGetPopupEvents(computedFilters)
@@ -203,7 +217,9 @@ const getMenuAction = (item: PopupEvent) => {
     </div>
 
     <EmptyState
-      v-if="!popupEvents?.count && !status && !searchQuery && !debouncedSearch"
+      v-if="
+        !popupEvents?.count && !status && !searchQuery && !debouncedSearch && !activeFilterCount
+      "
       title="You don't have any popup yet!"
       description="Create a popup event."
       action-label="Create a popup event"
@@ -235,11 +251,11 @@ const getMenuAction = (item: PopupEvent) => {
 
             <AppButton
               icon="filter-lines"
-              variant="outlined"
               size="sm"
               color="alt"
-              class="flex-shrink-0"
+              class="relative flex-shrink-0"
               :label="isMobile ? '' : 'Filter'"
+              :badge="activeFilterCount ? activeFilterCount : ''"
               @click="showFilter = true"
             />
 
@@ -256,13 +272,18 @@ const getMenuAction = (item: PopupEvent) => {
         <DataTable
           :data="popupEvents?.results ?? []"
           :columns="POPUP_COLUMN"
-          :show-pagination="true"
           fix-last-column
           :loading="isPending || isFetching"
+          :show-pagination="true"
+          :items-per-page="itemsPerPage"
+          :total-items-count="popupEvents?.count || 0"
+          :total-page-count="Math.ceil((popupEvents?.count || 0) / itemsPerPage) || 1"
+          :server-pagination="true"
+          @pagination-change="(d) => (page = d.currentPage)"
           :empty-state="{
             title: 'No Popup Found',
             description:
-              searchQuery || status
+              searchQuery || status || activeFilterCount
                 ? 'Try adjusting your filters or search query'
                 : 'You don\'t have any popup yet. Create a popup event to get started.',
           }"
@@ -273,12 +294,12 @@ const getMenuAction = (item: PopupEvent) => {
               <div class="h-1.5 w-16 rounded-full bg-gray-200">
                 <div
                   class="bg-primary-600 h-1.5 rounded-full"
-                  :style="`width: ${((item.items_sold_count || 0) / (item.products_count || 1)) * 100}%`"
+                  :style="`width: ${((item.total_orders || 0) / (item.products_count || 1)) * 100}%`"
                 ></div>
               </div>
               <span class="flex flex-shrink-0 break-keep">
                 {{
-                  `${parseInt(String(((item.items_sold_count || 0) / (item.products_count || 1)) * 100))}%`
+                  `${parseInt(String(((item.total_orders || 0) / (item.products_count || 1)) * 100))}%`
                 }}
               </span>
             </div>
@@ -382,6 +403,12 @@ const getMenuAction = (item: PopupEvent) => {
       :event="selectedPopup"
       @refresh="refetch"
       :has-full-details="false"
+    />
+
+    <PopupFiltersDrawer
+      :open="showFilter"
+      @close="showFilter = false"
+      @apply="handleApplyFilters"
     />
   </div>
 </template>

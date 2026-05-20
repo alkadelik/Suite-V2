@@ -29,7 +29,6 @@
         :loading="isPending || isUpdating"
         class="w-full"
         @click="onSubmit"
-        :disabled="!meta.valid"
       />
     </template>
   </Modal>
@@ -63,14 +62,12 @@ const isMobile = useMediaQuery("(max-width: 768px)")
 const { mutate: createFn, isPending } = useCreateLocation()
 const { mutate: updateFn, isPending: isUpdating } = useUpdateLocation()
 
-const { handleSubmit, meta, setValues, values, errors, setFieldValue } = useForm<TLocationFormData>(
-  {
-    validationSchema: yup.object({
-      name: yup.string().required("Location name is required"),
-      address: yup.string().required("Address is required"),
-    }),
-  },
-)
+const { handleSubmit, setValues, values, errors, setFieldValue } = useForm<TLocationFormData>({
+  validationSchema: yup.object({
+    name: yup.string().required("Location name is required"),
+    address: yup.string().required("Address is required"),
+  }),
+})
 
 watch(
   () => props.location,

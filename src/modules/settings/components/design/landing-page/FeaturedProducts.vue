@@ -93,7 +93,7 @@ const SELECTION_OPTIONS = [
 const props = defineProps<{ featuredProductsSection?: ThemeSection | null }>()
 const emit = defineEmits<{ refetch: [] }>()
 
-const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
+const isMobile = useMediaQuery("(max-width: 768px)")
 
 const { mutate: updateSection, isPending } = useUpdateStorefrontSection()
 

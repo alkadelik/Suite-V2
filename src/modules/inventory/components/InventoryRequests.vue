@@ -196,7 +196,7 @@ const clearFilters = () => {
 const requestParams = computed(() => {
   const params: Record<string, string | number> = {
     limit: pageSize.value,
-    offset: (currentPage.value - 1) * pageSize.value,
+    offset: (debouncedSearch.value ? 1 : currentPage.value - 1) * pageSize.value,
   }
   if (debouncedSearch.value) params.search = debouncedSearch.value
   if (activeFilters.value.status) params.status = activeFilters.value.status

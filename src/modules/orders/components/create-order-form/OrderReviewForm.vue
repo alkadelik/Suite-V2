@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { formatDate } from "@/utils/formatDate"
 import { startCase } from "@/utils/format-strings"
 import AppButton from "@components/AppButton.vue"
@@ -64,6 +64,8 @@ const emit = defineEmits<{
   prev: []
   submit: []
 }>()
+
+const { format } = useFormatCurrency()
 
 const customerName = computed(() => {
   if (!props.customer) return "Unknown Customer"
@@ -174,10 +176,10 @@ const deliveryPaymentLabel = computed(() => {
               v-if="item.variant?.original_price && item.variant.original_price !== item.unit_price"
               class="text-core-400 text-xs line-through"
             >
-              {{ formatCurrency(item.quantity * item.variant.original_price) }}
+              {{ format(item.quantity * item.variant.original_price) }}
             </span>
             <span class="ml-1 text-sm font-medium">
-              {{ formatCurrency(Number(item.quantity * item.unit_price)) }}
+              {{ format(Number(item.quantity * item.unit_price)) }}
             </span>
           </div>
         </div>
@@ -207,7 +209,7 @@ const deliveryPaymentLabel = computed(() => {
         </p>
         <p class="flex justify-between text-sm">
           <span class="text-core-600">Subtotal</span>
-          <span class="font-medium">{{ formatCurrency(productsTotal, { kobo: true }) }}</span>
+          <span class="font-medium">{{ format(productsTotal, { kobo: true }) }}</span>
         </p>
         <p class="flex justify-between text-sm">
           <span class="text-core-600"
@@ -217,12 +219,12 @@ const deliveryPaymentLabel = computed(() => {
             ></span
           >
           <span class="font-medium" :class="{ 'font-normal! line-through': isFreeShipping }">
-            {{ deliveryFee > 0 ? formatCurrency(deliveryFee, { kobo: true }) : "-" }}
+            {{ deliveryFee > 0 ? format(deliveryFee, { kobo: true }) : "-" }}
           </span>
         </p>
         <p v-if="vatAmount > 0" class="flex justify-between text-sm">
           <span class="text-core-600">VAT (7.5%)</span>
-          <span class="font-medium">{{ formatCurrency(vatAmount, { kobo: true }) }}</span>
+          <span class="font-medium">{{ format(vatAmount, { kobo: true }) }}</span>
         </p>
         <p
           v-if="paymentInfo.discount_amount > 0"
@@ -230,17 +232,17 @@ const deliveryPaymentLabel = computed(() => {
         >
           <span>Discount</span>
           <span class="font-medium"
-            >-{{ formatCurrency(paymentInfo.discount_amount, { kobo: true }) }}</span
+            >-{{ format(paymentInfo.discount_amount, { kobo: true }) }}</span
           >
         </p>
         <div class="border-core-200 my-2 border-t border-dashed"></div>
         <div class="flex justify-between text-lg font-semibold">
           <span>Total:</span>
           <div class="text-right">
-            <span class="text-primary-600">{{ formatCurrency(totalAmount, { kobo: true }) }}</span>
+            <span class="text-primary-600">{{ format(totalAmount, { kobo: true }) }}</span>
             <br />
             <span class="text-core-600 text-sm font-normal line-through" v-if="isFreeShipping">
-              {{ formatCurrency(totalAmount + deliveryFee, { kobo: true }) }}
+              {{ format(totalAmount + deliveryFee, { kobo: true }) }}
             </span>
           </div>
         </div>
@@ -268,9 +270,7 @@ const deliveryPaymentLabel = computed(() => {
         </p>
         <p v-if="paymentInfo.payment_status !== 'unpaid'" class="flex justify-between text-sm">
           <span class="text-core-600">Amount Paid</span>
-          <span class="font-medium">{{
-            formatCurrency(paymentInfo.payment_amount, { kobo: true })
-          }}</span>
+          <span class="font-medium">{{ format(paymentInfo.payment_amount, { kobo: true }) }}</span>
         </p>
       </div>
 

@@ -138,7 +138,7 @@ import Drawer from "@components/Drawer.vue"
 import type { TCustomerFormMode, ICustomerFormPayload, ICustomerDetail } from "../types"
 import CustomerCard from "./CustomerCard.vue"
 import Tabs from "@/components/Tabs.vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import SummaryCard from "@/components/SummaryCards.vue"
 import Chip from "@components/Chip.vue"
 import { formatDate } from "../utils/dateFormatter"
@@ -168,6 +168,8 @@ const props = withDefaults(defineProps<Props>(), {
 const customer = computed(() => props.customerData || null)
 
 const emit = defineEmits<Emits>()
+
+const { format } = useFormatCurrency()
 
 const isMobile = ref(false)
 const formKey = ref(0)
@@ -207,12 +209,12 @@ const summaryStats = computed(() => [
   },
   {
     label: "Total Spend",
-    value: formatCurrency(Number(customer.value?.total_spent) || 0),
+    value: format(Number(customer.value?.total_spent) || 0),
     icon: "money-add",
   },
   {
     label: "Total Credit",
-    value: formatCurrency(Number(customer.value?.total_credits) || 0),
+    value: format(Number(customer.value?.total_credits) || 0),
     icon: "coin",
   },
   {

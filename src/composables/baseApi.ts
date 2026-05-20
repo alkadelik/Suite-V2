@@ -90,11 +90,15 @@ baseApi.interceptors.response.use(
       }
     }
 
-    // check if error is a Plan_Limit_Error
+    // check if error is a Plan_Limit_Error (skip for international accounts)
     const errorData = error.response?.data as { error?: { error?: string } }
     if (error.response?.status === 402 && errorData.error?.error === "PLAN_LIMIT_EXCEEDED") {
-      const { setPlanUpgradeModal } = useSettingsStore()
-      setPlanUpgradeModal(true)
+      console.log("Plan limit exceeded error detected")
+      const settingsStore = useSettingsStore()
+      if (!settingsStore.isInternational) {
+        console.log("Opening plan limit modal")
+        settingsStore.setPlanLimitModal(true)
+      }
       return Promise.reject(error)
     }
 

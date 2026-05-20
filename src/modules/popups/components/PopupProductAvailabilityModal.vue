@@ -5,7 +5,7 @@ import Modal from "@components/Modal.vue"
 import AppButton from "@components/AppButton.vue"
 import Icon from "@components/Icon.vue"
 import Chip from "@components/Chip.vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { PopupInventory, PopupInventoryVariant } from "@modules/popups/types"
 import { useUpdatePopupProduct } from "@modules/popups/api"
 import { displayError } from "@/utils/error-handler"
@@ -36,6 +36,8 @@ const emit = defineEmits<{
 }>()
 
 const route = useRoute()
+
+const { format } = useFormatCurrency()
 
 // Local state for managing the variant visibility
 const variantItems = ref<VariantVisibilityItem[]>([])
@@ -193,13 +195,13 @@ const closeModal = () => {
                 <Chip color="primary" :label="item.variant_name" size="sm" />
                 <span class="text-core-600 flex items-center gap-1 text-xs">
                   <Icon name="tag" class="h-3 w-3" />
-                  {{ formatCurrency(item.event_price) }}
+                  {{ format(item.event_price) }}
                 </span>
               </div>
               <div class="flex items-center gap-2 text-xs text-gray-500">
                 <span>Qty: {{ item.quantity }}</span>
                 <span>•</span>
-                <span>Original: {{ formatCurrency(item.original_price) }}</span>
+                <span>Original: {{ format(item.original_price) }}</span>
               </div>
             </div>
 

@@ -17,7 +17,10 @@
       <Icon
         name="chevron-down"
         :size="20"
-        :class="['transition-transform duration-200', props.isExpanded ? 'rotate-180' : '']"
+        :class="[
+          'transition-transform duration-200',
+          props.isExpanded || hasActiveChild ? 'rotate-180' : '',
+        ]"
       />
     </button>
 
@@ -26,7 +29,7 @@
       v-if="children && children.length > 0"
       :class="[
         'overflow-hidden transition-all duration-200 ease-in-out',
-        props.isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0',
+        props.isExpanded || hasActiveChild ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0',
       ]"
     >
       <div class="mt-1 ml-6 space-y-1 border-l-2 border-gray-200 pl-3">
@@ -67,6 +70,8 @@ const route = useRoute()
 
 const hasActiveChild = computed(() => {
   if (!props.children) return false
-  return props.children.some((child) => route.path === child.to)
+  return props.children.some(
+    (child) => route.path === child.to || route.path.startsWith(child.to + "/"),
+  )
 })
 </script>

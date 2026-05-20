@@ -35,7 +35,6 @@
           :name="name"
           type="number"
           :placeholder="placeholder"
-          :required="required"
           :disabled="disabled"
           :readonly="readonly"
           :class="inputClasses"

@@ -11,7 +11,7 @@
     <AppForm
       :schema="categorySchema"
       @submit="handleSubmit"
-      v-slot="{ meta }"
+      v-slot="{}"
       class="flex h-full flex-col"
     >
       <div class="p-4 md:px-6">
@@ -36,7 +36,7 @@
           label="Add Category"
           :loading="isPending"
           class="w-full"
-          :disabled="!meta.valid || isPending"
+          :disabled="isPending"
         />
       </div>
     </AppForm>

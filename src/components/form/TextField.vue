@@ -5,23 +5,9 @@
       <span v-if="required" class="text-red-500">*</span>
     </label>
     <div :class="containerClasses">
-      <!-- Country Code Prefix for Tel Input -->
-      <div
-        v-if="type === 'tel'"
-        class="flex items-center gap-2 border-r border-gray-200 bg-transparent pr-3 pl-3"
-      >
-        <div
-          class="flex h-4 w-4 items-center justify-center overflow-hidden rounded-full bg-gray-200"
-        >
-          <img src="/images/nigeria.png" alt="Nigerian Flag" class="h-full w-full object-cover" />
-        </div>
-        <span class="text-sm font-medium text-gray-700">+234</span>
-        <Icon name="CaretDown" size="16" class="text-gray-500" />
-      </div>
-
       <!-- Prefix -->
-      <div v-else-if="prefix" :class="prefixClasses">
-        {{ prefix }}
+      <div v-if="prefix || format === 'currency'" :class="prefixClasses">
+        {{ format === "currency" ? currencySymbol : prefix }}
       </div>
 
       <!-- Left Icon -->
@@ -35,7 +21,6 @@
         :name="name"
         :type="actualType"
         :placeholder="placeholder"
-        :required="required"
         :disabled="disabled"
         :readonly="readonly"
         :class="inputClasses"
@@ -44,8 +29,10 @@
         @input="handleInput"
         @keydown="handleKeydown"
         @paste="handlePaste"
-        @blur="$emit('blur', $event)"
-        @focus="$emit('focus', $event)"
+        :inputmode="type === 'number' && format ? 'decimal' : undefined"
+        @wheel="type === 'number' ? $event.preventDefault() : undefined"
+        @blur="handleBlur"
+        @focus="handleFocus"
         v-bind="$attrs"
       />
 
@@ -89,6 +76,7 @@
 <script setup lang="ts">
 import { capitalizeFirstChar } from "@/utils/format-strings"
 import Icon from "@components/Icon.vue"
+import { useSettingsStore } from "@modules/settings/store"
 import { computed, ref } from "vue"
 
 interface Props {
@@ -138,6 +126,8 @@ interface Props {
   inputClass?: string
   /** Additional classes for the container element */
   containerClass?: string
+  /** Number formatting mode — displays commas, emits raw value */
+  format?: "currency" | "number"
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -152,7 +142,35 @@ const emit = defineEmits<{
   focus: [event: FocusEvent]
 }>()
 
+const currencySymbol = computed(() => {
+  const currency = useSettingsStore().storeDetails?.currency || "NGN"
+  const symbols: Record<string, string> = { NGN: "₦", USD: "$", GHS: "₵", KES: "KSh" }
+  return symbols[currency] || currency
+})
+
 const showPassword = ref(false)
+const isFocused = ref(false)
+
+const handleBlur = (event: FocusEvent) => {
+  isFocused.value = false
+  emit("blur", event)
+}
+
+const handleFocus = (event: FocusEvent) => {
+  isFocused.value = true
+  emit("focus", event)
+}
+
+const formatWithCommas = (value: string): string => {
+  if (!value) return value
+  const num = parseFloat(value)
+  if (isNaN(num)) return value
+  const parts = value.split(".")
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+  return parts.join(".")
+}
+
+const stripCommas = (value: string): string => value.replace(/,/g, "")
 
 const sanitizeNumberValue = (value: string): string => {
   if (!value) return value
@@ -180,17 +198,15 @@ const sanitizeNumberValue = (value: string): string => {
 
 const handleBeforeInput = (event: Event) => {
   const inputEvent = event as InputEvent
-
   if (props.type !== "number" || !inputEvent.data?.includes(",")) return
-
+  if (props.format) return // allow commas in formatted mode
   inputEvent.preventDefault()
 }
 
 const handleKeydown = (event: Event) => {
   const keyboardEvent = event as KeyboardEvent
-
   if (props.type !== "number" || keyboardEvent.key !== ",") return
-
+  if (props.format) return // allow commas in formatted mode
   keyboardEvent.preventDefault()
 }
 
@@ -200,6 +216,23 @@ const handlePaste = (event: Event) => {
   if (props.type !== "number") return
 
   const pastedText = clipboardEvent.clipboardData?.getData("text") || ""
+
+  if (props.format) {
+    // In formatted mode, strip commas from pasted text and emit raw value
+    clipboardEvent.preventDefault()
+    const target = clipboardEvent.target as HTMLInputElement
+    const rawPasted = stripCommas(pastedText)
+    const currentRaw = stripCommas(target.value)
+    const selectionStart = target.selectionStart ?? currentRaw.length
+    const selectionEnd = target.selectionEnd ?? currentRaw.length
+    const nextValue = sanitizeNumberValue(
+      `${currentRaw.slice(0, selectionStart)}${rawPasted}${currentRaw.slice(selectionEnd)}`,
+    )
+    target.value = formatWithCommas(nextValue)
+    emit("update:modelValue", nextValue)
+    return
+  }
+
   if (!pastedText.includes(",")) return
 
   clipboardEvent.preventDefault()
@@ -220,26 +253,24 @@ const handleInput = (event: Event) => {
   const target = event.target as HTMLInputElement
   let value = target.value
 
+  // For formatted number inputs, strip commas, sanitize, then reformat display
+  if (props.type === "number" && props.format && value) {
+    const raw = sanitizeNumberValue(stripCommas(value))
+    // Reformat with commas for display while preserving cursor
+    const cursorPos = target.selectionStart ?? 0
+    const commasBefore = (value.slice(0, cursorPos).match(/,/g) || []).length
+    target.value = formatWithCommas(raw)
+    const commasAfter = (target.value.slice(0, cursorPos).match(/,/g) || []).length
+    const newPos = cursorPos + (commasAfter - commasBefore)
+    target.setSelectionRange(newPos, newPos)
+    emit("update:modelValue", raw)
+    return
+  }
+
   // For number inputs, allow only valid numeric characters
   if (props.type === "number" && value) {
     value = sanitizeNumberValue(value)
     target.value = value
-  }
-
-  // For tel inputs, prefix with +234
-  if (props.type === "tel" && value) {
-    // Remove any existing +234 prefix to avoid duplication
-    value = value.replace(/^\+234\s*/, "")
-    // Remove any non-digit characters
-    value = value.replace(/[^\d]/g, "")
-    // Remove leading 0 if present
-    if (value.startsWith("0")) {
-      value = value.substring(1)
-    }
-    // Add +234 prefix
-    if (value) {
-      value = `+234${value}`
-    }
   }
 
   emit("update:modelValue", value)
@@ -251,16 +282,16 @@ const togglePasswordVisibility = () => {
 
 const htmlFor = computed(() => props.id || props.name || props.label)
 
-const actualType = computed(() =>
-  props.type === "password" && showPassword.value ? "text" : props.type,
-)
+const actualType = computed(() => {
+  if (props.type === "password" && showPassword.value) return "text"
+  if (props.type === "number" && props.format) return "text"
+  return props.type
+})
 
-// For tel inputs, display value without +234 prefix
 const displayValue = computed(() => {
-  if (props.type === "tel" && props.modelValue) {
-    const value = String(props.modelValue)
-    // Remove +234 prefix for display
-    return value.replace(/^\+234/, "")
+  // For formatted number inputs, always show commas
+  if (props.type === "number" && props.format && props.modelValue) {
+    return formatWithCommas(String(props.modelValue))
   }
   return props.modelValue
 })
@@ -327,3 +358,14 @@ const suffixClasses = computed(() => {
   return [baseClasses, sizeClasses[props.size]].filter(Boolean).join(" ")
 })
 </script>
+
+<style scoped>
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+</style>

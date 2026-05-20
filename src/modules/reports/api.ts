@@ -1,6 +1,7 @@
 import baseApi, { TApiPromise, useApiQuery } from "@/composables/baseApi"
 import { useMutation } from "@tanstack/vue-query"
 import {
+  IHighlightsResponse,
   IMonthlyReport,
   IReportGenerationStatus,
   IEODReport,
@@ -9,7 +10,7 @@ import {
 import { MaybeRefOrGetter, computed, toValue } from "vue"
 
 export function useGetHighlights() {
-  return useApiQuery<unknown>({
+  return useApiQuery<IHighlightsResponse>({
     url: "/reports/highlights/",
     key: "report-highlights",
     selectData: true,

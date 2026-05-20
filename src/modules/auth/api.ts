@@ -77,6 +77,21 @@ export function useResetPasswordApi() {
     mutationFn: (body) => baseApi.post("/account/reset_password/", body),
   })
 }
+/** Request email change — sends OTP to new email */
+export function useRequestEmailChange() {
+  return useMutation({
+    mutationFn: (body: { old_email: string; new_email: string }) =>
+      baseApi.post("/accounts/email-change/request/", body),
+  })
+}
+
+/** Confirm email change with OTP */
+export function useConfirmEmailChange() {
+  return useMutation({
+    mutationFn: (body: { otp: string }) => baseApi.post("/accounts/email-change/confirm/", body),
+  })
+}
+
 /** Create store api request  */
 export function useCreateStoreApi() {
   return useMutation({

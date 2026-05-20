@@ -1,6 +1,8 @@
 <template>
   <div
-    v-if="!isLive && !isLoadingLiveStatus && (!isOnOnboarding || !hasSubscription)"
+    v-if="
+      !isInternational && !isLive && !isLoadingLiveStatus && (!isOnOnboarding || !hasSubscription)
+    "
     class="bg-primary-25 text-warning-700 border-warning-300 flex flex-col items-start gap-3 border-b px-6 py-3 lg:flex-row lg:items-center"
   >
     <span
@@ -53,6 +55,7 @@ const storeSlug = useAuthStore().user?.store_slug || ""
 const { data: liveStatusData, isPending: isLoadingLiveStatus } = useGetLiveStatus(storeSlug)
 
 const isLive = computed(() => useSettingsStore().liveStatus?.is_live || false)
+const isInternational = computed(() => useSettingsStore().isInternational)
 const isOnOnboarding = computed(() => route.path === "/onboarding")
 const hasSubscription = computed(
   () => liveStatusData.value?.data?.criteria?.subscription?.status || false,

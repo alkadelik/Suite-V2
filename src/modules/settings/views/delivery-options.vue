@@ -369,7 +369,12 @@ const handleRefresh = () => {
 
           <!-- Standard Delivery Section -->
           <div>
-            <h3 class="text-md !font-outfit mb-3 font-semibold">Standard Delivery</h3>
+            <div class="mb-3 flex flex-wrap items-baseline gap-x-2">
+              <h3 class="text-md !font-outfit font-semibold">Standard Delivery</h3>
+              <p class="text-core-600 text-xs">
+                Choose between Managed Delivery or Manual Delivery
+              </p>
+            </div>
 
             <!-- Case 1: No shipping account AND no manual deliveries - Show setup prompt -->
             <div
@@ -411,7 +416,7 @@ const handleRefresh = () => {
 
                   <div class="flex-1">
                     <h3 class="mb-1 flex items-end gap-2 text-base font-semibold">
-                      Allow Managed Delivery?
+                      Use Managed Delivery?
                       <button
                         v-if="form.delivery_enabled || hasShippingAccount"
                         type="button"
@@ -455,7 +460,7 @@ const handleRefresh = () => {
                       </div>
                     </div>
                     <div class="flex flex-col">
-                      <h6 class="text-md font-semibold">Switch to Manual Delivery Service</h6>
+                      <h6 class="text-md font-semibold">Switch to Manual Delivery</h6>
                       <p class="text-sm">
                         Manage the delivery of orders to your customers all by yourself.
                       </p>
@@ -479,7 +484,7 @@ const handleRefresh = () => {
 
                   <div class="flex-1">
                     <h3 class="mb-1 flex items-end gap-2 text-base font-semibold">
-                      Allow Manual Delivery?
+                      Use Manual Delivery?
                       <button
                         v-if="form.manual_delivery_enabled || hasManualDeliveries"
                         type="button"
@@ -551,7 +556,7 @@ const handleRefresh = () => {
 
                 <div class="flex-1">
                   <h3 class="mb-1 flex items-end gap-2 text-base font-semibold">
-                    Allow Express Delivery?
+                    Add Express Delivery?
                     <button
                       v-if="form.express_delivery_enabled || hasExpressDeliveries"
                       type="button"

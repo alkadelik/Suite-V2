@@ -3,6 +3,7 @@ import { IStoreDetails, TLocation } from "./types"
 import { computed, ref } from "vue"
 import { isStaging } from "@/utils/others"
 import { ILiveStatusData } from "@modules/shared/types"
+import { useAuthStore } from "@modules/auth/store"
 
 export const useSettingsStore = defineStore(
   "settings",
@@ -11,10 +12,14 @@ export const useSettingsStore = defineStore(
     const locations = ref<TLocation[] | null>(null)
     const activeLocation = ref<TLocation | null>(null)
     const showPlanUpgradeModal = ref(false)
+    const showPlanLimitModal = ref(false)
+    const showMobileMenu = ref(false)
     const showAddLocationModal = ref(false)
     const locationForEdit = ref<TLocation | null>(null)
     const storeDetails = ref<IStoreDetails | null>(null)
     const liveStatus = ref<ILiveStatusData | null>(null)
+
+    const isInternational = computed(() => useAuthStore().user?.is_international ?? false)
 
     const storefrontUrl = computed(
       () =>
@@ -34,6 +39,15 @@ export const useSettingsStore = defineStore(
 
     const setPlanUpgradeModal = (value: boolean) => {
       showPlanUpgradeModal.value = value
+    }
+
+    const setPlanLimitModal = (value: boolean) => {
+      showPlanLimitModal.value = value
+      if (value) showMobileMenu.value = false
+    }
+
+    const setMobileMenu = (value: boolean) => {
+      showMobileMenu.value = value
     }
 
     const setAddLocationModal = (value: boolean) => {
@@ -59,6 +73,10 @@ export const useSettingsStore = defineStore(
       setActiveLocation,
       showPlanUpgradeModal,
       setPlanUpgradeModal,
+      showPlanLimitModal,
+      setPlanLimitModal,
+      showMobileMenu,
+      setMobileMenu,
       showAddLocationModal,
       setAddLocationModal,
       locationForEdit,
@@ -66,6 +84,7 @@ export const useSettingsStore = defineStore(
       setStoreDetails,
       storeDetails,
       storefrontUrl,
+      isInternational,
       liveStatus,
       setLiveStatus,
     }

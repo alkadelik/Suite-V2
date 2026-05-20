@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import ReportStatCard, { IReportStat } from "../ReportStatCard.vue"
 import { computed } from "vue"
 import DataTable, { TableColumn } from "@components/DataTable.vue"
@@ -21,8 +21,9 @@ import {
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 const props = defineProps<{ data: IMonthlyReport | null }>()
+const { format } = useFormatCurrency()
 
-const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
+const isMobile = useMediaQuery("(max-width: 768px)")
 
 const stats = computed(() => {
   if (!props.data) return []
@@ -61,7 +62,7 @@ const COLUMNS: TableColumn<TRefundRow>[] = [
   {
     header: "Amount",
     accessor: "amount",
-    cell: ({ value }) => formatCurrency(Number(value)),
+    cell: ({ value }) => format(Number(value)),
   },
   { header: "% of Total", accessor: "percentage", cell: ({ value }) => `${value}%` },
 ]
@@ -131,7 +132,7 @@ const channelChartOptions: ChartOptions<"bar"> = {
     tooltip: {
       callbacks: {
         label: (context) => {
-          return ` ${formatCurrency(Number(context.parsed.x))}`
+          return ` ${format(Number(context.parsed.x))}`
         },
       },
     },
@@ -191,7 +192,7 @@ const channelChartOptions: ChartOptions<"bar"> = {
               </div>
               <!--  -->
               <p class="text-sm font-semibold break-keep">
-                {{ formatCurrency(payment.amount) }}
+                {{ format(payment.amount) }}
               </p>
             </div>
           </div>

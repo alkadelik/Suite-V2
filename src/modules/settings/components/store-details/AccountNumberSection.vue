@@ -32,7 +32,7 @@ const supportedBanks = computed(() => {
   return []
 })
 
-const { handleSubmit, meta, setErrors, setValues, values } = useForm<{
+const { handleSubmit, setErrors, setValues, values } = useForm<{
   account_number: string
   bank_name: { label: string; value: string }
   account_name: string
@@ -161,7 +161,7 @@ const onUpdateBank = handleSubmit((values) => {
           :loading="isPending"
           class="px-12"
           label="Save Details"
-          :class="{ 'cursor-not-allowed opacity-50': !meta.valid || !accountName || isResolving }"
+          :class="{ 'cursor-not-allowed opacity-50': !accountName || isResolving }"
         />
       </div>
     </form>

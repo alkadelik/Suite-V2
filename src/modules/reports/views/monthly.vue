@@ -18,10 +18,12 @@ import { useReportsStore } from "../store"
 import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
 import { useSettingsStore } from "@modules/settings/store"
+import { toast } from "@/composables/useToast"
 
-const lastMonth = new Date()
-lastMonth.setMonth(lastMonth.getMonth() - 1)
-const activeDate = ref(lastMonth.toISOString().slice(0, 7))
+const now = new Date()
+const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+const lastMonthStr = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, "0")}`
+const activeDate = ref(lastMonthStr)
 
 const reportsStore = useReportsStore()
 const settingsStore = useSettingsStore()
@@ -71,7 +73,7 @@ const reportData = computed(() => {
   return latestMonthlyReport.value
 })
 
-const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
+const isMobile = useMediaQuery("(max-width: 1024px)")
 const fullMonth = computed(() =>
   new Date(activeDate.value).toLocaleDateString("en-US", { month: "long" }),
 )
@@ -88,6 +90,18 @@ const dateRange = computed(() => {
 const activeSection = ref("summary")
 
 const handleGenerate = () => {
+  const createdAt = settingsStore.storeDetails?.created_at
+  if (createdAt) {
+    const daysSinceCreation = (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24)
+    if (daysSinceCreation < 31) {
+      toast.error(
+        "Your store needs at least 31 days of activity before generating a Monthly report.",
+        { title: "Not Enough Data" },
+      )
+      return
+    }
+  }
+
   const [year, month] = activeDate.value.split("-").map(Number)
 
   generateMonthlyReport(
@@ -132,11 +146,21 @@ const STEPS = computed(() => [
           type="month"
           size="sm"
           v-model="activeDate"
-          :max="lastMonth.toISOString().slice(0, 7)"
+          :max="lastMonthStr"
           :min="storeCreatedDate"
         />
       </template>
     </SectionHeader>
+
+    <div v-if="isMobile" class="flex justify-end pt-4">
+      <TextField
+        type="month"
+        size="sm"
+        v-model="activeDate"
+        :max="lastMonthStr"
+        :min="storeCreatedDate"
+      />
+    </div>
 
     <EmptyState
       v-if="!reportData || isCurrentMonthGenerating || isPending || isFetching"

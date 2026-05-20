@@ -28,13 +28,16 @@
 
     <!-- Weight Section (hidden when Weight attribute is in variants - auto-populated, or when hideWeight prop is true) -->
     <div v-if="!hasWeightAttributeInVariants && !props.hideWeight" class="space-y-4">
-      <SelectField
-        v-model="selectedDimension"
-        :options="dimensionOptions"
-        label="Product Weight"
-        placeholder="Select weight category"
-        required
-      />
+      <div data-validation-target="product-weight">
+        <SelectField
+          v-model="selectedDimension"
+          :options="dimensionOptions"
+          label="Product Weight"
+          placeholder="Select weight category"
+          required
+          :error="props.errors?.weight"
+        />
+      </div>
 
       <!-- Product Dimensions (only show when weight is selected) -->
       <div v-if="selectedDimension" class="rounded-lg border border-gray-200 bg-white p-4">
@@ -43,38 +46,46 @@
           These are estimated dimensions based on the weight you selected. You can update them if
           you know the exact dimensions of your product.
         </p>
-        <div class="grid grid-cols-3 gap-3">
-          <TextField
-            :model-value="globalDimensions.height"
-            type="number"
-            label="Height (cm)"
-            placeholder="40.0"
-            step="0.1"
-            min="0"
-            required
-            @update:model-value="updateGlobalDimension('height', $event)"
-          />
-          <TextField
-            :model-value="globalDimensions.length"
-            type="number"
-            label="Length (cm)"
-            placeholder="40.0"
-            step="0.1"
-            min="0"
-            required
-            @update:model-value="updateGlobalDimension('length', $event)"
-          />
-          <TextField
-            :model-value="globalDimensions.width"
-            type="number"
-            label="Width (cm)"
-            placeholder="40.0"
-            step="0.1"
-            min="0"
-            required
-            @update:model-value="updateGlobalDimension('width', $event)"
-          />
-        </div>
+        <FieldGroupError target="product-dimensions" :error="props.errors?.dimensions">
+          <div class="grid grid-cols-3 gap-3">
+            <TextField
+              :model-value="globalDimensions.height"
+              name="product-height"
+              type="number"
+              label="Height (cm)"
+              placeholder="40.0"
+              step="0.1"
+              min="0"
+              required
+              :error="props.errors?.dimensionFields?.height"
+              @update:model-value="updateGlobalDimension('height', $event)"
+            />
+            <TextField
+              :model-value="globalDimensions.length"
+              name="product-length"
+              type="number"
+              label="Length (cm)"
+              placeholder="40.0"
+              step="0.1"
+              min="0"
+              required
+              :error="props.errors?.dimensionFields?.length"
+              @update:model-value="updateGlobalDimension('length', $event)"
+            />
+            <TextField
+              :model-value="globalDimensions.width"
+              name="product-width"
+              type="number"
+              label="Width (cm)"
+              placeholder="40.0"
+              step="0.1"
+              min="0"
+              required
+              :error="props.errors?.dimensionFields?.width"
+              @update:model-value="updateGlobalDimension('width', $event)"
+            />
+          </div>
+        </FieldGroupError>
       </div>
     </div>
 
@@ -84,40 +95,54 @@
       <TextField
         v-if="!props.hidePrice"
         :model-value="singleVariantForm.cost_price"
+        name="variant-cost-price-0"
         @update:model-value="updateSingleVariantField('cost_price', removeLeadingZeros($event))"
-        label="Cost Price"
+        :label="`Cost Price (${currency})`"
         placeholder=""
         type="number"
+        format="currency"
         step="0.01"
         min="0"
+        :prefix="currencySymbol"
         required
         :disabled="props.disableCostPrice"
+        :error="props.errors?.variants?.[0]?.cost_price"
       />
 
       <!-- Selling Price Section -->
-      <TextField
-        v-if="!props.hidePrice"
-        :model-value="singleVariantForm.price"
-        @update:model-value="updateSingleVariantField('price', removeLeadingZeros($event))"
-        label="Selling Price"
-        placeholder=""
-        type="number"
-        step="0.01"
-        min="0"
-        required
-        :disabled="props.disablePrice"
-      />
+      <div v-if="!props.hidePrice">
+        <TextField
+          :model-value="singleVariantForm.price"
+          name="variant-price-0"
+          @update:model-value="updateSingleVariantField('price', removeLeadingZeros($event))"
+          label="Selling Price"
+          placeholder=""
+          type="number"
+          format="currency"
+          step="0.01"
+          min="0"
+          :prefix="currencySymbol"
+          required
+          :disabled="props.disablePrice"
+          :error="props.errors?.variants?.[0]?.price"
+        />
+        <p v-if="costPriceWarnings[0]" class="mt-1 text-xs text-amber-600">
+          {{ costPriceWarnings[0] }}
+        </p>
+      </div>
 
       <!-- Stock Section -->
       <TextField
         v-if="!props.hideStock"
         :model-value="singleVariantForm.opening_stock"
+        name="variant-opening-stock-0"
         @update:model-value="updateSingleVariantField('opening_stock', removeLeadingZeros($event))"
         label="Available Stock"
         placeholder=""
         type="number"
         min="0"
         required
+        :error="props.errors?.variants?.[0]?.opening_stock"
       />
     </div>
 
@@ -132,10 +157,10 @@
           <h3 class="text-sm font-medium text-gray-900">Quantity</h3>
         </div>
         <div v-if="!props.hidePrice" class="w-24 text-center">
-          <h3 class="text-sm font-medium text-gray-900">Cost Price</h3>
+          <h3 class="text-sm font-medium text-gray-900">Cost Price ({{ currency }})</h3>
         </div>
         <div v-if="!props.hidePrice" class="w-24 text-center">
-          <h3 class="text-sm font-medium text-gray-900">Selling Price</h3>
+          <h3 class="text-sm font-medium text-gray-900">Selling Price ({{ currency }})</h3>
         </div>
       </div>
 
@@ -162,47 +187,83 @@
           <div v-if="!props.hideStock" class="w-24">
             <TextField
               :model-value="variant.opening_stock"
+              :name="`variant-opening-stock-${index}`"
               placeholder=""
               type="number"
               min="0"
               size="sm"
+              :error="props.errors?.variants?.[index]?.opening_stock"
               @update:model-value="
                 updateVariantField(index, 'opening_stock', removeLeadingZeros($event))
               "
               @blur="handleStockBlur(index, $event)"
             />
+            <button
+              v-if="index === 0 && variants.length > 1 && variant.opening_stock"
+              type="button"
+              class="text-primary-600 mt-1 block w-full truncate text-[10px] underline"
+              @click="applyToAll('opening_stock', variant.opening_stock)"
+            >
+              Apply to all
+            </button>
           </div>
 
           <!-- Cost Price Input -->
-          <div v-if="!props.hidePrice" class="w-24">
+          <div v-if="!props.hidePrice" class="w-28">
             <TextField
               :model-value="variant.cost_price"
+              :name="`variant-cost-price-${index}`"
               placeholder=""
               type="number"
+              format="currency"
               step="0.01"
               min="0"
               size="sm"
+              :prefix="currencySymbol"
               :disabled="props.disableCostPrice"
+              :error="props.errors?.variants?.[index]?.cost_price"
               @update:model-value="
                 updateVariantField(index, 'cost_price', removeLeadingZeros($event))
               "
-              @blur="handleCostPriceBlur(index, $event)"
+              @blur="handleCostPriceBlur(index)"
             />
+            <button
+              v-if="
+                index === 0 && variants.length > 1 && !props.disableCostPrice && variant.cost_price
+              "
+              type="button"
+              class="text-primary-600 mt-1 block w-full truncate text-[10px] underline"
+              @click="applyToAll('cost_price', variant.cost_price)"
+            >
+              Apply to all
+            </button>
           </div>
 
           <!-- Selling Price Input -->
-          <div v-if="!props.hidePrice" class="w-24">
+          <div v-if="!props.hidePrice" class="w-28">
             <TextField
               :model-value="variant.price"
+              :name="`variant-price-${index}`"
               placeholder=""
               type="number"
+              format="currency"
               step="0.01"
               min="0"
               size="sm"
+              :prefix="currencySymbol"
               :disabled="props.disablePrice"
+              :error="props.errors?.variants?.[index]?.price"
               @update:model-value="updateVariantField(index, 'price', removeLeadingZeros($event))"
-              @blur="handlePriceBlur(index, $event)"
+              @blur="handlePriceBlur(index)"
             />
+            <button
+              v-if="index === 0 && variants.length > 1 && !props.disablePrice && variant.price"
+              type="button"
+              class="text-primary-600 mt-1 block w-full truncate text-[10px] underline"
+              @click="applyToAll('price', variant.price)"
+            >
+              Apply to all
+            </button>
           </div>
         </div>
       </div>
@@ -237,50 +298,89 @@
           <div v-if="!props.hideStock">
             <TextField
               :model-value="variant.opening_stock"
+              :name="`variant-opening-stock-${index}`"
               label="Quantity"
               placeholder=""
               type="number"
               min="0"
               size="sm"
+              :error="props.errors?.variants?.[index]?.opening_stock"
               @update:model-value="
                 updateVariantField(index, 'opening_stock', removeLeadingZeros($event))
               "
               @blur="handleStockBlur(index, $event)"
             />
+            <button
+              v-if="index === 0 && variants.length > 1 && variant.opening_stock"
+              type="button"
+              class="text-primary-600 mt-1 text-xs underline"
+              @click="applyToAll('opening_stock', variant.opening_stock)"
+            >
+              Apply to all
+            </button>
           </div>
 
           <!-- Cost Price -->
           <div v-if="!props.hidePrice">
             <TextField
               :model-value="variant.cost_price"
+              :name="`variant-cost-price-${index}`"
               label="Cost Price"
               placeholder=""
               type="number"
+              format="currency"
               step="0.01"
               min="0"
               size="sm"
+              :prefix="currencySymbol"
               :disabled="props.disableCostPrice"
+              :error="props.errors?.variants?.[index]?.cost_price"
               @update:model-value="
                 updateVariantField(index, 'cost_price', removeLeadingZeros($event))
               "
-              @blur="handleCostPriceBlur(index, $event)"
+              @blur="handleCostPriceBlur(index)"
             />
+            <button
+              v-if="
+                index === 0 && variants.length > 1 && !props.disableCostPrice && variant.cost_price
+              "
+              type="button"
+              class="text-primary-600 mt-1 text-xs underline"
+              @click="applyToAll('cost_price', variant.cost_price)"
+            >
+              Apply to all
+            </button>
           </div>
 
           <!-- Selling Price -->
           <div v-if="!props.hidePrice">
             <TextField
               :model-value="variant.price"
+              :name="`variant-price-${index}`"
               label="Selling Price"
               placeholder=""
               type="number"
+              format="currency"
               step="0.01"
               min="0"
               size="sm"
+              :prefix="currencySymbol"
               :disabled="props.disablePrice"
+              :error="props.errors?.variants?.[index]?.price"
               @update:model-value="updateVariantField(index, 'price', removeLeadingZeros($event))"
-              @blur="handlePriceBlur(index, $event)"
+              @blur="handlePriceBlur(index)"
             />
+            <button
+              v-if="index === 0 && variants.length > 1 && !props.disablePrice && variant.price"
+              type="button"
+              class="text-primary-600 mt-1 text-xs underline"
+              @click="applyToAll('price', variant.price)"
+            >
+              Apply to all
+            </button>
+            <p v-if="costPriceWarnings[index]" class="mt-1 text-xs text-amber-600">
+              {{ costPriceWarnings[index] }}
+            </p>
           </div>
         </div>
       </div>
@@ -290,6 +390,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
+import FieldGroupError from "@/components/form/FieldGroupError.vue"
 import TextField from "@/components/form/TextField.vue"
 import SelectField from "@/components/form/SelectField.vue"
 import Chip from "@/components/Chip.vue"
@@ -298,6 +399,8 @@ import { PRODUCT_DIMENSIONS, WEIGHT_ATTRIBUTE_UIDS } from "../../constants"
 import { IProductDimension } from "@modules/inventory/types"
 import { IProductVariant, IProductVariantDetails } from "../../types"
 import { useWeightBasedDimensions } from "../../composables/useWeightBasedDimensions"
+import type { IInventoryValidationErrors } from "../../composables/useVariantValidation"
+import { useSettingsStore } from "@modules/settings/store"
 
 interface Props {
   /** Variants array - for no variants case, should contain single variant */
@@ -318,6 +421,8 @@ interface Props {
   deletedVariants?: IProductVariant[]
   /** Use table layout instead of card layout (for editing existing variants) */
   useTableLayout?: boolean
+  /** Inline validation errors shown after a failed submit attempt */
+  errors?: IInventoryValidationErrors
 }
 
 interface Emits {
@@ -327,6 +432,7 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+const currency = computed(() => useSettingsStore().storeDetails?.currency || "NGN")
 
 // Initialize weight-based dimensions composable
 const { hasWeightAttribute } = useWeightBasedDimensions()
@@ -398,6 +504,46 @@ const hasDeletedVariants = computed(() => {
 
 // Get variants array
 const variants = computed(() => props.modelValue || [])
+
+const currencySymbol = computed(() => {
+  const currency = useSettingsStore().storeDetails?.currency || "NGN"
+  const symbols: Record<string, string> = { NGN: "₦", USD: "$", GHS: "₵", KES: "KSh" }
+  return symbols[currency] || currency
+})
+
+/**
+ * Parse a price-shaped value, tolerating thousands separators and stray
+ * whitespace. `parseFloat("1,000")` returns 1, which caused LYW-2508 — the
+ * warning fired with cost=10, sell=1,000 because sell parsed to 1.
+ */
+const parsePrice = (val: string | number | null | undefined): number => {
+  if (val === null || val === undefined) return NaN
+  const str = (typeof val === "number" ? val.toString() : val).trim().replace(/[^\d.-]/g, "")
+  if (!str) return NaN
+  return parseFloat(str)
+}
+
+const costPriceWarnings = computed(() => {
+  return variants.value.map((v, i) => {
+    const cost = parsePrice(v.cost_price)
+    const sell = parsePrice(v.price)
+    // TEMP LYW-2508 INVESTIGATION: log raw values so the source of any
+    // comma-formatted prices can be traced. Remove once confirmed clean.
+    if (
+      typeof v.cost_price === "string" &&
+      (v.cost_price.includes(",") || /\s/.test(v.cost_price))
+    ) {
+      console.warn(`[LYW-2508] variant[${i}].cost_price contains separators:`, v.cost_price)
+    }
+    if (typeof v.price === "string" && (v.price.includes(",") || /\s/.test(v.price))) {
+      console.warn(`[LYW-2508] variant[${i}].price contains separators:`, v.price)
+    }
+    if (isFinite(cost) && isFinite(sell) && cost > 0 && sell > 0 && sell < cost) {
+      return "Note: Selling price is lower than cost price"
+    }
+    return ""
+  })
+})
 
 // Check if any variant has the Weight (Kg) attribute
 // If true, we should hide the weight dropdown as it's auto-populated
@@ -550,6 +696,20 @@ const updateVariantField = (index: number, field: keyof IProductVariant, value: 
   }
 }
 
+/**
+ * LYW-2509: copy a field's value from the first variant to every other variant,
+ * overwriting whatever the others hold. Used by the "Apply to all" link shown
+ * below each price/cost/stock field on the first variant.
+ */
+const applyToAll = (field: "opening_stock" | "cost_price" | "price", value: string) => {
+  if (!props.modelValue || props.modelValue.length < 2) return
+  const updatedVariants = props.modelValue.map((variant, index) => {
+    if (index === 0) return variant
+    return { ...variant, [field]: value }
+  })
+  emit("update:modelValue", updatedVariants)
+}
+
 // Update global dimensions and apply to all variants
 const updateGlobalDimension = (field: string, value: string) => {
   globalDimensions.value = {
@@ -608,9 +768,9 @@ const handleStockBlur = (currentIndex: number, event: Event) => {
 }
 
 // Handle cost price blur - auto-fill other variants if they're empty
-const handleCostPriceBlur = (currentIndex: number, event: Event) => {
-  const target = event.target as HTMLInputElement
-  const value = target.value.trim()
+const handleCostPriceBlur = (currentIndex: number) => {
+  // Read raw value from the variant model (not the DOM, which contains formatted commas)
+  const value = (props.modelValue[currentIndex]?.cost_price || "").trim()
 
   if (!value || value === "0") return
 
@@ -634,9 +794,9 @@ const handleCostPriceBlur = (currentIndex: number, event: Event) => {
 }
 
 // Handle price blur - auto-fill other variants if they're empty
-const handlePriceBlur = (currentIndex: number, event: Event) => {
-  const target = event.target as HTMLInputElement
-  const value = target.value.trim()
+const handlePriceBlur = (currentIndex: number) => {
+  // Read raw value from the variant model (not the DOM, which contains formatted commas)
+  const value = (props.modelValue[currentIndex]?.price || "").trim()
 
   if (!value || value === "0") return
 

@@ -10,7 +10,7 @@ import type {
 } from "./types"
 import { TableColumn } from "@components/DataTable.vue"
 import type { TOrder } from "@modules/orders/types"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 
 export const PRODUCT_COLUMNS: TableColumn<TProduct>[] = [
   { header: "Name", accessor: "name", maxWidth: "300px" },
@@ -46,7 +46,10 @@ export const MOVEMENT_COLUMNS: TableColumn<IInventoryMovement>[] = [
   {
     header: "Unit Cost",
     accessor: "variant_cost_price",
-    cell: ({ value }) => formatCurrency(Number(value)),
+    cell: ({ value }) => {
+      const { format } = useFormatCurrency()
+      return format(Number(value))
+    },
   },
   { header: "Reason", accessor: "reason" },
   { header: "Created By", accessor: "created_by_name" },

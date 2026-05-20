@@ -43,6 +43,8 @@
                 placeholder="e.g 5800"
                 class="min-w-0 flex-1"
                 type="number"
+                format="currency"
+                step="0.01"
               />
               <AppButton
                 label="-"

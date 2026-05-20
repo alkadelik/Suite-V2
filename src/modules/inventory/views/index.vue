@@ -11,7 +11,10 @@
     </div>
 
     <!-- Page content - always visible -->
-    <div class="grid grid-cols-2 gap-4 lg:grid-cols-5">
+    <div
+      class="grid grid-cols-2 gap-4"
+      :class="productMetrics.length === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'"
+    >
       <StatCard
         v-for="item in productMetrics"
         :key="item.label"
@@ -143,7 +146,9 @@
           </template>
 
           <template #cell:category="{ value }">
-            <Chip :label="String(value) || 'Uncategorized'" icon="tag" color="purple" size="sm" />
+            <div class="max-w-48">
+              <Chip :label="String(value) || 'Uncategorized'" icon="tag" color="purple" size="sm" />
+            </div>
           </template>
 
           <template #cell:sellable_stock="{ value }">
@@ -223,6 +228,7 @@
     <ProductFormDrawer
       v-if="showProductFormDrawer"
       v-model="showProductFormDrawer"
+      :source-product-uid="productUidForDuplicate"
       @refresh="refetchProducts"
     />
     <ProductEditDrawer
@@ -284,7 +290,8 @@ import InventoryRequests from "../components/InventoryRequests.vue"
 import ReceiveRequestModal from "../components/ReceiveRequestModal.vue"
 import ProductCard from "../components/ProductCard.vue"
 import ManageStockModal from "../components/ManageStockModal.vue"
-import { formatPriceRange, formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
+import { useUserRoles } from "@/composables/useUserRoles"
 import SectionHeader from "@components/SectionHeader.vue"
 import PageHeader from "@components/PageHeader.vue"
 import Tabs from "@components/Tabs.vue"
@@ -307,6 +314,32 @@ import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
 import StatCard from "@components/StatCard.vue"
 
+const { format, truncate } = useFormatCurrency()
+
+const formatPriceRange = (
+  value: string | number | boolean | Record<string, unknown> | null | undefined,
+): string => {
+  if (!value || typeof value !== "string") return "-"
+
+  // Split the price range string
+  const parts = value.split(" - ")
+  if (parts.length !== 2) return "-"
+
+  const minPrice = parseFloat(parts[0])
+  const maxPrice = parseFloat(parts[1])
+
+  // If prices are invalid
+  if (isNaN(minPrice) || isNaN(maxPrice)) return "-"
+
+  // If min and max are the same, show single price
+  if (minPrice === maxPrice) {
+    return format(minPrice)
+  }
+
+  // Otherwise, show price range
+  return `${format(minPrice)} - ${format(maxPrice)}`
+}
+
 const page = ref(1)
 const itemsPerPage = ref(10)
 const search = ref("")
@@ -325,7 +358,7 @@ const activeFilters = ref<{
 
 const combinedParams = computed(() => {
   const params: Record<string, string | number> = {
-    offset: (page.value - 1) * itemsPerPage.value,
+    offset: (debouncedSearch.value ? 1 : page.value - 1) * itemsPerPage.value,
     limit: itemsPerPage.value,
   }
   if (debouncedSearch.value) params.name = debouncedSearch.value
@@ -390,6 +423,8 @@ const productEditDrawerRef = ref<{
 
 // Manage stock modal state
 const showManageStockModal = ref(false)
+// LYW-2443: holds the source product UID when "Duplicate Product" is clicked
+const productUidForDuplicate = ref<string | null>(null)
 const editMode = ref<"product-details" | "variant-details" | "variants" | "images">(
   "product-details",
 )
@@ -466,10 +501,12 @@ const handleRowClick = (clickedProduct: TProduct) => {
   router.push({ name: "Product-Details", params: { uid: clickedProduct.uid } })
 }
 
+const { canViewStockValue } = useUserRoles()
+
 const productMetrics = computed(() => {
   const stats = productDashboard.value
 
-  return [
+  const cards = [
     {
       label: "Total Products",
       value: stats?.total_products ?? 0,
@@ -477,20 +514,17 @@ const productMetrics = computed(() => {
       iconClass: "text-success-500",
       percentage: 0,
     },
-    {
-      label: "Total Variants",
-      value: stats?.total_variants ?? 0,
-      icon: "box-filled",
-      iconClass: "md:text-green-700",
-      percentage: 0,
-    },
-    {
-      label: "Stock Value",
-      value: formatCurrency(stats?.total_stock_value ?? 0),
-      icon: "moneys",
-      iconClass: "text-bloom-700",
-      percentage: 0,
-    },
+    ...(canViewStockValue.value
+      ? [
+          {
+            label: "Stock Value",
+            value: truncate(stats?.total_stock_value ?? 0),
+            icon: "moneys",
+            iconClass: "text-bloom-700",
+            percentage: 0,
+          },
+        ]
+      : []),
     {
       label: "Low Stock",
       value: stats?.low_stock_count ?? 0,
@@ -499,13 +533,15 @@ const productMetrics = computed(() => {
       percentage: 0,
     },
     {
-      label: "Overstocked",
-      value: stats?.overstocked_count ?? 0,
+      label: "Stale Products",
+      value: stats?.stale_products_count ?? 0,
       icon: "box-filled",
-      iconClass: "md:text-bloom-700",
+      iconClass: "text-error-500",
       percentage: 0,
     },
   ]
+
+  return cards
 })
 
 const getStockStatus = (item: TProduct) => {
@@ -667,7 +703,9 @@ const handleAction = (
   } else if (action === "view") {
     router.push({ name: "Product-Details", params: { uid: item.uid } })
   } else if (action === "duplicate") {
-    toast.info("Duplicate functionality coming soon")
+    if (!checkPremiumAccess()) return
+    productUidForDuplicate.value = item.uid
+    showProductFormDrawer.value = true
   }
 }
 
@@ -754,8 +792,11 @@ watch(
 )
 
 watch(showProductFormDrawer, (isOpen) => {
-  if (!isOpen && route.query.create === "true") {
-    router.replace({ name: "Inventory", query: {} })
+  if (!isOpen) {
+    productUidForDuplicate.value = null
+    if (route.query.create === "true") {
+      router.replace({ name: "Inventory", query: {} })
+    }
   }
 })
 

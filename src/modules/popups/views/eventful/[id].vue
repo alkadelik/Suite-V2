@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { startCase } from "@/utils/format-strings"
 import { formatDate } from "@/utils/formatDate"
 import AppButton from "@components/AppButton.vue"
@@ -19,6 +19,8 @@ import { displayError } from "@/utils/error-handler"
 
 const route = useRoute()
 const router = useRouter()
+
+const { format } = useFormatCurrency()
 
 const openRegister = ref(false)
 const openConfirmation = ref(false)
@@ -149,7 +151,7 @@ const handleConfirmFreeRegistration = () => {
               <h2 class="text-2xl font-bold">
                 {{
                   Number(popupEvt?.participant_fee)
-                    ? formatCurrency(Number(popupEvt?.participant_fee), { kobo: true })
+                    ? format(Number(popupEvt?.participant_fee), { kobo: true })
                     : "Free"
                 }}
               </h2>

@@ -38,7 +38,7 @@ const popupSchema = yup.object({
     .url("Please enter a valid URL (e.g., https://example.com)"),
 })
 
-const { handleSubmit, setValues, meta } = useForm({ validationSchema: popupSchema })
+const { handleSubmit, setValues } = useForm({ validationSchema: popupSchema })
 
 const { mutate: updatePopupSettings, isPending } = useUpdatePopupSettings()
 const { data: popupSettings, refetch, isPending: isLoading } = useGetPopupSettings()
@@ -107,7 +107,6 @@ const applyPopupSettings = () => {
         label="Publish PopUp"
         class="!hidden md:!inline-flex"
         :loading="isPending"
-        :inactive="enablePopup && !meta.valid"
         @click="applyPopupSettings"
       />
     </div>
@@ -117,7 +116,6 @@ const applyPopupSettings = () => {
         label="Publish PopUp"
         class="w-full"
         :loading="isPending"
-        :inactive="enablePopup && !meta.valid"
         @click="applyPopupSettings"
       />
     </div>

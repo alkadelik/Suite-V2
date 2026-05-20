@@ -583,4 +583,6 @@ export interface IProductStats {
   total_stock_value: number
   low_stock_count: number
   overstocked_count: number
+  in_stock_products: number
+  stale_products_count: number
 }

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Modal from "@components/Modal.vue"
 import AppButton from "@components/AppButton.vue"
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import TextField from "@components/form/TextField.vue"
 import OrganizerPopupCard from "./OrganizerPopupCard.vue"
 import { EventfulPopup } from "../types"
@@ -20,6 +20,8 @@ const emit = defineEmits<{ (e: "close"): void; (e: "refresh"): void }>()
 const discountCode = ref("")
 const discountValue = ref(0)
 const isDiscountApplied = ref(false)
+
+const { format } = useFormatCurrency()
 
 const totalAmount = computed(() => {
   const fee = Number(props.event?.participant_fee) || 0
@@ -118,26 +120,24 @@ const handleRegister = () => {
         <p class="flex justify-between text-sm">
           <span>1x Registration</span>
           <span class="font-medium">
-            {{ formatCurrency(Number(event?.participant_fee), { kobo: true }) }}
+            {{ format(Number(event?.participant_fee), { kobo: true }) }}
           </span>
         </p>
         <p class="my-3 flex justify-between text-sm">
           <span>Discount</span>
-          <span class="font-medium">{{ formatCurrency(discountValue, { kobo: true }) }}</span>
+          <span class="font-medium">{{ format(discountValue, { kobo: true }) }}</span>
         </p>
 
         <p
           class="border-core-300 mb-6 flex justify-between border-t border-dashed pt-3 font-medium"
         >
           <span>Total</span>
-          <span>{{ formatCurrency(totalAmount, { kobo: true }) }}</span>
+          <span>{{ format(totalAmount, { kobo: true }) }}</span>
         </p>
 
         <AppButton
           :label="
-            Number(totalAmount)
-              ? `Pay ${formatCurrency(totalAmount, { kobo: true })}`
-              : 'Register Now'
+            Number(totalAmount) ? `Pay ${format(totalAmount, { kobo: true })}` : 'Register Now'
           "
           class="w-full"
           :loading="isPending"

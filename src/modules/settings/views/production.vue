@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppButton from "@components/AppButton.vue"
 import SectionHeader from "@components/SectionHeader.vue"
-import { componentOptions, recipeNameOptions } from "@modules/production/constants"
+import { componentOptions, recipeNameOptions } from "@modules/production/constant"
 import { computed, ref, watch } from "vue"
 import { useSettingsStore } from "../store"
 import { useUpdateStoreDetails } from "../api"
@@ -43,7 +43,7 @@ watch(
 const handleSubmit = () => {
   const body = {
     material_type: selectedRawMaterial.value,
-    recipe_terminology: selectedRecipeName.value,
+    recipe_terminology: selectedRecipeName.value?.toLowerCase(),
   }
   updateStore(
     { id: storeId.value, body },
@@ -62,7 +62,7 @@ const handleSubmit = () => {
   )
 }
 
-const isSmAndUp = computed(() => useMediaQuery("(min-width: 640px)").value)
+const isSmAndUp = useMediaQuery("(min-width: 640px)")
 </script>
 
 <template>

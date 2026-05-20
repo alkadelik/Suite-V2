@@ -7,7 +7,7 @@
     variant="bottom-nav"
     :handle-padding="false"
   >
-    <AppForm :schema="schema" :initial-values="initialValues" @submit="onSubmit" v-slot="{ meta }">
+    <AppForm :schema="schema" :initial-values="initialValues" @submit="onSubmit" v-slot="{}">
       <div class="space-y-4 px-4 py-4 md:space-y-8 md:px-6">
         <IconHeader
           icon-name="user-edit"
@@ -64,13 +64,7 @@
       </div>
 
       <div class="space-y-3 bg-white px-6 py-4">
-        <AppButton
-          type="submit"
-          label="Save Changes"
-          :loading="isPending"
-          class="w-full"
-          :disabled="!meta.valid"
-        />
+        <AppButton type="submit" label="Save Changes" :loading="isPending" class="w-full" />
       </div>
     </AppForm>
   </Modal>

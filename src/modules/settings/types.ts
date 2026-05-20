@@ -73,7 +73,10 @@ export interface IStoreDetails {
   support_email: string
   support_phone: string
   instagram_handle: string
+  country: string
   currency: string
+  is_international: boolean
+  can_change_currency: boolean
   pickup_location?: string
   pickup_weekday_start_time?: string
   pickup_weekday_end_time?: string
@@ -285,4 +288,33 @@ export interface IVersionHistory {
   changed_by_name: string
   snapshot: string
   created_at: string
+}
+
+// --- Custom domains ---
+
+export type TCustomDomainStatus = "PENDING" | "VERIFYING" | "ACTIVE" | "FAILED"
+
+/**
+ * DNS / verification record. The backend schema does not type these yet, so we
+ * model them defensively. When the real payload is known, adjust `host`/`name`
+ * handling in DnsRecordsTable.vue and the create-domain fallback in
+ * ConnectDomainDrawer.vue accordingly.
+ */
+export type TDnsRecord = {
+  host?: string
+  name?: string
+  type: string
+  value: string
+  status?: string
+}
+
+export type TCustomDomain = {
+  uid: string
+  domain: string
+  status: TCustomDomainStatus
+  dns_records: TDnsRecord[] | null
+  verification_records: TDnsRecord[] | null
+  verified_at: string | null
+  created_at: string
+  updated_at: string
 }

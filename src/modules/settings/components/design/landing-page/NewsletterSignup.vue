@@ -21,6 +21,20 @@
 
       <FormField name="cta_button_text" label="CTA Button Text" placeholder="e.g. Shop Now" />
 
+      <div class="flex gap-6">
+        <div class="flex-1">
+          <FormField
+            type="file"
+            name="image"
+            label="Image (Optional)"
+            accept="image/*"
+            :show-preview="true"
+            placeholder="Upload an image (1200 x 600 px recommended)"
+            class="w-full"
+          />
+        </div>
+      </div>
+
       <div class="flex justify-end">
         <AppButton type="submit" label="Save Section" :loading="isPending" />
       </div>
@@ -44,6 +58,7 @@ interface NewsletterSignupFormData {
   body_text?: string
   cta_button_text?: string
   email_capture_field?: string
+  image?: File | string | null
 }
 
 const props = defineProps<{ newsletterSignupSection?: ThemeSection | null }>()
@@ -63,6 +78,7 @@ const validationSchema = yup.object({
     .string()
     .max(100, "Email capture field must not exceed 100 characters")
     .optional(),
+  image: yup.mixed().nullable().optional(),
 })
 
 const { handleSubmit, setValues } = useForm<NewsletterSignupFormData>({
@@ -78,6 +94,7 @@ watch(
         body_text: newSection.content || "",
         cta_button_text: newSection.cta_text || "",
         email_capture_field: newSection.subtitle || "",
+        image: newSection.image || null,
       })
     }
   },
@@ -89,15 +106,15 @@ const onSubmit = handleSubmit((values) => {
     return toast.error("Newsletter Signup section not found. Please refresh the page.")
   }
 
-  const body = {
-    title: values.headline,
-    content: values.body_text || "",
-    cta_text: values.cta_button_text || "",
-    subtitle: values.email_capture_field || "",
-  }
+  const formData = new FormData()
+  formData.append("title", values.headline)
+  if (values.body_text) formData.append("content", values.body_text)
+  if (values.cta_button_text) formData.append("cta_text", values.cta_button_text)
+  if (values.email_capture_field) formData.append("subtitle", values.email_capture_field)
+  if (values.image && typeof values.image !== "string") formData.append("image", values.image)
 
   updateSection(
-    { id: props.newsletterSignupSection.uid, body: body as unknown as FormData },
+    { id: props.newsletterSignupSection.uid, body: formData },
     {
       onSuccess: () => {
         toast.success("Newsletter Signup section updated successfully")

@@ -10,13 +10,14 @@ import { useSettingsStore } from "@modules/settings/store"
 import { useLocationSwitch } from "@/composables/useLocationSwitch"
 import { computed, watch } from "vue"
 import { useProductionStore } from "@modules/production/store"
-import { componentOptions } from "@modules/production/constants"
+import { componentOptions, recipeNameOptions } from "@modules/production/constant"
 
 const settingsStore = useSettingsStore()
 const { setLocations } = settingsStore
 const { requestLocationSwitch } = useLocationSwitch()
 const user = computed(() => useAuthStore().user)
 const isStoreOwner = computed(() => user.value?.roles.some((role) => role.type === "owner"))
+const isInternational = computed(() => useSettingsStore().isInternational)
 
 const { data: locationsData } = useGetLocations(isStoreOwner.value)
 
@@ -38,10 +39,17 @@ watch(
   (details) => {
     if (details) {
       useSettingsStore().setStoreDetails(details)
+      // Set raw material component option in production store for global access
       const materialType = details.material_type
       const fullOption = componentOptions.find((o) => o.value === materialType)
       if (fullOption) {
         useProductionStore().setSelectedComponentOption(fullOption)
+      }
+      // set recipe terminology in settings store for global access
+      const recipeTerminology = details.recipe_terminology
+      const recipeOption = recipeNameOptions.find((o) => o.value === recipeTerminology)
+      if (recipeOption) {
+        useProductionStore().setSelectedRecipeOption(recipeOption)
       }
     }
   },
@@ -120,7 +128,10 @@ const onLocationSelect = (id: string) => {
               <Chip v-if="currentLocation?.is_hq" size="sm" label="HQ" class="w-full" />
             </div>
           </div>
-          <div class="flex min-w-0 items-center gap-2 text-sm text-gray-600">
+          <div
+            v-if="!isInternational"
+            class="flex min-w-0 items-center gap-2 text-sm text-gray-600"
+          >
             <p class="min-w-0 truncate">{{ storefrontUrl }}</p>
             <Icon
               name="copy"

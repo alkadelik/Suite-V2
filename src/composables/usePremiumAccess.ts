@@ -26,6 +26,9 @@ export function usePremiumAccess() {
    * If not, shows the upgrade modal
    */
   const checkPremiumAccess = (): boolean => {
+    // International accounts have full access — no upgrade needed
+    if (settingsStore.isInternational) return true
+
     if (hasPremiumAccess.value) {
       return true
     }

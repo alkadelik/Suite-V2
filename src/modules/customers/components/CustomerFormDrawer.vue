@@ -1,7 +1,5 @@
 <template>
-  <component
-    :is="isMobile ? Modal : Drawer"
-    variant="fullscreen"
+  <Drawer
     :open="modelValue"
     :title="mode === 'add' ? 'Add New Customer' : 'Edit Customer'"
     :position="drawerPosition"
@@ -22,7 +20,7 @@
       :schema="schema"
       :initial-values="initialValues"
       @submit="onSubmit"
-      v-slot="{ meta }"
+      v-slot="{}"
       class="flex h-full flex-col"
       :key="formKey"
     >
@@ -105,11 +103,11 @@
           :label="mode === 'add' ? 'Add Customer' : 'Save Changes'"
           :loading="isPending"
           class="w-full"
-          :disabled="!meta.valid || isPending"
+          :disabled="isPending"
         />
       </div>
     </AppForm>
-  </component>
+  </Drawer>
 </template>
 
 <script setup lang="ts">
@@ -126,7 +124,6 @@ import { useCreateCustomer, useUpdateCustomer } from "../api"
 import { displayError } from "@/utils/error-handler"
 import { useAuthStore } from "@modules/auth/store"
 import { formatPhoneNumber } from "@/utils/others"
-import Modal from "@components/Modal.vue"
 import { useMediaQuery } from "@vueuse/core"
 
 const isMobile = useMediaQuery("(max-width: 1024px)")

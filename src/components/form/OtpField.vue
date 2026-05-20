@@ -23,7 +23,6 @@
           :inputmode="digitsOnly ? 'numeric' : 'text'"
           :pattern="digitsOnly ? '[0-9]*' : undefined"
           :disabled="disabled"
-          :required="required && i === 0"
           maxlength="1"
           placeholder="•"
           :class="inputClasses"

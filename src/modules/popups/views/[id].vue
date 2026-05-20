@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { formatCurrency } from "@/utils/format-currency"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { startCase } from "@/utils/format-strings"
 import { formatDate } from "@/utils/formatDate"
 import PageHeader from "@components/PageHeader.vue"
@@ -30,12 +30,14 @@ const openEdit = ref(false)
 const openClose = ref(false)
 const activeTab = ref("overview")
 
+const { format } = useFormatCurrency()
+
 const { data: popupEvt, isPending, refetch } = useGetPopupEventById(route.params.id as string)
 
 const overviewInfo = computed(() => {
   return {
     "Participation Fee": Number(popupEvt.value?.participation_fee)
-      ? formatCurrency(popupEvt.value?.participation_fee || 0)
+      ? format(popupEvt.value?.participation_fee || 0)
       : "Free",
     Description: popupEvt.value?.description || "N/A",
   }
@@ -80,7 +82,7 @@ const storeDetails = computed(() => useSettingsStore().storeDetails)
 </script>
 
 <template>
-  <PageHeader title="Popup Details" inner />
+  <PageHeader title="Popup Details" inner back-link="/popups" />
 
   <div class="hidden p-4 pb-0 md:inline-block">
     <BackButton label="Back to Popups" to="/popups" />

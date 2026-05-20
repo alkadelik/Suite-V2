@@ -264,7 +264,19 @@ const isEmpty = computed(() => !orderData.value?.uid || isPending.value)
               >
                 <td class="px-4 py-6">{{ index + 1 }}</td>
                 <td class="px-4 py-6">{{ item.product_name }}</td>
-                <td class="px-4 py-6">{{ formatCurrency(item.unit_price, { kobo: true }) }}</td>
+                <td class="px-4 py-6">
+                  <span
+                    v-if="
+                      item.original_price &&
+                      Number(item.original_price) > 0 &&
+                      Number(item.unit_price) < Number(item.original_price)
+                    "
+                    class="mr-1 text-gray-400 line-through"
+                  >
+                    {{ formatCurrency(item.original_price, { kobo: true }) }}
+                  </span>
+                  {{ formatCurrency(item.unit_price, { kobo: true }) }}
+                </td>
                 <td class="px-4 py-6">{{ item.quantity }}</td>
                 <td class="px-4 py-6">
                   {{ formatCurrency(Number(item.unit_price) * item.quantity, { kobo: true }) }}
