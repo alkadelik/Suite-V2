@@ -1,77 +1,8 @@
 <template>
-  <div class="space-y-6">
+  <div class="min-w-0 space-y-6 overflow-x-hidden pb-6 md:pb-0">
     <BackButton label="Back to Domains" to="/settings/domains" class="mb-2" />
 
-    <div class="flex items-start justify-between gap-3">
-      <div class="min-w-0 flex-1">
-        <div class="flex items-center gap-2">
-          <h2 class="truncate text-xl font-bold text-gray-900 md:text-2xl">{{ titleUrl }}</h2>
-          <button
-            type="button"
-            class="text-primary-600 shrink-0 cursor-pointer"
-            aria-label="Copy URL"
-            @click="clipboardCopy(titleUrl)"
-          >
-            <Icon name="copy" size="20" />
-          </button>
-        </div>
-        <div class="mt-1 flex flex-wrap gap-1.5">
-          <Chip
-            v-for="chip in chips"
-            :key="chip.label"
-            :label="chip.label"
-            :color="chip.color"
-            size="sm"
-            variant="outlined"
-            showDot
-          />
-        </div>
-      </div>
-      <div v-if="!isBuiltIn" class="hidden shrink-0 items-center gap-2 md:flex">
-        <AppButton
-          label="Manage DNS"
-          icon="settings-02"
-          variant="outlined"
-          color="alt"
-          size="sm"
-          @click="scrollToDns"
-        />
-        <AppButton
-          label="Open URL"
-          icon="arrow-up-square"
-          icon-placement="right"
-          size="sm"
-          @click="openUrl"
-        />
-      </div>
-      <DropdownMenu
-        v-if="!isBuiltIn"
-        class="shrink-0 md:hidden"
-        :items="detailMobileActions"
-        placement="bottom-end"
-        :show-chevron="false"
-        size="sm"
-        trigger-class="!bg-primary-50 !p-2 hover:!bg-primary-100 !border-0 !rounded-lg"
-      >
-        <template #trigger>
-          <Icon name="dots-vertical" />
-        </template>
-      </DropdownMenu>
-    </div>
-
-    <!-- Setup banner (custom domains in a non-active state) -->
-    <WarningBox v-if="!isBuiltIn && banner" :header="banner.title">
-      <p class="text-sm">{{ banner.message }}</p>
-      <button
-        type="button"
-        class="text-warning-700 mt-1 flex items-center gap-1 text-sm font-medium"
-        @click="completeSetup"
-      >
-        Complete Setup <Icon name="arrow-right" size="16" />
-      </button>
-    </WarningBox>
-
-    <div v-if="loadingDetails" class="py-12 text-center text-sm text-gray-500">Loading…</div>
+    <DomainDetailsSkeleton v-if="loadingDetails" :built-in="isBuiltIn" />
 
     <div
       v-else-if="!isBuiltIn && !domain"
@@ -88,27 +19,103 @@
     </div>
 
     <template v-else>
+      <!-- Header: title + chips + actions -->
+      <div class="flex min-w-0 items-start justify-between gap-3">
+        <div class="min-w-0 flex-1">
+          <div class="flex min-w-0 items-center gap-2">
+            <h2 class="min-w-0 truncate text-base font-bold text-gray-900 md:text-xl">
+              {{ titleUrl }}
+            </h2>
+            <button
+              type="button"
+              class="text-primary-600 shrink-0 cursor-pointer"
+              aria-label="Copy URL"
+              @click="clipboardCopy(titleUrl)"
+            >
+              <Icon name="copy" size="20" />
+            </button>
+          </div>
+          <div class="mt-1 flex flex-wrap gap-1.5">
+            <Chip
+              v-for="chip in chips"
+              :key="chip.label"
+              :label="chip.label"
+              :color="chip.color"
+              size="sm"
+              variant="outlined"
+              showDot
+            />
+          </div>
+        </div>
+        <div v-if="!isBuiltIn" class="hidden shrink-0 items-center gap-2 md:flex">
+          <AppButton
+            label="Manage DNS"
+            icon="edit"
+            variant="outlined"
+            color="alt"
+            size="sm"
+            @click="scrollToDns"
+          />
+          <AppButton
+            label="Open URL"
+            icon="export"
+            icon-placement="right"
+            size="sm"
+            @click="openUrl"
+          />
+        </div>
+        <DropdownMenu
+          v-if="!isBuiltIn"
+          class="shrink-0 md:hidden"
+          :items="detailMobileActions"
+          placement="bottom-end"
+          :show-chevron="false"
+          size="sm"
+          trigger-class="!p-1 hover:!bg-gray-100 !border-0 !rounded-lg"
+        >
+          <template #trigger>
+            <Icon name="dots-vertical" />
+          </template>
+        </DropdownMenu>
+      </div>
+
+      <!-- Setup banner (custom domains in a non-active state) -->
+      <WarningBox v-if="!isBuiltIn && banner" :header="banner.title">
+        <p class="text-sm">{{ banner.message }}</p>
+        <button
+          type="button"
+          class="text-warning-700 mt-1 flex items-center gap-1 text-sm font-medium"
+          @click="completeSetup"
+        >
+          Complete Setup <Icon name="arrow-right" size="16" />
+        </button>
+      </WarningBox>
+
       <!-- Domain Details -->
       <section class="overflow-hidden rounded-xl border border-gray-200 bg-white">
-        <header class="border-b border-gray-200 px-4 py-3 text-sm font-semibold text-gray-800">
+        <header class="border-b border-gray-200 px-4 py-4 text-sm font-semibold text-gray-800">
           Domain Details
         </header>
-        <dl class="divide-y divide-gray-100">
-          <div class="flex items-center justify-between px-4 py-3 text-sm">
-            <dt class="text-gray-600">SSL Certificate</dt>
-            <dd class="font-medium">
-              <Chip :label="sslLabel" :color="sslColor" size="sm" variant="outlined" showDot />
-            </dd>
-          </div>
-          <div class="flex items-center justify-between px-4 py-3 text-sm">
-            <dt class="text-gray-600">Provider</dt>
-            <dd class="font-medium">{{ isBuiltIn ? "Leyyow" : "—" }}</dd>
-          </div>
-          <div class="flex items-center justify-between px-4 py-3 text-sm">
-            <dt class="text-gray-600">{{ isBuiltIn ? "Expires" : "Date Connected" }}</dt>
-            <dd class="font-medium">{{ isBuiltIn ? "Never" : connectedDate }}</dd>
-          </div>
-        </dl>
+        <div class="space-y-3 p-4">
+          <dl class="divide-y divide-gray-200 rounded-xl bg-gray-50">
+            <div class="flex items-center justify-between gap-3 px-4 py-4 text-sm">
+              <dt class="text-gray-500">SSL Certificate</dt>
+              <dd class="font-medium text-gray-900">
+                <Chip :label="sslLabel" :color="sslColor" size="sm" variant="outlined" showDot />
+              </dd>
+            </div>
+            <div class="flex items-center justify-between gap-3 px-4 py-4 text-sm">
+              <dt class="text-gray-500">Provider</dt>
+              <dd class="font-semibold text-gray-900">{{ isBuiltIn ? "Leyyow" : "—" }}</dd>
+            </div>
+            <div class="flex items-center justify-between gap-3 px-4 py-4 text-sm">
+              <dt class="text-gray-500">{{ isBuiltIn ? "Expires" : "Date Connected" }}</dt>
+              <dd class="font-semibold text-gray-900">
+                {{ isBuiltIn ? "Never" : connectedDate }}
+              </dd>
+            </div>
+          </dl>
+        </div>
       </section>
 
       <template v-if="!isBuiltIn && domain">
@@ -166,7 +173,7 @@
             </div>
             <AppButton
               label="Disconnect Domain"
-              icon="link-01"
+              icon="link-2"
               variant="outlined"
               color="error"
               @click="disconnectOpen = true"
@@ -208,6 +215,7 @@ import Icon from "@components/Icon.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import WarningBox from "@components/WarningBox.vue"
 import DnsRecordsTable from "../components/domains/DnsRecordsTable.vue"
+import DomainDetailsSkeleton from "../components/domains/DomainDetailsSkeleton.vue"
 import ConnectDomainDrawer from "../components/domains/ConnectDomainDrawer.vue"
 import DomainLiveModal from "../components/domains/DomainLiveModal.vue"
 import DisconnectDomainModal from "../components/domains/DisconnectDomainModal.vue"
@@ -274,8 +282,8 @@ function scrollToDns() {
 
 type TMobileAction = { label: string; icon: string; action: () => void }
 const detailMobileActions = computed<TMobileAction[]>(() => [
-  { label: "Manage DNS", icon: "settings-02", action: scrollToDns },
-  { label: "Open URL", icon: "arrow-up-square", action: openUrl },
+  { label: "Manage DNS", icon: "edit", action: scrollToDns },
+  { label: "Open URL", icon: "export", action: openUrl },
 ])
 
 const { mutate: verifyDomain, isPending: refreshing } = useVerifyCustomDomain()
