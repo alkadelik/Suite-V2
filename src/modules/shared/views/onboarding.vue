@@ -195,7 +195,11 @@ const tasks = computed(() => {
     {
       id: 4,
       title: "Allow Delivery?",
-      completed: criteria?.delivery_options?.status || false,
+      completed:
+        criteria?.delivery_options?.details?.delivery_enabled ||
+        criteria?.delivery_options?.details?.manual_delivery_enabled ||
+        criteria?.delivery_options?.details?.express_delivery_enabled ||
+        false,
       subtext: "Offer delivery to your customers.",
       isButton: false,
       buttonLabel: "",
