@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6 pb-6 md:pb-0">
+  <div class="min-w-0 space-y-6 overflow-x-hidden pb-6 md:pb-0">
     <SectionHeader
       title="Domains"
       subtitle="Connect and manage domains associated with your website."

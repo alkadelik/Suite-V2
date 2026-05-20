@@ -175,7 +175,7 @@ export const DOMAIN_STATUS_META: Record<
 > = {
   PENDING: {
     chips: [
-      { label: "Connected", color: "purple" },
+      { label: "Pending", color: "primary" },
       { label: "SSL Inactive", color: "alt" },
       { label: "Missing records", color: "warning" },
     ],
@@ -187,9 +187,9 @@ export const DOMAIN_STATUS_META: Record<
   },
   VERIFYING: {
     chips: [
-      { label: "Connected", color: "purple" },
+      { label: "Pending", color: "primary" },
       { label: "SSL Inactive", color: "alt" },
-      { label: "Pending", color: "warning" },
+      { label: "Verifying records", color: "warning" },
     ],
     banner: {
       title: "Verifying your domain",
