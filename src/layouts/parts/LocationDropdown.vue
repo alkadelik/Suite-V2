@@ -39,18 +39,15 @@ watch(
   (details) => {
     if (details) {
       useSettingsStore().setStoreDetails(details)
-      // Set raw material component option in production store for global access
+      // Sync material type to production store (null clears so selection screen shows)
       const materialType = details.material_type
       const fullOption = componentOptions.find((o) => o.value === materialType)
-      if (fullOption) {
-        useProductionStore().setSelectedComponentOption(fullOption)
-      }
-      // set recipe terminology in settings store for global access
+      useProductionStore().setSelectedComponentOption(fullOption ?? null)
+
+      // Sync recipe terminology to production store (null clears so selection screen shows)
       const recipeTerminology = details.recipe_terminology
       const recipeOption = recipeNameOptions.find((o) => o.value === recipeTerminology)
-      if (recipeOption) {
-        useProductionStore().setSelectedRecipeOption(recipeOption)
-      }
+      useProductionStore().setSelectedRecipeOption(recipeOption ?? null)
     }
   },
   { immediate: true },
