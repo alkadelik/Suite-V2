@@ -19,12 +19,14 @@ const statusOptions = [
   { label: "Customer Action Required", value: "customer-action" },
 ]
 
-const memoForm = ref({
+const emptyForm = () => ({
   title: "",
   status: statusOptions[0],
   severity: "low" as "low" | "medium" | "high",
   content: "",
 })
+
+const memoForm = ref(emptyForm())
 
 const { mutate: createMemo, isPending } = useCreateOrderMemo()
 
@@ -33,13 +35,19 @@ const onSubmit = () => {
     { id: props.orderId, body: { ...memoForm.value, status: memoForm.value.status.value } },
     {
       onSuccess: () => {
+        memoForm.value = emptyForm()
         toast.success("Memo created successfully!")
-        emit("close")
         emit("refresh")
+        emit("close")
       },
       onError: displayError,
     },
   )
+}
+
+const handleClose = () => {
+  memoForm.value = emptyForm()
+  emit("close")
 }
 </script>
 
@@ -49,7 +57,7 @@ const onSubmit = () => {
     title="Create Memo"
     max-width="2xl"
     variant="fullscreen"
-    @close="emit('close')"
+    @close="handleClose"
   >
     <div class="space-y-5">
       <!-- Title -->

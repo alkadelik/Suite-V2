@@ -13,6 +13,9 @@ import { useForm } from "vee-validate"
 import * as yup from "yup"
 import { UNITS_OF_MEASURE } from "@modules/production/constant"
 import { useSharedStore } from "@modules/shared/store"
+import { useProductionStore } from "@modules/production/store"
+
+const recipeSingularLabel = computed(() => useProductionStore().recipeSingularLabel)
 
 type ItemOption = { label: string; value: string; item?: Record<string, unknown> }
 
@@ -163,11 +166,11 @@ const handleNext = handleSubmit((formValues) => {
     <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
       <Icon name="box" size="28" />
     </div>
-    <p class="mb-4 text-sm">Basic Recipe Details</p>
+    <p class="mb-4 text-sm">Basic {{ recipeSingularLabel }} Details</p>
 
     <FormField
       name="name"
-      label="Recipe Name (optional)"
+      :label="`${recipeSingularLabel} Name (optional)`"
       placeholder="e.g. Vanila Cake"
       :required="false"
     />

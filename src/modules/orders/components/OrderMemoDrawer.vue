@@ -36,7 +36,6 @@ const formatDate = (dateString: string) => {
 // Methods
 const openCreateMemoModal = () => {
   openAddMemo.value = true
-  emit("close")
 }
 
 const { data: memosData, refetch } = useGetOrderMemos(props.order.uid)
@@ -47,7 +46,7 @@ const { data: memosData, refetch } = useGetOrderMemos(props.order.uid)
     <Drawer
       variant="fullscreen"
       :open="open"
-      title="Order Memos"
+      :title="`Order Memo (${order.order_number})`"
       max-width="2xl"
       @close="emit('close')"
     >

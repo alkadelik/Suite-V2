@@ -183,9 +183,9 @@ const formatWithUnit = (item: TRecipe) => {
     <div v-else class="flex flex-col gap-8">
       <EmptyState
         v-if="!recipes?.count && !searchQuery.length && page === 1"
-        :title="`You don't have any recipe yet!`"
-        :description="`Start tracking everything you use to make your products by adding your recipe`"
-        :action-label="`Add ${selectedComponent.value}`"
+        :title="`You don't have any ${recipeValue} yet!`"
+        :description="`Start tracking everything you use to make your products by adding your ${recipeValue}.`"
+        :action-label="`Add ${recipeLabel}`"
         :loading="isPending"
         action-icon="add"
         @action="showCreateModal = 'create'"
@@ -219,7 +219,7 @@ const formatWithUnit = (item: TRecipe) => {
                 left-icon="search-lg"
                 size="sm"
                 class="w-full md:min-w-64"
-                placeholder="Search by recipe or item name"
+                placeholder="Search by name or output item"
                 v-model="searchQuery"
               />
 

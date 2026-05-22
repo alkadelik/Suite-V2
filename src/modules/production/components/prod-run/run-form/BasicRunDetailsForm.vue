@@ -11,6 +11,9 @@ import { useForm } from "vee-validate"
 import * as yup from "yup"
 import { BasicRunDetails } from "../form-types"
 import Chip from "@components/Chip.vue"
+import { useProductionStore } from "@modules/production/store"
+
+const recipeSingularLabel = computed(() => useProductionStore().recipeSingularLabel)
 
 type ItemOption = {
   label: string
@@ -46,11 +49,12 @@ const schema = yup.object({
     .transform((value, originalValue) => (originalValue === "" ? undefined : value))
     .typeError("Must be a number")
     .required("Damaged quantity is required")
-    .min(0, "Cannot be negative"),
+    .min(0, "Cannot be negative")
+    .max(yup.ref("outputQuantity"), "Damaged quantity cannot exceed quantity produced"),
   recipe: yup
     .object({ label: yup.string().required(), value: yup.string().required() })
     .nullable()
-    .required("Recipe is required"),
+    .required(`${recipeSingularLabel.value} is required`),
   outputVariantUid: yup
     .object({ label: yup.string().required(), value: yup.string().required() })
     .nullable()
@@ -63,20 +67,33 @@ const { handleSubmit, values, errors, setFieldValue, resetForm } = useForm({
     outputQuantity: props.initialValues.outputQuantity || (undefined as unknown as number),
     damagedQuantity: props.initialValues.damagedQuantity ?? (undefined as unknown as number),
     recipe: (props.initialValues.recipeOption ?? null) as ItemOption | null,
-    outputVariantUid: null as ItemOption | null,
+    outputVariantUid: (props.initialValues.outputVariantOption ?? null) as {
+      label: string
+      value: string
+      price?: number
+    } | null,
   },
 })
+
+// Track the last known recipe UID so we can distinguish a real recipe change
+// from the watch firing on initial mount (which must NOT clear the saved variant).
+const lastKnownRecipeUid = ref(props.initialValues.recipeOption?.value || "")
 
 // Re-initialize when parent repopulates (edit/duplicate reopens)
 watch(
   () => props.initialValues,
   (iv) => {
+    lastKnownRecipeUid.value = iv.recipeOption?.value || ""
     resetForm({
       values: {
         outputQuantity: iv.outputQuantity || (undefined as unknown as number),
         damagedQuantity: iv.damagedQuantity ?? (undefined as unknown as number),
         recipe: (iv.recipeOption ?? null) as ItemOption | null,
-        outputVariantUid: null as ItemOption | null,
+        outputVariantUid: (iv.outputVariantOption ?? null) as {
+          label: string
+          value: string
+          price?: number
+        } | null,
       },
     })
   },
@@ -135,20 +152,31 @@ watch(
   () => values.recipe,
   (recipe) => {
     if (props.isEditMode) return
-    setFieldValue("outputVariantUid", null)
+    const newUid = recipe && typeof recipe === "object" ? String(recipe.value) : ""
+    // Only clear the saved variant when the recipe genuinely changes, not on initial mount
+    if (newUid !== lastKnownRecipeUid.value) {
+      setFieldValue("outputVariantUid", null)
+    }
+    lastKnownRecipeUid.value = newUid
     if (recipe && typeof recipe === "object" && "value" in recipe) {
       emit("recipe-change", String(recipe.value))
     }
   },
 )
 
-// ─── Auto-select variant when options load (edit / duplicate pre-populate) ─
-watch(variantOptions, (opts) => {
-  const preselectedUid = props.initialValues.outputVariantUid
-  if (!preselectedUid || values.outputVariantUid) return
-  const match = opts.find((o) => o.value === preselectedUid)
-  if (match) setFieldValue("outputVariantUid", match)
-})
+// ─── Auto-select variant when options load (edit / first-open fallback) ──
+// { immediate: true } handles the case where TanStack Query returns cached
+// data synchronously — the value doesn't change so a plain watch would miss it.
+watch(
+  variantOptions,
+  (opts) => {
+    const preselectedUid = props.initialValues.outputVariantUid
+    if (!preselectedUid || values.outputVariantUid) return
+    const match = opts.find((o) => o.value === preselectedUid)
+    if (match) setFieldValue("outputVariantUid", match)
+  },
+  { immediate: true },
+)
 
 // ─── Submit handler ─────────────────────────────────────────────────────
 const handleNext = handleSubmit((formValues) => {
@@ -169,6 +197,9 @@ const handleNext = handleSubmit((formValues) => {
       output_product: recipe.output_product,
     },
     outputVariantUid: variant?.value || "",
+    outputVariantOption: variant
+      ? { label: variant.label, value: variant.value, price: variant.price }
+      : null,
     outputItemType: recipe.item_type,
     variantPrice: variant?.price,
   })
@@ -180,11 +211,11 @@ const handleNext = handleSubmit((formValues) => {
     <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
       <Icon name="box" size="28" />
     </div>
-    <p class="mb-4 text-sm">Basic Recipe Details</p>
+    <p class="mb-4 text-sm">Basic Run Details</p>
 
     <SelectField
       :model-value="values.recipe"
-      label="Select Recipe"
+      :label="`Select ${recipeSingularLabel}`"
       placeholder="e.g standard formula v2"
       :options="recipeOptions"
       :error="errors.recipe ? String(errors.recipe) : undefined"

@@ -5,6 +5,9 @@ import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
 import type { ProcessRow, AdditionalExpenseRow } from "../form-types"
 import { computed, ref } from "vue"
+import { useProductionStore } from "@modules/production/store"
+
+const recipeSingularLabel = computed(() => useProductionStore().recipeSingularLabel)
 
 const props = defineProps<{
   initialRows: ProcessRow[]
@@ -64,7 +67,9 @@ function handleSubmit() {
     <div class="mb-6 rounded-2xl border border-gray-200 bg-white pt-3">
       <div class="flex items-center gap-3 px-4">
         <Icon name="setting" size="20" class="text-gray-600" />
-        <span class="text-sm font-medium text-gray-900"> Processes </span>
+        <span class="text-sm font-medium text-gray-900"
+          >{{ recipeSingularLabel }} Process Costs (for the entire batch)</span
+        >
       </div>
       <div v-if="processRows.length" class="mt-4 space-y-6 border-t border-gray-200 px-4">
         <div v-for="row in processRows" :key="row.id" class="flex items-center gap-3 py-3">
@@ -81,7 +86,7 @@ function handleSubmit() {
           <button
             type="button"
             class="flex h-7 w-7 items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600"
-            aria-label="Remove expense"
+            aria-label="Remove process cost"
             @click="removeProcessRow(row)"
           >
             <span class="text-lg leading-none">−</span>
@@ -90,16 +95,22 @@ function handleSubmit() {
       </div>
       <div
         v-if="!processRows.length"
-        class="rounded-xl border border-dashed border-gray-200 p-4 text-center text-sm text-gray-400"
+        class="m-4 rounded-xl border border-dashed border-gray-200 p-4 text-center text-sm text-gray-400"
       >
-        No process costs defined in recipe.
+        No process costs defined in this {{ recipeSingularLabel.toLowerCase() }}.
       </div>
     </div>
 
     <!-- Additional Expenses -->
-    <div>
-      <p class="mb-3 text-sm font-medium text-gray-700">Additional Expenses</p>
-      <div class="space-y-4">
+    <div class="mb-6 rounded-2xl border border-gray-200 bg-white pt-3">
+      <div class="flex items-center gap-3 px-4">
+        <Icon name="receipt" size="20" class="text-gray-600" />
+        <span class="text-sm font-medium text-gray-900"
+          >Additional Expenses (for the entire batch)</span
+        >
+      </div>
+
+      <div v-if="additionalExpenses.length" class="mt-4 space-y-3 border-t border-gray-200 px-4">
         <div v-for="row in additionalExpenses" :key="row.id" class="flex items-center gap-3 py-3">
           <div class="grid flex-1 grid-cols-2 gap-3">
             <TextField v-model="row.name" placeholder="e.g. Billing, Labour" />
@@ -108,7 +119,7 @@ function handleSubmit() {
               type="number"
               format="currency"
               step="0.01"
-              :placeholder="`e.g. 100`"
+              placeholder="e.g. 100"
             />
           </div>
           <button
@@ -122,21 +133,30 @@ function handleSubmit() {
         </div>
       </div>
 
-      <button
-        type="button"
-        class="flex items-center gap-2 text-sm font-medium text-gray-400 hover:text-gray-600"
-        @click="addExpense"
+      <div
+        v-if="!additionalExpenses.length"
+        class="m-4 rounded-xl border border-dashed border-gray-200 p-4 text-center text-sm text-gray-400"
       >
-        <span class="text-lg leading-none">+</span>
-        <span>Add expense</span>
-      </button>
+        No additional expenses added yet.
+      </div>
+
+      <div class="border-t border-gray-200 px-4 py-3">
+        <button
+          type="button"
+          class="flex items-center gap-2 text-sm font-medium text-gray-400 hover:text-gray-600"
+          @click="addExpense"
+        >
+          <Icon name="add" size="16" />
+          <span>Add expense</span>
+        </button>
+      </div>
     </div>
 
     <div class="h-40" />
 
     <div class="border-core-200 fixed right-0 bottom-0 left-0 border-t bg-white p-4 md:p-6">
       <div class="mb-1 flex items-center justify-between text-sm">
-        <span class="text-gray-500">Recipe Process Costs</span>
+        <span class="text-gray-500">{{ recipeSingularLabel }} Process Costs</span>
         <span class="font-medium text-gray-900">{{ formatCurrency(recipeTotalCost) }}</span>
       </div>
       <div class="mb-3 flex items-center justify-between text-sm">

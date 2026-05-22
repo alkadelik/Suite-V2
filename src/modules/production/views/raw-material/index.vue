@@ -101,7 +101,7 @@ const handleRefresh = () => {
 
 const getActionItems = (item: TRawMaterial) => [
   {
-    label: "Edit material",
+    label: `Edit ${materialSingular.value}`,
     icon: "edit",
     action: () => {
       selectedMaterial.value = item
@@ -122,7 +122,7 @@ const getActionItems = (item: TRawMaterial) => [
     action: () => router.push(`/production/raw-materials/${item.uid}?tab=usage`),
   },
   {
-    label: "Delete material",
+    label: `Delete ${materialSingular.value}`,
     icon: "trash",
     class: "!text-error-600",
     action: () => {
@@ -146,12 +146,19 @@ watch(
   { immediate: true },
 )
 
+const hasComponentSet = computed(() => !!useProductionStore().selectedComponentOption)
+
 const selectedComponent = computed(() => {
   const opt = useProductionStore().selectedComponentOption
   return {
     label: opt?.label || "Raw Materials",
     value: opt?.value === "raw_materials" ? "material" : opt?.value || "material",
   }
+})
+
+const materialSingular = computed(() => {
+  const v = materialValue.value
+  return v.endsWith("s") ? v.slice(0, -1) : v
 })
 
 const materialLabel = computed(() => useProductionStore().componentLabel)
@@ -188,7 +195,7 @@ const handleDelete = () => {
     />
     <div class="mt-6" />
 
-    <SelectComponentName v-if="!selectedComponent" @select="onSelect" />
+    <SelectComponentName v-if="!hasComponentSet" @select="onSelect" />
 
     <div v-else class="flex flex-col gap-8">
       <EmptyState

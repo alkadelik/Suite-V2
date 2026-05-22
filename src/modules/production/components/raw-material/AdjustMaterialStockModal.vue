@@ -18,6 +18,7 @@ import {
   convertNumToUsageUnit,
   getPurchaseUnit,
 } from "@modules/production/utils"
+import { useProductionStore } from "@modules/production/store"
 
 interface Props {
   open: boolean
@@ -33,6 +34,7 @@ const emit = defineEmits<{
 const { format } = useFormatCurrency()
 
 const selectedMaterial = computed(() => props.material)
+const materialSingular = computed(() => useProductionStore().componentSingular)
 
 // Adjustment type options
 const adjustmentTypeOptions = [
@@ -200,7 +202,7 @@ watch(
         class="bg-warning-50 border-warning-200 flex flex-wrap justify-between gap-x-8 gap-y-2 rounded-xl border p-5 text-sm"
       >
         <p>
-          <span class="font-semibold">Material:</span>
+          <span class="font-semibold">{{ materialSingular }}:</span>
           {{ selectedMaterial.name }}
         </p>
         <p>

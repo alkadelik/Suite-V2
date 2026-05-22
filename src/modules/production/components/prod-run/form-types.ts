@@ -40,6 +40,7 @@ export type BasicRunDetails = {
     output_product?: string | null
   } | null
   outputVariantUid?: string
+  outputVariantOption?: { label: string; value: string; price?: number } | null
   outputItemType?: "product" | "sub_assembly"
   variantPrice?: number
 }

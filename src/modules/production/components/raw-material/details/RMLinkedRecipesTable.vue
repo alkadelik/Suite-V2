@@ -4,8 +4,13 @@ import DataTable from "@components/DataTable.vue"
 import RMTableCard from "./RMTableCard.vue"
 import { TRawMaterial } from "@modules/production/types"
 import { LINKED_RECIPES_COLUMN } from "@modules/production/constant"
+import { useProductionStore } from "@modules/production/store"
+import { computed } from "vue"
 
 defineProps<{ material: TRawMaterial }>()
+
+const recipeLabel = computed(() => useProductionStore().recipeLabel)
+const recipeSingularLabel = computed(() => useProductionStore().recipeSingularLabel)
 </script>
 
 <template>
@@ -17,8 +22,8 @@ defineProps<{ material: TRawMaterial }>()
         :loading="false"
         :enable-row-selection="false"
         :empty-state="{
-          title: `No Linked Recipes Available`,
-          description: `Start tracking your linked recipes by adding them to the system.`,
+          title: `No Linked ${recipeLabel} Available`,
+          description: `Start tracking your linked ${recipeLabel.toLowerCase()} by adding them to the system.`,
         }"
         :show-pagination="false"
       >
@@ -40,7 +45,7 @@ defineProps<{ material: TRawMaterial }>()
             :to="`/production/recipes/${item.uid}`"
             class="text-primary-600 text-sm font-medium underline"
           >
-            View recipe
+            View {{ recipeSingularLabel }}
           </router-link>
         </template>
         <template #mobile="{ item }">
