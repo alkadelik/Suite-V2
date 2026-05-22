@@ -10,8 +10,9 @@ import { useSearchRawMaterial } from "@modules/production/api"
 import { computed, ref } from "vue"
 import Chip from "@components/Chip.vue"
 import TextField from "@components/form/TextField.vue"
-// import AdjustMaterialStockModal from "../../raw-material/AdjustMaterialStockModal.vue"
-// import type { TRawMaterial } from "@/modules/production/types"
+import { useProductionStore } from "@modules/production/store"
+
+const materialSingular = computed(() => useProductionStore().componentSingular)
 
 const props = defineProps<{
   initialRows: IngredientRow[]
@@ -73,34 +74,6 @@ function saveUsedStock() {
   editModalOpen.value = false
 }
 
-// ─── Adjust stock (commented out — may be needed later) ──────────────────
-// const adjustModalOpen = ref(false)
-// const selectedMaterial = ref<TRawMaterial | null>(null)
-//
-// function openAdjustModal(row: IngredientRow) {
-//   selectedMaterial.value = {
-//     uid: row.ingredient.value,
-//     name: row.ingredient.label,
-//     unit: row.ingredient.unit || "",
-//     current_stock: row.ingredient.available_stock ?? 0,
-//     is_sub_assembly: row.ingredient.kind === "sub_assembly",
-//     avg_cost: row.ingredient.cost_per_unit,
-//     last_cost: row.ingredient.cost_per_unit,
-//     low_stock: false,
-//     created_at: "",
-//   }
-//   adjustModalOpen.value = true
-// }
-//
-// function onAdjustRefresh(quantity: number) {
-//   if (selectedMaterial.value) {
-//     const uid = selectedMaterial.value.uid
-//     const row = ingredientRows.value.find((r) => r.ingredient.value === uid)
-//     if (row) row.ingredient.available_stock = (row.ingredient.available_stock || 0) + quantity
-//   }
-//   adjustModalOpen.value = false
-// }
-
 // ─── Add ingredient modal ─────────────────────────────────────────────────
 const addModalOpen = ref(false)
 const addSearchInput = ref("")
@@ -161,7 +134,7 @@ function updateSelectedMat(evt: unknown) {
     <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
       <Icon name="box" size="28" />
     </div>
-    <p class="mb-4 text-sm">Review and adjust ingredient quantities.</p>
+    <p class="mb-4 text-sm">Review and adjust {{ materialSingular }} quantities.</p>
 
     <!-- Loading skeleton -->
     <div v-if="loading && !ingredientRows.length" class="space-y-3">
@@ -275,7 +248,7 @@ function updateSelectedMat(evt: unknown) {
           v-if="!ingredientRows.length"
           class="rounded-xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-400"
         >
-          No ingredients found for this recipe.
+          No {{ materialSingular }} found for this recipe.
         </div>
       </div>
 
@@ -285,7 +258,7 @@ function updateSelectedMat(evt: unknown) {
         @click="addModalOpen = true"
       >
         <Icon name="add" size="16" />
-        Add Ingredient
+        Add {{ materialSingular }}
       </button>
     </template>
 
@@ -368,7 +341,7 @@ function updateSelectedMat(evt: unknown) {
     <!-- Add Ingredient Modal -->
     <Modal
       :open="addModalOpen"
-      title="Add Ingredient"
+      :title="`Add ${materialSingular}`"
       max-width="lg"
       variant="bottom-nav"
       @close="addModalOpen = false"
@@ -376,7 +349,7 @@ function updateSelectedMat(evt: unknown) {
       <div class="space-y-4">
         <SelectField
           :model-value="addSelectedMaterial"
-          label="Search material"
+          :label="`Search ${materialSingular}`"
           placeholder="Type to search..."
           :options="addMaterialOptions"
           searchable

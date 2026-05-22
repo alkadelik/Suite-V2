@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
+import { useProductionStore } from "@modules/production/store"
 import AppButton from "@components/AppButton.vue"
 import Icon from "@components/Icon.vue"
 import Modal from "@components/Modal.vue"
 import { computed, ref, watch } from "vue"
+
+const materialLabel = computed(() => useProductionStore().componentLabel)
+const recipeSingularLabel = computed(() => useProductionStore().recipeSingularLabel)
 import type {
   IngredientRow,
   ProcessRow,
@@ -83,11 +87,11 @@ const estimationVerdict = computed(() => {
     <div class="border-core-300 bg-core-25 space-y-3 rounded-xl border p-4">
       <h4 class="text-sm font-medium">Production Cost Breakdown</h4>
       <p class="flex justify-between text-sm">
-        <span class="text-core-600">Materials</span>
+        <span class="text-core-600">{{ materialLabel }}</span>
         <span class="font-medium">{{ format(materialsCost, { kobo: true }) }}</span>
       </p>
       <p class="flex justify-between text-sm">
-        <span class="text-core-600">Recipe Process Costs</span>
+        <span class="text-core-600">{{ recipeSingularLabel }} Process Costs</span>
         <span class="font-medium">{{ format(processCostTotal, { kobo: true }) }}</span>
       </p>
       <p class="flex justify-between text-sm">
