@@ -42,12 +42,13 @@ const activeTab = ref("batches")
 const materialTabs = computed(() => [
   { title: "Batches", key: "batches" },
   { title: "Logs", key: "usage" },
-  { title: isMobile.value ? " Recipes" : "Linked Recipes", key: "recipes" },
+  { title: isMobile.value ? recipeLabel.value : `Linked ${recipeLabel.value}`, key: "recipes" },
 ])
 
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 const materialLabel = computed(() => useProductionStore().componentLabel)
 const materialValue = computed(() => useProductionStore().componentValue)
+const recipeLabel = computed(() => useProductionStore().recipeLabel)
 
 const { data: material, isPending, refetch } = useGetSingleRawMaterial(route.params.id as string)
 const { mutate: deleteRawMaterial, isPending: isDeleting } = useDeleteRawMaterial()
