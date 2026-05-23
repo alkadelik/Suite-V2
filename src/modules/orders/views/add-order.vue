@@ -14,11 +14,16 @@ import { useGetCategories } from "@modules/inventory/api"
 import { useInfiniteScroll } from "@vueuse/core"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import OrderSelectCustomer from "../components/create-order-form/OrderSelectCustomer.vue"
-import OrderShippingInfoForm from "../components/create-order-form/OrderShippingInfoForm.vue"
-import OrderPaymentForm from "../components/create-order-form/OrderPaymentForm.vue"
+import OrderDetailsForm from "../components/create-order-form/OrderDetailsForm.vue"
 import OrderAddCustomerAddress from "../components/create-order-form/OrderAddCustomerAddress.vue"
 import AddNewProductModal from "../components/create-order-form/AddNewProductModal.vue"
-import { anonymousCustomer, ORDER_CHANNELS, DELIVERY_PAYMENT_OPTION } from "../constants"
+import OrderProductCartModal from "../components/create-order-form/OrderProductCartModal.vue"
+import {
+  anonymousCustomer,
+  ORDER_CHANNELS,
+  DELIVERY_PAYMENT_OPTION,
+  ORDER_PAYMENT_STATUS,
+} from "../constants"
 import { displayError } from "@/utils/error-handler"
 import { useCreateOrder } from "../api"
 import { toast } from "@/composables/useToast"
@@ -110,16 +115,10 @@ interface OrderItem {
 
 const orderItems = ref<OrderItem[]>([])
 
-const getItemQty = (productUid: string, variantUid: string | null) => {
-  return (
-    orderItems.value.find(
-      (i) => i.product.uid === productUid && (i.variant?.uid ?? null) === variantUid,
-    )?.quantity ?? 0
-  )
-}
-
 const productTotalQty = (product: IProductCatalogue) =>
-  orderItems.value.filter((i) => i.product.uid === product.uid).reduce((s, i) => s + i.quantity, 0)
+  orderItems.value
+    .filter((i) => i.product.uid === product.uid)
+    .reduce((s, i) => s + Number(i.quantity), 0)
 
 const incrementItem = (product: IProductCatalogue, variant: VariantRef | null) => {
   const idx = orderItems.value.findIndex(
@@ -137,25 +136,33 @@ const incrementItem = (product: IProductCatalogue, variant: VariantRef | null) =
   }
 }
 
-const decrementItem = (product: IProductCatalogue, variant: VariantRef | null) => {
-  const idx = orderItems.value.findIndex(
-    (i) => i.product.uid === product.uid && (i.variant?.uid ?? null) === (variant?.uid ?? null),
-  )
-  if (idx === -1) return
-  if (orderItems.value[idx].quantity <= 1) {
-    orderItems.value.splice(idx, 1)
-  } else {
-    orderItems.value[idx].quantity--
-  }
+// ─── Product cart modal (single + multi-variant) ─────────────────────────────
+const cartModalProduct = ref<IProductCatalogue | null>(null)
+
+const openCartModal = (product: IProductCatalogue) => {
+  if (getAvailableStock(product) === 0) return
+  cartModalProduct.value = product
+}
+const closeCartModal = () => {
+  cartModalProduct.value = null
 }
 
-// ─── Variant selection modal ──────────────────────────────────────────────────
-const variantModalProduct = ref<IProductCatalogue | null>(null)
-const openVariantModal = (product: IProductCatalogue) => {
-  variantModalProduct.value = product
+const existingItemsForProduct = computed<OrderItem[]>(() => {
+  if (!cartModalProduct.value) return []
+  return orderItems.value.filter((i) => i.product.uid === cartModalProduct.value!.uid)
+})
+
+const handleCartSave = (items: OrderItem[]) => {
+  if (!cartModalProduct.value) return
+  const uid = cartModalProduct.value.uid
+  // Replace any existing entries for this product with the new set from the modal
+  orderItems.value = [...orderItems.value.filter((i) => i.product.uid !== uid), ...items]
+  closeCartModal()
 }
-const closeVariantModal = () => {
-  variantModalProduct.value = null
+
+const handleCartRemove = (productUid: string) => {
+  orderItems.value = orderItems.value.filter((i) => i.product.uid !== productUid)
+  closeCartModal()
 }
 
 // ─── Customer ────────────────────────────────────────────────────────────────
@@ -170,7 +177,22 @@ const customerName = computed(() => {
 
 // ─── Order details (shipping + payment) ──────────────────────────────────────
 const showDetailsDrawer = ref(false)
-const detailsTab = ref<"shipping" | "payment">("shipping")
+const orderDetailsSaved = ref(false)
+
+const handleOrderDetailsSaved = () => {
+  orderDetailsSaved.value = true
+  showDetailsDrawer.value = false
+}
+
+const paymentStatusInfo = computed(() =>
+  ORDER_PAYMENT_STATUS.find((s) => s.value === paymentInfo.value.payment_status),
+)
+
+const paymentChipLabel = computed(() => {
+  const base = paymentStatusInfo.value?.label || paymentInfo.value.payment_status
+  const source = paymentInfo.value.payment_source?.label
+  return source ? `${base} (${source})` : base
+})
 
 const getInitialShippingInfo = () => ({
   fulfilment_method: "pickup" as "pickup" | "delivery",
@@ -212,10 +234,10 @@ const paymentInfo = ref(getInitialPaymentInfo())
 const couponInput = ref("")
 
 // ─── Totals ───────────────────────────────────────────────────────────────────
-const itemsCount = computed(() => orderItems.value.reduce((s, i) => s + i.quantity, 0))
+const itemsCount = computed(() => orderItems.value.reduce((s, i) => s + Number(i.quantity), 0))
 
 const productsTotal = computed(() =>
-  orderItems.value.reduce((s, i) => s + i.quantity * i.unit_price, 0),
+  orderItems.value.reduce((s, i) => s + Number(i.quantity) * i.unit_price, 0),
 )
 
 const vatAmount = computed(() => {
@@ -383,7 +405,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="flex h-screen overflow-hidden bg-gray-50">
+  <div class="flex h-[calc(100vh-64px)] overflow-hidden bg-gray-50">
     <!-- ─── LEFT PANEL ─────────────────────────────────────────── -->
     <div class="flex min-w-0 flex-1 flex-col overflow-hidden border-r border-gray-200 bg-white">
       <!-- Header -->
@@ -480,38 +502,33 @@ onMounted(() => {
                 radius="md"
               />
 
-              <!-- Multi-variant: See option -->
-              <button
+              <!-- Multi-variant: See option / Edit -->
+              <AppButton
                 v-else-if="hasMultipleVariants(product)"
-                class="border-primary-400 text-primary-600 hover:bg-primary-50 w-full rounded-lg border py-1.5 text-xs font-medium"
-                @click="openVariantModal(product)"
-              >
-                {{
+                @click="openCartModal(product)"
+                size="sm"
+                variant="outlined"
+                :label="
                   productTotalQty(product) > 0
-                    ? `${productTotalQty(product)} added · Edit`
-                    : "See option"
-                }}
-              </button>
+                    ? productTotalQty(product) + ' in cart · Edit'
+                    : 'See option'
+                "
+                class="w-full"
+              />
 
-              <!-- Single variant: qty controls -->
-              <div v-else class="flex items-center justify-between gap-2">
-                <button
-                  class="flex size-7 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40"
-                  :disabled="getItemQty(product.uid, product.variants[0]?.uid ?? null) === 0"
-                  @click="decrementItem(product, product.variants[0] ?? null)"
-                >
-                  <Icon name="minus" size="14" />
-                </button>
-                <span class="min-w-[1.5rem] text-center text-sm font-semibold text-gray-800">
-                  {{ getItemQty(product.uid, product.variants[0]?.uid ?? null) }}
-                </span>
-                <button
-                  class="flex size-7 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
-                  @click="incrementItem(product, product.variants[0] ?? null)"
-                >
-                  <Icon name="add" size="14" />
-                </button>
-              </div>
+              <!-- Single variant: open modal (Add / Edit) -->
+              <AppButton
+                v-else
+                @click="openCartModal(product)"
+                size="sm"
+                color="alt"
+                :label="
+                  productTotalQty(product) > 0
+                    ? productTotalQty(product) + ' in cart · Edit'
+                    : 'Add to cart'
+                "
+                class="w-full"
+              />
             </div>
           </div>
 
@@ -550,7 +567,7 @@ onMounted(() => {
                 class="size-full object-cover"
               />
               <div v-else class="flex size-full items-center justify-center">
-                <Icon name="image-01" size="14" class="text-gray-400" />
+                <Icon name="box-filled" size="20" class="text-gray-400" />
               </div>
             </div>
             <div class="min-w-0 flex-1">
@@ -572,7 +589,7 @@ onMounted(() => {
         <!-- Empty state -->
         <div
           v-else
-          class="mb-4 flex flex-col items-center justify-center rounded-xl bg-gray-50 py-16 text-center"
+          class="mb-4 flex flex-col items-center justify-center rounded-xl bg-gray-50 py-12 text-center"
         >
           <Icon name="bag-2" size="48" class="mb-2" />
           <p class="text-core-800 text-sm font-medium">No Products Added</p>
@@ -581,40 +598,99 @@ onMounted(() => {
 
         <!-- Add Customer card -->
         <button
-          class="mb-3 flex w-full items-center gap-3 rounded-xl border border-gray-100 bg-orange-50 px-4 py-3 text-left transition-colors hover:bg-orange-100"
+          class="border-primary-100 bg-primary-25 mb-3 flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors"
           @click="showCustomerDrawer = true"
         >
-          <div class="flex size-9 shrink-0 items-center justify-center rounded-full bg-orange-100">
-            <Icon name="personalcard" size="18" class="text-orange-600" />
+          <div
+            v-if="!customerName"
+            class="bg-primary-100 flex size-9 shrink-0 items-center justify-center rounded-xl"
+          >
+            <Icon name="personalcard" size="18" class="text-primary-600" />
           </div>
           <div class="min-w-0 flex-1">
-            <p class="text-sm font-medium text-gray-800">
+            <p class="truncate text-sm font-medium text-gray-800">
               {{ customerName ?? "Add Customer" }}
             </p>
-            <p class="text-xs text-gray-500">
-              {{
-                customerName
-                  ? selectedCustomer?.email || "Customer selected"
-                  : "Who owns this order?"
-              }}
-            </p>
+            <div
+              v-if="customerName"
+              class="mt-0.5 flex min-w-0 items-center gap-3 text-xs text-gray-500"
+            >
+              <span v-if="selectedCustomer?.email" class="flex min-w-0 flex-1 items-center gap-1">
+                <Icon name="sms" size="12" class="shrink-0" />
+                <span class="truncate">{{ selectedCustomer.email }}</span>
+              </span>
+              <span v-if="selectedCustomer?.phone" class="flex min-w-0 flex-1 items-center gap-1">
+                <Icon name="call" size="12" class="shrink-0" />
+                <span class="truncate">{{ selectedCustomer.phone }}</span>
+              </span>
+            </div>
+            <p v-else class="text-xs text-gray-500">Who owns this order?</p>
           </div>
-          <Icon name="chevron-right" size="16" class="shrink-0 text-gray-400" />
+          <Icon
+            :name="customerName ? 'edit' : 'chevron-right'"
+            size="16"
+            class="shrink-0"
+            :class="customerName ? 'text-primary-600' : 'text-gray-400'"
+          />
         </button>
 
         <!-- Add Order Details card -->
         <button
-          class="mb-5 flex w-full items-center gap-3 rounded-xl border border-gray-100 bg-orange-50 px-4 py-3 text-left transition-colors hover:bg-orange-100"
+          class="border-primary-100 bg-primary-25 mb-5 flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors"
           @click="showDetailsDrawer = true"
         >
-          <div class="flex size-9 shrink-0 items-center justify-center rounded-full bg-orange-100">
-            <Icon name="truck-fast" size="18" class="text-orange-600" />
+          <div
+            v-if="!orderDetailsSaved"
+            class="bg-primary-100 flex size-9 shrink-0 items-center justify-center rounded-xl"
+          >
+            <Icon name="truck-fast" size="18" class="text-primary-600" />
           </div>
-          <div class="flex-1">
-            <p class="text-sm font-medium text-gray-800">Add Order Details</p>
-            <p class="text-xs text-gray-500">How was this order shipped and fulfilled</p>
+          <div class="min-w-0 flex-1">
+            <template v-if="!orderDetailsSaved">
+              <p class="text-sm font-medium text-gray-800">Add Order Details</p>
+              <p class="text-xs text-gray-500">How was this order shipped and fulfilled</p>
+            </template>
+            <div v-else class="flex flex-wrap gap-x-1 gap-y-2">
+              <!-- Source / order channel -->
+              <Chip
+                v-if="shippingInfo.order_channel?.label"
+                icon="global"
+                color="purple"
+                variant="outlined"
+                dense
+                :label="shippingInfo.order_channel.label"
+              />
+              <!-- Fulfilment status -->
+              <Chip
+                icon="box-time"
+                :color="shippingInfo.fulfilment_status === 'fulfilled' ? 'success' : 'warning'"
+                variant="outlined"
+                dense
+                :label="shippingInfo.fulfilment_status === 'fulfilled' ? 'Fulfilled' : 'Ongoing'"
+              />
+              <!-- Payment status (+ source) -->
+              <Chip
+                icon="card-tick"
+                variant="outlined"
+                dense
+                :color="paymentStatusInfo?.color"
+                :label="paymentChipLabel"
+              />
+              <!-- Fulfilment method -->
+              <Chip
+                :icon="shippingInfo.fulfilment_method === 'delivery' ? 'truck-fast' : 'location'"
+                :label="shippingInfo.fulfilment_method === 'delivery' ? 'Delivery' : 'Pickup'"
+                variant="outlined"
+                color="blue"
+                dense
+              />
+            </div>
           </div>
-          <Icon name="chevron-right" size="16" class="shrink-0 text-gray-400" />
+          <Icon
+            :name="orderDetailsSaved ? 'edit' : 'chevron-right'"
+            size="16"
+            class="text-primary-600 shrink-0"
+          />
         </button>
 
         <!-- Coupon code -->
@@ -681,47 +757,15 @@ onMounted(() => {
     </div>
   </div>
 
-  <!-- ─── Variant selection modal ──────────────────────────────────────────── -->
-  <Drawer
-    :open="!!variantModalProduct"
-    :title="variantModalProduct?.name ?? ''"
-    max-width="sm"
-    @close="closeVariantModal"
-  >
-    <div v-if="variantModalProduct" class="space-y-3 p-4">
-      <div
-        v-for="variant in variantModalProduct.variants"
-        :key="variant.uid"
-        class="flex items-center gap-3 rounded-xl border border-gray-200 p-3"
-      >
-        <div class="min-w-0 flex-1">
-          <p class="text-sm font-medium text-gray-800">{{ variant.name }}</p>
-          <p class="text-xs text-gray-500">{{ format(parseFloat(variant.price)) }}</p>
-          <p class="text-xs text-gray-400">{{ variant.sellable_stock }} in stock</p>
-        </div>
-        <div class="flex items-center gap-2">
-          <button
-            class="flex size-7 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40"
-            :disabled="getItemQty(variantModalProduct.uid, variant.uid) === 0"
-            @click="decrementItem(variantModalProduct, variant)"
-          >
-            <Icon name="minus" size="14" />
-          </button>
-          <span class="min-w-[1.5rem] text-center text-sm font-semibold">
-            {{ getItemQty(variantModalProduct.uid, variant.uid) }}
-          </span>
-          <button
-            class="flex size-7 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40"
-            :disabled="getItemQty(variantModalProduct.uid, variant.uid) >= variant.sellable_stock"
-            @click="incrementItem(variantModalProduct, variant)"
-          >
-            <Icon name="add" size="14" />
-          </button>
-        </div>
-      </div>
-      <AppButton label="Done" class="mt-4 w-full" @click="closeVariantModal" />
-    </div>
-  </Drawer>
+  <!-- ─── Product cart modal (single + multi-variant) ─────────────────────── -->
+  <OrderProductCartModal
+    :open="!!cartModalProduct"
+    :product="cartModalProduct"
+    :existing-items="existingItemsForProduct"
+    @close="closeCartModal"
+    @save="handleCartSave"
+    @remove="handleCartRemove"
+  />
 
   <!-- ─── Customer drawer ──────────────────────────────────────────────────── -->
   <Drawer
@@ -745,33 +789,9 @@ onMounted(() => {
     max-width="xl"
     @close="showDetailsDrawer = false"
   >
-    <div class="flex gap-4 border-b border-gray-200 px-6 py-2">
-      <button
-        :class="[
-          'pb-2 text-sm font-medium transition-colors',
-          detailsTab === 'shipping'
-            ? 'text-primary-600 border-primary-500 border-b-2'
-            : 'text-gray-500 hover:text-gray-700',
-        ]"
-        @click="detailsTab = 'shipping'"
-      >
-        Shipping
-      </button>
-      <button
-        :class="[
-          'pb-2 text-sm font-medium transition-colors',
-          detailsTab === 'payment'
-            ? 'text-primary-600 border-primary-500 border-b-2'
-            : 'text-gray-500 hover:text-gray-700',
-        ]"
-        @click="detailsTab = 'payment'"
-      >
-        Payment
-      </button>
-    </div>
-    <OrderShippingInfoForm
-      v-if="detailsTab === 'shipping'"
+    <OrderDetailsForm
       v-model:shipping-info="shippingInfo"
+      v-model:payment-info="paymentInfo"
       :customer="selectedCustomer"
       :orderItems="
         orderItems.map((i) => ({
@@ -779,21 +799,15 @@ onMounted(() => {
           variant: i.variant ? { ...i.variant, stock: i.variant.sellable_stock } : null,
         }))
       "
-      @next="detailsTab = 'payment'"
-      @prev="showDetailsDrawer = false"
-      @openAddAddress="showAddAddressModal = true"
-    />
-    <OrderPaymentForm
-      v-else
-      v-model:paymentInfo="paymentInfo"
       :productsTotal="productsTotal"
       :deliveryFee="deliveryFee"
       :vatAmount="vatAmount"
       :totalAmount="totalAmount"
       :itemsCount="itemsCount"
       :is-free-shipping="shippingInfo.delivery_payment_option === 'free_shipping'"
-      @next="showDetailsDrawer = false"
-      @prev="detailsTab = 'shipping'"
+      @save="handleOrderDetailsSaved"
+      @close="showDetailsDrawer = false"
+      @openAddAddress="showAddAddressModal = true"
     />
   </Drawer>
 

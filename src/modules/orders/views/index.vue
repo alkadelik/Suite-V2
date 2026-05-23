@@ -135,7 +135,8 @@ const handleOpenCreate = () => {
   // Check premium access before opening drawer
   if (!checkPremiumAccess()) return
 
-  openCreate.value = true
+  if (isMobile.value) openCreate.value = true
+  else router.push("/orders/add")
 }
 
 const handleRefresh = () => {
