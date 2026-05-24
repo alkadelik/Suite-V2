@@ -75,7 +75,10 @@
         </nav>
 
         <!-- FAB -->
-        <div v-if="!isMobile" class="fixed right-4 bottom-4 z-[50] hidden lg:inline-block">
+        <div
+          v-if="!isMobile && !$route.path.includes('/orders/add')"
+          class="fixed right-4 bottom-4 z-[50] hidden lg:inline-block"
+        >
           <DropdownMenu :items="actionMenuItems">
             <template #trigger="{ open }">
               <AppButton
