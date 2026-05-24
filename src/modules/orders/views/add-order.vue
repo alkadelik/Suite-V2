@@ -165,6 +165,20 @@ const handleCartRemove = (productUid: string) => {
   closeCartModal()
 }
 
+const openDetailsDrawer = () => {
+  if (orderItems.value.length === 0) {
+    toast.info("Add at least one product before order details.")
+    return
+  }
+
+  if (!selectedCustomer.value || selectedCustomer.value.uid === anonymousCustomer.uid) {
+    toast.info("Select a customer before order details.")
+    return
+  }
+
+  showDetailsDrawer.value = true
+}
+
 // ─── Customer ────────────────────────────────────────────────────────────────
 const showCustomerDrawer = ref(false)
 const selectedCustomer = ref<ICustomer | null>(null)
@@ -405,7 +419,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="flex h-[calc(100vh-64px)] overflow-hidden bg-gray-50">
+  <div class="flex h-[calc(100vh-64px)] overflow-hidden">
     <!-- ─── LEFT PANEL ─────────────────────────────────────────── -->
     <div class="flex min-w-0 flex-1 flex-col overflow-hidden border-r border-gray-200 bg-white">
       <!-- Header -->
@@ -580,9 +594,20 @@ onMounted(() => {
               </p>
               <p class="text-xs text-gray-500">× {{ item.quantity }}</p>
             </div>
-            <p class="shrink-0 text-xs font-semibold text-gray-800">
-              {{ format(item.unit_price * item.quantity) }}
-            </p>
+            <div class="shrink-0 text-right">
+              <p
+                v-if="
+                  item.variant?.original_price != null &&
+                  item.variant.original_price !== item.unit_price
+                "
+                class="text-[10px] text-gray-400 line-through"
+              >
+                {{ format(item.variant.original_price) }}
+              </p>
+              <p class="text-xs font-semibold text-gray-800">
+                {{ format(item.unit_price * item.quantity) }}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -591,7 +616,7 @@ onMounted(() => {
           v-else
           class="mb-4 flex flex-col items-center justify-center rounded-xl bg-gray-50 py-12 text-center"
         >
-          <Icon name="bag-2" size="48" class="mb-2" />
+          <img src="@/assets/images/empty-bag.svg?url" class="mx-auto mb-2 h-30" />
           <p class="text-core-800 text-sm font-medium">No Products Added</p>
           <p class="text-core-500 text-xs">Add at least one to create an order</p>
         </div>
@@ -601,12 +626,11 @@ onMounted(() => {
           class="border-primary-100 bg-primary-25 mb-3 flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors"
           @click="showCustomerDrawer = true"
         >
-          <div
+          <img
             v-if="!customerName"
-            class="bg-primary-100 flex size-9 shrink-0 items-center justify-center rounded-xl"
-          >
-            <Icon name="personalcard" size="18" class="text-primary-600" />
-          </div>
+            src="@/assets/images/empty-user.svg?url"
+            class="size-10 shrink-0"
+          />
           <div class="min-w-0 flex-1">
             <p class="truncate text-sm font-medium text-gray-800">
               {{ customerName ?? "Add Customer" }}
@@ -629,22 +653,20 @@ onMounted(() => {
           <Icon
             :name="customerName ? 'edit' : 'chevron-right'"
             size="16"
-            class="shrink-0"
-            :class="customerName ? 'text-primary-600' : 'text-gray-400'"
+            class="text-primary-600 shrink-0"
           />
         </button>
 
         <!-- Add Order Details card -->
         <button
           class="border-primary-100 bg-primary-25 mb-5 flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors"
-          @click="showDetailsDrawer = true"
+          @click="openDetailsDrawer"
         >
-          <div
+          <img
             v-if="!orderDetailsSaved"
-            class="bg-primary-100 flex size-9 shrink-0 items-center justify-center rounded-xl"
-          >
-            <Icon name="truck-fast" size="18" class="text-primary-600" />
-          </div>
+            src="@/assets/images/empty-store.svg?url"
+            class="size-10 shrink-0"
+          />
           <div class="min-w-0 flex-1">
             <template v-if="!orderDetailsSaved">
               <p class="text-sm font-medium text-gray-800">Add Order Details</p>
