@@ -11,7 +11,7 @@ import type { ICustomer } from "@modules/customers/types"
 import type { OrderPayload, OrderItemPayload } from "@modules/orders/types"
 import { useGetProductCatalogsInfinite } from "@modules/inventory/api"
 import { useGetCategories } from "@modules/inventory/api"
-import { useInfiniteScroll } from "@vueuse/core"
+import { useInfiniteScroll, useMediaQuery } from "@vueuse/core"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import OrderSelectCustomer from "../components/create-order-form/OrderSelectCustomer.vue"
 import OrderDetailsForm from "../components/create-order-form/OrderDetailsForm.vue"
@@ -33,9 +33,12 @@ import { useSettingsStore } from "@modules/settings/store"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import Chip from "@components/Chip.vue"
 import { pluralize } from "@/utils/pluralize"
+import PageHeader from "@components/PageHeader.vue"
 
 const router = useRouter()
 const { format } = useFormatCurrency()
+
+const showOrderSummary = ref(false)
 
 const storeDetails = computed(() => useSettingsStore().storeDetails)
 const isTaxEnabled = computed(() => storeDetails.value?.tax_collection_enabled || false)
@@ -282,6 +285,24 @@ const canCreate = computed(() => orderItems.value.length > 0)
 const onCreateOrder = () => {
   if (!canCreate.value) return
 
+  if (!customerName.value) {
+    if (isMobile.value) {
+      toast.info("Click the Order Summary to add customer", { title: "No customer selected" })
+    } else {
+      toast.info("Please select a customer before creating the order.")
+    }
+    return
+  }
+
+  if (!orderDetailsSaved.value) {
+    if (isMobile.value) {
+      toast.info("Click the Order Summary to add order details", { title: "No order details" })
+    } else {
+      toast.info("Please add order details before creating the order.")
+    }
+    return
+  }
+
   const { fulfilment_method, delivery_type, delivery_method } = shippingInfo.value
   const { uid, email, phone, full_name, first_name, last_name } = selectedCustomer.value || {}
 
@@ -416,28 +437,33 @@ watch(
 onMounted(() => {
   loadPaystackScript()
 })
+
+const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 </script>
 
 <template>
+  <PageHeader title="Add Order" back-link="/orders" inner v-if="isMobile" />
   <div class="flex h-[calc(100vh-64px)] overflow-hidden">
     <!-- ─── LEFT PANEL ─────────────────────────────────────────── -->
-    <div class="flex min-w-0 flex-1 flex-col overflow-hidden border-r border-gray-200 bg-white">
+    <div class="flex min-w-0 flex-1 flex-col overflow-hidden border-gray-200 bg-white md:border-r">
       <!-- Header -->
-      <div class="flex items-center gap-3 border-b border-gray-100 px-5 py-4">
-        <button class="hover:text-primary-600" @click="router.push('/orders')">
+      <div
+        class="flex items-center gap-2 border-b border-gray-100 px-3 py-3 md:gap-3 md:px-5 md:py-4"
+      >
+        <button v-if="!isMobile" class="hover:text-primary-600" @click="router.push('/orders')">
           <Icon name="arrow-left" size="20" />
         </button>
-        <h1 class="text-lg font-semibold">Add Order</h1>
-        <div class="flex-1" />
+        <h1 v-if="!isMobile" class="text-lg font-semibold">Add Order</h1>
+        <div class="flex-1" v-if="!isMobile" />
         <TextField
           v-model="searchQuery"
           left-icon="search-lg"
           placeholder="Search by name"
           size="sm"
-          class="w-64"
+          class="w-full md:w-64"
         />
-        <AppButton color="alt" size="sm" icon="filter-lines" />
-        <AppButton icon="add" size="sm" @click="showAddProduct = true" />
+        <AppButton color="alt" size="sm" icon="filter-lines" class="shrink-0" />
+        <AppButton icon="add" size="sm" class="shrink-0" @click="showAddProduct = true" />
       </div>
 
       <!-- Category filter pills -->
@@ -464,22 +490,39 @@ onMounted(() => {
         />
       </div>
 
+      <!-- Mobile: Order Summary trigger bar -->
+      <button
+        class="flex w-full items-center border-b border-gray-100 px-4 py-3 md:hidden"
+        @click="showOrderSummary = true"
+      >
+        <span class="text-sm font-semibold text-gray-900">Order Summary</span>
+        <div class="ml-auto flex items-center gap-2">
+          <span class="text-sm font-medium text-gray-600">
+            {{ itemsCount > 0 ? format(productsTotal) : "-" }}
+          </span>
+          <Chip radius="md" color="alt" :label="`${itemsCount} ${pluralize('item', itemsCount)}`" />
+          <Icon name="chevron-down" size="16" class="shrink-0 text-gray-400" />
+        </div>
+      </button>
+
       <!-- Product grid -->
-      <div ref="scrollContainer" class="flex-1 overflow-y-auto p-5">
+      <div ref="scrollContainer" class="flex-1 overflow-y-auto p-3 pb-24 md:p-5 md:pb-5">
         <EmptyState v-if="isPending" title="" description="" :loading="true" class="mt-10" />
         <EmptyState
           v-else-if="products.length === 0"
           title="No products found"
           description="Try a different search or category."
         />
-        <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
+        <div v-else class="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-3">
           <div
             v-for="product in products"
             :key="product.uid"
             class="overflow-hidden rounded-xl border border-gray-200 bg-white p-1"
           >
             <!-- Image -->
-            <div class="relative h-[180px] w-full overflow-hidden rounded-xl bg-gray-100">
+            <div
+              class="relative h-[120px] w-full overflow-hidden rounded-xl bg-gray-100 md:h-[180px]"
+            >
               <img
                 v-if="product.images?.[0]?.image"
                 :src="product.images[0].image"
@@ -500,10 +543,10 @@ onMounted(() => {
             </div>
 
             <!-- Info + controls -->
-            <div class="px-1 py-3">
+            <div class="px-1 pt-3 pb-1">
               <div class="mb-2 flex items-center justify-between">
                 <p class="truncate text-xs font-medium">{{ product.name }}</p>
-                <p class="text-sm font-semibold">
+                <p class="text-xs font-semibold sm:text-sm">
                   {{ format(parseFloat(product.variants[0]?.price ?? "0")) }}
                 </p>
               </div>
@@ -520,7 +563,7 @@ onMounted(() => {
               <AppButton
                 v-else-if="hasMultipleVariants(product)"
                 @click="openCartModal(product)"
-                size="sm"
+                size="xs"
                 variant="outlined"
                 :label="
                   productTotalQty(product) > 0
@@ -534,7 +577,7 @@ onMounted(() => {
               <AppButton
                 v-else
                 @click="openCartModal(product)"
-                size="sm"
+                size="xs"
                 color="alt"
                 :label="
                   productTotalQty(product) > 0
@@ -557,8 +600,8 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- ─── RIGHT PANEL ────────────────────────────────────────── -->
-    <div class="flex w-80 shrink-0 flex-col bg-white xl:w-96">
+    <!-- ─── RIGHT PANEL (desktop only) ──────────────────────────── -->
+    <div class="hidden w-80 shrink-0 flex-col bg-white md:flex xl:w-96">
       <!-- Header -->
       <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
         <h2 class="font-semibold text-gray-900">Order Summary</h2>
@@ -737,7 +780,7 @@ onMounted(() => {
             <span>Subtotal</span>
             <span>{{ orderItems.length ? format(productsTotal) : "-" }}</span>
           </div>
-          <div class="flex justify-between">
+          <div v-if="isTaxEnabled" class="flex justify-between">
             <span>VAT ({{ (VAT_RATE * 100).toFixed(1) }}%)</span>
             <span>{{ isTaxEnabled && orderItems.length ? format(vatAmount) : "-" }}</span>
           </div>
@@ -778,6 +821,228 @@ onMounted(() => {
       </div>
     </div>
   </div>
+
+  <!-- ─── Mobile: fixed Create Order button ───────────────────────────────── -->
+  <div class="fixed inset-x-0 bottom-0 z-30 border-t border-gray-200 bg-white p-4 md:hidden">
+    <AppButton
+      label="Create Order"
+      class="w-full"
+      :disabled="!canCreate"
+      :loading="isCreating"
+      @click="onCreateOrder"
+    />
+  </div>
+
+  <!-- ─── Mobile: Order Summary drawer ─────────────────────────────────────── -->
+  <Drawer
+    :open="showOrderSummary"
+    title="Order Summary"
+    max-width="xl"
+    class="md:hidden"
+    @close="showOrderSummary = false"
+  >
+    <div class="flex flex-col gap-4 pb-2">
+      <!-- Items list -->
+      <div v-if="orderItems.length > 0" class="space-y-3">
+        <div
+          v-for="item in orderItems"
+          :key="`${item.product.uid}-${item.variant?.uid}-m`"
+          class="flex items-center gap-3"
+        >
+          <div class="size-10 shrink-0 overflow-hidden rounded-lg bg-gray-200">
+            <img
+              v-if="item.product.images?.[0]?.image"
+              :src="item.product.images[0].image"
+              :alt="item.product.name"
+              class="size-full object-cover"
+            />
+            <div v-else class="flex size-full items-center justify-center">
+              <Icon name="box-filled" size="20" class="text-gray-600" />
+            </div>
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-xs font-medium text-gray-800">{{ item.product.name }}</p>
+            <p
+              v-if="item.variant && hasMultipleVariants(item.product)"
+              class="text-xs text-gray-400"
+            >
+              {{ item.variant.name }}
+            </p>
+            <p class="text-xs text-gray-500">× {{ item.quantity }}</p>
+          </div>
+          <div class="shrink-0 text-right">
+            <p
+              v-if="
+                item.variant?.original_price != null &&
+                item.variant.original_price !== item.unit_price
+              "
+              class="text-[10px] text-gray-400 line-through"
+            >
+              {{ format(item.variant.original_price) }}
+            </p>
+            <p class="text-xs font-semibold text-gray-800">
+              {{ format(item.unit_price * item.quantity) }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div
+        v-else
+        class="flex flex-col items-center justify-center rounded-xl bg-gray-50 py-10 text-center"
+      >
+        <img src="@/assets/images/empty-bag.svg?url" class="mx-auto mb-2 h-24" />
+        <p class="text-core-800 text-sm font-medium">No Products Added</p>
+        <p class="text-core-500 text-xs">Add at least one to create an order</p>
+      </div>
+
+      <!-- Add Customer card -->
+      <button
+        class="border-primary-100 bg-primary-25 flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors"
+        @click="showCustomerDrawer = true"
+      >
+        <img
+          v-if="!customerName"
+          src="@/assets/images/empty-user.svg?url"
+          class="size-10 shrink-0"
+        />
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-sm font-medium text-gray-800">
+            {{ customerName ?? "Add Customer" }}
+          </p>
+          <div
+            v-if="customerName"
+            class="mt-0.5 flex min-w-0 items-center gap-3 text-xs text-gray-500"
+          >
+            <span v-if="selectedCustomer?.email" class="flex min-w-0 flex-1 items-center gap-1">
+              <Icon name="sms" size="12" class="shrink-0" />
+              <span class="truncate">{{ selectedCustomer.email }}</span>
+            </span>
+            <span v-if="selectedCustomer?.phone" class="flex min-w-0 flex-1 items-center gap-1">
+              <Icon name="call" size="12" class="shrink-0" />
+              <span class="truncate">{{ selectedCustomer.phone }}</span>
+            </span>
+          </div>
+          <p v-else class="text-xs text-gray-500">Who owns this order?</p>
+        </div>
+        <Icon
+          :name="customerName ? 'edit' : 'chevron-right'"
+          size="16"
+          class="text-primary-600 shrink-0"
+        />
+      </button>
+
+      <!-- Add Order Details card -->
+      <button
+        class="border-primary-100 bg-primary-25 flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors"
+        @click="openDetailsDrawer"
+      >
+        <img
+          v-if="!orderDetailsSaved"
+          src="@/assets/images/empty-store.svg?url"
+          class="size-10 shrink-0"
+        />
+        <div class="min-w-0 flex-1">
+          <template v-if="!orderDetailsSaved">
+            <p class="text-sm font-medium text-gray-800">Add Order Details</p>
+            <p class="text-xs text-gray-500">How was this order shipped and fulfilled</p>
+          </template>
+          <div v-else class="flex flex-wrap gap-x-1 gap-y-2">
+            <Chip
+              v-if="shippingInfo.order_channel?.label"
+              icon="global"
+              color="purple"
+              variant="outlined"
+              dense
+              :label="shippingInfo.order_channel.label"
+            />
+            <Chip
+              icon="box-time"
+              :color="shippingInfo.fulfilment_status === 'fulfilled' ? 'success' : 'warning'"
+              variant="outlined"
+              dense
+              :label="shippingInfo.fulfilment_status === 'fulfilled' ? 'Fulfilled' : 'Ongoing'"
+            />
+            <Chip
+              icon="card-tick"
+              variant="outlined"
+              dense
+              :color="paymentStatusInfo?.color"
+              :label="paymentChipLabel"
+            />
+            <Chip
+              :icon="shippingInfo.fulfilment_method === 'delivery' ? 'truck-fast' : 'location'"
+              :label="shippingInfo.fulfilment_method === 'delivery' ? 'Delivery' : 'Pickup'"
+              variant="outlined"
+              color="blue"
+              dense
+            />
+          </div>
+        </div>
+        <Icon
+          :name="orderDetailsSaved ? 'edit' : 'chevron-right'"
+          size="16"
+          class="text-primary-600 shrink-0"
+        />
+      </button>
+
+      <!-- Coupon code -->
+      <div class="flex gap-2">
+        <TextField v-model="couponInput" placeholder="Enter Coupon Code" size="sm" class="flex-1" />
+        <AppButton
+          label="Apply Code"
+          size="sm"
+          :disabled="!couponInput.trim()"
+          @click="paymentInfo.coupon_code = couponInput.trim() || null"
+        />
+      </div>
+
+      <!-- Totals -->
+      <div class="space-y-2.5 border-t border-dashed border-gray-200 pt-4 text-sm text-gray-600">
+        <div class="flex justify-between">
+          <span>Subtotal</span>
+          <span>{{ orderItems.length ? format(productsTotal) : "-" }}</span>
+        </div>
+        <div v-if="isTaxEnabled" class="flex justify-between">
+          <span>VAT ({{ (VAT_RATE * 100).toFixed(1) }}%)</span>
+          <span>{{ isTaxEnabled && orderItems.length ? format(vatAmount) : "-" }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span>Shipping</span>
+          <span>
+            {{
+              shippingInfo.fulfilment_method === "delivery" && orderItems.length
+                ? shippingInfo.delivery_payment_option === "free_shipping"
+                  ? "Free"
+                  : format(deliveryFee)
+                : "-"
+            }}
+          </span>
+        </div>
+        <div v-if="paymentInfo.discount_amount > 0" class="flex justify-between text-green-600">
+          <span>Discount</span>
+          <span>-{{ format(paymentInfo.discount_amount) }}</span>
+        </div>
+        <div
+          class="flex justify-between border-t border-gray-200 pt-2.5 font-semibold text-gray-900"
+        >
+          <span>Total</span>
+          <span>{{ orderItems.length ? format(totalAmount) : "-" }}</span>
+        </div>
+      </div>
+    </div>
+
+    <template #footer>
+      <AppButton
+        label="Create Order"
+        class="w-full"
+        :disabled="!canCreate"
+        :loading="isCreating"
+        @click="onCreateOrder"
+      />
+    </template>
+  </Drawer>
 
   <!-- ─── Product cart modal (single + multi-variant) ─────────────────────── -->
   <OrderProductCartModal

@@ -276,23 +276,24 @@ const totalStock = computed(() => {
 
 <template>
   <Modal
-    :open="open"
+    :open="open && !!product?.uid"
     :max-width="needsVariantSelection ? 'xl' : 'lg'"
-    :show-header="false"
+    :show-header="true"
     variant="bottom-nav"
     :handle-padding="false"
-    body-class="!rounded-t-2xl"
+    body-class="!rounded-t-2xl flex flex-col"
     @close="close"
   >
-    <div v-if="product" class="flex flex-col">
-      <!-- Header -->
-      <div class="flex items-center justify-between gap-3 border-b border-gray-100 bg-white p-4">
+    <template #header>
+      <div
+        class="flex items-center justify-between gap-3 rounded-t-2xl! border-b border-gray-100 bg-white p-4"
+      >
         <div class="flex min-w-0 items-center gap-3">
           <div class="size-11 shrink-0 overflow-hidden rounded-lg bg-gray-100">
             <img
               v-if="headerImage"
               :src="headerImage"
-              :alt="product.name"
+              :alt="product?.name"
               class="size-full object-cover"
             />
             <div v-else class="flex size-full items-center justify-center">
@@ -300,9 +301,9 @@ const totalStock = computed(() => {
             </div>
           </div>
           <div class="min-w-0">
-            <h3 class="truncate text-sm font-semibold text-gray-900">{{ product.name }}</h3>
+            <h3 class="truncate text-sm font-semibold text-gray-900">{{ product?.name }}</h3>
             <p class="text-xs text-gray-500">
-              {{ format(parseFloat(product.variants?.[0]?.price ?? "0")) }}
+              {{ format(parseFloat(product?.variants?.[0]?.price ?? "0")) }}
             </p>
           </div>
         </div>
@@ -313,7 +314,8 @@ const totalStock = computed(() => {
           </button>
         </div>
       </div>
-
+    </template>
+    <div v-if="product" class="flex flex-col">
       <!-- Body -->
       <div class="space-y-4 p-4">
         <!-- Multi-variant: variant select -->
@@ -415,9 +417,10 @@ const totalStock = computed(() => {
           :rows="3"
         />
       </div>
-
-      <!-- Footer -->
-      <div class="flex gap-3 border-t border-gray-100 bg-white p-4">
+    </div>
+    <!-- Footer -->
+    <template #footer>
+      <div class="flex gap-3">
         <AppButton
           v-if="isEditing"
           label="Remove From Cart"
@@ -432,6 +435,6 @@ const totalStock = computed(() => {
           @click="handleSave"
         />
       </div>
-    </div>
+    </template>
   </Modal>
 </template>

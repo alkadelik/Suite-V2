@@ -241,7 +241,7 @@ const showAppHeader = computed(() => {
   return !hide || !isMobile.value
 })
 
-const isInner = computed(() => !!route.params.id)
+const isInner = computed(() => !!route.params.id || route.path.endsWith("/add"))
 
 const MENU_ITEMS = computed(() => {
   const allSuites = [
