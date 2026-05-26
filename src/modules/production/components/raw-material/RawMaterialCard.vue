@@ -20,11 +20,11 @@ const { format } = useFormatCurrency()
 
 const router = useRouter()
 
-const selectedComponent = computed(() => useProductionStore().selectedComponentOption)
+const materialSingular = computed(() => useProductionStore().componentSingular)
 
 const actionMenus = computed(() => [
   {
-    label: `Edit ${selectedComponent.value?.value || "material"}`,
+    label: `Edit ${materialSingular.value}`,
     icon: "edit",
     action: () => emit("edit"),
   },
@@ -41,7 +41,7 @@ const actionMenus = computed(() => [
     },
   },
   {
-    label: "Delete material",
+    label: `Delete ${materialSingular.value}`,
     icon: "trash",
     class: "!text-error-600",
     action: () => emit("delete"),

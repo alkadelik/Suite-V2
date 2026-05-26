@@ -62,7 +62,7 @@ const drawerTitle = computed(() => {
   return `Add ${capitalize(recipeNameValue.value)}`
 })
 
-const steps = ["Basic details", "Ingredients", "Process cost"]
+const steps = computed(() => ["Basic details", useProductionStore().componentLabel, "Process cost"])
 const activeStep = ref(0)
 
 const recipeNameValue = computed(() => useProductionStore().recipeValue)
@@ -272,8 +272,8 @@ const forceClose = () => {
 
           <ConfirmationModal
             v-model="confirmClose"
-            header="Discard Recipe?"
-            paragraph="You have unsaved progress on this recipe. Closing now will lose everything you've entered."
+            :header="`Discard ${capitalize(recipeNameValue)}?`"
+            :paragraph="`You have unsaved progress on this ${recipeNameValue}. Closing now will lose everything you've entered.`"
             action-label="Discard"
             variant="warning"
             info-message="This action cannot be reversed."

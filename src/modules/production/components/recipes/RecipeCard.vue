@@ -10,6 +10,7 @@ const props = defineProps<{ recipe: TRecipe; class?: string }>()
 const emit = defineEmits(["click", "toggle", "edit", "delete", "disable", "duplicate"])
 
 const recipeLabel = computed(() => useProductionStore().recipeLabel)
+const componentLabel = computed(() => useProductionStore().componentLabel)
 
 const actionMenus = computed(() => [
   {
@@ -75,7 +76,7 @@ const actionMenus = computed(() => [
       <!--  -->
       <div>
         <p class="text-sm font-medium">{{ recipe.ingredient_count }}</p>
-        <p class="text-core-600 text-xs">Ingredient Count</p>
+        <p class="text-core-600 text-xs">{{ componentLabel }} Count</p>
       </div>
       <!--  -->
       <div>

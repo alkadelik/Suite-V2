@@ -18,6 +18,7 @@ import ProdEconomicsForm from "./run-form/ProdEconomicsForm.vue"
 import type { IngredientRow, ProcessRow, AdditionalExpenseRow, BasicRunDetails } from "./form-types"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
 import { floatDecimal } from "@/utils/others"
+import { useProductionStore } from "@modules/production/store"
 
 export type { IngredientRow, ProcessRow, AdditionalExpenseRow, BasicRunDetails }
 type RunStatus = "draft" | "finalized"
@@ -41,7 +42,12 @@ const drawerTitle = computed(() => {
   return "Create Run"
 })
 
-const steps = ["Basic details", "Ingredients", "Process cost", "Economics"]
+const steps = computed(() => [
+  "Basic details",
+  useProductionStore().componentLabel,
+  "Process cost",
+  "Economics",
+])
 const activeStep = ref(0)
 
 // ─── Shared state across steps ─────────────────────────────────────────────

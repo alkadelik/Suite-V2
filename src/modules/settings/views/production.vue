@@ -53,8 +53,8 @@ const handleSubmit = () => {
         const details = res.data.data as IStoreDetails
         useSettingsStore().setStoreDetails({
           ...details,
-          // API currently not saving it [DESMOND]
-          recipe_terminology: body.recipe_terminology,
+          // Ensure local state reflects the saved value even if API response omits it
+          recipe_terminology: details.recipe_terminology || body.recipe_terminology,
         })
       },
       onError: displayError,
@@ -77,6 +77,10 @@ const isSmAndUp = useMediaQuery("(min-width: 640px)")
       <!-- Raw Materials -->
       <section class="p-4 md:px-6">
         <h3 class="!font-outfit mb-4 text-base font-semibold md:text-lg">Raw Materials</h3>
+        <p v-if="!selectedRawMaterial" class="mb-3 text-sm text-gray-500">
+          No preference set — currently displaying as
+          <span class="font-medium text-gray-700">Raw Materials</span>.
+        </p>
         <RadioInputField
           :options="componentOptions"
           v-model="selectedRawMaterial"
@@ -90,7 +94,10 @@ const isSmAndUp = useMediaQuery("(min-width: 640px)")
       <!-- Recipes -->
       <section class="p-4 md:px-6">
         <h3 class="!font-outfit mb-4 text-base font-semibold md:text-lg">Recipes</h3>
-
+        <p v-if="!selectedRecipeName" class="mb-3 text-sm text-gray-500">
+          No preference set — currently displaying as
+          <span class="font-medium text-gray-700">Recipe</span>.
+        </p>
         <RadioInputField
           :options="recipeNameOptions"
           v-model="selectedRecipeName"

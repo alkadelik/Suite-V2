@@ -43,7 +43,7 @@ export interface ChipProps {
    * The chip visual variant
    * - filled: Solid background with contrasting text
    * - outlined: Light background with border
-   * @default "filled"
+   * @default "outlined"
    */
   variant?: "filled" | "outlined"
 
