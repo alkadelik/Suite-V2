@@ -13,7 +13,7 @@
         :src="confetti"
         alt=""
         aria-hidden="true"
-        class="pointer-events-none absolute inset-0 h-full w-full object-cover"
+        class="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-40"
       />
 
       <!-- Close -->
