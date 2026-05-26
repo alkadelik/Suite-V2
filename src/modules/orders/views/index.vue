@@ -623,15 +623,24 @@ const handleDetailsMarkAsPaid = () => {
           "
         >
           <template #cell:items="{ item }">
-            <ProductAvatar
-              :name="item.items?.[0].product_name"
-              :url="undefined"
-              :variants-count="item.items.length > 1 ? item.items.length : undefined"
-              :variants-count-text="`+ ${item.items.length - 1}`"
-              shape="rounded"
-              class="!gap-2"
-              max-width="100px"
-            />
+            <div class="flex items-center gap-2">
+              <ProductAvatar
+                :name="item.items?.[0].product_name"
+                :url="undefined"
+                :variants-count="item.items.length > 1 ? item.items.length : undefined"
+                :variants-count-text="`+ ${item.items.length - 1}`"
+                shape="rounded"
+                class="!gap-2"
+                max-width="100px"
+              />
+              <Chip
+                v-if="item.memos_count"
+                :label="item.memos_count"
+                class="!flex-row-reverse"
+                icon="note"
+                color="blue"
+              />
+            </div>
           </template>
           <template #cell:fulfilment_status="{ item }">
             <Chip

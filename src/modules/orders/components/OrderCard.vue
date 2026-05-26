@@ -167,6 +167,7 @@ const outstandingBalance = computed(() => {
                 order.items?.reduce((acc, item) => acc + item.quantity, 0)
               }}
             </p> -->
+            <Chip v-if="order.memos_count" color="blue" :label="order.memos_count + ' memos'" />
           </div>
         </div>
       </div>

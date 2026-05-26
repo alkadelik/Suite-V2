@@ -77,10 +77,10 @@ export function useCreateOrderMemo() {
 }
 
 /** Fetch order memos */
-export function useGetOrderMemos(id: string) {
+export function useGetOrderMemos(id: MaybeRefOrGetter<string>) {
   return useApiQuery<TPaginatedResponse<TOrderMemo>["data"]>({
-    url: `/orders/${id}/memos/`,
-    key: "orderMemos",
+    url: computed(() => `/orders/${toValue(id)}/memos/`),
+    key: computed(() => `orderMemos_${toValue(id)}`),
     selectData: true,
   })
 }

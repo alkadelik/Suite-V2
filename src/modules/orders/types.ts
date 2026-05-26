@@ -41,6 +41,7 @@ export type TOrder = {
   items: TOrderItem[]
   location: string
   location_name: string
+  memos_count: number
   outstanding_balance: number
   payment_status: "unpaid" | "paid" | "partially_paid"
   rate: string
