@@ -25,7 +25,11 @@ const route = useRoute()
 const router = useRouter()
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 const recipeLabel = computed(() => useProductionStore().recipeLabel)
-const recipeValue = computed(() => useProductionStore().recipeValue)
+const recipeValue = computed(() => {
+  const v = useProductionStore().recipeValue
+  return v === "bom" ? v.toUpperCase() : v
+})
+const materialLabel = computed(() => useProductionStore().componentLabel)
 const { format } = useFormatCurrency()
 
 const showCreateModal = ref<"edit" | "duplicate" | null>(null)
@@ -62,30 +66,30 @@ const actionMenus = computed(() => [
   ...(recipe.value?.is_active
     ? [
         {
-          label: `Edit ${recipeLabel.value}`,
+          label: `Edit ${recipeValue.value}`,
           icon: "edit",
           action: () => (showCreateModal.value = "edit"),
         },
         {
-          label: `Duplicate ${recipeLabel.value}`,
+          label: `Duplicate ${recipeValue.value}`,
           icon: "copy",
           action: () => (showCreateModal.value = "duplicate"),
         },
         {
-          label: `Disable ${recipeLabel.value}`,
+          label: `Disable ${recipeValue.value}`,
           icon: "close-circle",
           action: () => (showDisableModal.value = "disable"),
         },
       ]
     : [
         {
-          label: `Enable ${recipeLabel.value}`,
+          label: `Enable ${recipeValue.value}`,
           icon: "tick-circle",
           action: () => (showDisableModal.value = "enable"),
         },
       ]),
   {
-    label: `Delete ${recipeLabel.value}`,
+    label: `Delete ${recipeValue.value}`,
     icon: "trash",
     danger: true,
     action: () => (showDeleteModal.value = true),
@@ -99,7 +103,7 @@ const confirmDeleteRecipe = () => {
   if (!recipe.value) return
   deleteRecipeMutate(recipe.value.uid, {
     onSuccess: () => {
-      toast.success(`${recipeLabel.value} deleted successfully`)
+      toast.success(`${recipeValue.value} deleted successfully`)
       router.push("/production/recipes")
       showDeleteModal.value = false
     },
@@ -203,7 +207,7 @@ watch(
             <span class="bg-warning-100 flex size-10 items-center justify-center rounded-xl">
               <Icon name="box" :size="24" class="text-primary-700" />
             </span>
-            <h3 class="!font-outfit truncate font-medium">Ingredients</h3>
+            <h3 class="!font-outfit truncate font-medium">{{ materialLabel }}</h3>
           </div>
           <div class="mt-4 divide-y divide-gray-200 rounded-xl bg-gray-50 px-4">
             <div

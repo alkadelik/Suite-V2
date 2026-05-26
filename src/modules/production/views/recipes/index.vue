@@ -41,8 +41,11 @@ const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 const router = useRouter()
 
 const selectedComponent = computed(() => useProductionStore().selectedRecipeOption)
-const recipeLabel = computed(() => selectedComponent.value?.label || "Recipe")
-const recipeValue = computed(() => selectedComponent.value?.value || "recipe")
+const recipeLabel = computed(() => useProductionStore().recipeLabel)
+const recipeValue = computed(() => {
+  const v = useProductionStore().recipeValue
+  return v === "bom" ? v.toUpperCase() : v
+})
 
 const onSelect = (option: { label: string; value: string }) => {
   useProductionStore().setSelectedRecipeOption(option)
@@ -87,37 +90,37 @@ const recipesStats = computed(() => [
 
 const getActionItems = (item: TRecipe) => [
   {
-    label: `View ${recipeLabel.value}`,
+    label: `View ${recipeValue.value}`,
     icon: "eye",
     action: () => router.push(`/production/recipes/${item.uid}`),
   },
   ...(item.is_active
     ? [
         {
-          label: `Edit ${recipeLabel.value}`,
+          label: `Edit ${recipeValue.value}`,
           icon: "edit",
           action: () => (showCreateModal.value = "edit"),
         },
         {
-          label: `Duplicate ${recipeLabel.value}`,
+          label: `Duplicate ${recipeValue.value}`,
           icon: "copy",
           action: () => (showCreateModal.value = "duplicate"),
         },
         {
-          label: `Disable ${recipeLabel.value}`,
+          label: `Disable ${recipeValue.value}`,
           icon: "close-circle",
           action: () => (showDisableModal.value = "disable"),
         },
       ]
     : [
         {
-          label: `Enable ${recipeLabel.value}`,
+          label: `Enable ${recipeValue.value}`,
           icon: "tick-circle",
           action: () => (showDisableModal.value = "enable"),
         },
       ]),
   {
-    label: `Delete ${recipeLabel.value}`,
+    label: `Delete ${recipeValue.value}`,
     icon: "trash",
     danger: true,
     action: () => (showDeleteModal.value = true),

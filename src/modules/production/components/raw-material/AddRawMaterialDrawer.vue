@@ -27,6 +27,7 @@ import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { UNITS_OF_MEASURE } from "@modules/production/constant"
 import { floatDecimal } from "@/utils/others"
 import { useProductionStore } from "@modules/production/store"
+import { startCase } from "@/utils/format-strings"
 
 const props = defineProps<{
   open: boolean
@@ -507,7 +508,7 @@ const handleAddFromSearch = (search: string, close: () => void) => {
             <FormField
               type="text"
               name="name"
-              :label="`${materialLabel} Name`"
+              :label="`${startCase(materialSingular)} Name`"
               placeholder="e.g. Glass Butter"
               required
             />

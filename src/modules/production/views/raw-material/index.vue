@@ -202,7 +202,7 @@ const handleDelete = () => {
         v-if="!rawMaterials?.count && !searchQuery && page === 1"
         :title="`You don't have any ${materialValue} yet!`"
         :description="`Start tracking everything you use to make your products by adding your ${materialValue}.`"
-        :action-label="`Add ${materialValue}`"
+        :action-label="`Add ${materialSingular}`"
         :loading="isPending"
         action-icon="add"
         @action="() => (showAddDrawer = 'create')"
@@ -261,7 +261,7 @@ const handleDelete = () => {
                 icon="add"
                 size="sm"
                 class="flex-shrink-0"
-                :label="isMobile ? '' : `Add ${materialValue}`"
+                :label="isMobile ? '' : `Add ${materialSingular}`"
                 @click="() => (showAddDrawer = 'create')"
               />
             </div>

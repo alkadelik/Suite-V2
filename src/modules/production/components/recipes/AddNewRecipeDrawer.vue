@@ -56,16 +56,17 @@ export type RecipeDrawerProps = {
 const props = withDefaults(defineProps<RecipeDrawerProps>(), { mode: "create" })
 const emit = defineEmits(["close", "refresh"])
 const isEditMode = computed(() => props.mode === "edit" && !!props.recipe)
-
-const drawerTitle = computed(() => {
-  if (isEditMode.value) return `Edit ${capitalize(recipeNameValue.value)}`
-  return `Add ${capitalize(recipeNameValue.value)}`
-})
-
-const steps = computed(() => ["Basic details", useProductionStore().componentLabel, "Process cost"])
-const activeStep = ref(0)
+const recipeSingular = computed(() => useProductionStore().recipeSingularLabel)
+const materialLabel = computed(() => useProductionStore().componentLabel)
 
 const recipeNameValue = computed(() => useProductionStore().recipeValue)
+const drawerTitle = computed(() => {
+  if (isEditMode.value) return `Edit ${recipeSingular.value}`
+  return `Add ${recipeSingular.value}`
+})
+
+const steps = computed(() => ["Basic details", materialLabel.value, "Process cost"])
+const activeStep = ref(0)
 
 // ─── Shared state across steps ─────────────────────────────────────────────
 const basicDetails = ref<BasicDetails>({
