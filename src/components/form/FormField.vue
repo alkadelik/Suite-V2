@@ -19,7 +19,11 @@
       :clearable="clearable"
       :placement="isMobile && searchable ? 'top' : placement"
       @update:model-value="field.value = $event"
-    />
+    >
+      <template v-if="$slots.option" #option="optionSlotProps">
+        <slot name="option" v-bind="optionSlotProps" />
+      </template>
+    </SelectField>
 
     <!-- Select Tags Field -->
     <SelectTagsField
