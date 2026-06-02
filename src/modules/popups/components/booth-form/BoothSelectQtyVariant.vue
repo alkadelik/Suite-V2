@@ -54,6 +54,7 @@ const emit = defineEmits<{
   next: []
   prev: []
   "update:orderItems": [items: OrderItem[]]
+  "update:selectedProducts": [products: IProductCatalogue[]]
 }>()
 
 const localItems = ref<OrderItem[]>([])
@@ -85,100 +86,98 @@ const needsVariantSelection = (product: IProductCatalogue) => {
 const getVariantOptions = (product: IProductCatalogue) => {
   if (!product.variants) return []
   return product.variants
-    .filter((v) => !props.existingVariantSkus?.includes(v.sku)) // Exclude already added variants
+    .filter((v) => !props.existingVariantSkus?.includes(v.sku))
+    .filter(
+      (v) =>
+        Number(v.sellable_stock ?? v.available_stock ?? 0) - Number(v.popup_quantity_taken ?? 0) >
+        0,
+    )
     .map((v) => ({
       label:
         v.attributes.length > 0
           ? `${v.attributes.map((a) => a.attribute_value).join(", ")}`
           : v.name,
       value: v.uid,
-      disabled: props.existingVariantSkus?.includes(v.sku), // Mark as disabled if already in popup
+      disabled: props.existingVariantSkus?.includes(v.sku),
     }))
 }
 
-// Initialize local items when component mounts or products change
+// Initialize local items when component mounts.
+// selectedProducts is always the source of truth for which products appear.
+// orderItems is used only to restore previously entered qty/variant/price.
 onMounted(() => {
-  if (props.orderItems.length > 0) {
-    // Use selectedProducts for localItems (one per product)
-    localItems.value = props.selectedProducts.map((product) => ({
-      product,
-      variant: null,
-      quantity: 1,
-      unit_price: 0,
-      notes: "",
-    }))
+  // Build a lookup of saved state keyed by product uid
+  const savedByProduct = new Map<string, OrderItem[]>()
+  for (const item of props.orderItems) {
+    const list = savedByProduct.get(item.product.uid) ?? []
+    list.push(item)
+    savedByProduct.set(item.product.uid, list)
+  }
 
-    // Populate selectedVariants from orderItems
-    for (const item of props.orderItems) {
-      if (item.variant) {
-        const existing = selectedVariants.value.get(item.product.uid) || []
-        // Ensure stock is properly calculated when restoring
+  localItems.value = props.selectedProducts.map((product) => {
+    const saved = savedByProduct.get(product.uid)
+
+    // Restore previously saved variants for this product
+    if (saved && saved.length > 0 && saved[0].variant) {
+      const variantItems: VariantItem[] = saved.map((item) => {
         const availableStock =
-          Number(item.variant.sellable_stock ?? item.variant.stock) -
-          Number(item.variant.popup_quantity_taken ?? 0)
-        existing.push({
+          Number(item.variant!.sellable_stock ?? item.variant!.stock) -
+          Number(item.variant!.popup_quantity_taken ?? 0)
+        return {
           variant: {
-            ...item.variant,
+            ...item.variant!,
             stock: Math.max(0, availableStock),
-            sellable_stock: Number(item.variant.sellable_stock ?? item.variant.stock),
-            popup_quantity_taken: Number(item.variant.popup_quantity_taken ?? 0),
-            original_price: item.variant.original_price ?? parseFloat(item.variant.price),
+            sellable_stock: Number(item.variant!.sellable_stock ?? item.variant!.stock),
+            popup_quantity_taken: Number(item.variant!.popup_quantity_taken ?? 0),
+            original_price: item.variant!.original_price ?? parseFloat(item.variant!.price),
           },
           quantity: item.quantity,
           unit_price: item.unit_price,
-        })
-        selectedVariants.value.set(item.product.uid, existing)
-      }
-    }
-  } else {
-    // Create initial items from selected products
-    localItems.value = props.selectedProducts.map((product) => {
-      // Auto-select variant if there's only one and no attributes
-      if (
-        product.variants &&
-        product.variants.length === 1 &&
-        product.variants[0].attributes.length === 0
-      ) {
-        const src = product.variants[0]
-        const availableStock =
-          Number(src.sellable_stock ?? src.available_stock) - Number(src.popup_quantity_taken ?? 0)
-        const defaultVariant = {
-          uid: src.uid,
-          name: src.name,
-          sku: src.sku,
-          price: src.price,
-          stock: Math.max(0, availableStock),
-          sellable_stock: Number(src.sellable_stock ?? src.available_stock),
-          popup_quantity_taken: Number(src.popup_quantity_taken ?? 0),
-          original_price: parseFloat(src.price),
         }
-
-        selectedVariants.value.set(product.uid, [
-          {
-            variant: defaultVariant,
-            quantity: 1,
-            unit_price: parseFloat(defaultVariant.price),
-          },
-        ])
-
-        return {
-          product,
-          variant: defaultVariant,
-          quantity: 1,
-          unit_price: parseFloat(defaultVariant.price),
-          notes: "",
-        }
-      }
-
+      })
+      selectedVariants.value.set(product.uid, variantItems)
       return {
         product,
-        variant: null,
+        variant: saved[0].variant,
+        quantity: saved[0].quantity,
+        unit_price: saved[0].unit_price,
+        notes: saved[0].notes ?? "",
+      }
+    }
+
+    // Auto-select if single variant with no attributes
+    if (
+      product.variants &&
+      product.variants.length === 1 &&
+      product.variants[0].attributes.length === 0
+    ) {
+      const src = product.variants[0]
+      const availableStock =
+        Number(src.sellable_stock ?? src.available_stock) - Number(src.popup_quantity_taken ?? 0)
+      const defaultVariant = {
+        uid: src.uid,
+        name: src.name,
+        sku: src.sku,
+        price: src.price,
+        stock: Math.max(0, availableStock),
+        sellable_stock: Number(src.sellable_stock ?? src.available_stock),
+        popup_quantity_taken: Number(src.popup_quantity_taken ?? 0),
+        original_price: parseFloat(src.price),
+      }
+      selectedVariants.value.set(product.uid, [
+        { variant: defaultVariant, quantity: 1, unit_price: parseFloat(defaultVariant.price) },
+      ])
+      return {
+        product,
+        variant: defaultVariant,
         quantity: 1,
-        unit_price: 0,
+        unit_price: parseFloat(defaultVariant.price),
         notes: "",
       }
-    })
-  }
+    }
+
+    return { product, variant: null, quantity: 1, unit_price: 0, notes: "" }
+  })
 })
 
 // Get currently selected variant UIDs for a product
@@ -250,9 +249,13 @@ const removeItem = (index: number) => {
   if (variants) {
     variants.forEach((v) => delete validationErrors.value[v.variant.uid])
   }
-  // Remove the product's variants from selectedVariants Map
   selectedVariants.value.delete(product.uid)
   localItems.value.splice(index, 1)
+  // Sync removal back to parent so step 0 stays in sync
+  emit(
+    "update:selectedProducts",
+    localItems.value.map((i) => i.product),
+  )
 }
 
 // Validate a single variant item
@@ -389,6 +392,39 @@ watch(
   },
   { deep: true },
 )
+
+// Snapshot current selections into the OrderItem[] shape the parent stores
+const buildCurrentOrderItems = (): OrderItem[] => {
+  const items: OrderItem[] = []
+  for (const item of localItems.value) {
+    const variants = selectedVariants.value.get(item.product.uid)
+    if (variants && variants.length > 0) {
+      for (const v of variants) {
+        items.push({
+          product: item.product,
+          variant: v.variant,
+          quantity: v.quantity,
+          unit_price: v.unit_price,
+          notes: item.notes,
+        })
+      }
+    } else {
+      items.push({
+        product: item.product,
+        variant: null,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        notes: item.notes,
+      })
+    }
+  }
+  return items
+}
+
+const handlePrev = () => {
+  emit("update:orderItems", buildCurrentOrderItems())
+  emit("prev")
+}
 
 const handleNext = async () => {
   const missingVariants = localItems.value.some((item) => {
@@ -631,7 +667,7 @@ const productsTotal = computed(() => {
       </div>
       <FieldGroupError v-if="stepError" target="booth-product-qty" :error="stepError" />
       <div class="flex gap-3">
-        <AppButton label="Back" color="alt" class="w-1/3" icon="arrow-left" @click="emit('prev')" />
+        <AppButton label="Back" color="alt" class="w-1/3" icon="arrow-left" @click="handlePrev" />
         <AppButton label="Next" class="w-2/3" @click="handleNext" />
       </div>
     </div>

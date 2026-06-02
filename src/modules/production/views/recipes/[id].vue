@@ -2,7 +2,7 @@
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
-import { startCase } from "@/utils/format-strings"
+import { removeUnderscores, startCase } from "@/utils/format-strings"
 import { formatDate } from "@/utils/formatDate"
 import { floatDecimal } from "@/utils/others"
 import AppButton from "@components/AppButton.vue"
@@ -165,7 +165,10 @@ watch(
     <div v-else>
       <section class="mb-6 flex justify-between gap-4">
         <div>
-          <h2 class="mb-4 text-2xl font-semibold capitalize">{{ recipe.output_item_name }}</h2>
+          <h2 class="mb-4 text-2xl font-semibold capitalize">
+            <span v-if="recipe.name">{{ recipe.name }} - </span>
+            {{ recipe.output_item_name }}
+          </h2>
           <div class="flex gap-1">
             <Chip
               :label="parseInt(recipe.output_quantity) + ' ' + recipe.output_unit"
@@ -217,7 +220,7 @@ watch(
             >
               <p class="space-x-1">
                 <span class="font-medium">{{ ingr.material_name }}</span>
-                <span>({{ floatDecimal(ingr.quantity) }} {{ ingr.unit }})</span>
+                <span>({{ floatDecimal(ingr.quantity) }} {{ removeUnderscores(ingr.unit) }})</span>
               </p>
               <p>
                 <span class="font-medium">{{ format(ingr.estimated_cost) }}</span>

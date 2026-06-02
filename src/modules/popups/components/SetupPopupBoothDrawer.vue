@@ -3,7 +3,7 @@ import Drawer from "@components/Drawer.vue"
 import StepperWizard from "@components/StepperWizard.vue"
 import AppButton from "@components/AppButton.vue"
 import Icon from "@components/Icon.vue"
-import { ref, computed, watch } from "vue"
+import { ref, computed } from "vue"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import type { IProductCatalogue } from "@modules/inventory/types"
 import BoothSelectProduct from "./booth-form/BoothSelectProduct.vue"
@@ -107,13 +107,6 @@ const onSubmitBooth = () => {
     },
   )
 }
-
-// Clear orderItems when going back to step 0 to ensure fresh initialization
-watch(activeStep, (newStep, oldStep) => {
-  if (newStep === 0 && oldStep === 1) {
-    orderItems.value = []
-  }
-})
 </script>
 
 <template>
@@ -142,6 +135,7 @@ watch(activeStep, (newStep, oldStep) => {
           :selectedProducts="selectedProducts"
           :existingVariantSkus="props.existingVariantSkus"
           @update:orderItems="updateOrderItems"
+          @update:selectedProducts="selectedProducts = $event"
           @next="onNext"
           @prev="onPrev"
         />

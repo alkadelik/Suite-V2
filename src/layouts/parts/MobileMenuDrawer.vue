@@ -49,7 +49,7 @@ const quickActionGroups = computed<ActionGroup[]>(() => {
       label: "Sales",
       items: [
         { label: "Orders", icon: "shopping-cart", to: "/orders" },
-        { label: "Inventory", icon: "people", to: "/inventory" },
+        { label: "Inventory", icon: "folder", to: "/inventory" },
         { label: "Customers", icon: "people", to: "/customers" },
         { label: "Popups", icon: "calendar-tick", to: "/popups", hqOnly: true },
         {
@@ -74,7 +74,7 @@ const quickActionGroups = computed<ActionGroup[]>(() => {
     {
       label: "Reports",
       items: [
-        { label: "Overview", icon: "pie-chart", to: "/reports/overview" },
+        { label: "Overview", icon: "pie-chart", to: "/reports/store-overview" },
         { label: "End of Day", icon: "pie-chart", to: "/reports/end-of-day" },
         { label: "Monthly", icon: "pie-chart", to: "/reports/monthly" },
       ],

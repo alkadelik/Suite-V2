@@ -249,7 +249,12 @@ const forceClose = () => {
                 onNext()
               }
             "
-            @prev="onPrev"
+            @prev="
+              (rows: IngredientRow[]) => {
+                ingredientRowsState = rows
+                onPrev()
+              }
+            "
           />
           <!-- step 2: process cost -->
           <ProcessCostForm
@@ -262,7 +267,12 @@ const forceClose = () => {
               unit: basicDetails.unit,
               type: basicDetails.outputItemType,
             }"
-            @prev="onPrev"
+            @prev="
+              (rows: ProcessRow[]) => {
+                processRowsState = rows
+                onPrev()
+              }
+            "
             @submit="
               (rows: ProcessRow[]) => {
                 processRowsState = rows

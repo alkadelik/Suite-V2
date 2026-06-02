@@ -24,7 +24,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "next", rows: IngredientRow[]): void
-  (e: "prev"): void
+  (e: "prev", rows: IngredientRow[]): void
 }>()
 
 const isMobile = useMediaQuery("(max-width: 1028px)")
@@ -119,6 +119,10 @@ const canProceed = computed(() => ingredientRows.value.some((r) => r.qty > 0))
 
 function handleNext() {
   emit("next", [...ingredientRows.value])
+}
+
+function handlePrev() {
+  emit("prev", [...ingredientRows.value])
 }
 </script>
 
@@ -254,7 +258,7 @@ function handleNext() {
       </div>
 
       <div class="flex gap-3">
-        <AppButton label="Back" color="alt" class="w-1/3" icon="arrow-left" @click="emit('prev')" />
+        <AppButton label="Back" color="alt" class="w-1/3" icon="arrow-left" @click="handlePrev" />
         <AppButton label="Next" class="w-2/3" type="submit" :disabled="!canProceed" />
       </div>
     </div>

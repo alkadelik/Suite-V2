@@ -28,7 +28,7 @@ const itemQuantities = ref<Record<string, number>>({})
 const initializeQuantities = () => {
   itemQuantities.value = props.items.reduce(
     (acc, item) => {
-      acc[item.uid] = 0
+      acc[item.uid] = 1
       return acc
     },
     {} as Record<string, number>,
