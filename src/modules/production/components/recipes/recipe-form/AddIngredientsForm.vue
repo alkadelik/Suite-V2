@@ -11,6 +11,7 @@ import { computed, ref } from "vue"
 import Chip from "@components/Chip.vue"
 import TextField from "@components/form/TextField.vue"
 import { useProductionStore } from "@modules/production/store"
+import { removeUnderscores } from "@/utils/format-strings.ts"
 
 const materialLabel = computed(() => useProductionStore().componentLabel)
 const materialSingular = computed(() => useProductionStore().componentSingular)
@@ -205,7 +206,7 @@ function handleNext() {
                   class="mt-1 flex items-center gap-2"
                 >
                   <Chip
-                    :label="`${formatCurrency(row.ingredient.cost_per_unit)}/${row.ingredient.unit}`"
+                    :label="`${formatCurrency(row.ingredient.cost_per_unit)}/${removeUnderscores(row.ingredient.unit)}`"
                     size="sm"
                   />
                 </div>
@@ -216,7 +217,7 @@ function handleNext() {
               <TextField
                 v-model="row.qty"
                 type="number"
-                :prefix="row.ingredient.unit"
+                :prefix="removeUnderscores(row.ingredient.unit)"
                 class="w-full"
               />
 

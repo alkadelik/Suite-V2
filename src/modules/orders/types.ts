@@ -35,6 +35,7 @@ export type TOrder = {
   delivery_address: string | null
   delivery_fee: string
   delivery_method: "manual" | "shipbubble" | "custom"
+  delivery_payment_option: string
   discount_amount: string
   fulfilment_method: "pickup" | "delivery"
   fulfilment_status: "unfulfilled" | "fulfilled" | "partially_fulfilled" | "voided"

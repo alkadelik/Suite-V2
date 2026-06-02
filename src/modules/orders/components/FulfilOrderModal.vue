@@ -238,6 +238,7 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
       header="Fulfill All Items"
       paragraph="This will mark all unfulfilled items in this order as fulfilled. This action cannot be undone."
       action-label="Fulfill All"
+      info-message=""
       variant="warning"
       :loading="isMarkingAll"
       @confirm="handleMarkAll"

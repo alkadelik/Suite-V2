@@ -20,7 +20,10 @@ const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
 const storeDetails = computed(() => useSettingsStore().storeDetails)
 const currentLocation = computed(() => useSettingsStore().activeLocation)
 const user = computed(() => useAuthStore().user)
-const recipeLabel = computed(() => useProductionStore().recipeLabel)
+const recipeValue = computed(() => {
+  const v = useProductionStore().recipeValue
+  return v === "bom" ? v.toUpperCase() : v
+})
 const componentLabel = computed(() => useProductionStore().componentLabel)
 
 const isHQ = computed(() => currentLocation.value?.is_hq ?? true)
@@ -43,10 +46,17 @@ type ActionGroup = {
 const quickActionGroups = computed<ActionGroup[]>(() => {
   const groups: ActionGroup[] = [
     {
-      label: "Sales Suite",
+      label: "Sales",
       items: [
+        { label: "Orders", icon: "shopping-cart", to: "/orders" },
+        { label: "Inventory", icon: "people", to: "/inventory" },
         { label: "Customers", icon: "people", to: "/customers" },
         { label: "Popups", icon: "calendar-tick", to: "/popups", hqOnly: true },
+        {
+          label: "Discounts",
+          icon: "tag",
+          action: () => toast.info("This module is coming soon!", { title: "Discounts" }),
+        },
       ],
     },
     {
@@ -57,31 +67,26 @@ const quickActionGroups = computed<ActionGroup[]>(() => {
       label: "Production",
       items: [
         { label: componentLabel.value, icon: "archive", to: "/production/raw-materials" },
-        { label: recipeLabel.value, icon: "clipboard-text-outline", to: "/production/recipes" },
+        { label: recipeValue.value, icon: "clipboard-text-outline", to: "/production/recipes" },
         { label: "Runs", icon: "chart", to: "/production/runs" },
       ],
     },
     {
       label: "Reports",
       items: [
+        { label: "Overview", icon: "pie-chart", to: "/reports/overview" },
         { label: "End of Day", icon: "pie-chart", to: "/reports/end-of-day" },
         { label: "Monthly", icon: "pie-chart", to: "/reports/monthly" },
       ],
     },
     {
-      label: "Accounting",
-      items: [
-        { label: "Expenses", icon: "receipt-text", to: "/expenses" },
-        {
-          label: "Discounts",
-          icon: "tag",
-          action: () => toast.info("This module is coming soon!", { title: "Discounts" }),
-        },
-      ],
+      label: "Expenses",
+      items: [{ label: "Expenses", icon: "receipt-text", to: "/expenses" }],
     },
     {
-      label: "Help & Settings",
+      label: "Others",
       items: [
+        { label: "Locations", icon: "folder", to: "/settings/locations" },
         {
           label: "Support",
           icon: "life-buoy",
@@ -182,7 +187,7 @@ const { setPlanUpgradeModal } = settingsStore
             :key="group.label"
             class="rounded-2xl border border-gray-100 bg-white p-3"
           >
-            <p class="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase">
+            <p class="text-core-900 mb-2 text-xs font-semibold tracking-wide uppercase">
               {{ group.label }}
             </p>
             <div class="grid grid-cols-3 gap-2">

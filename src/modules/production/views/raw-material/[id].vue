@@ -28,7 +28,7 @@ import {
   getPurchaseUnit,
 } from "@modules/production/utils"
 import { UNITS_OF_MEASURE } from "@modules/production/constant"
-import { startCase } from "@/utils/format-strings"
+import { removeUnderscores, startCase } from "@/utils/format-strings"
 import { floatDecimal } from "@/utils/others"
 
 const route = useRoute()
@@ -87,17 +87,17 @@ const materialStats = computed(() => {
   return [
     {
       label: "Current Stock",
-      value: `${floatDecimal(convertNumToPurchaseUnit(item.current_stock || 0, item))} ${getPurchaseUnit(item)}`,
+      value: `${floatDecimal(convertNumToPurchaseUnit(item.current_stock || 0, item))} ${removeUnderscores(getPurchaseUnit(item))}`,
       icon: "bag",
     },
     {
       label: "Avg Cost per Unit",
-      value: `${format(+convertNumToUsageUnit(+item.avg_cost, item))}/${getPurchaseUnit(item)}`,
+      value: `${format(+convertNumToUsageUnit(+item.avg_cost, item))}/${removeUnderscores(getPurchaseUnit(item))}`,
       icon: "bag",
     },
     {
       label: "Last Purchase Cost",
-      value: `${format(+convertNumToUsageUnit(+item.last_cost, item))}/${getPurchaseUnit(item)}`,
+      value: `${format(+convertNumToUsageUnit(+item.last_cost, item))}/${removeUnderscores(getPurchaseUnit(item))}`,
       icon: "bag",
       chip: isMobile.value
         ? undefined

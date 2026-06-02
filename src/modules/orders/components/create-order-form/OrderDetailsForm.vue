@@ -400,11 +400,8 @@ const canProceedShipping = computed(() => {
           !!shippingInfo.value.courier
         )
       } else if (localDeliveryMethod.value === "custom") {
-        return (
-          !!shippingInfo.value.courier &&
-          shippingInfo.value.delivery_fee >= 0 &&
-          !!shippingInfo.value.delivery_address
-        )
+        // &&  !!shippingInfo.value.delivery_address
+        return !!shippingInfo.value.courier && shippingInfo.value.delivery_fee >= 0
       }
     }
   }

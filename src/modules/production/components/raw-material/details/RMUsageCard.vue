@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
+import { removeUnderscores } from "@/utils/format-strings"
 import { formatDate } from "@/utils/formatDate"
 import { floatDecimal } from "@/utils/others"
 import Chip from "@components/Chip.vue"
@@ -41,7 +42,7 @@ const { format } = useFormatCurrency()
                 ({{
                   floatDecimal(convertNumToPurchaseUnit(+item.quantity, props.material!)) +
                   " " +
-                  getPurchaseUnit(props.material!)
+                  removeUnderscores(getPurchaseUnit(props.material!))
                 }})
               </span>
             </div>

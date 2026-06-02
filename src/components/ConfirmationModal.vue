@@ -18,7 +18,7 @@
       <p class="mt-2 text-xs md:text-sm">{{ paragraph }}</p>
     </slot>
 
-    <div :class="infoBoxClasses">
+    <div v-if="props.infoMessage !== ''" :class="infoBoxClasses">
       <div :class="infoIconContainerClasses">
         <div :class="infoIconInnerClasses">
           <Icon name="info-circle-filled" size="20" :class="infoIconClasses" />

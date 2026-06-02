@@ -23,7 +23,7 @@ import OrderPaymentDrawer from "@modules/orders/components/OrderPaymentDrawer.vu
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
 import { PopupEvent } from "@modules/popups/types"
-import { anonymousCustomer } from "@modules/orders/constants"
+import { anonymousCustomer, ORDER_PAYMENT_METHODS } from "@modules/orders/constants"
 import ProductAvatar from "@components/ProductAvatar.vue"
 import { useDeleteOrder, useVoidOrder } from "@modules/orders/api"
 import OrderDetailsDrawer from "@modules/orders/components/OrderDetailsDrawer.vue"
@@ -33,6 +33,7 @@ const openCreate = ref(false)
 const showFilter = ref(false)
 const selectedOrder = ref<TOrder | null>(null)
 const openMarkPaid = ref(false)
+const markPaidMethod = ref(ORDER_PAYMENT_METHODS[0])
 const openVoid = ref(false)
 const openDelete = ref(false)
 const openMemo = ref(false)
@@ -152,14 +153,17 @@ const { mutate: voidOrder, isPending: isVoiding } = useVoidOrder()
 const { mutate: deleteOrder, isPending: isDeleting } = useDeleteOrder()
 
 const handleMarkAsPaid = () => {
-  markAsPaid(selectedOrder.value?.uid || "", {
-    onSuccess: () => {
-      toast.success("Order marked as paid successfully")
-      openMarkPaid.value = false
-      refetch()
+  markAsPaid(
+    { id: selectedOrder.value?.uid || "", payment_source: markPaidMethod.value.value },
+    {
+      onSuccess: () => {
+        toast.success("Order marked as paid successfully")
+        openMarkPaid.value = false
+        refetch()
+      },
+      onError: displayError,
     },
-    onError: displayError,
-  })
+  )
 }
 
 const onCloseVoidDel = () => {
@@ -318,6 +322,7 @@ const handleVoidDelete = ({ action, reason }: { action: string; reason: string }
     :open="openCreate"
     @close="openCreate = false"
     :popup-event-id="String(route.params.id)"
+    :popup-event-name="popup.name"
     @refresh="refetch()"
   />
 
@@ -335,12 +340,27 @@ const handleVoidDelete = ({ action, reason }: { action: string; reason: string }
     v-if="selectedOrder"
     v-model="openMarkPaid"
     header="Mark Order as Paid"
-    :paragraph="`Are you sure you want to mark order #${selectedOrder.order_number} as fully paid? This will update the payment status to 'Paid'.`"
     action-label="Mark as Paid"
     variant="success"
     :loading="isMarking"
     @confirm="handleMarkAsPaid"
-  />
+  >
+    <template #paragraph>
+      <div class="space-y-4">
+        <p class="text-sm">
+          Are you sure you want to mark order
+          <span class="font-medium">#{{ selectedOrder.order_number }}</span> as fully paid? This
+          will update the payment status to <span class="font-medium">'Paid'</span>.
+        </p>
+
+        <SelectField
+          v-model="markPaidMethod"
+          label="Select Payment Method"
+          :options="ORDER_PAYMENT_METHODS"
+        />
+      </div>
+    </template>
+  </ConfirmationModal>
 
   <FulfilOrderModal
     v-if="selectedOrder"

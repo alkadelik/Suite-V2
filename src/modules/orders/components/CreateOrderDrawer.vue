@@ -28,6 +28,7 @@ import ConfirmationModal from "@components/ConfirmationModal.vue"
 const props = defineProps({
   open: { type: Boolean, required: true },
   popupEventId: { type: String, default: undefined },
+  popupEventName: { type: String },
 })
 const emit = defineEmits(["close", "refresh"])
 
@@ -442,7 +443,7 @@ watch(
 <template>
   <Drawer
     :open="open"
-    :title="isPopupOrder ? 'Add Popup Order' : 'Create Order'"
+    :title="isPopupOrder ? `Add Order to ${popupEventName || 'Popup'}` : 'Create Order'"
     max-width="2xl"
     variant="fullscreen"
     @close="handleClose"

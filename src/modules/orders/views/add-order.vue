@@ -174,7 +174,7 @@ const openDetailsDrawer = () => {
     return
   }
 
-  if (!selectedCustomer.value || selectedCustomer.value.uid === anonymousCustomer.uid) {
+  if (!selectedCustomer.value) {
     toast.info("Select a customer before order details.")
     return
   }
@@ -498,7 +498,7 @@ const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
         <span class="text-sm font-semibold text-gray-900">Order Summary</span>
         <div class="ml-auto flex items-center gap-2">
           <span class="text-sm font-medium text-gray-600">
-            {{ itemsCount > 0 ? format(productsTotal) : "-" }}
+            {{ itemsCount > 0 ? format(productsTotal) : "" }}
           </span>
           <Chip radius="md" color="alt" :label="`${itemsCount} ${pluralize('item', itemsCount)}`" />
           <Icon name="chevron-down" size="16" class="shrink-0 text-gray-400" />
@@ -557,6 +557,7 @@ const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
                 color="error"
                 label="Out of stock"
                 radius="md"
+                class="w-full"
               />
 
               <!-- Multi-variant: See option / Edit -->

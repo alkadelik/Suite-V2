@@ -361,7 +361,7 @@ onMounted(() => {
     "
     :info-message="
       confirmationAction === 'remove'
-        ? 'You can always add the product back later if needed.'
+        ? 'You can re-add the product afterwards.'
         : `You can ${confirmationAction === 'disable' ? 're-activate' : 'de-activate '} it later if needed.`
     "
     :variant="
