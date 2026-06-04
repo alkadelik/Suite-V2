@@ -281,7 +281,8 @@ const planName = computed(() => subscription.value?.plan_name ?? "")
 const planNameLower = computed(() => planName.value.toLowerCase())
 const planCtaLabel = computed(() => {
   if (isTrial.value) return "Upgrade"
-  return planNameLower.value === "burst" ? "Subscribed" : "Upgrade"
+  return "Subscribed"
+  // return planNameLower.value === "burst" ? "Subscribed" : "Upgrade"
 })
 
 const formattedEnds = computed(() => {

@@ -20,7 +20,7 @@ import OrganizerPopupCard from "../components/OrganizerPopupCard.vue"
 import "vue3-carousel/carousel.css"
 import { Carousel, Slide } from "vue3-carousel"
 import DeletePopupEvent from "../components/DeletePopupEvent.vue"
-import { useRoute } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
 import PopupCreatedSuccessModal from "../components/PopupCreatedSuccessModal.vue"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
 import ClosePopupModal from "../components/ClosePopupModal.vue"
@@ -69,7 +69,7 @@ const computedFilters = computed(() => {
   const filters: Record<string, string> = {}
   if (status.value && status.value !== "all") filters.status = status.value
   if (debouncedSearch.value) filters.search = debouncedSearch.value
-  filters.offset = ((debouncedSearch.value ? 1 : page.value - 1) * itemsPerPage.value).toString()
+  filters.offset = ((debouncedSearch.value ? 0 : page.value - 1) * itemsPerPage.value).toString()
   filters.limit = itemsPerPage.value.toString()
   Object.assign(filters, activeFilters.value)
   return filters
@@ -101,6 +101,8 @@ watch(
   { immediate: true },
 )
 
+const router = useRouter()
+
 const getMenuAction = (item: PopupEvent) => {
   const actions = []
   if (item.status !== "past") {
@@ -108,6 +110,18 @@ const getMenuAction = (item: PopupEvent) => {
       label: "Edit Event",
       icon: "edit",
       action: () => handleAction("edit", item),
+    })
+  }
+  if (item.status === "active") {
+    actions.push({
+      label: "Add products",
+      icon: "box-add",
+      action: () => router.push(`/popups/${item.uid}?tab=overview&action=add-products`),
+    })
+    actions.push({
+      label: "Add sales",
+      icon: "shopping-cart-outline",
+      action: () => router.push(`/popups/${item.uid}?tab=sales&action=add-sale`),
     })
   }
   if (!item.total_orders && !["past", "closed"].includes(item.status)) {

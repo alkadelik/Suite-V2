@@ -21,7 +21,11 @@ export const useProductionStore = defineStore(
     })
 
     const selectedRecipeOption = ref<{ label: string; value: string } | null>(null)
-    const recipeLabel = computed(() => selectedRecipeOption.value?.label || "Recipes")
+    const recipeLabel = computed(() =>
+      selectedRecipeOption.value?.value === "bom"
+        ? "Bill of Materials"
+        : selectedRecipeOption.value?.label || "Recipes",
+    )
     const recipeValue = computed(() => selectedRecipeOption.value?.value || "recipe")
 
     const recipeSingularLabel = computed(() => {

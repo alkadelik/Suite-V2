@@ -19,6 +19,7 @@ import {
   getPurchaseUnit,
 } from "@modules/production/utils"
 import { useProductionStore } from "@modules/production/store"
+import { removeUnderscores } from "@/utils/format-strings"
 
 interface Props {
   open: boolean
@@ -189,7 +190,7 @@ watch(
 <template>
   <Modal
     :open="props.open"
-    title="Adjust Stock"
+    title="Add/Remove Stock"
     max-width="lg"
     variant="bottom-nav"
     @close="closeModal"
@@ -202,7 +203,7 @@ watch(
         class="bg-warning-50 border-warning-200 flex flex-wrap justify-between gap-x-8 gap-y-2 rounded-xl border p-5 text-sm"
       >
         <p>
-          <span class="font-semibold">{{ materialSingular }}:</span>
+          <span class="font-semibold capitalize">{{ materialSingular }}:</span>
           {{ selectedMaterial.name }}
         </p>
         <p>
@@ -212,7 +213,7 @@ watch(
               convertNumToPurchaseUnit(selectedMaterial.current_stock, selectedMaterial),
             ).toLocaleString()
           }}
-          {{ getPurchaseUnit(selectedMaterial) }}
+          {{ removeUnderscores(getPurchaseUnit(selectedMaterial)) }}
         </p>
       </div>
 
@@ -229,7 +230,7 @@ watch(
             >Quantity ({{
               convertNumToUsageUnit(+values.quantity || 0, selectedMaterial) +
               " " +
-              selectedMaterial.unit
+              removeUnderscores(selectedMaterial.unit)
             }})</label
           >
           <div
@@ -251,7 +252,9 @@ watch(
                   placeholder="0"
                 />
               </Field>
-              <span class="text-gray-500">({{ getPurchaseUnit(selectedMaterial) }})</span>
+              <span class="text-gray-500"
+                >({{ removeUnderscores(getPurchaseUnit(selectedMaterial)) }})</span
+              >
             </div>
 
             <button
@@ -272,7 +275,7 @@ watch(
           type="number"
           format="currency"
           name="unit_cost"
-          :label="`Unit Cost per ${getPurchaseUnit(selectedMaterial)}`"
+          :label="`Unit Cost per ${removeUnderscores(getPurchaseUnit(selectedMaterial))}`"
           :placeholder="`e.g. ${format(12400)}`"
         />
 
@@ -295,7 +298,12 @@ watch(
     </div>
 
     <template #footer>
-      <AppButton label="Adjust Stock" class="w-full" :loading="isAdjusting" @click="onSubmit" />
+      <AppButton
+        :label="adjustmentType === 'add' ? 'Add Stock' : 'Remove Stock'"
+        class="w-full"
+        :loading="isAdjusting"
+        @click="onSubmit"
+      />
     </template>
   </Modal>
 </template>

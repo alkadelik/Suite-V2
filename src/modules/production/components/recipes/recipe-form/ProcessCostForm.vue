@@ -15,7 +15,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: "prev"): void
+  (e: "prev", rows: ProcessRow[]): void
   (e: "submit", rows: ProcessRow[]): void
 }>()
 
@@ -52,6 +52,10 @@ const openProcessNote = (row: ProcessRow) => {
 const isNoteVisible = (row: ProcessRow) => visibleNotes.value.has(row.id as string) || !!row.note
 
 // ─── Submit ──────────────────────────────────────────────────────────────
+function handlePrev() {
+  emit("prev", [...processRows.value])
+}
+
 function handleSubmit() {
   emit("submit", [...processRows.value])
 }
@@ -161,7 +165,7 @@ function handleSubmit() {
       class="border-core-200 fixed right-0 bottom-0 left-0 space-y-2 border-t bg-white p-4 md:p-6"
     >
       <div class="flex gap-3">
-        <AppButton label="Back" color="alt" class="w-1/3" icon="arrow-left" @click="emit('prev')" />
+        <AppButton label="Back" color="alt" class="w-1/3" icon="arrow-left" @click="handlePrev" />
         <AppButton label="Save Recipe" class="w-2/3" type="submit" :loading="loading" />
       </div>
     </div>

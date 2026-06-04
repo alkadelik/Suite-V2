@@ -367,7 +367,7 @@ const activeFilters = ref<{
 
 const combinedParams = computed(() => {
   const params: Record<string, string | number> = {
-    offset: (debouncedSearch.value ? 1 : page.value - 1) * itemsPerPage.value,
+    offset: (debouncedSearch.value ? 0 : page.value - 1) * itemsPerPage.value,
     limit: itemsPerPage.value,
   }
   if (debouncedSearch.value) params.name = debouncedSearch.value

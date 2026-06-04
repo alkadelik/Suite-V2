@@ -115,7 +115,7 @@ const recipeOptions = computed<ItemOption[]>(() => {
       return {
         label: `${m.name ? `${m.name} - ${m.output_item_name}` : m.output_item_name} - ${qty}${unit}`,
         value: m.uid || "",
-        output_quantity: qty + unit,
+        output_quantity: qty + " " + unit,
         name: m.name ? `${m.name} - ${m.output_item_name}` : m.output_item_name,
         item_type: m.item_type,
         output_product: m.output_product,

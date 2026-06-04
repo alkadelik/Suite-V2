@@ -14,7 +14,7 @@ import {
   POPUP_INVENTORY_COLUMNS,
 } from "@modules/popups/constants"
 import { useMediaQuery } from "@vueuse/core"
-import { computed, onMounted, ref } from "vue"
+import { computed, onMounted, ref, watch } from "vue"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import { useRoute } from "vue-router"
 import SetupPopupBoothDrawer from "../SetupPopupBoothDrawer.vue"
@@ -177,8 +177,16 @@ const getStockStatus = (item: PopupInventory) => {
 }
 
 onMounted(() => {
-  if (route.query.setup === "true") openAddProduct.value = true
+  if (route.query.setup === "true" || route.query.action === "add-products")
+    openAddProduct.value = true
 })
+
+watch(
+  () => route.query.action,
+  (action) => {
+    if (action === "add-products") openAddProduct.value = true
+  },
+)
 </script>
 
 <template>
@@ -361,7 +369,7 @@ onMounted(() => {
     "
     :info-message="
       confirmationAction === 'remove'
-        ? 'You can always add the product back later if needed.'
+        ? 'You can re-add the product afterwards.'
         : `You can ${confirmationAction === 'disable' ? 're-activate' : 'de-activate '} it later if needed.`
     "
     :variant="

@@ -68,7 +68,10 @@ const deliveryFee = computed(() => {
 })
 
 const isFreeShipping = computed(() => {
-  return props.order.fulfilment_method === "delivery"
+  return (
+    props.order.fulfilment_method === "delivery" &&
+    props.order.delivery_payment_option === "free_shipping"
+  )
 })
 
 // Get store's default VAT rate as fallback

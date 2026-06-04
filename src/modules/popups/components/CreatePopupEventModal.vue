@@ -58,7 +58,7 @@ const prepareFormData = (currentData: Partial<PopupPayload>): FormData => {
     formData.append("start_date", currentData.start_date!)
     formData.append("end_date", currentData.end_date!)
     if (currentData.participation_fee !== null && currentData.participation_fee !== undefined) {
-      formData.append("participation_fee", currentData.participation_fee.toString())
+      formData.append("participation_fee", String(currentData.participation_fee).replace(/,/g, ""))
     }
     if (currentData.banner_image) formData.append("banner_image", currentData.banner_image)
   } else {
@@ -80,7 +80,10 @@ const prepareFormData = (currentData: Partial<PopupPayload>): FormData => {
     }
     if (currentData.participation_fee !== initialValues.value.participation_fee) {
       if (currentData.participation_fee !== null && currentData.participation_fee !== undefined) {
-        formData.append("participation_fee", currentData.participation_fee.toString())
+        formData.append(
+          "participation_fee",
+          String(currentData.participation_fee).replace(/,/g, ""),
+        )
       } else {
         formData.append("participation_fee", "")
       }

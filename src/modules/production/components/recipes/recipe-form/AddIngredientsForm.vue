@@ -11,6 +11,7 @@ import { computed, ref } from "vue"
 import Chip from "@components/Chip.vue"
 import TextField from "@components/form/TextField.vue"
 import { useProductionStore } from "@modules/production/store"
+import { removeUnderscores } from "@/utils/format-strings.ts"
 
 const materialLabel = computed(() => useProductionStore().componentLabel)
 const materialSingular = computed(() => useProductionStore().componentSingular)
@@ -23,7 +24,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "next", rows: IngredientRow[]): void
-  (e: "prev"): void
+  (e: "prev", rows: IngredientRow[]): void
 }>()
 
 const isMobile = useMediaQuery("(max-width: 1028px)")
@@ -119,6 +120,10 @@ const canProceed = computed(() => ingredientRows.value.some((r) => r.qty > 0))
 function handleNext() {
   emit("next", [...ingredientRows.value])
 }
+
+function handlePrev() {
+  emit("prev", [...ingredientRows.value])
+}
 </script>
 
 <template>
@@ -205,7 +210,7 @@ function handleNext() {
                   class="mt-1 flex items-center gap-2"
                 >
                   <Chip
-                    :label="`${formatCurrency(row.ingredient.cost_per_unit)}/${row.ingredient.unit}`"
+                    :label="`${formatCurrency(row.ingredient.cost_per_unit)}/${removeUnderscores(row.ingredient.unit)}`"
                     size="sm"
                   />
                 </div>
@@ -216,7 +221,7 @@ function handleNext() {
               <TextField
                 v-model="row.qty"
                 type="number"
-                :prefix="row.ingredient.unit"
+                :prefix="removeUnderscores(row.ingredient.unit)"
                 class="w-full"
               />
 
@@ -253,7 +258,7 @@ function handleNext() {
       </div>
 
       <div class="flex gap-3">
-        <AppButton label="Back" color="alt" class="w-1/3" icon="arrow-left" @click="emit('prev')" />
+        <AppButton label="Back" color="alt" class="w-1/3" icon="arrow-left" @click="handlePrev" />
         <AppButton label="Next" class="w-2/3" type="submit" :disabled="!canProceed" />
       </div>
     </div>

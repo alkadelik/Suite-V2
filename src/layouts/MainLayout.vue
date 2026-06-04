@@ -111,7 +111,7 @@
     @refresh="handleLocationRefresh"
   />
 
-  <MobileMenuDrawer :open="openMore" @close="openMore = false" />
+  <MobileMenuDrawer v-if="isMobile" :open="openMore" @close="openMore = false" />
 
   <MobileQuickActionsModal :open="openActions" @close="openActions = false" />
 

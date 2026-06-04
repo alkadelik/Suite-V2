@@ -29,7 +29,7 @@ const actionMenus = computed(() => [
     action: () => emit("edit"),
   },
   {
-    label: "Adjust stock",
+    label: "Add/Remove Stock",
     icon: "box",
     action: () => emit("adjust"),
   },

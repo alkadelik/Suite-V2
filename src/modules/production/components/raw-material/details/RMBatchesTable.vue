@@ -6,7 +6,7 @@ import DataTable from "@components/DataTable.vue"
 import Drawer from "@components/Drawer.vue"
 import { TBatch, TRawMaterial } from "@modules/production/types"
 import { ref } from "vue"
-import { startCase } from "@/utils/format-strings"
+import { removeUnderscores, startCase } from "@/utils/format-strings"
 import RMBatchCard from "./RMBatchCard.vue"
 import { BATCHES_COLUMN } from "@modules/production/constant"
 import {
@@ -45,15 +45,15 @@ const onRowClick = (batch: TBatch) => {
       >
         <template #cell:quantity_added="{ item }">
           {{ floatDecimal(convertNumToPurchaseUnit(+item.quantity, material)) }}
-          {{ getPurchaseUnit(material) }}
+          {{ removeUnderscores(getPurchaseUnit(material)) }}
         </template>
         <template #cell:quantity_left="{ item }">
           {{ floatDecimal(convertNumToPurchaseUnit(+item.remaining_quantity, material)) }}
-          {{ getPurchaseUnit(material) }}
+          {{ removeUnderscores(getPurchaseUnit(material)) }}
         </template>
         <template #cell:unit_cost="{ item }">
           {{ format(+convertNumToUsageUnit(+item.unit_cost, material)) }} /
-          {{ getPurchaseUnit(material) }}
+          {{ removeUnderscores(getPurchaseUnit(material)) }}
         </template>
         <template #cell:source="{ item }">
           <Chip v-if="item.source_type" :label="startCase(item.source_type)" color="blue" />
@@ -81,7 +81,7 @@ const onRowClick = (batch: TBatch) => {
         <div class="flex flex-col items-center justify-center gap-2">
           <h4 class="text-3xl font-bold md:text-4xl">
             {{ floatDecimal(convertNumToPurchaseUnit(+selectedBatch.quantity, props.material)) }}
-            {{ getPurchaseUnit(props.material) }}
+            {{ removeUnderscores(getPurchaseUnit(props.material)) }}
           </h4>
           <p class="text-sm font-medium md:text-base">
             {{ formatDate(new Date(selectedBatch.date_added)) }}
@@ -107,29 +107,29 @@ const onRowClick = (batch: TBatch) => {
         <div class="border-core-300 bg-core-25 my-6 space-y-3 rounded-xl border p-4">
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Quantity Added</span>
-            <span class="font-medium capitalize"
+            <span class="font-medium"
               >{{
                 floatDecimal(convertNumToPurchaseUnit(+selectedBatch.quantity, props.material))
               }}
-              {{ getPurchaseUnit(props.material) }}</span
+              {{ removeUnderscores(getPurchaseUnit(props.material)) }}</span
             >
           </p>
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Quantity Left</span>
-            <span class="font-medium capitalize"
+            <span class="font-medium"
               >{{
                 floatDecimal(
                   convertNumToPurchaseUnit(+selectedBatch.remaining_quantity, props.material),
                 )
               }}
-              {{ getPurchaseUnit(props.material) }}</span
+              {{ removeUnderscores(getPurchaseUnit(props.material)) }}</span
             >
           </p>
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Unit Cost</span>
             <span class="font-medium"
               >{{ format(+convertNumToUsageUnit(+selectedBatch.unit_cost, material)) }} /
-              {{ getPurchaseUnit(material) }}</span
+              {{ removeUnderscores(getPurchaseUnit(material)) }}</span
             >
           </p>
           <p class="flex justify-between text-sm">

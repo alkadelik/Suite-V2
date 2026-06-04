@@ -17,14 +17,14 @@ export const validationSchema = yup.object({
     .min(yup.ref("start_date"), "End date must be after start date")
     .required("End date is required"),
 
-  event_address: yup
-    .string()
-    .min(10, "Event address must be at least 10 characters")
-    .required("Event address is required"),
+  event_address: yup.string().required("Event address is required"),
 
   participation_fee: yup
     .number()
-    .typeError("Must be a number")
+    .transform((_, originalValue) =>
+      originalValue === "" ? undefined : Number(String(originalValue).replace(/,/g, "")),
+    )
+    .typeError("Amount must be a number")
     .min(0, "Participant fee cannot be negative")
     .nullable()
     .optional(),

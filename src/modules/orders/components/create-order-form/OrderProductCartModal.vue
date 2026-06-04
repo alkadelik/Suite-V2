@@ -223,8 +223,7 @@ const validate = (): boolean => {
         .transform((_, o) => (o === "" ? undefined : Number(String(o).replace(/,/g, ""))))
         .typeError("Price must be a number")
         .required("Price is required")
-        .positive("Price must be greater than 0")
-        .min(0.01, "Price must be at least 0.01"),
+        .min(0, "Price cannot be a negative number"),
     })
     try {
       schema.validateSync({ quantity: s.quantity, unit_price: s.unit_price }, { abortEarly: false })

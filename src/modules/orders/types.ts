@@ -35,12 +35,14 @@ export type TOrder = {
   delivery_address: string | null
   delivery_fee: string
   delivery_method: "manual" | "shipbubble" | "custom"
+  delivery_payment_option: string
   discount_amount: string
   fulfilment_method: "pickup" | "delivery"
   fulfilment_status: "unfulfilled" | "fulfilled" | "partially_fulfilled" | "voided"
   items: TOrderItem[]
   location: string
   location_name: string
+  memos_count: number
   outstanding_balance: number
   payment_status: "unpaid" | "paid" | "partially_paid"
   rate: string

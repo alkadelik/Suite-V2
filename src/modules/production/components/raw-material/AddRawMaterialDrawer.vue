@@ -27,6 +27,7 @@ import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { UNITS_OF_MEASURE } from "@modules/production/constant"
 import { floatDecimal } from "@/utils/others"
 import { useProductionStore } from "@modules/production/store"
+import { removeUnderscores, startCase } from "@/utils/format-strings"
 
 const props = defineProps<{
   open: boolean
@@ -507,7 +508,7 @@ const handleAddFromSearch = (search: string, close: () => void) => {
             <FormField
               type="text"
               name="name"
-              :label="`${materialLabel} Name`"
+              :label="`${startCase(materialSingular)} Name`"
               placeholder="e.g. Glass Butter"
               required
             />
@@ -631,8 +632,8 @@ const handleAddFromSearch = (search: string, close: () => void) => {
 
               <div v-if="showConversionSection" class="rounded-md bg-gray-200 p-4">
                 <p class="mb-3 flex items-center gap-1 text-sm font-medium">
-                  How do you convert {{ values.unit?.label.toLowerCase() }} to
-                  {{ values.production_unit?.label.toLowerCase() }}?
+                  How do you convert {{ removeUnderscores(values.unit?.label) }} to
+                  {{ removeUnderscores(values.production_unit?.label) }}?
                 </p>
                 <p v-if="unitsLocked" class="mb-3 text-xs text-amber-600">
                   Units and conversion are locked because this {{ materialSingular }} is used in
@@ -643,8 +644,8 @@ const handleAddFromSearch = (search: string, close: () => void) => {
                     <FormField
                       name="conversion_from_qty"
                       type="number"
-                      :label="values.unit?.label"
-                      :suffix="values.unit?.label"
+                      :label="removeUnderscores(values.unit?.label)"
+                      :suffix="removeUnderscores(values.unit?.label)"
                       placeholder="e.g. 1"
                       :disabled="unitsLocked"
                     />
@@ -659,8 +660,8 @@ const handleAddFromSearch = (search: string, close: () => void) => {
                     <FormField
                       name="conversion_to_qty"
                       type="number"
-                      :label="values.production_unit?.label"
-                      :suffix="values.production_unit?.label"
+                      :label="removeUnderscores(values.production_unit?.label)"
+                      :suffix="removeUnderscores(values.production_unit?.label)"
                       placeholder="e.g. 12"
                       :disabled="unitsLocked"
                     />
@@ -674,7 +675,7 @@ const handleAddFromSearch = (search: string, close: () => void) => {
                 type="number"
                 name="qty_in_stock"
                 label="Quantity in Stock"
-                :suffix="values.unit?.label"
+                :suffix="removeUnderscores(values.unit?.label)"
                 placeholder="e.g. 25"
                 required
               />
@@ -687,8 +688,8 @@ const handleAddFromSearch = (search: string, close: () => void) => {
                 name="default_cost"
                 format="currency"
                 step="0.01"
-                :label="`Price per ${values.unit?.value || 'Unit'} (${currency})`"
-                :suffix="values.unit?.label"
+                :label="`Price per ${removeUnderscores(values.unit?.value) || 'Unit'} (${currency})`"
+                :suffix="removeUnderscores(values.unit?.label)"
                 placeholder="e.g. 25"
                 required
               />

@@ -174,7 +174,7 @@ const openDetailsDrawer = () => {
     return
   }
 
-  if (!selectedCustomer.value || selectedCustomer.value.uid === anonymousCustomer.uid) {
+  if (!selectedCustomer.value) {
     toast.info("Select a customer before order details.")
     return
   }
@@ -288,6 +288,7 @@ const onCreateOrder = () => {
   if (!customerName.value) {
     if (isMobile.value) {
       toast.info("Click the Order Summary to add customer", { title: "No customer selected" })
+      showOrderSummary.value = true
     } else {
       toast.info("Please select a customer before creating the order.")
     }
@@ -297,6 +298,7 @@ const onCreateOrder = () => {
   if (!orderDetailsSaved.value) {
     if (isMobile.value) {
       toast.info("Click the Order Summary to add order details", { title: "No order details" })
+      showOrderSummary.value = true
     } else {
       toast.info("Please add order details before creating the order.")
     }
@@ -439,11 +441,23 @@ onMounted(() => {
 })
 
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
+
+const hasNotLiveBanner = computed(() => {
+  const store = useSettingsStore()
+  return (
+    !store.isInternational && (!store.liveStatus?.is_live || !store.liveStatus?.has_subscription)
+  )
+})
 </script>
 
 <template>
   <PageHeader title="Add Order" back-link="/orders" inner v-if="isMobile" />
-  <div class="flex h-[calc(100vh-64px)] overflow-hidden">
+  <div
+    :class="[
+      'flex overflow-hidden',
+      hasNotLiveBanner ? 'h-[calc(100vh-130px)]' : 'h-[calc(100vh-64px)]',
+    ]"
+  >
     <!-- ─── LEFT PANEL ─────────────────────────────────────────── -->
     <div class="flex min-w-0 flex-1 flex-col overflow-hidden border-gray-200 bg-white md:border-r">
       <!-- Header -->
@@ -490,30 +504,29 @@ const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
         />
       </div>
 
-      <!-- Mobile: Order Summary trigger bar -->
-      <button
-        class="flex w-full items-center border-b border-gray-100 px-4 py-3 md:hidden"
-        @click="showOrderSummary = true"
-      >
-        <span class="text-sm font-semibold text-gray-900">Order Summary</span>
-        <div class="ml-auto flex items-center gap-2">
-          <span class="text-sm font-medium text-gray-600">
-            {{ itemsCount > 0 ? format(productsTotal) : "-" }}
-          </span>
-          <Chip radius="md" color="alt" :label="`${itemsCount} ${pluralize('item', itemsCount)}`" />
-          <Icon name="chevron-down" size="16" class="shrink-0 text-gray-400" />
-        </div>
-      </button>
-
       <!-- Product grid -->
       <div ref="scrollContainer" class="flex-1 overflow-y-auto p-3 pb-24 md:p-5 md:pb-5">
-        <EmptyState v-if="isPending" title="" description="" :loading="true" class="mt-10" />
+        <EmptyState
+          v-if="isPending"
+          title=""
+          description=""
+          :loading="true"
+          class="!min-h-[70vh]"
+        />
         <EmptyState
           v-else-if="products.length === 0"
-          title="No products found"
-          description="Try a different search or category."
+          :title="!searchQuery && !activeCategoryUid ? 'No products yet' : 'No products found'"
+          :description="
+            !searchQuery && !activeCategoryUid
+              ? 'You haven\'t added any products to your catalogue. Add a product to start creating orders.'
+              : 'No products match your search or selected category. Try a different keyword or category.'
+          "
+          :action-label="!searchQuery && !activeCategoryUid ? 'Add a product' : undefined"
+          :action-icon="!searchQuery && !activeCategoryUid ? 'add' : undefined"
+          class="!min-h-[70vh] !shadow-none"
+          @action="showAddProduct = true"
         />
-        <div v-else class="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-3">
+        <div v-else class="grid grid-cols-2 gap-3 xl:grid-cols-3">
           <div
             v-for="product in products"
             :key="product.uid"
@@ -557,6 +570,7 @@ const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
                 color="error"
                 label="Out of stock"
                 radius="md"
+                class="w-full"
               />
 
               <!-- Multi-variant: See option / Edit -->
@@ -597,6 +611,7 @@ const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
             Loading more...
           </div>
         </div>
+        <div v-if="isMobile" class="py-8" />
       </div>
     </div>
 
@@ -666,7 +681,12 @@ const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 
         <!-- Add Customer card -->
         <button
-          class="border-primary-100 bg-primary-25 mb-3 flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors"
+          class="mb-4 flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors"
+          :class="
+            customerName
+              ? 'border-primary-100 bg-primary-25 border-solid'
+              : 'bg-core-25 border-core-300 border-dashed'
+          "
           @click="showCustomerDrawer = true"
         >
           <img
@@ -696,13 +716,19 @@ const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
           <Icon
             :name="customerName ? 'edit' : 'chevron-right'"
             size="16"
-            class="text-primary-600 shrink-0"
+            class="shrink-0"
+            :class="customerName ? 'text-primary-600' : 'text-gray-400'"
           />
         </button>
 
         <!-- Add Order Details card -->
         <button
-          class="border-primary-100 bg-primary-25 mb-5 flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors"
+          class="mb-4 flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors"
+          :class="
+            orderDetailsSaved
+              ? 'border-primary-100 bg-primary-25 border-solid'
+              : 'bg-core-25 border-core-300 border-dashed'
+          "
           @click="openDetailsDrawer"
         >
           <img
@@ -754,7 +780,8 @@ const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
           <Icon
             :name="orderDetailsSaved ? 'edit' : 'chevron-right'"
             size="16"
-            class="text-primary-600 shrink-0"
+            class="shrink-0"
+            :class="orderDetailsSaved ? 'text-primary-600' : 'text-gray-400'"
           />
         </button>
 
@@ -823,14 +850,67 @@ const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
   </div>
 
   <!-- ─── Mobile: fixed Create Order button ───────────────────────────────── -->
-  <div class="fixed inset-x-0 bottom-0 z-30 border-t border-gray-200 bg-white p-4 md:hidden">
-    <AppButton
-      label="Create Order"
-      class="w-full"
-      :disabled="!canCreate"
-      :loading="isCreating"
-      @click="onCreateOrder"
-    />
+  <div class="fixed inset-x-0 bottom-0 z-30 border-t border-gray-200 bg-white md:hidden">
+    <div>
+      <!-- Mobile: Order Summary trigger bar -->
+      <button
+        class="flex w-full items-start gap-2 border-b border-gray-200 bg-gray-100 px-4 py-3 md:hidden"
+        @click="showOrderSummary = true"
+      >
+        <div class="flex flex-col items-start gap-1">
+          <span class="text-core-900 text-sm font-semibold"
+            >Order Summary <span class="font-normal">({{ itemsCount }} items)</span></span
+          >
+          <div class="mt-1 flex flex-wrap items-center gap-1">
+            <Chip
+              v-if="!customerName"
+              color="error"
+              class="!border-dashed"
+              label="+ Add Customer"
+            />
+            <Chip v-else :label="customerName" icon="user-edit" class="!max-w-[100px]" />
+            <!-- order details -->
+            <Chip
+              v-if="!orderDetailsSaved"
+              color="error"
+              class="!border-dashed"
+              label="+ Add Delivery"
+            />
+            <template v-else>
+              <Chip
+                icon="card-tick"
+                variant="outlined"
+                dense
+                :color="paymentStatusInfo?.color"
+                :label="paymentChipLabel"
+              />
+              <Chip
+                :icon="shippingInfo.fulfilment_method === 'delivery' ? 'truck-fast' : 'location'"
+                :label="shippingInfo.fulfilment_method === 'delivery' ? 'Delivery' : 'Pickup'"
+                variant="outlined"
+                color="blue"
+                dense
+              />
+            </template>
+          </div>
+        </div>
+        <div class="ml-auto flex items-center gap-2">
+          <span class="text-core-900 text-sm font-medium">
+            {{ format(productsTotal) }}
+          </span>
+        </div>
+        <Icon name="chevron-down" size="16" class="shrink-0 text-gray-400" />
+      </button>
+    </div>
+    <div class="p-4">
+      <AppButton
+        label="Create Order"
+        class="w-full"
+        :disabled="!canCreate"
+        :loading="isCreating"
+        @click="onCreateOrder"
+      />
+    </div>
   </div>
 
   <!-- ─── Mobile: Order Summary drawer ─────────────────────────────────────── -->
@@ -891,6 +971,7 @@ const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
       <div
         v-else
         class="flex flex-col items-center justify-center rounded-xl bg-gray-50 py-10 text-center"
+        @click="showOrderSummary = false"
       >
         <img src="@/assets/images/empty-bag.svg?url" class="mx-auto mb-2 h-24" />
         <p class="text-core-800 text-sm font-medium">No Products Added</p>
@@ -899,7 +980,12 @@ const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 
       <!-- Add Customer card -->
       <button
-        class="border-primary-100 bg-primary-25 flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors"
+        class="flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors"
+        :class="
+          customerName
+            ? 'border-primary-100 bg-primary-25 border-solid'
+            : 'bg-core-25 border-core-300 border-dashed'
+        "
         @click="showCustomerDrawer = true"
       >
         <img
@@ -929,13 +1015,19 @@ const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
         <Icon
           :name="customerName ? 'edit' : 'chevron-right'"
           size="16"
-          class="text-primary-600 shrink-0"
+          class="shrink-0"
+          :class="customerName ? 'text-primary-600' : 'text-gray-400'"
         />
       </button>
 
       <!-- Add Order Details card -->
       <button
-        class="border-primary-100 bg-primary-25 flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors"
+        class="flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors"
+        :class="
+          orderDetailsSaved
+            ? 'border-primary-100 bg-primary-25 border-solid'
+            : 'bg-core-25 border-core-300 border-dashed'
+        "
         @click="openDetailsDrawer"
       >
         <img
@@ -983,7 +1075,8 @@ const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
         <Icon
           :name="orderDetailsSaved ? 'edit' : 'chevron-right'"
           size="16"
-          class="text-primary-600 shrink-0"
+          class="shrink-0"
+          :class="orderDetailsSaved ? 'text-primary-600' : 'text-gray-400'"
         />
       </button>
 
