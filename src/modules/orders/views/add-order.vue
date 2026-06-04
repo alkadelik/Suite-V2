@@ -288,6 +288,7 @@ const onCreateOrder = () => {
   if (!customerName.value) {
     if (isMobile.value) {
       toast.info("Click the Order Summary to add customer", { title: "No customer selected" })
+      showOrderSummary.value = true
     } else {
       toast.info("Please select a customer before creating the order.")
     }
@@ -297,6 +298,7 @@ const onCreateOrder = () => {
   if (!orderDetailsSaved.value) {
     if (isMobile.value) {
       toast.info("Click the Order Summary to add order details", { title: "No order details" })
+      showOrderSummary.value = true
     } else {
       toast.info("Please add order details before creating the order.")
     }
@@ -969,6 +971,7 @@ const hasNotLiveBanner = computed(() => {
       <div
         v-else
         class="flex flex-col items-center justify-center rounded-xl bg-gray-50 py-10 text-center"
+        @click="showOrderSummary = false"
       >
         <img src="@/assets/images/empty-bag.svg?url" class="mx-auto mb-2 h-24" />
         <p class="text-core-800 text-sm font-medium">No Products Added</p>
