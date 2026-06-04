@@ -2,7 +2,7 @@
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
-import { startCase } from "@/utils/format-strings"
+import { removeUnderscores, startCase } from "@/utils/format-strings"
 import { formatDate } from "@/utils/formatDate"
 import { floatDecimal } from "@/utils/others"
 import AppButton from "@components/AppButton.vue"
@@ -25,7 +25,11 @@ const route = useRoute()
 const router = useRouter()
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 const recipeLabel = computed(() => useProductionStore().recipeLabel)
-const recipeValue = computed(() => useProductionStore().recipeValue)
+const recipeValue = computed(() => {
+  const v = useProductionStore().recipeValue
+  return v === "bom" ? v.toUpperCase() : v
+})
+const materialLabel = computed(() => useProductionStore().componentLabel)
 const { format } = useFormatCurrency()
 
 const showCreateModal = ref<"edit" | "duplicate" | null>(null)
@@ -62,30 +66,30 @@ const actionMenus = computed(() => [
   ...(recipe.value?.is_active
     ? [
         {
-          label: `Edit ${recipeLabel.value}`,
+          label: `Edit ${recipeValue.value}`,
           icon: "edit",
           action: () => (showCreateModal.value = "edit"),
         },
         {
-          label: `Duplicate ${recipeLabel.value}`,
+          label: `Duplicate ${recipeValue.value}`,
           icon: "copy",
           action: () => (showCreateModal.value = "duplicate"),
         },
         {
-          label: `Disable ${recipeLabel.value}`,
+          label: `Disable ${recipeValue.value}`,
           icon: "close-circle",
           action: () => (showDisableModal.value = "disable"),
         },
       ]
     : [
         {
-          label: `Enable ${recipeLabel.value}`,
+          label: `Enable ${recipeValue.value}`,
           icon: "tick-circle",
           action: () => (showDisableModal.value = "enable"),
         },
       ]),
   {
-    label: `Delete ${recipeLabel.value}`,
+    label: `Delete ${recipeValue.value}`,
     icon: "trash",
     danger: true,
     action: () => (showDeleteModal.value = true),
@@ -99,7 +103,7 @@ const confirmDeleteRecipe = () => {
   if (!recipe.value) return
   deleteRecipeMutate(recipe.value.uid, {
     onSuccess: () => {
-      toast.success(`${recipeLabel.value} deleted successfully`)
+      toast.success(`${recipeValue.value} deleted successfully`)
       router.push("/production/recipes")
       showDeleteModal.value = false
     },
@@ -161,7 +165,10 @@ watch(
     <div v-else>
       <section class="mb-6 flex justify-between gap-4">
         <div>
-          <h2 class="mb-4 text-2xl font-semibold capitalize">{{ recipe.output_item_name }}</h2>
+          <h2 class="mb-4 text-2xl font-semibold capitalize">
+            <span v-if="recipe.name">{{ recipe.name }} - </span>
+            {{ recipe.output_item_name }}
+          </h2>
           <div class="flex gap-1">
             <Chip
               :label="parseInt(recipe.output_quantity) + ' ' + recipe.output_unit"
@@ -203,7 +210,7 @@ watch(
             <span class="bg-warning-100 flex size-10 items-center justify-center rounded-xl">
               <Icon name="box" :size="24" class="text-primary-700" />
             </span>
-            <h3 class="!font-outfit truncate font-medium">Ingredients</h3>
+            <h3 class="!font-outfit truncate font-medium">{{ materialLabel }}</h3>
           </div>
           <div class="mt-4 divide-y divide-gray-200 rounded-xl bg-gray-50 px-4">
             <div
@@ -213,7 +220,7 @@ watch(
             >
               <p class="space-x-1">
                 <span class="font-medium">{{ ingr.material_name }}</span>
-                <span>({{ floatDecimal(ingr.quantity) }} {{ ingr.unit }})</span>
+                <span>({{ floatDecimal(ingr.quantity) }} {{ removeUnderscores(ingr.unit) }})</span>
               </p>
               <p>
                 <span class="font-medium">{{ format(ingr.estimated_cost) }}</span>

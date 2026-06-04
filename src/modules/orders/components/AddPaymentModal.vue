@@ -10,15 +10,11 @@ import AppButton from "@components/AppButton.vue"
 import { TOrder } from "../types"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import * as yup from "yup"
+import { ORDER_PAYMENT_METHODS } from "../constants"
 
 const props = defineProps<{ open: boolean; order: TOrder; outstanding: number }>()
 
 const emit = defineEmits<{ close: []; refresh: [] }>()
-
-const PAYMENT_METHODS = [
-  { label: "Cash", value: "cash" },
-  { label: "Bank Transfer", value: "transfer" },
-]
 
 const outstandingAmount = computed(() => props.outstanding)
 
@@ -55,7 +51,7 @@ const { handleSubmit, resetForm } = useForm<FormValues>({
   initialValues: {
     amount: "",
     date: new Date().toISOString().split("T")[0],
-    source: PAYMENT_METHODS[0],
+    source: ORDER_PAYMENT_METHODS[0],
   },
 })
 
@@ -63,7 +59,10 @@ const { mutate: addPayment, isPending } = useAddUpdateOrderPayment()
 
 const onSubmit = handleSubmit((values) => {
   addPayment(
-    { id: props.order.uid, body: { ...values, source: values.source.value } },
+    {
+      id: props.order.uid,
+      body: { ...values, amount: values.amount.replace(/,/g, ""), source: values.source.value },
+    },
     {
       onSuccess: () => {
         toast.success("Payment added successfully!")
@@ -95,7 +94,12 @@ watch(
     @close="emit('close')"
   >
     <div class="space-y-5">
-      <FormField type="select" name="source" label="Payment Source" :options="PAYMENT_METHODS" />
+      <FormField
+        type="select"
+        name="source"
+        label="Payment Source"
+        :options="ORDER_PAYMENT_METHODS"
+      />
 
       <FormField
         name="amount"

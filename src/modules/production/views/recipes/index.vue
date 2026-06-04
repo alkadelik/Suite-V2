@@ -41,8 +41,11 @@ const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 const router = useRouter()
 
 const selectedComponent = computed(() => useProductionStore().selectedRecipeOption)
-const recipeLabel = computed(() => selectedComponent.value?.label || "Recipe")
-const recipeValue = computed(() => selectedComponent.value?.value || "recipe")
+const recipeLabel = computed(() => useProductionStore().recipeLabel)
+const recipeValue = computed(() => {
+  const v = useProductionStore().recipeValue
+  return v === "bom" ? v.toUpperCase() : v
+})
 
 const onSelect = (option: { label: string; value: string }) => {
   useProductionStore().setSelectedRecipeOption(option)
@@ -51,7 +54,7 @@ const onSelect = (option: { label: string; value: string }) => {
 const computedParams = computed(() => {
   const params: Record<string, string> = {}
   if (debouncedSearch.value) params.search = debouncedSearch.value
-  params.offset = ((debouncedSearch.value ? 1 : page.value - 1) * itemsPerPage.value).toString()
+  params.offset = ((debouncedSearch.value ? 0 : page.value - 1) * itemsPerPage.value).toString()
   params.limit = itemsPerPage.value.toString()
   return params
 })
@@ -87,37 +90,37 @@ const recipesStats = computed(() => [
 
 const getActionItems = (item: TRecipe) => [
   {
-    label: `View ${recipeLabel.value}`,
+    label: `View ${recipeValue.value}`,
     icon: "eye",
     action: () => router.push(`/production/recipes/${item.uid}`),
   },
   ...(item.is_active
     ? [
         {
-          label: `Edit ${recipeLabel.value}`,
+          label: `Edit ${recipeValue.value}`,
           icon: "edit",
           action: () => (showCreateModal.value = "edit"),
         },
         {
-          label: `Duplicate ${recipeLabel.value}`,
+          label: `Duplicate ${recipeValue.value}`,
           icon: "copy",
           action: () => (showCreateModal.value = "duplicate"),
         },
         {
-          label: `Disable ${recipeLabel.value}`,
+          label: `Disable ${recipeValue.value}`,
           icon: "close-circle",
           action: () => (showDisableModal.value = "disable"),
         },
       ]
     : [
         {
-          label: `Enable ${recipeLabel.value}`,
+          label: `Enable ${recipeValue.value}`,
           icon: "tick-circle",
           action: () => (showDisableModal.value = "enable"),
         },
       ]),
   {
-    label: `Delete ${recipeLabel.value}`,
+    label: `Delete ${recipeValue.value}`,
     icon: "trash",
     danger: true,
     action: () => (showDeleteModal.value = true),
@@ -183,9 +186,9 @@ const formatWithUnit = (item: TRecipe) => {
     <div v-else class="flex flex-col gap-8">
       <EmptyState
         v-if="!recipes?.count && !searchQuery.length && page === 1"
-        :title="`You don't have any recipe yet!`"
-        :description="`Start tracking everything you use to make your products by adding your recipe`"
-        :action-label="`Add ${selectedComponent.value}`"
+        :title="`You don't have any ${recipeValue} yet!`"
+        :description="`Start tracking everything you use to make your products by adding your ${recipeValue}.`"
+        :action-label="`Add ${recipeLabel}`"
         :loading="isPending"
         action-icon="add"
         @action="showCreateModal = 'create'"
@@ -219,7 +222,7 @@ const formatWithUnit = (item: TRecipe) => {
                 left-icon="search-lg"
                 size="sm"
                 class="w-full md:min-w-64"
-                placeholder="Search by recipe or item name"
+                placeholder="Search by name or output item"
                 v-model="searchQuery"
               />
 
@@ -256,6 +259,9 @@ const formatWithUnit = (item: TRecipe) => {
           >
             <template #cell:output_item_name="{ item }">
               <div class="flex items-center gap-2">
+                <span class="text-sm text-gray-700" v-if="item.name">
+                  {{ item.name + " - " }}
+                </span>
                 <span class="text-sm text-gray-700">{{ item.output_item_name }}</span>
                 <Chip v-if="formatWithUnit(item)" color="blue" :label="formatWithUnit(item)" />
                 <Chip

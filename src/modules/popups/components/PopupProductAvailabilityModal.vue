@@ -55,7 +55,7 @@ const initializeVariants = () => {
       variant_name: popupVariant.name,
       variant_sku: popupVariant.sku,
       popup_inventory_uid: popupVariant.popup_inventory_uid,
-      quantity: Number(popupVariant.quantity),
+      quantity: Number(popupVariant.available_quantity),
       event_price: Number(popupVariant.event_price),
       original_price: Number(popupVariant.original_price || popupVariant.price),
       is_visible: popupVariant.is_visible,

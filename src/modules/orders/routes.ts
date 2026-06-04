@@ -7,6 +7,12 @@ const ordersRoutes: RouteRecordRaw[] = [
     component: () => import("./views/index.vue"),
     meta: { hideAppHeader: true },
   },
+  {
+    path: "orders/add",
+    name: "AddOrder",
+    component: () => import("./views/add-order.vue"),
+    meta: { hideAppHeader: true },
+  },
 ]
 
 export default ordersRoutes

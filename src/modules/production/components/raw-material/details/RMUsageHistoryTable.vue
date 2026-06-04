@@ -10,6 +10,7 @@ import RMUsageCard from "./RMUsageCard.vue"
 import { USAGE_HISTORY_COLUMN } from "@modules/production/constant"
 import { convertNumToPurchaseUnit, getPurchaseUnit } from "@modules/production/utils"
 import { floatDecimal } from "@/utils/others"
+import { removeUnderscores } from "@/utils/format-strings.ts"
 
 const props = defineProps<{ material: TRawMaterial }>()
 const { format } = useFormatCurrency()
@@ -40,7 +41,7 @@ const onRowClick = (batch: TMovement) => {
       >
         <template #cell:quantity="{ item }">
           {{ floatDecimal(convertNumToPurchaseUnit(+item.quantity, props.material)) }}
-          {{ getPurchaseUnit(props.material) }}
+          {{ removeUnderscores(getPurchaseUnit(props.material)) }}
         </template>
         <template #cell:reason="{ item }">
           <Chip :label="item.reason" color="blue" class="capitalize" />
@@ -85,7 +86,7 @@ const onRowClick = (batch: TMovement) => {
           />
           <h4 class="text-3xl font-bold md:text-4xl">
             {{ floatDecimal(convertNumToPurchaseUnit(+selectedHistory.quantity, props.material)) }}
-            {{ getPurchaseUnit(props.material) }}
+            {{ removeUnderscores(getPurchaseUnit(props.material)) }}
           </h4>
           <p class="text-sm font-medium md:text-base">
             {{ formatDate(new Date(selectedHistory.created_at)) }}
@@ -103,7 +104,7 @@ const onRowClick = (batch: TMovement) => {
               >{{
                 floatDecimal(convertNumToPurchaseUnit(+selectedHistory.quantity, props.material))
               }}
-              {{ getPurchaseUnit(props.material) }}</span
+              {{ removeUnderscores(getPurchaseUnit(props.material)) }}</span
             >
           </p>
           <p class="flex justify-between text-sm">

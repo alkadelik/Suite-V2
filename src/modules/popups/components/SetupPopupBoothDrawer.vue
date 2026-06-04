@@ -3,7 +3,7 @@ import Drawer from "@components/Drawer.vue"
 import StepperWizard from "@components/StepperWizard.vue"
 import AppButton from "@components/AppButton.vue"
 import Icon from "@components/Icon.vue"
-import { ref, computed, watch } from "vue"
+import { ref, computed } from "vue"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import type { IProductCatalogue } from "@modules/inventory/types"
 import BoothSelectProduct from "./booth-form/BoothSelectProduct.vue"
@@ -107,13 +107,6 @@ const onSubmitBooth = () => {
     },
   )
 }
-
-// Clear orderItems when going back to step 0 to ensure fresh initialization
-watch(activeStep, (newStep, oldStep) => {
-  if (newStep === 0 && oldStep === 1) {
-    orderItems.value = []
-  }
-})
 </script>
 
 <template>
@@ -142,6 +135,7 @@ watch(activeStep, (newStep, oldStep) => {
           :selectedProducts="selectedProducts"
           :existingVariantSkus="props.existingVariantSkus"
           @update:orderItems="updateOrderItems"
+          @update:selectedProducts="selectedProducts = $event"
           @next="onNext"
           @prev="onPrev"
         />
@@ -154,10 +148,9 @@ watch(activeStep, (newStep, oldStep) => {
           <p class="mb-4 text-sm">Review your booth setup and confirm the products.</p>
 
           <!-- Booth Items -->
-          <div class="rounded-xl bg-white p-4">
-            <h3 class="mb-3 text-sm font-semibold">Booth Products</h3>
-
-            <div class="border-core-300 bg-core-25 my-6 space-y-4 rounded-xl border p-4">
+          <div>
+            <div class="border-core-300 bg-core-25 mb-6 space-y-4 rounded-xl border p-4">
+              <h4 class="text-sm font-medium">Booth Products</h4>
               <div
                 v-for="(item, idx) in orderItems"
                 :key="`${item.product.uid}-${item.variant?.uid || idx}`"
@@ -206,19 +199,17 @@ watch(activeStep, (newStep, oldStep) => {
             </div>
           </div>
 
-          <!-- Summary -->
-          <div class="rounded-xl bg-white p-4">
-            <h3 class="mb-3 text-sm font-semibold">Booth Summary</h3>
-            <div class="space-y-2 text-sm">
-              <p class="flex justify-between">
-                <span class="text-gray-600">Total Products:</span>
-                <span class="font-medium">{{ orderItems.length }}</span>
-              </p>
-              <p class="flex justify-between">
-                <span class="text-gray-600">Total Value:</span>
-                <span class="text-primary-600 font-medium">{{ format(productsTotal) }}</span>
-              </p>
-            </div>
+          <!-- Booth Summary -->
+          <div class="border-core-300 bg-core-25 space-y-3 rounded-xl border p-4">
+            <h4 class="text-sm font-medium">Booth Summary</h4>
+            <p class="flex justify-between text-sm">
+              <span class="text-core-600">Total Products:</span>
+              <span class="font-medium">{{ orderItems.length }}</span>
+            </p>
+            <p class="flex justify-between text-sm">
+              <span class="text-core-600">Total Value:</span>
+              <span class="font-medium">{{ format(productsTotal, { kobo: true }) }}</span>
+            </p>
           </div>
 
           <div class="h-24" />

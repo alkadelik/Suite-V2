@@ -24,7 +24,12 @@ import {
 } from "../api"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
-import { anonymousCustomer, ORDER_COLUMNS, ORDER_STATUS_TAB } from "../constants"
+import {
+  anonymousCustomer,
+  ORDER_COLUMNS,
+  ORDER_PAYMENT_METHODS,
+  ORDER_STATUS_TAB,
+} from "../constants"
 import { startCase } from "@/utils/format-strings"
 import OrderCard from "../components/OrderCard.vue"
 import FulfilOrderModal from "../components/FulfilOrderModal.vue"
@@ -40,6 +45,8 @@ import OrderDetailsDrawer from "../components/OrderDetailsDrawer.vue"
 import StatCard from "@components/StatCard.vue"
 import OrderShipmentTab from "../components/OrderShipmentTab.vue"
 import OrderFiltersDrawer from "../components/OrderFiltersDrawer.vue"
+import SelectField from "@components/form/SelectField.vue"
+import Icon from "@components/Icon.vue"
 
 const openCreate = ref(false)
 const openVoid = ref(false)
@@ -49,6 +56,7 @@ const openFulfil = ref(false)
 const openPayment = ref(false)
 const openDetails = ref(false)
 const openMarkPaid = ref(false)
+const markPaidMethod = ref(ORDER_PAYMENT_METHODS[0])
 const selectedOrder = ref<TOrder | null>(null)
 const status = ref(ORDER_STATUS_TAB[0].key)
 
@@ -121,7 +129,7 @@ const computedParams = computed(() => {
       params.fulfilment_status = status.value
     }
   }
-  params.offset = ((debouncedSearch.value ? 1 : page.value - 1) * itemsPerPage.value).toString()
+  params.offset = ((debouncedSearch.value ? 0 : page.value - 1) * itemsPerPage.value).toString()
   params.limit = itemsPerPage.value.toString()
   Object.assign(params, activeFilters.value)
   return params
@@ -135,7 +143,9 @@ const handleOpenCreate = () => {
   // Check premium access before opening drawer
   if (!checkPremiumAccess()) return
 
-  openCreate.value = true
+  // if (isMobile.value) openCreate.value = true
+  // else
+  router.push("/orders/add")
 }
 
 const handleRefresh = () => {
@@ -389,14 +399,17 @@ const handleVoidDelete = ({ action, reason }: { action: string; reason: string }
 }
 
 const handleMarkAsPaid = () => {
-  markAsPaid(selectedOrder.value?.uid || "", {
-    onSuccess: () => {
-      toast.success("Order marked as paid successfully")
-      openMarkPaid.value = false
-      handleRefresh()
+  markAsPaid(
+    { id: selectedOrder.value?.uid || "", payment_source: markPaidMethod.value.value },
+    {
+      onSuccess: () => {
+        toast.success("Order marked as paid successfully")
+        openMarkPaid.value = false
+        handleRefresh()
+      },
+      onError: displayError,
     },
-    onError: displayError,
-  })
+  )
 }
 
 const route = useRoute()
@@ -621,15 +634,18 @@ const handleDetailsMarkAsPaid = () => {
           "
         >
           <template #cell:items="{ item }">
-            <ProductAvatar
-              :name="item.items?.[0].product_name"
-              :url="undefined"
-              :variants-count="item.items.length > 1 ? item.items.length : undefined"
-              :variants-count-text="`+ ${item.items.length - 1}`"
-              shape="rounded"
-              class="!gap-2"
-              max-width="100px"
-            />
+            <div class="flex items-center gap-2">
+              <ProductAvatar
+                :name="item.items?.[0].product_name"
+                :url="undefined"
+                :variants-count="item.items.length > 1 ? item.items.length : undefined"
+                :variants-count-text="`+ ${item.items.length - 1}`"
+                shape="rounded"
+                class="!gap-2"
+                max-width="100px"
+              />
+              <Icon v-if="item.memos_count" name="note-2" size="20" class="text-primary-600" />
+            </div>
           </template>
           <template #cell:fulfilment_status="{ item }">
             <Chip
@@ -703,12 +719,28 @@ const handleDetailsMarkAsPaid = () => {
       v-if="selectedOrder"
       v-model="openMarkPaid"
       header="Mark Order as Paid"
-      :paragraph="`Are you sure you want to mark order #${selectedOrder.order_number} as fully paid? This will update the payment status to 'Paid'.`"
       action-label="Mark as Paid"
       variant="success"
+      info-message=""
       :loading="isMarkingPaid"
       @confirm="handleMarkAsPaid"
-    />
+    >
+      <template #paragraph>
+        <div class="space-y-4">
+          <p class="text-sm">
+            Are you sure you want to mark order
+            <span class="font-medium">#{{ selectedOrder.order_number }}</span> as fully paid? This
+            will update the payment status to <span class="font-medium">'Paid'</span>.
+          </p>
+
+          <SelectField
+            v-model="markPaidMethod"
+            label="Select Payment Method"
+            :options="ORDER_PAYMENT_METHODS"
+          />
+        </div>
+      </template>
+    </ConfirmationModal>
 
     <CreateOrderDrawer
       :open="openCreate"

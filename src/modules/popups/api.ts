@@ -134,7 +134,8 @@ export function useCreatePopupOrder() {
 
 export function useMarkPopupOrderAsPaid() {
   return useMutation({
-    mutationFn: (orderId: string) => baseApi.post(`/orders/${orderId}/mark-paid/`),
+    mutationFn: ({ id, payment_source }: { id: string; payment_source: string }) =>
+      baseApi.post(`/orders/${id}/mark-paid/`, { payment_source }),
   })
 }
 

@@ -28,7 +28,7 @@ import {
   getPurchaseUnit,
 } from "@modules/production/utils"
 import { UNITS_OF_MEASURE } from "@modules/production/constant"
-import { startCase } from "@/utils/format-strings"
+import { removeUnderscores, startCase } from "@/utils/format-strings"
 import { floatDecimal } from "@/utils/others"
 
 const route = useRoute()
@@ -42,12 +42,13 @@ const activeTab = ref("batches")
 const materialTabs = computed(() => [
   { title: "Batches", key: "batches" },
   { title: "Logs", key: "usage" },
-  { title: isMobile.value ? " Recipes" : "Linked Recipes", key: "recipes" },
+  { title: isMobile.value ? recipeLabel.value : `Linked ${recipeLabel.value}`, key: "recipes" },
 ])
 
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 const materialLabel = computed(() => useProductionStore().componentLabel)
 const materialValue = computed(() => useProductionStore().componentValue)
+const recipeLabel = computed(() => useProductionStore().recipeLabel)
 
 const { data: material, isPending, refetch } = useGetSingleRawMaterial(route.params.id as string)
 const { mutate: deleteRawMaterial, isPending: isDeleting } = useDeleteRawMaterial()
@@ -70,7 +71,7 @@ const actionMenus = computed(() => [
     icon: "edit",
     action: () => (showEdit.value = true),
   },
-  { label: "Adjust stock", icon: "box", action: () => (showAdjust.value = true) },
+  { label: "Add/Remove stock", icon: "box", action: () => (showAdjust.value = true) },
   {
     label: `Delete ${materialValue.value}`,
     icon: "trash",
@@ -86,17 +87,17 @@ const materialStats = computed(() => {
   return [
     {
       label: "Current Stock",
-      value: `${floatDecimal(convertNumToPurchaseUnit(item.current_stock || 0, item))} ${getPurchaseUnit(item)}`,
+      value: `${floatDecimal(convertNumToPurchaseUnit(item.current_stock || 0, item))} ${removeUnderscores(getPurchaseUnit(item))}`,
       icon: "bag",
     },
     {
       label: "Avg Cost per Unit",
-      value: `${format(+convertNumToUsageUnit(+item.avg_cost, item))}/${getPurchaseUnit(item)}`,
+      value: `${format(+convertNumToUsageUnit(+item.avg_cost, item))}/${removeUnderscores(getPurchaseUnit(item))}`,
       icon: "bag",
     },
     {
       label: "Last Purchase Cost",
-      value: `${format(+convertNumToUsageUnit(+item.last_cost, item))}/${getPurchaseUnit(item)}`,
+      value: `${format(+convertNumToUsageUnit(+item.last_cost, item))}/${removeUnderscores(getPurchaseUnit(item))}`,
       icon: "bag",
       chip: isMobile.value
         ? undefined

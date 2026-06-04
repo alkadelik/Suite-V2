@@ -1,9 +1,9 @@
 <template>
   <section class="overflow-hidden rounded-xl border border-gray-200 bg-white">
-    <header class="border-b border-gray-200 px-4 py-3 text-sm font-semibold text-gray-800">
+    <header class="border-b border-gray-200 px-4 py-4 text-sm font-semibold text-gray-800">
       Connected Domain
     </header>
-    <div class="flex items-start justify-between gap-3 px-4 py-4 md:items-center">
+    <div class="flex items-start justify-between gap-3 px-4 py-6 md:items-center">
       <RouterLink :to="detailRoute" class="min-w-0 flex-1">
         <p class="truncate text-sm font-bold text-gray-900 md:text-base">{{ fullUrl }}</p>
         <div class="mt-1 flex flex-wrap gap-1.5">
@@ -21,22 +21,22 @@
 
       <!-- Desktop actions -->
       <div class="hidden shrink-0 items-center gap-4 md:flex">
-        <button
+        <!-- <button
           v-if="domain.status === 'ACTIVE'"
           type="button"
           disabled
           title="Coming soon"
           class="flex cursor-not-allowed items-center gap-1 text-sm text-gray-400"
         >
-          <Icon name="star" size="18" /> Make Primary
-        </button>
+          <Icon name="star-outline" size="18" /> Make Primary
+        </button> -->
         <button
           type="button"
           disabled
           title="Coming soon"
           class="flex cursor-not-allowed items-center gap-1 text-sm text-gray-400"
         >
-          <Icon name="edit" size="18" /> Edit
+          <Icon name="edit-2" size="18" /> Edit
         </button>
         <button
           v-if="domain.status !== 'ACTIVE'"
@@ -52,7 +52,7 @@
           class="text-error-600 flex cursor-pointer items-center gap-1 text-sm font-medium"
           @click="emit('disconnect')"
         >
-          <Icon name="link-01" size="18" /> Disconnect
+          <Icon name="link-2" size="18" /> Disconnect
         </button>
       </div>
 
@@ -63,7 +63,7 @@
           placement="bottom-end"
           :show-chevron="false"
           size="sm"
-          trigger-class="!bg-primary-50 !p-2 hover:!bg-primary-100 !border-0 !rounded-lg"
+          trigger-class="!p-1 hover:!bg-gray-100 !border-0 !rounded-lg"
           @click.stop
         >
           <template #trigger>

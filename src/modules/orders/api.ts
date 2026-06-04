@@ -77,10 +77,10 @@ export function useCreateOrderMemo() {
 }
 
 /** Fetch order memos */
-export function useGetOrderMemos(id: string) {
+export function useGetOrderMemos(id: MaybeRefOrGetter<string>) {
   return useApiQuery<TPaginatedResponse<TOrderMemo>["data"]>({
-    url: `/orders/${id}/memos/`,
-    key: "orderMemos",
+    url: computed(() => `/orders/${toValue(id)}/memos/`),
+    key: computed(() => `orderMemos_${toValue(id)}`),
     selectData: true,
   })
 }
@@ -159,6 +159,7 @@ export function useGenerateInvoice() {
 /** Mark order as paid */
 export function useMarkOrderAsPaid() {
   return useMutation({
-    mutationFn: (orderId: string) => baseApi.post(`/orders/${orderId}/mark-paid/`),
+    mutationFn: ({ id, payment_source }: { id: string; payment_source: string }) =>
+      baseApi.post(`/orders/${id}/mark-paid/`, { payment_source }),
   })
 }

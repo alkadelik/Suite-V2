@@ -56,16 +56,17 @@ export type RecipeDrawerProps = {
 const props = withDefaults(defineProps<RecipeDrawerProps>(), { mode: "create" })
 const emit = defineEmits(["close", "refresh"])
 const isEditMode = computed(() => props.mode === "edit" && !!props.recipe)
-
-const drawerTitle = computed(() => {
-  if (isEditMode.value) return `Edit ${capitalize(recipeNameValue.value)}`
-  return `Add ${capitalize(recipeNameValue.value)}`
-})
-
-const steps = ["Basic details", "Ingredients", "Process cost"]
-const activeStep = ref(0)
+const recipeSingular = computed(() => useProductionStore().recipeSingularLabel)
+const materialLabel = computed(() => useProductionStore().componentLabel)
 
 const recipeNameValue = computed(() => useProductionStore().recipeValue)
+const drawerTitle = computed(() => {
+  if (isEditMode.value) return `Edit ${recipeSingular.value}`
+  return `Add ${recipeSingular.value}`
+})
+
+const steps = computed(() => ["Basic details", materialLabel.value, "Process cost"])
+const activeStep = ref(0)
 
 // ─── Shared state across steps ─────────────────────────────────────────────
 const basicDetails = ref<BasicDetails>({
@@ -248,7 +249,12 @@ const forceClose = () => {
                 onNext()
               }
             "
-            @prev="onPrev"
+            @prev="
+              (rows: IngredientRow[]) => {
+                ingredientRowsState = rows
+                onPrev()
+              }
+            "
           />
           <!-- step 2: process cost -->
           <ProcessCostForm
@@ -261,7 +267,12 @@ const forceClose = () => {
               unit: basicDetails.unit,
               type: basicDetails.outputItemType,
             }"
-            @prev="onPrev"
+            @prev="
+              (rows: ProcessRow[]) => {
+                processRowsState = rows
+                onPrev()
+              }
+            "
             @submit="
               (rows: ProcessRow[]) => {
                 processRowsState = rows
@@ -272,8 +283,8 @@ const forceClose = () => {
 
           <ConfirmationModal
             v-model="confirmClose"
-            header="Discard Recipe?"
-            paragraph="You have unsaved progress on this recipe. Closing now will lose everything you've entered."
+            :header="`Discard ${capitalize(recipeNameValue)}?`"
+            :paragraph="`You have unsaved progress on this ${recipeNameValue}. Closing now will lose everything you've entered.`"
             action-label="Discard"
             variant="warning"
             info-message="This action cannot be reversed."

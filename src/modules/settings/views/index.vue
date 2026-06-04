@@ -3,9 +3,9 @@
     <AppHeader show-logo :is-live="isLive" @logout="logout = true" />
 
     <Container class="flex min-h-0 flex-1 overflow-hidden">
-      <div class="flex min-h-0 flex-1 rounded-xl bg-white p-4 pb-0 2xl:px-8">
+      <div class="flex min-h-0 min-w-0 flex-1 rounded-xl bg-white p-4 pb-0 2xl:px-8">
         <!-- Fixed Header Section -->
-        <div class="flex min-h-0 flex-1 flex-col">
+        <div class="flex min-h-0 min-w-0 flex-1 flex-col">
           <header
             class="mb-4 hidden flex-shrink-0 border-b border-gray-200 pb-4 md:block md:text-left"
           >
@@ -26,7 +26,7 @@
           </header>
 
           <BackButton
-            v-if="route.path !== '/settings'"
+            v-if="route.path !== '/settings' && !route.path.startsWith('/settings/domains/')"
             label="Back"
             to="/settings"
             class="mb-3 flex-shrink-0 md:hidden"
@@ -58,7 +58,7 @@
             </aside>
 
             <!-- Scrollable main content -->
-            <main class="min-h-0 flex-1 overflow-y-auto px-3 md:py-3">
+            <main class="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-3 md:py-3">
               <router-view />
             </main>
           </div>

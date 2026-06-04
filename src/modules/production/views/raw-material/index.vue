@@ -48,7 +48,7 @@ const debouncedSearch = useDebouncedRef(searchQuery, 750)
 const computedParams = computed(() => {
   const params: Record<string, string> = {}
   if (debouncedSearch.value) params.search = debouncedSearch.value
-  params.offset = ((debouncedSearch.value ? 1 : page.value - 1) * itemsPerPage.value).toString()
+  params.offset = ((debouncedSearch.value ? 0 : page.value - 1) * itemsPerPage.value).toString()
   params.limit = itemsPerPage.value.toString()
   return params
 })
@@ -101,7 +101,7 @@ const handleRefresh = () => {
 
 const getActionItems = (item: TRawMaterial) => [
   {
-    label: "Edit material",
+    label: `Edit ${materialSingular.value}`,
     icon: "edit",
     action: () => {
       selectedMaterial.value = item
@@ -109,7 +109,7 @@ const getActionItems = (item: TRawMaterial) => [
     },
   },
   {
-    label: "Adjust stock",
+    label: "Add/Remove stock",
     icon: "box",
     action: () => {
       selectedMaterial.value = item
@@ -122,7 +122,7 @@ const getActionItems = (item: TRawMaterial) => [
     action: () => router.push(`/production/raw-materials/${item.uid}?tab=usage`),
   },
   {
-    label: "Delete material",
+    label: `Delete ${materialSingular.value}`,
     icon: "trash",
     class: "!text-error-600",
     action: () => {
@@ -146,12 +146,19 @@ watch(
   { immediate: true },
 )
 
+const hasComponentSet = computed(() => !!useProductionStore().selectedComponentOption)
+
 const selectedComponent = computed(() => {
   const opt = useProductionStore().selectedComponentOption
   return {
     label: opt?.label || "Raw Materials",
     value: opt?.value === "raw_materials" ? "material" : opt?.value || "material",
   }
+})
+
+const materialSingular = computed(() => {
+  const v = materialValue.value
+  return v.endsWith("s") ? v.slice(0, -1) : v
 })
 
 const materialLabel = computed(() => useProductionStore().componentLabel)
@@ -188,14 +195,14 @@ const handleDelete = () => {
     />
     <div class="mt-6" />
 
-    <SelectComponentName v-if="!selectedComponent" @select="onSelect" />
+    <SelectComponentName v-if="!hasComponentSet" @select="onSelect" />
 
     <div v-else class="flex flex-col gap-8">
       <EmptyState
         v-if="!rawMaterials?.count && !searchQuery && page === 1"
         :title="`You don't have any ${materialValue} yet!`"
         :description="`Start tracking everything you use to make your products by adding your ${materialValue}.`"
-        :action-label="`Add ${materialValue}`"
+        :action-label="`Add ${materialSingular}`"
         :loading="isPending"
         action-icon="add"
         @action="() => (showAddDrawer = 'create')"
@@ -254,7 +261,7 @@ const handleDelete = () => {
                 icon="add"
                 size="sm"
                 class="flex-shrink-0"
-                :label="isMobile ? '' : `Add ${materialValue}`"
+                :label="isMobile ? '' : `Add ${materialSingular}`"
                 @click="() => (showAddDrawer = 'create')"
               />
             </div>

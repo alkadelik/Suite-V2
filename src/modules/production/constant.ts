@@ -13,7 +13,7 @@ import componentPng from "@/assets/images/components.png"
 import ingredientPng from "@/assets/images/ingredients.png"
 import materialPng from "@/assets/images/materials.png"
 import { formatDate } from "@/utils/formatDate"
-import { startCase } from "@/utils/format-strings"
+import { removeUnderscores, startCase } from "@/utils/format-strings"
 import { convertNumToPurchaseUnit, convertNumToUsageUnit, getPurchaseUnit } from "./utils"
 import { floatDecimal } from "@/utils/others"
 
@@ -28,7 +28,7 @@ export const RAW_MATERIALS_COLUMN: TableColumn<TRawMaterial>[] = [
     cell: ({ item }) =>
       floatDecimal(convertNumToPurchaseUnit(+item.current_stock, item as TRawMaterial)) +
       " " +
-      getPurchaseUnit(item as TRawMaterial),
+      removeUnderscores(getPurchaseUnit(item as TRawMaterial)),
   },
   {
     header: "Last Cost",
@@ -36,7 +36,7 @@ export const RAW_MATERIALS_COLUMN: TableColumn<TRawMaterial>[] = [
     cell: ({ item }) => {
       const { format } = useFormatCurrency()
       return Number(item.last_cost)
-        ? `${format(+convertNumToUsageUnit(+item.last_cost, item as TRawMaterial))}/${getPurchaseUnit(item as TRawMaterial)}`
+        ? `${format(+convertNumToUsageUnit(+item.last_cost, item as TRawMaterial))}/${removeUnderscores(getPurchaseUnit(item as TRawMaterial))}`
         : "-"
     },
   },
@@ -46,7 +46,7 @@ export const RAW_MATERIALS_COLUMN: TableColumn<TRawMaterial>[] = [
     cell: ({ item }) => {
       const { format } = useFormatCurrency()
       return Number(item.avg_cost)
-        ? `${format(+convertNumToUsageUnit(+item.avg_cost, item as TRawMaterial))}/${getPurchaseUnit(item as TRawMaterial)}`
+        ? `${format(+convertNumToUsageUnit(+item.avg_cost, item as TRawMaterial))}/${removeUnderscores(getPurchaseUnit(item as TRawMaterial))}`
         : "-"
     },
   },
@@ -139,8 +139,8 @@ export const UNITS_OF_MEASURE = [
 // ================ RECIPES =========================
 
 export const RECIPES_COLUMN: TableColumn<TRecipe>[] = [
+  // { header: "Recipe Name", accessor: "name" },
   { header: "Output Item", accessor: "output_item_name" },
-  { header: "Optional Name", accessor: "name" },
   { header: "Ingredient Count", accessor: "ingredient_count" },
   {
     header: "Status",
@@ -174,7 +174,7 @@ export const recipeNameOptions = [
   },
   {
     label: "BOM (Bill of Materials)",
-    value: "BOM",
+    value: "bom",
     desc: "Common for manufacturing & assembly",
     examples: "e.g. fabric, plastic bottles, packaging",
     class: "border-blue-200 bg-blue-50",

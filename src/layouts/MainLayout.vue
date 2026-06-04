@@ -75,7 +75,10 @@
         </nav>
 
         <!-- FAB -->
-        <div v-if="!isMobile" class="fixed right-4 bottom-4 z-[50] hidden lg:inline-block">
+        <div
+          v-if="!isMobile && !$route.path.includes('/orders/add')"
+          class="fixed right-4 bottom-4 z-[50] hidden lg:inline-block"
+        >
           <DropdownMenu :items="actionMenuItems">
             <template #trigger="{ open }">
               <AppButton
@@ -108,7 +111,7 @@
     @refresh="handleLocationRefresh"
   />
 
-  <MobileMenuDrawer :open="openMore" @close="openMore = false" />
+  <MobileMenuDrawer v-if="isMobile" :open="openMore" @close="openMore = false" />
 
   <MobileQuickActionsModal :open="openActions" @close="openActions = false" />
 
@@ -238,7 +241,7 @@ const showAppHeader = computed(() => {
   return !hide || !isMobile.value
 })
 
-const isInner = computed(() => !!route.params.id)
+const isInner = computed(() => !!route.params.id || route.path.endsWith("/add"))
 
 const MENU_ITEMS = computed(() => {
   const allSuites = [

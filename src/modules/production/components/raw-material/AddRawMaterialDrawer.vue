@@ -26,6 +26,8 @@ import SelectField from "@components/form/SelectField.vue"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { UNITS_OF_MEASURE } from "@modules/production/constant"
 import { floatDecimal } from "@/utils/others"
+import { useProductionStore } from "@modules/production/store"
+import { removeUnderscores, startCase } from "@/utils/format-strings"
 
 const props = defineProps<{
   open: boolean
@@ -39,7 +41,11 @@ const isMobile = useMediaQuery("(max-width: 1028px)")
 const isEditMode = computed(() => !!props.material)
 const { currency } = useFormatCurrency()
 
-const steps = ["Add Material", "Suppliers (optional)"]
+const materialSingular = computed(() => useProductionStore().componentSingular)
+const materialLabel = computed(() => useProductionStore().componentLabel)
+const recipeLabel = computed(() => useProductionStore().recipeLabel)
+
+const steps = computed(() => [`Add ${materialLabel.value}`, "Suppliers (optional)"])
 const activeStep = ref(0)
 
 // Supplier management
@@ -129,7 +135,7 @@ const { handleSubmit, resetForm, values, setFieldValue, validateField, setFieldT
       yup.object({
         name: yup
           .string()
-          .required("Material name is required")
+          .required(`${useProductionStore().componentSingular} name is required`)
           .min(3, "Name must be at least 3 characters"),
         unit: yup
           .object()
@@ -285,7 +291,9 @@ const onSubmit = handleSubmit((values) => {
   }
 
   const onSuccess = () => {
-    toast.success(`Material ${isEditMode.value ? "updated" : "added"} successfully!`)
+    toast.success(
+      `${materialSingular.value} ${isEditMode.value ? "updated" : "added"} successfully!`,
+    )
     resetForm()
     emit("close")
     emit("refresh")
@@ -470,7 +478,9 @@ const handleAddFromSearch = (search: string, close: () => void) => {
 <template>
   <Drawer
     :open="open"
-    :title="isEditMode ? `Edit ${props.material?.name || 'Material'}` : 'Add Material'"
+    :title="
+      isEditMode ? `Edit ${props.material?.name || materialSingular}` : `Add ${materialSingular}`
+    "
     max-width="2xl"
     @close="emit('close')"
   >
@@ -488,7 +498,9 @@ const handleAddFromSearch = (search: string, close: () => void) => {
               <icon :name="isEditMode ? 'edit' : 'shop-add'" size="28" />
             </div>
             <p class="text-sm text-gray-600">
-              {{ isEditMode ? "Update material details" : "Add a new material" }}
+              {{
+                isEditMode ? `Update ${materialSingular} details` : `Add a new ${materialSingular}`
+              }}
             </p>
           </div>
 
@@ -496,7 +508,7 @@ const handleAddFromSearch = (search: string, close: () => void) => {
             <FormField
               type="text"
               name="name"
-              label="Material Name"
+              :label="`${startCase(materialSingular)} Name`"
               placeholder="e.g. Glass Butter"
               required
             />
@@ -620,22 +632,20 @@ const handleAddFromSearch = (search: string, close: () => void) => {
 
               <div v-if="showConversionSection" class="rounded-md bg-gray-200 p-4">
                 <p class="mb-3 flex items-center gap-1 text-sm font-medium">
-                  How do you convert {{ values.unit?.label.toLowerCase() }} to
-                  {{ values.production_unit?.label.toLowerCase() }}?
+                  How do you convert {{ removeUnderscores(values.unit?.label) }} to
+                  {{ removeUnderscores(values.production_unit?.label) }}?
                 </p>
                 <p v-if="unitsLocked" class="mb-3 text-xs text-amber-600">
-                  Units and conversion are locked because this material is used in
-                  {{ props.material?.linked_recipes?.length }} recipe{{
-                    (props.material?.linked_recipes?.length ?? 0) > 1 ? "s" : ""
-                  }}.
+                  Units and conversion are locked because this {{ materialSingular }} is used in
+                  {{ props.material?.linked_recipes?.length }} {{ recipeLabel.toLowerCase() }}.
                 </p>
                 <div class="flex items-end gap-2">
                   <div class="min-w-0 flex-1">
                     <FormField
                       name="conversion_from_qty"
                       type="number"
-                      :label="values.unit?.label"
-                      :suffix="values.unit?.label"
+                      :label="removeUnderscores(values.unit?.label)"
+                      :suffix="removeUnderscores(values.unit?.label)"
                       placeholder="e.g. 1"
                       :disabled="unitsLocked"
                     />
@@ -650,8 +660,8 @@ const handleAddFromSearch = (search: string, close: () => void) => {
                     <FormField
                       name="conversion_to_qty"
                       type="number"
-                      :label="values.production_unit?.label"
-                      :suffix="values.production_unit?.label"
+                      :label="removeUnderscores(values.production_unit?.label)"
+                      :suffix="removeUnderscores(values.production_unit?.label)"
                       placeholder="e.g. 12"
                       :disabled="unitsLocked"
                     />
@@ -665,7 +675,7 @@ const handleAddFromSearch = (search: string, close: () => void) => {
                 type="number"
                 name="qty_in_stock"
                 label="Quantity in Stock"
-                :suffix="values.unit?.label"
+                :suffix="removeUnderscores(values.unit?.label)"
                 placeholder="e.g. 25"
                 required
               />
@@ -678,8 +688,8 @@ const handleAddFromSearch = (search: string, close: () => void) => {
                 name="default_cost"
                 format="currency"
                 step="0.01"
-                :label="`Price per ${values.unit?.value || 'Unit'} (${currency})`"
-                :suffix="values.unit?.label"
+                :label="`Price per ${removeUnderscores(values.unit?.value) || 'Unit'} (${currency})`"
+                :suffix="removeUnderscores(values.unit?.label)"
                 placeholder="e.g. 25"
                 required
               />
@@ -694,7 +704,7 @@ const handleAddFromSearch = (search: string, close: () => void) => {
                   <Icon name="info-circle" size="20" />
                 </span>
                 <div class="text-sm">
-                  <p class="font-medium">This Material is a Sub-assembly</p>
+                  <p class="font-medium">This {{ materialSingular }} is a Sub-assembly</p>
                   <p>This will be the name displayed in the inventory</p>
                 </div>
               </div>
@@ -708,7 +718,7 @@ const handleAddFromSearch = (search: string, close: () => void) => {
             <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
               <icon name="profile-add" size="28" />
             </div>
-            <p class="text-sm text-gray-600">Review material details and confirm</p>
+            <p class="text-sm text-gray-600">Review {{ materialSingular }} details and confirm</p>
           </div>
 
           <div class="mt-6 space-y-4">
@@ -798,7 +808,7 @@ const handleAddFromSearch = (search: string, close: () => void) => {
       <div class="flex gap-3">
         <AppButton label="Back" color="alt" class="flex-1" @click="goToPrevStep" />
         <AppButton
-          :label="isEditMode ? 'Update Material' : 'Add Material'"
+          :label="isEditMode ? `Update ${materialSingular}` : `Add ${materialSingular}`"
           type="submit"
           class="flex-1"
           :loading="isPending"
@@ -825,7 +835,9 @@ const handleAddFromSearch = (search: string, close: () => void) => {
         <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
           <Icon name="profile-add" size="28" />
         </div>
-        <p class="text-sm text-gray-600">Create a new supplier for your raw materials</p>
+        <p class="text-sm text-gray-600">
+          Create a new supplier for your {{ materialLabel.toLowerCase() }}
+        </p>
 
         <TextField
           v-model="newSupplierName"
@@ -861,7 +873,9 @@ const handleAddFromSearch = (search: string, close: () => void) => {
         <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
           <Icon name="profile-add" size="28" />
         </div>
-        <p class="text-sm text-gray-600">Create a new unit for your raw materials</p>
+        <p class="text-sm text-gray-600">
+          Create a new unit for your {{ materialLabel.toLowerCase() }}
+        </p>
 
         <TextField v-model="newUnitName" label="Unit Name" placeholder="e.g. Kilogram" required />
       </div>

@@ -60,6 +60,7 @@ const props = defineProps<{
   shippingInfo: ShippingInfo
   customer: ICustomer | null
   orderItems?: OrderItem[]
+  isPopupOrder?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -750,6 +751,7 @@ const isMobile = useMediaQuery("(max-width: 768px)")
         <hr class="mb-4 border-gray-300" />
         <div class="space-y-4">
           <FormField
+            v-if="!props.isPopupOrder"
             type="select"
             :options="ORDER_CHANNELS"
             name="order_channel"
