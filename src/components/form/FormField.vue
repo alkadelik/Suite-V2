@@ -1,5 +1,5 @@
 <template>
-  <Field v-slot="{ field, errors: fieldErrors }" :name="name">
+  <Field v-slot="{ field, errors: fieldErrors, handleChange }" :name="name">
     <!-- Select Field -->
     <SelectField
       v-if="type === 'select'"
@@ -19,7 +19,11 @@
       :clearable="clearable"
       :placement="isMobile && searchable ? 'top' : placement"
       @update:model-value="field.value = $event"
-    />
+    >
+      <template v-if="$slots.option" #option="optionSlotProps">
+        <slot name="option" v-bind="optionSlotProps" />
+      </template>
+    </SelectField>
 
     <!-- Select Tags Field -->
     <SelectTagsField
@@ -142,7 +146,7 @@
       :disabled="isDisabled"
       :error="fieldErrors[0]"
       :size="size"
-      @update:model-value="field.value = $event"
+      @update:model-value="handleChange"
     />
 
     <!-- Text Field (default for all other types) -->

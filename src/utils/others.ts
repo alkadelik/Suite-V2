@@ -14,10 +14,14 @@ export function clipboardCopy(text: string) {
   )
 }
 
-/**  Format phone numbers: add +234 and remove leading 0 */
+/**  Format phone numbers: keep an existing dial code, otherwise add +234 and remove leading 0 */
 export const formatPhoneNumber = (phone: string) => {
-  const cleaned = phone.replace(/\s+/g, "").replace(/^0+/, "")
-  return phone.startsWith("+234") ? phone : `+234${cleaned}`
+  if (!phone) return ""
+  const trimmed = phone.replace(/\s+/g, "")
+  // Already carries an international dial code (e.g. emitted by PhoneInput) — keep as-is
+  if (trimmed.startsWith("+")) return trimmed
+  // Bare local number — strip leading zeros and default to the Nigerian dial code
+  return `+234${trimmed.replace(/^0+/, "")}`
 }
 
 /** Checks whether app is in staging environment  */

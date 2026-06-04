@@ -54,7 +54,8 @@
       :data="variants"
       :columns="variantColumns"
       :loading="loading"
-      :show-pagination="false"
+      :show-pagination="variants.length > 10"
+      :items-per-page="10"
       :empty-state="{
         title: 'No results match this filter',
         description: 'Try adjusting or clearing your filters.',

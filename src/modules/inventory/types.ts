@@ -45,6 +45,12 @@ export type TProduct = {
   memo_count: number
   return_count: number
   is_best_seller?: boolean
+  /**
+   * Units of this product's inventory currently committed to popups (HQ only).
+   * Used to render a "N in Popups" pill on the products list. Optional because
+   * it is only present when the list endpoint returns popup data.
+   */
+  popup_quantity_taken?: number
 }
 
 // Detailed product type (used in single product view/edit)

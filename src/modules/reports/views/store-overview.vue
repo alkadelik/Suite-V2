@@ -78,8 +78,8 @@ const topProducts = computed(() => {
 
 <template>
   <div class="p-4">
-    <PageHeader v-if="isMobile" title="Store Overview" />
-    <SectionHeader v-else title="Store Overview" :subtitle="dateRange">
+    <PageHeader v-if="isMobile" title="Store Summary" />
+    <SectionHeader v-else title="Store Summary" :subtitle="dateRange">
       <template #action>
         <Chip :label="`Past ${highlights?.period?.days || 30} days`" color="warning" />
       </template>

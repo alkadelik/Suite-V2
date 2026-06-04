@@ -170,11 +170,18 @@ const drawerPosition = computed(() => {
   return isMobile.value ? "bottom" : "right"
 })
 
-// Clear all filters
+// Clear all filters: reset local state, sync the parent so the list refetches
+// without active filters, and close the drawer (matches Apply behaviour).
 const clearFilters = () => {
   selectedCategory.value = null
   selectedStatus.value = null
   selectedSubCategory.value = null
+  emit("apply", {
+    category: null,
+    status: null,
+    subCategory: null,
+  })
+  emit("update:modelValue", false)
 }
 
 // Apply filters and close drawer
