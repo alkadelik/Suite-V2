@@ -6,8 +6,8 @@ import PageHeader from "@components/PageHeader.vue"
 import Chip from "@components/Chip.vue"
 import EmptyState from "@components/EmptyState.vue"
 import Icon from "@components/Icon.vue"
-import { computed, ref } from "vue"
-import { useRoute } from "vue-router"
+import { computed, ref, watch } from "vue"
+import { useRoute, useRouter } from "vue-router"
 import { useGetPopupEventById } from "../api"
 import Tabs from "@components/Tabs.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
@@ -25,10 +25,18 @@ import ClosePopupModal from "../components/ClosePopupModal.vue"
 import BackButton from "@components/BackButton.vue"
 
 const route = useRoute()
+const router = useRouter()
 const openDelete = ref(false)
 const openEdit = ref(false)
 const openClose = ref(false)
-const activeTab = ref("overview")
+const activeTab = ref((route.query.tab as string) || "overview")
+
+watch(
+  () => route.query.tab,
+  (tab) => {
+    if (tab) activeTab.value = tab as string
+  },
+)
 
 const { format } = useFormatCurrency()
 
@@ -50,6 +58,20 @@ const actionMenu = computed(() => {
       label: "Edit Event",
       icon: "edit",
       action: () => (openEdit.value = true),
+    })
+  }
+  if (popupEvt.value?.status === "active") {
+    actions.push({ divider: true })
+    actions.push({
+      label: "Add Products",
+      icon: "box-add",
+      action: () =>
+        router.replace({ query: { ...route.query, tab: "overview", action: "add-products" } }),
+    })
+    actions.push({
+      label: "Add Sales",
+      icon: "shopping-cart-outline",
+      action: () => router.replace({ query: { ...route.query, tab: "sales", action: "add-sale" } }),
     })
   }
   if (!popupEvt.value?.total_orders && !["past", "closed"].includes(popupEvt.value?.status || "")) {

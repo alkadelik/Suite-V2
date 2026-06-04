@@ -496,6 +496,7 @@ watch(
           v-model:shipping-info="shippingInfo"
           :customer="selectedCustomer"
           :orderItems="isPopupOrder ? (popupOrderItems as any) : orderItems"
+          :is-popup-order="isPopupOrder"
           @next="onNext"
           @prev="onPrev"
           @openAddAddress="showAddAddressModal = true"

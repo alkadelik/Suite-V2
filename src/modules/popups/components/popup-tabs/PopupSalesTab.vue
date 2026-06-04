@@ -9,7 +9,7 @@ import { TOrder } from "@modules/orders/types"
 import { useGetPopupOrders, useMarkPopupOrderAsPaid } from "@modules/popups/api"
 import { POPUP_ORDER_COLUMNS } from "@modules/popups/constants"
 import { useMediaQuery } from "@vueuse/core"
-import { computed, ref } from "vue"
+import { computed, onMounted, ref, watch } from "vue"
 import { useRoute } from "vue-router"
 import CreateOrderDrawer from "@modules/orders/components/CreateOrderDrawer.vue"
 import DataTable from "@components/DataTable.vue"
@@ -43,6 +43,17 @@ const openDetails = ref(false)
 
 const route = useRoute()
 const isMobile = useMediaQuery("(max-width: 768px)")
+
+onMounted(() => {
+  if (route.query.action === "add-sale") openCreate.value = true
+})
+
+watch(
+  () => route.query.action,
+  (action) => {
+    if (action === "add-sale") openCreate.value = true
+  },
+)
 
 const props = defineProps<{ isActive: boolean; startDate?: string; popup: PopupEvent }>()
 const startDate = props.startDate

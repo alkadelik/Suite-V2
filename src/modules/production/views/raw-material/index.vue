@@ -109,7 +109,7 @@ const getActionItems = (item: TRawMaterial) => [
     },
   },
   {
-    label: "Adjust stock",
+    label: "Add/Remove stock",
     icon: "box",
     action: () => {
       selectedMaterial.value = item

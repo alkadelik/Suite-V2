@@ -190,7 +190,7 @@ watch(
 <template>
   <Modal
     :open="props.open"
-    title="Adjust Stock"
+    title="Add/Remove Stock"
     max-width="lg"
     variant="bottom-nav"
     @close="closeModal"
@@ -298,7 +298,12 @@ watch(
     </div>
 
     <template #footer>
-      <AppButton label="Adjust Stock" class="w-full" :loading="isAdjusting" @click="onSubmit" />
+      <AppButton
+        :label="adjustmentType === 'add' ? 'Add Stock' : 'Remove Stock'"
+        class="w-full"
+        :loading="isAdjusting"
+        @click="onSubmit"
+      />
     </template>
   </Modal>
 </template>

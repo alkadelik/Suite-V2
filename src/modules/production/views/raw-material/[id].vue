@@ -71,7 +71,7 @@ const actionMenus = computed(() => [
     icon: "edit",
     action: () => (showEdit.value = true),
   },
-  { label: "Adjust stock", icon: "box", action: () => (showAdjust.value = true) },
+  { label: "Add/Remove stock", icon: "box", action: () => (showAdjust.value = true) },
   {
     label: `Delete ${materialValue.value}`,
     icon: "trash",
