@@ -858,9 +858,37 @@ const hasNotLiveBanner = computed(() => {
           <span class="text-core-900 text-sm font-semibold"
             >Order Summary <span class="font-normal">({{ itemsCount }} items)</span></span
           >
-          <div class="mt-1 flex items-center gap-1">
-            <Chip color="error" class="!border-dashed" label="+ Add Customer" />
-            <Chip color="error" class="!border-dashed" label="+ Add Delivery" />
+          <div class="mt-1 flex flex-wrap items-center gap-1">
+            <Chip
+              v-if="!customerName"
+              color="error"
+              class="!border-dashed"
+              label="+ Add Customer"
+            />
+            <Chip v-else :label="customerName" icon="user-edit" class="!max-w-[100px]" />
+            <!-- order details -->
+            <Chip
+              v-if="!orderDetailsSaved"
+              color="error"
+              class="!border-dashed"
+              label="+ Add Delivery"
+            />
+            <template v-else>
+              <Chip
+                icon="card-tick"
+                variant="outlined"
+                dense
+                :color="paymentStatusInfo?.color"
+                :label="paymentChipLabel"
+              />
+              <Chip
+                :icon="shippingInfo.fulfilment_method === 'delivery' ? 'truck-fast' : 'location'"
+                :label="shippingInfo.fulfilment_method === 'delivery' ? 'Delivery' : 'Pickup'"
+                variant="outlined"
+                color="blue"
+                dense
+              />
+            </template>
           </div>
         </div>
         <div class="ml-auto flex items-center gap-2">
@@ -952,7 +980,7 @@ const hasNotLiveBanner = computed(() => {
         :class="
           customerName
             ? 'border-primary-100 bg-primary-25 border-solid'
-            : 'bg-core-25 border-core-100 border-dashed'
+            : 'bg-core-25 border-core-300 border-dashed'
         "
         @click="showCustomerDrawer = true"
       >
@@ -983,13 +1011,19 @@ const hasNotLiveBanner = computed(() => {
         <Icon
           :name="customerName ? 'edit' : 'chevron-right'"
           size="16"
-          class="text-primary-600 shrink-0"
+          class="shrink-0"
+          :class="customerName ? 'text-primary-600' : 'text-gray-400'"
         />
       </button>
 
       <!-- Add Order Details card -->
       <button
-        class="border-primary-100 bg-primary-25 flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors"
+        class="flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors"
+        :class="
+          orderDetailsSaved
+            ? 'border-primary-100 bg-primary-25 border-solid'
+            : 'bg-core-25 border-core-300 border-dashed'
+        "
         @click="openDetailsDrawer"
       >
         <img
@@ -1037,7 +1071,8 @@ const hasNotLiveBanner = computed(() => {
         <Icon
           :name="orderDetailsSaved ? 'edit' : 'chevron-right'"
           size="16"
-          class="text-primary-600 shrink-0"
+          class="shrink-0"
+          :class="orderDetailsSaved ? 'text-primary-600' : 'text-gray-400'"
         />
       </button>
 
