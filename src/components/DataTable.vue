@@ -242,6 +242,18 @@ watch(
   },
 )
 
+// Keep the internal page index in sync with a parent-controlled `currentPage`
+// (e.g. when applying a filter/search resets the list back to page 1).
+watch(
+  () => props.currentPage,
+  (newPage) => {
+    const targetIndex = Math.max(0, (newPage ?? 1) - 1)
+    if (pagination.value.pageIndex !== targetIndex) {
+      pagination.value.pageIndex = targetIndex
+    }
+  },
+)
+
 // listen to rowSelection Changes
 watch(rowSelection, (newVal) => {
   const selected = Object.keys(newVal)

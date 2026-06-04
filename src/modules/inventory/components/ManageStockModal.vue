@@ -136,7 +136,6 @@
             label="Additional Notes"
             type="textarea"
             placeholder="Enter additional notes"
-            required
           />
         </template>
 
@@ -392,7 +391,8 @@ const validationSchema = yup.lazy(() => {
       otherwise: (schema) => schema.nullable().optional(),
     }),
     note: yup.string().when("action", {
-      is: (action: { value: string } | null) => action?.value !== undefined,
+      is: (action: { value: string } | null) =>
+        action?.value !== undefined && action?.value !== "reduce",
       then: (schema) => schema.required("Notes are required"),
       otherwise: (schema) => schema.optional(),
     }),

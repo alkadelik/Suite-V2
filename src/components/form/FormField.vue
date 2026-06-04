@@ -1,5 +1,5 @@
 <template>
-  <Field v-slot="{ field, errors: fieldErrors }" :name="name">
+  <Field v-slot="{ field, errors: fieldErrors, handleChange }" :name="name">
     <!-- Select Field -->
     <SelectField
       v-if="type === 'select'"
@@ -146,7 +146,7 @@
       :disabled="isDisabled"
       :error="fieldErrors[0]"
       :size="size"
-      @update:model-value="field.value = $event"
+      @update:model-value="handleChange"
     />
 
     <!-- Text Field (default for all other types) -->

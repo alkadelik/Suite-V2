@@ -36,6 +36,7 @@ import { useRoute, useRouter } from "vue-router"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import ProductAvatar from "@components/ProductAvatar.vue"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
+import { useQueryClient } from "@tanstack/vue-query"
 import OrderDetailsDrawer from "../components/OrderDetailsDrawer.vue"
 import StatCard from "@components/StatCard.vue"
 import OrderShipmentTab from "../components/OrderShipmentTab.vue"
@@ -53,6 +54,7 @@ const selectedOrder = ref<TOrder | null>(null)
 const status = ref(ORDER_STATUS_TAB[0].key)
 
 const { format } = useFormatCurrency()
+const queryClient = useQueryClient()
 
 const {
   data: orderDashboard,
@@ -141,6 +143,11 @@ const handleOpenCreate = () => {
 }
 
 const handleRefresh = () => {
+  // Invalidate every orders list query — all status tabs share the ["orders", params]
+  // prefix — plus the dashboard, so inactive tabs and stat cards refresh too (not just
+  // the currently active tab). See LYW-2615.
+  queryClient.invalidateQueries({ queryKey: ["orders"] })
+  queryClient.invalidateQueries({ queryKey: ["orders-dashboard"] })
   refetch()
   refetchStats()
 }

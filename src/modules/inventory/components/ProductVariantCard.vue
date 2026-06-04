@@ -34,7 +34,7 @@
 
     <div class="flex items-center justify-between text-[11px]">
       <div class="border-core-300 flex items-center gap-1 border-r pr-2">
-        <span class="text-core-600">Actual Stock:</span>
+        <span class="text-core-600">Sellable Stock:</span>
         <span class="text-core-800 font-semibold">{{ variant.sellable_stock }}</span>
       </div>
       <div class="border-core-300 flex items-center gap-1 border-r px-2">

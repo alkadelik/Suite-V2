@@ -64,7 +64,6 @@
           label="Additional Notes"
           type="textarea"
           placeholder="Enter additional notes"
-          required
         />
       </template>
     </div>
@@ -165,7 +164,7 @@ const { handleSubmit, resetForm } = useForm<FormValues>({
                 value: yup.string().required(),
               })
               .required("Loss type is required"),
-            note: yup.string().required("Additional notes are required"),
+            note: yup.string().optional(),
           }),
     }),
   ),
