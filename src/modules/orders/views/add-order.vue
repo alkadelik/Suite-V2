@@ -609,6 +609,7 @@ const hasNotLiveBanner = computed(() => {
             Loading more...
           </div>
         </div>
+        <div v-if="isMobile" class="py-8" />
       </div>
     </div>
 
