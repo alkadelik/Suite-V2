@@ -69,7 +69,7 @@ const computedFilters = computed(() => {
   const filters: Record<string, string> = {}
   if (status.value && status.value !== "all") filters.status = status.value
   if (debouncedSearch.value) filters.search = debouncedSearch.value
-  filters.offset = ((debouncedSearch.value ? 1 : page.value - 1) * itemsPerPage.value).toString()
+  filters.offset = ((debouncedSearch.value ? 0 : page.value - 1) * itemsPerPage.value).toString()
   filters.limit = itemsPerPage.value.toString()
   Object.assign(filters, activeFilters.value)
   return filters

@@ -129,7 +129,7 @@ const computedParams = computed(() => {
       params.fulfilment_status = status.value
     }
   }
-  params.offset = ((debouncedSearch.value ? 1 : page.value - 1) * itemsPerPage.value).toString()
+  params.offset = ((debouncedSearch.value ? 0 : page.value - 1) * itemsPerPage.value).toString()
   params.limit = itemsPerPage.value.toString()
   Object.assign(params, activeFilters.value)
   return params
