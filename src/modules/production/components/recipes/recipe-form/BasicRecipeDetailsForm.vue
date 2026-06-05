@@ -163,30 +163,23 @@ const handleNext = handleSubmit((formValues) => {
 
 <template>
   <form @submit.prevent="handleNext" class="flex flex-col gap-5">
-    <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
-      <Icon name="box" size="28" />
+    <div>
+      <span class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
+        <Icon name="box-filled" size="28" />
+      </span>
+      <p class="text-sm">Basic {{ recipeSingularLabel }} Details</p>
     </div>
-    <p class="mb-4 text-sm">Basic {{ recipeSingularLabel }} Details</p>
 
-    <FormField
-      name="name"
-      :label="`${recipeSingularLabel} Name (optional)`"
-      placeholder="e.g. Vanila Cake"
-      :required="false"
+    <RadioInputField
+      :model-value="values.outputItemType"
+      :options="[
+        { label: 'Product', value: 'product' },
+        { label: 'Sub-assembly', value: 'sub_assembly' },
+      ]"
+      label="Output Item Type"
+      :disabled="isEditMode"
+      @update:model-value="setFieldValue('outputItemType', $event as 'product' | 'sub_assembly')"
     />
-
-    <div class="mb-4">
-      <RadioInputField
-        :model-value="values.outputItemType"
-        :options="[
-          { label: 'Product', value: 'product' },
-          { label: 'Sub-assembly', value: 'sub_assembly' },
-        ]"
-        label="Output Item Type"
-        :disabled="isEditMode"
-        @update:model-value="setFieldValue('outputItemType', $event as 'product' | 'sub_assembly')"
-      />
-    </div>
 
     <SelectField
       v-if="values.outputItemType === 'product'"
@@ -218,6 +211,13 @@ const handleNext = handleSubmit((formValues) => {
       :disabled="isEditMode"
       @update:model-value="setFieldValue('outputItem', $event as ItemOption)"
       @search-change="matSearchInput = $event"
+    />
+
+    <FormField
+      name="name"
+      :label="`Custom ${recipeSingularLabel} Name (optional)`"
+      placeholder="e.g. Vanila Cake"
+      :required="false"
     />
 
     <div>

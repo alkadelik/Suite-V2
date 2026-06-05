@@ -28,7 +28,7 @@ const itemQuantities = ref<Record<string, number>>({})
 const initializeQuantities = () => {
   itemQuantities.value = props.items.reduce(
     (acc, item) => {
-      acc[item.uid] = 1
+      acc[item.uid] = 0
       return acc
     },
     {} as Record<string, number>,
@@ -44,6 +44,16 @@ watch(
     }
   },
   { immediate: true },
+)
+
+// Initialize when modal opens (items may already be loaded at that point)
+watch(
+  () => props.open,
+  (isOpen) => {
+    if (isOpen && props.items.length > 0) {
+      initializeQuantities()
+    }
+  },
 )
 
 // Compute unfulfilled items
@@ -125,13 +135,8 @@ const handleFulfill = () => {
   )
 }
 
-// Re-initialize when modal opens
-const handleModalChange = (isOpen: boolean) => {
-  if (!isOpen) {
-    emit("close")
-  } else {
-    initializeQuantities()
-  }
+const handleModalChange = () => {
+  emit("close")
 }
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
@@ -142,7 +147,7 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
     :open="open"
     max-width="xl"
     title="Fulfill Order"
-    @close="handleModalChange(false)"
+    @close="handleModalChange"
     body-class="!px-4 md:!px-6"
     variant="bottom-nav"
   >
@@ -205,7 +210,7 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
 
           <TextField
             type="number"
-            :model-value="String(itemQuantities[item.uid])"
+            :model-value="itemQuantities[item.uid]"
             :suffix="`/ ${item.quantity - item.qty_fulfilled}`"
             input-class="max-w-[32px] md:max-w-[60px] text-center"
             class="w-[88px] md:w-32"

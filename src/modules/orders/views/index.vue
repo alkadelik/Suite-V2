@@ -773,6 +773,7 @@ const handleDetailsMarkAsPaid = () => {
       :order="selectedOrder"
       :open="openMemo"
       @close="openMemo = false"
+      @refresh="handleRefresh"
     />
 
     <OrderPaymentDrawer

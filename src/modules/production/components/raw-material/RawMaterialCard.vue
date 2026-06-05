@@ -13,6 +13,7 @@ import {
   getPurchaseUnit,
 } from "@modules/production/utils"
 import { floatDecimal } from "@/utils/others"
+import { removeUnderscores } from "@/utils/format-strings"
 
 const props = defineProps<{ material: TRawMaterial; class?: string }>()
 const emit = defineEmits(["click", "toggle", "edit", "adjust", "view", "delete"])
@@ -72,7 +73,7 @@ const actionMenus = computed(() => [
       <div class="min-w-0">
         <p class="truncate text-sm font-medium">
           {{ floatDecimal(convertNumToPurchaseUnit(+material.current_stock, material)) }}
-          {{ getPurchaseUnit(material) }}
+          {{ removeUnderscores(getPurchaseUnit(material)) }}
         </p>
         <p class="text-core-600 text-xs">Stock</p>
       </div>
@@ -83,7 +84,7 @@ const actionMenus = computed(() => [
             +material.last_cost
               ? `${format(
                   +convertNumToUsageUnit(+material.last_cost, material),
-                )}/${getPurchaseUnit(material)}`
+                )}/${removeUnderscores(getPurchaseUnit(material))}`
               : "-"
           }}
         </p>
@@ -94,7 +95,7 @@ const actionMenus = computed(() => [
         <p class="truncate text-sm font-medium">
           {{
             +material.avg_cost
-              ? `${format(+convertNumToUsageUnit(+material.avg_cost, material))}/${getPurchaseUnit(material)}`
+              ? `${format(+convertNumToUsageUnit(+material.avg_cost, material))}/${removeUnderscores(getPurchaseUnit(material))}`
               : "-"
           }}
         </p>
