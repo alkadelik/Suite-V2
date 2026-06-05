@@ -165,6 +165,7 @@ watch(
         <AppButton
           :icon="currentViewMode === 'grid' ? 'list' : 'grid'"
           variant="outlined"
+          class="shrink-0"
           @click="currentViewMode = currentViewMode === 'grid' ? 'list' : 'grid'"
         />
         <AppButton icon="add" class="flex-shrink-0" @click="showAdd = true" />
