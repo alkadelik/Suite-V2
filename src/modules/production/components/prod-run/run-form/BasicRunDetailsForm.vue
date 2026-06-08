@@ -165,13 +165,18 @@ watch(
 )
 
 // ─── Auto-select variant when options load (edit / first-open fallback) ──
-// { immediate: true } handles the case where TanStack Query returns cached
-// data synchronously — the value doesn't change so a plain watch would miss it.
 watch(
   variantOptions,
   (opts) => {
+    if (values.outputVariantUid) return
+    // Auto-select when there is only one variant — no need to ask the user
+    if (opts.length === 1) {
+      setFieldValue("outputVariantUid", opts[0])
+      return
+    }
+    // Restore saved selection when returning from a later step
     const preselectedUid = props.initialValues.outputVariantUid
-    if (!preselectedUid || values.outputVariantUid) return
+    if (!preselectedUid) return
     const match = opts.find((o) => o.value === preselectedUid)
     if (match) setFieldValue("outputVariantUid", match)
   },
@@ -238,10 +243,10 @@ const handleNext = handleSubmit((formValues) => {
     </SelectField>
 
     <SelectField
-      v-if="isProductRecipe"
+      v-if="isProductRecipe && variantOptions.length > 1"
       :model-value="values.outputVariantUid"
       label="Output Variant"
-      placeholder="Select variant"
+      :placeholder="isLoadingVariants ? 'Loading variants...' : 'Select variant'"
       :options="variantOptions"
       :error="errors.outputVariantUid ? String(errors.outputVariantUid) : undefined"
       :loading="isLoadingVariants"

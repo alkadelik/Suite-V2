@@ -336,6 +336,7 @@ watch(
     :open="openAddProduct"
     :existing-variant-skus="existingVariantSkus"
     @close="openAddProduct = false"
+    :popup-name="props.popup.name"
     @refresh="refetch"
   />
 

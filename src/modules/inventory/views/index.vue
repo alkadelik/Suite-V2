@@ -121,6 +121,7 @@
           :loading="isFetching"
           :show-pagination="true"
           :items-per-page="itemsPerPage"
+          :current-page="page"
           :total-items-count="products?.data?.count || 0"
           :total-page-count="Math.ceil((products?.data?.count || 0) / itemsPerPage) || 1"
           :server-pagination="true"
@@ -135,6 +136,14 @@
                 :variants-count="item.variants_count > 1 ? item.variants_count : undefined"
                 shape="rounded"
                 class="min-w-0 flex-1"
+              />
+              <Chip
+                v-if="isHQ && (item.popup_quantity_taken ?? 0) > 0"
+                icon="calendar-tick"
+                color="warning"
+                size="sm"
+                class="flex-shrink-0"
+                :label="`${item.popup_quantity_taken} in Popups`"
               />
               <Icon
                 v-if="item.is_hidden_from_storefront"
@@ -229,7 +238,7 @@
       v-if="showProductFormDrawer"
       v-model="showProductFormDrawer"
       :source-product-uid="productUidForDuplicate"
-      @refresh="refetchProducts"
+      @refresh="handleProductRefresh"
     />
     <ProductEditDrawer
       v-if="showProductEditDrawer"
@@ -369,6 +378,13 @@ const combinedParams = computed(() => {
 })
 
 const { data: products, isFetching, refetch: refetchProducts } = useGetProducts(combinedParams)
+
+// After creating a product, jump back to page 1 so the newly added product
+// (which lands at the top of the unfiltered list) is immediately visible.
+const handleProductRefresh = () => {
+  page.value = 1
+  refetchProducts()
+}
 const { data: productDashboard, isPending: isLoadingDashboard } = useGetProductDashboard()
 const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct()
 const { mutate: updateProduct, isPending: isUpdatingProduct } = useUpdateProduct()

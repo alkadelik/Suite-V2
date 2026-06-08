@@ -21,9 +21,15 @@ import { formatPhoneNumber, isStaging } from "@/utils/others"
 
 const validSchema = yup.object({
   store_name: yup.string().required("Store name is required"),
+  slug: yup
+    .string()
+    .required("Store slug is required")
+    .matches(/^[a-z0-9-]+$/, "Store slug can only contain lowercase letters, numbers, and hyphens")
+    .min(2, "Store slug must be at least 2 characters")
+    .max(30, "Store slug cannot exceed 30 characters"),
   currency: yup.object().required("Currency is required"),
-  store_email: yup.string().email("Invalid email").required("Store email is required"),
-  store_phone: yup.string().required("Store phone is required"),
+  store_email: yup.string().email("Invalid email").nullable(),
+  store_phone: yup.string().nullable(),
   support_email: yup.string().email("Invalid email").nullable(),
   support_phone: yup.string().nullable(),
   industry: yup.object().required("Industry is required"),
@@ -42,9 +48,13 @@ const {
 
 const isLoading = computed(() => isLoadingIndustries.value || isLoadingDetails.value)
 
-const { mutate: updateStoreDetails } = useUpdateStoreDetails()
+const { mutate: updateStoreDetails, isPending: isUpdating } = useUpdateStoreDetails()
 
-const { handleSubmit: handleStoreSubmit, setValues: setStoreValues } = useForm<IStoreDetailsForm>({
+const {
+  handleSubmit: handleStoreSubmit,
+  setValues: setStoreValues,
+  setFieldValue,
+} = useForm<IStoreDetailsForm>({
   validationSchema: validSchema,
 })
 
@@ -52,18 +62,18 @@ const onSubmitStoreDetails = handleStoreSubmit((formData) => {
   const payload = new FormData()
 
   payload.append("name", formData.store_name)
+  payload.append("slug", formData.slug)
   payload.append("currency", formData.currency.value)
-  payload.append("store_email", formData.store_email)
 
-  payload.append("store_phone", formatPhoneNumber(formData.store_phone))
-
-  if (formData.support_email) {
-    payload.append("support_email", formData.support_email)
-  }
-
-  if (formData.support_phone) {
-    payload.append("support_phone", formatPhoneNumber(formData.support_phone))
-  }
+  // Always send these (even when empty) so clearing a previously-saved value
+  // persists — an absent field leaves the old value unchanged on the backend.
+  payload.append("store_email", formData.store_email || "")
+  payload.append("store_phone", formData.store_phone ? formatPhoneNumber(formData.store_phone) : "")
+  payload.append("support_email", formData.support_email || "")
+  payload.append(
+    "support_phone",
+    formData.support_phone ? formatPhoneNumber(formData.support_phone) : "",
+  )
 
   payload.append("industry", formData.industry.value)
 
@@ -99,6 +109,7 @@ watch(
     if (newDetails) {
       setStoreValues({
         store_name: newDetails.name,
+        slug: newDetails.slug,
         industry: { label: newDetails.industry_name, value: newDetails.industry },
         currency: { label: "Nigerian Naira", value: "NGN" },
         store_email: newDetails.store_email,
@@ -123,12 +134,13 @@ const INDUSTRIES = computed(() => {
   }))
 })
 
-// Watch for store name changes to auto-generate slug
-const watchStoreNameForSlug = (storeName: string) => {
-  if (storeName) {
-    const slug = slugify(storeName)
-    currentSlug.value = slug
-  }
+// Clean and sync the slug field as the user edits it directly. The slug is kept
+// independent of the store name here (unlike create-store) so editing the name on
+// an existing store can't silently change the public storefront URL.
+const watchSlugForDisplay = (slug: string) => {
+  const cleanSlug = slugify(slug)
+  currentSlug.value = cleanSlug
+  setFieldValue("slug", cleanSlug)
 }
 </script>
 
@@ -149,13 +161,21 @@ const watchStoreNameForSlug = (storeName: string) => {
         class="border-core-100 mt-6 rounded-2xl border bg-white"
       >
         <div class="grid grid-cols-1 gap-6 p-6 md:grid-cols-2">
+          <FormField
+            name="store_name"
+            label="Store Name"
+            placeholder="e.g. John's Store"
+            required
+          />
+
           <div>
             <FormField
-              name="store_name"
-              label="Store Name"
-              placeholder="e.g. John's Store"
+              name="slug"
+              label="Store Slug"
+              placeholder="e.g. johns-store"
               required
-              @update:modelValue="watchStoreNameForSlug"
+              :modelValue="currentSlug"
+              @update:modelValue="watchSlugForDisplay"
             />
             <p class="text-core-400 mt-1.5 inline-flex items-center text-xs font-medium">
               <Icon name="global" size="12" class="mr-1 text-gray-400" />
@@ -180,16 +200,9 @@ const watchStoreNameForSlug = (storeName: string) => {
             name="store_email"
             label="Store Email"
             placeholder="e.g. john.doe@example.com"
-            required
           />
 
-          <FormField
-            type="tel"
-            name="store_phone"
-            label="Store Phone"
-            placeholder="8012345678"
-            required
-          />
+          <FormField type="tel" name="store_phone" label="Store Phone" placeholder="8012345678" />
 
           <FormField
             name="support_email"
@@ -244,7 +257,7 @@ const watchStoreNameForSlug = (storeName: string) => {
         </div>
 
         <div class="border-core-100 flex justify-end gap-6 border-t px-6 py-4">
-          <AppButton type="submit" label="Save Changes" />
+          <AppButton type="submit" label="Save Changes" :loading="isUpdating" />
         </div>
       </form>
     </section>

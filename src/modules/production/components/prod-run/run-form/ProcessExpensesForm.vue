@@ -23,9 +23,6 @@ const { format: formatCurrency } = useFormatCurrency()
 
 // ─── Process rows (local copy so rows can be removed) ────────────────────
 const processRows = ref<ProcessRow[]>([...props.initialRows])
-const removeProcessRow = (row: ProcessRow) => {
-  processRows.value = processRows.value.filter((r) => r.id !== row.id)
-}
 
 // ─── Additional expense rows ─────────────────────────────────────────────
 const makeEmptyExpense = (): AdditionalExpenseRow => ({
@@ -71,8 +68,8 @@ function handleSubmit() {
           >{{ recipeSingularLabel }} Process Costs (for the entire batch)</span
         >
       </div>
-      <div v-if="processRows.length" class="mt-4 space-y-6 border-t border-gray-200 px-4">
-        <div v-for="row in processRows" :key="row.id" class="flex items-center gap-3 py-3">
+      <div v-if="processRows.length" class="mt-4 space-y-3 border-t border-gray-200 p-3">
+        <div v-for="row in processRows" :key="row.id" class="flex items-center gap-3">
           <div class="grid flex-1 grid-cols-2 gap-3">
             <TextField :model-value="row.name" disabled />
             <TextField
@@ -83,14 +80,6 @@ function handleSubmit() {
               placeholder="0"
             />
           </div>
-          <button
-            type="button"
-            class="flex h-7 w-7 items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600"
-            aria-label="Remove process cost"
-            @click="removeProcessRow(row)"
-          >
-            <span class="text-lg leading-none">−</span>
-          </button>
         </div>
       </div>
       <div
@@ -110,8 +99,8 @@ function handleSubmit() {
         >
       </div>
 
-      <div v-if="additionalExpenses.length" class="mt-4 space-y-3 border-t border-gray-200 px-4">
-        <div v-for="row in additionalExpenses" :key="row.id" class="flex items-center gap-3 py-3">
+      <div v-if="additionalExpenses.length" class="mt-4 space-y-3 border-t border-gray-200 p-3">
+        <div v-for="row in additionalExpenses" :key="row.id" class="flex items-center gap-3">
           <div class="grid flex-1 grid-cols-2 gap-3">
             <TextField v-model="row.name" placeholder="e.g. Billing, Labour" />
             <TextField

@@ -45,7 +45,7 @@ type ActionGroup = {
 const quickActionGroups = computed<ActionGroup[]>(() => {
   const groups: ActionGroup[] = [
     {
-      label: "General",
+      label: "",
       items: [
         { label: "Orders", icon: "shopping-cart", to: "/orders" },
         { label: "Inventory", icon: "folder", to: "/inventory" },
@@ -70,7 +70,7 @@ const quickActionGroups = computed<ActionGroup[]>(() => {
       ],
     },
     {
-      label: "Production suite",
+      label: "Production",
       items: [
         { label: componentLabel.value, icon: "archive", to: "/production/raw-materials" },
         { label: recipeValue.value, icon: "clipboard-text-outline", to: "/production/recipes" },
@@ -183,7 +183,7 @@ const { setPlanUpgradeModal } = settingsStore
             left-icon="search-lg"
             size="sm"
             class="w-full"
-            placeholder="Search for menu..."
+            placeholder="Search menu..."
             v-model="searchQuery"
             container-class="bg-white!"
           />
@@ -198,12 +198,10 @@ const { setPlanUpgradeModal } = settingsStore
             <p class="text-xs text-gray-400">Try a different search term</p>
           </div>
           <div v-for="group in quickActionGroups" :key="group.label" class="mb-2">
-            <p class="text-core-600 mb-2 text-xs font-semibold tracking-wide uppercase">
+            <p class="text-core-600 mb-2 text-[11px] font-medium tracking-widest uppercase">
               {{ group.label }}
             </p>
-            <div
-              class="bg-primary-25 grid grid-cols-3 gap-2 rounded-2xl border border-gray-100 p-2"
-            >
+            <div class="bg-primary-25 grid grid-cols-3 gap-2 rounded-2xl p-2">
               <div
                 v-for="action in group.items"
                 :key="action.label"
@@ -226,7 +224,7 @@ const { setPlanUpgradeModal } = settingsStore
                     <Icon :name="action.icon" size="24" />
                   </div>
                 </div>
-                <span class="text-xs font-medium md:text-base">{{ action.label }}</span>
+                <span class="text-xs font-normal md:text-base">{{ action.label }}</span>
               </div>
             </div>
           </div>

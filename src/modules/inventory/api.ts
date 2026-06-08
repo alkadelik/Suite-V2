@@ -143,12 +143,24 @@ export function useSearchProducts(query: MaybeRefOrGetter<string>) {
   })
 }
 
-/** Fetch order statistics */
+/**
+ * Fetch product dashboard / summary statistics.
+ *
+ * Uses queryKey `["products", "dashboard"]` so it's a child of the `products`
+ * key — every existing `invalidateQueries({ queryKey: ["products"] })` site
+ * (create, update, delete, stock changes, etc.) will refresh the dashboard
+ * automatically via TanStack Query's prefix matching. No per-mutation hooks
+ * needed.
+ */
 export function useGetProductDashboard() {
-  return useApiQuery<IProductStats>({
-    url: `/inventory/products/dashboard/`,
-    key: `products-dashboard`,
-    selectData: true,
+  return useQuery({
+    queryKey: ["products", "dashboard"],
+    queryFn: async () => {
+      const { data } = await baseApi.get<{ data: IProductStats }>("/inventory/products/dashboard/")
+      return data.data
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
   })
 }
 

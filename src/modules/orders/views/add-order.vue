@@ -558,8 +558,8 @@ const hasNotLiveBanner = computed(() => {
             <!-- Info + controls -->
             <div class="px-1 pt-3 pb-1">
               <div class="mb-2 flex items-center justify-between">
-                <p class="truncate text-xs font-medium">{{ product.name }}</p>
-                <p class="text-xs font-semibold sm:text-sm">
+                <p class="truncate text-sm font-medium">{{ product.name }}</p>
+                <p class="text-sm font-semibold">
                   {{ format(parseFloat(product.variants[0]?.price ?? "0")) }}
                 </p>
               </div>
@@ -577,7 +577,7 @@ const hasNotLiveBanner = computed(() => {
               <AppButton
                 v-else-if="hasMultipleVariants(product)"
                 @click="openCartModal(product)"
-                size="xs"
+                size="sm"
                 variant="outlined"
                 :label="
                   productTotalQty(product) > 0
@@ -591,7 +591,7 @@ const hasNotLiveBanner = computed(() => {
               <AppButton
                 v-else
                 @click="openCartModal(product)"
-                size="xs"
+                size="sm"
                 color="alt"
                 :label="
                   productTotalQty(product) > 0

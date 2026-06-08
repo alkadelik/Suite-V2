@@ -15,7 +15,7 @@ import { useProductionStore } from "../../store"
 import AppButton from "@components/AppButton.vue"
 import TextField from "@components/form/TextField.vue"
 import { useSettingsStore } from "@modules/settings/store"
-import { useRouter } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
 import AddRawMaterialDrawer from "@modules/production/components/raw-material/AddRawMaterialDrawer.vue"
 import AdjustMaterialStockModal from "@modules/production/components/raw-material/AdjustMaterialStockModal.vue"
 import { TRawMaterial } from "@modules/production/types"
@@ -30,6 +30,7 @@ import ConfirmationModal from "@components/ConfirmationModal.vue"
 import { displayError } from "@/utils/error-handler"
 import SelectComponentName from "@modules/production/components/raw-material/SelectComponentName.vue"
 import { toast } from "@/composables/useToast"
+import { startCase } from "@/utils/format-strings"
 
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 const { truncate } = useFormatCurrency()
@@ -93,6 +94,18 @@ const materialStats = computed(() => [
 ])
 
 const router = useRouter()
+const route = useRoute()
+
+watch(
+  () => route.query.create,
+  (val) => {
+    if (val === "true") {
+      showAddDrawer.value = "create"
+      router.replace({ query: {} })
+    }
+  },
+  { immediate: true },
+)
 
 const handleRefresh = () => {
   refetch()
@@ -176,7 +189,7 @@ const handleDelete = () => {
       onSuccess: () => {
         showDelete.value = false
         selectedMaterial.value = null
-        toast.success(`${materialLabel.value} deleted successfully`)
+        toast.success(`${startCase(materialSingular.value)} deleted successfully`)
         handleRefresh()
       },
       onError: displayError,
@@ -360,7 +373,7 @@ const handleDelete = () => {
     />
 
     <ConfirmationModal
-      :header="`Delete ${materialValue}`"
+      :header="`Delete ${materialSingular}`"
       :paragraph="`Are you sure you want to delete '${selectedMaterial?.name}'? This action cannot be undone.`"
       v-model="showDelete"
       @close="showDelete = false"
