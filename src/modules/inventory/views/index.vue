@@ -31,7 +31,6 @@
     <!-- Requests Tab Content -->
     <InventoryRequests
       v-if="activeTab === 'requests' && isHQ"
-      :key="requestsRefetchKey"
       @request-click="handleRequestClick"
     />
 
@@ -94,7 +93,7 @@
         <!-- Empty State: Only show when no products exist AND no search/filters are active -->
         <EmptyState
           v-if="
-            !isFetching &&
+            !isPending &&
             filteredProducts.length === 0 &&
             !search &&
             activeFilters.category === null &&
@@ -118,7 +117,7 @@
           v-else
           :data="filteredProducts"
           :columns="PRODUCT_COLUMNS"
-          :loading="isFetching"
+          :loading="isPending"
           :show-pagination="true"
           :items-per-page="itemsPerPage"
           :current-page="page"
@@ -238,7 +237,6 @@
       v-if="showProductFormDrawer"
       v-model="showProductFormDrawer"
       :source-product-uid="productUidForDuplicate"
-      @refresh="handleProductRefresh"
     />
     <ProductEditDrawer
       v-if="showProductEditDrawer"
@@ -247,7 +245,6 @@
       :product="product"
       :edit-mode="editMode"
       :variant="variantForEdit"
-      @refresh="refetchProducts"
       @add-category="showAddCategoryModal = true"
     />
     <FilterDrawer
@@ -267,14 +264,12 @@
       :open="showReceiveRequestModal"
       :request="selectedRequest"
       @close="showReceiveRequestModal = false"
-      @success="handleRequestSuccess"
     />
     <ManageStockModal
       v-if="productDetailsForStock?.data"
       :open="showManageStockModal"
       :product="productDetailsForStock.data"
       @close="showManageStockModal = false"
-      @success="refetchProducts"
     />
   </div>
 </template>
@@ -297,6 +292,7 @@ import ProductEditDrawer from "../components/ProductEditDrawer.vue"
 import AddCategoryModal from "../components/AddCategoryModal.vue"
 import InventoryRequests from "../components/InventoryRequests.vue"
 import ReceiveRequestModal from "../components/ReceiveRequestModal.vue"
+import { inventoryCache } from "../cache"
 import ProductCard from "../components/ProductCard.vue"
 import ManageStockModal from "../components/ManageStockModal.vue"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
@@ -317,7 +313,6 @@ import EmptyState from "@components/EmptyState.vue"
 import { displayError } from "@/utils/error-handler"
 import router from "@/router"
 import { useSettingsStore } from "@modules/settings/store"
-import { useInventoryStore } from "../store"
 import { useRoute } from "vue-router"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
@@ -377,41 +372,18 @@ const combinedParams = computed(() => {
   return params
 })
 
-const { data: products, isFetching, refetch: refetchProducts } = useGetProducts(combinedParams)
-
-// After creating a product, jump back to page 1 so the newly added product
-// (which lands at the top of the unfiltered list) is immediately visible.
-const handleProductRefresh = () => {
-  page.value = 1
-  refetchProducts()
-}
+const { data: products, isPending } = useGetProducts(combinedParams)
 const { data: productDashboard, isPending: isLoadingDashboard } = useGetProductDashboard()
 const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct()
 const { mutate: updateProduct, isPending: isUpdatingProduct } = useUpdateProduct()
 const queryClient = useQueryClient()
 const settingsStore = useSettingsStore()
-const inventoryStore = useInventoryStore()
 const { checkPremiumAccess } = usePremiumAccess()
-
-// Update store when products data changes
-watch(
-  () => products.value,
-  (newProducts: typeof products.value) => {
-    if (newProducts?.data) {
-      inventoryStore.setProducts(
-        newProducts.data.results as TProduct[],
-        newProducts.data.count as number,
-      )
-    }
-  },
-  { immediate: true },
-)
 
 // Tabs state
 const activeTab = ref("products")
 const selectedRequest = ref<IInventoryTransferRequest | null>(null)
 const showReceiveRequestModal = ref(false)
-const requestsRefetchKey = ref(0)
 const route = useRoute()
 
 // Check if current location is HQ
@@ -448,9 +420,11 @@ const variantForEdit = ref<IProductVariantDetails | null>(null)
 const productUidForManageStock = ref<string | null>(null)
 const productUidForEdit = ref<string | null>(null)
 
-// Fetch product details for manage stock modal
+// Fetch product details for manage stock modal — only while the modal is open
 const productUidForFetch = computed(() => productUidForManageStock.value || "")
-const { data: productDetailsForStock } = useGetProduct(productUidForFetch)
+const { data: productDetailsForStock } = useGetProduct(productUidForFetch, {
+  enabled: () => showManageStockModal.value,
+})
 
 // Fetch product details for edit drawer when needed
 const productUidForEditFetch = computed(() => productUidForEdit.value || "")
@@ -729,12 +703,13 @@ const handleAction = (
 const handleDeleteProduct = () => {
   if (!product.value) return
 
-  deleteProduct(product.value?.uid, {
+  const deletedUid = product.value.uid
+  deleteProduct(deletedUid, {
     onSuccess: () => {
       toast.success("Product deleted successfully")
       showDeleteConfirmationModal.value = false
       product.value = null
-      queryClient.invalidateQueries({ queryKey: ["products"] })
+      inventoryCache.productDeleted(queryClient, deletedUid)
     },
     onError: displayError,
   })
@@ -746,9 +721,10 @@ const handleToggleVisibility = () => {
 
   const isCurrentlyHidden = product.value.is_hidden_from_storefront
   const newHiddenState = !isCurrentlyHidden
+  const toggledUid = product.value.uid
 
   updateProduct(
-    { uid: product.value.uid, is_hidden_from_storefront: newHiddenState },
+    { uid: toggledUid, is_hidden_from_storefront: newHiddenState },
     {
       onSuccess: () => {
         toast.success(
@@ -758,7 +734,7 @@ const handleToggleVisibility = () => {
         )
         showHideConfirmationModal.value = false
         product.value = null
-        refetchProducts()
+        inventoryCache.productUpdated(queryClient, toggledUid)
       },
       onError: displayError,
     },
@@ -791,11 +767,6 @@ const handleRequestClick = (request: IInventoryTransferRequest) => {
   showReceiveRequestModal.value = true
 }
 
-const handleRequestSuccess = () => {
-  // Increment key to force InventoryRequests component to remount and refetch
-  requestsRefetchKey.value++
-}
-
 // Watch for route query to open create modal/drawer
 watch(
   () => route.query.create,
@@ -822,6 +793,14 @@ watch(showProductEditDrawer, (isOpen) => {
     productUidForEdit.value = null
     variantForEdit.value = null
     router.replace({ name: "Inventory", query: {} })
+  }
+})
+
+// Clear product UID for manage stock when the modal is closed so its detail
+// query goes inactive instead of fetching in the background.
+watch(showManageStockModal, (isOpen) => {
+  if (!isOpen) {
+    productUidForManageStock.value = null
   }
 })
 

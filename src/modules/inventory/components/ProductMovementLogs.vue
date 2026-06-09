@@ -166,7 +166,7 @@ const movementParams = computed(() => {
   return params
 })
 
-const { data: movementsData, isFetching: loading } = useGetProductMovements(
+const { data: movementsData, isPending: loading } = useGetProductMovements(
   computed(() => props.product.uid),
   movementParams,
 )
