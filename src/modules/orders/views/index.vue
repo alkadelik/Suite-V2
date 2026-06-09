@@ -750,6 +750,7 @@ const handleDetailsMarkAsPaid = () => {
     </ConfirmationModal>
 
     <CreateOrderDrawer
+      v-if="openCreate"
       :open="openCreate"
       @close="
         () => {

@@ -176,7 +176,7 @@ const variantParams = computed(() => {
   return params
 })
 
-const { data: variantsData, isFetching: loading } = useGetVariantsByProduct(variantParams)
+const { data: variantsData, isPending: loading } = useGetVariantsByProduct(variantParams)
 const variants = computed(() => variantsData.value?.data?.results || props.product.variants || [])
 
 const filterGroups: FilterGroup[] = [

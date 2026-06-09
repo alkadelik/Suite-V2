@@ -100,6 +100,8 @@ import FormField from "@components/form/FormField.vue"
 import IconHeader from "@components/IconHeader.vue"
 import Chip from "@components/Chip.vue"
 import { useDirectStockTransfer, useRequestStockTransfer } from "../api"
+import { useQueryClient } from "@tanstack/vue-query"
+import { inventoryCache } from "../cache"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
 import type {
@@ -124,7 +126,6 @@ interface Props {
 
 interface Emits {
   (e: "close"): void
-  (e: "success"): void
 }
 
 const props = defineProps<Props>()
@@ -134,6 +135,7 @@ const { format } = useFormatCurrency()
 const settingsStore = useSettingsStore()
 const { mutate: directTransfer, isPending: isTransferring } = useDirectStockTransfer()
 const { mutate: requestTransfer, isPending: isRequesting } = useRequestStockTransfer()
+const queryClient = useQueryClient()
 
 const isPending = computed(() => isTransferring.value || isRequesting.value)
 
@@ -245,7 +247,8 @@ const onSubmit = handleSubmit((values) => {
     toast.success(
       `Stock ${props.type === "transfer" ? "transferred" : "request sent"} successfully`,
     )
-    emit("success")
+    // A direct transfer moves stock; a request only creates a transfer request.
+    inventoryCache.transferChanged(queryClient, props.type === "transfer", props.product?.uid)
     emit("close")
   }
 

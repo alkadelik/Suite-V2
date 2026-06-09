@@ -129,7 +129,7 @@ const orderParams = computed(() => {
   return params
 })
 
-const { data: ordersData, isFetching: loading } = useGetOrders(orderParams)
+const { data: ordersData, isPending: loading } = useGetOrders(orderParams)
 const orders = computed(() => ordersData.value?.results || [])
 
 const filterGroups: FilterGroup[] = [
