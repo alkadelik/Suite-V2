@@ -365,9 +365,9 @@ const onCreateOrder = () => {
     ...deliveryFields,
     fulfilment_method,
     coupon_code: paymentInfo.value.coupon_code || "",
-    payment_status: paymentInfo.value.payment_status,
+    payment_status: totalAmount.value === 0 ? "paid" : paymentInfo.value.payment_status,
     payment_amount:
-      paymentInfo.value.payment_status === "paid"
+      totalAmount.value === 0 || paymentInfo.value.payment_status === "paid"
         ? Number(totalAmount.value).toFixed(2)
         : Number(paymentInfo.value.payment_amount).toFixed(2),
     payment_source: paymentInfo.value.payment_source?.value,
