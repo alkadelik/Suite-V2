@@ -60,40 +60,52 @@ export function useProductFormState() {
   ])
 
   /**
-   * Initialize default variant when hasVariants is toggled
-   * Prevents empty variant state that would fail validation
+   * Build a single non-variant default row. Kept as a factory so the toggle
+   * watcher (and any reset) share exactly one definition.
+   */
+  const createDefaultVariant = (): IProductVariant => ({
+    name: form.name || "Default",
+    sku: "",
+    price: "",
+    promo_price: "",
+    promo_expiry: "",
+    cost_price: "",
+    weight: "",
+    length: "",
+    width: "",
+    height: "",
+    reorder_point: "",
+    max_stock: "",
+    opening_stock: "",
+    is_active: true,
+    is_default: true,
+    batch_number: "",
+    expiry_date: "",
+    attributes: [],
+  })
+
+  /**
+   * Keep `variants` consistent with the hasVariants toggle.
+   * Prevents empty variant state that would fail validation, and — critically —
+   * discards leftover multi-variant combinations when the user turns the switch
+   * back OFF after having configured variants (otherwise the inventory/pricing
+   * step renders those stale combinations instead of a single default row).
    */
   const stopVariantsWatcher = watch(hasVariants, (newValue) => {
-    if (!newValue && variants.value.length === 0) {
-      // Initialize single variant for products without variants
-      variants.value = [
-        {
-          name: form.name || "Default",
-          sku: "",
-          price: "",
-          promo_price: "",
-          promo_expiry: "",
-          cost_price: "",
-          weight: "",
-          length: "",
-          width: "",
-          height: "",
-          reorder_point: "",
-          max_stock: "",
-          opening_stock: "",
-          is_active: true,
-          is_default: true,
-          batch_number: "",
-          expiry_date: "",
-          attributes: [],
-        },
-      ]
-    } else if (
-      newValue &&
-      variants.value.length === 1 &&
-      variants.value[0].attributes.length === 0
-    ) {
-      // Clear variants when switching back to variants mode
+    const isSingleDefaultVariant =
+      variants.value.length === 1 && variants.value[0].attributes.length === 0
+
+    if (!newValue) {
+      // Simple (no-variant) product: ensure exactly one default row. Reset when
+      // the array is empty OR still holds generated multi-variant combinations,
+      // but preserve an already-clean single default so a user doesn't lose
+      // pricing they already entered.
+      if (!isSingleDefaultVariant) {
+        variants.value = [createDefaultVariant()]
+      }
+    } else if (isSingleDefaultVariant) {
+      // Switching to variants mode: drop the placeholder single default so the
+      // generated combinations start clean.
       variants.value = []
     }
   })

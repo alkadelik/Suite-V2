@@ -55,7 +55,7 @@ const activeCategoryUid = ref<string | null>(null)
 const { data: categoriesData } = useGetCategories()
 const categories = computed(() => categoriesData.value?.data.results ?? [])
 
-const { data, isPending, isFetchingNextPage, fetchNextPage, hasNextPage, refetch } =
+const { data, isPending, isFetchingNextPage, fetchNextPage, hasNextPage } =
   useGetProductCatalogsInfinite(20, debouncedSearch)
 
 const scrollContainer = useTemplateRef<HTMLElement>("scrollContainer")
@@ -89,10 +89,8 @@ const getAvailableStock = (product: IProductCatalogue) => {
 const hasMultipleVariants = (product: IProductCatalogue) => product.variants.length > 1
 
 const showAddProduct = ref(false)
-const handleProductCreated = async (uid: string) => {
+const handleProductCreated = (newProd: IProductCatalogue | null) => {
   showAddProduct.value = false
-  await refetch()
-  const newProd = allProducts.value.find((p) => p.uid === uid)
   if (newProd && getAvailableStock(newProd) > 0 && !hasMultipleVariants(newProd)) {
     incrementItem(newProd, newProd.variants[0] ?? null)
   }
@@ -1206,6 +1204,7 @@ const hasNotLiveBanner = computed(() => {
 
   <!-- ─── Add product modal ─────────────────────────────────────────────────── -->
   <AddNewProductModal
+    v-if="showAddProduct"
     :open="showAddProduct"
     @close="showAddProduct = false"
     @created="handleProductCreated"

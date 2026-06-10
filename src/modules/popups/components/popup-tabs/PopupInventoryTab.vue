@@ -333,6 +333,7 @@ watch(
 
   <!-- Setup Booth Drawer - Available for both empty and populated states -->
   <SetupPopupBoothDrawer
+    v-if="openAddProduct"
     :open="openAddProduct"
     :existing-variant-skus="existingVariantSkus"
     @close="openAddProduct = false"
