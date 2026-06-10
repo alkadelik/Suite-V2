@@ -547,6 +547,14 @@ watch(
       updateShipping("delivery_fee", 0)
       updateShipping("courier", "")
     }
+    navigationErrors.value = {
+      delivery_type: "",
+      delivery_method: "",
+      express_delivery_option: "",
+      manual_delivery_option: "",
+    }
+    shippingRateErrors.value = { email: "", phone: "", address: "" }
+    validationErrors.value = { courier: "", delivery_fee: "" }
   },
 )
 
@@ -579,6 +587,21 @@ watch(localDeliveryType, () => {
 
 // ─── Payment side syncing ────────────────────────────────────────────────────
 watch(
+  () => props.totalAmount,
+  (newTotal) => {
+    if (newTotal === 0) {
+      paymentInfo.value = {
+        ...paymentInfo.value,
+        payment_status: "paid",
+        payment_amount: 0,
+        payment_source: paymentInfo.value.payment_source ?? ORDER_PAYMENT_METHODS[0],
+      }
+    }
+  },
+  { immediate: true },
+)
+
+watch(
   () => paymentInfo.value.payment_status,
   (newStatus) => {
     if (newStatus === "paid") {
@@ -595,7 +618,7 @@ watch(
 watch(
   () => props.totalAmount,
   (newTotal) => {
-    if (paymentInfo.value.payment_status === "paid") {
+    if (newTotal > 0 && paymentInfo.value.payment_status === "paid") {
       paymentInfo.value = { ...paymentInfo.value, payment_amount: newTotal }
     }
   },
@@ -1155,7 +1178,10 @@ const handleSave = async () => {
       </section>
 
       <!-- ─── PAYMENT CARD ─────────────────────────────────────── -->
-      <section class="overflow-hidden rounded-xl border border-gray-200 bg-white">
+      <section
+        v-if="productsTotal > 0 || shippingInfo.delivery_fee > 0"
+        class="overflow-hidden rounded-xl border border-gray-200 bg-white"
+      >
         <header class="border-b border-gray-200 bg-gray-50 px-4 py-2.5">
           <h3 class="text-sm font-semibold text-gray-700">Payment</h3>
         </header>

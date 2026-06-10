@@ -25,6 +25,8 @@ interface OrderItem {
 const props = defineProps({
   open: { type: Boolean, required: true },
   existingVariantSkus: { type: Array as () => string[], default: () => [] },
+  isSetup: { type: Boolean, default: false },
+  popupName: { type: String, default: "" },
 })
 const emit = defineEmits(["close", "refresh"])
 
@@ -113,7 +115,7 @@ const onSubmitBooth = () => {
   <Drawer
     :open="open"
     variant="fullscreen"
-    title="Setup Booth"
+    :title="isSetup ? 'Setup Booth' : `Add Products to ${popupName}`"
     max-width="2xl"
     @close="handleClose"
   >
@@ -219,7 +221,7 @@ const onSubmitBooth = () => {
           >
             <AppButton label="Back" color="alt" class="w-1/3" icon="arrow-left" @click="onPrev" />
             <AppButton
-              label="Setup Booth"
+              :label="isSetup ? 'Setup Booth' : 'Add Products'"
               class="w-2/3"
               :loading="isAddingProducts"
               @click="onSubmitBooth"

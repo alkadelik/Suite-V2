@@ -55,7 +55,7 @@ const activeCategoryUid = ref<string | null>(null)
 const { data: categoriesData } = useGetCategories()
 const categories = computed(() => categoriesData.value?.data.results ?? [])
 
-const { data, isPending, isFetchingNextPage, fetchNextPage, hasNextPage, refetch } =
+const { data, isPending, isFetchingNextPage, fetchNextPage, hasNextPage } =
   useGetProductCatalogsInfinite(20, debouncedSearch)
 
 const scrollContainer = useTemplateRef<HTMLElement>("scrollContainer")
@@ -89,10 +89,8 @@ const getAvailableStock = (product: IProductCatalogue) => {
 const hasMultipleVariants = (product: IProductCatalogue) => product.variants.length > 1
 
 const showAddProduct = ref(false)
-const handleProductCreated = async (uid: string) => {
+const handleProductCreated = (newProd: IProductCatalogue | null) => {
   showAddProduct.value = false
-  await refetch()
-  const newProd = allProducts.value.find((p) => p.uid === uid)
   if (newProd && getAvailableStock(newProd) > 0 && !hasMultipleVariants(newProd)) {
     incrementItem(newProd, newProd.variants[0] ?? null)
   }
@@ -365,9 +363,9 @@ const onCreateOrder = () => {
     ...deliveryFields,
     fulfilment_method,
     coupon_code: paymentInfo.value.coupon_code || "",
-    payment_status: paymentInfo.value.payment_status,
+    payment_status: totalAmount.value === 0 ? "paid" : paymentInfo.value.payment_status,
     payment_amount:
-      paymentInfo.value.payment_status === "paid"
+      totalAmount.value === 0 || paymentInfo.value.payment_status === "paid"
         ? Number(totalAmount.value).toFixed(2)
         : Number(paymentInfo.value.payment_amount).toFixed(2),
     payment_source: paymentInfo.value.payment_source?.value,
@@ -558,8 +556,8 @@ const hasNotLiveBanner = computed(() => {
             <!-- Info + controls -->
             <div class="px-1 pt-3 pb-1">
               <div class="mb-2 flex items-center justify-between">
-                <p class="truncate text-xs font-medium">{{ product.name }}</p>
-                <p class="text-xs font-semibold sm:text-sm">
+                <p class="truncate text-sm font-medium">{{ product.name }}</p>
+                <p class="text-sm font-semibold">
                   {{ format(parseFloat(product.variants[0]?.price ?? "0")) }}
                 </p>
               </div>
@@ -577,7 +575,7 @@ const hasNotLiveBanner = computed(() => {
               <AppButton
                 v-else-if="hasMultipleVariants(product)"
                 @click="openCartModal(product)"
-                size="xs"
+                size="sm"
                 variant="outlined"
                 :label="
                   productTotalQty(product) > 0
@@ -591,7 +589,7 @@ const hasNotLiveBanner = computed(() => {
               <AppButton
                 v-else
                 @click="openCartModal(product)"
-                size="xs"
+                size="sm"
                 color="alt"
                 :label="
                   productTotalQty(product) > 0
@@ -1206,6 +1204,7 @@ const hasNotLiveBanner = computed(() => {
 
   <!-- ─── Add product modal ─────────────────────────────────────────────────── -->
   <AddNewProductModal
+    v-if="showAddProduct"
     :open="showAddProduct"
     @close="showAddProduct = false"
     @created="handleProductCreated"

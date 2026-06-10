@@ -428,7 +428,7 @@ const totalStock = computed(() => {
           @click="handleRemove"
         />
         <AppButton
-          label="Save To Cart"
+          label="Add to Cart"
           class="flex-1"
           :disabled="variantStates.length === 0"
           @click="handleSave"

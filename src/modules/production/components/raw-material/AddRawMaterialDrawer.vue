@@ -688,7 +688,7 @@ const handleAddFromSearch = (search: string, close: () => void) => {
                 name="default_cost"
                 format="currency"
                 step="0.01"
-                :label="`Price per ${removeUnderscores(values.unit?.value) || 'Unit'} (${currency})`"
+                :label="`Cost per ${removeUnderscores(values.unit?.value) || 'unit'} (${currency})`"
                 :suffix="removeUnderscores(values.unit?.label)"
                 placeholder="e.g. 25"
                 required

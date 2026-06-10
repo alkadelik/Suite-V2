@@ -15,6 +15,7 @@ const props = defineProps<{ open: boolean; order: TOrder }>()
 
 const emit = defineEmits<{
   close: []
+  refresh: []
 }>()
 
 // State
@@ -176,7 +177,12 @@ const { data: memosData, isFetching, refetch } = useGetOrderMemos(id)
       :open="openAddMemo"
       :order-id="props.order.uid"
       @close="openAddMemo = false"
-      @refresh="refetch"
+      @refresh="
+        () => {
+          refetch()
+          emit('refresh')
+        }
+      "
     />
   </div>
 </template>
