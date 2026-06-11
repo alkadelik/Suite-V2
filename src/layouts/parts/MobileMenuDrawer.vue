@@ -70,14 +70,22 @@ const quickActionGroups = computed<ActionGroup[]>(() => {
         { label: "Settings", icon: "setting", to: "/settings" },
       ],
     },
-    {
-      label: "Production",
-      items: [
-        { label: componentLabel.value, icon: "archive", to: "/production/raw-materials" },
-        { label: recipeValue.value, icon: "clipboard-text-outline", to: "/production/recipes" },
-        { label: "Runs", icon: "chart", to: "/production/runs" },
-      ],
-    },
+    ...(isHQ.value
+      ? [
+          {
+            label: "Production",
+            items: [
+              { label: componentLabel.value, icon: "archive", to: "/production/raw-materials" },
+              {
+                label: recipeValue.value,
+                icon: "clipboard-text-outline",
+                to: "/production/recipes",
+              },
+              { label: "Runs", icon: "chart", to: "/production/runs" },
+            ],
+          },
+        ]
+      : []),
     {
       label: "Reports",
       items: [

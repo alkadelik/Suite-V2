@@ -79,6 +79,7 @@
       />
 
       <SidebarGroup
+        v-if="isHQ"
         icon="building-outline"
         label="Production"
         :children="productionItems"
@@ -207,6 +208,7 @@ const expandedGroup = ref<string | null>("sales-suite")
 // Prefer the connected custom domain when one is active (LYW-2618).
 const storefrontUrl = computed(() => useSettingsStore().displayDomain)
 const isInternational = computed(() => useSettingsStore().isInternational)
+const isHQ = computed(() => activeLocation.value?.is_hq)
 
 // Sales Suite items
 const salesSuiteItems = computed(() =>

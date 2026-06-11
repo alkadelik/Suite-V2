@@ -267,6 +267,15 @@ const shippingRateErrors = ref({ email: "", phone: "", address: "" })
 const submitAttempted = ref(false)
 const paymentErrors = ref({ payment_source: "", payment_amount: "" })
 
+const partialAmountError = computed(() => {
+  if (paymentInfo.value.payment_status !== "partially_paid") return ""
+  const amount = Number(paymentInfo.value.payment_amount)
+  if (Number.isFinite(amount) && amount > props.totalAmount) {
+    return `Amount must be less than ${format(props.totalAmount)}.`
+  }
+  return ""
+})
+
 const manualDeliverySchema = yup.object({
   courier: yup.string().required("Courier name is required").trim(),
   delivery_fee: yup
@@ -361,8 +370,7 @@ const validatePayment = (): boolean => {
     if (!Number.isFinite(amount) || amount <= 0) {
       paymentErrors.value.payment_amount = "Enter an amount greater than 0."
     } else if (amount >= props.totalAmount) {
-      paymentErrors.value.payment_amount =
-        "Partial payment must be less than the total order amount."
+      paymentErrors.value.payment_amount = `Amount must be less than ${format(props.totalAmount)}.`
     }
   }
 
@@ -1224,9 +1232,8 @@ const handleSave = async () => {
               :label="`Amount Paid (${format(totalAmount)})`"
               placeholder="0.00"
               :min="0"
-              :max="totalAmount"
               required
-              :error="submitAttempted ? paymentErrors.payment_amount : ''"
+              :error="partialAmountError || (submitAttempted ? paymentErrors.payment_amount : '')"
               @update:model-value="paymentInfo.payment_amount = $event"
             />
           </div>

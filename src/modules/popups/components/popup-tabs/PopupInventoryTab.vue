@@ -110,7 +110,7 @@ const handleConfirmAction = () => {
   if (confirmationAction.value === "remove") {
     const payload = {
       popup_event: route.params.id as string,
-      uids: [selectedProduct.value.uid],
+      uids: selectedProduct.value.variants.map((v) => v.popup_inventory_uid),
     }
 
     deletePopupProducts(payload, {
