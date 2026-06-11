@@ -104,7 +104,11 @@ import { useSettingsStore } from "@modules/settings/store"
 const router = useRouter()
 
 const authStore = useAuthStore()
-const storeSlug = authStore.user?.store_slug || ""
+// Prefer the live storeDetails slug (refreshed after a slug edit) over the
+// persisted auth snapshot, so live-status isn't polled with a stale slug.
+const storeSlug = computed(
+  () => useSettingsStore().storeDetails?.slug || authStore.user?.store_slug || "",
+)
 
 const {
   data: liveStatusData,

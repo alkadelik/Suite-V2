@@ -467,7 +467,10 @@ export function useSearchProductVariants(search: MaybeRefOrGetter<string>) {
 }
 
 /** get inventory transfer requests (for HQ to view pending requests) */
-export function useGetTransferRequests(params?: MaybeRefOrGetter<Record<string, string | number>>) {
+export function useGetTransferRequests(
+  params?: MaybeRefOrGetter<Record<string, string | number>>,
+  options?: { enabled?: MaybeRefOrGetter<boolean> },
+) {
   return useQuery({
     queryKey: computed(() => inventoryKeys.transfers.list(toValue(params))),
     queryFn: async () => {
@@ -482,6 +485,7 @@ export function useGetTransferRequests(params?: MaybeRefOrGetter<Record<string, 
     },
     retry: false,
     refetchOnWindowFocus: false,
+    enabled: options?.enabled !== undefined ? computed(() => toValue(options.enabled)) : undefined,
   })
 }
 

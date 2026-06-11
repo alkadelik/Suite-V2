@@ -145,7 +145,14 @@ export const inventoryCache = {
     void invalidate(queryClient, inventoryKeys.variants.all)
   },
   stockChanged(queryClient: QueryClient, productUid?: string) {
-    if (productUid) void invalidate(queryClient, inventoryKeys.products.detail(productUid))
+    // Refetch the product detail with refetchType "all" (not just "active") so the
+    // Manage Stock modal's detail query is refreshed even if it has just gone
+    // inactive on close, preventing stale stock on reopen (LYW-2647).
+    if (productUid)
+      void queryClient.invalidateQueries({
+        queryKey: inventoryKeys.products.detail(productUid),
+        refetchType: "all",
+      })
     void invalidate(queryClient, inventoryKeys.products.lists())
     void invalidate(queryClient, inventoryKeys.products.dashboard())
     void invalidate(queryClient, inventoryKeys.catalog.all)

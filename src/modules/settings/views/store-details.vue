@@ -1,20 +1,27 @@
 <script setup lang="ts">
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
-import { onInvalidSubmit, slugify } from "@/utils/validations"
+import { onInvalidSubmit } from "@/utils/validations"
 import AppButton from "@components/AppButton.vue"
 import Avatar from "@components/Avatar.vue"
 import FormField from "@components/form/FormField.vue"
+import Icon from "@components/Icon.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import StorefrontNotLiveBanner from "@components/StorefrontNotLiveBanner.vue"
 import StoreDetailsSkeleton from "../components/skeletons/StoreDetailsSkeleton.vue"
 import { useAuthStore } from "@modules/auth/store"
+import { useSettingsStore } from "@modules/settings/store"
 import { CURRENCY_OPTIONS } from "@modules/shared/constants"
-import { useForm } from "vee-validate"
-import { ref } from "vue"
+import { useFieldValue, useForm } from "vee-validate"
 import { computed, watch } from "vue"
 import * as yup from "yup"
-import { useGetStoreDetails, useGetStoreIndustries, useUpdateStoreDetails } from "../api"
+import {
+  useCheckSlugTaken,
+  useGetStoreDetails,
+  useGetStoreIndustries,
+  useUpdateStoreDetails,
+} from "../api"
+import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import { IStoreDetailsForm, IUpdateStoreDetailsPayload } from "../types"
 import AccountNumberSection from "../components/store-details/AccountNumberSection.vue"
 import { formatPhoneNumber, isStaging } from "@/utils/others"
@@ -37,7 +44,7 @@ const validSchema = yup.object({
   logo: yup.mixed().nullable(),
 })
 
-const { user } = useAuthStore()
+const { user, updateAuthUser } = useAuthStore()
 
 const { data: industries, isPending: isLoadingIndustries } = useGetStoreIndustries()
 const {
@@ -50,15 +57,34 @@ const isLoading = computed(() => isLoadingIndustries.value || isLoadingDetails.v
 
 const { mutate: updateStoreDetails, isPending: isUpdating } = useUpdateStoreDetails()
 
-const {
-  handleSubmit: handleStoreSubmit,
-  setValues: setStoreValues,
-  setFieldValue,
-} = useForm<IStoreDetailsForm>({
+const { handleSubmit: handleStoreSubmit, setValues: setStoreValues } = useForm<IStoreDetailsForm>({
   validationSchema: validSchema,
 })
 
+// Drive the slug preview from the live vee-validate field value so the input is
+// owned solely by vee-validate (LYW-2573).
+const slugValue = useFieldValue<string>("slug")
+
+// Debounced slug availability check, mirroring the bank-account verification UX
+// (LYW-2573). Only runs for a validly-shaped slug that differs from the saved one.
+const debouncedSlug = useDebouncedRef(slugValue, 600)
+const slugCheckEnabled = computed(() => {
+  const slug = debouncedSlug.value
+  return (
+    !!slug && slug !== storeDetails.value?.slug && slug.length >= 2 && /^[a-z0-9-]+$/.test(slug)
+  )
+})
+const { data: slugTaken, isFetching: isCheckingSlug } = useCheckSlugTaken(
+  () => debouncedSlug.value || "",
+  slugCheckEnabled,
+)
+
 const onSubmitStoreDetails = handleStoreSubmit((formData) => {
+  // Block saving while the slug is taken or still being checked (LYW-2573).
+  if (slugCheckEnabled.value && (isCheckingSlug.value || slugTaken.value)) {
+    return toast.error("Please choose an available store slug")
+  }
+
   const payload = new FormData()
 
   payload.append("name", formData.store_name)
@@ -101,12 +127,19 @@ const onSubmitStoreDetails = handleStoreSubmit((formData) => {
   )
 }, onInvalidSubmit)
 
-const currentSlug = ref("")
-
 watch(
   storeDetails,
   (newDetails) => {
     if (newDetails) {
+      // Hydrate the persisted settings store directly so a freshly-saved slug
+      // propagates app-wide (live-status, storefront URL) even when the
+      // LocationDropdown hydration watcher isn't mounted.
+      useSettingsStore().setStoreDetails(newDetails)
+      // Keep the persisted auth snapshot's slug in sync — it's the live-status
+      // fallback and is otherwise only refreshed at the next login.
+      if (newDetails.slug && user?.store_slug !== newDetails.slug) {
+        updateAuthUser({ store_slug: newDetails.slug })
+      }
       setStoreValues({
         store_name: newDetails.name,
         slug: newDetails.slug,
@@ -119,8 +152,6 @@ watch(
         instagram_handle: newDetails.instagram_handle,
         logo: (newDetails.logo as File) || null,
       })
-
-      if (newDetails.slug) currentSlug.value = newDetails.slug
     }
   },
   { immediate: true },
@@ -133,15 +164,6 @@ const INDUSTRIES = computed(() => {
     value: industry.uid,
   }))
 })
-
-// Clean and sync the slug field as the user edits it directly. The slug is kept
-// independent of the store name here (unlike create-store) so editing the name on
-// an existing store can't silently change the public storefront URL.
-const watchSlugForDisplay = (slug: string) => {
-  const cleanSlug = slugify(slug)
-  currentSlug.value = cleanSlug
-  setFieldValue("slug", cleanSlug)
-}
 </script>
 
 <template>
@@ -169,19 +191,42 @@ const watchSlugForDisplay = (slug: string) => {
           />
 
           <div>
-            <FormField
-              name="slug"
-              label="Store Slug"
-              placeholder="e.g. johns-store"
-              required
-              :modelValue="currentSlug"
-              @update:modelValue="watchSlugForDisplay"
-            />
+            <div class="mb-1.5 flex items-center justify-between">
+              <label class="text-core-800 text-sm font-medium">
+                Store Slug <span class="text-red-500">*</span>
+              </label>
+              <span
+                v-if="slugCheckEnabled && (isCheckingSlug || slugTaken !== undefined)"
+                :class="[
+                  'inline-flex items-center gap-1 text-xs font-medium',
+                  isCheckingSlug
+                    ? 'text-core-800'
+                    : slugTaken
+                      ? 'text-error-600'
+                      : 'text-green-800',
+                ]"
+              >
+                <Icon
+                  v-if="!isCheckingSlug && slugTaken === false"
+                  name="check-circle"
+                  size="14"
+                  class="[&_path]:fill-current"
+                />
+                {{
+                  isCheckingSlug
+                    ? "Checking availability..."
+                    : slugTaken
+                      ? "Slug is already taken"
+                      : "Slug is available"
+                }}
+              </span>
+            </div>
+            <FormField name="slug" placeholder="e.g. johns-store" required hide-label />
             <p class="text-core-400 mt-1.5 inline-flex items-center text-xs font-medium">
               <Icon name="global" size="12" class="mr-1 text-gray-400" />
               {{ `https://${isStaging ? "storefronts-v2.vercel.app" : "buy.leyyow.com"}/` }}
               <span class="text-core-600 font-semibold">
-                {{ currentSlug || "[SLUG]" }}
+                {{ slugValue || "[SLUG]" }}
               </span>
             </p>
           </div>

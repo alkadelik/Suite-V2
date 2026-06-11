@@ -7,6 +7,31 @@ interface ErrorResponse {
   [key: string]: unknown
 }
 
+// Depth-first search for the first non-empty leaf string in an arbitrarily
+// nested error value. Handles DRF nested-serializer shapes the explicit
+// branches below don't, e.g.
+//   "transfers": { "0": { "quantity": ["Insufficient stock. Available: 80"] } }
+//   "transfers": [ { "quantity": ["..."] } ]
+const extractLeafString = (val: unknown, depth = 0): string | null => {
+  if (depth > 6) return null
+  if (typeof val === "string") return val.trim() || null
+  if (Array.isArray(val)) {
+    for (const item of val) {
+      const leaf = extractLeafString(item, depth + 1)
+      if (leaf) return leaf
+    }
+    return null
+  }
+  if (typeof val === "object" && val !== null) {
+    for (const v of Object.values(val as Record<string, unknown>)) {
+      const leaf = extractLeafString(v, depth + 1)
+      if (leaf) return leaf
+    }
+    return null
+  }
+  return null
+}
+
 export const formatError = (error: unknown): string => {
   console.error("API Error:", error)
 
@@ -49,6 +74,12 @@ export const formatError = (error: unknown): string => {
             const [nestedKey, nestedValue] = nestedEntries[0]
             nestedVal = `${nestedKey}: ${String(nestedValue)}`
           }
+        }
+
+        // Handle deeply-nested DRF serializer errors the branches above miss,
+        // e.g. "transfers": { "0": { "quantity": ["Insufficient stock. Available: 80"] } }
+        else if (typeof value === "object" && value !== null) {
+          nestedVal = extractLeafString(value)
         }
       }
     }

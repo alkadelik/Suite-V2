@@ -5,6 +5,7 @@ import Icon from "@components/Icon.vue"
 import SectionHeader from "@components/SectionHeader.vue"
 import DeliveryOptionsSkeleton from "../components/skeletons/DeliveryOptionsSkeleton.vue"
 import { useAuthStore } from "@modules/auth/store"
+import { useSettingsStore } from "@modules/settings/store"
 import {
   useGetLiveStatus,
   useGetManualDeliveryOptions,
@@ -46,14 +47,18 @@ const automaticSetupMode = ref(false)
 // Track which delivery type is currently being displayed (automatic or manual)
 const currentDeliveryView = ref<"automatic" | "manual">("automatic")
 
-const storeSlug = computed(() => useAuthStore().user?.store_slug || "")
+// Prefer the live storeDetails slug (refreshed after a slug edit) over the
+// persisted auth snapshot, so live-status isn't polled with a stale slug.
+const storeSlug = computed(
+  () => useSettingsStore().storeDetails?.slug || useAuthStore().user?.store_slug || "",
+)
 const storeUid = computed(() => useAuthStore().user?.store_uid || "")
 
 const {
   data: liveStatus,
   refetch: refetchLiveStatus,
   isPending: isLoadingLiveStatus,
-} = useGetLiveStatus(storeSlug.value)
+} = useGetLiveStatus(storeSlug)
 const {
   data: storeDetails,
   refetch: refetchStoreDetails,
