@@ -74,51 +74,36 @@ const getVariantOptions = (product: PopupInventory) => {
 
 // Initialize local items when component mounts or products change
 onMounted(() => {
-  if (props.orderItems.length > 0) {
-    // Group orderItems by product
-    const productMap = new Map<string, { product: PopupInventory; notes?: string }>()
-    const variantsMap = new Map<string, VariantItem[]>()
+  const productMap = new Map<string, { product: PopupInventory; notes?: string }>()
+  const variantsMap = new Map<string, VariantItem[]>()
 
-    for (const item of props.orderItems) {
-      if (!productMap.has(item.product.uid)) {
-        productMap.set(item.product.uid, { product: item.product, notes: item.notes })
-      }
-
-      const existing = variantsMap.get(item.product.uid) || []
-      existing.push({
-        variant: item.variant,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-      })
-      variantsMap.set(item.product.uid, existing)
+  // Restore existing order items first
+  for (const item of props.orderItems) {
+    if (!productMap.has(item.product.uid)) {
+      productMap.set(item.product.uid, { product: item.product, notes: item.notes })
     }
+    const existing = variantsMap.get(item.product.uid) || []
+    existing.push({ variant: item.variant, quantity: item.quantity, unit_price: item.unit_price })
+    variantsMap.set(item.product.uid, existing)
+  }
 
-    localItems.value = Array.from(productMap.values())
-    selectedVariants.value = variantsMap
-  } else {
-    // Create initial items from selected products - group by product
-    localItems.value = props.selectedProducts.map((product) => {
-      // Auto-select variant if there's only one
+  // Add any selected products not yet covered by orderItems
+  for (const product of props.selectedProducts) {
+    if (!productMap.has(product.uid)) {
+      productMap.set(product.uid, { product, notes: "" })
       if (product.variants && product.variants.length === 1) {
         const variant = product.variants[0]
-        selectedVariants.value.set(product.uid, [
-          {
-            variant,
-            quantity: 1,
-            unit_price: parseFloat(variant.event_price),
-          },
+        variantsMap.set(product.uid, [
+          { variant, quantity: 1, unit_price: parseFloat(variant.event_price) },
         ])
       } else {
-        // For products with multiple variants, start with empty selection
-        selectedVariants.value.set(product.uid, [])
+        variantsMap.set(product.uid, [])
       }
-
-      return {
-        product,
-        notes: "",
-      }
-    })
+    }
   }
+
+  localItems.value = Array.from(productMap.values())
+  selectedVariants.value = variantsMap
 })
 
 // Watch for new products added in step 0

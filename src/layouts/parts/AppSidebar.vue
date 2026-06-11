@@ -78,6 +78,7 @@
       />
 
       <SidebarGroup
+        v-if="isHQ"
         icon="building-outline"
         label="Production"
         :children="productionItems"
@@ -205,6 +206,7 @@ const expandedGroup = ref<string | null>("sales-suite")
 
 const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
 const isInternational = computed(() => useSettingsStore().isInternational)
+const isHQ = computed(() => activeLocation.value?.is_hq)
 
 // Sales Suite items
 const salesSuiteItems = computed(() =>

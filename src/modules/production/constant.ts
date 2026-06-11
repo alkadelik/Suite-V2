@@ -148,7 +148,12 @@ export const RECIPES_COLUMN: TableColumn<TRecipe>[] = [
     cell: ({ item }) => (item.is_active ? "Active" : "Disabled"),
   },
   {
-    header: "Last Edited",
+    header: "Last Used",
+    accessor: "last_used",
+    cell: ({ item }) => (item.last_used ? formatDate(item.last_used as string) : "--"),
+  },
+  {
+    header: "Date Modified",
     accessor: "updated_at",
     cell: ({ item }) => formatDate(item.updated_at as string),
   },

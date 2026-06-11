@@ -22,6 +22,7 @@ type ItemOption = { label: string; value: string; item?: Record<string, unknown>
 const props = defineProps<{
   initialValues: BasicDetails
   isEditMode?: boolean
+  unitLockedByHistory?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -125,7 +126,9 @@ const selectedItemUnit = computed<string | null>(() => {
   return (selected.item.unit as string) || null
 })
 
-const unitIsLocked = computed(() => !!selectedItemUnit.value || props.isEditMode)
+const selectedItemHasBeenProduced = computed(() => !!values.outputItem?.item?.has_been_produced)
+
+const unitIsLocked = computed(() => selectedItemHasBeenProduced.value || props.unitLockedByHistory)
 
 watch(selectedItemUnit, (unit) => {
   if (unit) {
@@ -229,9 +232,8 @@ const handleNext = handleSubmit((formValues) => {
         :options="unitOptions"
         :disabled="unitIsLocked"
         required
-        :hint="isEditMode ? 'Unit cannot be changed in EDIT mode' : undefined"
       />
-      <p v-if="selectedItemUnit" class="mt-1 text-sm text-gray-500">
+      <p v-if="unitIsLocked" class="mt-1 text-sm text-gray-500">
         Unit cannot be changed once a recipe has been used in a production run.
         <button
           type="button"
