@@ -117,7 +117,7 @@
     v-model="confirmSwitch"
     header="Switch Location?"
     :paragraph="`Are you sure you want to switch to ${pendingLocation?.name?.toUpperCase()}? This will reload the page.`"
-    info-message="You can reverse this action later by switching to another location."
+    info-message=""
     action-label="Switch Location"
     :loading="false"
     @confirm="confirmLocationSwitch"
@@ -331,7 +331,11 @@ const handleLocationRefresh = () => {
   setAddLocationModal(false)
   setLocationForEdit(null)
 }
-const storeSlug = useAuthStore().user?.store_slug || ""
+// Prefer the live storeDetails slug (refreshed after a slug edit) over the
+// persisted auth snapshot, so live-status isn't polled with a stale slug.
+const storeSlug = computed(
+  () => useSettingsStore().storeDetails?.slug || useAuthStore().user?.store_slug || "",
+)
 const { data: liveStatusData } = useGetLiveStatus(storeSlug)
 
 const storeUid = computed(() => useAuthStore().user?.store_uid || "")

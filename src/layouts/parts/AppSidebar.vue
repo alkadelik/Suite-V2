@@ -70,6 +70,7 @@
       />
 
       <SidebarGroup
+        v-if="activeLocation?.is_hq"
         icon="trend-up-outline"
         label="Marketing"
         :children="marketingItems"
@@ -204,7 +205,8 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
 // Track which sidebar group is expanded
 const expandedGroup = ref<string | null>("sales-suite")
 
-const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
+// Prefer the connected custom domain when one is active (LYW-2618).
+const storefrontUrl = computed(() => useSettingsStore().displayDomain)
 const isInternational = computed(() => useSettingsStore().isInternational)
 const isHQ = computed(() => activeLocation.value?.is_hq)
 

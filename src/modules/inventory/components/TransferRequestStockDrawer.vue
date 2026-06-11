@@ -58,13 +58,7 @@
         </div>
       </div>
 
-      <FormField
-        name="note"
-        label="Notes"
-        type="textarea"
-        placeholder="Enter additional notes"
-        required
-      />
+      <FormField name="note" label="Notes" type="textarea" placeholder="Enter additional notes" />
 
       <FormField
         name="to_location"
@@ -204,7 +198,8 @@ const { handleSubmit, resetForm } = useForm<FormValues>({
         }
         return true
       }),
-    note: yup.string().required("Notes are required"),
+    // Notes are optional for both transfers and requests (LYW-2623).
+    note: yup.string().optional(),
   }),
   initialValues: {
     to_location: "",

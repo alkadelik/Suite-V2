@@ -113,7 +113,7 @@ router.beforeEach((to, from, next) => {
       return next({ path: "/dashboard" })
     }
 
-    const hQOnlyPages = ["/popups", "/onboarding"]
+    const hQOnlyPages = ["/popups", "/onboarding", "/email-list"]
     // Restrict HQ-only pages to HQ users
     if (hQOnlyPages.includes(to.path)) {
       const { activeLocation } = useSettingsStore()

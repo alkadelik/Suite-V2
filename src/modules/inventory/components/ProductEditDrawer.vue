@@ -62,6 +62,7 @@
             :hide-stock="true"
             :hide-price="true"
             :hide-weight="true"
+            :hide-reorder="true"
             :deleted-variants="deletedVariants"
             :use-table-layout="productOriginallyHadVariants"
             :errors="submitAttempted ? currentStepValidation.inventoryErrors : undefined"
@@ -769,6 +770,7 @@ const handleSubmit = async () => {
               length: variantData.length,
               width: variantData.width,
               height: variantData.height,
+              reorder_point: variantData.reorder_point,
             }
           })
           .filter((item): item is NonNullable<typeof item> => item !== null)
@@ -785,6 +787,7 @@ const handleSubmit = async () => {
           length: variantData.length,
           width: variantData.width,
           height: variantData.height,
+          reorder_point: variantData.reorder_point,
         }
 
         await updateVariant({ uid: props.variant.uid, ...payload })

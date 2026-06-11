@@ -35,7 +35,10 @@ export const PRODUCT_ORDER_COLUMNS: TableColumn<TOrder>[] = [
   { header: "Order ID", accessor: "order_number" },
   { header: "Order Date", accessor: "created_at" },
   { header: "Customer", accessor: "customer_info" },
+  { header: "Qty", accessor: "items" },
+  { header: "Amount", accessor: "total_amount" },
   { header: "Status", accessor: "payment_status" },
+  { header: "Fulfilled", accessor: "fulfilment_status" },
 ]
 
 export const MOVEMENT_COLUMNS: TableColumn<IInventoryMovement>[] = [

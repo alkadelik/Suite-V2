@@ -23,8 +23,8 @@
     <div class="mt-2 flex flex-wrap gap-1">
       <Chip :label="request.from_location_name" size="sm" />
       <Chip
-        :label="getStatusLabel(request.status)"
-        :color="getStatusColor(request.status)"
+        :label="getStatusLabel(request)"
+        :color="getStatusColor(request)"
         :show-dot="true"
         size="sm"
       />
@@ -35,14 +35,16 @@
 <script setup lang="ts">
 import Chip from "@components/Chip.vue"
 import ProductAvatar from "@components/ProductAvatar.vue"
-import type { IInventoryTransferRequest, TTransferRequestStatus } from "../types"
+import type { IInventoryTransferRequest } from "../types"
 import Icon from "@components/Icon.vue"
 
 interface Props {
   request: IInventoryTransferRequest
   formatDate: (dateString: string) => string
-  getStatusLabel: (status: TTransferRequestStatus) => string
-  getStatusColor: (status: TTransferRequestStatus) => "warning" | "error" | "success" | "primary"
+  getStatusLabel: (request: IInventoryTransferRequest) => string
+  getStatusColor: (
+    request: IInventoryTransferRequest,
+  ) => "warning" | "error" | "success" | "primary"
 }
 
 interface Emits {

@@ -15,7 +15,7 @@ import CreatePopupEventModal from "../components/CreatePopupEventModal.vue"
 import DeletePopupEvent from "../components/DeletePopupEvent.vue"
 import PopupSalesTab from "../components/popup-tabs/PopupSalesTab.vue"
 import PopupInventoryTab from "../components/popup-tabs/PopupInventoryTab.vue"
-import { clipboardCopy, isStaging } from "@/utils/others"
+import { clipboardCopy } from "@/utils/others"
 import { useMediaQuery } from "@vueuse/core"
 import Collapsible from "@components/Collapsible.vue"
 import { useSettingsStore } from "@modules/settings/store"
@@ -100,7 +100,9 @@ const actionMenu = computed(() => {
 
 const isMobile = useMediaQuery("(max-width: 768px)")
 
-const storeDetails = computed(() => useSettingsStore().storeDetails)
+// Prefer the connected custom domain as the storefront base (LYW-2618); it already
+// carries the store slug when falling back to the default storefront domain.
+const displayDomain = computed(() => useSettingsStore().displayDomain)
 </script>
 
 <template>
@@ -168,19 +170,13 @@ const storeDetails = computed(() => useSettingsStore().storeDetails)
             </p>
             <p class="flex items-center gap-2 text-xs md:text-sm">
               <span class="min-w-0 truncate">
-                {{
-                  `${isStaging ? "www.storefronts-v2.vercel.app" : "www.buy.leyyow.com"}/${storeDetails?.slug}/events/${popupEvt?.slug}`
-                }}
+                {{ `${displayDomain}/events/${popupEvt?.slug}` }}
               </span>
               <Icon
                 name="copy"
                 size="20"
                 class="flex-shrink-0 cursor-pointer"
-                @click="
-                  clipboardCopy(
-                    `https://${isStaging ? 'storefronts-v2.vercel.app' : 'buy.leyyow.com'}/${storeDetails?.slug}/events/${popupEvt?.slug}`,
-                  )
-                "
+                @click="clipboardCopy(`https://${displayDomain}/events/${popupEvt?.slug}`)"
               />
             </p>
             <Chip
