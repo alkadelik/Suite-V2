@@ -70,6 +70,7 @@
       />
 
       <SidebarGroup
+        v-if="activeLocation?.is_hq"
         icon="trend-up-outline"
         label="Marketing"
         :children="marketingItems"
@@ -78,6 +79,7 @@
       />
 
       <SidebarGroup
+        v-if="isHQ"
         icon="building-outline"
         label="Production"
         :children="productionItems"
@@ -203,8 +205,10 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
 // Track which sidebar group is expanded
 const expandedGroup = ref<string | null>("sales-suite")
 
-const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
+// Prefer the connected custom domain when one is active (LYW-2618).
+const storefrontUrl = computed(() => useSettingsStore().displayDomain)
 const isInternational = computed(() => useSettingsStore().isInternational)
+const isHQ = computed(() => activeLocation.value?.is_hq)
 
 // Sales Suite items
 const salesSuiteItems = computed(() =>
@@ -236,9 +240,9 @@ const productionItems = computed(() => {
 
 // reports items
 const reportsItems = computed(() => [
+  { icon: "pie-chart", label: "Store Summary", to: "/reports/store-overview" },
   { icon: "pie-chart", label: "End of Day", to: "/reports/end-of-day" },
   { icon: "pie-chart", label: "Monthly", to: "/reports/monthly" },
-  { icon: "pie-chart", label: "Store Overview", to: "/reports/store-overview" },
 ])
 
 const storeDetails = computed(() => useSettingsStore().storeDetails)

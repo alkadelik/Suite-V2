@@ -74,51 +74,36 @@ const getVariantOptions = (product: PopupInventory) => {
 
 // Initialize local items when component mounts or products change
 onMounted(() => {
-  if (props.orderItems.length > 0) {
-    // Group orderItems by product
-    const productMap = new Map<string, { product: PopupInventory; notes?: string }>()
-    const variantsMap = new Map<string, VariantItem[]>()
+  const productMap = new Map<string, { product: PopupInventory; notes?: string }>()
+  const variantsMap = new Map<string, VariantItem[]>()
 
-    for (const item of props.orderItems) {
-      if (!productMap.has(item.product.uid)) {
-        productMap.set(item.product.uid, { product: item.product, notes: item.notes })
-      }
-
-      const existing = variantsMap.get(item.product.uid) || []
-      existing.push({
-        variant: item.variant,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-      })
-      variantsMap.set(item.product.uid, existing)
+  // Restore existing order items first
+  for (const item of props.orderItems) {
+    if (!productMap.has(item.product.uid)) {
+      productMap.set(item.product.uid, { product: item.product, notes: item.notes })
     }
+    const existing = variantsMap.get(item.product.uid) || []
+    existing.push({ variant: item.variant, quantity: item.quantity, unit_price: item.unit_price })
+    variantsMap.set(item.product.uid, existing)
+  }
 
-    localItems.value = Array.from(productMap.values())
-    selectedVariants.value = variantsMap
-  } else {
-    // Create initial items from selected products - group by product
-    localItems.value = props.selectedProducts.map((product) => {
-      // Auto-select variant if there's only one
+  // Add any selected products not yet covered by orderItems
+  for (const product of props.selectedProducts) {
+    if (!productMap.has(product.uid)) {
+      productMap.set(product.uid, { product, notes: "" })
       if (product.variants && product.variants.length === 1) {
         const variant = product.variants[0]
-        selectedVariants.value.set(product.uid, [
-          {
-            variant,
-            quantity: 1,
-            unit_price: parseFloat(variant.event_price),
-          },
+        variantsMap.set(product.uid, [
+          { variant, quantity: 1, unit_price: parseFloat(variant.event_price) },
         ])
       } else {
-        // For products with multiple variants, start with empty selection
-        selectedVariants.value.set(product.uid, [])
+        variantsMap.set(product.uid, [])
       }
-
-      return {
-        product,
-        notes: "",
-      }
-    })
+    }
   }
+
+  localItems.value = Array.from(productMap.values())
+  selectedVariants.value = variantsMap
 })
 
 // Watch for new products added in step 0
@@ -388,11 +373,11 @@ watch(
 )
 
 // Get original price for showing slash-through
-const getOriginalPrice = (variant: PopupInventoryVariant) => {
-  const originalPrice = parseFloat(variant.original_price)
-  const eventPrice = parseFloat(variant.event_price)
-  return originalPrice !== eventPrice && originalPrice > eventPrice ? originalPrice : null
-}
+// const getOriginalPrice = (variant: PopupInventoryVariant) => {
+//   const originalPrice = parseFloat(variant.original_price)
+//   const eventPrice = parseFloat(variant.event_price)
+//   return originalPrice !== eventPrice && originalPrice > eventPrice ? originalPrice : null
+// }
 
 // Get price display for products
 const getProductPriceDisplay = (product: PopupInventory) => {
@@ -436,8 +421,8 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
     </div>
     <p class="mb-4 text-sm">Adjust quantities, and review prices.</p>
 
-    <h3 class="mb-8 flex items-center gap-2 text-lg font-semibold">
-      Select Products <Chip :label="String(localItems.length)" />
+    <h3 class="mb-8 flex items-center gap-2 text-base font-semibold md:text-lg">
+      Selected Products <Chip :label="String(localItems.length)" />
     </h3>
 
     <section data-validation-target="popup-order-product-qty" class="grid gap-6">
@@ -508,27 +493,26 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
           >
             <div
               v-if="needsVariantSelection(item.product)"
-              class="mb-2 flex items-center justify-between"
+              class="mb-2 flex items-start justify-between gap-1"
             >
-              <div class="flex items-center gap-2">
-                <Chip color="primary" :label="variantItem.variant.name" />
-                <span
-                  v-if="getOriginalPrice(variantItem.variant)"
-                  class="text-core-300 line-through"
-                  style="font-size: 11px"
-                >
-                  {{ format(getOriginalPrice(variantItem.variant)!) }}
-                </span>
-                <span class="text-core-600 flex items-center gap-1 text-xs">
+              <div class="flex min-w-0 flex-1 flex-wrap items-center gap-2 overflow-hidden">
+                <Chip
+                  color="primary"
+                  :label="variantItem.variant.name.split(' - ')[1]"
+                  class="max-w-[150px]!"
+                />
+                <!-- display original price here -->
+                <span class="text-core-600 flex shrink-0 items-center gap-0.5 text-xs">
                   <Icon name="tag" class="h-3 w-3" />
                   {{ format(parseFloat(variantItem.variant.event_price)) }}
                 </span>
               </div>
+
               <Chip
                 color="success"
                 :label="`${variantItem.variant.available_quantity} in Stock`"
                 icon="box"
-                class="text-xs"
+                class="shrink-0! text-xs"
               />
             </div>
             <div class="grid grid-cols-2 gap-3">
@@ -539,6 +523,7 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
                 label="Quantity"
                 placeholder="1"
                 :min="1"
+                size="sm"
                 :max="variantItem.variant.available_quantity"
                 :error="validationErrors[variantItem.variant.uid]?.quantity"
                 @blur="validateVariantItem(variantItem)"
@@ -552,6 +537,7 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
                 label="Unit Price"
                 placeholder="e.g. 59.99"
                 :min="0"
+                size="sm"
                 :error="validationErrors[variantItem.variant.uid]?.unit_price"
                 @blur="validateVariantItem(variantItem)"
               />
@@ -588,8 +574,8 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
       </div>
       <FieldGroupError v-if="stepError" target="popup-order-product-qty" :error="stepError" />
       <div class="flex gap-3">
-        <AppButton label="Back" color="alt" class="w-1/3" icon="arrow-left" @click="emit('prev')" />
-        <AppButton label="Next" class="w-2/3" @click="handleNext" />
+        <AppButton label="Back" color="alt" class="w-1/2" icon="arrow-left" @click="emit('prev')" />
+        <AppButton label="Next" class="w-1/2" @click="handleNext" />
       </div>
     </div>
   </div>

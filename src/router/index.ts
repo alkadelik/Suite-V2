@@ -115,7 +115,7 @@ router.beforeEach((to, from, next) => {
       return next({ path: "/dashboard" })
     }
 
-    const hQOnlyPages = ["/popups", "/onboarding"]
+    const hQOnlyPages = ["/popups", "/onboarding", "/email-list"]
     // Restrict HQ-only pages to HQ users
     if (hQOnlyPages.includes(to.path)) {
       const { activeLocation } = useSettingsStore()
@@ -150,13 +150,20 @@ router.beforeEach((to, from, next) => {
       "/settings/design",
       "/settings/billing",
       "/settings/delivery-options",
+      // Onboarding criteria (bank account, KYC, delivery options) are
+      // Nigerian-only — international accounts can't complete them, so
+      // /onboarding is hidden and they're sent to the dashboard instead.
+      "/onboarding",
     ]
     if (useSettingsStore().isInternational) {
       const blocked = internationalBlockedPaths.some(
         (p) => to.path === p || to.path.startsWith(p + "/"),
       )
       if (blocked) {
-        return next({ path: "/settings/profile" })
+        // Onboarding sends to dashboard; the rest of the blocked settings
+        // pages still send to the profile (existing behaviour).
+        const fallback = to.path === "/onboarding" ? "/dashboard" : "/settings/profile"
+        return next({ path: fallback })
       }
     }
   }

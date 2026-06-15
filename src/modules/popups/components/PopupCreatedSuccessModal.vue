@@ -3,7 +3,7 @@ import AppButton from "@components/AppButton.vue"
 import Chip from "@components/Chip.vue"
 import { PopupEvent } from "../types"
 import { computed } from "vue"
-import { clipboardCopy, isStaging } from "@/utils/others"
+import { clipboardCopy } from "@/utils/others"
 import Modal from "@components/Modal.vue"
 import { useSettingsStore } from "@modules/settings/store"
 import gridPng from "@/assets/images/empty-grid.png"
@@ -12,12 +12,9 @@ const props = defineProps<{ popup: PopupEvent | null; open: boolean }>()
 
 defineEmits<{ "setup-booth": []; close: [] }>()
 
-const storeDetails = computed(() => useSettingsStore().storeDetails)
-
-const popupUrl = computed(
-  () =>
-    `${isStaging ? "www.storefronts-v2.vercel.app" : "www.buy.leyyow.com"}/${storeDetails.value?.slug}/events/${props.popup?.slug}`,
-)
+// displayDomain prefers the connected custom domain (LYW-2618) and already
+// carries the store slug when falling back to the default storefront domain.
+const popupUrl = computed(() => `${useSettingsStore().displayDomain}/events/${props.popup?.slug}`)
 </script>
 
 <template>

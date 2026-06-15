@@ -51,7 +51,11 @@ import { useSettingsStore } from "@modules/settings/store"
 
 const route = useRoute()
 const { setPlanUpgradeModal } = useSettingsStore()
-const storeSlug = useAuthStore().user?.store_slug || ""
+// Prefer the live storeDetails slug (refreshed after a slug edit) over the
+// persisted auth snapshot, so live-status isn't polled with a stale slug.
+const storeSlug = computed(
+  () => useSettingsStore().storeDetails?.slug || useAuthStore().user?.store_slug || "",
+)
 const { data: liveStatusData, isPending: isLoadingLiveStatus } = useGetLiveStatus(storeSlug)
 
 const isLive = computed(() => useSettingsStore().liveStatus?.is_live || false)

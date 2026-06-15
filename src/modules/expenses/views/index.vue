@@ -114,7 +114,7 @@ const handleApplyFilters = (filters: Record<string, string>) => {
 const computedParams = computed(() => {
   const params: Record<string, string> = {}
   if (debouncedSearch.value) params.search = debouncedSearch.value
-  params.offset = ((debouncedSearch.value ? 1 : page.value - 1) * itemsPerPage.value).toString()
+  params.offset = ((debouncedSearch.value ? 0 : page.value - 1) * itemsPerPage.value).toString()
   params.limit = itemsPerPage.value.toString()
   Object.assign(params, activeFilters.value)
   return params
@@ -389,7 +389,7 @@ watch(
             "
           >
             <template #cell:name="{ item }">
-              <div class="flex max-w-48 items-center gap-2 truncate">
+              <div class="flex max-w-52 items-center gap-2 truncate">
                 <span
                   class="bg-core-200 relative flex size-10 shrink-0 items-center justify-center rounded-xl"
                 >
@@ -419,6 +419,7 @@ watch(
 
                 <h4 v-else class="!font-outfit truncate text-left text-sm font-medium capitalize">
                   {{ item.name || item.category_name }}
+                  <span v-if="item.produced_item_name"> ({{ item.produced_item_name }}) </span>
                 </h4>
               </div>
             </template>

@@ -25,6 +25,8 @@ interface OrderItem {
 const props = defineProps({
   open: { type: Boolean, required: true },
   existingVariantSkus: { type: Array as () => string[], default: () => [] },
+  isSetup: { type: Boolean, default: false },
+  popupName: { type: String, default: "" },
 })
 const emit = defineEmits(["close", "refresh"])
 
@@ -113,7 +115,7 @@ const onSubmitBooth = () => {
   <Drawer
     :open="open"
     variant="fullscreen"
-    title="Setup Booth"
+    :title="isSetup ? 'Setup Booth' : `Add Products to ${popupName}`"
     max-width="2xl"
     @close="handleClose"
   >
@@ -148,10 +150,9 @@ const onSubmitBooth = () => {
           <p class="mb-4 text-sm">Review your booth setup and confirm the products.</p>
 
           <!-- Booth Items -->
-          <div class="rounded-xl bg-white p-4">
-            <h3 class="mb-3 text-sm font-semibold">Booth Products</h3>
-
-            <div class="border-core-300 bg-core-25 my-6 space-y-4 rounded-xl border p-4">
+          <div>
+            <div class="border-core-300 bg-core-25 mb-6 space-y-4 rounded-xl border p-4">
+              <h4 class="text-sm font-medium">Booth Products</h4>
               <div
                 v-for="(item, idx) in orderItems"
                 :key="`${item.product.uid}-${item.variant?.uid || idx}`"
@@ -200,19 +201,17 @@ const onSubmitBooth = () => {
             </div>
           </div>
 
-          <!-- Summary -->
-          <div class="rounded-xl bg-white p-4">
-            <h3 class="mb-3 text-sm font-semibold">Booth Summary</h3>
-            <div class="space-y-2 text-sm">
-              <p class="flex justify-between">
-                <span class="text-gray-600">Total Products:</span>
-                <span class="font-medium">{{ orderItems.length }}</span>
-              </p>
-              <p class="flex justify-between">
-                <span class="text-gray-600">Total Value:</span>
-                <span class="text-primary-600 font-medium">{{ format(productsTotal) }}</span>
-              </p>
-            </div>
+          <!-- Booth Summary -->
+          <div class="border-core-300 bg-core-25 space-y-3 rounded-xl border p-4">
+            <h4 class="text-sm font-medium">Booth Summary</h4>
+            <p class="flex justify-between text-sm">
+              <span class="text-core-600">Total Products:</span>
+              <span class="font-medium">{{ orderItems.length }}</span>
+            </p>
+            <p class="flex justify-between text-sm">
+              <span class="text-core-600">Total Value:</span>
+              <span class="font-medium">{{ format(productsTotal, { kobo: true }) }}</span>
+            </p>
           </div>
 
           <div class="h-24" />
@@ -222,7 +221,7 @@ const onSubmitBooth = () => {
           >
             <AppButton label="Back" color="alt" class="w-1/3" icon="arrow-left" @click="onPrev" />
             <AppButton
-              label="Setup Booth"
+              :label="isSetup ? 'Setup Booth' : 'Add Products'"
               class="w-2/3"
               :loading="isAddingProducts"
               @click="onSubmitBooth"

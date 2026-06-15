@@ -64,7 +64,6 @@
           label="Additional Notes"
           type="textarea"
           placeholder="Enter additional notes"
-          required
         />
       </template>
     </div>
@@ -91,6 +90,8 @@ import FormField from "@components/form/FormField.vue"
 import IconHeader from "@components/IconHeader.vue"
 import Chip from "@components/Chip.vue"
 import { useAddStock, useReduceStock } from "../api"
+import { useQueryClient } from "@tanstack/vue-query"
+import { inventoryCache } from "../cache"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
 import type { IAddStockPayload, IReduceStockPayload, IProductVariantAttribute } from "../types"
@@ -101,6 +102,7 @@ interface Props {
   type: "add" | "reduce"
   variantUid: string
   productName: string
+  productUid?: string
   variantAttributes?: IProductVariantAttribute[]
   variantPrice?: string
   availableStock?: number
@@ -108,7 +110,6 @@ interface Props {
 
 interface Emits {
   (e: "close"): void
-  (e: "success"): void
 }
 
 const props = defineProps<Props>()
@@ -118,6 +119,7 @@ const isMobile = useMediaQuery("(max-width: 768px)")
 
 const { mutate: addStock, isPending: isAdding } = useAddStock()
 const { mutate: reduceStock, isPending: isReducing } = useReduceStock()
+const queryClient = useQueryClient()
 
 const isPending = computed(() => isAdding.value || isReducing.value)
 
@@ -165,7 +167,7 @@ const { handleSubmit, resetForm } = useForm<FormValues>({
                 value: yup.string().required(),
               })
               .required("Loss type is required"),
-            note: yup.string().required("Additional notes are required"),
+            note: yup.string().optional(),
           }),
     }),
   ),
@@ -204,7 +206,7 @@ const onSubmit = handleSubmit((values) => {
 
     const onSuccess = () => {
       toast.success("Stock added successfully")
-      emit("success")
+      inventoryCache.stockChanged(queryClient, props.productUid)
       emit("close")
     }
 
@@ -221,7 +223,7 @@ const onSubmit = handleSubmit((values) => {
 
     const onSuccess = () => {
       toast.success("Stock reduced successfully")
-      emit("success")
+      inventoryCache.stockChanged(queryClient, props.productUid)
       emit("close")
     }
 

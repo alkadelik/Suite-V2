@@ -4,6 +4,8 @@ import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
 import Modal from "@components/Modal.vue"
+import DropdownMenu from "@components/DropdownMenu.vue"
+import ConfirmationModal from "@components/ConfirmationModal.vue"
 import SelectField from "@components/form/SelectField.vue"
 import type { IngredientRow } from "../form-types"
 import { useSearchRawMaterial } from "@modules/production/api"
@@ -11,6 +13,7 @@ import { computed, ref } from "vue"
 import Chip from "@components/Chip.vue"
 import TextField from "@components/form/TextField.vue"
 import { useProductionStore } from "@modules/production/store"
+import { removeUnderscores } from "@/utils/format-strings"
 
 const materialSingular = computed(() => useProductionStore().componentSingular)
 
@@ -73,6 +76,33 @@ function saveUsedStock() {
   if (row) row.ingredient.used_stock = editUsedStock.value
   editModalOpen.value = false
 }
+
+// ─── Remove ingredient ────────────────────────────────────────────────────
+const removeModalOpen = ref(false)
+const removingRow = ref<IngredientRow | null>(null)
+
+function openRemoveModal(row: IngredientRow) {
+  removingRow.value = row
+  removeModalOpen.value = true
+}
+
+function confirmRemoveIngredient() {
+  if (!removingRow.value) return
+  ingredientRows.value = ingredientRows.value.filter((r) => r.id !== removingRow.value!.id)
+  removeModalOpen.value = false
+  removingRow.value = null
+}
+
+const rowActionItems = (row: IngredientRow) => [
+  { label: "Edit Used Stock", icon: "edit", action: () => openEditModal(row) },
+  {
+    label: "Remove Ingredient",
+    icon: "trash",
+    class: "text-red-600 hover:bg-red-50",
+    iconClass: "text-red-600",
+    action: () => openRemoveModal(row),
+  },
+]
 
 // ─── Add ingredient modal ─────────────────────────────────────────────────
 const addModalOpen = ref(false)
@@ -211,7 +241,11 @@ function updateSelectedMat(evt: unknown) {
             <div class="grid flex-1 grid-cols-3">
               <!-- Required Stock -->
               <div class="flex flex-col items-start gap-1">
-                <Chip color="alt" :label="`${row.qty} ${row.ingredient.unit}`" radius="md" />
+                <Chip
+                  color="alt"
+                  :label="`${row.qty} ${removeUnderscores(row.ingredient.unit)}`"
+                  radius="md"
+                />
                 <span class="text-xs text-gray-500">Required stock</span>
               </div>
               <!-- Available Stock  -->
@@ -219,7 +253,7 @@ function updateSelectedMat(evt: unknown) {
                 <Chip
                   v-if="row.ingredient.available_stock !== undefined"
                   :color="isInsufficient(row) ? 'error' : 'alt'"
-                  :label="`${row.ingredient.available_stock} ${row.ingredient.unit}`"
+                  :label="`${row.ingredient.available_stock} ${removeUnderscores(row.ingredient.unit)}`"
                   radius="md"
                 />
                 <span v-else>-</span>
@@ -229,18 +263,13 @@ function updateSelectedMat(evt: unknown) {
               <div class="flex flex-col items-start gap-1">
                 <Chip
                   color="alt"
-                  :label="`${row.ingredient.used_stock ?? row.qty} ${row.ingredient.unit}`"
+                  :label="`${row.ingredient.used_stock ?? row.qty} ${removeUnderscores(row.ingredient.unit)}`"
                   radius="md"
                 />
                 <span class="text-xs text-gray-500">Used Stock</span>
               </div>
             </div>
-            <!-- Edit Button -->
-            <div class="flex flex-col items-end gap-1">
-              <button type="button" @click="openEditModal(row)">
-                <Icon name="edit" size="16" class="text-gray-500" />
-              </button>
-            </div>
+            <DropdownMenu :items="rowActionItems(row)" size="sm" />
           </div>
         </div>
 
@@ -287,12 +316,12 @@ function updateSelectedMat(evt: unknown) {
         <!-- Used stock input — spans both columns -->
         <div class="col-span-2 rounded-xl border border-gray-200 bg-white p-4">
           <label class="mb-2 block text-sm font-medium text-gray-700">
-            Used Stock ({{ editingRow.ingredient.unit }})
+            Used Stock ({{ removeUnderscores(editingRow.ingredient.unit) }})
           </label>
           <TextField
             v-model.number="editUsedStock"
             type="number"
-            :suffix="editingRow.ingredient.unit"
+            :suffix="removeUnderscores(editingRow.ingredient.unit)"
           />
         </div>
 
@@ -306,7 +335,7 @@ function updateSelectedMat(evt: unknown) {
                 : "—"
             }}
             <span class="text-sm font-normal text-gray-500">
-              {{ editingRow.ingredient.unit }}
+              {{ removeUnderscores(editingRow.ingredient.unit) }}
             </span>
           </p>
         </div>
@@ -317,7 +346,7 @@ function updateSelectedMat(evt: unknown) {
           <p class="mt-1 text-lg font-semibold text-gray-900">
             {{ editingRow.qty }}
             <span class="text-sm font-normal text-gray-500">
-              {{ editingRow.ingredient.unit }}
+              {{ removeUnderscores(editingRow.ingredient.unit) }}
             </span>
           </p>
         </div>
@@ -337,6 +366,38 @@ function updateSelectedMat(evt: unknown) {
       @refresh="(qty) => onAdjustRefresh(qty as number)"
     />
     -->
+
+    <!-- Remove Ingredient Confirmation -->
+    <ConfirmationModal
+      v-model="removeModalOpen"
+      header="Remove Ingredient From Run"
+      action-label="Remove Ingredient"
+      variant="error"
+      info-message=""
+      @confirm="confirmRemoveIngredient"
+    >
+      <template #paragraph>
+        <p class="mt-1 text-sm text-gray-600">
+          This ingredient will be removed from the list of ingredients used for this run. The
+          ingredient will remain in your original recipe.
+        </p>
+        <div
+          v-if="removingRow"
+          class="border-primary-200 bg-primary-25 mt-4 flex items-center gap-3 rounded-xl border px-4 py-3"
+        >
+          <Icon name="blur" size="18" class="text-primary-600 shrink-0" />
+          <span class="flex-1 text-sm font-medium text-gray-900">
+            {{ removingRow.ingredient.label }}
+            <span class="text-gray-500"
+              >({{ removeUnderscores(removingRow.ingredient.unit) }})</span
+            >
+          </span>
+          <span class="text-sm font-semibold text-gray-700">
+            {{ formatCurrency(removingRow.ingredient.cost_per_unit * removingRow.qty) }}
+          </span>
+        </div>
+      </template>
+    </ConfirmationModal>
 
     <!-- Add Ingredient Modal -->
     <Modal

@@ -46,7 +46,12 @@ const removeProcessRow = (row: ProcessRow) => {
 const visibleNotes = ref<Set<string>>(new Set())
 
 const openProcessNote = (row: ProcessRow) => {
-  visibleNotes.value.add(row.id as string)
+  const id = row.id as string
+  if (visibleNotes.value.has(id)) {
+    visibleNotes.value.delete(id)
+  } else {
+    visibleNotes.value.add(id)
+  }
 }
 
 const isNoteVisible = (row: ProcessRow) => visibleNotes.value.has(row.id as string) || !!row.note
@@ -105,8 +110,9 @@ function handleSubmit() {
           <div class="flex items-center gap-3">
             <button
               type="button"
-              class="flex h-9 w-9 items-center justify-center rounded-xl text-gray-700 hover:bg-gray-50"
-              aria-label="Add note"
+              class="flex h-9 w-9 items-center justify-center rounded-xl hover:bg-gray-50"
+              :class="isNoteVisible(row) ? 'text-primary-600' : 'text-gray-700'"
+              :aria-label="isNoteVisible(row) ? 'Hide note' : 'Add note'"
               @click="openProcessNote(row)"
             >
               <Icon name="note-add" size="24" />

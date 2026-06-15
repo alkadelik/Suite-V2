@@ -12,6 +12,9 @@ import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 import { useQueryClient } from "@tanstack/vue-query"
 import { useSettingsStore } from "@modules/settings/store"
+import { normalizeProductResponse, productDetailsToCatalogue } from "@modules/inventory/normalizers"
+import { inventoryCache } from "@modules/inventory/cache"
+import type { IProductCatalogue } from "@modules/inventory/types"
 
 interface FormValues {
   name: string
@@ -27,7 +30,7 @@ defineProps<{
 
 const emit = defineEmits<{
   close: []
-  success: [productUid: string]
+  created: [product: IProductCatalogue | null]
 }>()
 const currency = computed(() => useSettingsStore().storeDetails?.currency || "NGN")
 
@@ -153,20 +156,13 @@ const onSubmit = () => {
 
     createProduct(payload, {
       onSuccess: (response: unknown) => {
-        toast.success("Product created successfully")
+        const createdProduct = normalizeProductResponse(response)
+        inventoryCache.productCreated(queryClient, createdProduct ?? undefined)
 
-        // Extract product UID from response
-        const productUid =
-          (response as { data?: { data?: { uid?: string } } })?.data?.data?.uid || ""
-
-        // Invalidate product queries to refresh the list
-        queryClient.invalidateQueries({ queryKey: ["products"] })
-        queryClient.invalidateQueries({ queryKey: ["product-catalogs"] })
-
-        // Reset form and close modal
         resetForm()
-        emit("success", productUid)
+        emit("created", createdProduct ? productDetailsToCatalogue(createdProduct) : null)
         emit("close")
+        toast.success("Product created successfully")
       },
       onError: (error) => {
         displayError(error)

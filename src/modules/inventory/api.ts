@@ -1,6 +1,6 @@
-import baseApi, { TPaginatedResponse, useApiQuery } from "@/composables/baseApi"
+import baseApi, { TPaginatedResponse } from "@/composables/baseApi"
 import { useMutation, useQuery, useInfiniteQuery } from "@tanstack/vue-query"
-import { toValue, type MaybeRefOrGetter, type Ref } from "vue"
+import { computed, toValue, type MaybeRefOrGetter, type Ref } from "vue"
 import {
   IProductCategoryFormPayload,
   IProductFormPayload,
@@ -22,11 +22,12 @@ import {
   IProductCategory,
   IProductVariantDetails,
 } from "./types"
+import { inventoryKeys } from "./queryKeys"
 
 /** Get categories api request */
 export function useGetCategories() {
   return useQuery<TPaginatedResponse<IProductCategory>>({
-    queryKey: ["categories"],
+    queryKey: inventoryKeys.categories.list(),
     queryFn: async () => {
       const { data } = await baseApi.get("/inventory/categories/")
       return data
@@ -113,7 +114,7 @@ export function useGetProducts(
   params?: MaybeRefOrGetter<Record<string, string | number | boolean> | undefined>,
 ) {
   return useQuery({
-    queryKey: ["products", params],
+    queryKey: computed(() => inventoryKeys.products.list(toValue(params))),
     queryFn: async () => {
       const { data } = await baseApi.get(
         "/inventory/products/",
@@ -129,7 +130,7 @@ export function useGetProducts(
 /** search inventory products */
 export function useSearchProducts(query: MaybeRefOrGetter<string>) {
   return useQuery({
-    queryKey: ["products", "search", query],
+    queryKey: computed(() => inventoryKeys.products.search(toValue(query))),
     queryFn: async () => {
       const search = toValue(query)
       const { data } = await baseApi.get<TPaginatedResponse<IProductCatalogue>>(
@@ -143,12 +144,15 @@ export function useSearchProducts(query: MaybeRefOrGetter<string>) {
   })
 }
 
-/** Fetch order statistics */
 export function useGetProductDashboard() {
-  return useApiQuery<IProductStats>({
-    url: `/inventory/products/dashboard/`,
-    key: `products-dashboard`,
-    selectData: true,
+  return useQuery({
+    queryKey: inventoryKeys.products.dashboard(),
+    queryFn: async () => {
+      const { data } = await baseApi.get<{ data: IProductStats }>("/inventory/products/dashboard/")
+      return data.data
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
   })
 }
 
@@ -162,7 +166,7 @@ export function useDeleteProduct() {
 /** get attributes api request */
 export function useGetAttributes() {
   return useQuery({
-    queryKey: ["attributes"],
+    queryKey: inventoryKeys.attributes.list(),
     queryFn: async () => {
       const { data } = await baseApi.get("/inventory/attributes/")
       return data
@@ -182,7 +186,7 @@ export function useCreateAttribute() {
 /** get values api request */
 export function useGetAttributeValues(attributeUid: string) {
   return useQuery({
-    queryKey: ["attributes", attributeUid, "values"],
+    queryKey: inventoryKeys.attributes.values(attributeUid),
     queryFn: async () => {
       const { data } = await baseApi.get(`/inventory/attributes/${attributeUid}/values/`)
       return data
@@ -252,9 +256,13 @@ export function useGetProduct(
   options?: { enabled?: MaybeRefOrGetter<boolean> },
 ) {
   return useQuery({
-    queryKey: ["products", uid],
-    queryFn: async () => {
-      const uidValue = toValue(uid)
+    queryKey: computed(() => inventoryKeys.products.detail(toValue(uid))),
+    // Derive the uid from the (immutable) query key rather than the live ref.
+    // A forced refetch (e.g. an inventoryCache invalidation) can run after the
+    // ref has been reset to "" by a closing drawer; reading the key keeps the
+    // request URL consistent with the cache entry and avoids `/products//` 404s.
+    queryFn: async ({ queryKey }) => {
+      const uidValue = String(queryKey[queryKey.length - 1] ?? "")
       const { data } = await baseApi.get<IGetProductResponse>(`/inventory/products/${uidValue}/`)
       return data
     },
@@ -289,7 +297,7 @@ export function useGetInventoryMovements(
   params?: MaybeRefOrGetter<Record<string, string | number> | undefined>,
 ) {
   return useQuery({
-    queryKey: ["inventory-movements", params],
+    queryKey: computed(() => inventoryKeys.movements.list(toValue(params))),
     queryFn: async () => {
       const { data } = await baseApi.get<IInventoryMovementsApiResponse>("/inventory/movements/", {
         params: toValue(params),
@@ -307,7 +315,9 @@ export function useGetProductMovements(
   params?: MaybeRefOrGetter<Record<string, string | number> | undefined>,
 ) {
   return useQuery({
-    queryKey: ["product-movements", productUid, params],
+    queryKey: computed(() =>
+      inventoryKeys.movements.byProduct(toValue(productUid), toValue(params)),
+    ),
     queryFn: async () => {
       const uid = toValue(productUid)
       const { data } = await baseApi.get<IInventoryMovementsApiResponse>(
@@ -337,17 +347,21 @@ export function useRequestStockTransfer() {
 }
 
 export function useGetProductCatalogs() {
-  return useApiQuery<TPaginatedResponse<IProductCatalogue>["data"]>({
-    url: `/inventory/catalog/`,
-    key: "productCatalogs",
-    selectData: true,
+  return useQuery({
+    queryKey: inventoryKeys.catalog.list(),
+    queryFn: async () => {
+      const { data } = await baseApi.get(`/inventory/catalog/`)
+      return data?.data ?? data
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
   })
 }
 
 /** Get product catalogs with infinite scroll */
 export function useGetProductCatalogsInfinite(limit = 20, search?: Ref<string>) {
   return useInfiniteQuery({
-    queryKey: ["productCatalogsInfinite", limit, search],
+    queryKey: computed(() => inventoryKeys.catalog.infinite(limit, search?.value ?? "")),
     queryFn: async ({ pageParam = 0 }) => {
       const params: Record<string, string | number> = {
         limit,
@@ -374,7 +388,7 @@ export function useGetProductCatalogsInfinite(limit = 20, search?: Ref<string>) 
 /** search product catalogs by product name */
 export function useSearchProductCatalogs(search: MaybeRefOrGetter<string>) {
   return useQuery({
-    queryKey: ["productCatalogs", "search", search],
+    queryKey: computed(() => inventoryKeys.catalog.search(toValue(search))),
     queryFn: async () => {
       const { data } = await baseApi.get<TPaginatedResponse<IProductCatalogue>>(
         `/inventory/catalog/`,
@@ -393,10 +407,14 @@ export function useSearchProductCatalogs(search: MaybeRefOrGetter<string>) {
 }
 
 export function useGetProductVariants() {
-  return useApiQuery<TPaginatedResponse<IProductVariant>["data"]>({
-    url: `/inventory/variants/`,
-    key: "productVariants",
-    selectData: true,
+  return useQuery({
+    queryKey: inventoryKeys.variants.list(),
+    queryFn: async () => {
+      const { data } = await baseApi.get(`/inventory/variants/`)
+      return data?.data ?? data
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
   })
 }
 
@@ -407,7 +425,10 @@ export function useGetVariantsByProduct(
   return useQuery<{
     data: { count: number; results: IProductVariantDetails[] }
   }>({
-    queryKey: ["product-variants-filtered", params],
+    queryKey: computed(() => {
+      const resolvedParams = toValue(params)
+      return inventoryKeys.variants.byProduct(String(resolvedParams?.product ?? ""), resolvedParams)
+    }),
     queryFn: async () => {
       const { data } = await baseApi.get(
         `/inventory/variants/`,
@@ -427,7 +448,7 @@ export function useGetVariantsByProduct(
 /** search product variants by name */
 export function useSearchProductVariants(search: MaybeRefOrGetter<string>) {
   return useQuery({
-    queryKey: ["productVariants", "search", search],
+    queryKey: computed(() => inventoryKeys.variants.search(toValue(search))),
     queryFn: async () => {
       const { data } = await baseApi.get<TPaginatedResponse<IProductVariant>>(
         `/inventory/variants/`,
@@ -446,9 +467,12 @@ export function useSearchProductVariants(search: MaybeRefOrGetter<string>) {
 }
 
 /** get inventory transfer requests (for HQ to view pending requests) */
-export function useGetTransferRequests(params?: MaybeRefOrGetter<Record<string, string | number>>) {
+export function useGetTransferRequests(
+  params?: MaybeRefOrGetter<Record<string, string | number>>,
+  options?: { enabled?: MaybeRefOrGetter<boolean> },
+) {
   return useQuery({
-    queryKey: ["transfer-requests", params],
+    queryKey: computed(() => inventoryKeys.transfers.list(toValue(params))),
     queryFn: async () => {
       const paramsValue = toValue(params)
       const { data } = await baseApi.get<IInventoryTransferRequestsApiResponse>(
@@ -461,6 +485,7 @@ export function useGetTransferRequests(params?: MaybeRefOrGetter<Record<string, 
     },
     retry: false,
     refetchOnWindowFocus: false,
+    enabled: options?.enabled !== undefined ? computed(() => toValue(options.enabled)) : undefined,
   })
 }
 

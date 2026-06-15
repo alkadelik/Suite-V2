@@ -41,6 +41,7 @@ import { useRoute, useRouter } from "vue-router"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import ProductAvatar from "@components/ProductAvatar.vue"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
+import { useQueryClient } from "@tanstack/vue-query"
 import OrderDetailsDrawer from "../components/OrderDetailsDrawer.vue"
 import StatCard from "@components/StatCard.vue"
 import OrderShipmentTab from "../components/OrderShipmentTab.vue"
@@ -61,6 +62,7 @@ const selectedOrder = ref<TOrder | null>(null)
 const status = ref(ORDER_STATUS_TAB[0].key)
 
 const { format } = useFormatCurrency()
+const queryClient = useQueryClient()
 
 const {
   data: orderDashboard,
@@ -129,7 +131,7 @@ const computedParams = computed(() => {
       params.fulfilment_status = status.value
     }
   }
-  params.offset = ((debouncedSearch.value ? 1 : page.value - 1) * itemsPerPage.value).toString()
+  params.offset = ((debouncedSearch.value ? 0 : page.value - 1) * itemsPerPage.value).toString()
   params.limit = itemsPerPage.value.toString()
   Object.assign(params, activeFilters.value)
   return params
@@ -149,6 +151,11 @@ const handleOpenCreate = () => {
 }
 
 const handleRefresh = () => {
+  // Invalidate every orders list query — all status tabs share the ["orders", params]
+  // prefix — plus the dashboard, so inactive tabs and stat cards refresh too (not just
+  // the currently active tab). See LYW-2615.
+  queryClient.invalidateQueries({ queryKey: ["orders"] })
+  queryClient.invalidateQueries({ queryKey: ["orders-dashboard"] })
   refetch()
   refetchStats()
 }
@@ -218,7 +225,7 @@ const getActionItems = (item: TOrder) => [
         },
       ]
     : []),
-  ...(item.fulfilment_status === "unfulfilled"
+  ...(item.fulfilment_status !== "fulfilled"
     ? [
         {
           label: "Fulfill Order",
@@ -743,6 +750,7 @@ const handleDetailsMarkAsPaid = () => {
     </ConfirmationModal>
 
     <CreateOrderDrawer
+      v-if="openCreate"
       :open="openCreate"
       @close="
         () => {
@@ -766,6 +774,7 @@ const handleDetailsMarkAsPaid = () => {
       :order="selectedOrder"
       :open="openMemo"
       @close="openMemo = false"
+      @refresh="handleRefresh"
     />
 
     <OrderPaymentDrawer

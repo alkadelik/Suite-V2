@@ -40,7 +40,7 @@ const currentViewMode = computed({
   set: (value) => emit("update:viewMode", value),
 })
 
-const { data, isPending, isFetchingNextPage, fetchNextPage, hasNextPage, refetch } =
+const { data, isPending, isFetchingNextPage, fetchNextPage, hasNextPage } =
   useGetProductCatalogsInfinite(50, debouncedSearch)
 
 // Flatten all pages into a single products array
@@ -120,16 +120,10 @@ const getAvailableProductQty = (product: IProductCatalogue) => {
 
 const showAdd = ref(false)
 
-const handleProductCreated = async (productUid: string) => {
+const handleProductCreated = (newProduct: IProductCatalogue | null) => {
   showAdd.value = false
-  // Refetch products
-  await refetch()
-  // Find and auto-select the newly created product
-  if (productUid) {
-    const newProduct = products.value.find((p) => p.uid === productUid)
-    if (newProduct && getAvailableProductQty(newProduct) > 0) {
-      toggleProductSelection(newProduct)
-    }
+  if (newProduct && getAvailableProductQty(newProduct) > 0) {
+    toggleProductSelection(newProduct)
   }
 }
 
@@ -165,6 +159,7 @@ watch(
         <AppButton
           :icon="currentViewMode === 'grid' ? 'list' : 'grid'"
           variant="outlined"
+          class="shrink-0"
           @click="currentViewMode = currentViewMode === 'grid' ? 'list' : 'grid'"
         />
         <AppButton icon="add" class="flex-shrink-0" @click="showAdd = true" />
@@ -288,5 +283,5 @@ watch(
     </div>
   </div>
 
-  <AddNewProductModal :open="showAdd" @close="showAdd = false" @success="handleProductCreated" />
+  <AddNewProductModal :open="showAdd" @close="showAdd = false" @created="handleProductCreated" />
 </template>

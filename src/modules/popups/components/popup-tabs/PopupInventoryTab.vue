@@ -14,7 +14,7 @@ import {
   POPUP_INVENTORY_COLUMNS,
 } from "@modules/popups/constants"
 import { useMediaQuery } from "@vueuse/core"
-import { computed, onMounted, ref } from "vue"
+import { computed, onMounted, ref, watch } from "vue"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import { useRoute } from "vue-router"
 import SetupPopupBoothDrawer from "../SetupPopupBoothDrawer.vue"
@@ -110,7 +110,7 @@ const handleConfirmAction = () => {
   if (confirmationAction.value === "remove") {
     const payload = {
       popup_event: route.params.id as string,
-      uids: [selectedProduct.value.uid],
+      uids: selectedProduct.value.variants.map((v) => v.popup_inventory_uid),
     }
 
     deletePopupProducts(payload, {
@@ -177,8 +177,16 @@ const getStockStatus = (item: PopupInventory) => {
 }
 
 onMounted(() => {
-  if (route.query.setup === "true") openAddProduct.value = true
+  if (route.query.setup === "true" || route.query.action === "add-products")
+    openAddProduct.value = true
 })
+
+watch(
+  () => route.query.action,
+  (action) => {
+    if (action === "add-products") openAddProduct.value = true
+  },
+)
 </script>
 
 <template>
@@ -325,9 +333,11 @@ onMounted(() => {
 
   <!-- Setup Booth Drawer - Available for both empty and populated states -->
   <SetupPopupBoothDrawer
+    v-if="openAddProduct"
     :open="openAddProduct"
     :existing-variant-skus="existingVariantSkus"
     @close="openAddProduct = false"
+    :popup-name="props.popup.name"
     @refresh="refetch"
   />
 

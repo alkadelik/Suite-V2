@@ -74,7 +74,7 @@ export const POPUP_ORDER_COLUMNS: TableColumn<TOrder>[] = [
 ]
 
 export const getInventoryQty = (item: PopupInventory) => {
-  const qty = item.variants?.reduce((acc, variant) => acc + variant.quantity, 0)
+  const qty = item.variants?.reduce((acc, variant) => acc + variant.available_quantity, 0)
   return qty || 0
 }
 

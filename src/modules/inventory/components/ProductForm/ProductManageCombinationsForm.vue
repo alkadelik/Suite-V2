@@ -26,6 +26,22 @@
       </div>
     </div>
 
+    <!-- Reorder Threshold — product-level for multi-variant products, applies to all variants (LYW-2648) -->
+    <div v-if="!isSingleVariant && !props.hideReorder">
+      <TextField
+        :model-value="globalReorderPoint"
+        name="product-reorder-point"
+        label="Reorder Threshold"
+        placeholder="e.g. 5"
+        type="number"
+        min="0"
+        @update:model-value="updateGlobalReorderPoint"
+      />
+      <p class="mt-1 text-xs text-gray-600">
+        Applies to all variants. You'll get a low-stock alert when stock falls to this level.
+      </p>
+    </div>
+
     <!-- Weight Section (hidden when Weight attribute is in variants - auto-populated, or when hideWeight prop is true) -->
     <div v-if="!hasWeightAttributeInVariants && !props.hideWeight" class="space-y-4">
       <div data-validation-target="product-weight">
@@ -144,6 +160,24 @@
         required
         :error="props.errors?.variants?.[0]?.opening_stock"
       />
+
+      <!-- Reorder Threshold — under Available Stock for simple products (LYW-2648) -->
+      <div v-if="!props.hideReorder">
+        <TextField
+          :model-value="singleVariantForm.reorder_point"
+          name="variant-reorder-point-0"
+          @update:model-value="
+            updateSingleVariantField('reorder_point', removeLeadingZeros($event))
+          "
+          label="Reorder Threshold"
+          placeholder="e.g. 5"
+          type="number"
+          min="0"
+        />
+        <p class="mt-1 text-xs text-gray-600">
+          You'll get a low-stock alert when stock falls to this level.
+        </p>
+      </div>
     </div>
 
     <!-- Multiple Variants View - Table Layout (for editing existing variants) -->
@@ -417,6 +451,8 @@ interface Props {
   hidePrice?: boolean
   /** Hide the weight section (for variants edit mode) */
   hideWeight?: boolean
+  /** Hide the reorder threshold field (for variants edit mode) */
+  hideReorder?: boolean
   /** Deleted variants to display (only in edit mode) - no UIDs, just attributes */
   deletedVariants?: IProductVariant[]
   /** Use table layout instead of card layout (for editing existing variants) */
@@ -708,6 +744,19 @@ const applyToAll = (field: "opening_stock" | "cost_price" | "price", value: stri
     return { ...variant, [field]: value }
   })
   emit("update:modelValue", updatedVariants)
+}
+
+// Product-level reorder threshold for multi-variant products — one value applies
+// to every variant (LYW-2648).
+const globalReorderPoint = computed(() => props.modelValue?.[0]?.reorder_point || "")
+
+const updateGlobalReorderPoint = (value: string) => {
+  if (!props.modelValue || props.modelValue.length === 0) return
+  const clean = removeLeadingZeros(value)
+  emit(
+    "update:modelValue",
+    props.modelValue.map((variant) => ({ ...variant, reorder_point: clean })),
+  )
 }
 
 // Update global dimensions and apply to all variants

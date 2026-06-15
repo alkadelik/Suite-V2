@@ -25,8 +25,8 @@ import { RECIPES_COLUMN } from "@modules/production/constant"
 import { useProductionStore } from "@modules/production/store"
 import { TRecipe } from "@modules/production/types"
 import { useMediaQuery } from "@vueuse/core"
-import { capitalize, computed, ref } from "vue"
-import { useRouter } from "vue-router"
+import { capitalize, computed, ref, watch } from "vue"
+import { useRoute, useRouter } from "vue-router"
 
 const page = ref(1)
 const itemsPerPage = ref(10)
@@ -39,6 +39,18 @@ const showDisableModal = ref<"enable" | "disable" | null>(null)
 
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 const router = useRouter()
+const route = useRoute()
+
+watch(
+  () => route.query.create,
+  (val) => {
+    if (val === "true") {
+      showCreateModal.value = "create"
+      router.replace({ query: {} })
+    }
+  },
+  { immediate: true },
+)
 
 const selectedComponent = computed(() => useProductionStore().selectedRecipeOption)
 const recipeLabel = computed(() => useProductionStore().recipeLabel)
@@ -54,7 +66,7 @@ const onSelect = (option: { label: string; value: string }) => {
 const computedParams = computed(() => {
   const params: Record<string, string> = {}
   if (debouncedSearch.value) params.search = debouncedSearch.value
-  params.offset = ((debouncedSearch.value ? 1 : page.value - 1) * itemsPerPage.value).toString()
+  params.offset = ((debouncedSearch.value ? 0 : page.value - 1) * itemsPerPage.value).toString()
   params.limit = itemsPerPage.value.toString()
   return params
 })

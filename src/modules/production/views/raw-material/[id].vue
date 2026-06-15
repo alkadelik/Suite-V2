@@ -38,6 +38,10 @@ const showEdit = ref(false)
 const showAdjust = ref(false)
 const showDelete = ref(false)
 const activeTab = ref("batches")
+const recipeLabel = computed(() => {
+  const val = useProductionStore().recipeLabel
+  return val.includes("Bill") ? "BOM" : val
+})
 
 const materialTabs = computed(() => [
   { title: "Batches", key: "batches" },
@@ -48,7 +52,7 @@ const materialTabs = computed(() => [
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 const materialLabel = computed(() => useProductionStore().componentLabel)
 const materialValue = computed(() => useProductionStore().componentValue)
-const recipeLabel = computed(() => useProductionStore().recipeLabel)
+const materialSingular = computed(() => useProductionStore().componentSingular)
 
 const { data: material, isPending, refetch } = useGetSingleRawMaterial(route.params.id as string)
 const { mutate: deleteRawMaterial, isPending: isDeleting } = useDeleteRawMaterial()
@@ -67,13 +71,13 @@ const handleDelete = () => {
 
 const actionMenus = computed(() => [
   {
-    label: `Edit ${materialValue.value}`,
+    label: `Edit ${materialSingular.value}`,
     icon: "edit",
     action: () => (showEdit.value = true),
   },
-  { label: "Adjust stock", icon: "box", action: () => (showAdjust.value = true) },
+  { label: "Add/Remove stock", icon: "box", action: () => (showAdjust.value = true) },
   {
-    label: `Delete ${materialValue.value}`,
+    label: `Delete ${materialSingular.value}`,
     icon: "trash",
     class: "!text-error-600",
     action: () => (showDelete.value = true),
@@ -131,7 +135,7 @@ const getUnitLabel = computed(() => {
   <div class="px-3 lg:px-6 lg:pt-8">
     <PageHeader
       v-if="isMobile"
-      :title="`${materialLabel} Details`"
+      :title="`${startCase(materialSingular)} Details`"
       inner
       backLink="/production/raw-materials"
     />
@@ -164,7 +168,7 @@ const getUnitLabel = computed(() => {
                 variant="outlined"
                 icon="dots-vertical"
                 class="!flex-row-reverse"
-                :label="!isMobile ? `Manage ${materialValue}` : ''"
+                :label="!isMobile ? `Manage ${materialSingular}` : ''"
               />
             </template>
           </DropdownMenu>
@@ -208,7 +212,7 @@ const getUnitLabel = computed(() => {
       />
 
       <ConfirmationModal
-        :header="`Delete ${materialLabel}`"
+        :header="`Delete ${materialSingular}`"
         :paragraph="`Are you sure you want to delete '${material.name}'? This cannot be undone.`"
         v-model="showDelete"
         variant="error"

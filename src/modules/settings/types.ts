@@ -92,6 +92,7 @@ export interface IStoreDetails {
 
 export interface IUpdateStoreDetailsPayload {
   store_name?: string
+  slug?: string
   logo?: string | null
   industry?: string
   currency?: string
@@ -131,6 +132,7 @@ export type TIndustriesResponse = {
 
 export interface IStoreDetailsForm {
   store_name: string
+  slug: string
   currency: { label: string; value: string }
   store_email: string
   store_phone: string

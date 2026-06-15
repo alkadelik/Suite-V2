@@ -95,8 +95,8 @@
 
       <template #cell:status="{ item }">
         <Chip
-          :label="getStatusLabel(item.status)"
-          :color="getStatusColor(item.status)"
+          :label="getStatusLabel(item)"
+          :color="getStatusColor(item)"
           :show-dot="true"
           size="sm"
         />
@@ -125,6 +125,7 @@ import { useGetTransferRequests } from "../api"
 import type { IInventoryTransferRequest, TTransferRequestStatus } from "../types"
 import type { FilterGroup } from "@components/ListFilterDrawer.vue"
 import { formatDate as projectFormatDate } from "@/utils/formatDate"
+import { useSettingsStore } from "@modules/settings/store"
 import ProductAvatar from "@components/ProductAvatar.vue"
 import TextField from "@components/form/TextField.vue"
 import AppButton from "@components/AppButton.vue"
@@ -196,7 +197,7 @@ const clearFilters = () => {
 const requestParams = computed(() => {
   const params: Record<string, string | number> = {
     limit: pageSize.value,
-    offset: (debouncedSearch.value ? 1 : currentPage.value - 1) * pageSize.value,
+    offset: (debouncedSearch.value ? 0 : currentPage.value - 1) * pageSize.value,
   }
   if (debouncedSearch.value) params.search = debouncedSearch.value
   if (activeFilters.value.status) params.status = activeFilters.value.status
@@ -231,37 +232,55 @@ const formatDate = (dateString: string): string => {
 }
 
 /**
- * Get status label for display
+ * A request is outgoing when THIS location filed it (from_location = requester);
+ * incoming requests (to_location = this location) are the ones awaiting our action.
  */
-const getStatusLabel = (status: TTransferRequestStatus): string => {
+const activeLocationUid = computed(() => useSettingsStore().activeLocation?.uid || "")
+const isOutgoing = (request: IInventoryTransferRequest) =>
+  request.from_location === activeLocationUid.value
+
+/**
+ * Get status label for display. Pending is direction-aware: outgoing requests are
+ * "Awaiting Approval" (the other location must act), incoming ones are
+ * "Action Required" (this location must grant/reject).
+ */
+const getStatusLabel = (request: IInventoryTransferRequest): string => {
+  if (request.status === "pending") {
+    return isOutgoing(request) ? "Awaiting Approval" : "Action Required"
+  }
   const labels: Record<TTransferRequestStatus, string> = {
     pending: "Pending",
     approved: "Approved",
     rejected: "Rejected",
     fulfilled: "Fulfilled",
   }
-  return labels[status] || status
+  return labels[request.status] || request.status
 }
 
 /**
- * Get status color for chip
+ * Get status color for chip (pending is direction-aware, see getStatusLabel)
  */
 const getStatusColor = (
-  status: TTransferRequestStatus,
+  request: IInventoryTransferRequest,
 ): "warning" | "error" | "success" | "primary" => {
+  if (request.status === "pending") {
+    return isOutgoing(request) ? "warning" : "error"
+  }
   const colors: Record<TTransferRequestStatus, "warning" | "error" | "success" | "primary"> = {
     pending: "warning",
     rejected: "error",
     approved: "success",
     fulfilled: "primary",
   }
-  return colors[status] || "primary"
+  return colors[request.status] || "primary"
 }
 
 /**
- * Handle request row click
+ * Handle request row click. Outgoing requests are not actionable here (only the
+ * receiving location can grant them), so they are not clickable.
  */
 const handleRequestClick = (request: IInventoryTransferRequest) => {
+  if (isOutgoing(request)) return
   emit("request-click", request)
 }
 

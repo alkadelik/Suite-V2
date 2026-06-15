@@ -62,7 +62,8 @@ const toggleExpand = (label: string): void => {
 
 const openLogout = ref(false)
 
-const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
+// Prefer the connected custom domain when one is active (LYW-2618).
+const storefrontUrl = computed(() => useSettingsStore().displayDomain)
 </script>
 
 <template>

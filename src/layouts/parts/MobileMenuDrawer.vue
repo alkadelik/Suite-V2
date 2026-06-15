@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { toast } from "@/composables/useToast"
 import { clipboardCopy } from "@/utils/others"
-import AppButton from "@components/AppButton.vue"
 import Chip from "@components/Chip.vue"
 import Drawer from "@components/Drawer.vue"
 import TextField from "@components/form/TextField.vue"
@@ -16,7 +15,8 @@ defineProps<{ open: boolean }>()
 
 const emit = defineEmits<{ (e: "close"): void }>()
 
-const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
+// Prefer the connected custom domain when one is active (LYW-2618).
+const storefrontUrl = computed(() => useSettingsStore().displayDomain)
 const storeDetails = computed(() => useSettingsStore().storeDetails)
 const currentLocation = computed(() => useSettingsStore().activeLocation)
 const user = computed(() => useAuthStore().user)
@@ -46,7 +46,7 @@ type ActionGroup = {
 const quickActionGroups = computed<ActionGroup[]>(() => {
   const groups: ActionGroup[] = [
     {
-      label: "Sales",
+      label: "",
       items: [
         { label: "Orders", icon: "shopping-cart", to: "/orders" },
         { label: "Inventory", icon: "folder", to: "/inventory" },
@@ -57,36 +57,8 @@ const quickActionGroups = computed<ActionGroup[]>(() => {
           icon: "tag",
           action: () => toast.info("This module is coming soon!", { title: "Discounts" }),
         },
-      ],
-    },
-    {
-      label: "Marketing",
-      items: [{ label: "Email List", icon: "sms", to: "/email-list" }],
-    },
-    {
-      label: "Production",
-      items: [
-        { label: componentLabel.value, icon: "archive", to: "/production/raw-materials" },
-        { label: recipeValue.value, icon: "clipboard-text-outline", to: "/production/recipes" },
-        { label: "Runs", icon: "chart", to: "/production/runs" },
-      ],
-    },
-    {
-      label: "Reports",
-      items: [
-        { label: "Overview", icon: "pie-chart", to: "/reports/store-overview" },
-        { label: "End of Day", icon: "pie-chart", to: "/reports/end-of-day" },
-        { label: "Monthly", icon: "pie-chart", to: "/reports/monthly" },
-      ],
-    },
-    {
-      label: "Expenses",
-      items: [{ label: "Expenses", icon: "receipt-text", to: "/expenses" }],
-    },
-    {
-      label: "Others",
-      items: [
-        { label: "Locations", icon: "folder", to: "/settings/locations" },
+        { label: "Expenses", icon: "receipt-text", to: "/expenses" },
+        { label: "Email List", icon: "sms", to: "/email-list", hqOnly: true },
         {
           label: "Support",
           icon: "life-buoy",
@@ -96,6 +68,30 @@ const quickActionGroups = computed<ActionGroup[]>(() => {
           },
         },
         { label: "Settings", icon: "setting", to: "/settings" },
+      ],
+    },
+    ...(isHQ.value
+      ? [
+          {
+            label: "Production",
+            items: [
+              { label: componentLabel.value, icon: "archive", to: "/production/raw-materials" },
+              {
+                label: recipeValue.value,
+                icon: "clipboard-text-outline",
+                to: "/production/recipes",
+              },
+              { label: "Runs", icon: "chart", to: "/production/runs" },
+            ],
+          },
+        ]
+      : []),
+    {
+      label: "Reports",
+      items: [
+        { label: "Overview", icon: "pie-chart", to: "/reports/store-overview" },
+        { label: "End of Day", icon: "pie-chart", to: "/reports/end-of-day" },
+        { label: "Monthly", icon: "pie-chart", to: "/reports/monthly" },
       ],
     },
   ]
@@ -116,10 +112,6 @@ const settingsStore = useSettingsStore()
 const isInternational = computed(() => settingsStore.isInternational)
 
 const currentPlanName = computed(() => user.value?.subscription?.plan_name?.toLowerCase() ?? "")
-const planCtaLabel = computed(() => {
-  if (user.value?.subscription?.trial_mode) return "Upgrade"
-  return currentPlanName.value === "burst" ? "Subscribed" : "Upgrade"
-})
 
 const { setPlanUpgradeModal } = settingsStore
 </script>
@@ -162,18 +154,50 @@ const { setPlanUpgradeModal } = settingsStore
         </div>
       </div>
 
-      <div class="bg-primary-25 mt-6 mb-10 rounded-2xl">
-        <div class="bg-primary-25 sticky top-[100px] z-10 rounded-xl p-2">
+      <div
+        v-if="!isInternational && currentPlanName !== 'burst'"
+        :class="['relative mb-4 flex cursor-pointer flex-col gap-2 rounded-2xl p-4 text-white']"
+        style="
+          background: linear-gradient(136.41deg, #1a2a6c -3.7%, #b21f1f 53.98%, #fdbb2d 99.39%);
+        "
+        @click="setPlanUpgradeModal(true)"
+      >
+        <div class="w-full max-w-3/4">
+          <template v-if="!user?.subscription?.trial_mode && !user?.subscription?.is_active">
+            <h3 class="mb-1 text-sm font-bold">Your trial has ended!</h3>
+            <p class="text-xs">Upgrade to regain full access.</p>
+          </template>
+
+          <template v-else>
+            <h3 class="mb-1 text-sm font-semibold">Do more with Burst!</h3>
+            <p class="text-xs">Get advanced tools to mange every aspect of your business.</p>
+          </template>
+        </div>
+
+        <img
+          v-if="!user?.subscription?.trial_mode && !user?.subscription?.is_active"
+          src="@/assets/images/gift-timer.png"
+          class="absolute top-4 right-4 h-14 w-auto object-contain"
+        />
+        <img
+          v-else
+          src="@/assets/images/bloom-plant.png"
+          class="absolute top-4 right-4 h-14 w-auto object-contain"
+        />
+      </div>
+
+      <div>
+        <div class="sticky top-[100px] z-10 mb-2 bg-white pb-2">
           <TextField
             left-icon="search-lg"
             size="sm"
             class="w-full"
-            placeholder="Search for menu..."
+            placeholder="Search menu..."
             v-model="searchQuery"
             container-class="bg-white!"
           />
         </div>
-        <div class="flex flex-col gap-2.5 overflow-y-auto p-3 pt-2">
+        <div class="flex flex-col gap-3 overflow-y-auto">
           <div
             v-if="quickActionGroups.length === 0"
             class="flex flex-col items-center gap-2 py-10 text-center"
@@ -182,19 +206,15 @@ const { setPlanUpgradeModal } = settingsStore
             <p class="text-sm font-medium text-gray-500">No results for "{{ searchQuery }}"</p>
             <p class="text-xs text-gray-400">Try a different search term</p>
           </div>
-          <div
-            v-for="group in quickActionGroups"
-            :key="group.label"
-            class="rounded-2xl border border-gray-100 bg-white p-3"
-          >
-            <p class="text-core-900 mb-2 text-xs font-semibold tracking-wide uppercase">
+          <div v-for="group in quickActionGroups" :key="group.label" class="mb-2">
+            <p class="text-core-600 mb-2 text-[11px] font-medium tracking-widest uppercase">
               {{ group.label }}
             </p>
-            <div class="grid grid-cols-3 gap-2">
+            <div class="bg-primary-25 grid grid-cols-3 gap-2 rounded-2xl p-2">
               <div
                 v-for="action in group.items"
                 :key="action.label"
-                class="border-primary-200 text-primary-700 cursor-pointer rounded-xl border bg-white px-2 py-3 text-center"
+                class="border-primary-200 text-primary-700 cursor-pointer rounded-xl border bg-white px-2 py-2.5 text-center"
                 @click="
                   () => {
                     if (action.action) {
@@ -213,57 +233,14 @@ const { setPlanUpgradeModal } = settingsStore
                     <Icon :name="action.icon" size="24" />
                   </div>
                 </div>
-                <span class="text-xs font-medium md:text-base">{{ action.label }}</span>
+                <span class="text-xs font-normal md:text-base">{{ action.label }}</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div
-        v-if="!isInternational"
-        :class="['relative flex flex-col gap-2 rounded-3xl p-6 text-white']"
-        style="
-          background: linear-gradient(136.41deg, #1a2a6c -3.7%, #b21f1f 53.98%, #fdbb2d 99.39%);
-        "
-      >
-        <div class="w-full max-w-3/4">
-          <template v-if="!user?.subscription?.trial_mode && !user?.subscription?.is_active">
-            <h3 class="mb-1 text-sm font-bold">Your trial has ended!</h3>
-            <p class="mb-4 text-sm">Upgrade to regain full access.</p>
-          </template>
-
-          <template v-else>
-            <h3 v-if="user?.subscription?.trial_mode" class="mb-1 text-sm font-bold">
-              You are on trial mode
-            </h3>
-            <h3 v-else class="mb-1 text-sm font-semibold">
-              Active: <b>{{ user?.subscription?.plan_name + " Plan" }}</b>
-            </h3>
-            <p class="mb-4 text-sm">
-              Ends:
-              {{
-                new Date(user?.subscription?.active_until).toLocaleString("en-US", {
-                  dateStyle: "medium",
-                })
-              }}
-            </p>
-          </template>
-        </div>
-        <AppButton
-          color="alt"
-          :label="planCtaLabel"
-          class="w-full flex-row-reverse"
-          icon="star"
-          @click="setPlanUpgradeModal(true)"
-        />
-        <img
-          src="@/assets/images/gift.png"
-          class="absolute top-4 right-6 h-16 w-auto object-contain"
-        />
-      </div>
-
-      <div class="py-10" />
+      <div class="py-8" />
     </Drawer>
   </div>
 </template>

@@ -20,6 +20,7 @@ export type TExpense = {
   created_at: string
   updated_at: string
   linked_order_number?: string
+  produced_item_name?: string
 }
 
 export type TExpenseResponse = {

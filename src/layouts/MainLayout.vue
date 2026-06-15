@@ -75,10 +75,7 @@
         </nav>
 
         <!-- FAB -->
-        <div
-          v-if="!isMobile && !$route.path.includes('/orders/add')"
-          class="fixed right-4 bottom-4 z-[50] hidden lg:inline-block"
-        >
+        <div v-if="showDesktopFab" class="fixed right-4 bottom-4 z-[50] hidden lg:inline-block">
           <DropdownMenu :items="actionMenuItems">
             <template #trigger="{ open }">
               <AppButton
@@ -120,7 +117,7 @@
     v-model="confirmSwitch"
     header="Switch Location?"
     :paragraph="`Are you sure you want to switch to ${pendingLocation?.name?.toUpperCase()}? This will reload the page.`"
-    info-message="You can reverse this action later by switching to another location."
+    info-message=""
     action-label="Switch Location"
     :loading="false"
     @confirm="confirmLocationSwitch"
@@ -243,6 +240,10 @@ const showAppHeader = computed(() => {
 
 const isInner = computed(() => !!route.params.id || route.path.endsWith("/add"))
 
+const showDesktopFab = computed(() => {
+  return !isMobile.value && !isInner.value
+})
+
 const MENU_ITEMS = computed(() => {
   const allSuites = [
     { icon: "box", label: "Orders", to: "/orders" },
@@ -330,7 +331,11 @@ const handleLocationRefresh = () => {
   setAddLocationModal(false)
   setLocationForEdit(null)
 }
-const storeSlug = useAuthStore().user?.store_slug || ""
+// Prefer the live storeDetails slug (refreshed after a slug edit) over the
+// persisted auth snapshot, so live-status isn't polled with a stale slug.
+const storeSlug = computed(
+  () => useSettingsStore().storeDetails?.slug || useAuthStore().user?.store_slug || "",
+)
 const { data: liveStatusData } = useGetLiveStatus(storeSlug)
 
 const storeUid = computed(() => useAuthStore().user?.store_uid || "")

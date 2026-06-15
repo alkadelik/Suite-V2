@@ -196,11 +196,12 @@
     <ConfirmationModal
       v-model="showSuspendMemberModal"
       @close="showSuspendMemberModal = false"
-      header="Suspend Member"
-      paragraph="Are you sure you want to suspend this member?"
-      info-message="You can reverse this action by reactivating the member."
-      variant="warning"
+      :header="`${member?.is_suspended ? 'Unsuspend' : 'Suspend'} Member`"
+      :paragraph="`Are you sure you want to ${member?.is_suspended ? 'unsuspend' : 'suspend'} this member?`"
+      :info-message="`You can reverse this action by ${member?.is_suspended ? 'deactivating' : 'reactivating'}  the member later.`"
+      :variant="member?.is_suspended ? 'success' : 'warning'"
       :loading="isSuspending"
+      :action-label="member?.is_suspended ? 'Unsuspend' : 'Suspend'"
       @confirm="handleSuspendMember"
     />
   </div>

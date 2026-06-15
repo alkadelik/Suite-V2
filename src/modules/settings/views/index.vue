@@ -98,7 +98,11 @@ const { data: rolesData } = useGetRoles()
 
 const logout = ref(false)
 
-const storeSlug = useAuthStore().user?.store_slug || ""
+// Prefer the live storeDetails slug (refreshed after a slug edit) over the
+// persisted auth snapshot, so live-status isn't polled with a stale slug.
+const storeSlug = computed(
+  () => useSettingsStore().storeDetails?.slug || useAuthStore().user?.store_slug || "",
+)
 const { data: liveStatusData } = useGetLiveStatus(storeSlug)
 const isLive = computed(() => liveStatusData.value?.data?.is_live || false)
 
@@ -151,7 +155,8 @@ const settingsStore = useSettingsStore()
 const { setAddLocationModal, setLocationForEdit } = settingsStore
 const showAddLocationModal = computed(() => useSettingsStore().showAddLocationModal)
 const locationForEdit = computed(() => useSettingsStore().locationForEdit)
-const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
+// Prefer the connected custom domain when one is active (LYW-2618).
+const storefrontUrl = computed(() => useSettingsStore().displayDomain)
 
 // Handle location refresh after adding/updating location
 const handleLocationRefresh = () => {
