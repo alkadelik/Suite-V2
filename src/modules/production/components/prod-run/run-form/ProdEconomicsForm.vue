@@ -142,6 +142,8 @@ const estimationVerdict = computed(() => {
       />
     </div>
 
+    <div class="py-12" />
+
     <div class="border-core-200 fixed right-0 bottom-0 left-0 border-t bg-white p-4 md:p-6">
       <div class="mt-3 flex gap-2">
         <AppButton
