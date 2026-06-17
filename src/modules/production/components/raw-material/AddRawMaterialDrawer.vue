@@ -249,7 +249,7 @@ const buildConversion = (values: FormValues) => {
 
   if (!purchaseUnit || !productionUnit || !fromQty || !toQty) return undefined
 
-  const rate = (Number(toQty) / Number(fromQty)).toString()
+  const rate = floatDecimal(Number(toQty) / Number(fromQty)).toString()
   const name = values.conversion_name || `${purchaseUnit} to ${productionUnit}`
 
   return {
