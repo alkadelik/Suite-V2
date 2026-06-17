@@ -265,7 +265,7 @@ const onSubmit = handleSubmit((values) => {
   const conversion = buildConversion(values)
 
   const qty_in_stock: string = conversion
-    ? String(Number(values.qty_in_stock) * Number(conversion.rate))
+    ? floatDecimal(Number(values.qty_in_stock) * Number(conversion.rate)).toString()
     : values.qty_in_stock
 
   // unit cost for each material is stored in purchase unit, so convert if needed
@@ -466,6 +466,21 @@ const goToNextStep = async () => {
 
 const goToPrevStep = () => {
   activeStep.value = activeStep.value - 1
+}
+
+const allowDecimalInput = (e: KeyboardEvent) => {
+  const allowed = /^[0-9.]$/
+  const ctrl = e.ctrlKey || e.metaKey
+  if (
+    !allowed.test(e.key) &&
+    !ctrl &&
+    !["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)
+  ) {
+    e.preventDefault()
+  }
+  if (e.key === "." && (e.target as HTMLInputElement).value.includes(".")) {
+    e.preventDefault()
+  }
 }
 
 const handleAddFromSearch = (search: string, close: () => void) => {
@@ -672,12 +687,13 @@ const handleAddFromSearch = (search: string, close: () => void) => {
 
             <div>
               <FormField
-                type="number"
+                type="text"
                 name="qty_in_stock"
                 label="Quantity in Stock"
                 :suffix="removeUnderscores(values.unit?.label)"
                 placeholder="e.g. 25"
                 required
+                @keydown="allowDecimalInput"
               />
             </div>
 
