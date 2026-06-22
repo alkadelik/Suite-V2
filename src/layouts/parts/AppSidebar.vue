@@ -210,6 +210,7 @@ const isInternational = computed(() => useSettingsStore().isInternational)
 const salesSuiteItems = computed(() =>
   [
     { icon: "box", label: "Orders", to: "/orders" },
+    { icon: "truck-fast-outline", label: "Shipments", to: "/shipments" },
     { icon: "folder", label: "Inventory", to: "/inventory" },
     { icon: "calendar-tick", label: "Popups", to: "/popups" },
     { icon: "people", label: "Customers", to: "/customers" },

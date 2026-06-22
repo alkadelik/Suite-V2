@@ -132,6 +132,19 @@
   --color-pink-700: #c11574;
   --color-pink-800: #9e165f;
   --color-pink-900: #851651;
+  /* colors - leyyow */
+  /* --color-leyyow-25: #fcf6f1; */
+  --color-leyyow-50: #faf3e6;
+  --color-leyyow-100: #f6e8cb;
+  /* --color-leyyow-200: #f0c59e; */
+  /* --color-leyyow-300: #eea563; */
+  /* --color-leyyow-400: #ef8a2e; */
+  /* --color-leyyow-500: #bb5a02; */
+  --color-leyyow-600: #b87b00;
+  --color-leyyow-700: #8f6000;
+  /* --color-leyyow-800: #6b3300; */
+  /* --color-leyyow-900: #4c2400; */
+  /* --color-leyyow-950: #331800; */
   /* animations */
   --animate-spin: spin 2s linear infinite;
 }

@@ -130,6 +130,7 @@ export const SAMPLE_SHIPMENTS: TShipment[] = [
 ]
 
 export const ORDER_SHIPMENT_COLUMNS: TableColumn<TShipment>[] = [
+  { header: "Order ID", accessor: "uid" },
   { header: "Name", accessor: "customer_name" },
   { header: "Courier", accessor: "courier" },
   {
@@ -141,14 +142,10 @@ export const ORDER_SHIPMENT_COLUMNS: TableColumn<TShipment>[] = [
     },
   },
   {
-    header: "Pickup Date",
-    accessor: "pickup_date",
-    cell: ({ value }) => getSmartDateLabel(String(value)),
-  },
-  {
     header: "Delivery Date",
     accessor: "delivery_date",
     cell: ({ value }) => getSmartDateLabel(String(value)),
   },
   { header: "Status", accessor: "status" },
+  { header: "", accessor: "actions" },
 ]
