@@ -200,3 +200,8 @@ export interface EventDiscountCode {
   event_name: string
   usage_remaining: number | null
 }
+
+export interface TQrcodeResponse {
+  qr_code_url: string
+  storefront_url: string
+}

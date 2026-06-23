@@ -134,6 +134,7 @@ const seedFromRun = (run: TProdRun) => {
     recipeUid: run.recipe,
     recipeOption: { label: recipeLabel, value: run.recipe },
     outputVariantUid: run.output_variant || "",
+    outputUnit: run.output_unit,
   }
 
   ingredientRowsState.value = (run.ingredients_used ?? []).map((ing) => {

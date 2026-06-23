@@ -154,7 +154,7 @@
       v-else
       v-bind="{ ...field, ...$attrs }"
       :model-value="field.value"
-      :type="type"
+      :type="type === 'decimal' ? 'text' : type"
       :label="hideLabel ? '' : label || startCase(name)"
       :placeholder="placeholder"
       :required="isRequired"
@@ -172,6 +172,7 @@
       :autocomplete="autocomplete"
       :description="description"
       @update:model-value="field.value = $event"
+      @keydown="onKeyDown"
     />
   </Field>
 </template>
@@ -191,6 +192,7 @@ import { computed, toRefs } from "vue"
 import FileUploadField from "./FileUploadField.vue"
 import { TChipColor } from "@modules/shared/types"
 import { useMediaQuery } from "@vueuse/core"
+import { allowDecimalInput } from "@/utils/form-validation.ts"
 
 // Import or define the ISelectOption interface to match your existing type
 interface ISelectOption {
@@ -205,6 +207,7 @@ interface ISelectOption {
  */
 export type FormFieldType =
   | "text"
+  | "decimal"
   | "email"
   | "password"
   | "number"
@@ -427,4 +430,9 @@ const isDisabled = computed(() => props.disabled ?? false)
 const isRequired = computed(() => props.required ?? false)
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
+
+const onKeyDown = (e: KeyboardEvent) => {
+  if (props.type === "decimal") allowDecimalInput(e)
+  else return undefined
+}
 </script>
