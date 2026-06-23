@@ -100,7 +100,7 @@ const materialStats = computed(() => {
       icon: "bag",
     },
     {
-      label: "Last Purchase Cost",
+      label: `Last ${item.is_sub_assembly ? "Production" : "Purchase"} Cost`,
       value: `${format(+convertNumToUsageUnit(+item.last_cost, item))}/${removeUnderscores(getPurchaseUnit(item))}`,
       icon: "bag",
       chip: isMobile.value

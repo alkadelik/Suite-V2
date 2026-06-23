@@ -14,6 +14,7 @@ import Chip from "@components/Chip.vue"
 import TextField from "@components/form/TextField.vue"
 import { useProductionStore } from "@modules/production/store"
 import { removeUnderscores } from "@/utils/format-strings"
+import { floatDecimal } from "@/utils/others"
 
 const materialSingular = computed(() => useProductionStore().componentSingular)
 
@@ -52,7 +53,7 @@ const totalIngredientCost = computed(() => {
     (sum, row) => sum + (row.ingredient.cost_per_unit || 0) * row.qty,
     0,
   )
-  return formatCurrency(total)
+  return formatCurrency(total, { kobo: true })
 })
 
 const canProceed = computed(
@@ -243,7 +244,7 @@ function updateSelectedMat(evt: unknown) {
               <div class="flex flex-col items-start gap-1">
                 <Chip
                   color="alt"
-                  :label="`${row.qty} ${removeUnderscores(row.ingredient.unit)}`"
+                  :label="`${floatDecimal(row.qty)} ${removeUnderscores(row.ingredient.unit)}`"
                   radius="md"
                 />
                 <span class="text-xs text-gray-500">Required stock</span>
@@ -253,7 +254,7 @@ function updateSelectedMat(evt: unknown) {
                 <Chip
                   v-if="row.ingredient.available_stock !== undefined"
                   :color="isInsufficient(row) ? 'error' : 'alt'"
-                  :label="`${row.ingredient.available_stock} ${removeUnderscores(row.ingredient.unit)}`"
+                  :label="`${floatDecimal(row.ingredient.available_stock)} ${removeUnderscores(row.ingredient.unit)}`"
                   radius="md"
                 />
                 <span v-else>-</span>
@@ -263,7 +264,7 @@ function updateSelectedMat(evt: unknown) {
               <div class="flex flex-col items-start gap-1">
                 <Chip
                   color="alt"
-                  :label="`${row.ingredient.used_stock ?? row.qty} ${removeUnderscores(row.ingredient.unit)}`"
+                  :label="`${floatDecimal(row.ingredient.used_stock ?? row.qty)} ${removeUnderscores(row.ingredient.unit)}`"
                   radius="md"
                 />
                 <span class="text-xs text-gray-500">Used Stock</span>
@@ -331,7 +332,7 @@ function updateSelectedMat(evt: unknown) {
           <p class="mt-1 text-lg font-semibold text-gray-900">
             {{
               editingRow.ingredient.available_stock !== undefined
-                ? editingRow.ingredient.available_stock
+                ? floatDecimal(editingRow.ingredient.available_stock)
                 : "—"
             }}
             <span class="text-sm font-normal text-gray-500">
@@ -344,7 +345,7 @@ function updateSelectedMat(evt: unknown) {
         <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
           <p class="text-xs text-gray-500">Required Stock</p>
           <p class="mt-1 text-lg font-semibold text-gray-900">
-            {{ editingRow.qty }}
+            {{ floatDecimal(editingRow.qty) }}
             <span class="text-sm font-normal text-gray-500">
               {{ removeUnderscores(editingRow.ingredient.unit) }}
             </span>
@@ -356,16 +357,6 @@ function updateSelectedMat(evt: unknown) {
         <AppButton label="Save" class="w-full" @click="saveUsedStock" />
       </template>
     </Modal>
-
-    <!-- AdjustMaterialStockModal (commented out — may be needed later)
-    <AdjustMaterialStockModal
-      :open="adjustModalOpen"
-      :material="selectedMaterial"
-      add-only
-      @close="adjustModalOpen = false"
-      @refresh="(qty) => onAdjustRefresh(qty as number)"
-    />
-    -->
 
     <!-- Remove Ingredient Confirmation -->
     <ConfirmationModal
@@ -393,7 +384,9 @@ function updateSelectedMat(evt: unknown) {
             >
           </span>
           <span class="text-sm font-semibold text-gray-700">
-            {{ formatCurrency(removingRow.ingredient.cost_per_unit * removingRow.qty) }}
+            {{
+              formatCurrency(removingRow.ingredient.cost_per_unit * removingRow.qty, { kobo: true })
+            }}
           </span>
         </div>
       </template>

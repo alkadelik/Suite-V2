@@ -69,9 +69,6 @@ const selectedOptions = computed<MatOption[]>(() =>
 
 function onSelectChange(newVal: unknown) {
   const selected = (Array.isArray(newVal) ? newVal : []) as MatOption[]
-
-  console.log("Selected options:", selected)
-
   const newVals = new Set(selected.map((o) => String(o.value)))
 
   // Remove deselected
@@ -112,7 +109,7 @@ const totalIngredientCost = computed(() => {
     const baseCost = row.ingredient.cost_per_unit || 0
     return sum + baseCost * row.qty
   }, 0)
-  return formatCurrency(Number(total))
+  return formatCurrency(Number(total), { kobo: true })
 })
 
 const canProceed = computed(() => ingredientRows.value.some((r) => r.qty > 0))
@@ -205,12 +202,15 @@ function handlePrev() {
                     size="sm"
                   />
                 </div>
-                <div
-                  v-if="row.ingredient.kind !== 'sub_assembly'"
-                  class="mt-1 flex items-center gap-2"
-                >
+                <div class="mt-1 flex items-center gap-2">
                   <Chip
                     :label="`${formatCurrency(row.ingredient.cost_per_unit)}/${removeUnderscores(row.ingredient.unit)}`"
+                    size="sm"
+                  />
+                  <Chip
+                    v-if="row.ingredient.kind === 'sub_assembly' && !row.ingredient.cost_per_unit"
+                    color="error"
+                    label="Unproduced"
                     size="sm"
                   />
                 </div>
@@ -220,7 +220,7 @@ function handlePrev() {
             <div class="flex items-center gap-3" :class="isMobile ? 'w-full justify-between' : ''">
               <TextField
                 v-model="row.qty"
-                type="number"
+                type="decimal"
                 :prefix="removeUnderscores(row.ingredient.unit)"
                 class="w-full"
               />
