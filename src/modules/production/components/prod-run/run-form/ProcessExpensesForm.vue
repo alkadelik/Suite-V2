@@ -146,11 +146,15 @@ function handleSubmit() {
     <div class="border-core-200 fixed right-0 bottom-0 left-0 border-t bg-white p-4 md:p-6">
       <div class="mb-1 flex items-center justify-between text-sm">
         <span class="text-gray-500">{{ recipeSingularLabel }} Process Costs</span>
-        <span class="font-medium text-gray-900">{{ formatCurrency(recipeTotalCost) }}</span>
+        <span class="font-medium text-gray-900">{{
+          formatCurrency(recipeTotalCost, { kobo: true })
+        }}</span>
       </div>
       <div class="mb-3 flex items-center justify-between text-sm">
         <span class="text-gray-500">Additional Expenses</span>
-        <span class="font-medium text-gray-900">+ {{ formatCurrency(additionalTotalCost) }}</span>
+        <span class="font-medium text-gray-900"
+          >+ {{ formatCurrency(additionalTotalCost, { kobo: true }) }}</span
+        >
       </div>
       <div class="flex gap-3">
         <AppButton label="Back" color="alt" class="w-1/3" icon="arrow-left" @click="emit('prev')" />

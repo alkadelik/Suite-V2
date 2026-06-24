@@ -15,7 +15,7 @@ import CreatePopupEventModal from "../components/CreatePopupEventModal.vue"
 import DeletePopupEvent from "../components/DeletePopupEvent.vue"
 import PopupSalesTab from "../components/popup-tabs/PopupSalesTab.vue"
 import PopupInventoryTab from "../components/popup-tabs/PopupInventoryTab.vue"
-import { clipboardCopy } from "@/utils/others"
+import { clipboardCopy, isStaging } from "@/utils/others"
 import { useMediaQuery } from "@vueuse/core"
 import Collapsible from "@components/Collapsible.vue"
 import { useSettingsStore } from "@modules/settings/store"
@@ -23,6 +23,7 @@ import popupEmpty from "@/assets/images/popup-empty.svg?url"
 import popupBanner from "@/assets/images/popup-banner.svg?url"
 import ClosePopupModal from "../components/ClosePopupModal.vue"
 import BackButton from "@components/BackButton.vue"
+import AppButton from "@components/AppButton.vue"
 
 const route = useRoute()
 const router = useRouter()
@@ -100,9 +101,25 @@ const actionMenu = computed(() => {
 
 const isMobile = useMediaQuery("(max-width: 768px)")
 
-// Prefer the connected custom domain as the storefront base (LYW-2618); it already
-// carries the store slug when falling back to the default storefront domain.
-const displayDomain = computed(() => useSettingsStore().displayDomain)
+const storeDetails = computed(() => useSettingsStore().storeDetails)
+
+const downloadQrCode = async () => {
+  if (!popupEvt.value?.qr_code) return
+  try {
+    // "https://res.cloudinary.com/do2uxmtsx/image/upload/v1781867095/blank-avatar_vgt0by.jpg",
+    const res = await fetch(popupEvt.value.qr_code)
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `${popupEvt.value.slug || "popup"}-qr-code.png`
+    link.click()
+    URL.revokeObjectURL(url)
+  } catch (error) {
+    console.log("Error downloading image:", error)
+    window.open(popupEvt.value.qr_code, "_blank")
+  }
+}
 </script>
 
 <template>
@@ -170,13 +187,19 @@ const displayDomain = computed(() => useSettingsStore().displayDomain)
             </p>
             <p class="flex items-center gap-2 text-xs md:text-sm">
               <span class="min-w-0 truncate">
-                {{ `${displayDomain}/events/${popupEvt?.slug}` }}
+                {{
+                  `${isStaging ? "www.storefronts-v2.vercel.app" : "www.buy.leyyow.com"}/${storeDetails?.slug}/events/${popupEvt?.slug}`
+                }}
               </span>
               <Icon
                 name="copy"
                 size="20"
                 class="flex-shrink-0 cursor-pointer"
-                @click="clipboardCopy(`https://${displayDomain}/events/${popupEvt?.slug}`)"
+                @click="
+                  clipboardCopy(
+                    `https://${isStaging ? 'storefronts-v2.vercel.app' : 'buy.leyyow.com'}/${storeDetails?.slug}/events/${popupEvt?.slug}`,
+                  )
+                "
               />
             </p>
             <Chip
@@ -222,6 +245,23 @@ const displayDomain = computed(() => useSettingsStore().displayDomain)
                   >
                     <p class="text-core-600 flex-1 font-semibold">{{ startCase(key) }}</p>
                     <p class="flex-2 font-medium">{{ value }}</p>
+                  </div>
+                  <div v-if="popupEvt.qr_code" class="flex flex-col gap-2 py-3 text-sm">
+                    <p class="text-core-600 flex-1 font-semibold">QR Code</p>
+                    <div class="flex items-end gap-3">
+                      <img
+                        :src="popupEvt.qr_code"
+                        alt="Event QR code"
+                        class="border-core-100 h-24 w-24 rounded-lg border p-1"
+                      />
+                      <AppButton
+                        variant="outlined"
+                        label="Download"
+                        icon="download-cloud-02"
+                        size="xs"
+                        @click="downloadQrCode"
+                      />
+                    </div>
                   </div>
                 </div>
               </template>

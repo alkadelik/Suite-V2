@@ -249,7 +249,7 @@ const buildConversion = (values: FormValues) => {
 
   if (!purchaseUnit || !productionUnit || !fromQty || !toQty) return undefined
 
-  const rate = (Number(toQty) / Number(fromQty)).toString()
+  const rate = (Number(toQty) / Number(fromQty)).toFixed(4)
   const name = values.conversion_name || `${purchaseUnit} to ${productionUnit}`
 
   return {
@@ -265,7 +265,7 @@ const onSubmit = handleSubmit((values) => {
   const conversion = buildConversion(values)
 
   const qty_in_stock: string = conversion
-    ? String(Number(values.qty_in_stock) * Number(conversion.rate))
+    ? floatDecimal(Number(values.qty_in_stock) * Number(conversion.rate)).toString()
     : values.qty_in_stock
 
   // unit cost for each material is stored in purchase unit, so convert if needed
@@ -320,17 +320,20 @@ const seedFromMaterial = (item: TRawMaterial) => {
   const activeConversion: TConversion | undefined = item.conversions?.find(
     (c) => c.is_active && c.from_unit !== c.to_unit,
   )
-  const productionUnit = activeConversion
-    ? { label: activeConversion.to_unit, value: activeConversion.to_unit }
-    : { label: item.unit, value: item.unit }
-
-  const ensureUnit = (unitValue: string) => {
-    if (!unitOptions.value.find((o) => o.value === unitValue)) {
-      unitOptions.value.push({ label: unitValue, value: unitValue })
-    }
+  // Reuse the existing option (with its canonical label) when the unit is known,
+  // otherwise add it as a custom option so it can still be selected.
+  const resolveUnit = (unitValue: string) => {
+    const existing = unitOptions.value.find((o) => o.value === unitValue)
+    if (existing) return existing
+    const custom = { label: unitValue, value: unitValue }
+    unitOptions.value.push(custom)
+    return custom
   }
-  ensureUnit(item.unit)
-  if (activeConversion) ensureUnit(activeConversion.to_unit)
+
+  const purchaseUnitOption = resolveUnit(item.unit)
+  const productionUnit = activeConversion
+    ? resolveUnit(activeConversion.to_unit)
+    : purchaseUnitOption
 
   const prefillSuppliers = item.suppliers?.map((s) => ({ label: s.name, value: s.uid })) ?? []
 
@@ -338,7 +341,7 @@ const seedFromMaterial = (item: TRawMaterial) => {
     values: {
       name: item.name,
       unit: productionUnit,
-      production_unit: { label: item.unit, value: item.unit },
+      production_unit: purchaseUnitOption,
       qty_in_stock: activeConversion
         ? floatDecimal(item.current_stock / Number(activeConversion.rate)).toString()
         : item.current_stock.toString(),
@@ -353,14 +356,14 @@ const seedFromMaterial = (item: TRawMaterial) => {
         : "",
       notes: item.notes ?? "",
       conversion_from_qty: "1",
-      conversion_to_qty: "",
+      conversion_to_qty: activeConversion?.rate,
       conversion_name: "",
     },
   })
   if (activeConversion) {
     nextTick(() => {
       setFieldValue("conversion_from_qty", "1")
-      setFieldValue("conversion_to_qty", String(parseInt(activeConversion.rate)))
+      setFieldValue("conversion_to_qty", activeConversion.rate)
       setFieldValue("conversion_name", activeConversion.name)
     })
   }
@@ -635,7 +638,7 @@ const handleAddFromSearch = (search: string, close: () => void) => {
                   How do you convert {{ removeUnderscores(values.unit?.label) }} to
                   {{ removeUnderscores(values.production_unit?.label) }}?
                 </p>
-                <p v-if="unitsLocked" class="mb-3 text-xs text-amber-600">
+                <p v-if="false" class="mb-3 text-xs text-amber-600">
                   Units and conversion are locked because this {{ materialSingular }} is used in
                   {{ props.material?.linked_recipes?.length }} {{ recipeLabel.toLowerCase() }}.
                 </p>
@@ -643,11 +646,11 @@ const handleAddFromSearch = (search: string, close: () => void) => {
                   <div class="min-w-0 flex-1">
                     <FormField
                       name="conversion_from_qty"
-                      type="number"
                       :label="removeUnderscores(values.unit?.label)"
                       :suffix="removeUnderscores(values.unit?.label)"
                       placeholder="e.g. 1"
-                      :disabled="unitsLocked"
+                      :disabled="false"
+                      type="decimal"
                     />
                   </div>
                   <AppButton
@@ -659,25 +662,25 @@ const handleAddFromSearch = (search: string, close: () => void) => {
                   <div class="min-w-0 flex-1">
                     <FormField
                       name="conversion_to_qty"
-                      type="number"
                       :label="removeUnderscores(values.production_unit?.label)"
                       :suffix="removeUnderscores(values.production_unit?.label)"
                       placeholder="e.g. 12"
-                      :disabled="unitsLocked"
+                      :disabled="false"
+                      type="decimal"
                     />
                   </div>
                 </div>
               </div>
             </section>
 
-            <div>
+            <div v-if="!isEditMode">
               <FormField
-                type="number"
                 name="qty_in_stock"
                 label="Quantity in Stock"
                 :suffix="removeUnderscores(values.unit?.label)"
                 placeholder="e.g. 25"
                 required
+                type="decimal"
               />
             </div>
 
