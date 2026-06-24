@@ -13,15 +13,17 @@
           <img :src="emptyState" alt="Coupon" class="h-28 w-auto" />
         </div>
 
-        <!-- Description: three stacked lines -->
+        <!-- Description: amount + human date range (matches the mock) -->
         <div class="mt-5 max-w-xs text-center">
           <p class="text-primary-600 text-xl font-bold">{{ valueLabel }}</p>
-          <p class="text-core-500 mt-1 text-sm">off all orders from</p>
-          <p class="mt-1 text-sm font-semibold">
-            <span class="text-primary-600">{{ startLabel }}</span>
-            <span class="text-core-500"> to </span>
-            <span class="text-primary-600">{{ endLabel }}</span>
+          <p class="text-core-500 mt-1 text-sm">
+            Discount Off All Orders {{ coupon.valid_until ? "between" : "from" }}
           </p>
+          <p class="text-primary-600 mt-1 text-sm font-semibold">{{ startLabel }}</p>
+          <template v-if="coupon.valid_until">
+            <p class="text-core-500 text-sm">and</p>
+            <p class="text-primary-600 text-sm font-semibold">{{ endLabel }}</p>
+          </template>
         </div>
 
         <!-- Usage progress -->
@@ -39,7 +41,7 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
-import { formatNumericDate } from "../../utils"
+import { formatNumericDate, formatTimeOfDay } from "../../utils"
 import emptyState from "@/assets/images/empty-state.png"
 import emptyGrid from "@/assets/images/empty-grid.png"
 import type { TCoupon, TCouponUsageStats } from "../../types"
@@ -69,6 +71,12 @@ const valueLabel = computed(() => {
   return format(Number(c.flat_discount ?? 0))
 })
 
-const startLabel = computed(() => formatNumericDate(props.coupon.valid_from))
-const endLabel = computed(() => formatNumericDate(props.coupon.valid_until))
+const startLabel = computed(
+  () =>
+    `${formatNumericDate(props.coupon.valid_from)} - ${formatTimeOfDay(props.coupon.valid_from)}`,
+)
+const endLabel = computed(
+  () =>
+    `${formatNumericDate(props.coupon.valid_until)} ${formatTimeOfDay(props.coupon.valid_until)}`,
+)
 </script>

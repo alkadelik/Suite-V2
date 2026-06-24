@@ -1,85 +1,79 @@
 <template>
-  <!-- outer light-grey frame (mobile), no frame on desktop -->
-  <div class="rounded-[20px] bg-gray-100 p-1.5 md:rounded-2xl md:bg-transparent md:p-0">
-    <div class="rounded-2xl bg-white md:border md:border-gray-200">
-      <!-- Header -->
-      <div class="flex items-center gap-2.5 border-b border-gray-100 px-4 py-3.5 md:px-5">
-        <span
-          class="bg-primary-50 text-primary-600 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
-        >
-          <Icon name="tag-2" size="18" />
-        </span>
-        <h3 class="m-0 text-sm font-semibold text-gray-800 md:text-base">Target Products</h3>
+  <!-- mobile: grey card, header on grey + a white list panel; desktop: white card + border -->
+  <div class="rounded-2xl bg-gray-100 p-2.5 md:border md:border-gray-200 md:bg-white md:p-0">
+    <!-- Header (on grey on mobile, on white on desktop) -->
+    <div
+      class="flex items-center gap-2.5 px-1.5 py-2 md:border-b md:border-gray-100 md:px-5 md:py-3.5"
+    >
+      <span
+        class="bg-primary-50 text-primary-600 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+      >
+        <Icon name="tag-2" size="18" />
+      </span>
+      <h3 class="m-0 text-sm font-semibold text-gray-800 md:text-base">Target Products</h3>
 
-        <!-- Category count -->
-        <span v-if="isCategoryScope" class="ml-1 text-xs font-medium text-gray-500">
-          {{ coupon.applicable_categories.length }}
-          {{ coupon.applicable_categories.length === 1 ? "Category" : "Categories" }}
-        </span>
+      <!-- Category count -->
+      <span v-if="isCategoryScope" class="ml-1 text-xs font-medium text-gray-500">
+        {{ coupon.categories.length }}
+        {{ coupon.categories.length === 1 ? "Category" : "Categories" }}
+      </span>
 
-        <!-- Category filter (category scope only) -->
-        <div v-if="isCategoryScope" class="ml-auto">
-          <DropdownMenu :items="categoryFilterItems" placement="bottom-end" menu-width="auto">
-            <template #trigger>
-              <button
-                type="button"
-                class="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
-              >
-                <Icon name="filter-lines" size="14" class="text-gray-500" />
-                <span class="max-w-28 truncate">{{ activeCategoryLabel }}</span>
-                <Icon name="chevron-down" size="14" class="text-gray-400" />
-              </button>
+      <!-- Category filter (category scope only) -->
+      <div v-if="isCategoryScope" class="ml-auto">
+        <DropdownMenu :items="categoryFilterItems" placement="bottom-end" menu-width="auto">
+          <template #trigger>
+            <button
+              type="button"
+              class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+            >
+              <Icon name="filter-lines" size="14" class="text-gray-500" />
+              <span class="max-w-28 truncate">{{ activeCategoryLabel }}</span>
+              <Icon name="chevron-down" size="14" class="text-gray-400" />
+            </button>
+          </template>
+        </DropdownMenu>
+      </div>
+    </div>
+
+    <!-- White list panel (mobile); grey nested panel (desktop) -->
+    <div class="rounded-xl bg-white p-1.5 md:m-3 md:bg-gray-50 md:p-2">
+      <!-- Loading -->
+      <div v-if="loading" class="space-y-3 px-3 py-3">
+        <div v-for="n in 4" :key="n" class="flex items-center gap-3">
+          <div class="h-12 w-12 animate-pulse rounded-lg bg-gray-100" />
+          <div class="h-3 flex-1 animate-pulse rounded bg-gray-100" />
+          <div class="h-3 w-16 animate-pulse rounded bg-gray-100" />
+        </div>
+      </div>
+
+      <!-- Empty -->
+      <p v-else-if="rows.length === 0" class="py-6 text-center text-sm text-gray-500">
+        No target products to display.
+      </p>
+
+      <!-- Rows -->
+      <ul v-else class="divide-y divide-gray-200">
+        <li v-for="row in rows" :key="row.uid" class="flex items-center gap-3 rounded-lg px-3 py-3">
+          <img
+            :src="row.image ?? emptyState"
+            :alt="row.name"
+            class="h-12 w-12 shrink-0 rounded-lg bg-white object-cover"
+            :class="{ 'object-contain p-1': !row.image }"
+          />
+          <span class="min-w-0 flex-1 truncate text-sm font-medium text-gray-800">
+            {{ row.name }}
+          </span>
+
+          <!-- Prices -->
+          <div class="flex shrink-0 items-baseline gap-2">
+            <template v-if="row.original != null">
+              <span class="text-xs text-gray-400 line-through">{{ format(row.original) }}</span>
+              <span class="text-sm font-semibold text-gray-800">{{ format(row.discounted) }}</span>
             </template>
-          </DropdownMenu>
-        </div>
-      </div>
-
-      <!-- Nested grey panel holding the product list -->
-      <div class="m-3 rounded-xl bg-gray-50 p-1.5 md:p-2">
-        <!-- Loading -->
-        <div v-if="loading" class="space-y-3 px-3 py-3">
-          <div v-for="n in 4" :key="n" class="flex items-center gap-3">
-            <div class="h-12 w-12 animate-pulse rounded-lg bg-gray-100" />
-            <div class="h-3 flex-1 animate-pulse rounded bg-gray-100" />
-            <div class="h-3 w-16 animate-pulse rounded bg-gray-100" />
+            <span v-else class="text-sm font-semibold text-gray-800">--</span>
           </div>
-        </div>
-
-        <!-- Empty -->
-        <p v-else-if="rows.length === 0" class="py-6 text-center text-sm text-gray-500">
-          No target products to display.
-        </p>
-
-        <!-- Rows -->
-        <ul v-else class="divide-y divide-gray-200">
-          <li
-            v-for="row in rows"
-            :key="row.uid"
-            class="flex items-center gap-3 rounded-lg px-3 py-3"
-          >
-            <img
-              :src="row.image ?? emptyState"
-              :alt="row.name"
-              class="h-12 w-12 shrink-0 rounded-lg bg-white object-cover"
-              :class="{ 'object-contain p-1': !row.image }"
-            />
-            <span class="min-w-0 flex-1 truncate text-sm font-medium text-gray-800">
-              {{ row.name }}
-            </span>
-
-            <!-- Prices -->
-            <div class="flex shrink-0 items-baseline gap-2">
-              <template v-if="row.original != null">
-                <span class="text-xs text-gray-400 line-through">{{ format(row.original) }}</span>
-                <span class="text-sm font-semibold text-gray-800">{{
-                  format(row.discounted)
-                }}</span>
-              </template>
-              <span v-else class="text-sm font-semibold text-gray-800">--</span>
-            </div>
-          </li>
-        </ul>
-      </div>
+        </li>
+      </ul>
     </div>
   </div>
 </template>
@@ -98,7 +92,7 @@ const props = defineProps<{ coupon: TCoupon }>()
 
 const { format } = useFormatCurrency()
 
-const isCategoryScope = computed(() => (props.coupon.applicable_categories?.length ?? 0) > 0)
+const isCategoryScope = computed(() => (props.coupon.categories?.length ?? 0) > 0)
 
 // ---------------------------------------------------------------------------
 // Price helpers
@@ -137,7 +131,7 @@ const allCategories = computed<IProductCategory[]>(() => categoriesData.value?.d
 
 /** Categories actually targeted by this coupon. */
 const targetCategories = computed<IProductCategory[]>(() => {
-  const uids = new Set(props.coupon.applicable_categories ?? [])
+  const uids = new Set(props.coupon.categories ?? [])
   return allCategories.value.filter((c) => uids.has(c.uid))
 })
 
@@ -194,7 +188,7 @@ function toRow(p: TProduct): TargetRow {
 
 const rows = computed<TargetRow[]>(() => {
   if (isCategoryScope.value) {
-    const catUids = new Set(props.coupon.applicable_categories ?? [])
+    const catUids = new Set(props.coupon.categories ?? [])
     return products.value
       .filter((p) => {
         if (activeCategory.value) return p.category === activeCategory.value

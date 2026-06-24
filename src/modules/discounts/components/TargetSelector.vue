@@ -3,14 +3,14 @@
     <!-- Discount Applies to -->
     <SelectField
       :model-value="appliesToOption"
-      :options="APPLIES_TO_OPTIONS"
+      :options="appliesToOptions"
       label="Discount Applies to"
       @update:model-value="onModeChange"
     />
 
     <!-- ALL -->
     <p v-if="model.mode === 'all'" class="text-core-500 text-sm">
-      This coupon applies to all products.
+      {{ allHelpText }}
     </p>
 
     <!-- PRODUCTS -->
@@ -322,7 +322,19 @@ type TCategoryWithCount = IProductCategory & {
   total_products?: number
 }
 
-const props = defineProps<{ modelValue: ITargetSelectorModel }>()
+const props = withDefaults(
+  defineProps<{
+    modelValue: ITargetSelectorModel
+    /** Override the "Applies to" options (e.g. Storefront-labelled for discounts). */
+    appliesToOptions?: { label: string; value: string }[]
+    /** Helper text shown for the "all" mode. */
+    allHelpText?: string
+  }>(),
+  {
+    appliesToOptions: () => APPLIES_TO_OPTIONS,
+    allHelpText: "This coupon applies to all products.",
+  },
+)
 const emit = defineEmits<{ "update:modelValue": [value: ITargetSelectorModel] }>()
 
 const { format } = useFormatCurrency()
@@ -331,7 +343,7 @@ const model = computed(() => props.modelValue)
 
 /** The matching option object so SelectField shows the friendly label. */
 const appliesToOption = computed(
-  () => APPLIES_TO_OPTIONS.find((o) => o.value === model.value.mode) ?? null,
+  () => props.appliesToOptions.find((o) => o.value === model.value.mode) ?? null,
 )
 
 /** Emit a brand-new object so the prop is never mutated. */
@@ -492,4 +504,30 @@ function categoryProductCount(category: TCategoryWithCount): number | null {
   const count = category.products_count ?? category.product_count ?? category.total_products
   return typeof count === "number" ? count : null
 }
+
+// ---------------------------------------------------------------------------
+// Variant resolution (products mode only — for Discounts, which target
+// ProductVariant UIDs). Categories + Storefront are sent to the backend as
+// category UIDs / a storefront flag and resolved server-side, so no client-side
+// catalogue enumeration is needed. Coupons don't call this.
+// ---------------------------------------------------------------------------
+/**
+ * Resolve the selected products to a flat, deduped list of ProductVariant UIDs,
+ * respecting per-product variant picks (empty selection = all of that product's
+ * variants). Returns [] for categories / storefront modes.
+ */
+function getResolvedVariantUids(): string[] {
+  const m = props.modelValue
+  if (m.mode !== "products") return []
+  const set = new Set<string>()
+  for (const uid of m.productUids) {
+    const sel = m.variantSelections[uid]
+    const vUids =
+      sel && sel.length ? sel : (productCache.value[uid]?.variants ?? []).map((v) => v.uid)
+    vUids.forEach((v) => set.add(v))
+  }
+  return Array.from(set)
+}
+
+defineExpose({ getResolvedVariantUids })
 </script>

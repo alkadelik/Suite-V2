@@ -4,7 +4,7 @@ import { ref } from "vue"
 export type TDiscountsTab = "discounts" | "coupons"
 
 export const useDiscountsStore = defineStore("discounts", () => {
-  const activeTab = ref<TDiscountsTab>("coupons")
+  const activeTab = ref<TDiscountsTab>("discounts")
   const couponFilters = ref<{ status: string | null; scope: string | null; type: string | null }>({
     status: null,
     scope: null,

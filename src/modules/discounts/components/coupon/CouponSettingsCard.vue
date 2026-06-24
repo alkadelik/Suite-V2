@@ -1,38 +1,36 @@
 <template>
-  <!-- outer light-grey frame (mobile), no frame on desktop -->
-  <div class="h-full rounded-[20px] bg-gray-100 p-1.5 md:rounded-2xl md:bg-transparent md:p-0">
-    <div class="h-full rounded-2xl bg-white md:border md:border-gray-200">
-      <!-- Header -->
-      <div class="flex items-center gap-2.5 px-4 py-3.5 md:px-5">
-        <span
-          class="bg-primary-50 text-primary-600 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
-        >
-          <Icon name="setting" size="18" />
-        </span>
-        <h3 class="m-0 text-sm font-semibold text-gray-800 md:text-base">Coupon Settings</h3>
-      </div>
-
-      <!-- Grouped rows -->
-      <dl class="px-4 md:px-5">
-        <div
-          v-for="(group, gi) in groups"
-          :key="gi"
-          class="py-2"
-          :class="gi > 0 ? 'border-t border-dashed border-gray-200' : ''"
-        >
-          <div
-            v-for="row in group"
-            :key="row.label"
-            class="flex items-center justify-between gap-4 py-2.5"
-          >
-            <dt class="text-xs text-gray-500 md:text-sm">{{ row.label }}</dt>
-            <dd class="m-0 text-right text-xs font-semibold text-gray-800 md:text-sm">
-              {{ row.value }}
-            </dd>
-          </div>
-        </div>
-      </dl>
+  <!-- mobile: grey card, header on grey + a white content panel; desktop: white card + border -->
+  <div class="h-full rounded-2xl bg-gray-100 p-2.5 md:border md:border-gray-200 md:bg-white md:p-0">
+    <!-- Header (sits on the grey on mobile, on white on desktop) -->
+    <div class="flex items-center gap-2.5 px-1.5 py-2 md:px-5 md:py-3.5">
+      <span
+        class="bg-primary-50 text-primary-600 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+      >
+        <Icon name="setting" size="18" />
+      </span>
+      <h3 class="m-0 text-sm font-semibold text-gray-800 md:text-base">Coupon Settings</h3>
     </div>
+
+    <!-- White content panel -->
+    <dl class="rounded-xl bg-white px-4 py-1.5 md:rounded-none md:bg-transparent md:px-5 md:py-0">
+      <div
+        v-for="(group, gi) in groups"
+        :key="gi"
+        class="py-2"
+        :class="gi > 0 ? 'border-t border-dashed border-gray-200' : ''"
+      >
+        <div
+          v-for="row in group"
+          :key="row.label"
+          class="flex items-center justify-between gap-4 py-2.5"
+        >
+          <dt class="text-xs text-gray-500 md:text-sm">{{ row.label }}</dt>
+          <dd class="m-0 text-right text-xs font-semibold text-gray-800 md:text-sm">
+            {{ row.value }}
+          </dd>
+        </div>
+      </div>
+    </dl>
   </div>
 </template>
 
@@ -75,11 +73,10 @@ const groups = computed<{ label: string; value: string }[][]>(() => {
     { label: "Discount Type", value: discountTypeLabel.value },
     { label: "Discount Value", value: discountValue.value },
   ]
-  if (c.discount_type === "combined") {
-    group1.push({
-      label: "Maximum Discount Amt.",
-      value: c.flat_discount != null ? format(Number(c.flat_discount)) : "--",
-    })
+  // Max-discount cap: dedicated `discount_cap`, with legacy `combined` fallback.
+  const cap = c.discount_cap ?? (c.discount_type === "combined" ? c.flat_discount : null)
+  if (cap != null && cap !== "") {
+    group1.push({ label: "Maximum Discount Amt.", value: format(Number(cap)) })
   }
 
   // Group 2: usage limits
@@ -94,7 +91,10 @@ const groups = computed<{ label: string; value: string }[][]>(() => {
       label: "Min. Cart Cost Value",
       value: c.min_order_amount != null ? format(Number(c.min_order_amount)) : "--",
     },
-    { label: "Min. Cart Items", value: c.min_cart_items != null ? String(c.min_cart_items) : "--" },
+    {
+      label: "Min. Cart Items",
+      value: c.min_order_quantity != null ? String(c.min_order_quantity) : "--",
+    },
   ]
 
   // Group 4: start

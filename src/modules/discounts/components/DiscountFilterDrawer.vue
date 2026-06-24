@@ -1,11 +1,6 @@
 <template>
-  <!--
-    NOTE: The coupon list API only supports `search` + `ordering`, so the
-    filters applied here are evaluated client-side over the current page only.
-    ListFilterDrawer renders its own template/footer and exposes no slot for
-    extra body content, so we cannot inject a visual hint about this limitation
-    here — documented as a comment instead.
-  -->
+  <!-- Filters map to the `/discounts/` server-side query params: status,
+       target_type (scope) and discount_type (type). -->
   <ListFilterDrawer
     :model-value="modelValue"
     :filter-groups="filterGroups"
@@ -36,10 +31,11 @@ const filterGroups: FilterGroup[] = [
   },
   {
     key: "scope",
-    label: "Scope",
+    label: "Target",
     options: [
-      { value: "order", label: "Order", color: "primary" },
-      { value: "products", label: "Product", color: "purple" },
+      { value: "products", label: "Product", color: "primary" },
+      { value: "categories", label: "Category", color: "purple" },
+      { value: "storefront", label: "Storefront", color: "blue" },
     ],
   },
   {

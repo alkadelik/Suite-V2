@@ -52,7 +52,7 @@
 
           <!-- Chips -->
           <div class="mt-3 flex flex-wrap items-center gap-2">
-            <Chip :label="scopeLabel" color="purple" />
+            <Chip :label="scopeLabel" :color="scopeChipColor" />
             <Chip :label="statusMeta.label" :color="statusMeta.color" show-dot />
           </div>
         </div>
@@ -63,12 +63,16 @@
             :items="manageItems"
             placement="bottom-end"
             menu-width="auto"
-            trigger-class="inline-flex items-center justify-center p-1.5 text-gray-600 md:gap-2 md:rounded-lg md:border md:border-primary-600 md:bg-primary-50 md:px-3 md:py-2 md:text-sm md:font-medium md:text-primary-600 md:hover:bg-primary-100"
+            trigger-class="inline-flex items-center justify-center rounded-xl bg-primary-50 p-2 text-gray-700 md:gap-2 md:rounded-lg md:border md:border-primary-600 md:px-3 md:py-2 md:text-sm md:font-medium md:text-primary-600 md:hover:bg-primary-100"
           >
             <template #trigger>
-              <Icon name="setting" size="18" class="hidden md:inline-block" />
-              <span class="hidden md:inline">Manage Coupon</span>
-              <Icon name="dots-vertical" size="20" class="md:hidden" />
+              <span class="hidden items-center gap-2 md:inline-flex">
+                <Icon name="setting" size="18" />
+                Manage Coupon
+              </span>
+              <span class="inline-flex md:hidden">
+                <Icon name="dots-vertical" size="20" />
+              </span>
             </template>
           </DropdownMenu>
         </div>
@@ -76,13 +80,16 @@
 
       <!-- Body -->
       <!-- Order scope: gauge + settings -->
-      <div v-if="scope === 'order'" class="mt-5 grid items-stretch gap-4 lg:grid-cols-2">
+      <div
+        v-if="scope === 'order'"
+        class="mt-5 space-y-4 lg:grid lg:grid-cols-2 lg:items-stretch lg:gap-4 lg:space-y-0"
+      >
         <CouponUsageGauge :coupon="coupon" :usage="usage" />
         <CouponSettingsCard :coupon="coupon" />
       </div>
 
       <!-- Products / category scope: usage bar + target + settings -->
-      <div v-else class="mt-5 grid gap-4 lg:grid-cols-2">
+      <div v-else class="mt-5 space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
         <div class="space-y-4">
           <!-- Usage progress bar -->
           <!-- outer light-grey frame (mobile), no frame on desktop -->
@@ -183,10 +190,13 @@ const statusMeta = computed(() => {
 
 const scopeLabel = computed(() => {
   if (!coupon.value) return ""
-  if ((coupon.value.applicable_categories?.length ?? 0) > 0) return "Category"
+  if ((coupon.value.categories?.length ?? 0) > 0) return "Category"
   const kind = coupon.value.discount_type === "flat" ? "fixed" : "percentage"
   return couponScopeHeaderLabel(scope.value, kind)
 })
+
+// Scope chip color: Order = primary (orange), Products/Category = purple (matches the mocks).
+const scopeChipColor = computed(() => (scope.value === "order" ? "primary" : "purple"))
 
 // Usage (products/category top bar)
 const usedCount = computed(() => usage.value?.total_usage ?? 0)

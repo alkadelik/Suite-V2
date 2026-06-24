@@ -13,6 +13,12 @@ const discountsRoutes: RouteRecordRaw[] = [
     component: () => import("./views/coupon-details.vue"),
     meta: { requiresAuth: true, hideAppHeader: true },
   },
+  {
+    path: "discounts/discount/:uid",
+    name: "Discount-Details",
+    component: () => import("./views/discount-details.vue"),
+    meta: { requiresAuth: true, hideAppHeader: true },
+  },
 ]
 
 export default discountsRoutes

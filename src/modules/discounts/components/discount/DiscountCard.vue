@@ -3,7 +3,7 @@
     class="cursor-pointer overflow-hidden rounded-2xl border border-purple-100 bg-white"
     @click="emit('click')"
   >
-    <!-- Top: tinted header (icon + name/code/scope + value + actions) -->
+    <!-- Top: tinted header (icon + name/type/target + value + actions) -->
     <div class="flex items-start gap-3 bg-purple-50/50 px-3.5 py-3">
       <span
         class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-purple-100 text-purple-600"
@@ -12,9 +12,9 @@
       </span>
 
       <div class="min-w-0 flex-1">
-        <p class="truncate text-base font-semibold text-gray-900">{{ coupon.name }}</p>
+        <p class="truncate text-base font-semibold text-gray-900">{{ discount.name }}</p>
         <div class="mt-1 flex flex-wrap items-center gap-2">
-          <span class="font-mono text-sm text-gray-500">{{ coupon.code }}</span>
+          <span class="text-sm text-gray-500">{{ typeLabel }}</span>
           <Chip :label="scopeMeta.label" :color="scopeMeta.color" size="sm" />
         </div>
       </div>
@@ -36,19 +36,15 @@
       </div>
     </div>
 
-    <!-- Bottom: white (expiry + usage + status) -->
+    <!-- Bottom: white (expiry + status) -->
     <div class="flex items-center justify-between gap-2 border-t border-gray-100 px-3.5 py-3">
       <div class="min-w-0">
         <p class="text-sm font-medium text-gray-900">
-          {{ coupon.valid_until ? formatCouponDate(coupon.valid_until) : "-" }}
+          {{ discount.end_at ? formatCouponDate(discount.end_at) : "-" }}
         </p>
         <p class="mt-0.5 text-xs text-gray-500">Expiry Date</p>
       </div>
-
-      <div class="flex shrink-0 items-center gap-2">
-        <Chip :label="usageLabel" color="blue" size="sm" icon="chart-breakout-square" />
-        <Chip :label="statusMeta.label" :color="statusMeta.color" size="sm" />
-      </div>
+      <Chip :label="statusMeta.label" :color="statusMeta.color" size="sm" />
     </div>
   </div>
 </template>
@@ -58,9 +54,9 @@ import { computed } from "vue"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
-import { formatCouponDate, couponValueLabel } from "../../utils"
-import { COUPON_STATUS_META, COUPON_SCOPE_META } from "../../constants"
-import type { TCouponRow } from "../../types"
+import { formatCouponDate, discountValueLabel } from "../../utils"
+import { DISCOUNT_STATUS_META, DISCOUNT_SCOPE_META } from "../../constants"
+import type { TDiscountRow } from "../../types"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 
 interface DropdownItem {
@@ -73,21 +69,21 @@ interface DropdownItem {
   action?: () => unknown
 }
 
-const props = defineProps<{ coupon: TCouponRow; actionItems: DropdownItem[] }>()
+const props = defineProps<{ discount: TDiscountRow; actionItems: DropdownItem[] }>()
 const emit = defineEmits<{ click: [] }>()
 
 const { format } = useFormatCurrency()
 
-const scopeMeta = computed(() => COUPON_SCOPE_META[props.coupon.scope])
-const statusMeta = computed(() => COUPON_STATUS_META[props.coupon.status])
-const valueLabel = computed(() => couponValueLabel(props.coupon, format))
-
-// Per-coupon usage counts aren't in the list payload (backend gap), so this reflects
-// the cap only: "Unlimited" when uncapped, else "{used}% Usage" (used = 0 for now).
-const usageLabel = computed(() => {
-  const limit = props.coupon.max_usage
-  if (limit == null || limit <= 0) return "Unlimited"
-  const used = 0
-  return `${Math.min(100, Math.round((used / limit) * 100))}% Usage`
-})
+const scopeMeta = computed(() => DISCOUNT_SCOPE_META[props.discount.scope])
+const statusMeta = computed(
+  () =>
+    DISCOUNT_STATUS_META[props.discount.status] ?? {
+      label: props.discount.status || "—",
+      color: "alt" as const,
+    },
+)
+const valueLabel = computed(() => discountValueLabel(props.discount, format))
+const typeLabel = computed(() =>
+  props.discount.discount_type === "fixed_amount" ? "Fixed Amount" : "Percentage Off",
+)
 </script>

@@ -175,8 +175,7 @@ watch(
       // NOTE (best-effort hydration): couponToFormModel restores productUids /
       // categoryUids but not variantSelections; TargetSelector fills product
       // names as the user searches (it caches search results). Full name
-      // hydration would require fetching the selected products by uid — deferred
-      // since the update endpoint itself is an assumed/not-yet-live backend feature.
+      // hydration would require fetching the selected products by uid.
       model.value = couponToFormModel(props.coupon)
       if (props.mode === "duplicate") {
         model.value = {
@@ -272,7 +271,9 @@ function onSubmit(): void {
     // The parent (index.vue) shows the success toast + refetch on @saved.
   }
   if (props.mode === "edit" && props.coupon) {
-    update({ uid: props.coupon.uid, ...payload }, opts)
+    // Editing must not flip enable/disable (that's the toggle action) — keep the
+    // coupon's current is_active rather than the payload default.
+    update({ uid: props.coupon.uid, ...payload, is_active: props.coupon.is_active }, opts)
   } else {
     create(payload, opts)
   }
