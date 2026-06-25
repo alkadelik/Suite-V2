@@ -433,7 +433,7 @@ const validateStepOne = async () => {
 
   if (
     values.source?.value === "supplier" ||
-    (values.qty_in_stock && values.source?.value === "manufacture")
+    (+values.qty_in_stock > 0 && values.source?.value === "manufacture")
   ) {
     stepOneFields.push("default_cost")
   }
@@ -686,7 +686,7 @@ const handleAddFromSearch = (search: string, close: () => void) => {
 
             <div v-if="mode !== 'edit'">
               <FormField
-                v-if="values.qty_in_stock || values.source?.value === 'supplier'"
+                v-if="+values.qty_in_stock > 0 || values.source?.value === 'supplier'"
                 type="number"
                 name="default_cost"
                 format="currency"

@@ -43,9 +43,12 @@ const recipeStats = computed(() => [
     ? []
     : [
         {
-          label: "Producible Quantity",
-          value: recipe.value?.producible_quantity + " " + recipe.value?.output_unit,
+          label: "Output Quantity",
+          value: floatDecimal(recipe.value?.output_quantity || 0) + " " + recipe.value?.output_unit,
           icon: "bag",
+          chip: `Able to produce ${floatDecimal(recipe.value?.producible_quantity || 0)} ${recipe.value?.output_unit}`,
+          chipColor: "blue",
+          chipIcon: "",
         },
       ]),
   {
@@ -170,10 +173,6 @@ watch(
             {{ recipe.output_item_name }}
           </h2>
           <div class="flex gap-1">
-            <Chip
-              :label="parseInt(recipe.output_quantity) + ' ' + recipe.output_unit"
-              color="blue"
-            />
             <Chip v-if="recipe.item_type === 'sub_assembly'" label="Sub-assembly" color="purple" />
             <Chip
               :label="recipe.is_active ? 'Active' : 'Disabled'"
