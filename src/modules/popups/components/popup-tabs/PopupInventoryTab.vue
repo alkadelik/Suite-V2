@@ -110,7 +110,7 @@ const handleConfirmAction = () => {
   if (confirmationAction.value === "remove") {
     const payload = {
       popup_event: route.params.id as string,
-      uids: [selectedProduct.value.uid],
+      uids: selectedProduct.value.variants.map((v) => v.popup_inventory_uid),
     }
 
     deletePopupProducts(payload, {
@@ -333,6 +333,7 @@ watch(
 
   <!-- Setup Booth Drawer - Available for both empty and populated states -->
   <SetupPopupBoothDrawer
+    v-if="openAddProduct"
     :open="openAddProduct"
     :existing-variant-skus="existingVariantSkus"
     @close="openAddProduct = false"

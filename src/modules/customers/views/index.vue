@@ -247,13 +247,22 @@ const showViewCustomerDrawer = ref(false)
 const showExportCustomerModal = ref(false)
 const customer = ref<ICustomer | null>(null)
 const searchQuery = ref("")
-const debouncedSearch = useDebouncedRef(searchQuery, 750)
 const page = ref(1)
 const itemsPerPage = ref(20)
+// Reset to the first page whenever the search term changes so a stale page
+// offset doesn't leak into the next request (LYW-2645).
+const debouncedSearch = useDebouncedRef(searchQuery, 750, () => {
+  page.value = 1
+})
 const computedParams = computed(() => {
   const params: Record<string, string> = {}
-  if (debouncedSearch.value) params.search = debouncedSearch.value
-  params.offset = ((debouncedSearch.value ? 0 : page.value - 1) * itemsPerPage.value).toString()
+  if (debouncedSearch.value) {
+    params.search = debouncedSearch.value
+  } else {
+    // Omit offset entirely while searching — search must scan the whole dataset,
+    // not a paged slice; sending offset breaks the customer search (LYW-2645).
+    params.offset = ((page.value - 1) * itemsPerPage.value).toString()
+  }
   params.limit = itemsPerPage.value.toString()
   return params
 })

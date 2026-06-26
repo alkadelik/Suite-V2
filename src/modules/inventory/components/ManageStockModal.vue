@@ -162,7 +162,6 @@
             label="Notes"
             type="textarea"
             placeholder="Enter additional notes"
-            required
           />
         </template>
 
@@ -189,7 +188,6 @@
             label="Notes"
             type="textarea"
             placeholder="Enter additional notes"
-            required
           />
         </template>
       </template>
@@ -224,6 +222,8 @@ import {
   useDirectStockTransfer,
   useRequestStockTransfer,
 } from "../api"
+import { useQueryClient } from "@tanstack/vue-query"
+import { inventoryCache } from "../cache"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
@@ -243,7 +243,6 @@ interface Props {
 
 interface Emits {
   (e: "close"): void
-  (e: "success"): void
 }
 
 const props = defineProps<Props>()
@@ -257,6 +256,7 @@ const { mutate: addStock, isPending: isAdding } = useAddStock()
 const { mutate: reduceStock, isPending: isReducing } = useReduceStock()
 const { mutate: directTransfer, isPending: isTransferring } = useDirectStockTransfer()
 const { mutate: requestTransfer, isPending: isRequesting } = useRequestStockTransfer()
+const queryClient = useQueryClient()
 
 const isPending = computed(
   () => isAdding.value || isReducing.value || isTransferring.value || isRequesting.value,
@@ -390,9 +390,10 @@ const validationSchema = yup.lazy(() => {
           .required("Location is required"),
       otherwise: (schema) => schema.nullable().optional(),
     }),
+    // Notes are only required for manual stock additions ("Reason for Manual Entry");
+    // optional when reducing, transferring, or requesting stock (LYW-2623).
     note: yup.string().when("action", {
-      is: (action: { value: string } | null) =>
-        action?.value !== undefined && action?.value !== "reduce",
+      is: (action: { value: string } | null) => action?.value === "add",
       then: (schema) => schema.required("Notes are required"),
       otherwise: (schema) => schema.optional(),
     }),
@@ -587,7 +588,7 @@ const onSubmit = handleSubmit((formValues) => {
 
     const onSuccess = () => {
       toast.success("Stock added successfully")
-      emit("success")
+      inventoryCache.stockChanged(queryClient, props.product.uid)
       emit("close")
     }
 
@@ -611,13 +612,15 @@ const onSubmit = handleSubmit((formValues) => {
 
     const onSuccess = () => {
       toast.success("Stock reduced successfully")
-      emit("success")
+      inventoryCache.stockChanged(queryClient, props.product.uid)
       emit("close")
     }
 
     reduceStock(payload, { onSuccess, onError: displayError })
   } else if (formValues.action?.value === "transfer" || formValues.action?.value === "request") {
     if (!formValues.to_location) return
+
+    const action = formValues.action.value === "transfer" ? "transfer" : "request"
 
     const payload: IStockTransferPayload = {
       to_location: formValues.to_location.value,
@@ -631,14 +634,13 @@ const onSubmit = handleSubmit((formValues) => {
     }
 
     const onSuccess = () => {
-      toast.success(
-        `Stock ${formValues.action?.value === "transfer" ? "transferred" : "request sent"} successfully`,
-      )
-      emit("success")
+      toast.success(`Stock ${action === "transfer" ? "transferred" : "request sent"} successfully`)
+      // A direct transfer moves stock; a request only creates a transfer request.
+      inventoryCache.transferChanged(queryClient, action === "transfer", props.product.uid)
       emit("close")
     }
 
-    if (formValues.action?.value === "transfer") {
+    if (action === "transfer") {
       directTransfer(payload, { onSuccess, onError: displayError })
     } else {
       requestTransfer(payload, { onSuccess, onError: displayError })

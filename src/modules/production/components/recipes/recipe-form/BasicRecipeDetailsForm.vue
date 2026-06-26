@@ -24,6 +24,7 @@ type ItemOption = { label: string; value: string; item?: Record<string, unknown>
 const props = defineProps<{
   initialValues: BasicDetails
   isEditMode?: boolean
+  unitLockedByHistory?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -140,7 +141,7 @@ const selectedItemUnit = computed<string | null>(() => {
   return (selected.item.unit as string) || null
 })
 
-const unitIsLocked = computed(() => !!selectedItemUnit.value || props.isEditMode)
+const selectedItemHasBeenProduced = computed(() => !!values.outputItem?.item?.has_been_produced)
 
 watch(selectedItemUnit, (unit) => {
   if (unit) {
@@ -243,7 +244,7 @@ const handleNext = handleSubmit((formValues) => {
           label="Unit of Measurement"
           placeholder="e.g. kg, liters, pieces"
           :options="unitOptions"
-          :disabled="unitIsLocked"
+          :disabled="selectedItemHasBeenProduced"
           required
           searchable
           :error="fieldErrors[0]"
@@ -286,7 +287,7 @@ const handleNext = handleSubmit((formValues) => {
           </template>
         </SelectField>
       </Field>
-      <p v-if="selectedItemUnit" class="mt-1 text-sm text-gray-500">
+      <p v-if="selectedItemHasBeenProduced" class="mt-1 text-sm text-gray-500">
         Unit cannot be changed once a recipe has been used in a production run.
         <button
           type="button"
@@ -301,7 +302,7 @@ const handleNext = handleSubmit((formValues) => {
 
     <FormField
       name="outputQuantity"
-      type="number"
+      type="decimal"
       label="Output Quantity"
       placeholder="e.g. 100"
       required

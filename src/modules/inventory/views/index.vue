@@ -10,9 +10,38 @@
       />
     </div>
 
-    <!-- Page content - always visible -->
+    <!-- Mobile summary (LYW-2692): a large plain Stock Value stat on top, then exactly
+         two cards — Low Stock and Stale Products. Do NOT render the full metric grid
+         on mobile; the 4-card grid is desktop-only (block below). -->
+    <div class="lg:hidden">
+      <div v-if="canViewStockValue" class="mb-4">
+        <div v-if="isLoadingDashboard" class="animate-pulse space-y-2">
+          <div class="h-4 w-24 rounded bg-gray-200" />
+          <div class="h-9 w-32 rounded bg-gray-200" />
+        </div>
+        <template v-else>
+          <p class="text-core-600 flex items-center gap-1.5 text-sm">
+            <Icon name="dollar-circle" size="18" />
+            Stock Value
+          </p>
+          <p class="text-core-800 mt-1 text-4xl font-bold">
+            {{ truncate(productDashboard?.total_stock_value ?? 0) }}
+          </p>
+        </template>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <StatCard
+          v-for="item in mobileMetrics"
+          :key="item.label"
+          :stat="item"
+          :loading="isLoadingDashboard"
+        />
+      </div>
+    </div>
+
+    <!-- Desktop summary: full metric grid -->
     <div
-      class="grid grid-cols-2 gap-4"
+      class="hidden gap-4 lg:grid"
       :class="productMetrics.length === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'"
     >
       <StatCard
@@ -31,7 +60,6 @@
     <!-- Requests Tab Content -->
     <InventoryRequests
       v-if="activeTab === 'requests' && isHQ"
-      :key="requestsRefetchKey"
       @request-click="handleRequestClick"
     />
 
@@ -94,7 +122,7 @@
         <!-- Empty State: Only show when no products exist AND no search/filters are active -->
         <EmptyState
           v-if="
-            !isFetching &&
+            !isPending &&
             filteredProducts.length === 0 &&
             !search &&
             activeFilters.category === null &&
@@ -238,7 +266,6 @@
       v-if="showProductFormDrawer"
       v-model="showProductFormDrawer"
       :source-product-uid="productUidForDuplicate"
-      @refresh="handleProductRefresh"
     />
     <ProductEditDrawer
       v-if="showProductEditDrawer"
@@ -247,8 +274,8 @@
       :product="product"
       :edit-mode="editMode"
       :variant="variantForEdit"
-      @refresh="refetchProducts"
       @add-category="showAddCategoryModal = true"
+      @edit-variant-details="handleEditVariantDetails"
     />
     <FilterDrawer
       v-if="showFilterDrawer || hasOpenedFilterDrawer"
@@ -267,14 +294,12 @@
       :open="showReceiveRequestModal"
       :request="selectedRequest"
       @close="showReceiveRequestModal = false"
-      @success="handleRequestSuccess"
     />
     <ManageStockModal
       v-if="productDetailsForStock?.data"
       :open="showManageStockModal"
       :product="productDetailsForStock.data"
       @close="showManageStockModal = false"
-      @success="refetchProducts"
     />
   </div>
 </template>
@@ -283,7 +308,7 @@
 import DataTable from "@components/DataTable.vue"
 import { TProduct, type IInventoryTransferRequest, type IProductVariantDetails } from "../types"
 import { PRODUCT_COLUMNS } from "../constants"
-import { ref, computed, watch } from "vue"
+import { ref, computed, watch, nextTick } from "vue"
 import { useQueryClient } from "@tanstack/vue-query"
 import Icon from "@components/Icon.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
@@ -297,6 +322,8 @@ import ProductEditDrawer from "../components/ProductEditDrawer.vue"
 import AddCategoryModal from "../components/AddCategoryModal.vue"
 import InventoryRequests from "../components/InventoryRequests.vue"
 import ReceiveRequestModal from "../components/ReceiveRequestModal.vue"
+import { inventoryCache } from "../cache"
+import { inventoryKeys } from "../queryKeys"
 import ProductCard from "../components/ProductCard.vue"
 import ManageStockModal from "../components/ManageStockModal.vue"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
@@ -311,13 +338,13 @@ import {
   useGetProduct,
   useUpdateProduct,
   useGetProductDashboard,
+  useGetTransferRequests,
 } from "../api"
 import ProductAvatar from "@components/ProductAvatar.vue"
 import EmptyState from "@components/EmptyState.vue"
 import { displayError } from "@/utils/error-handler"
 import router from "@/router"
 import { useSettingsStore } from "@modules/settings/store"
-import { useInventoryStore } from "../store"
 import { useRoute } from "vue-router"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
@@ -367,61 +394,59 @@ const activeFilters = ref<{
 
 const combinedParams = computed(() => {
   const params: Record<string, string | number> = {
-    offset: (debouncedSearch.value ? 0 : page.value - 1) * itemsPerPage.value,
     limit: itemsPerPage.value,
   }
-  if (debouncedSearch.value) params.name = debouncedSearch.value
+  if (debouncedSearch.value) {
+    params.name = debouncedSearch.value
+    // Omit offset entirely while searching — sending it breaks product search (LYW-2603).
+  } else {
+    params.offset = (page.value - 1) * itemsPerPage.value
+  }
   if (activeFilters.value.category) params.category = activeFilters.value.category
   if (activeFilters.value.status) params.stock_status = activeFilters.value.status
   if (activeFilters.value.subCategory) params.variant_type = activeFilters.value.subCategory
   return params
 })
 
-const { data: products, isFetching, refetch: refetchProducts } = useGetProducts(combinedParams)
-
-// After creating a product, jump back to page 1 so the newly added product
-// (which lands at the top of the unfiltered list) is immediately visible.
-const handleProductRefresh = () => {
-  page.value = 1
-  refetchProducts()
-}
+// isFetching (not just isPending) so the table also shows its loading state during
+// background refetches, e.g. right after a successful stock change invalidates the list.
+const { data: products, isPending, isFetching } = useGetProducts(combinedParams)
 const { data: productDashboard, isPending: isLoadingDashboard } = useGetProductDashboard()
 const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct()
 const { mutate: updateProduct, isPending: isUpdatingProduct } = useUpdateProduct()
 const queryClient = useQueryClient()
 const settingsStore = useSettingsStore()
-const inventoryStore = useInventoryStore()
 const { checkPremiumAccess } = usePremiumAccess()
-
-// Update store when products data changes
-watch(
-  () => products.value,
-  (newProducts: typeof products.value) => {
-    if (newProducts?.data) {
-      inventoryStore.setProducts(
-        newProducts.data.results as TProduct[],
-        newProducts.data.count as number,
-      )
-    }
-  },
-  { immediate: true },
-)
 
 // Tabs state
 const activeTab = ref("products")
 const selectedRequest = ref<IInventoryTransferRequest | null>(null)
 const showReceiveRequestModal = ref(false)
-const requestsRefetchKey = ref(0)
 const route = useRoute()
 
 // Check if current location is HQ
 const isHQ = computed(() => settingsStore.activeLocation?.is_hq || false)
 const locationsCount = computed(() => settingsStore.locations?.length || 0)
 
+// Pending transfer-requests count for the Requests tab pill (LYW-2625).
+// Only fires for HQ multi-location stores (the only context the Requests tab shows).
+// Scoped to requests addressed TO this location (to_location = the location being
+// asked to grant; from_location = the requester), so requests this location made
+// elsewhere don't inflate the pill.
+const pendingRequestParams = computed(() => ({
+  status: "pending",
+  to_location: settingsStore.activeLocation?.uid || "",
+  limit: 1,
+}))
+const { data: pendingRequests } = useGetTransferRequests(pendingRequestParams, {
+  enabled: () => isHQ.value && locationsCount.value > 1 && !!settingsStore.activeLocation?.uid,
+})
+const pendingRequestsCount = computed(() => pendingRequests.value?.data?.count || 0)
+
 // Tabs configuration
 const tabs = computed(() => [
   { key: "products", title: "Products" },
-  { key: "requests", title: "Requests" },
+  { key: "requests", title: "Requests", count: pendingRequestsCount.value },
 ])
 
 const showDeleteConfirmationModal = ref(false)
@@ -448,9 +473,13 @@ const variantForEdit = ref<IProductVariantDetails | null>(null)
 const productUidForManageStock = ref<string | null>(null)
 const productUidForEdit = ref<string | null>(null)
 
-// Fetch product details for manage stock modal
+// Fetch product details for manage stock modal. Gate on the selected product UID
+// (not the modal-open flag) so the query stays active through the post-mutation
+// refetch and isn't disabled in the same tick the cache is invalidated (LYW-2647).
 const productUidForFetch = computed(() => productUidForManageStock.value || "")
-const { data: productDetailsForStock } = useGetProduct(productUidForFetch)
+const { data: productDetailsForStock } = useGetProduct(productUidForFetch, {
+  enabled: () => !!productUidForManageStock.value,
+})
 
 // Fetch product details for edit drawer when needed
 const productUidForEditFetch = computed(() => productUidForEdit.value || "")
@@ -560,6 +589,12 @@ const productMetrics = computed(() => {
   return cards
 })
 
+// Mobile shows ONLY these two summary cards; Stock Value renders as the hero stat
+// above them and Total Products lives in the page header count (LYW-2692).
+const mobileMetrics = computed(() =>
+  productMetrics.value.filter((m) => m.label === "Low Stock" || m.label === "Stale Products"),
+)
+
 const getStockStatus = (item: TProduct) => {
   if (item.sellable_stock === 0) {
     return { label: "Out of Stock", color: "error" as const }
@@ -600,6 +635,20 @@ const openVariantsManage = (item: TProduct) => {
   setTimeout(() => {
     showProductEditDrawer.value = true
   }, 0)
+}
+
+// After the variants step saves, reopen the drawer in price & weight mode so the
+// newly added variants get their selling price — mirrors the product details page
+// flow (LYW-2679). nextTick lets the drawer-close watcher clear stale edit state
+// before we set up the follow-up edit.
+const handleEditVariantDetails = () => {
+  const item = product.value
+  if (!item) return
+  void nextTick(async () => {
+    // Ensure the just-saved variants are in the cache before the drawer reopens
+    await queryClient.refetchQueries({ queryKey: inventoryKeys.products.detail(item.uid) })
+    openPriceWeightEdit(item)
+  })
 }
 
 const openManageStockModal = (item: TProduct) => {
@@ -729,12 +778,13 @@ const handleAction = (
 const handleDeleteProduct = () => {
   if (!product.value) return
 
-  deleteProduct(product.value?.uid, {
+  const deletedUid = product.value.uid
+  deleteProduct(deletedUid, {
     onSuccess: () => {
       toast.success("Product deleted successfully")
       showDeleteConfirmationModal.value = false
       product.value = null
-      queryClient.invalidateQueries({ queryKey: ["products"] })
+      inventoryCache.productDeleted(queryClient, deletedUid)
     },
     onError: displayError,
   })
@@ -746,9 +796,10 @@ const handleToggleVisibility = () => {
 
   const isCurrentlyHidden = product.value.is_hidden_from_storefront
   const newHiddenState = !isCurrentlyHidden
+  const toggledUid = product.value.uid
 
   updateProduct(
-    { uid: product.value.uid, is_hidden_from_storefront: newHiddenState },
+    { uid: toggledUid, is_hidden_from_storefront: newHiddenState },
     {
       onSuccess: () => {
         toast.success(
@@ -758,7 +809,7 @@ const handleToggleVisibility = () => {
         )
         showHideConfirmationModal.value = false
         product.value = null
-        refetchProducts()
+        inventoryCache.productUpdated(queryClient, toggledUid)
       },
       onError: displayError,
     },
@@ -791,11 +842,6 @@ const handleRequestClick = (request: IInventoryTransferRequest) => {
   showReceiveRequestModal.value = true
 }
 
-const handleRequestSuccess = () => {
-  // Increment key to force InventoryRequests component to remount and refetch
-  requestsRefetchKey.value++
-}
-
 // Watch for route query to open create modal/drawer
 watch(
   () => route.query.create,
@@ -822,6 +868,18 @@ watch(showProductEditDrawer, (isOpen) => {
     productUidForEdit.value = null
     variantForEdit.value = null
     router.replace({ name: "Inventory", query: {} })
+  }
+})
+
+// Clear the product UID a short while after the modal closes so the detail query
+// goes inactive eventually, but stays active long enough for the post-mutation
+// refetch (invalidated on success while the modal was still open) to land in the
+// cache — otherwise reopening shows stale stock (LYW-2647).
+watch(showManageStockModal, (isOpen) => {
+  if (!isOpen) {
+    setTimeout(() => {
+      if (!showManageStockModal.value) productUidForManageStock.value = null
+    }, 1500)
   }
 })
 

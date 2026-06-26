@@ -431,6 +431,12 @@ const forceClose = () => {
   emit("close")
 }
 
+// Keep popupOrderItems in sync when products are added/removed from step 0
+watch(selectedPopupProducts, (products) => {
+  const selectedUids = new Set(products.map((p) => p.uid))
+  popupOrderItems.value = popupOrderItems.value.filter((item) => selectedUids.has(item.product.uid))
+})
+
 // reset form when drawer is closed
 watch(
   () => props.open,

@@ -154,11 +154,11 @@
       :type="stockModalType"
       :variant-uid="selectedVariant.uid"
       :product-name="product?.data.name || ''"
+      :product-uid="uid"
       :variant-attributes="selectedVariant.attributes"
       :variant-price="selectedVariant.price"
       :available-stock="selectedVariant.sellable_stock || selectedVariant.available_stock || 0"
       @close="showAddReduceStockModal = false"
-      @success="handleStockSuccess"
     />
 
     <TransferRequestStockDrawer
@@ -171,7 +171,6 @@
       :variant="selectedVariant"
       :product="product?.data"
       @close="showTransferRequestDrawer = false"
-      @success="handleStockSuccess"
     />
 
     <!-- Product Edit Drawer -->
@@ -182,7 +181,6 @@
       :edit-mode="editMode"
       :variant="variantForEdit"
       :loading="isFetching"
-      @refresh="handleStockSuccess"
       @add-category="showAddCategoryModal = true"
       @edit-variant-details="handleEditVariantDetails"
     />
@@ -196,7 +194,6 @@
       :open="showManageStockModal"
       :product="product.data"
       @close="showManageStockModal = false"
-      @success="handleStockSuccess"
     />
   </div>
 </template>
@@ -227,7 +224,8 @@ import TransferRequestStockDrawer from "../components/TransferRequestStockDrawer
 import ManageStockModal from "../components/ManageStockModal.vue"
 import type { TOrder } from "@modules/orders/types"
 import { useSettingsStore } from "@modules/settings/store"
-import { useGetProductMovements } from "../api"
+import { inventoryKeys } from "../queryKeys"
+import { inventoryCache } from "../cache"
 import AppButton from "@components/AppButton.vue"
 import ProductEditDrawer from "../components/ProductEditDrawer.vue"
 import AddCategoryModal from "../components/AddCategoryModal.vue"
@@ -243,8 +241,6 @@ const uid = Array.isArray(route.params.uid) ? route.params.uid[0] : route.params
 const { data: product, isPending, isFetching } = useGetProduct(uid)
 const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct()
 const { mutate: updateProduct, isPending: isUpdatingProduct } = useUpdateProduct()
-
-const { refetch: refetchMovements } = useGetProductMovements(uid)
 
 // Initialize activeTab from query parameter or default to "overview"
 const activeTab = ref((route.query.tab as string) || "overview")
@@ -284,17 +280,6 @@ const openStockModal = (
     selectedVariant.value = product.value?.data.variants[0] || null
   }
   showAddReduceStockModal.value = true
-}
-
-const handleStockSuccess = () => {
-  queryClient.refetchQueries({ queryKey: ["products", uid] })
-  queryClient.invalidateQueries({ queryKey: ["products"] })
-  // The Variants tab uses a separate query (`useGetVariantsByProduct` →
-  // `["product-variants-filtered", params]`), which the products invalidation
-  // doesn't reach. Refetch it explicitly so stock changes show without a page
-  // reload.
-  queryClient.refetchQueries({ queryKey: ["product-variants-filtered"] })
-  refetchMovements()
 }
 
 const openTransferRequestDrawer = (
@@ -517,8 +502,8 @@ const handleEditVariantDetails = () => {
   // Open drawer immediately
   openPriceWeightEdit()
 
-  // Refetch product data in the background
-  queryClient.refetchQueries({ queryKey: ["products", uid] })
+  // Refetch product detail in the background
+  queryClient.refetchQueries({ queryKey: inventoryKeys.products.detail(uid) })
 }
 
 const actionItems = computed(() => {
@@ -695,11 +680,12 @@ const productMetrics = computed(
 const handleDeleteProduct = () => {
   if (!product.value) return
 
-  deleteProduct(product.value?.data.uid, {
+  const deletedUid = product.value.data.uid
+  deleteProduct(deletedUid, {
     onSuccess: () => {
       toast.success("Product deleted successfully")
       showDeleteConfirmationModal.value = false
-      queryClient.refetchQueries({ queryKey: ["products"] })
+      inventoryCache.productDeleted(queryClient, deletedUid)
       router.push({ name: "Inventory" })
     },
     onError: displayError,
@@ -725,7 +711,7 @@ const handleToggleVisibility = () => {
             : "Product is now visible on storefront",
         )
         showHideConfirmationModal.value = false
-        queryClient.refetchQueries({ queryKey: ["products", uid] })
+        inventoryCache.productUpdated(queryClient, uid)
       },
       onError: displayError,
     },

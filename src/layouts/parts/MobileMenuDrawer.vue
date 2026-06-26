@@ -15,7 +15,8 @@ defineProps<{ open: boolean }>()
 
 const emit = defineEmits<{ (e: "close"): void }>()
 
-const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
+// Prefer the connected custom domain when one is active (LYW-2618).
+const storefrontUrl = computed(() => useSettingsStore().displayDomain)
 const storeDetails = computed(() => useSettingsStore().storeDetails)
 const currentLocation = computed(() => useSettingsStore().activeLocation)
 const user = computed(() => useAuthStore().user)
@@ -57,7 +58,7 @@ const quickActionGroups = computed<ActionGroup[]>(() => {
           action: () => toast.info("This module is coming soon!", { title: "Discounts" }),
         },
         { label: "Expenses", icon: "receipt-text", to: "/expenses" },
-        { label: "Email List", icon: "sms", to: "/email-list" },
+        { label: "Email List", icon: "sms", to: "/email-list", hqOnly: true },
         {
           label: "Support",
           icon: "life-buoy",
@@ -69,14 +70,22 @@ const quickActionGroups = computed<ActionGroup[]>(() => {
         { label: "Settings", icon: "setting", to: "/settings" },
       ],
     },
-    {
-      label: "Production",
-      items: [
-        { label: componentLabel.value, icon: "archive", to: "/production/raw-materials" },
-        { label: recipeValue.value, icon: "clipboard-text-outline", to: "/production/recipes" },
-        { label: "Runs", icon: "chart", to: "/production/runs" },
-      ],
-    },
+    ...(isHQ.value
+      ? [
+          {
+            label: "Production",
+            items: [
+              { label: componentLabel.value, icon: "archive", to: "/production/raw-materials" },
+              {
+                label: recipeValue.value,
+                icon: "clipboard-text-outline",
+                to: "/production/recipes",
+              },
+              { label: "Runs", icon: "chart", to: "/production/runs" },
+            ],
+          },
+        ]
+      : []),
     {
       label: "Reports",
       items: [

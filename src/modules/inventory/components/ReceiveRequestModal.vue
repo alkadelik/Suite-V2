@@ -89,6 +89,8 @@ import InfoBox from "@components/InfoBox.vue"
 import ProductAvatar from "@components/ProductAvatar.vue"
 import type { IInventoryTransferRequest, IApproveRejectRequestPayload } from "../types"
 import { useApproveRejectRequest } from "../api"
+import { useQueryClient } from "@tanstack/vue-query"
+import { inventoryCache } from "../cache"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 
@@ -108,8 +110,6 @@ interface Emits {
   fulfill: [request: IInventoryTransferRequest]
   // Emitted when request is successfully rejected
   reject: [request: IInventoryTransferRequest]
-  // Emitted when any action succeeds (for refetching list)
-  success: []
 }
 
 const props = defineProps<Props>()
@@ -117,6 +117,7 @@ const emit = defineEmits<Emits>()
 
 // API Integration
 const { mutate: approveRejectRequest, isPending: isApiProcessing } = useApproveRejectRequest()
+const queryClient = useQueryClient()
 
 // Reactive State
 const isFulfilling = ref(false)
@@ -178,8 +179,9 @@ const handleFulfill = (): void => {
   approveRejectRequest(payload, {
     onSuccess: () => {
       toast.success("Request fulfilled successfully")
+      // Fulfilling (approving) a request moves stock between locations.
+      inventoryCache.transferChanged(queryClient, true)
       emit("fulfill", props.request!)
-      emit("success")
       handleClose()
     },
     onError: (error) => {
@@ -206,8 +208,9 @@ const handleReject = (): void => {
   approveRejectRequest(payload, {
     onSuccess: () => {
       toast.success("Request rejected successfully")
+      // Rejecting a request changes no stock; only the transfer list needs refreshing.
+      inventoryCache.transferChanged(queryClient, false)
       emit("reject", props.request!)
-      emit("success")
       handleClose()
     },
     onError: (error) => {

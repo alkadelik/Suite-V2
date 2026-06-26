@@ -1,5 +1,6 @@
 import baseApi, { TApiPromise, useApiQuery } from "@/composables/baseApi"
 import { useMutation, useQuery } from "@tanstack/vue-query"
+import { computed, toValue, type MaybeRefOrGetter } from "vue"
 import {
   IRolesApiResponse,
   TCreateAccountPayload,
@@ -140,15 +141,19 @@ export function useGetRoles() {
   })
 }
 
-/** Get live status for store */
-export function useGetLiveStatus(slug: string) {
+/** Get live status for store. Accepts a ref/getter so the query re-keys and
+ * refetches when the slug changes (e.g. after editing it in settings) instead
+ * of being frozen to the slug captured at component setup. */
+export function useGetLiveStatus(slug: MaybeRefOrGetter<string>) {
   return useQuery<ILiveStatusResponse>({
-    queryKey: ["liveStatus", slug],
+    queryKey: computed(() => ["liveStatus", toValue(slug)]),
     queryFn: async () => {
-      const res = await baseApi.get<ILiveStatusResponse>(`/stores/public/live-status/${slug}/`)
+      const res = await baseApi.get<ILiveStatusResponse>(
+        `/stores/public/live-status/${toValue(slug)}/`,
+      )
       return res.data
     },
-    enabled: !!slug,
+    enabled: computed(() => !!toValue(slug)),
     retry: false,
     refetchOnWindowFocus: false,
   })

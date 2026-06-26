@@ -225,7 +225,7 @@ const getActionItems = (item: TOrder) => [
         },
       ]
     : []),
-  ...(item.fulfilment_status === "unfulfilled"
+  ...(item.fulfilment_status !== "fulfilled"
     ? [
         {
           label: "Fulfill Order",
@@ -750,6 +750,7 @@ const handleDetailsMarkAsPaid = () => {
     </ConfirmationModal>
 
     <CreateOrderDrawer
+      v-if="openCreate"
       :open="openCreate"
       @close="
         () => {

@@ -206,6 +206,7 @@ const handleNext = handleSubmit((formValues) => {
       ? { label: variant.label, value: variant.value, price: variant.price }
       : null,
     outputItemType: recipe.item_type,
+    outputUnit: recipe.unit,
     variantPrice: variant?.price,
   })
 })
@@ -257,7 +258,7 @@ const handleNext = handleSubmit((formValues) => {
 
     <FormField
       name="outputQuantity"
-      type="number"
+      type="decimal"
       label="Quantity Produced (including damages)"
       placeholder="e.g. 100"
       required
@@ -266,7 +267,7 @@ const handleNext = handleSubmit((formValues) => {
 
     <FormField
       name="damagedQuantity"
-      type="number"
+      type="decimal"
       label="Quantity Damaged"
       placeholder="e.g. 10"
       required

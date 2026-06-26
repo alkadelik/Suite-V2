@@ -23,6 +23,7 @@ import popupEmpty from "@/assets/images/popup-empty.svg?url"
 import popupBanner from "@/assets/images/popup-banner.svg?url"
 import ClosePopupModal from "../components/ClosePopupModal.vue"
 import BackButton from "@components/BackButton.vue"
+import AppButton from "@components/AppButton.vue"
 
 const route = useRoute()
 const router = useRouter()
@@ -101,6 +102,24 @@ const actionMenu = computed(() => {
 const isMobile = useMediaQuery("(max-width: 768px)")
 
 const storeDetails = computed(() => useSettingsStore().storeDetails)
+
+const downloadQrCode = async () => {
+  if (!popupEvt.value?.qr_code) return
+  try {
+    // "https://res.cloudinary.com/do2uxmtsx/image/upload/v1781867095/blank-avatar_vgt0by.jpg",
+    const res = await fetch(popupEvt.value.qr_code)
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `${popupEvt.value.slug || "popup"}-qr-code.png`
+    link.click()
+    URL.revokeObjectURL(url)
+  } catch (error) {
+    console.log("Error downloading image:", error)
+    window.open(popupEvt.value.qr_code, "_blank")
+  }
+}
 </script>
 
 <template>
@@ -226,6 +245,23 @@ const storeDetails = computed(() => useSettingsStore().storeDetails)
                   >
                     <p class="text-core-600 flex-1 font-semibold">{{ startCase(key) }}</p>
                     <p class="flex-2 font-medium">{{ value }}</p>
+                  </div>
+                  <div v-if="popupEvt.qr_code" class="flex flex-col gap-2 py-3 text-sm">
+                    <p class="text-core-600 flex-1 font-semibold">QR Code</p>
+                    <div class="flex items-end gap-3">
+                      <img
+                        :src="popupEvt.qr_code"
+                        alt="Event QR code"
+                        class="border-core-100 h-24 w-24 rounded-lg border p-1"
+                      />
+                      <AppButton
+                        variant="outlined"
+                        label="Download"
+                        icon="download-cloud-02"
+                        size="xs"
+                        @click="downloadQrCode"
+                      />
+                    </div>
                   </div>
                 </div>
               </template>

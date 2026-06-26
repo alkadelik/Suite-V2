@@ -26,6 +26,19 @@ export const useSettingsStore = defineStore(
         `${isStaging ? "storefronts-v2.vercel.app" : "buy.leyyow.com"}/${storeDetails.value?.slug || "your-store"}`,
     )
 
+    // Connected custom domain (only set when an ACTIVE domain exists). Hydrated from
+    // LocationDropdown, which fetches custom domains on every authenticated page.
+    const activeCustomDomain = ref<string | null>(null)
+
+    // The storefront domain shown across the app (sidebar, more menu, settings header):
+    // prefer a connected custom domain (scheme stripped to match the bare-URL contract),
+    // else fall back to the built-in storefront URL (LYW-2618).
+    const displayDomain = computed(() =>
+      activeCustomDomain.value
+        ? activeCustomDomain.value.replace(/^https?:\/\//, "")
+        : storefrontUrl.value,
+    )
+
     // Actions
     const setLocations = (locs: TLocation[]) => {
       locations.value = locs
@@ -66,6 +79,10 @@ export const useSettingsStore = defineStore(
       locationForEdit.value = location
     }
 
+    const setActiveCustomDomain = (domain: string | null) => {
+      activeCustomDomain.value = domain
+    }
+
     return {
       locations,
       activeLocation,
@@ -84,6 +101,9 @@ export const useSettingsStore = defineStore(
       setStoreDetails,
       storeDetails,
       storefrontUrl,
+      activeCustomDomain,
+      setActiveCustomDomain,
+      displayDomain,
       isInternational,
       liveStatus,
       setLiveStatus,

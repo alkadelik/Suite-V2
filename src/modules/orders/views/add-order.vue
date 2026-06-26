@@ -55,7 +55,7 @@ const activeCategoryUid = ref<string | null>(null)
 const { data: categoriesData } = useGetCategories()
 const categories = computed(() => categoriesData.value?.data.results ?? [])
 
-const { data, isPending, isFetchingNextPage, fetchNextPage, hasNextPage, refetch } =
+const { data, isPending, isFetchingNextPage, fetchNextPage, hasNextPage } =
   useGetProductCatalogsInfinite(20, debouncedSearch)
 
 const scrollContainer = useTemplateRef<HTMLElement>("scrollContainer")
@@ -89,10 +89,8 @@ const getAvailableStock = (product: IProductCatalogue) => {
 const hasMultipleVariants = (product: IProductCatalogue) => product.variants.length > 1
 
 const showAddProduct = ref(false)
-const handleProductCreated = async (uid: string) => {
+const handleProductCreated = (newProd: IProductCatalogue | null) => {
   showAddProduct.value = false
-  await refetch()
-  const newProd = allProducts.value.find((p) => p.uid === uid)
   if (newProd && getAvailableStock(newProd) > 0 && !hasMultipleVariants(newProd)) {
     incrementItem(newProd, newProd.variants[0] ?? null)
   }
@@ -166,6 +164,12 @@ const handleCartSave = (items: OrderItem[]) => {
 const handleCartRemove = (productUid: string) => {
   orderItems.value = orderItems.value.filter((i) => i.product.uid !== productUid)
   closeCartModal()
+}
+
+const removeOrderItem = (productUid: string, variantUid: string | undefined) => {
+  orderItems.value = orderItems.value.filter(
+    (i) => !(i.product.uid === productUid && (i.variant?.uid ?? undefined) === variantUid),
+  )
 }
 
 const openDetailsDrawer = () => {
@@ -365,9 +369,9 @@ const onCreateOrder = () => {
     ...deliveryFields,
     fulfilment_method,
     coupon_code: paymentInfo.value.coupon_code || "",
-    payment_status: paymentInfo.value.payment_status,
+    payment_status: totalAmount.value === 0 ? "paid" : paymentInfo.value.payment_status,
     payment_amount:
-      paymentInfo.value.payment_status === "paid"
+      totalAmount.value === 0 || paymentInfo.value.payment_status === "paid"
         ? Number(totalAmount.value).toFixed(2)
         : Number(paymentInfo.value.payment_amount).toFixed(2),
     payment_source: paymentInfo.value.payment_source?.value,
@@ -531,6 +535,12 @@ const hasNotLiveBanner = computed(() => {
             v-for="product in products"
             :key="product.uid"
             class="overflow-hidden rounded-xl border border-gray-200 bg-white p-1"
+            :class="
+              getAvailableStock(product) === 0
+                ? 'cursor-not-allowed opacity-50'
+                : 'cursor-pointer opacity-100'
+            "
+            @click="openCartModal(product)"
           >
             <!-- Image -->
             <div
@@ -541,8 +551,13 @@ const hasNotLiveBanner = computed(() => {
                 :src="product.images[0].image"
                 :alt="product.name"
                 class="size-full object-cover"
+                :class="getAvailableStock(product) === 0 ? 'opacity-40' : 'opacity-100'"
               />
-              <div v-else class="flex size-full items-center justify-center">
+              <div
+                v-else
+                class="flex size-full items-center justify-center"
+                :class="getAvailableStock(product) === 0 ? 'opacity-40' : 'opacity-100'"
+              >
                 <Icon name="box-filled" size="60" />
               </div>
               <!-- Category chip -->
@@ -551,6 +566,13 @@ const hasNotLiveBanner = computed(() => {
                 color="purple"
                 :label="product.category_name"
                 class="absolute top-2 left-2"
+                radius="md"
+              />
+              <Chip
+                v-if="getAvailableStock(product) === 0"
+                color="error"
+                label="Out of Stock"
+                class="absolute top-2 right-2"
                 radius="md"
               />
             </div>
@@ -564,18 +586,9 @@ const hasNotLiveBanner = computed(() => {
                 </p>
               </div>
 
-              <!-- Out of stock -->
-              <Chip
-                v-if="getAvailableStock(product) === 0"
-                color="error"
-                label="Out of stock"
-                radius="md"
-                class="w-full"
-              />
-
               <!-- Multi-variant: See option / Edit -->
               <AppButton
-                v-else-if="hasMultipleVariants(product)"
+                v-if="hasMultipleVariants(product)"
                 @click="openCartModal(product)"
                 size="sm"
                 variant="outlined"
@@ -585,6 +598,7 @@ const hasNotLiveBanner = computed(() => {
                     : 'See option'
                 "
                 class="w-full"
+                :disabled="getAvailableStock(product) === 0"
               />
 
               <!-- Single variant: open modal (Add / Edit) -->
@@ -599,6 +613,7 @@ const hasNotLiveBanner = computed(() => {
                     : 'Add to cart'
                 "
                 class="w-full"
+                :disabled="getAvailableStock(product) === 0"
               />
             </div>
           </div>
@@ -652,19 +667,27 @@ const hasNotLiveBanner = computed(() => {
               </p>
               <p class="text-xs text-gray-500">× {{ item.quantity }}</p>
             </div>
-            <div class="shrink-0 text-right">
-              <p
-                v-if="
-                  item.variant?.original_price != null &&
-                  item.variant.original_price !== item.unit_price
-                "
-                class="text-[10px] text-gray-400 line-through"
+            <div class="flex shrink-0 items-center gap-2 text-right">
+              <div>
+                <p
+                  v-if="
+                    item.variant?.original_price != null &&
+                    item.variant.original_price !== item.unit_price
+                  "
+                  class="text-[10px] text-gray-400 line-through"
+                >
+                  {{ format(item.variant.original_price) }}
+                </p>
+                <p class="text-xs font-semibold text-gray-800">
+                  {{ format(item.unit_price * item.quantity) }}
+                </p>
+              </div>
+              <button
+                @click="removeOrderItem(item.product.uid, item.variant?.uid)"
+                class="text-error-500"
               >
-                {{ format(item.variant.original_price) }}
-              </p>
-              <p class="text-xs font-semibold text-gray-800">
-                {{ format(item.unit_price * item.quantity) }}
-              </p>
+                <Icon name="trash" size="16" />
+              </button>
             </div>
           </div>
         </div>
@@ -950,19 +973,27 @@ const hasNotLiveBanner = computed(() => {
             </p>
             <p class="text-xs text-gray-500">× {{ item.quantity }}</p>
           </div>
-          <div class="shrink-0 text-right">
-            <p
-              v-if="
-                item.variant?.original_price != null &&
-                item.variant.original_price !== item.unit_price
-              "
-              class="text-[10px] text-gray-400 line-through"
+          <div class="flex shrink-0 items-center gap-2 text-right">
+            <div>
+              <p
+                v-if="
+                  item.variant?.original_price != null &&
+                  item.variant.original_price !== item.unit_price
+                "
+                class="text-[10px] text-gray-400 line-through"
+              >
+                {{ format(item.variant.original_price) }}
+              </p>
+              <p class="text-xs font-semibold text-gray-800">
+                {{ format(item.unit_price * item.quantity) }}
+              </p>
+            </div>
+            <button
+              @click="removeOrderItem(item.product.uid, item.variant?.uid)"
+              class="text-error-500"
             >
-              {{ format(item.variant.original_price) }}
-            </p>
-            <p class="text-xs font-semibold text-gray-800">
-              {{ format(item.unit_price * item.quantity) }}
-            </p>
+              <Icon name="trash" size="16" />
+            </button>
           </div>
         </div>
       </div>
@@ -1206,6 +1237,7 @@ const hasNotLiveBanner = computed(() => {
 
   <!-- ─── Add product modal ─────────────────────────────────────────────────── -->
   <AddNewProductModal
+    v-if="showAddProduct"
     :open="showAddProduct"
     @close="showAddProduct = false"
     @created="handleProductCreated"

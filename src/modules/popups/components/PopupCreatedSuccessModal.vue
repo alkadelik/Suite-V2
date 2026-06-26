@@ -3,21 +3,22 @@ import AppButton from "@components/AppButton.vue"
 import Chip from "@components/Chip.vue"
 import { PopupEvent } from "../types"
 import { computed } from "vue"
-import { clipboardCopy, isStaging } from "@/utils/others"
+import { clipboardCopy } from "@/utils/others"
 import Modal from "@components/Modal.vue"
 import { useSettingsStore } from "@modules/settings/store"
 import gridPng from "@/assets/images/empty-grid.png"
+import { useGetPopupQrcode } from "../api"
+import LoadingIcon from "@components/LoadingIcon.vue"
 
 const props = defineProps<{ popup: PopupEvent | null; open: boolean }>()
 
 defineEmits<{ "setup-booth": []; close: [] }>()
 
-const storeDetails = computed(() => useSettingsStore().storeDetails)
+const { data: qrData, isPending } = useGetPopupQrcode(() => props.popup?.uid)
 
-const popupUrl = computed(
-  () =>
-    `${isStaging ? "www.storefronts-v2.vercel.app" : "www.buy.leyyow.com"}/${storeDetails.value?.slug}/events/${props.popup?.slug}`,
-)
+// displayDomain prefers the connected custom domain (LYW-2618) and already
+// carries the store slug when falling back to the default storefront domain.
+const popupUrl = computed(() => `${useSettingsStore().displayDomain}/events/${props.popup?.slug}`)
 </script>
 
 <template>
@@ -53,6 +54,13 @@ const popupUrl = computed(
           You now have a virtual storefront for this event. Customers can scan your QR code or use
           your link to shop.
         </p>
+
+        <div v-if="qrData?.qr_code_url" class="rounded-xl bg-white p-1">
+          <img :src="qrData.qr_code_url" alt="Booth QR code" class="h-40 w-40 rounded-xl" />
+        </div>
+        <div v-else-if="isPending" class="flex items-center justify-center">
+          <LoadingIcon class="h-32 w-32 text-white" />
+        </div>
 
         <div
           class="border-warning-300 bg-primary-900/50 mt-8 w-full border-y border-dashed py-2 text-center text-base font-bold"
