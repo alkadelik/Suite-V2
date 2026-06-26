@@ -39,7 +39,7 @@ export type BasicDetails = {
   name?: string
   outputItemType: "product" | "sub_assembly"
   outputItem: string
-  outputItemOption?: { label: string; value: string } | null
+  outputItemOption?: { label: string; value: string; item?: Record<string, unknown> } | null
   outputQuantity: number
   unit: string
   unitOption?: { label: string; value: string } | null

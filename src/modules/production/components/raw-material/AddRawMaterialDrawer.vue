@@ -356,14 +356,14 @@ const seedFromMaterial = (item: TRawMaterial) => {
         : "",
       notes: item.notes ?? "",
       conversion_from_qty: "1",
-      conversion_to_qty: activeConversion?.rate,
+      conversion_to_qty: activeConversion ? floatDecimal(activeConversion.rate, 4).toString() : "",
       conversion_name: "",
     },
   })
   if (activeConversion) {
     nextTick(() => {
       setFieldValue("conversion_from_qty", "1")
-      setFieldValue("conversion_to_qty", activeConversion.rate)
+      setFieldValue("conversion_to_qty", floatDecimal(activeConversion.rate, 4).toString())
       setFieldValue("conversion_name", activeConversion.name)
     })
   }
@@ -433,7 +433,7 @@ const validateStepOne = async () => {
 
   if (
     values.source?.value === "supplier" ||
-    (values.qty_in_stock && values.source?.value === "manufacture")
+    (+values.qty_in_stock > 0 && values.source?.value === "manufacture")
   ) {
     stepOneFields.push("default_cost")
   }
@@ -686,7 +686,7 @@ const handleAddFromSearch = (search: string, close: () => void) => {
 
             <div v-if="mode !== 'edit'">
               <FormField
-                v-if="values.qty_in_stock || values.source?.value === 'supplier'"
+                v-if="+values.qty_in_stock > 0 || values.source?.value === 'supplier'"
                 type="number"
                 name="default_cost"
                 format="currency"

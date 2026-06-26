@@ -308,12 +308,12 @@ const getMenuAction = (item: PopupEvent) => {
               <div class="h-1.5 w-16 rounded-full bg-gray-200">
                 <div
                   class="bg-primary-600 h-1.5 rounded-full"
-                  :style="`width: ${((item.total_orders || 0) / (item.products_count || 1)) * 100}%`"
+                  :style="`width: ${((item.total_orders || 0) / (item.total_items_count || 1)) * 100}%`"
                 ></div>
               </div>
               <span class="flex flex-shrink-0 break-keep">
                 {{
-                  `${parseInt(String(((item.total_orders || 0) / (item.products_count || 1)) * 100))}%`
+                  `${parseInt(String(((item.total_orders || 0) / (item.total_items_count || 1)) * 100))}%`
                 }}
               </span>
             </div>
