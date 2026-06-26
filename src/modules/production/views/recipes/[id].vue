@@ -48,7 +48,8 @@ const recipeStats = computed(() => [
           icon: "bag",
           chip: `Able to produce ${floatDecimal(recipe.value?.producible_quantity || 0)} ${recipe.value?.output_unit}`,
           chipColor: "blue",
-          chipIcon: "",
+          chipIcon: "info-circle",
+          chipToolTip: `Based on your available ${materialLabel.value}, and using the proportions in this ${recipeValue.value}, you are only able to produce ${floatDecimal(recipe.value?.producible_quantity || 0)} ${recipe.value?.output_unit}.`,
         },
       ]),
   {
