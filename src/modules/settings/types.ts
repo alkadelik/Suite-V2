@@ -116,6 +116,31 @@ export interface IUpdateStoreDetailsPayload {
   recipe_terminology?: string
 }
 
+/** Day of week as used by the pickup-schedules API (0 = Monday … 6 = Sunday). */
+export type TDayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6
+
+/**
+ * A single day's pickup schedule.
+ * `GET /stores/pickup-schedules/` returns one of these per day of the week.
+ */
+export interface IPickupSchedule {
+  uid: string
+  day_of_week: TDayOfWeek
+  day_of_week_display: string
+  is_enabled: boolean
+  /** 24h time ("HH:MM" / "HH:MM:SS"); null when not set */
+  start_time: string | null
+  end_time: string | null
+  updated_at: string
+}
+
+/** PATCH body for `/stores/pickup-schedules/{uid}/`. */
+export interface IUpdatePickupSchedulePayload {
+  is_enabled?: boolean
+  start_time?: string | null
+  end_time?: string | null
+}
+
 export type TIndustry = {
   uid: string
   name: string
