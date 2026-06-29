@@ -8,7 +8,17 @@ import {
   type Table,
   type Row,
 } from "@tanstack/vue-table"
-import { computed, h, HTMLAttributes, onMounted, ref, useSlots, watch, type VNode } from "vue"
+import {
+  computed,
+  getCurrentInstance,
+  h,
+  HTMLAttributes,
+  onMounted,
+  ref,
+  useSlots,
+  watch,
+  type VNode,
+} from "vue"
 import Icon from "./Icon.vue"
 import AppButton from "./AppButton.vue"
 import EmptyState from "./EmptyState.vue"
@@ -127,6 +137,11 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const rowSelection = ref<Record<string, boolean>>({})
+// Only show the pointer cursor when a row-click listener is actually bound.
+// row-click is a declared emit, so it's stripped from $attrs — read it off the
+// component's own vnode props instead.
+const instance = getCurrentInstance()
+const hasRowClick = computed(() => !!instance?.vnode.props?.onRowClick)
 const slots = useSlots()
 const data = computed(() => props.data)
 const columnHelper = createColumnHelper<T>()
@@ -363,7 +378,11 @@ const getRowClasses = (row: T) => {
           <tr
             v-for="row in table.getRowModel().rows"
             :key="row.id"
-            :class="['text-core-700 border-t border-gray-200', getRowClasses(row.original as T)]"
+            :class="[
+              'text-core-700 border-t border-gray-200',
+              { 'cursor-pointer': hasRowClick },
+              getRowClasses(row.original as T),
+            ]"
             @click="handleRowClick(row.original as T)"
           >
             <td
@@ -432,7 +451,7 @@ const getRowClasses = (row: T) => {
             <div
               :class="[
                 'my-3 rounded-lg border border-gray-200',
-                { 'cursor-pointer hover:bg-gray-50': true },
+                { 'cursor-pointer hover:bg-gray-50': hasRowClick },
                 getRowClasses(row.original as T),
               ]"
               @click="handleRowClick(row.original as T)"

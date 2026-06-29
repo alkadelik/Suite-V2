@@ -15,7 +15,7 @@ import CreatePopupEventModal from "../components/CreatePopupEventModal.vue"
 import DeletePopupEvent from "../components/DeletePopupEvent.vue"
 import PopupSalesTab from "../components/popup-tabs/PopupSalesTab.vue"
 import PopupInventoryTab from "../components/popup-tabs/PopupInventoryTab.vue"
-import { clipboardCopy, isStaging } from "@/utils/others"
+import { clipboardCopy } from "@/utils/others"
 import { useMediaQuery } from "@vueuse/core"
 import Collapsible from "@components/Collapsible.vue"
 import { useSettingsStore } from "@modules/settings/store"
@@ -40,6 +40,7 @@ watch(
 )
 
 const { format } = useFormatCurrency()
+const storefrontUrl = computed(() => useSettingsStore().displayDomain)
 
 const { data: popupEvt, isPending, refetch } = useGetPopupEventById(route.params.id as string)
 
@@ -100,8 +101,6 @@ const actionMenu = computed(() => {
 })
 
 const isMobile = useMediaQuery("(max-width: 768px)")
-
-const storeDetails = computed(() => useSettingsStore().storeDetails)
 
 const downloadQrCode = async () => {
   if (!popupEvt.value?.qr_code) return
@@ -187,19 +186,13 @@ const downloadQrCode = async () => {
             </p>
             <p class="flex items-center gap-2 text-xs md:text-sm">
               <span class="min-w-0 truncate">
-                {{
-                  `${isStaging ? "www.storefronts-v2.vercel.app" : "www.buy.leyyow.com"}/${storeDetails?.slug}/events/${popupEvt?.slug}`
-                }}
+                {{ `${storefrontUrl}/events/${popupEvt?.slug}` }}
               </span>
               <Icon
                 name="copy"
                 size="20"
                 class="flex-shrink-0 cursor-pointer"
-                @click="
-                  clipboardCopy(
-                    `https://${isStaging ? 'storefronts-v2.vercel.app' : 'buy.leyyow.com'}/${storeDetails?.slug}/events/${popupEvt?.slug}`,
-                  )
-                "
+                @click="clipboardCopy(`${storefrontUrl}/events/${popupEvt?.slug}`)"
               />
             </p>
             <Chip

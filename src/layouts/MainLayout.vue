@@ -168,6 +168,10 @@ import {
   useMarkNotificationAsRead,
 } from "@modules/shared/api"
 import type { INotification } from "@modules/shared/types"
+import { toast } from "@/composables/useToast.ts"
+import { startCase } from "@/utils/format-strings.ts"
+import { usePremiumAccess } from "@/composables/usePremiumAccess.ts"
+import { useProductionStore } from "@modules/production/store.ts"
 // import WhatsNewModal from "@components/WhatsNewModal.vue"
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
@@ -256,14 +260,25 @@ const MENU_ITEMS = computed(() => {
   return allSuites.filter((suite) => !suite.hqOnly || isHQ.value)
 })
 
+const { checkPremiumAccess } = usePremiumAccess()
+const materialSingular = computed(() => useProductionStore().componentSingular)
+const recipeSingularLabel = computed(() => useProductionStore().recipeSingularLabel)
+
 const actionMenuItems = computed(() => {
+  const onNavigate = (path: string) => {
+    if (!checkPremiumAccess()) return
+    if (!path.startsWith("/"))
+      return toast.info("This module is coming soon!", { title: "Discounts" })
+    router.push(path)
+  }
+
   const allActions = [
     {
       label: "Add a product",
       icon: "box",
       class: "!bg-blue-50 !text-blue-700 mb-1",
       iconClass: "!text-blue-700",
-      action: () => router.push("/inventory?create=true"),
+      action: () => onNavigate("/inventory?create=true"),
       hqOnly: true,
     },
     {
@@ -271,14 +286,14 @@ const actionMenuItems = computed(() => {
       icon: "bag",
       class: "!bg-green-50 !text-green-700 mb-1",
       iconClass: "!text-green-700",
-      action: () => router.push("/orders?create=true"),
+      action: () => onNavigate("/orders?create=true"),
     },
     {
       label: "Create popup",
       icon: "calendar-tick",
       class: "!bg-purple-50 !text-purple-700 mb-1",
       iconClass: "!text-purple-700",
-      action: () => router.push("/popups?create=true"),
+      action: () => onNavigate("/popups?create=true"),
       hqOnly: true,
     },
     {
@@ -286,16 +301,46 @@ const actionMenuItems = computed(() => {
       icon: "profile-add",
       class: "!bg-primary-50 !text-primary-700 mb-1",
       iconClass: "!text-primary-700",
-      action: () => router.push("/customers?create=true"),
+      action: () => onNavigate("/customers?create=true"),
     },
     {
       label: "Record expense",
       icon: "receipt-add",
       class: "!bg-pink-50 !text-pink-700",
       iconClass: "!text-primary-700",
-      action: () => {
-        router.push("/expenses?create=true")
-      },
+      action: () => onNavigate("/expenses?create=true"),
+    },
+    {
+      label: "Add discount",
+      icon: "tag-2-filled",
+      class: "!bg-primary-50 !text-primary-800",
+      iconClass: "!text-primary-700",
+      action: () => onNavigate("Discount"),
+      hqOnly: true,
+    },
+    {
+      label: `Add ${startCase(materialSingular.value)}`,
+      icon: "document-normal-filled",
+      class: "!bg-warning-50 !text-warning-800",
+      iconClass: "!text-primary-700",
+      action: () => onNavigate("/production/raw-materials?create=true"),
+      hqOnly: true,
+    },
+    {
+      label: `Add ${startCase(recipeSingularLabel.value)}`,
+      icon: "clipboard-text-filled",
+      class: "!bg-core-25 !text-[#432A1E]",
+      iconClass: "!text-primary-700",
+      action: () => onNavigate("/production/recipes?create=true"),
+      hqOnly: true,
+    },
+    {
+      label: "Add Run",
+      icon: "chart-filled",
+      class: "!bg-error-50 !text-error-800",
+      iconClass: "!text-primary-700",
+      action: () => onNavigate("/production/runs?create=true"),
+      hqOnly: true,
     },
   ]
 
