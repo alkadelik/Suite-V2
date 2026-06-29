@@ -36,6 +36,9 @@ const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
 const outputItemType = computed(() => props.initialValues.outputItemType)
 const isProduct = computed(() => outputItemType.value === "product")
 
+// The output item's unit (e.g. "kg", "pcs"); falls back to "unit" when absent
+const unitLabel = computed(() => props.initialValues.outputUnit?.trim() || "unit")
+
 const sellingPrice = ref(props.initialValues.variantPrice ?? 0)
 
 // Sync whenever the parent changes (e.g. back-navigation resets)
@@ -111,7 +114,7 @@ const estimationVerdict = computed(() => {
       </p>
       <div class="border-core-200 my-2 border-t border-dashed"></div>
       <div class="flex justify-between text-sm font-semibold">
-        <span class="text-core-600 font-medium">Cost per Unit</span>
+        <span class="text-core-600 font-medium">Cost per {{ unitLabel }}</span>
         <span class="font-medium">{{ format(costPerUnit, { kobo: true }) }}</span>
       </div>
     </div>
@@ -124,11 +127,11 @@ const estimationVerdict = computed(() => {
         <span class="font-medium">{{ format(originalSellingPrice, { kobo: true }) }}</span>
       </p>
       <p class="flex justify-between text-sm">
-        <span class="text-core-600">Estimated profit / unit</span>
+        <span class="text-core-600">Estimated profit per {{ unitLabel }}</span>
         <span class="font-medium">{{ format(originalProfitPerUnit, { kobo: true }) }}</span>
       </p>
       <p class="flex justify-between text-sm">
-        <span class="text-core-600">Estimated profit / batch</span>
+        <span class="text-core-600">Estimated profit per batch</span>
         <span class="font-medium">{{ format(originalProfitPerBatch, { kobo: true }) }}</span>
       </p>
     </div>
@@ -141,6 +144,8 @@ const estimationVerdict = computed(() => {
         @click="showEstimator = true"
       />
     </div>
+
+    <div class="py-12" />
 
     <div class="border-core-200 fixed right-0 bottom-0 left-0 border-t bg-white p-4 md:p-6">
       <div class="mt-3 flex gap-2">
@@ -193,7 +198,7 @@ const estimationVerdict = computed(() => {
             'bg-gray-25 border-gray-200': estimationVerdict === 'neutral',
           }"
         >
-          <p class="text-core-600 mb-1 text-sm">Estimated profit / unit</p>
+          <p class="text-core-600 mb-1 text-sm">Estimated profit / {{ unitLabel }}</p>
           <p
             class="text-lg font-semibold"
             :class="{

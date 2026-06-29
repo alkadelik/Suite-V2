@@ -81,8 +81,8 @@ const getAvailableStock = (product: IProductCatalogue) => {
   if (!product.variants || product.variants.length === 0) return 0
   return product.variants.reduce((total, v) => {
     const sellable = Number(v.sellable_stock ?? v.available_stock ?? 0)
-    const taken = Number((v as { popup_quantity_taken?: number }).popup_quantity_taken ?? 0)
-    return total + Math.max(0, sellable - taken)
+    // const taken = Number((v as { popup_quantity_taken?: number }).popup_quantity_taken ?? 0)
+    return total + Math.max(0, sellable)
   }, 0)
 }
 

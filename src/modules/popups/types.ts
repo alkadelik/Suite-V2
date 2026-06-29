@@ -19,6 +19,7 @@ export type PopupEvent = {
   store_slug: string
   customer_count: number
   items_sold_count: number
+  total_items_count: number
   products_count: number
   total_orders: number
   total_sales_amount: number
@@ -199,4 +200,9 @@ export interface EventDiscountCode {
   expires_at: string
   event_name: string
   usage_remaining: number | null
+}
+
+export interface TQrcodeResponse {
+  qr_code_url: string
+  storefront_url: string
 }

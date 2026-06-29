@@ -134,6 +134,7 @@ const seedFromRun = (run: TProdRun) => {
     recipeUid: run.recipe,
     recipeOption: { label: recipeLabel, value: run.recipe },
     outputVariantUid: run.output_variant || "",
+    outputUnit: run.output_unit,
   }
 
   ingredientRowsState.value = (run.ingredients_used ?? []).map((ing) => {
@@ -247,14 +248,21 @@ const onSubmit = (status: RunStatus) => {
 }
 
 function handleBasicDetailsNext(details: BasicRunDetails, onNext: () => void) {
+  const outputChanged = details.outputQuantity !== basicDetails.value.outputQuantity
   basicDetails.value = details
   // Scale ingredient quantities by the ratio of desired output to recipe batch size
   if (!isEditMode.value && recipeOutputQty.value > 0) {
     const scale = details.outputQuantity / recipeOutputQty.value
-    ingredientRowsState.value = ingredientRowsState.value.map((row) => ({
-      ...row,
-      qty: (ingredientBaseQty.value[row.id] ?? row.qty) * scale,
-    }))
+    ingredientRowsState.value = ingredientRowsState.value.map((row) => {
+      const qty = (ingredientBaseQty.value[row.id] ?? row.qty) * scale
+      return {
+        ...row,
+        qty,
+        // When output qty changes, re-evaluate used_stock to match the new
+        // required qty — regardless of any manual edits made previously.
+        ingredient: outputChanged ? { ...row.ingredient, used_stock: qty } : row.ingredient,
+      }
+    })
   }
   onNext()
 }

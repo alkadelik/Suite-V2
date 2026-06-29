@@ -1,3 +1,4 @@
+import { floatDecimal } from "@/utils/others"
 import { TConversion, TRawMaterial } from "./types"
 
 export type TConversionItem = { unit: string; conversions?: TConversion[] }
@@ -18,12 +19,12 @@ export const convertNumToUsageUnit = (quantity: number, material: TConversionIte
   const conversion = material.conversions?.[0]
   if (!conversion) return quantity // No conversion, return original quantity
 
-  return quantity * Number(conversion.rate)
+  return floatDecimal(quantity * Number(conversion.rate))
 }
 
 export const convertNumToPurchaseUnit = (quantity: number, material: TConversionItem) => {
   const conversion = material.conversions?.[0]
   if (!conversion) return quantity
 
-  return quantity / Number(conversion.rate)
+  return floatDecimal(quantity / Number(conversion.rate))
 }

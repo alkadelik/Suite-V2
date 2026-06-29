@@ -3,6 +3,7 @@ import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 import { formatDate } from "@/utils/formatDate"
+import { floatDecimal } from "@/utils/others"
 import AppButton from "@components/AppButton.vue"
 import BackButton from "@components/BackButton.vue"
 import Chip from "@components/Chip.vue"
@@ -62,9 +63,18 @@ const costBreakdown = computed(() => {
 
 const economicsBreakdown = computed(() => {
   return {
-    "Produced Units": parseInt(prodRun.value?.quantity_to_produce || "0"),
-    "Usable Units": parseInt(prodRun.value?.usable_quantity || "0"),
-    "Cost per Unit": format(prodRun.value?.cost_per_unit || 0, { kobo: true }),
+    "Quantity produced":
+      floatDecimal(prodRun.value?.quantity_to_produce || "0") +
+      " " +
+      (prodRun.value?.output_unit || ""),
+    "Usable Quantity":
+      floatDecimal(prodRun.value?.usable_quantity || "0") +
+      " " +
+      (prodRun.value?.output_unit || ""),
+    [`Cost per ${prodRun.value?.output_unit || "unit"}`]: format(
+      prodRun.value?.cost_per_unit || 0,
+      { kobo: true },
+    ),
   }
 })
 
@@ -105,7 +115,7 @@ const onFinaliseRun = () => {
           <h2 class="mb-4 text-2xl font-semibold capitalize">{{ prodRun.output_item_name }}</h2>
           <div class="flex gap-1">
             <Chip
-              :label="parseInt(prodRun.quantity_to_produce) + ' ' + prodRun.output_unit"
+              :label="floatDecimal(prodRun.quantity_to_produce) + ' ' + prodRun.output_unit"
               color="blue"
             />
             <Chip
@@ -214,7 +224,7 @@ const onFinaliseRun = () => {
               <Chip
                 icon="danger"
                 color="error"
-                :label="`${parseInt(prodRun.damaged_quantity)} ${prodRun.output_unit}`"
+                :label="`${floatDecimal(prodRun.damaged_quantity)} ${prodRun.output_unit}`"
               />
             </div>
           </div>
