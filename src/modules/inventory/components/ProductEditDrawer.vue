@@ -32,6 +32,7 @@
           :product-name="form.name"
           :hide-stock="true"
           :disable-cost-price="!isNewVariantPricingFlow"
+          :force-variant-layout="isNewVariantPricingFlow"
           :errors="submitAttempted ? currentStepValidation.inventoryErrors : undefined"
         />
 

@@ -5,6 +5,7 @@ import {
   filterVariantsByAttributeKeys,
   getNewVariantAttributeKeys,
   getVariantAttributeKey,
+  shouldUseSingleVariantLayout,
 } from "./variant-editing.js"
 
 const sizeRed = [
@@ -52,4 +53,10 @@ test("filtering returns all variants when no target keys are provided", () => {
   ]
 
   assert.deepEqual(filterVariantsByAttributeKeys(variants, []), variants)
+})
+
+test("single variant layout can be disabled for one variant in a variant-product flow", () => {
+  assert.equal(shouldUseSingleVariantLayout({ variantCount: 1, forceVariantLayout: false }), true)
+  assert.equal(shouldUseSingleVariantLayout({ variantCount: 1, forceVariantLayout: true }), false)
+  assert.equal(shouldUseSingleVariantLayout({ variantCount: 2, forceVariantLayout: false }), false)
 })

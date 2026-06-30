@@ -435,6 +435,7 @@ import { IProductVariant, IProductVariantDetails } from "../../types"
 import { useWeightBasedDimensions } from "../../composables/useWeightBasedDimensions"
 import type { IInventoryValidationErrors } from "../../composables/useVariantValidation"
 import { useSettingsStore } from "@modules/settings/store"
+import { shouldUseSingleVariantLayout } from "../../utils/variant-editing"
 
 interface Props {
   /** Variants array - for no variants case, should contain single variant */
@@ -457,6 +458,8 @@ interface Props {
   deletedVariants?: IProductVariant[]
   /** Use table layout instead of card layout (for editing existing variants) */
   useTableLayout?: boolean
+  /** Keep variant-product layout even when the visible variant subset has one item */
+  forceVariantLayout?: boolean
   /** Inline validation errors shown after a failed submit attempt */
   errors?: IInventoryValidationErrors
 }
@@ -530,7 +533,10 @@ watch(
 
 // Check if we have a single variant
 const isSingleVariant = computed(() => {
-  return !props.modelValue || props.modelValue.length <= 1
+  return shouldUseSingleVariantLayout({
+    variantCount: props.modelValue?.length || 0,
+    forceVariantLayout: props.forceVariantLayout ?? false,
+  })
 })
 
 // Check if we have deleted variants

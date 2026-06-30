@@ -46,3 +46,13 @@ export const filterVariantsByAttributeKeys = <T extends TVariantWithAttributes>(
   const targetKeySet = new Set(targetKeys)
   return variants.filter((variant) => targetKeySet.has(getVariantAttributeKey(variant.attributes)))
 }
+
+export const shouldUseSingleVariantLayout = ({
+  variantCount,
+  forceVariantLayout,
+}: {
+  variantCount: number
+  forceVariantLayout: boolean
+}): boolean => {
+  return variantCount <= 1 && !forceVariantLayout
+}
