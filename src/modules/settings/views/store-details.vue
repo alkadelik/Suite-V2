@@ -17,6 +17,7 @@ import { computed, watch } from "vue"
 import * as yup from "yup"
 import {
   useCheckSlugTaken,
+  useGetCustomDomains,
   useGetStoreDetails,
   useGetStoreIndustries,
   useUpdateStoreDetails,
@@ -52,8 +53,17 @@ const {
   refetch,
   isPending: isLoadingDetails,
 } = useGetStoreDetails(user?.store_uid || "")
+const { data: customDomainsData, isPending: isLoadingDomains } = useGetCustomDomains()
+const settingsStore = useSettingsStore()
+const customDomain = computed(() => customDomainsData.value?.results?.[0] ?? null)
+const activeCustomDomain = computed(
+  () => customDomainsData.value?.results?.find((domain) => domain.status === "ACTIVE") ?? null,
+)
+const isSlugLockedByCustomDomain = computed(() => !!customDomain.value)
 
-const isLoading = computed(() => isLoadingIndustries.value || isLoadingDetails.value)
+const isLoading = computed(
+  () => isLoadingIndustries.value || isLoadingDetails.value || isLoadingDomains.value,
+)
 
 const { mutate: updateStoreDetails, isPending: isUpdating } = useUpdateStoreDetails()
 
@@ -71,7 +81,11 @@ const debouncedSlug = useDebouncedRef(slugValue, 600)
 const slugCheckEnabled = computed(() => {
   const slug = debouncedSlug.value
   return (
-    !!slug && slug !== storeDetails.value?.slug && slug.length >= 2 && /^[a-z0-9-]+$/.test(slug)
+    !isSlugLockedByCustomDomain.value &&
+    !!slug &&
+    slug !== storeDetails.value?.slug &&
+    slug.length >= 2 &&
+    /^[a-z0-9-]+$/.test(slug)
   )
 })
 const { data: slugTaken, isFetching: isCheckingSlug } = useCheckSlugTaken(
@@ -88,7 +102,9 @@ const onSubmitStoreDetails = handleStoreSubmit((formData) => {
   const payload = new FormData()
 
   payload.append("name", formData.store_name)
-  payload.append("slug", formData.slug)
+  if (!isSlugLockedByCustomDomain.value) {
+    payload.append("slug", formData.slug)
+  }
   payload.append("currency", formData.currency.value)
 
   // Always send these (even when empty) so clearing a previously-saved value
@@ -134,7 +150,7 @@ watch(
       // Hydrate the persisted settings store directly so a freshly-saved slug
       // propagates app-wide (live-status, storefront URL) even when the
       // LocationDropdown hydration watcher isn't mounted.
-      useSettingsStore().setStoreDetails(newDetails)
+      settingsStore.setStoreDetails(newDetails)
       // Keep the persisted auth snapshot's slug in sync — it's the live-status
       // fallback and is otherwise only refreshed at the next login.
       if (newDetails.slug && user?.store_slug !== newDetails.slug) {
@@ -153,6 +169,14 @@ watch(
         logo: (newDetails.logo as File) || null,
       })
     }
+  },
+  { immediate: true },
+)
+
+watch(
+  activeCustomDomain,
+  (domain) => {
+    settingsStore.setActiveCustomDomain(domain?.domain ?? null)
   },
   { immediate: true },
 )
@@ -196,7 +220,11 @@ const INDUSTRIES = computed(() => {
                 Store Slug <span class="text-red-500">*</span>
               </label>
               <span
-                v-if="slugCheckEnabled && (isCheckingSlug || slugTaken !== undefined)"
+                v-if="
+                  !isSlugLockedByCustomDomain &&
+                  slugCheckEnabled &&
+                  (isCheckingSlug || slugTaken !== undefined)
+                "
                 :class="[
                   'inline-flex items-center gap-1 text-xs font-medium',
                   isCheckingSlug
@@ -221,13 +249,22 @@ const INDUSTRIES = computed(() => {
                 }}
               </span>
             </div>
-            <FormField name="slug" placeholder="e.g. johns-store" required hide-label />
+            <FormField
+              name="slug"
+              placeholder="e.g. johns-store"
+              required
+              hide-label
+              :disabled="isSlugLockedByCustomDomain"
+            />
             <p class="text-core-400 mt-1.5 inline-flex items-center text-xs font-medium">
               <Icon name="global" size="12" class="mr-1 text-gray-400" />
               {{ `https://${isStaging ? "storefronts-v2.vercel.app" : "buy.leyyow.com"}/` }}
               <span class="text-core-600 font-semibold">
                 {{ slugValue || "[SLUG]" }}
               </span>
+            </p>
+            <p v-if="isSlugLockedByCustomDomain" class="text-core-500 mt-1 text-xs">
+              Locked while {{ customDomain?.domain }} is connected or being set up.
             </p>
           </div>
 

@@ -180,6 +180,7 @@
       :product="productForEdit"
       :edit-mode="editMode"
       :variant="variantForEdit"
+      :variant-attribute-keys="variantAttributeKeysForEdit"
       :loading="isFetching"
       @add-category="showAddCategoryModal = true"
       @edit-variant-details="handleEditVariantDetails"
@@ -257,6 +258,7 @@ const editMode = ref<"product-details" | "variant-details" | "variants" | "image
   "product-details",
 )
 const variantForEdit = ref<IProductVariantDetails | null>(null)
+const variantAttributeKeysForEdit = ref<string[]>([])
 const showAddCategoryModal = ref(false)
 const showManageStockModal = ref(false)
 const productEditDrawerRef = ref<{
@@ -381,6 +383,7 @@ const openProductEditDrawer = () => {
 
   editMode.value = "product-details"
   variantForEdit.value = null
+  variantAttributeKeysForEdit.value = []
   showProductEditDrawer.value = true
 }
 
@@ -410,6 +413,7 @@ const openVariantPricingEdit = (variant: IProductVariantDetails) => {
   // Always open in variant-details mode for price & weight editing
   editMode.value = "variant-details"
   variantForEdit.value = variant
+  variantAttributeKeysForEdit.value = []
 
   showProductEditDrawer.value = true
 }
@@ -439,10 +443,11 @@ const openImagesEditDrawer = () => {
 
   editMode.value = "images"
   variantForEdit.value = null
+  variantAttributeKeysForEdit.value = []
   showProductEditDrawer.value = true
 }
 
-const openPriceWeightEdit = () => {
+const openPriceWeightEdit = (variantAttributeKeys: string[] = []) => {
   if (!product.value) return
 
   productForEdit.value = {
@@ -467,6 +472,7 @@ const openPriceWeightEdit = () => {
   // Always open in variant-details mode for price & weight editing
   editMode.value = "variant-details"
   variantForEdit.value = product.value.data.variants[0] || null
+  variantAttributeKeysForEdit.value = variantAttributeKeys
 
   showProductEditDrawer.value = true
 }
@@ -495,15 +501,14 @@ const openVariantsManage = () => {
 
   editMode.value = "variants"
   variantForEdit.value = null
+  variantAttributeKeysForEdit.value = []
   showProductEditDrawer.value = true
 }
 
-const handleEditVariantDetails = () => {
-  // Open drawer immediately
-  openPriceWeightEdit()
-
-  // Refetch product detail in the background
-  queryClient.refetchQueries({ queryKey: inventoryKeys.products.detail(uid) })
+const handleEditVariantDetails = (variantAttributeKeys: string[]) => {
+  void queryClient
+    .refetchQueries({ queryKey: inventoryKeys.products.detail(uid) })
+    .then(() => openPriceWeightEdit(variantAttributeKeys))
 }
 
 const actionItems = computed(() => {

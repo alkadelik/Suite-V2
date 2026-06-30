@@ -2,10 +2,10 @@ import { formatError } from "@/utils/error-handler"
 import { useAuthStore } from "@modules/auth/store"
 import { useQuery } from "@tanstack/vue-query"
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from "axios"
-import { toast } from "./useToast"
 import { useSettingsStore } from "@modules/settings/store"
 import { toValue, MaybeRefOrGetter, computed } from "vue"
 import * as Sentry from "@sentry/vue"
+import { toast } from "./useToast"
 
 const baseURL = import.meta.env.VITE_API_BASE_URL as string
 
@@ -31,6 +31,7 @@ baseApi.interceptors.request.use((config) => {
 
 // Singleton promise to prevent multiple simultaneous refresh attempts
 let refreshTokenPromise: Promise<string> | null = null
+let hasHandledSessionExpiry = false
 
 const refreshToken = async (): Promise<string> => {
   // If a refresh is already in progress, return that promise
@@ -79,13 +80,18 @@ baseApi.interceptors.response.use(
 
       try {
         const newAccessToken = await refreshToken()
+        hasHandledSessionExpiry = false
         // Update the header with the new token and retry the request
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
         return baseApi(originalRequest)
       } catch (refreshError) {
-        // If refresh fails, perform a logout or redirect
-        toast.error("Session expired. Please log in again.")
-        useAuthStore().logout(true)
+        // If refresh fails, notify and redirect once. Concurrent 401s share the
+        // refresh promise and can all land here; only the first should show a toast.
+        if (!hasHandledSessionExpiry) {
+          hasHandledSessionExpiry = true
+          toast.error("Session expired. Please log in again.")
+          useAuthStore().logout(true)
+        }
         return Promise.reject(refreshError as Error)
       }
     }

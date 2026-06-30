@@ -31,7 +31,7 @@
           v-model="variants"
           :product-name="form.name"
           :hide-stock="true"
-          :disable-cost-price="true"
+          :disable-cost-price="!isNewVariantPricingFlow"
           :errors="submitAttempted ? currentStepValidation.inventoryErrors : undefined"
         />
 
@@ -216,6 +216,11 @@ import { useVariantProcessing } from "../composables/useVariantProcessing"
 import { useProductDrawerUtilities } from "../composables/useProductDrawerUtilities"
 import { inventoryCache } from "../cache"
 import { normalizeProductResponse } from "../normalizers"
+import {
+  filterVariantsByAttributeKeys,
+  getNewVariantAttributeKeys,
+  getVariantAttributeKey,
+} from "../utils/variant-editing"
 
 type TProductEditMode = "product-details" | "variant-details" | "variants" | "images"
 
@@ -230,6 +235,8 @@ interface Props {
   editMode?: TProductEditMode
   /** Variant to edit (required for variant-details mode) */
   variant?: IProductVariantDetails | null
+  /** Variant attribute keys to show in variant-details mode */
+  variantAttributeKeys?: string[]
 }
 
 interface Emits {
@@ -242,7 +249,7 @@ interface Emits {
   /** Emitted when a new category is successfully created */
   "category-created": [category: { label: string; value: string }]
   /** Emitted when variants are updated and should trigger editing variant details */
-  "edit-variant-details": []
+  "edit-variant-details": [variantAttributeKeys: string[]]
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -250,6 +257,7 @@ const props = withDefaults(defineProps<Props>(), {
   product: null,
   editMode: "product-details",
   variant: null,
+  variantAttributeKeys: () => [],
 })
 
 const emit = defineEmits<Emits>()
@@ -323,6 +331,8 @@ const expectedProductUid = ref<string | null>(null)
 
 // Track if the product originally had variants (for button label in variants edit mode)
 const productOriginallyHadVariants = ref(false)
+
+const isNewVariantPricingFlow = computed(() => props.variantAttributeKeys.length > 0)
 
 const { step, previousStep } = useProductDrawerUtilities().useStepManagement({
   hasVariants,
@@ -460,17 +470,16 @@ watch(
  * Generate a unique key for a variant based on its attributes
  * Used to match variants before and after regeneration
  */
-const generateVariantKey = (attributes: { attribute: string; value: string }[]): string => {
-  return attributes
-    .map((attr) => `${attr.attribute}:${attr.value}`)
-    .sort()
-    .join("|")
+const generateVariantKey = (
+  attributes: { attribute: string; value: string }[] | null | undefined,
+): string => {
+  return getVariantAttributeKey(attributes)
 }
 
 // Watch for product data to populate form
 watch(
-  () => productData.value,
-  (data) => {
+  () => [productData.value, props.editMode, props.variantAttributeKeys] as const,
+  ([data]) => {
     if (data?.data) {
       const product = data.data
 
@@ -501,18 +510,18 @@ watch(
       productOriginallyHadVariants.value =
         product.is_variable && product.variants && product.variants.length > 1
 
+      const productVariants = product.variants || []
+      const variantsForForm =
+        props.editMode === "variant-details"
+          ? filterVariantsByAttributeKeys(productVariants, props.variantAttributeKeys)
+          : productVariants
+
       // Populate original variant UIDs map and store full variant details
-      if (product.variants && product.variants.length > 0) {
-        originalVariantUids.value.clear()
-        variantDetailsWithUids.value = product.variants
-        product.variants.forEach((variant) => {
-          if (variant.attributes && variant.attributes.length > 0) {
-            const key = generateVariantKey(variant.attributes)
-            originalVariantUids.value.set(key, variant.uid)
-          } else {
-            // Track single variant (no attributes) with a special key
-            originalVariantUids.value.set("__single_variant__", variant.uid)
-          }
+      originalVariantUids.value.clear()
+      variantDetailsWithUids.value = variantsForForm
+      if (productVariants.length > 0) {
+        productVariants.forEach((variant) => {
+          originalVariantUids.value.set(generateVariantKey(variant.attributes), variant.uid)
         })
         console.log(
           `Tracked ${originalVariantUids.value.size} original variant UIDs`,
@@ -535,9 +544,7 @@ watch(
 
       // Prepare variant images (indices 5+)
       const variantImages =
-        product.variants && product.variants.length > 0
-          ? product.variants.map((variant) => variant.image || null)
-          : []
+        variantsForForm.length > 0 ? variantsForForm.map((variant) => variant.image || null) : []
 
       populateFormState({
         name: product.name || "",
@@ -551,8 +558,8 @@ watch(
         images: [...productImages, ...variantImages],
         hasVariants: product.is_variable || false,
         variants:
-          product.variants && product.variants.length > 0
-            ? product.variants.map((variant) => ({
+          variantsForForm.length > 0
+            ? variantsForForm.map((variant) => ({
                 name: variant.name || "",
                 sku: variant.sku || "",
                 price: variant.price || "",
@@ -752,11 +759,11 @@ const handleSubmit = async () => {
       return
     }
 
-    // Check if this is a complex product (multiple variants)
-    const isComplexProduct = variantDetailsWithUids.value.length > 1
+    const shouldBulkUpdateVariants =
+      variantDetailsWithUids.value.length > 1 || isNewVariantPricingFlow.value
 
     try {
-      if (isComplexProduct) {
+      if (shouldBulkUpdateVariants) {
         // For complex products, use bulk update endpoint
         const bulkPayload = variantDetailsWithUids.value
           .map((variantDetail, index) => {
@@ -766,6 +773,7 @@ const handleSubmit = async () => {
             return {
               uid: variantDetail.uid,
               price: variantData.price,
+              cost_price: variantData.cost_price,
               weight: variantData.weight,
               length: variantData.length,
               width: variantData.width,
@@ -780,9 +788,11 @@ const handleSubmit = async () => {
       } else {
         // For simple products, update single variant
         const variantData = variants.value[0]
+        const variantUid = variantDetailsWithUids.value[0]?.uid || props.variant.uid
         const payload: Partial<IProductVariant> = {
           name: variantData.name,
           price: variantData.price,
+          cost_price: variantData.cost_price,
           weight: variantData.weight,
           length: variantData.length,
           width: variantData.width,
@@ -790,7 +800,7 @@ const handleSubmit = async () => {
           reorder_point: variantData.reorder_point,
         }
 
-        await updateVariant({ uid: props.variant.uid, ...payload })
+        await updateVariant({ uid: variantUid, ...payload })
         toast.success("Variant updated successfully")
       }
 
@@ -946,18 +956,9 @@ const handleSubmit = async () => {
         // Identify variants to delete by looking up their UIDs from originalVariantUids map
         const toDelete: string[] = []
         deletedVariants.value.forEach((variant) => {
-          if (variant.attributes && variant.attributes.length > 0) {
-            const key = generateVariantKey(variant.attributes)
-            const uid = originalVariantUids.value.get(key)
-            if (uid) {
-              toDelete.push(uid)
-            }
-          } else {
-            // Handle single variant deletion using the special key
-            const uid = originalVariantUids.value.get("__single_variant__")
-            if (uid) {
-              toDelete.push(uid)
-            }
+          const uid = originalVariantUids.value.get(generateVariantKey(variant.attributes))
+          if (uid) {
+            toDelete.push(uid)
           }
         })
 
@@ -965,16 +966,6 @@ const handleSubmit = async () => {
         const toAdd: IProductVariant[] = []
 
         variants.value.forEach((variant) => {
-          if (!variant.attributes || variant.attributes.length === 0) {
-            // Single variant case - check if it existed before using the special key
-            const existingUid = originalVariantUids.value.get("__single_variant__")
-            if (!existingUid) {
-              // New variant - no existing UID
-              toAdd.push(variant)
-            }
-            return
-          }
-
           const key = generateVariantKey(variant.attributes)
           const existingUid = originalVariantUids.value.get(key)
 
@@ -983,6 +974,11 @@ const handleSubmit = async () => {
             toAdd.push(variant)
           }
         })
+
+        const newVariantAttributeKeys = getNewVariantAttributeKeys(
+          toAdd,
+          originalVariantUids.value.keys(),
+        )
 
         // Map variants to the correct format for the API
         const mappedToAdd = toAdd.map((variant) => ({
@@ -1052,8 +1048,9 @@ const handleSubmit = async () => {
         resetFormState()
         emit("update:modelValue", false)
         inventoryCache.variantsChanged(queryClient, productUid)
-        // Emit event to trigger editing variant details
-        emit("edit-variant-details")
+        if (newVariantAttributeKeys.length > 0) {
+          emit("edit-variant-details", newVariantAttributeKeys)
+        }
       } catch (error) {
         console.error("Failed to update variants:", error)
         displayError(error)
@@ -1164,10 +1161,7 @@ const handleSubmit = async () => {
 
       const variantUidByAttrKey = new Map<string, string>()
       updatedProduct?.variants.forEach((variant) => {
-        variantUidByAttrKey.set(
-          generateVariantKey(variant.attributes) || "__single_variant__",
-          variant.uid,
-        )
+        variantUidByAttrKey.set(generateVariantKey(variant.attributes), variant.uid)
       })
 
       const variantImagePayloads = submittedHasVariants
@@ -1175,9 +1169,7 @@ const handleSubmit = async () => {
             const image = variantImageFiles[index]
             if (!(image instanceof File)) return []
 
-            const variantUid = variantUidByAttrKey.get(
-              generateVariantKey(variant.attributes || []) || "__single_variant__",
-            )
+            const variantUid = variantUidByAttrKey.get(generateVariantKey(variant.attributes || []))
             return variantUid ? [{ variantUid, image }] : []
           })
         : []
