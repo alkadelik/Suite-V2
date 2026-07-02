@@ -7,7 +7,7 @@ export type TCouponScope = "order" | "products" // UI concept (Order vs Products
 export type TTargetMode = "all" | "products" | "categories"
 export type TCouponDiscountKind = "percentage" | "fixed" // UI concept
 export type TApiDiscountType = "percentage" | "flat" | "combined" // API enum
-export type TCouponTargetType = "order" | "products" | "categories" // API enum
+export type TCouponTargetType = "order" | "all_products" | "products" | "categories" // API enum
 export type TCouponStatus = "active" | "disabled" | "expired"
 export type TCouponAction = "view" | "edit" | "duplicate" | "disable" | "delete"
 

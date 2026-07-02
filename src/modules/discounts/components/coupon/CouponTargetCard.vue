@@ -12,8 +12,11 @@
       </span>
       <h3 class="m-0 text-sm font-semibold text-gray-800 md:text-base">Target Products</h3>
 
+      <!-- All-products scope -->
+      <span v-if="isAllProducts" class="ml-1 text-xs font-medium text-gray-500">All Products</span>
+
       <!-- Category count -->
-      <span v-if="isCategoryScope" class="ml-1 text-xs font-medium text-gray-500">
+      <span v-else-if="isCategoryScope" class="ml-1 text-xs font-medium text-gray-500">
         {{ coupon.categories.length }}
         {{ coupon.categories.length === 1 ? "Category" : "Categories" }}
       </span>
@@ -92,7 +95,10 @@ const props = defineProps<{ coupon: TCoupon }>()
 
 const { format } = useFormatCurrency()
 
-const isCategoryScope = computed(() => (props.coupon.categories?.length ?? 0) > 0)
+const isAllProducts = computed(() => props.coupon.target_type === "all_products")
+const isCategoryScope = computed(
+  () => !isAllProducts.value && (props.coupon.categories?.length ?? 0) > 0,
+)
 
 // ---------------------------------------------------------------------------
 // Price helpers
@@ -187,6 +193,10 @@ function toRow(p: TProduct): TargetRow {
 }
 
 const rows = computed<TargetRow[]>(() => {
+  // All-products scope: the coupon applies to the entire catalogue, so list the
+  // fetched product page directly (no uid matching needed).
+  if (isAllProducts.value) return products.value.map(toRow)
+
   if (isCategoryScope.value) {
     const catUids = new Set(props.coupon.categories ?? [])
     return products.value

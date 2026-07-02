@@ -72,7 +72,9 @@ export function buildCouponPayload(m: ICouponFormModel): ICouponPayload {
     ? "order"
     : m.targetMode === "categories"
       ? "categories"
-      : "products"
+      : m.targetMode === "products"
+        ? "products"
+        : "all_products"
 
   return {
     code: m.code.trim().toUpperCase(),
@@ -111,12 +113,15 @@ export function couponToFormModel(c: TCoupon): ICouponFormModel {
     flat_amount: c.discount_type === "flat" ? (c.flat_discount ?? "") : "",
     valid_from: c.valid_from,
     valid_until: c.valid_until ?? "",
+    // Prefer the backend target_type; fall back to the target arrays for older rows.
     targetMode:
-      (c.categories?.length ?? 0) > 0
-        ? "categories"
-        : (c.applicable_products?.length ?? 0) > 0
-          ? "products"
-          : "all",
+      c.target_type === "all_products"
+        ? "all"
+        : c.target_type === "categories" || (c.categories?.length ?? 0) > 0
+          ? "categories"
+          : c.target_type === "products" || (c.applicable_products?.length ?? 0) > 0
+            ? "products"
+            : "all",
     productUids: c.applicable_products ?? [],
     variantSelections: {},
     categoryUids: c.categories ?? [],
