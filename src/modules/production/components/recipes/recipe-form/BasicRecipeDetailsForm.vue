@@ -123,6 +123,7 @@ const unitOptions = ref(UNITS_OF_MEASURE)
 
 // ─── Add new unit ─────────────────────────────────────────────────────────
 const showAddUnit = ref(false)
+const showSalesUnitInfo = ref(false)
 const newUnitName = ref("")
 
 const createNewUnit = () => {
@@ -141,12 +142,19 @@ const selectedItemUnit = computed<string | null>(() => {
   return (selected.item.unit as string) || null
 })
 
-const selectedItemHasBeenProduced = computed(() => !!values.outputItem?.item?.has_been_produced)
+const selectedItemHasBeenProduced = computed(
+  () => !!values.outputItem?.item?.has_been_produced || !!props.unitLockedByHistory,
+)
 
 watch(selectedItemUnit, (unit) => {
+  if (isResetting) return
   if (unit) {
     const match = UNITS_OF_MEASURE.find((u) => u.value === unit)
     setFieldValue("unit", match ?? { label: unit, value: unit })
+  } else {
+    // New output item has no unit (e.g. not yet produced) — clear the
+    // previously selected item's unit instead of leaving it prefilled.
+    setFieldValue("unit", null)
   }
 })
 
@@ -168,7 +176,9 @@ const handleNext = handleSubmit((formValues) => {
     name: formValues.name || "",
     outputItemType: formValues.outputItemType as "product" | "sub_assembly",
     outputItem: item.value,
-    outputItemOption: { label: item.label, value: item.value },
+    // Preserve the underlying item (incl. has_been_produced) so the unit-lock
+    // state survives navigating to the next step and back.
+    outputItemOption: { label: item.label, value: item.value, item: item.item },
     outputQuantity: formValues.outputQuantity,
     unit: unit.value,
     unitOption: { label: unit.label, value: unit.value },
@@ -236,12 +246,11 @@ const handleNext = handleSubmit((formValues) => {
       :required="false"
     />
 
-    <div>
+    <div v-if="values.outputItemType !== 'sub_assembly'">
       <Field v-slot="{ field, errors: fieldErrors }" name="unit">
         <SelectField
           v-bind="field"
           :model-value="field.value"
-          label="Unit of Measurement"
           placeholder="e.g. kg, liters, pieces"
           :options="unitOptions"
           :disabled="selectedItemHasBeenProduced"
@@ -251,6 +260,18 @@ const handleNext = handleSubmit((formValues) => {
           :hint="isEditMode ? 'Unit cannot be changed in EDIT mode' : undefined"
           @update:model-value="field.value = $event"
         >
+          <template #label>
+            <span class="inline-flex items-center gap-1.5">
+              Sales Unit
+              <button
+                type="button"
+                class="text-primary-600 text-xs font-medium hover:underline"
+                @click.stop="showSalesUnitInfo = true"
+              >
+                Learn more
+              </button>
+            </span>
+          </template>
           <template #prepend="{ close }">
             <div
               class="hover:bg-core-25 cursor-pointer border-b border-gray-200 px-4 py-2 text-sm transition-colors duration-150"
@@ -303,7 +324,7 @@ const handleNext = handleSubmit((formValues) => {
     <FormField
       name="outputQuantity"
       type="decimal"
-      label="Output Quantity"
+      :label="`How many ${values.unit?.value ?? 'units'} does this recipe produce?`"
       placeholder="e.g. 100"
       required
       :suffix="values.unit?.value"
@@ -349,6 +370,29 @@ const handleNext = handleSubmit((formValues) => {
           />
         </div>
       </template>
+    </Modal>
+
+    <!-- Sales Unit Info Modal -->
+    <Modal
+      :open="showSalesUnitInfo"
+      title="What is a Sales Unit?"
+      max-width="md"
+      @close="showSalesUnitInfo = false"
+    >
+      <div class="space-y-4 text-sm text-gray-600">
+        <p>Sales Unit refers to the unit in which an item is sold to customers.</p>
+        <p>For example:</p>
+        <ul class="list-disc space-y-2 pl-5">
+          <li>Coca-Cola is sold in <b>bottles</b>, not centilitres (cl).</li>
+          <li>Perfumes are sold in <b>pieces</b>, not millilitres (ml).</li>
+          <li>Petrol is sold in <b>litres</b>, not kegs.</li>
+        </ul>
+        <p>
+          Use the unit that best represents how the item is sold, rather than how its quantity or
+          volume is measured.
+        </p>
+        <AppButton label="Got it" class="w-full" @click="showSalesUnitInfo = false" />
+      </div>
     </Modal>
   </form>
 </template>

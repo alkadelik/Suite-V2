@@ -122,6 +122,14 @@
     <!--  -->
     <WelcomeToTeamModal v-model="openModal" />
 
+    <SuccessModal
+      v-model="showSubscriptionSuccess"
+      title="Subscription successful"
+      subtitle="Your subscription payment was completed successfully. We’ll refresh your dashboard to apply your new plan."
+      button-text="Continue"
+      @update:model-value="onSubscriptionModalClose"
+    />
+
     <OrderDetailsDrawer
       v-if="selectedOrder"
       :open="openDetails"
@@ -136,11 +144,12 @@ import SectionHeader from "@components/SectionHeader.vue"
 import { useAuthStore } from "@modules/auth/store"
 import { useSettingsStore } from "@modules/settings/store"
 import WelcomeToTeamModal from "../components/WelcomeToTeamModal.vue"
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import Icon from "@components/Icon.vue"
 import EmptyState from "@components/EmptyState.vue"
+import SuccessModal from "@components/SuccessModal.vue"
 import { useMediaQuery } from "@vueuse/core"
-import { useRouter } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
 import { useGetOrders } from "@modules/orders/api"
 import { startCase } from "@/utils/format-strings"
@@ -156,7 +165,29 @@ import ProductAvatar from "@components/ProductAvatar.vue"
 const { user } = useAuthStore()
 const openModal = ref(false)
 const router = useRouter()
+const route = useRoute()
 const { checkPremiumAccess } = usePremiumAccess()
+
+// Paystack redirects back with `trxref` & `reference` query params after a
+// successful subscription payment. Detect that and confirm to the user.
+const showSubscriptionSuccess = ref(false)
+
+watch(
+  () => route.query,
+  (query) => {
+    if (query.trxref) {
+      showSubscriptionSuccess.value = true
+    }
+  },
+  { immediate: true },
+)
+
+// Hard refresh (so all endpoints re-run with the new plan) and drop the
+// Paystack query params from the URL.
+const onSubscriptionModalClose = (value: boolean) => {
+  if (value) return
+  window.location.assign(route.path)
+}
 
 const isMobile = useMediaQuery("(max-width: 768px)")
 const openDetails = ref(false)

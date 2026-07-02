@@ -31,6 +31,7 @@ import { displayError } from "@/utils/error-handler"
 import SelectComponentName from "@modules/production/components/raw-material/SelectComponentName.vue"
 import { toast } from "@/composables/useToast"
 import { startCase } from "@/utils/format-strings"
+import { usePremiumAccess } from "@/composables/usePremiumAccess"
 
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 const { truncate } = useFormatCurrency()
@@ -95,6 +96,13 @@ const materialStats = computed(() => [
 
 const router = useRouter()
 const route = useRoute()
+
+const { checkPremiumAccess } = usePremiumAccess()
+
+const handleOpenCreate = () => {
+  if (!checkPremiumAccess()) return
+  showAddDrawer.value = "create"
+}
 
 watch(
   () => route.query.create,
@@ -218,7 +226,7 @@ const handleDelete = () => {
         :action-label="`Add ${materialSingular}`"
         :loading="isPending"
         action-icon="add"
-        @action="() => (showAddDrawer = 'create')"
+        @action="handleOpenCreate"
       >
         <template #image>
           <img src="@/assets/images/empty-material.svg?url" class="mx-auto mb-4" />
@@ -275,7 +283,7 @@ const handleDelete = () => {
                 size="sm"
                 class="flex-shrink-0"
                 :label="isMobile ? '' : `Add ${materialSingular}`"
-                @click="() => (showAddDrawer = 'create')"
+                @click="handleOpenCreate"
               />
             </div>
           </div>
