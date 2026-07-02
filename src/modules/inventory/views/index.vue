@@ -267,6 +267,7 @@
     <ProductEditDrawer
       v-if="showProductEditDrawer"
       ref="productEditDrawerRef"
+      :key="editMode"
       v-model="showProductEditDrawer"
       :product="product"
       :edit-mode="editMode"
@@ -306,7 +307,7 @@
 import DataTable from "@components/DataTable.vue"
 import { TProduct, type IInventoryTransferRequest, type IProductVariantDetails } from "../types"
 import { PRODUCT_COLUMNS } from "../constants"
-import { ref, computed, watch, nextTick } from "vue"
+import { ref, computed, watch } from "vue"
 import { useQueryClient } from "@tanstack/vue-query"
 import Icon from "@components/Icon.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
@@ -641,18 +642,16 @@ const openVariantsManage = (item: TProduct) => {
   }, 0)
 }
 
-// After the variants step saves, reopen the drawer in price & weight mode so the
-// newly added variants get their selling price — mirrors the product details page
-// flow (LYW-2679). nextTick lets the drawer-close watcher clear stale edit state
-// before we set up the follow-up edit.
+// After the variants step saves, the drawer stays open and emits the new
+// variants' keys — switch it to the pricing step in place (the :key remounts it
+// in variant-details mode) once the refreshed product is in the cache (LYW-2679).
 const handleEditVariantDetails = (variantAttributeKeys: string[]) => {
   const item = product.value
   if (!item) return
-  void nextTick(async () => {
-    // Ensure the just-saved variants are in the cache before the drawer reopens
+  void (async () => {
     await queryClient.refetchQueries({ queryKey: inventoryKeys.products.detail(item.uid) })
     openPriceWeightEdit(item, variantAttributeKeys)
-  })
+  })()
 }
 
 const openManageStockModal = (item: TProduct) => {

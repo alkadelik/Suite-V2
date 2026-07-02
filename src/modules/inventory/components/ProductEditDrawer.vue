@@ -31,6 +31,7 @@
           v-model="variants"
           :product-name="form.name"
           :hide-stock="true"
+          :hide-weight="isNewVariantPricingFlow"
           :disable-cost-price="!isNewVariantPricingFlow"
           :force-variant-layout="isNewVariantPricingFlow"
           :errors="submitAttempted ? currentStepValidation.inventoryErrors : undefined"
@@ -64,6 +65,7 @@
             :hide-price="true"
             :hide-weight="true"
             :hide-reorder="true"
+            :is-new-variant="isNewVariant"
             :deleted-variants="deletedVariants"
             :use-table-layout="productOriginallyHadVariants"
             :errors="submitAttempted ? currentStepValidation.inventoryErrors : undefined"
@@ -362,6 +364,9 @@ const { currentStepValidation, validateAllUIDs } = useVariantValidation({
   variants,
   step,
   editMode: props.editMode,
+  // Weight is hidden in the new-variant pricing handoff (new variants inherit
+  // the product's default weight), so don't validate it there.
+  requireVariantDetailsWeight: computed(() => !isNewVariantPricingFlow.value),
 })
 
 const variantProcessor = useVariantProcessing(variantConfiguration, {
@@ -475,6 +480,18 @@ const generateVariantKey = (
   attributes: { attribute: string; value: string }[] | null | undefined,
 ): string => {
   return getVariantAttributeKey(attributes)
+}
+
+/**
+ * Whether a combination is newly added in variants mode (its attribute key has
+ * no tracked existing uid). Used to badge new rows with a "New" chip on step 2.
+ */
+const isNewVariant = (variant: IProductVariant): boolean => {
+  if (props.editMode !== "variants" || originalVariantUids.value.size === 0) return false
+  if (!variant.attributes || variant.attributes.length === 0) {
+    return !originalVariantUids.value.has("__single_variant__")
+  }
+  return !originalVariantUids.value.has(generateVariantKey(variant.attributes))
 }
 
 // Watch for product data to populate form
@@ -749,7 +766,9 @@ const handleSubmit = async () => {
 
   // Variant Details Mode
   if (props.editMode === "variant-details") {
-    if (!props.variant || variants.value.length === 0) {
+    // The new-variant pricing handoff always bulk-updates, so it doesn't need a
+    // specific variant prop — only the manual single-variant edit does.
+    if ((!props.variant && !isNewVariantPricingFlow.value) || variants.value.length === 0) {
       toast.error("No variant data to update")
       return
     }
@@ -789,7 +808,11 @@ const handleSubmit = async () => {
       } else {
         // For simple products, update single variant
         const variantData = variants.value[0]
-        const variantUid = variantDetailsWithUids.value[0]?.uid || props.variant.uid
+        const variantUid = variantDetailsWithUids.value[0]?.uid || props.variant?.uid
+        if (!variantUid) {
+          toast.error("No variant data to update")
+          return
+        }
         const payload: Partial<IProductVariant> = {
           name: variantData.name,
           price: variantData.price,
@@ -1046,11 +1069,15 @@ const handleSubmit = async () => {
         }
 
         submitAttempted.value = false
-        resetFormState()
-        emit("update:modelValue", false)
         inventoryCache.variantsChanged(queryClient, productUid)
         if (newVariantAttributeKeys.length > 0) {
+          // Hand off to the pricing step IN PLACE: the host switches editMode to
+          // "variant-details" (remounting this drawer via :key) so the user sets
+          // prices as a next step — do not close the drawer here.
           emit("edit-variant-details", newVariantAttributeKeys)
+        } else {
+          resetFormState()
+          emit("update:modelValue", false)
         }
       } catch (error) {
         console.error("Failed to update variants:", error)

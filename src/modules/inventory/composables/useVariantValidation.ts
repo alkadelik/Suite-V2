@@ -9,6 +9,12 @@ interface IVariantValidationOptions {
   variants: Ref<IProductVariant[]>
   step: Ref<number>
   editMode?: string
+  /**
+   * Whether variant-details mode requires weight/dimensions. False in the
+   * new-variant pricing handoff, where the weight section is hidden and new
+   * variants inherit the product's default weight. Defaults to true.
+   */
+  requireVariantDetailsWeight?: Ref<boolean>
 }
 
 export interface IProductDetailsValidationErrors {
@@ -73,7 +79,15 @@ const EMPTY_INVENTORY_ERRORS = (count: number): IInventoryValidationErrors => ({
 })
 
 export function useVariantValidation(options: IVariantValidationOptions) {
-  const { form, hasVariants, variantConfiguration, variants, step, editMode } = options
+  const {
+    form,
+    hasVariants,
+    variantConfiguration,
+    variants,
+    step,
+    editMode,
+    requireVariantDetailsWeight,
+  } = options
 
   const getVariantValue = (variant: IVariantConfiguration): string => {
     if (!variant?.name) return ""
@@ -304,11 +318,12 @@ export function useVariantValidation(options: IVariantValidationOptions) {
     }
 
     if (editMode === "variant-details") {
+      const requireWeight = requireVariantDetailsWeight?.value ?? true
       return buildInventoryValidation({
         requireStock: false,
         requirePrice: true,
-        requireWeight: true,
-        requireDimensions: true,
+        requireWeight,
+        requireDimensions: requireWeight,
       })
     }
 

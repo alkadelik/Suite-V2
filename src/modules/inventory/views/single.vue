@@ -176,6 +176,7 @@
     <!-- Product Edit Drawer -->
     <ProductEditDrawer
       ref="productEditDrawerRef"
+      :key="editMode"
       v-model="showProductEditDrawer"
       :product="productForEdit"
       :edit-mode="editMode"

@@ -216,8 +216,17 @@ const INDUSTRIES = computed(() => {
 
           <div>
             <div class="mb-1.5 flex items-center justify-between">
-              <label class="text-core-800 text-sm font-medium">
+              <label class="text-core-800 inline-flex items-center gap-1 text-sm font-medium">
                 Store Slug <span class="text-red-500">*</span>
+                <Icon
+                  v-if="isSlugLockedByCustomDomain"
+                  v-tooltip="
+                    'This cannot be edited because your store slug is overridden by your custom domain'
+                  "
+                  name="info-circle"
+                  size="14"
+                  class="cursor-pointer text-gray-400"
+                />
               </label>
               <span
                 v-if="
@@ -262,9 +271,6 @@ const INDUSTRIES = computed(() => {
               <span class="text-core-600 font-semibold">
                 {{ slugValue || "[SLUG]" }}
               </span>
-            </p>
-            <p v-if="isSlugLockedByCustomDomain" class="text-core-500 mt-1 text-xs">
-              Locked while {{ customDomain?.domain }} is connected or being set up.
             </p>
           </div>
 

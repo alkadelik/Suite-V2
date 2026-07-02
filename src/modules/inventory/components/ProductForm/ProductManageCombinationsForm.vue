@@ -207,12 +207,21 @@
         >
           <!-- Variant Name with Chips -->
           <div class="flex-1">
-            <div class="flex flex-wrap gap-2">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex flex-wrap gap-2">
+                <Chip
+                  v-for="(attributeValue, attrIndex) in getVariantDisplayValues(variant)"
+                  :key="`attr-${attrIndex}`"
+                  :label="attributeValue"
+                  size="sm"
+                />
+              </div>
               <Chip
-                v-for="(attributeValue, attrIndex) in getVariantDisplayValues(variant)"
-                :key="`attr-${attrIndex}`"
-                :label="attributeValue"
+                v-if="props.isNewVariant?.(variant)"
+                label="New"
+                color="success"
                 size="sm"
+                class="shrink-0"
               />
             </div>
           </div>
@@ -313,12 +322,21 @@
       >
         <!-- Top Section - Variant Chips -->
         <div class="p-4">
-          <div class="flex flex-wrap gap-2">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex flex-wrap gap-2">
+              <Chip
+                v-for="(attributeValue, attrIndex) in getVariantDisplayValues(variant)"
+                :key="`attr-${attrIndex}`"
+                :label="attributeValue"
+                size="sm"
+              />
+            </div>
             <Chip
-              v-for="(attributeValue, attrIndex) in getVariantDisplayValues(variant)"
-              :key="`attr-${attrIndex}`"
-              :label="attributeValue"
+              v-if="props.isNewVariant?.(variant)"
+              label="New"
+              color="success"
               size="sm"
+              class="shrink-0"
             />
           </div>
         </div>
@@ -454,6 +472,8 @@ interface Props {
   hideWeight?: boolean
   /** Hide the reorder threshold field (for variants edit mode) */
   hideReorder?: boolean
+  /** Predicate marking a variant as newly added — renders a "New" chip on its row */
+  isNewVariant?: (variant: IProductVariant) => boolean
   /** Deleted variants to display (only in edit mode) - no UIDs, just attributes */
   deletedVariants?: IProductVariant[]
   /** Use table layout instead of card layout (for editing existing variants) */
