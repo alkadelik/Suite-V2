@@ -16,6 +16,8 @@ import * as yup from "yup"
 import { UNITS_OF_MEASURE } from "@modules/production/constant"
 import { useSharedStore } from "@modules/shared/store"
 import { useProductionStore } from "@modules/production/store"
+import { getPurchaseUnit } from "@modules/production/utils.ts"
+import { TRawMaterial } from "@modules/production/types"
 
 const recipeSingularLabel = computed(() => useProductionStore().recipeSingularLabel)
 
@@ -109,13 +111,15 @@ const productOptions = computed(() => {
 // ─── Raw material search (sub-assemblies only) ───────────────────────────
 const matSearchInput = ref("")
 const matSearchQuery = useDebouncedRef(matSearchInput, 400)
-const { data: matSearchResults, isFetching: isSearchingMat } = useSearchRawMaterial(matSearchQuery)
+const { data: matSearchResults, isFetching: isSearchingMat } = useSearchRawMaterial(
+  matSearchQuery,
+  true, // is_sub_assembly
+)
 
 const materialOptions = computed<ItemOption[]>(() => {
   if (!matSearchResults.value?.results) return []
-  return matSearchResults.value.results
-    .filter((m) => m.is_sub_assembly)
-    .map((m) => ({ label: m.name, value: m.uid || "", item: m }))
+  return matSearchResults.value.results.map((m) => ({ label: m.name, value: m.uid || "", item: m }))
+  // .filter((m) => m.is_sub_assembly)
 })
 
 // ─── Unit options ─────────────────────────────────────────────────────────
@@ -136,9 +140,15 @@ const createNewUnit = () => {
 }
 
 // ─── Auto-fill unit from selected output item ────────────────────────────
+// A sub-assembly is just a higher-level raw material — its "unit" field
+// stores the production usage unit, so the recipe's output (sales) unit
+// must come from the material's purchase unit instead.
 const selectedItemUnit = computed<string | null>(() => {
   const selected = values.outputItem
   if (!selected?.item) return null
+  if (values.outputItemType === "sub_assembly") {
+    return getPurchaseUnit(selected.item as TRawMaterial) || null
+  }
   return (selected.item.unit as string) || null
 })
 

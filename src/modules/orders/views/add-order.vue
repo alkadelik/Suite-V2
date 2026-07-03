@@ -481,7 +481,7 @@ const hasNotLiveBanner = computed(() => {
           class="w-full md:w-64"
         />
         <AppButton color="alt" size="sm" icon="filter-lines" class="shrink-0" />
-        <AppButton icon="add" size="sm" class="shrink-0" @click="showAddProduct = true" />
+        <AppButton icon="box-add" size="sm" class="shrink-0" @click="showAddProduct = true" />
       </div>
 
       <!-- Category filter pills -->

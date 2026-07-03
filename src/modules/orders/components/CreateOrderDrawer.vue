@@ -461,6 +461,7 @@ watch(
           v-if="step === 0 && isPopupOrder"
           v-model:selectedProducts="selectedPopupProducts"
           v-model:viewMode="productViewMode"
+          :popup-event-id="props.popupEventId"
           @next="onNext"
         />
         <OrderSelectProduct
