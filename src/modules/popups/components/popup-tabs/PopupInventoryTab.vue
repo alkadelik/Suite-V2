@@ -233,7 +233,7 @@ watch(
         :data="popupInventory || []"
         :columns="POPUP_INVENTORY_COLUMNS"
         :loading="isFetching"
-        :show-pagination="false"
+        :show-pagination="true"
       >
         <template #cell:name="{ item }">
           <ProductAvatar

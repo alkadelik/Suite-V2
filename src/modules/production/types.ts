@@ -161,6 +161,7 @@ export type TRecipe = {
   ingredients?: TRecipeIngredient[]
   process_costs?: TRecipeProcessCost[]
   is_active: boolean
+  is_permanently_disabled: boolean
   created_at: string
   updated_at: string
   last_used?: string

@@ -20,7 +20,9 @@ interface FormValues {
   name: string
   category: string
   price: string
+  cost_price: string
   total_stock: string
+  reorder_point: string
   weight: string
 }
 
@@ -77,12 +79,23 @@ const productSchema = computed(() => {
       }),
     price: yup
       .string()
-      .required("Price is required")
+      .required("Selling price is required")
       .matches(/^\d+(\.\d{1,2})?$/, "Price must be a valid number"),
+    cost_price: yup
+      .string()
+      .required("Cost price is required")
+      .matches(/^\d+(\.\d{1,2})?$/, {
+        message: "Cost price must be a valid number",
+        excludeEmptyString: true,
+      }),
     total_stock: yup
       .string()
       .required("Available stock is required")
       .matches(/^\d+$/, "Stock must be a whole number"),
+    reorder_point: yup.string().notRequired().matches(/^\d+$/, {
+      message: "Reorder threshold must be a whole number",
+      excludeEmptyString: true,
+    }),
     weight: yup
       .mixed()
       .required("Product weight is required")
@@ -137,12 +150,12 @@ const onSubmit = () => {
           price: values.price,
           promo_price: "",
           promo_expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          cost_price: "",
+          cost_price: values.cost_price || "",
           weight: weightValue,
           length: selectedDimension?.depth.toString() || "0",
           width: selectedDimension?.width.toString() || "0",
           height: selectedDimension?.height.toString() || "0",
-          reorder_point: "0",
+          reorder_point: values.reorder_point || "0",
           max_stock: "0",
           opening_stock: values.total_stock,
           is_active: true,
@@ -193,13 +206,30 @@ const onSubmit = () => {
         />
 
         <FormField
-          type="text"
+          type="number"
+          format="currency"
+          name="cost_price"
+          :label="`Cost Price (${currency})`"
+          placeholder="e.g. 1000"
+        />
+
+        <FormField
+          type="number"
+          format="currency"
           name="price"
-          :label="`Price (${currency})`"
+          :label="`Selling Price (${currency})`"
           placeholder="e.g. 1000"
         />
 
         <FormField type="text" name="total_stock" label="Available Stock" placeholder="e.g. 50" />
+
+        <FormField
+          type="number"
+          name="reorder_point"
+          label="Reorder Threshold"
+          placeholder="e.g. 5"
+          hint="You'll get a low-stock alert when stock falls to this level"
+        />
 
         <div class="sm:col-span-2">
           <FormField

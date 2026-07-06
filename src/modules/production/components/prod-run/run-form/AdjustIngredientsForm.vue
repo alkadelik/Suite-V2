@@ -15,6 +15,7 @@ import TextField from "@components/form/TextField.vue"
 import { useProductionStore } from "@modules/production/store"
 import { removeUnderscores } from "@/utils/format-strings"
 import { floatDecimal } from "@/utils/others"
+import { focusNextOnEnter } from "@/composables/useFocusNextOnEnter"
 
 const materialSingular = computed(() => useProductionStore().componentSingular)
 
@@ -161,7 +162,7 @@ function updateSelectedMat(evt: unknown) {
 </script>
 
 <template>
-  <form @submit.prevent="handleNext">
+  <form @submit.prevent="handleNext" @keydown.enter="focusNextOnEnter">
     <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
       <Icon name="box" size="28" />
     </div>
