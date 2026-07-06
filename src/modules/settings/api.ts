@@ -15,6 +15,8 @@ import {
   ThemeSection,
   IVersionHistory,
   TCustomDomain,
+  IPickupSchedule,
+  IUpdatePickupSchedulePayload,
 } from "./types"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query"
 import { IkycInfo, IUser } from "@modules/auth/types"
@@ -160,6 +162,28 @@ export function useUpdateStoreDetails() {
       baseApi.patch(`/stores/${id}/`, body, {
         headers: { "Content-Type": "multipart/form-data" },
       }),
+  })
+}
+
+/** List the store's pickup schedules — one record per day of the week (7 total). */
+export function useGetPickupSchedules(enabled: MaybeRefOrGetter<boolean> = true) {
+  return useApiQuery<TPaginatedResponse<IPickupSchedule>["data"]>({
+    url: "/stores/pickup-schedules/",
+    key: "pickup-schedules",
+    selectData: true,
+    enabled,
+  })
+}
+
+/** Enable/disable a single day's pickup and/or update its start/end times. */
+export function useUpdatePickupSchedule() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ uid, body }: { uid: string; body: IUpdatePickupSchedulePayload }) =>
+      baseApi.patch(`/stores/pickup-schedules/${uid}/`, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pickup-schedules"] })
+    },
   })
 }
 
