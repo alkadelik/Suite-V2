@@ -116,8 +116,26 @@ export const cacheCreatedProduct = (queryClient: QueryClient, product: IProductD
 
 export const inventoryCache = {
   productCreated(queryClient: QueryClient, product?: IProductDetails) {
-    if (product) cacheCreatedProduct(queryClient, product)
-    void invalidate(queryClient, inventoryKeys.products.lists())
+    if (product) {
+      cacheCreatedProduct(queryClient, product)
+      // The unfiltered first pages were just reconciled with the created product
+      // (server response data), so don't refetch them actively — that dims the
+      // table right after the optimistic insert. Mark them stale for the next
+      // interaction and only actively refetch the filtered/paged lists the
+      // optimistic insert skipped.
+      void queryClient.invalidateQueries({
+        queryKey: inventoryKeys.products.lists(),
+        refetchType: "none",
+        predicate: (query) => isUnfilteredFirstPage(getParams(query.queryKey)),
+      })
+      void queryClient.invalidateQueries({
+        queryKey: inventoryKeys.products.lists(),
+        refetchType: "active",
+        predicate: (query) => !isUnfilteredFirstPage(getParams(query.queryKey)),
+      })
+    } else {
+      void invalidate(queryClient, inventoryKeys.products.lists())
+    }
     void invalidate(queryClient, inventoryKeys.products.searches())
     void invalidate(queryClient, inventoryKeys.products.dashboard())
     void invalidate(queryClient, inventoryKeys.catalog.all)

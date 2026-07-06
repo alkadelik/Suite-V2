@@ -132,13 +132,15 @@ const getActionItems = (item: TRecipe) => [
           action: () => (showDisableModal.value = "disable"),
         },
       ]
-    : [
-        {
-          label: `Enable ${recipeValue.value}`,
-          icon: "tick-circle",
-          action: () => (showDisableModal.value = "enable"),
-        },
-      ]),
+    : item.is_permanently_disabled
+      ? []
+      : [
+          {
+            label: `Enable ${recipeValue.value}`,
+            icon: "tick-circle",
+            action: () => (showDisableModal.value = "enable"),
+          },
+        ]),
   {
     label: `Delete ${recipeValue.value}`,
     icon: "trash",
