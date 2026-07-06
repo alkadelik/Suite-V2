@@ -84,7 +84,7 @@
         v-if="scope === 'order'"
         class="mt-5 space-y-4 lg:grid lg:grid-cols-2 lg:items-stretch lg:gap-4 lg:space-y-0"
       >
-        <CouponUsageGauge :coupon="coupon" :usage="usage" />
+        <CouponUsageGauge :coupon="coupon" />
         <CouponSettingsCard :coupon="coupon" />
       </div>
 
@@ -156,11 +156,11 @@ import CreateCouponDrawer from "../components/CreateCouponDrawer.vue"
 import CouponUsageGauge from "../components/coupon/CouponUsageGauge.vue"
 import CouponSettingsCard from "../components/coupon/CouponSettingsCard.vue"
 import CouponTargetCard from "../components/coupon/CouponTargetCard.vue"
-import { useGetCoupon, useGetCouponUsage, useToggleCoupon, useDeleteCoupon } from "../api"
+import { useGetCoupon, useToggleCoupon, useDeleteCoupon } from "../api"
 import { deriveScope, deriveStatus } from "../utils"
 import { COUPON_STATUS_META, couponScopeHeaderLabel } from "../constants"
 import { toast } from "@/composables/useToast"
-import type { TCoupon, TCouponUsageStats } from "../types"
+import type { TCouponDetail } from "../types"
 
 const route = useRoute()
 const router = useRouter()
@@ -169,17 +169,14 @@ const uid = computed(() => String(route.params.uid))
 
 // --- Data ---
 const { data, isLoading, refetch } = useGetCoupon(uid)
-const { data: usageData, refetch: refetchUsage } = useGetCouponUsage(uid)
 
 /** Normalize the single coupon (handles wrapped + direct shapes), typed. */
-const coupon = computed<TCoupon | null>(() => {
-  const raw = data.value as { data?: TCoupon } | TCoupon | undefined
+const coupon = computed<TCouponDetail | null>(() => {
+  const raw = data.value as { data?: TCouponDetail } | TCouponDetail | undefined
   if (!raw) return null
   if ("uid" in raw) return raw
   return raw.data ?? null
 })
-
-const usage = computed<TCouponUsageStats | null>(() => usageData.value ?? null)
 
 // --- Derived ---
 const scope = computed(() => (coupon.value ? deriveScope(coupon.value) : "order"))
@@ -198,8 +195,8 @@ const scopeLabel = computed(() => {
 // Scope chip color: Order = primary (orange), Products/Category = purple (matches the mocks).
 const scopeChipColor = computed(() => (scope.value === "order" ? "primary" : "purple"))
 
-// Usage (products/category top bar)
-const usedCount = computed(() => usage.value?.total_usage ?? 0)
+// Usage (products/category top bar) — `usage_count` comes with the detail response.
+const usedCount = computed(() => Number(coupon.value?.usage_count ?? 0) || 0)
 const usageLimit = computed(() => coupon.value?.max_usage ?? null)
 const usageLimitLabel = computed(() => (usageLimit.value != null ? String(usageLimit.value) : "∞"))
 const usagePercent = computed(() => {
@@ -235,7 +232,6 @@ function onSaved() {
   showDrawer.value = false
   toast.success(drawerMode.value === "edit" ? "Coupon updated!" : "Coupon duplicated!")
   void refetch()
-  void refetchUsage()
 }
 
 // Toggle (disable / enable)

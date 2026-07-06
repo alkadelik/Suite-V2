@@ -44,16 +44,14 @@ import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { formatNumericDate, formatTimeOfDay } from "../../utils"
 import emptyState from "@/assets/images/empty-state.png"
 import emptyGrid from "@/assets/images/empty-grid.png"
-import type { TCoupon, TCouponUsageStats } from "../../types"
+import type { TCouponDetail } from "../../types"
 
-const props = defineProps<{
-  coupon: TCoupon
-  usage: TCouponUsageStats | null | undefined
-}>()
+const props = defineProps<{ coupon: TCouponDetail }>()
 
 const { format } = useFormatCurrency()
 
-const used = computed(() => props.usage?.total_usage ?? 0)
+// `usage_count` is a read-only string on the detail response.
+const used = computed(() => Number(props.coupon.usage_count ?? 0) || 0)
 const limit = computed(() => props.coupon.max_usage)
 const limitLabel = computed(() => (limit.value != null ? String(limit.value) : "∞"))
 

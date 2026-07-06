@@ -41,6 +41,25 @@ export interface TCoupon {
   created_at: string
 }
 
+// Embedded in CouponDetail.variants (read-only summary, no client hydration).
+export interface TCouponVariantSummary {
+  uid: string
+  name: string
+  sku: string
+  price: string
+  promo_price: string | null
+  product_uid: string
+  product_name: string
+  image: string
+}
+
+// GET /coupons/{uid}/ returns the `CouponDetail` serializer: the base coupon
+// plus the resolved target variants and the actual usage count.
+export interface TCouponDetail extends TCoupon {
+  variants: TCouponVariantSummary[]
+  usage_count: string // ro, backend-computed
+}
+
 // Row type used by the table (derived/flattened for cell rendering)
 export type TCouponRow = TCoupon &
   Record<string, unknown> & {
@@ -72,13 +91,6 @@ export interface ICouponPayload {
   valid_from: string
   valid_until?: string | null
   is_active?: boolean
-}
-
-// Usage stats for the details gauge — shape ASSUMED, confirm at integration
-export interface TCouponUsageStats {
-  total_usage: number
-  max_usage: number | null
-  remaining: number | null
 }
 
 // Normalized wizard form model (UI-side; mapped to ICouponPayload on submit)

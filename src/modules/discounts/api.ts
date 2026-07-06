@@ -1,12 +1,7 @@
 import baseApi from "@/composables/baseApi"
 import { useMutation, useQuery } from "@tanstack/vue-query"
 import { toValue, type MaybeRefOrGetter } from "vue"
-import type {
-  ICouponPayload,
-  TCouponUsageStats,
-  IDiscountPayload,
-  IDiscountUpdatePayload,
-} from "./types"
+import type { ICouponPayload, IDiscountPayload, IDiscountUpdatePayload } from "./types"
 
 /** List coupons (search, ordering, limit, offset). Returns the raw response body. */
 export function useGetCoupons(
@@ -41,20 +36,6 @@ export function useGetCoupon(
       const e = options?.enabled ? toValue(options.enabled) : true
       return !!u && e
     },
-  })
-}
-
-/** Usage statistics for the details gauge (shape ASSUMED). */
-export function useGetCouponUsage(uid: MaybeRefOrGetter<string>) {
-  return useQuery({
-    queryKey: ["coupon-usage", uid],
-    queryFn: async () => {
-      const { data } = await baseApi.get<TCouponUsageStats>(`/coupons/${toValue(uid)}/usage/`)
-      return data
-    },
-    retry: false,
-    refetchOnWindowFocus: false,
-    enabled: () => !!toValue(uid),
   })
 }
 

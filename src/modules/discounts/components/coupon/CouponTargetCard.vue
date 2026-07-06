@@ -21,6 +21,11 @@
         {{ coupon.categories.length === 1 ? "Category" : "Categories" }}
       </span>
 
+      <!-- Variant count (products scope) -->
+      <span v-else class="ml-1 text-xs font-medium text-gray-500">
+        {{ variants.length }} {{ variants.length === 1 ? "Variant" : "Variants" }}
+      </span>
+
       <!-- Category filter (category scope only) -->
       <div v-if="isCategoryScope" class="ml-auto">
         <DropdownMenu :items="categoryFilterItems" placement="bottom-end" menu-width="auto">
@@ -63,9 +68,10 @@
             class="h-12 w-12 shrink-0 rounded-lg bg-white object-cover"
             :class="{ 'object-contain p-1': !row.image }"
           />
-          <span class="min-w-0 flex-1 truncate text-sm font-medium text-gray-800">
-            {{ row.name }}
-          </span>
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-sm font-medium text-gray-800">{{ row.name }}</p>
+            <p v-if="row.sub" class="truncate text-xs text-gray-500">{{ row.sub }}</p>
+          </div>
 
           <!-- Prices -->
           <div class="flex shrink-0 items-baseline gap-2">
@@ -89,16 +95,21 @@ import emptyState from "@/assets/images/empty-state.png"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { useGetProducts, useGetCategories } from "@modules/inventory/api"
 import type { TProduct, IProductCategory } from "@modules/inventory/types"
-import type { TCoupon } from "../../types"
+import type { TCouponDetail, TCouponVariantSummary } from "../../types"
 
-const props = defineProps<{ coupon: TCoupon }>()
+const props = defineProps<{ coupon: TCouponDetail }>()
 
 const { format } = useFormatCurrency()
 
 const isAllProducts = computed(() => props.coupon.target_type === "all_products")
+// Prefer the backend target_type; fall back to the categories array for older rows.
 const isCategoryScope = computed(
-  () => !isAllProducts.value && (props.coupon.categories?.length ?? 0) > 0,
+  () =>
+    props.coupon.target_type === "categories" ||
+    (!isAllProducts.value && (props.coupon.categories?.length ?? 0) > 0),
 )
+
+const variants = computed<TCouponVariantSummary[]>(() => props.coupon.variants ?? [])
 
 // ---------------------------------------------------------------------------
 // Price helpers
@@ -132,7 +143,7 @@ function discountedPrice(original: number): number {
 // ---------------------------------------------------------------------------
 const activeCategory = ref<string | null>(null)
 
-const { data: categoriesData } = useGetCategories()
+const { data: categoriesData } = useGetCategories(isCategoryScope)
 const allCategories = computed<IProductCategory[]>(() => categoriesData.value?.data?.results ?? [])
 
 /** Categories actually targeted by this coupon. */
@@ -156,11 +167,9 @@ const categoryFilterItems = computed(() => [
 ])
 
 // ---------------------------------------------------------------------------
-// Products — best-effort hydration.
-// The coupon detail endpoint only returns product/category uids, so we fetch a
-// page of products and resolve names/prices/thumbnails client-side. For the
-// products scope we match against `applicable_products`; for the category scope
-// we list products that belong to the targeted categories (optionally filtered).
+// Category-scope hydration. The category filter works off product.category, so
+// for the categories scope we still list products client-side. The products and
+// all-products scopes render straight from the detail response's `variants`.
 // ---------------------------------------------------------------------------
 const productParams = computed<Record<string, string | number>>(() => {
   const p: Record<string, string | number> = { limit: 100 }
@@ -168,12 +177,20 @@ const productParams = computed<Record<string, string | number>>(() => {
   return p
 })
 
-const { data: productsData, isFetching: loading } = useGetProducts(productParams)
+const { data: productsData, isFetching: productsFetching } = useGetProducts(
+  productParams,
+  isCategoryScope,
+)
 const products = computed<TProduct[]>(() => productsData.value?.data?.results ?? [])
+
+// Variant scopes render embedded data — only the category scope waits on a fetch.
+const loading = computed(() => isCategoryScope.value && productsFetching.value)
 
 interface TargetRow {
   uid: string
   name: string
+  /** Secondary line (variant name), when the row is a variant. */
+  sub?: string
   image: string | null
   /** Parsed original price, or null when missing/invalid (renders "--"). */
   original: number | null
@@ -192,11 +209,19 @@ function toRow(p: TProduct): TargetRow {
   }
 }
 
-const rows = computed<TargetRow[]>(() => {
-  // All-products scope: the coupon applies to the entire catalogue, so list the
-  // fetched product page directly (no uid matching needed).
-  if (isAllProducts.value) return products.value.map(toRow)
+function variantToRow(v: TCouponVariantSummary): TargetRow {
+  const original = parsePrice(v.price)
+  return {
+    uid: v.uid,
+    name: v.product_name,
+    sub: v.name,
+    image: v.image || null,
+    original,
+    discounted: original != null ? discountedPrice(original) : 0,
+  }
+}
 
+const rows = computed<TargetRow[]>(() => {
   if (isCategoryScope.value) {
     const catUids = new Set(props.coupon.categories ?? [])
     return products.value
@@ -207,12 +232,8 @@ const rows = computed<TargetRow[]>(() => {
       .map(toRow)
   }
 
-  // Products scope: resolve the targeted uids, preserving order; render a
-  // placeholder row for any uid not present in the fetched page.
-  const byUid = new Map(products.value.map((p) => [p.uid, p]))
-  return (props.coupon.applicable_products ?? []).map((uid) => {
-    const p = byUid.get(uid)
-    return p ? toRow(p) : { uid, name: "Product", image: null, original: null, discounted: 0 }
-  })
+  // Products / all-products scopes: the detail response embeds the resolved
+  // variants with real prices — no client-side uid matching needed.
+  return variants.value.map(variantToRow)
 })
 </script>
