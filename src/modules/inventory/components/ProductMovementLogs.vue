@@ -10,7 +10,7 @@
     <div v-else class="space-y-4 rounded-xl border-gray-200 pt-3 md:border md:bg-white">
       <div class="flex items-center justify-between md:px-4">
         <h3 class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
-          All Movements <Chip :label="String(movements.length)" />
+          All Movements <Chip :label="String(movementsCount)" />
         </h3>
         <div class="flex items-center gap-2">
           <AppButton
@@ -47,8 +47,14 @@
         :data="movements"
         :columns="movementColumns"
         :loading="loading"
-        :show-pagination="true"
+        :show-pagination="movementsCount > itemsPerPage"
+        :server-pagination="true"
+        :items-per-page="itemsPerPage"
+        :current-page="page"
+        :total-items-count="movementsCount"
+        :total-page-count="Math.ceil(movementsCount / itemsPerPage) || 1"
         :enable-row-selection="false"
+        @pagination-change="(d) => (page = d.currentPage)"
         :empty-state="{
           title: 'No results match this filter',
           description: 'Try adjusting or clearing your filters.',
@@ -159,19 +165,28 @@ const { format } = useFormatCurrency()
 const showFilter = ref(false)
 const activeFilters = ref<Record<string, string | null>>({})
 
+// Server-side pagination — without limit/offset the backend returns only its
+// default first page (20), silently hiding the rest of the logs.
+const page = ref(1)
+const itemsPerPage = ref(10)
+
 const movementParams = computed(() => {
-  const params: Record<string, string | number> = {}
+  const params: Record<string, string | number> = {
+    limit: itemsPerPage.value,
+    offset: (page.value - 1) * itemsPerPage.value,
+  }
   if (activeFilters.value.type) params.type = activeFilters.value.type
   if (activeFilters.value.reason) params.reason = activeFilters.value.reason
   return params
 })
 
-const { data: movementsData, isPending: loading } = useGetProductMovements(
+const { data: movementsData, isFetching: loading } = useGetProductMovements(
   computed(() => props.product.uid),
   movementParams,
 )
 
 const movements = computed(() => movementsData.value?.data?.results || [])
+const movementsCount = computed(() => movementsData.value?.data?.count || 0)
 
 const filterGroups: FilterGroup[] = [
   {
@@ -202,10 +217,12 @@ const activeFilterCount = computed(() => {
 
 const handleApplyFilters = (filters: Record<string, string | null>) => {
   activeFilters.value = filters
+  page.value = 1
 }
 
 const clearFilters = () => {
   activeFilters.value = {}
+  page.value = 1
 }
 
 const showMovementModal = ref(false)

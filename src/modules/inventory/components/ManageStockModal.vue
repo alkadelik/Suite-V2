@@ -162,7 +162,6 @@
             label="Notes"
             type="textarea"
             placeholder="Enter additional notes"
-            required
           />
         </template>
 
@@ -189,7 +188,6 @@
             label="Notes"
             type="textarea"
             placeholder="Enter additional notes"
-            required
           />
         </template>
       </template>
@@ -392,9 +390,10 @@ const validationSchema = yup.lazy(() => {
           .required("Location is required"),
       otherwise: (schema) => schema.nullable().optional(),
     }),
+    // Notes are only required for manual stock additions ("Reason for Manual Entry");
+    // optional when reducing, transferring, or requesting stock (LYW-2623).
     note: yup.string().when("action", {
-      is: (action: { value: string } | null) =>
-        action?.value !== undefined && action?.value !== "reduce",
+      is: (action: { value: string } | null) => action?.value === "add",
       then: (schema) => schema.required("Notes are required"),
       otherwise: (schema) => schema.optional(),
     }),

@@ -123,6 +123,11 @@ export const componentOptions = [
   },
 ]
 
+// Temporary: conversion rates can corrupt stock/cost records if edited after
+// creation, so we lock them post-save until proper recalculation is in place.
+// Flip to false to fall back to the previous (always-editable) behavior.
+export const LOCK_CONVERSION_RATE_EDITING = true
+
 export const UNITS_OF_MEASURE = [
   { label: "Kilograms (kg)", value: "kg" },
   { label: "Grams (g)", value: "g" },
@@ -148,7 +153,12 @@ export const RECIPES_COLUMN: TableColumn<TRecipe>[] = [
     cell: ({ item }) => (item.is_active ? "Active" : "Disabled"),
   },
   {
-    header: "Last Edited",
+    header: "Last Used",
+    accessor: "last_used",
+    cell: ({ item }) => (item.last_used ? formatDate(item.last_used as string) : "--"),
+  },
+  {
+    header: "Date Modified",
     accessor: "updated_at",
     cell: ({ item }) => formatDate(item.updated_at as string),
   },

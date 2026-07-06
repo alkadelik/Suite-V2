@@ -12,6 +12,7 @@ import * as yup from "yup"
 import { BasicRunDetails } from "../form-types"
 import Chip from "@components/Chip.vue"
 import { useProductionStore } from "@modules/production/store"
+import { focusNextOnEnter } from "@/composables/useFocusNextOnEnter"
 
 const recipeSingularLabel = computed(() => useProductionStore().recipeSingularLabel)
 
@@ -200,19 +201,21 @@ const handleNext = handleSubmit((formValues) => {
       value: recipe.value,
       item_type: recipe.item_type,
       output_product: recipe.output_product,
+      unit: recipe.unit,
     },
     outputVariantUid: variant?.value || "",
     outputVariantOption: variant
       ? { label: variant.label, value: variant.value, price: variant.price }
       : null,
     outputItemType: recipe.item_type,
+    outputUnit: recipe.unit,
     variantPrice: variant?.price,
   })
 })
 </script>
 
 <template>
-  <form @submit.prevent="handleNext" class="flex flex-col gap-4">
+  <form @submit.prevent="handleNext" @keydown.enter="focusNextOnEnter" class="flex flex-col gap-4">
     <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
       <Icon name="box" size="28" />
     </div>
@@ -257,7 +260,7 @@ const handleNext = handleSubmit((formValues) => {
 
     <FormField
       name="outputQuantity"
-      type="number"
+      type="decimal"
       label="Quantity Produced (including damages)"
       placeholder="e.g. 100"
       required
@@ -266,7 +269,7 @@ const handleNext = handleSubmit((formValues) => {
 
     <FormField
       name="damagedQuantity"
-      type="number"
+      type="decimal"
       label="Quantity Damaged"
       placeholder="e.g. 10"
       required

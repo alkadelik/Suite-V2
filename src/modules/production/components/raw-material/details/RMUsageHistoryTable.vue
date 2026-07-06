@@ -22,6 +22,11 @@ const onRowClick = (batch: TMovement) => {
   selectedHistory.value = batch
   openDetails.value = true
 }
+
+const formatReason = (reason: string) => {
+  if (reason.toLowerCase().startsWith("production")) return "Production Run"
+  else return reason
+}
 </script>
 
 <template>
@@ -44,7 +49,7 @@ const onRowClick = (batch: TMovement) => {
           {{ removeUnderscores(getPurchaseUnit(props.material)) }}
         </template>
         <template #cell:reason="{ item }">
-          <Chip :label="item.reason" color="blue" class="capitalize" />
+          <Chip :label="formatReason(item.reason)" color="blue" class="capitalize" />
         </template>
         <template #cell:movement_type="{ item }">
           <Chip
@@ -96,7 +101,7 @@ const onRowClick = (batch: TMovement) => {
         <div class="border-core-300 bg-core-25 my-6 space-y-3 rounded-xl border p-4">
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Reason</span>
-            <Chip :label="selectedHistory.reason" color="blue" class="capitalize" />
+            <Chip :label="formatReason(selectedHistory.reason)" color="blue" class="capitalize" />
           </p>
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Quantity</span>

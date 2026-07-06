@@ -267,6 +267,15 @@ const shippingRateErrors = ref({ email: "", phone: "", address: "" })
 const submitAttempted = ref(false)
 const paymentErrors = ref({ payment_source: "", payment_amount: "" })
 
+const partialAmountError = computed(() => {
+  if (paymentInfo.value.payment_status !== "partially_paid") return ""
+  const amount = Number(paymentInfo.value.payment_amount)
+  if (Number.isFinite(amount) && amount > props.totalAmount) {
+    return `Amount must be less than ${format(props.totalAmount)}.`
+  }
+  return ""
+})
+
 const manualDeliverySchema = yup.object({
   courier: yup.string().required("Courier name is required").trim(),
   delivery_fee: yup
@@ -361,8 +370,7 @@ const validatePayment = (): boolean => {
     if (!Number.isFinite(amount) || amount <= 0) {
       paymentErrors.value.payment_amount = "Enter an amount greater than 0."
     } else if (amount >= props.totalAmount) {
-      paymentErrors.value.payment_amount =
-        "Partial payment must be less than the total order amount."
+      paymentErrors.value.payment_amount = `Amount must be less than ${format(props.totalAmount)}.`
     }
   }
 
@@ -547,6 +555,14 @@ watch(
       updateShipping("delivery_fee", 0)
       updateShipping("courier", "")
     }
+    navigationErrors.value = {
+      delivery_type: "",
+      delivery_method: "",
+      express_delivery_option: "",
+      manual_delivery_option: "",
+    }
+    shippingRateErrors.value = { email: "", phone: "", address: "" }
+    validationErrors.value = { courier: "", delivery_fee: "" }
   },
 )
 
@@ -579,6 +595,21 @@ watch(localDeliveryType, () => {
 
 // ─── Payment side syncing ────────────────────────────────────────────────────
 watch(
+  () => props.totalAmount,
+  (newTotal) => {
+    if (newTotal === 0) {
+      paymentInfo.value = {
+        ...paymentInfo.value,
+        payment_status: "paid",
+        payment_amount: 0,
+        payment_source: paymentInfo.value.payment_source ?? ORDER_PAYMENT_METHODS[0],
+      }
+    }
+  },
+  { immediate: true },
+)
+
+watch(
   () => paymentInfo.value.payment_status,
   (newStatus) => {
     if (newStatus === "paid") {
@@ -595,7 +626,7 @@ watch(
 watch(
   () => props.totalAmount,
   (newTotal) => {
-    if (paymentInfo.value.payment_status === "paid") {
+    if (newTotal > 0 && paymentInfo.value.payment_status === "paid") {
       paymentInfo.value = { ...paymentInfo.value, payment_amount: newTotal }
     }
   },
@@ -1155,7 +1186,10 @@ const handleSave = async () => {
       </section>
 
       <!-- ─── PAYMENT CARD ─────────────────────────────────────── -->
-      <section class="overflow-hidden rounded-xl border border-gray-200 bg-white">
+      <section
+        v-if="productsTotal > 0 || shippingInfo.delivery_fee > 0"
+        class="overflow-hidden rounded-xl border border-gray-200 bg-white"
+      >
         <header class="border-b border-gray-200 bg-gray-50 px-4 py-2.5">
           <h3 class="text-sm font-semibold text-gray-700">Payment</h3>
         </header>
@@ -1198,9 +1232,8 @@ const handleSave = async () => {
               :label="`Amount Paid (${format(totalAmount)})`"
               placeholder="0.00"
               :min="0"
-              :max="totalAmount"
               required
-              :error="submitAttempted ? paymentErrors.payment_amount : ''"
+              :error="partialAmountError || (submitAttempted ? paymentErrors.payment_amount : '')"
               @update:model-value="paymentInfo.payment_amount = $event"
             />
           </div>

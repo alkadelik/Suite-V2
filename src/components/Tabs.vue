@@ -9,6 +9,8 @@ interface TabItem {
   title: string
   /** Unique key for the tab (used for slot names and identification) */
   key: string
+  /** Optional count rendered as a circular pill next to the title (hidden when falsy) */
+  count?: number
 }
 
 /**
@@ -40,7 +42,11 @@ const emit = defineEmits<{ "update:modelValue": [value: string] }>()
 const processedTabs = computed((): TabItem[] =>
   (props.tabs || []).map((tab) => {
     if (typeof tab === "string") return { title: tab, key: tab.replace(/\s+/g, "_").toLowerCase() }
-    return { title: tab.title, key: tab.key || tab.title.replace(/\s+/g, "_").toLowerCase() }
+    return {
+      title: tab.title,
+      key: tab.key || tab.title.replace(/\s+/g, "_").toLowerCase(),
+      count: tab.count,
+    }
   }),
 )
 
@@ -110,7 +116,15 @@ const changeTab = (tabKey: string) => {
         ]"
         @click="changeTab(tab.key)"
       >
-        {{ tab.title }}
+        <span class="inline-flex items-center justify-center gap-1.5">
+          {{ tab.title }}
+          <span
+            v-if="tab.count"
+            class="bg-primary-600 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white"
+          >
+            {{ tab.count }}
+          </span>
+        </span>
       </button>
     </div>
 

@@ -181,7 +181,12 @@ watch(
       <FormField name="name" label="Event Name" required />
 
       <div class="grid grid-cols-2 gap-6">
-        <FormField name="start_date" type="date" required />
+        <FormField
+          name="start_date"
+          type="date"
+          required
+          :min="new Date().toLocaleDateString('en-CA')"
+        />
 
         <FormField name="end_date" type="date" required />
       </div>

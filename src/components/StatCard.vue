@@ -12,6 +12,8 @@ interface Stat {
   valueText?: string
   chip?: string
   chipColor?: string
+  chipIcon?: string
+  chipToolTip?: string
   percentage?: number
 }
 
@@ -120,7 +122,20 @@ const isLoading = computed(() => props.loading)
           <span class="text-lg font-semibold md:text-xl">{{ stat.value }}</span>
           <span v-if="stat.valueText" class="text-sm">{{ " " + stat.valueText }}</span>
         </p>
-        <Chip v-if="stat.chip" :label="stat.chip" :color="chipColor" class="truncate" />
+        <div v-if="stat.chip" class="group relative flex-shrink-0">
+          <Chip
+            :label="stat.chip"
+            :icon="stat.chipIcon || undefined"
+            :color="chipColor"
+            class="truncate"
+          />
+          <span
+            v-if="stat.chipToolTip"
+            class="bg-core-800 pointer-events-none absolute right-0 bottom-full z-10 mb-2 w-max max-w-xs rounded-lg px-3 py-2 text-xs leading-snug font-normal text-white opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100"
+          >
+            {{ stat.chipToolTip }}
+          </span>
+        </div>
       </div>
     </template>
   </div>

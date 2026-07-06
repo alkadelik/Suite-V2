@@ -1,7 +1,11 @@
 <template>
   <div>
-    <label v-if="label" :for="htmlFor" class="text-core-800 mb-1.5 block text-sm font-medium">
-      {{ label }}
+    <label
+      v-if="label || $slots.label"
+      :for="htmlFor"
+      class="text-core-800 mb-1.5 block text-sm font-medium"
+    >
+      <slot name="label">{{ label }}</slot>
       <span v-if="required" class="text-red-500">*</span>
     </label>
 

@@ -66,13 +66,14 @@ export function useGetRawMaterials(
 }
 
 /** search raw-material by name */
-export function useSearchRawMaterial(search: MaybeRefOrGetter<string>) {
+export function useSearchRawMaterial(search: MaybeRefOrGetter<string>, is_sub_assembly?: boolean) {
   return useQuery({
     queryKey: ["rawMaterials", "search", search],
     queryFn: async () => {
       const { data } = await baseApi.get<TPaginatedResponse<TRawMaterial>>(`/raw-materials/`, {
         params: {
           ...(toValue(search) ? { search: toValue(search) } : {}),
+          ...(is_sub_assembly ? { is_sub_assembly } : {}),
           limit: 20,
         },
       })

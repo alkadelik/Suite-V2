@@ -36,13 +36,15 @@ const actionMenus = computed(() => [
           action: () => emit("disable"),
         },
       ]
-    : [
-        {
-          label: `Enable ${recipeLabel.value}`,
-          icon: "tick-circle",
-          action: () => emit("disable"),
-        },
-      ]),
+    : props.recipe.is_permanently_disabled
+      ? []
+      : [
+          {
+            label: `Enable ${recipeLabel.value}`,
+            icon: "tick-circle",
+            action: () => emit("disable"),
+          },
+        ]),
   {
     label: `Delete ${recipeLabel.value}`,
     icon: "trash",
