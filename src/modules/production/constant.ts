@@ -123,6 +123,11 @@ export const componentOptions = [
   },
 ]
 
+// Temporary: conversion rates can corrupt stock/cost records if edited after
+// creation, so we lock them post-save until proper recalculation is in place.
+// Flip to false to fall back to the previous (always-editable) behavior.
+export const LOCK_CONVERSION_RATE_EDITING = true
+
 export const UNITS_OF_MEASURE = [
   { label: "Kilograms (kg)", value: "kg" },
   { label: "Grams (g)", value: "g" },

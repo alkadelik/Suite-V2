@@ -227,41 +227,45 @@ const downloadQrCode = async () => {
         ]"
       >
         <template #overview>
-          <div class="mb-6 pt-3">
-            <Collapsible header="Popup Details" :default-open="true">
-              <template #body>
-                <div class="divide-core-100 divide-y">
-                  <div
-                    v-for="(value, key) in overviewInfo"
-                    :key="key"
-                    class="flex flex-col gap-1 py-3 text-sm"
-                  >
-                    <p class="text-core-600 flex-1 font-semibold">{{ startCase(key) }}</p>
-                    <p class="flex-2 font-medium">{{ value }}</p>
-                  </div>
-                  <div v-if="popupEvt.qr_code" class="flex flex-col gap-2 py-3 text-sm">
-                    <p class="text-core-600 flex-1 font-semibold">QR Code</p>
-                    <div class="flex items-end gap-3">
-                      <img
-                        :src="popupEvt.qr_code"
-                        alt="Event QR code"
-                        class="border-core-100 h-24 w-24 rounded-lg border p-1"
-                      />
-                      <AppButton
-                        variant="outlined"
-                        label="Download"
-                        icon="download-cloud-02"
-                        size="xs"
-                        @click="downloadQrCode"
-                      />
+          <div class="mb-6 flex flex-col gap-6 md:flex-row md:items-start">
+            <div class="min-w-0 flex-1">
+              <PopupInventoryTab :popup="popupEvt" />
+            </div>
+
+            <div class="md:sticky md:top-4 md:w-md md:flex-shrink-0">
+              <Collapsible header="Popup Details" :default-open="true">
+                <template #body>
+                  <div class="divide-core-100 divide-y">
+                    <div
+                      v-for="(value, key) in overviewInfo"
+                      :key="key"
+                      class="flex flex-col gap-1 py-3 text-sm"
+                    >
+                      <p class="text-core-600 flex-1 font-semibold">{{ startCase(key) }}</p>
+                      <p class="flex-2 font-medium">{{ value }}</p>
+                    </div>
+                    <div v-if="popupEvt.qr_code" class="flex flex-col gap-2 py-3 text-sm">
+                      <p class="text-core-600 flex-1 font-semibold">QR Code</p>
+                      <div class="flex items-end gap-3">
+                        <img
+                          :src="popupEvt.qr_code"
+                          alt="Event QR code"
+                          class="border-core-100 h-24 w-24 rounded-lg border p-1"
+                        />
+                        <AppButton
+                          variant="outlined"
+                          label="Download"
+                          icon="download-cloud-02"
+                          size="xs"
+                          @click="downloadQrCode"
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-              </template>
-            </Collapsible>
+                </template>
+              </Collapsible>
+            </div>
           </div>
-
-          <PopupInventoryTab :popup="popupEvt" />
         </template>
         <template #sales>
           <PopupSalesTab

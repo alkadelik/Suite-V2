@@ -12,6 +12,7 @@ import * as yup from "yup"
 import { BasicRunDetails } from "../form-types"
 import Chip from "@components/Chip.vue"
 import { useProductionStore } from "@modules/production/store"
+import { focusNextOnEnter } from "@/composables/useFocusNextOnEnter"
 
 const recipeSingularLabel = computed(() => useProductionStore().recipeSingularLabel)
 
@@ -200,6 +201,7 @@ const handleNext = handleSubmit((formValues) => {
       value: recipe.value,
       item_type: recipe.item_type,
       output_product: recipe.output_product,
+      unit: recipe.unit,
     },
     outputVariantUid: variant?.value || "",
     outputVariantOption: variant
@@ -213,7 +215,7 @@ const handleNext = handleSubmit((formValues) => {
 </script>
 
 <template>
-  <form @submit.prevent="handleNext" class="flex flex-col gap-4">
+  <form @submit.prevent="handleNext" @keydown.enter="focusNextOnEnter" class="flex flex-col gap-4">
     <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
       <Icon name="box" size="28" />
     </div>
