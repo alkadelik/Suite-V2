@@ -330,6 +330,7 @@ const handleVoidDelete = ({ action, reason }: { action: string; reason: string }
 
   <!--  -->
   <CreateOrderDrawer
+    v-if="openCreate"
     :open="openCreate"
     @close="openCreate = false"
     :popup-event-id="String(route.params.id)"

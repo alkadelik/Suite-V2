@@ -10,7 +10,7 @@
     <div v-else class="space-y-4 rounded-xl border-gray-200 pt-3 md:border md:bg-white">
       <div class="flex items-center justify-between md:px-4">
         <h3 class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
-          Orders <Chip :label="String(orders.length)" />
+          Orders <Chip :label="String(ordersCount)" />
         </h3>
         <div class="flex items-center gap-2">
           <AppButton
@@ -40,7 +40,13 @@
         :data="orders"
         :columns="orderColumns"
         :loading="loading"
-        :show-pagination="false"
+        :show-pagination="ordersCount > itemsPerPage"
+        :server-pagination="true"
+        :items-per-page="itemsPerPage"
+        :current-page="page"
+        :total-items-count="ordersCount"
+        :total-page-count="Math.ceil(ordersCount / itemsPerPage) || 1"
+        @pagination-change="(d) => (page = d.currentPage)"
         :empty-state="{
           title: 'No results match this filter',
           description: 'Try adjusting or clearing your filters.',
@@ -61,6 +67,22 @@
         <template #cell:customer_info="{ item }">
           <Avatar v-if="item.customer" :name="`${item.user_name || 'Customer'}`" size="sm" />
           <Avatar v-else name="Guest Customer" size="sm" />
+        </template>
+
+        <template #cell:items="{ item }">
+          <span class="text-sm font-semibold">{{ productQuantityInOrder(item) }}</span>
+        </template>
+
+        <template #cell:total_amount="{ value }">
+          <span class="text-sm">{{ formatAmount(value) }}</span>
+        </template>
+
+        <template #cell:fulfilment_status="{ item }">
+          <Chip
+            :color="item.fulfilment_status === 'fulfilled' ? 'success' : 'primary'"
+            :label="item.fulfilment_status === 'fulfilled' ? 'Yes' : 'No'"
+            size="sm"
+          />
         </template>
 
         <template #cell:payment_status="{ value }">
@@ -96,6 +118,7 @@ import Chip from "@components/Chip.vue"
 import Avatar from "@components/Avatar.vue"
 import ListFilterDrawer from "@components/ListFilterDrawer.vue"
 import { getSmartDateLabel } from "@/utils/formatDate"
+import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { useGetOrders } from "@modules/orders/api"
 import type { IProductDetails } from "../types"
 import type { TOrder } from "@modules/orders/types"
@@ -120,8 +143,17 @@ const emit = defineEmits<Emits>()
 const showFilter = ref(false)
 const activeFilters = ref<Record<string, string | null>>({})
 
+// Server-side pagination — without limit/offset the backend returns only its
+// default first page, silently hiding the rest of the orders.
+const page = ref(1)
+const itemsPerPage = ref(10)
+
 const orderParams = computed(() => {
-  const params: Record<string, string> = { product: props.product.uid }
+  const params: Record<string, string | number> = {
+    product: props.product.uid,
+    limit: itemsPerPage.value,
+    offset: (page.value - 1) * itemsPerPage.value,
+  }
   if (activeFilters.value.payment_status) params.payment_status = activeFilters.value.payment_status
   if (activeFilters.value.fulfilment_status)
     params.fulfilment_status = activeFilters.value.fulfilment_status
@@ -131,6 +163,28 @@ const orderParams = computed(() => {
 
 const { data: ordersData, isFetching: loading } = useGetOrders(orderParams)
 const orders = computed(() => ordersData.value?.results || [])
+const ordersCount = computed(() => ordersData.value?.count || 0)
+
+const { format } = useFormatCurrency()
+
+// Quantity of THIS product within an order — orders can contain other products'
+// items too, so only items belonging to one of this product's variants count.
+const productVariantUids = computed(() => new Set(props.product.variants.map((v) => v.uid)))
+const productQuantityInOrder = (order: TOrder) =>
+  (order.items || [])
+    .filter((item) => productVariantUids.value.has(item.variant))
+    .reduce((sum, item) => sum + (item.quantity || 0), 0)
+
+// total_amount can arrive as a comma-formatted string — guard against NaN.
+const formatAmount = (value: unknown) => {
+  const num =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+        ? Number(value.replace(/[^0-9.-]/g, ""))
+        : 0
+  return format(Number.isFinite(num) ? num : 0)
+}
 
 const filterGroups: FilterGroup[] = [
   {
@@ -172,10 +226,12 @@ const activeFilterCount = computed(() => {
 
 const handleApplyFilters = (filters: Record<string, string | null>) => {
   activeFilters.value = filters
+  page.value = 1
 }
 
 const clearFilters = () => {
   activeFilters.value = {}
+  page.value = 1
 }
 
 const formatOrderDate = (date: string) => {

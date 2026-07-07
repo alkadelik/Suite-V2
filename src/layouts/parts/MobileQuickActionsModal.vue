@@ -7,6 +7,7 @@ import { useSettingsStore } from "@modules/settings/store"
 import { usePremiumAccess } from "@/composables/usePremiumAccess"
 import { useProductionStore } from "@modules/production/store"
 import { toast } from "@/composables/useToast"
+import { startCase } from "@/utils/format-strings"
 
 defineProps<{ open: boolean; onClose: () => void }>()
 
@@ -66,14 +67,14 @@ const quickActions = computed(() => {
       hqOnly: true,
     },
     {
-      label: `Add ${materialSingular.value}`,
+      label: `Add ${startCase(materialSingular.value)}`,
       icon: "document-normal-filled",
       color: "bg-warning-50 text-warning-800 border-warning-100",
       action: () => onNavigate("/production/raw-materials?create=true"),
       hqOnly: true,
     },
     {
-      label: `Add ${recipeSingularLabel.value}`,
+      label: `Add ${startCase(recipeSingularLabel.value)}`,
       icon: "clipboard-text-filled",
       color: "bg-[#F9F7F6] text-[#432A1E] border-[#EAE1DC]",
       action: () => onNavigate("/production/recipes?create=true"),

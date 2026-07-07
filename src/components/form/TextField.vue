@@ -74,6 +74,7 @@
 </template>
 
 <script setup lang="ts">
+import { allowDecimalInput } from "@/utils/form-validation"
 import { capitalizeFirstChar } from "@/utils/format-strings"
 import Icon from "@components/Icon.vue"
 import { useSettingsStore } from "@modules/settings/store"
@@ -205,6 +206,7 @@ const handleBeforeInput = (event: Event) => {
 
 const handleKeydown = (event: Event) => {
   const keyboardEvent = event as KeyboardEvent
+  if (props.type === "decimal") allowDecimalInput(keyboardEvent)
   if (props.type !== "number" || keyboardEvent.key !== ",") return
   if (props.format) return // allow commas in formatted mode
   keyboardEvent.preventDefault()

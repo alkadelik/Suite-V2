@@ -15,6 +15,8 @@ import {
   ThemeSection,
   IVersionHistory,
   TCustomDomain,
+  IPickupSchedule,
+  IUpdatePickupSchedulePayload,
 } from "./types"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query"
 import { IkycInfo, IUser } from "@modules/auth/types"
@@ -160,6 +162,28 @@ export function useUpdateStoreDetails() {
       baseApi.patch(`/stores/${id}/`, body, {
         headers: { "Content-Type": "multipart/form-data" },
       }),
+  })
+}
+
+/** List the store's pickup schedules — one record per day of the week (7 total). */
+export function useGetPickupSchedules(enabled: MaybeRefOrGetter<boolean> = true) {
+  return useApiQuery<TPaginatedResponse<IPickupSchedule>["data"]>({
+    url: "/stores/pickup-schedules/",
+    key: "pickup-schedules",
+    selectData: true,
+    enabled,
+  })
+}
+
+/** Enable/disable a single day's pickup and/or update its start/end times. */
+export function useUpdatePickupSchedule() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ uid, body }: { uid: string; body: IUpdatePickupSchedulePayload }) =>
+      baseApi.patch(`/stores/pickup-schedules/${uid}/`, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pickup-schedules"] })
+    },
   })
 }
 
@@ -385,6 +409,29 @@ type TCustomDomainList = {
   next: string | null
   previous: string | null
   results: TCustomDomain[]
+}
+
+/**
+ * Probe whether a storefront slug is already taken (LYW-2573). The public
+ * storefront lookup returns 200 when a store owns the slug and 404 when it is
+ * free — 404 is treated as a valid "available" response, not an error.
+ */
+export function useCheckSlugTaken(
+  slug: MaybeRefOrGetter<string>,
+  enabled: MaybeRefOrGetter<boolean>,
+) {
+  return useQuery({
+    queryKey: computed(() => ["slug-availability", toValue(slug)]),
+    queryFn: async () => {
+      const { status } = await baseApi.get(`/storefront/public/slug/${toValue(slug)}/`, {
+        validateStatus: (s) => s === 200 || s === 404,
+      })
+      return status === 200
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
+    enabled: computed(() => toValue(enabled)),
+  })
 }
 
 /** List the store's custom domain(s) — expected to be 0 or 1. */

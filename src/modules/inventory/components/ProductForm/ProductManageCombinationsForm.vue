@@ -26,6 +26,22 @@
       </div>
     </div>
 
+    <!-- Reorder Threshold — product-level for multi-variant products, applies to all variants (LYW-2648) -->
+    <div v-if="!isSingleVariant && !props.hideReorder">
+      <TextField
+        :model-value="globalReorderPoint"
+        name="product-reorder-point"
+        label="Reorder Threshold"
+        placeholder="e.g. 5"
+        type="number"
+        min="0"
+        @update:model-value="updateGlobalReorderPoint"
+      />
+      <p class="mt-1 text-xs text-gray-600">
+        Applies to all variants. You'll get a low-stock alert when stock falls to this level.
+      </p>
+    </div>
+
     <!-- Weight Section (hidden when Weight attribute is in variants - auto-populated, or when hideWeight prop is true) -->
     <div v-if="!hasWeightAttributeInVariants && !props.hideWeight" class="space-y-4">
       <div data-validation-target="product-weight">
@@ -144,6 +160,24 @@
         required
         :error="props.errors?.variants?.[0]?.opening_stock"
       />
+
+      <!-- Reorder Threshold — under Available Stock for simple products (LYW-2648) -->
+      <div v-if="!props.hideReorder">
+        <TextField
+          :model-value="singleVariantForm.reorder_point"
+          name="variant-reorder-point-0"
+          @update:model-value="
+            updateSingleVariantField('reorder_point', removeLeadingZeros($event))
+          "
+          label="Reorder Threshold"
+          placeholder="e.g. 5"
+          type="number"
+          min="0"
+        />
+        <p class="mt-1 text-xs text-gray-600">
+          You'll get a low-stock alert when stock falls to this level.
+        </p>
+      </div>
     </div>
 
     <!-- Multiple Variants View - Table Layout (for editing existing variants) -->
@@ -173,12 +207,21 @@
         >
           <!-- Variant Name with Chips -->
           <div class="flex-1">
-            <div class="flex flex-wrap gap-2">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex flex-wrap gap-2">
+                <Chip
+                  v-for="(attributeValue, attrIndex) in getVariantDisplayValues(variant)"
+                  :key="`attr-${attrIndex}`"
+                  :label="attributeValue"
+                  size="sm"
+                />
+              </div>
               <Chip
-                v-for="(attributeValue, attrIndex) in getVariantDisplayValues(variant)"
-                :key="`attr-${attrIndex}`"
-                :label="attributeValue"
+                v-if="props.isNewVariant?.(variant)"
+                label="New"
+                color="success"
                 size="sm"
+                class="shrink-0"
               />
             </div>
           </div>
@@ -279,12 +322,21 @@
       >
         <!-- Top Section - Variant Chips -->
         <div class="p-4">
-          <div class="flex flex-wrap gap-2">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex flex-wrap gap-2">
+              <Chip
+                v-for="(attributeValue, attrIndex) in getVariantDisplayValues(variant)"
+                :key="`attr-${attrIndex}`"
+                :label="attributeValue"
+                size="sm"
+              />
+            </div>
             <Chip
-              v-for="(attributeValue, attrIndex) in getVariantDisplayValues(variant)"
-              :key="`attr-${attrIndex}`"
-              :label="attributeValue"
+              v-if="props.isNewVariant?.(variant)"
+              label="New"
+              color="success"
               size="sm"
+              class="shrink-0"
             />
           </div>
         </div>
@@ -401,6 +453,7 @@ import { IProductVariant, IProductVariantDetails } from "../../types"
 import { useWeightBasedDimensions } from "../../composables/useWeightBasedDimensions"
 import type { IInventoryValidationErrors } from "../../composables/useVariantValidation"
 import { useSettingsStore } from "@modules/settings/store"
+import { shouldUseSingleVariantLayout } from "../../utils/variant-editing"
 
 interface Props {
   /** Variants array - for no variants case, should contain single variant */
@@ -417,10 +470,16 @@ interface Props {
   hidePrice?: boolean
   /** Hide the weight section (for variants edit mode) */
   hideWeight?: boolean
+  /** Hide the reorder threshold field (for variants edit mode) */
+  hideReorder?: boolean
+  /** Predicate marking a variant as newly added — renders a "New" chip on its row */
+  isNewVariant?: (variant: IProductVariant) => boolean
   /** Deleted variants to display (only in edit mode) - no UIDs, just attributes */
   deletedVariants?: IProductVariant[]
   /** Use table layout instead of card layout (for editing existing variants) */
   useTableLayout?: boolean
+  /** Keep variant-product layout even when the visible variant subset has one item */
+  forceVariantLayout?: boolean
   /** Inline validation errors shown after a failed submit attempt */
   errors?: IInventoryValidationErrors
 }
@@ -494,7 +553,10 @@ watch(
 
 // Check if we have a single variant
 const isSingleVariant = computed(() => {
-  return !props.modelValue || props.modelValue.length <= 1
+  return shouldUseSingleVariantLayout({
+    variantCount: props.modelValue?.length || 0,
+    forceVariantLayout: props.forceVariantLayout ?? false,
+  })
 })
 
 // Check if we have deleted variants
@@ -708,6 +770,19 @@ const applyToAll = (field: "opening_stock" | "cost_price" | "price", value: stri
     return { ...variant, [field]: value }
   })
   emit("update:modelValue", updatedVariants)
+}
+
+// Product-level reorder threshold for multi-variant products — one value applies
+// to every variant (LYW-2648).
+const globalReorderPoint = computed(() => props.modelValue?.[0]?.reorder_point || "")
+
+const updateGlobalReorderPoint = (value: string) => {
+  if (!props.modelValue || props.modelValue.length === 0) return
+  const clean = removeLeadingZeros(value)
+  emit(
+    "update:modelValue",
+    props.modelValue.map((variant) => ({ ...variant, reorder_point: clean })),
+  )
 }
 
 // Update global dimensions and apply to all variants

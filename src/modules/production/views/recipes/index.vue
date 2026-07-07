@@ -27,6 +27,7 @@ import { TRecipe } from "@modules/production/types"
 import { useMediaQuery } from "@vueuse/core"
 import { capitalize, computed, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
+import { usePremiumAccess } from "@/composables/usePremiumAccess"
 
 const page = ref(1)
 const itemsPerPage = ref(10)
@@ -40,6 +41,13 @@ const showDisableModal = ref<"enable" | "disable" | null>(null)
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 const router = useRouter()
 const route = useRoute()
+
+const { checkPremiumAccess } = usePremiumAccess()
+
+const handleOpenCreate = () => {
+  if (!checkPremiumAccess()) return
+  showCreateModal.value = "create"
+}
 
 watch(
   () => route.query.create,
@@ -124,13 +132,15 @@ const getActionItems = (item: TRecipe) => [
           action: () => (showDisableModal.value = "disable"),
         },
       ]
-    : [
-        {
-          label: `Enable ${recipeValue.value}`,
-          icon: "tick-circle",
-          action: () => (showDisableModal.value = "enable"),
-        },
-      ]),
+    : item.is_permanently_disabled
+      ? []
+      : [
+          {
+            label: `Enable ${recipeValue.value}`,
+            icon: "tick-circle",
+            action: () => (showDisableModal.value = "enable"),
+          },
+        ]),
   {
     label: `Delete ${recipeValue.value}`,
     icon: "trash",
@@ -203,7 +213,7 @@ const formatWithUnit = (item: TRecipe) => {
         :action-label="`Add ${recipeLabel}`"
         :loading="isPending"
         action-icon="add"
-        @action="showCreateModal = 'create'"
+        @action="handleOpenCreate"
       >
         <template #image>
           <img src="@/assets/images/empty-material.svg?url" class="mx-auto mb-4" />
@@ -251,7 +261,7 @@ const formatWithUnit = (item: TRecipe) => {
                 size="sm"
                 class="flex-shrink-0"
                 :label="isMobile ? '' : `Add ${recipeValue}`"
-                @click="showCreateModal = 'create'"
+                @click="handleOpenCreate"
               />
             </div>
           </div>
@@ -331,6 +341,7 @@ const formatWithUnit = (item: TRecipe) => {
 
     <ConfirmationModal
       :model-value="!!showDisableModal"
+      @update:model-value="() => (showDisableModal = null)"
       :loading="isUpdating"
       :header="`${capitalize(showDisableModal || '')} ${recipeLabel}`"
       :paragraph="`Are you sure you want to ${showDisableModal} this ${recipeLabel.toLowerCase()}?  `"

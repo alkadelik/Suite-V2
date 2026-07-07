@@ -61,6 +61,10 @@ const { format } = useFormatCurrency()
           <span class="text-core-600">Sub-category</span>
           <Chip :label="expense.sub_category_name" color="pink" />
         </p>
+        <p v-if="expense.produced_item_name" class="flex justify-between text-sm">
+          <span class="text-core-600">Item produced</span>
+          <Chip :label="expense.produced_item_name" color="blue" />
+        </p>
       </div>
 
       <div class="border-core-300 bg-core-25 my-6 space-y-3 rounded-xl border p-4">
@@ -81,7 +85,7 @@ const { format } = useFormatCurrency()
       <div class="border-core-300 bg-core-25 my-6 space-y-3 rounded-xl border p-4">
         <p class="flex flex-col text-sm">
           <span class="text-core-600">Notes</span>
-          <span class="font-medium">{{ expense.notes || "-" }}</span>
+          <span class="font-medium whitespace-pre-wrap">{{ expense.notes || "-" }}</span>
         </p>
       </div>
     </div>

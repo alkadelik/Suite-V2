@@ -38,7 +38,7 @@
             v-if="errorMsg || resolvedAccountName || isResolving"
             :class="[
               'mt-1.5 text-xs font-medium',
-              isResolving ? 'text-core-800' : errorMsg ? 'text-error' : 'text-green-500',
+              isResolving ? 'text-core-800' : errorMsg ? 'text-error-600' : 'text-green-500',
             ]"
           >
             {{ isResolving ? "Validating..." : errorMsg || resolvedAccountName }}

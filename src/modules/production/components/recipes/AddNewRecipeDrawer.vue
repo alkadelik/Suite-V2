@@ -39,11 +39,12 @@ export type BasicDetails = {
   name?: string
   outputItemType: "product" | "sub_assembly"
   outputItem: string
-  outputItemOption?: { label: string; value: string } | null
+  outputItemOption?: { label: string; value: string; item?: Record<string, unknown> } | null
   outputQuantity: number
   unit: string
   unitOption?: { label: string; value: string } | null
   notes: string
+  lastUsed?: string | null
 }
 
 export type RecipeDrawerProps = {
@@ -95,6 +96,7 @@ const seedFromRecipe = (recipe: TRecipe) => {
     unit: recipe.output_unit,
     unitOption,
     notes: recipe.notes || "",
+    lastUsed: recipe.last_used ?? null,
   }
   ingredientRowsState.value = (recipe.ingredients ?? []).map((ing) => ({
     id: ing.uid,
@@ -224,6 +226,7 @@ const forceClose = () => {
             v-if="step == 0"
             :initial-values="basicDetails"
             :is-edit-mode="isEditMode"
+            :unit-locked-by-history="isEditMode && !!basicDetails.lastUsed"
             @next="
               (details: BasicDetails) => {
                 basicDetails = details

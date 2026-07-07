@@ -55,6 +55,7 @@ import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 import { useTextTransform } from "@/composables/useTextTransform"
 import { useQueryClient } from "@tanstack/vue-query"
+import { inventoryCache } from "../cache"
 import IconHeader from "@components/IconHeader.vue"
 
 interface FormValues {
@@ -128,7 +129,7 @@ const handleSubmit = (values: FormValues) => {
         toast.success("Category created successfully")
 
         // Invalidate categories query to refresh dropdown
-        queryClient.invalidateQueries({ queryKey: ["categories"] })
+        inventoryCache.categoryChanged(queryClient)
 
         // Emit success with new category data
         emit("success", {

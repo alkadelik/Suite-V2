@@ -8,6 +8,7 @@ import {
   PopupEventResponse,
   PopupInventory,
   PopupOrderPayload,
+  TQrcodeResponse,
 } from "./types"
 import { useMutation } from "@tanstack/vue-query"
 import { TOrderResponse } from "@modules/orders/types"
@@ -93,6 +94,15 @@ export function useGetPopupInventory(popupId: string, search?: MaybeRefOrGetter<
       return s ? { search: s } : undefined
     }),
     key: `popup-inventory-${popupId}`,
+    selectData: true,
+  })
+}
+
+export function useGetPopupQrcode(popupId: MaybeRefOrGetter<string | undefined>) {
+  return useApiQuery<TQrcodeResponse>({
+    url: () => `/popup-events/${toValue(popupId)}/qr-code/`,
+    key: () => `popup-qrcode-${toValue(popupId)}`,
+    enabled: () => !!toValue(popupId),
     selectData: true,
   })
 }

@@ -125,7 +125,10 @@ const computedParams = computed(() => {
   const params: Record<string, string> = {}
   if (debouncedSearch.value) params.search = debouncedSearch.value
   if (status.value && status.value !== "all") {
-    if (status.value.includes("paid")) {
+    if (status.value === "offline") {
+      params.payment_source = "offline"
+      params.payment_status = "unpaid"
+    } else if (status.value.includes("paid")) {
       params.payment_status = status.value
     } else {
       params.fulfilment_status = status.value
@@ -225,7 +228,7 @@ const getActionItems = (item: TOrder) => [
         },
       ]
     : []),
-  ...(item.fulfilment_status === "unfulfilled"
+  ...(item.fulfilment_status !== "fulfilled"
     ? [
         {
           label: "Fulfill Order",
@@ -750,6 +753,7 @@ const handleDetailsMarkAsPaid = () => {
     </ConfirmationModal>
 
     <CreateOrderDrawer
+      v-if="openCreate"
       :open="openCreate"
       @close="
         () => {
