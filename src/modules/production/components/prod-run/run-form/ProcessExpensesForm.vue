@@ -6,6 +6,7 @@ import AppButton from "@components/AppButton.vue"
 import type { ProcessRow, AdditionalExpenseRow } from "../form-types"
 import { computed, ref } from "vue"
 import { useProductionStore } from "@modules/production/store"
+import { focusNextOnEnter } from "@/composables/useFocusNextOnEnter"
 
 const recipeSingularLabel = computed(() => useProductionStore().recipeSingularLabel)
 
@@ -54,7 +55,7 @@ function handleSubmit() {
 </script>
 
 <template>
-  <form @submit.prevent="handleSubmit">
+  <form @submit.prevent="handleSubmit" @keydown.enter="focusNextOnEnter">
     <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
       <Icon name="box" size="28" />
     </div>

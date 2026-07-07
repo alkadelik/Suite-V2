@@ -19,6 +19,7 @@ import { TProdRun } from "@modules/production/types"
 import { useMediaQuery } from "@vueuse/core"
 import { computed, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
+import { usePremiumAccess } from "@/composables/usePremiumAccess"
 
 const page = ref(1)
 const itemsPerPage = ref(10)
@@ -31,6 +32,13 @@ const showFinaliseModal = ref(false)
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 const router = useRouter()
 const route = useRoute()
+
+const { checkPremiumAccess } = usePremiumAccess()
+
+const handleOpenCreate = () => {
+  if (!checkPremiumAccess()) return
+  showCreateModal.value = "create"
+}
 
 watch(
   () => route.query.create,
@@ -113,7 +121,7 @@ const onFinaliseRun = () => {
         :action-label="`Add production run`"
         :loading="isPending"
         action-icon="add"
-        @action="showCreateModal = 'create'"
+        @action="handleOpenCreate"
       >
         <template #image>
           <img src="@/assets/images/empty-material.svg?url" class="mx-auto mb-4" />
@@ -152,7 +160,7 @@ const onFinaliseRun = () => {
                 size="sm"
                 class="flex-shrink-0"
                 :label="isMobile ? '' : `Add Run`"
-                @click="showCreateModal = 'create'"
+                @click="handleOpenCreate"
               />
             </div>
           </div>

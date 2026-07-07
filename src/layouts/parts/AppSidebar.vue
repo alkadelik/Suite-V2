@@ -113,10 +113,13 @@
       <!-- Subscription view -->
       <div v-if="!isInternational" class="relative mt-20">
         <div
-          :class="['relative isolate flex flex-col gap-1 rounded-3xl p-3 pt-12 text-white']"
+          :class="[
+            'relative isolate flex cursor-pointer flex-col gap-1 rounded-3xl p-3 pt-12 text-white',
+          ]"
           style="
             background: linear-gradient(136.41deg, #1a2a6c -3.7%, #b21f1f 53.98%, #fdbb2d 99.39%);
           "
+          @click="$emit('upgrade')"
         >
           <template v-if="subscription && !isActive && !isTrial">
             <h3 class="mb-1 text-sm font-bold">Your trial has ended!</h3>
@@ -142,6 +145,7 @@
 
           <!--  v-if="isTrial || planNameLower !== 'bloom'" -->
           <AppButton
+            v-if="!isActive"
             color="alt"
             :label="planCtaLabel"
             class="w-full flex-row-reverse"
@@ -285,7 +289,7 @@ const planName = computed(() => subscription.value?.plan_name ?? "")
 const planNameLower = computed(() => planName.value.toLowerCase())
 const planCtaLabel = computed(() => {
   if (isTrial.value) return "Upgrade"
-  return "Subscribed"
+  return isActive.value ? "Subscribed" : "Subscribe"
   // return planNameLower.value === "burst" ? "Subscribed" : "Upgrade"
 })
 

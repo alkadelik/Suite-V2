@@ -92,7 +92,7 @@ watch(
           placeholder="Find a customer by name, email or phone"
           v-model="searchQuery"
         />
-        <AppButton icon="add" class="flex-shrink-0" @click="openAdd = true" />
+        <AppButton icon="user-add" class="flex-shrink-0" @click="openAdd = true" />
       </div>
     </div>
 

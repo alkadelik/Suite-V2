@@ -52,16 +52,13 @@
       />
     </div>
 
-    <!-- Tabs for HQ users -->
+    <!-- Product/request tabs for multi-location stores -->
     <div v-if="locationsCount > 1" class="mt-6 w-full md:w-1/2">
-      <Tabs v-if="isHQ" :tabs="tabs" v-model="activeTab" />
+      <Tabs :tabs="tabs" v-model="activeTab" />
     </div>
 
     <!-- Requests Tab Content -->
-    <InventoryRequests
-      v-if="activeTab === 'requests' && isHQ"
-      @request-click="handleRequestClick"
-    />
+    <InventoryRequests v-if="activeTab === 'requests'" @request-click="handleRequestClick" />
 
     <!-- Products Tab Content -->
     <template v-if="activeTab === 'products'">
@@ -270,10 +267,12 @@
     <ProductEditDrawer
       v-if="showProductEditDrawer"
       ref="productEditDrawerRef"
+      :key="editMode"
       v-model="showProductEditDrawer"
       :product="product"
       :edit-mode="editMode"
       :variant="variantForEdit"
+      :variant-attribute-keys="variantAttributeKeysForEdit"
       @add-category="showAddCategoryModal = true"
       @edit-variant-details="handleEditVariantDetails"
     />
@@ -308,7 +307,7 @@
 import DataTable from "@components/DataTable.vue"
 import { TProduct, type IInventoryTransferRequest, type IProductVariantDetails } from "../types"
 import { PRODUCT_COLUMNS } from "../constants"
-import { ref, computed, watch, nextTick } from "vue"
+import { ref, computed, watch } from "vue"
 import { useQueryClient } from "@tanstack/vue-query"
 import Icon from "@components/Icon.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
@@ -429,7 +428,7 @@ const isHQ = computed(() => settingsStore.activeLocation?.is_hq || false)
 const locationsCount = computed(() => settingsStore.locations?.length || 0)
 
 // Pending transfer-requests count for the Requests tab pill (LYW-2625).
-// Only fires for HQ multi-location stores (the only context the Requests tab shows).
+// Fires for any active location in a multi-location store.
 // Scoped to requests addressed TO this location (to_location = the location being
 // asked to grant; from_location = the requester), so requests this location made
 // elsewhere don't inflate the pill.
@@ -439,7 +438,7 @@ const pendingRequestParams = computed(() => ({
   limit: 1,
 }))
 const { data: pendingRequests } = useGetTransferRequests(pendingRequestParams, {
-  enabled: () => isHQ.value && locationsCount.value > 1 && !!settingsStore.activeLocation?.uid,
+  enabled: () => locationsCount.value > 1 && !!settingsStore.activeLocation?.uid,
 })
 const pendingRequestsCount = computed(() => pendingRequests.value?.data?.count || 0)
 
@@ -470,6 +469,7 @@ const editMode = ref<"product-details" | "variant-details" | "variants" | "image
   "product-details",
 )
 const variantForEdit = ref<IProductVariantDetails | null>(null)
+const variantAttributeKeysForEdit = ref<string[]>([])
 const productUidForManageStock = ref<string | null>(null)
 const productUidForEdit = ref<string | null>(null)
 
@@ -538,6 +538,7 @@ watch(
       // Clear the edit request when drawer closes
       productUidForEdit.value = null
       variantForEdit.value = null
+      variantAttributeKeysForEdit.value = []
     }
   },
 )
@@ -609,6 +610,7 @@ const getStockStatus = (item: TProduct) => {
 const openProductEditDrawer = (item: TProduct) => {
   product.value = { ...item }
   editMode.value = "product-details"
+  variantAttributeKeysForEdit.value = []
   setTimeout(() => {
     showProductEditDrawer.value = true
   }, 0)
@@ -617,14 +619,16 @@ const openProductEditDrawer = (item: TProduct) => {
 const openImagesEditDrawer = (item: TProduct) => {
   product.value = { ...item }
   editMode.value = "images"
+  variantAttributeKeysForEdit.value = []
   setTimeout(() => {
     showProductEditDrawer.value = true
   }, 0)
 }
 
-const openPriceWeightEdit = (item: TProduct) => {
+const openPriceWeightEdit = (item: TProduct, variantAttributeKeys: string[] = []) => {
   // Set edit mode first
   editMode.value = "variant-details"
+  variantAttributeKeysForEdit.value = variantAttributeKeys
   // Trigger fetch of full product details (watcher will handle opening drawer)
   productUidForEdit.value = item.uid
 }
@@ -632,23 +636,22 @@ const openPriceWeightEdit = (item: TProduct) => {
 const openVariantsManage = (item: TProduct) => {
   product.value = { ...item }
   editMode.value = "variants"
+  variantAttributeKeysForEdit.value = []
   setTimeout(() => {
     showProductEditDrawer.value = true
   }, 0)
 }
 
-// After the variants step saves, reopen the drawer in price & weight mode so the
-// newly added variants get their selling price — mirrors the product details page
-// flow (LYW-2679). nextTick lets the drawer-close watcher clear stale edit state
-// before we set up the follow-up edit.
-const handleEditVariantDetails = () => {
+// After the variants step saves, the drawer stays open and emits the new
+// variants' keys — switch it to the pricing step in place (the :key remounts it
+// in variant-details mode) once the refreshed product is in the cache (LYW-2679).
+const handleEditVariantDetails = (variantAttributeKeys: string[]) => {
   const item = product.value
   if (!item) return
-  void nextTick(async () => {
-    // Ensure the just-saved variants are in the cache before the drawer reopens
+  void (async () => {
     await queryClient.refetchQueries({ queryKey: inventoryKeys.products.detail(item.uid) })
-    openPriceWeightEdit(item)
-  })
+    openPriceWeightEdit(item, variantAttributeKeys)
+  })()
 }
 
 const openManageStockModal = (item: TProduct) => {

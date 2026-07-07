@@ -186,4 +186,34 @@ router.beforeEach((to, from, next) => {
   next()
 })
 
+/**
+ * Recover from stale chunk references after a new deployment.
+ *
+ * When a fresh build ships, the hashed chunk filenames change. A client still
+ * running the previous `index.html` will fail to fetch the old chunk on
+ * navigation. A one-time reload pulls the new `index.html` (and chunk names);
+ * the sessionStorage flag guards against an infinite reload loop.
+ */
+router.onError((error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error)
+  const pattern = /Failed to fetch dynamically imported module|Importing a module script failed/i
+
+  if (pattern.test(message)) {
+    const hasReloaded = sessionStorage.getItem("reload-attempted")
+
+    if (!hasReloaded) {
+      sessionStorage.setItem("reload-attempted", "true")
+
+      // Strip redirect from the current URL before reloading
+      const url = new URL(window.location.href)
+      url.searchParams.delete("redirect")
+
+      window.location.href = url.toString()
+    } else {
+      sessionStorage.removeItem("reload-attempted")
+      console.error("Failed to load page after refresh.", error)
+    }
+  }
+})
+
 export default router
