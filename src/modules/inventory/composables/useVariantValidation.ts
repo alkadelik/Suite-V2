@@ -15,6 +15,12 @@ interface IVariantValidationOptions {
    * variants inherit the product's default weight. Defaults to true.
    */
   requireVariantDetailsWeight?: Ref<boolean>
+  /**
+   * The subset of variants shown on the variants-mode pricing step (step 3):
+   * the newly added combinations. Validation errors are indexed against this
+   * list so they line up with the rendered rows.
+   */
+  pricingVariants?: Ref<IProductVariant[]>
 }
 
 export interface IProductDetailsValidationErrors {
@@ -87,6 +93,7 @@ export function useVariantValidation(options: IVariantValidationOptions) {
     step,
     editMode,
     requireVariantDetailsWeight,
+    pricingVariants,
   } = options
 
   const getVariantValue = (variant: IVariantConfiguration): string => {
@@ -233,16 +240,19 @@ export function useVariantValidation(options: IVariantValidationOptions) {
     }
   }
 
-  const buildInventoryValidation = (config: {
-    requireStock: boolean
-    requirePrice: boolean
-    requireWeight: boolean
-    requireDimensions: boolean
-  }): ICurrentProductStepValidation => {
-    const errors = EMPTY_INVENTORY_ERRORS(variants.value.length)
+  const buildInventoryValidation = (
+    config: {
+      requireStock: boolean
+      requirePrice: boolean
+      requireWeight: boolean
+      requireDimensions: boolean
+    },
+    variantsToValidate: IProductVariant[] = variants.value,
+  ): ICurrentProductStepValidation => {
+    const errors = EMPTY_INVENTORY_ERRORS(variantsToValidate.length)
     let firstErrorTarget: string | undefined
 
-    const firstVariant = variants.value[0]
+    const firstVariant = variantsToValidate[0]
 
     if (config.requireWeight && !isValidPositiveNumber(firstVariant?.weight || "")) {
       errors.weight = "Select a product weight to generate dimensions."
@@ -276,7 +286,7 @@ export function useVariantValidation(options: IVariantValidationOptions) {
       }
     }
 
-    variants.value.forEach((variant, index) => {
+    variantsToValidate.forEach((variant, index) => {
       if (config.requireStock && !isValidNonNegativeInteger(variant.opening_stock)) {
         errors.variants[index].opening_stock = "Enter a valid stock quantity."
         firstErrorTarget ??= `variant-opening-stock-${index}`
@@ -330,6 +340,20 @@ export function useVariantValidation(options: IVariantValidationOptions) {
     if (editMode === "variants") {
       if (step.value === 1) {
         return buildVariantConfigurationValidation()
+      }
+
+      // Step 3: pricing for the newly added combinations. New variants inherit
+      // the product's default weight, so only prices are validated here.
+      if (step.value === 3) {
+        return buildInventoryValidation(
+          {
+            requireStock: false,
+            requirePrice: true,
+            requireWeight: false,
+            requireDimensions: false,
+          },
+          pricingVariants?.value ?? variants.value,
+        )
       }
 
       return {

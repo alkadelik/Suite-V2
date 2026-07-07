@@ -8,6 +8,11 @@ interface IStepManagementOptions {
   hasVariants: Ref<boolean>
   /** Edit mode (optional, for edit drawer) */
   editMode?: string
+  /**
+   * Whether the variants edit flow currently has newly added combinations that
+   * still need pricing. Adds a third (pricing) step to the variants edit mode.
+   */
+  hasNewVariants?: Ref<boolean>
 }
 
 /**
@@ -24,6 +29,8 @@ interface IHeaderOptions {
   mode: "create" | "edit"
   /** Whether the product originally had variants (for edit mode) */
   productOriginallyHadVariants?: Ref<boolean>
+  /** Whether the variants edit flow has new combinations needing a pricing step */
+  hasNewVariants?: Ref<boolean>
 }
 
 /**
@@ -76,16 +83,17 @@ export function useProductDrawerUtilities() {
    * Step management for multi-step forms
    */
   const useStepManagement = (options: IStepManagementOptions) => {
-    const { hasVariants, editMode } = options
+    const { hasVariants, editMode, hasNewVariants } = options
     const step = ref<number>(1)
 
     /**
      * Calculate total steps based on variant status and edit mode
      */
     const totalSteps = computed<number>(() => {
-      // Variants edit mode always has 2 steps: configuration, then combinations/pricing
+      // Variants edit mode: configuration, then combinations review, plus a
+      // pricing step when the review produced newly added combinations.
       if (editMode === "variants") {
-        return 2
+        return hasNewVariants?.value ? 3 : 2
       }
       // Full create/edit mode
       return hasVariants.value ? 4 : 3
@@ -137,7 +145,8 @@ export function useProductDrawerUtilities() {
    * Dynamic header generation
    */
   const useDrawerHeaders = (options: IHeaderOptions) => {
-    const { step, hasVariants, editMode, mode, productOriginallyHadVariants } = options
+    const { step, hasVariants, editMode, mode, productOriginallyHadVariants, hasNewVariants } =
+      options
 
     /**
      * Get dynamic header title based on current step
@@ -170,12 +179,14 @@ export function useProductDrawerUtilities() {
         return "Supports: PNG, JPEG, SVG, WEBP, HEIC, HEIF, AVIF | Max. size: 5MB"
       }
 
-      // Variants edit mode (only 2 steps)
+      // Variants edit mode
       if (editMode === "variants") {
         if (step.value === 1) {
           return `${actionVerb} the different options your product comes in (like size or colour). For example: Size → Large, Color → Red.`
         } else if (step.value === 2) {
           return "These are the updated variations for this product"
+        } else if (step.value === 3) {
+          return "Set the selling price and cost price for each new variant."
         }
       }
 
@@ -202,19 +213,24 @@ export function useProductDrawerUtilities() {
      */
     const getSubmitButtonLabel = computed<string>(() => {
       const isEdit = mode === "edit"
-      const isLast = step.value === (editMode === "variants" ? 2 : hasVariants.value ? 4 : 3)
+      const variantsModeTotalSteps = hasNewVariants?.value ? 3 : 2
+      const isLast =
+        step.value ===
+        (editMode === "variants" ? variantsModeTotalSteps : hasVariants.value ? 4 : 3)
 
       if (isLast) {
         return isEdit ? "Save Changes" : "Publish Product"
       }
 
-      // Variants edit mode (only 2 steps)
+      // Variants edit mode
       if (editMode === "variants") {
         if (step.value === 1) {
           // If product originally had variants, just show "Next" (not adding new pricing)
           // Otherwise show "Next (Price)" since user needs to set prices for new variants
           return productOriginallyHadVariants?.value ? "Next" : "Next (Price)"
         }
+        // Step 2 with new combinations still to price
+        return "Next (Price)"
       }
 
       // Full mode
