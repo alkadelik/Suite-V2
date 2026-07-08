@@ -82,12 +82,12 @@ const scopeMeta = computed(() => COUPON_SCOPE_META[props.coupon.scope])
 const statusMeta = computed(() => COUPON_STATUS_META[props.coupon.status])
 const valueLabel = computed(() => couponValueLabel(props.coupon, format))
 
-// Per-coupon usage counts aren't in the list payload (backend gap), so this reflects
-// the cap only: "Unlimited" when uncapped, else "{used}% Usage" (used = 0 for now).
+// "Unlimited" when uncapped, else the real usage percentage (`usage_count` is
+// on the list serializer).
 const usageLabel = computed(() => {
   const limit = props.coupon.max_usage
   if (limit == null || limit <= 0) return "Unlimited"
-  const used = 0
+  const used = Number(props.coupon.usage_count ?? 0) || 0
   return `${Math.min(100, Math.round((used / limit) * 100))}% Usage`
 })
 </script>

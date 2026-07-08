@@ -127,12 +127,12 @@ import TargetSelector from "./TargetSelector.vue"
 import type { ITargetSelectorModel } from "./TargetSelector.vue"
 import { buildCouponPayload, couponToFormModel, generateCouponCode } from "../utils"
 import { useCreateCoupon, useUpdateCoupon } from "../api"
-import type { ICouponFormModel, TCoupon } from "../types"
+import type { ICouponFormModel, TCoupon, TCouponDetail } from "../types"
 
 const props = defineProps<{
   open: boolean
   mode: "create" | "edit" | "duplicate"
-  coupon?: TCoupon | null
+  coupon?: TCoupon | TCouponDetail | null
 }>()
 
 const emit = defineEmits<{ close: []; saved: [] }>()

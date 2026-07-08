@@ -11,56 +11,13 @@
         <Icon name="tag-2" size="18" />
       </span>
       <h3 class="m-0 text-sm font-semibold text-gray-800 md:text-base">Target Products</h3>
-
-      <!-- All-products scope -->
-      <span v-if="isAllProducts" class="ml-1 text-xs font-medium text-gray-500">All Products</span>
-
-      <!-- Category count -->
-      <span v-else-if="isCategoryScope" class="ml-1 text-xs font-medium text-gray-500">
-        {{ coupon.categories.length }}
-        {{ coupon.categories.length === 1 ? "Category" : "Categories" }}
-      </span>
-
-      <!-- Variant count (products scope) -->
-      <span v-else class="ml-1 text-xs font-medium text-gray-500">
-        {{ variants.length }} {{ variants.length === 1 ? "Variant" : "Variants" }}
-      </span>
-
-      <!-- Category filter (category scope only) -->
-      <div v-if="isCategoryScope" class="ml-auto">
-        <DropdownMenu :items="categoryFilterItems" placement="bottom-end" menu-width="auto">
-          <template #trigger>
-            <button
-              type="button"
-              class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
-            >
-              <Icon name="filter-lines" size="14" class="text-gray-500" />
-              <span class="max-w-28 truncate">{{ activeCategoryLabel }}</span>
-              <Icon name="chevron-down" size="14" class="text-gray-400" />
-            </button>
-          </template>
-        </DropdownMenu>
-      </div>
+      <span v-if="countLabel" class="ml-1 text-xs font-medium text-gray-500">{{ countLabel }}</span>
     </div>
 
     <!-- White list panel (mobile); grey nested panel (desktop) -->
     <div class="rounded-xl bg-white p-1.5 md:m-3 md:bg-gray-50 md:p-2">
-      <!-- Loading -->
-      <div v-if="loading" class="space-y-3 px-3 py-3">
-        <div v-for="n in 4" :key="n" class="flex items-center gap-3">
-          <div class="h-12 w-12 animate-pulse rounded-lg bg-gray-100" />
-          <div class="h-3 flex-1 animate-pulse rounded bg-gray-100" />
-          <div class="h-3 w-16 animate-pulse rounded bg-gray-100" />
-        </div>
-      </div>
-
-      <!-- Empty -->
-      <p v-else-if="rows.length === 0" class="py-6 text-center text-sm text-gray-500">
-        No target products to display.
-      </p>
-
-      <!-- Rows -->
-      <ul v-else class="divide-y divide-gray-200">
+      <!-- Variant rows — embedded in the detail response for every scope -->
+      <ul v-if="rows.length" class="divide-y divide-gray-200">
         <li v-for="row in rows" :key="row.uid" class="flex items-center gap-3 rounded-lg px-3 py-3">
           <img
             :src="row.image ?? emptyState"
@@ -83,33 +40,57 @@
           </div>
         </li>
       </ul>
+
+      <!-- Category fallback — category scope with no embedded variants -->
+      <ul v-else-if="categories.length" class="divide-y divide-gray-200">
+        <li
+          v-for="category in categories"
+          :key="category.uid"
+          class="flex items-center gap-3 rounded-lg px-3 py-3"
+        >
+          <span
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-purple-50 text-purple-600"
+          >
+            <Icon name="tag-2" size="18" />
+          </span>
+          <p class="min-w-0 flex-1 truncate text-sm font-medium text-gray-800">
+            {{ category.name }}
+          </p>
+        </li>
+      </ul>
+
+      <!-- Empty -->
+      <p v-else class="py-6 text-center text-sm text-gray-500">No target products to display.</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed } from "vue"
 import Icon from "@components/Icon.vue"
-import DropdownMenu from "@components/DropdownMenu.vue"
 import emptyState from "@/assets/images/empty-state.png"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
-import { useGetProducts, useGetCategories } from "@modules/inventory/api"
-import type { TProduct, IProductCategory } from "@modules/inventory/types"
 import type { TCouponDetail, TCouponVariantSummary } from "../../types"
 
+// Variants + category summaries are embedded in the detail response for every
+// scope (products, categories, all_products), so the card renders synchronously
+// — no client-side product/category hydration and no loading state.
 const props = defineProps<{ coupon: TCouponDetail }>()
 
 const { format } = useFormatCurrency()
 
-const isAllProducts = computed(() => props.coupon.target_type === "all_products")
-// Prefer the backend target_type; fall back to the categories array for older rows.
-const isCategoryScope = computed(
-  () =>
-    props.coupon.target_type === "categories" ||
-    (!isAllProducts.value && (props.coupon.categories?.length ?? 0) > 0),
-)
-
 const variants = computed<TCouponVariantSummary[]>(() => props.coupon.variants ?? [])
+const categories = computed(() => props.coupon.categories ?? [])
+
+const countLabel = computed(() => {
+  if (props.coupon.target_type === "all_products") return "All Products"
+  if (props.coupon.target_type === "categories" || categories.value.length > 0) {
+    const n = categories.value.length
+    return `${n} ${n === 1 ? "Category" : "Categories"}`
+  }
+  const n = variants.value.length
+  return `${n} ${n === 1 ? "Variant" : "Variants"}`
+})
 
 // ---------------------------------------------------------------------------
 // Price helpers
@@ -138,58 +119,10 @@ function discountedPrice(original: number): number {
   return Math.max(0, original - raw) // percentage
 }
 
-// ---------------------------------------------------------------------------
-// Category filter (category scope)
-// ---------------------------------------------------------------------------
-const activeCategory = ref<string | null>(null)
-
-const { data: categoriesData } = useGetCategories(isCategoryScope)
-const allCategories = computed<IProductCategory[]>(() => categoriesData.value?.data?.results ?? [])
-
-/** Categories actually targeted by this coupon. */
-const targetCategories = computed<IProductCategory[]>(() => {
-  const uids = new Set(props.coupon.categories ?? [])
-  return allCategories.value.filter((c) => uids.has(c.uid))
-})
-
-const activeCategoryLabel = computed(() => {
-  if (!activeCategory.value) return "All Products"
-  return targetCategories.value.find((c) => c.uid === activeCategory.value)?.name ?? "All Products"
-})
-
-const categoryFilterItems = computed(() => [
-  { id: "all", label: "All Products", action: () => (activeCategory.value = null) },
-  ...targetCategories.value.map((c) => ({
-    id: c.uid,
-    label: c.name,
-    action: () => (activeCategory.value = c.uid),
-  })),
-])
-
-// ---------------------------------------------------------------------------
-// Category-scope hydration. The category filter works off product.category, so
-// for the categories scope we still list products client-side. The products and
-// all-products scopes render straight from the detail response's `variants`.
-// ---------------------------------------------------------------------------
-const productParams = computed<Record<string, string | number>>(() => {
-  const p: Record<string, string | number> = { limit: 100 }
-  if (isCategoryScope.value && activeCategory.value) p.category = activeCategory.value
-  return p
-})
-
-const { data: productsData, isFetching: productsFetching } = useGetProducts(
-  productParams,
-  isCategoryScope,
-)
-const products = computed<TProduct[]>(() => productsData.value?.data?.results ?? [])
-
-// Variant scopes render embedded data — only the category scope waits on a fetch.
-const loading = computed(() => isCategoryScope.value && productsFetching.value)
-
 interface TargetRow {
   uid: string
   name: string
-  /** Secondary line (variant name), when the row is a variant. */
+  /** Secondary line (variant name). */
   sub?: string
   image: string | null
   /** Parsed original price, or null when missing/invalid (renders "--"). */
@@ -198,42 +131,17 @@ interface TargetRow {
   discounted: number
 }
 
-function toRow(p: TProduct): TargetRow {
-  const original = parsePrice(p.price)
-  return {
-    uid: p.uid,
-    name: p.name,
-    image: p.primary_image?.image ?? null,
-    original,
-    discounted: original != null ? discountedPrice(original) : 0,
-  }
-}
-
-function variantToRow(v: TCouponVariantSummary): TargetRow {
-  const original = parsePrice(v.price)
-  return {
-    uid: v.uid,
-    name: v.product_name,
-    sub: v.name,
-    image: v.image || null,
-    original,
-    discounted: original != null ? discountedPrice(original) : 0,
-  }
-}
-
-const rows = computed<TargetRow[]>(() => {
-  if (isCategoryScope.value) {
-    const catUids = new Set(props.coupon.categories ?? [])
-    return products.value
-      .filter((p) => {
-        if (activeCategory.value) return p.category === activeCategory.value
-        return p.category != null && catUids.has(p.category)
-      })
-      .map(toRow)
-  }
-
-  // Products / all-products scopes: the detail response embeds the resolved
-  // variants with real prices — no client-side uid matching needed.
-  return variants.value.map(variantToRow)
-})
+const rows = computed<TargetRow[]>(() =>
+  variants.value.map((v) => {
+    const original = parsePrice(v.price)
+    return {
+      uid: v.uid,
+      name: v.product_name,
+      sub: v.name !== v.product_name ? v.name : undefined,
+      image: v.image || null,
+      original,
+      discounted: original != null ? discountedPrice(original) : 0,
+    }
+  }),
+)
 </script>

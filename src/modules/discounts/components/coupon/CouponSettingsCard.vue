@@ -39,9 +39,9 @@ import { computed } from "vue"
 import Icon from "@components/Icon.vue"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { formatNumericDate, formatTimeOfDay } from "../../utils"
-import type { TCoupon } from "../../types"
+import type { TCoupon, TCouponDetail } from "../../types"
 
-const props = defineProps<{ coupon: TCoupon }>()
+const props = defineProps<{ coupon: TCoupon | TCouponDetail }>()
 
 const { format } = useFormatCurrency()
 

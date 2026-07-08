@@ -38,7 +38,14 @@ export interface TCoupon {
   is_active: boolean
   discount_description: string // read-only computed
   is_valid: string // read-only computed
+  usage_count: number // ro, backend-computed (on both the list and detail serializers)
   created_at: string
+}
+
+// Embedded in CouponDetail.categories (uid + name only — no product_count).
+export interface TCouponCategorySummary {
+  uid: string
+  name: string
 }
 
 // Embedded in CouponDetail.variants (read-only summary, no client hydration).
@@ -50,14 +57,15 @@ export interface TCouponVariantSummary {
   promo_price: string | null
   product_uid: string
   product_name: string
-  image: string
+  image: string | null
 }
 
 // GET /coupons/{uid}/ returns the `CouponDetail` serializer: the base coupon
-// plus the resolved target variants and the actual usage count.
-export interface TCouponDetail extends TCoupon {
+// plus the resolved target variants; `categories` is upgraded from uid strings
+// to embedded {uid, name} summaries.
+export interface TCouponDetail extends Omit<TCoupon, "categories"> {
+  categories: TCouponCategorySummary[]
   variants: TCouponVariantSummary[]
-  usage_count: string // ro, backend-computed
 }
 
 // Row type used by the table (derived/flattened for cell rendering)

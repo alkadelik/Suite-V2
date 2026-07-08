@@ -74,7 +74,7 @@
       </template>
 
       <template #cell:usage="{ item }">
-        <CouponUsageBar :used="0" :limit="item.max_usage" />
+        <CouponUsageBar :used="Number(item.usage_count ?? 0)" :limit="item.max_usage" />
       </template>
 
       <template #cell:status="{ item }">

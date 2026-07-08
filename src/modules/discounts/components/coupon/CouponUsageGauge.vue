@@ -50,7 +50,7 @@ const props = defineProps<{ coupon: TCouponDetail }>()
 
 const { format } = useFormatCurrency()
 
-// `usage_count` is a read-only string on the detail response.
+// `usage_count` is read-only on the detail response (typed number; coerced defensively).
 const used = computed(() => Number(props.coupon.usage_count ?? 0) || 0)
 const limit = computed(() => props.coupon.max_usage)
 const limitLabel = computed(() => (limit.value != null ? String(limit.value) : "∞"))

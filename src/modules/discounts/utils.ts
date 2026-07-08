@@ -1,5 +1,6 @@
 import type {
   TCoupon,
+  TCouponDetail,
   TCouponScope,
   TCouponStatus,
   TCouponTargetType,
@@ -34,8 +35,13 @@ export function generateCouponCode(length = 10): string {
   return out
 }
 
+/** Category uids, whether the source is a list row (uid strings) or a detail (summaries). */
+export function couponCategoryUids(c: Pick<TCoupon | TCouponDetail, "categories">): string[] {
+  return (c.categories ?? []).map((cat) => (typeof cat === "string" ? cat : cat.uid))
+}
+
 export function deriveScope(
-  c: Pick<TCoupon, "target_type" | "applicable_products" | "categories">,
+  c: Pick<TCoupon | TCouponDetail, "target_type" | "applicable_products" | "categories">,
 ): TCouponScope {
   // Prefer the backend `target_type`; fall back to the target arrays for older rows.
   if (c.target_type) return c.target_type === "order" ? "order" : "products"
@@ -99,7 +105,7 @@ export function buildCouponPayload(m: ICouponFormModel): ICouponPayload {
 }
 
 /** Hydrate a wizard model from an existing coupon (Edit / Duplicate). */
-export function couponToFormModel(c: TCoupon): ICouponFormModel {
+export function couponToFormModel(c: TCoupon | TCouponDetail): ICouponFormModel {
   const kind = c.discount_type === "flat" ? "fixed" : "percentage"
   // % cap: prefer the dedicated `discount_cap`; fall back to legacy `combined` rows.
   const cap = c.discount_cap ?? (c.discount_type === "combined" ? (c.flat_discount ?? "") : "")
@@ -124,7 +130,7 @@ export function couponToFormModel(c: TCoupon): ICouponFormModel {
             : "all",
     productUids: c.applicable_products ?? [],
     variantSelections: {},
-    categoryUids: c.categories ?? [],
+    categoryUids: couponCategoryUids(c),
     max_usage: c.max_usage != null ? String(c.max_usage) : "",
     max_usage_per_customer: c.max_usage_per_customer ? String(c.max_usage_per_customer) : "",
     enable_min_amount: c.min_order_amount != null,
