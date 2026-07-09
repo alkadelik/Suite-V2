@@ -43,9 +43,9 @@ const { format } = useFormatCurrency()
       <DropdownMenu :items="actions" @toggle="emit('toggle')" />
     </div>
     <div class="grid grid-cols-2 gap-3 p-3">
-      <div v-if="item.courier_name" class="min-w-0">
+      <div v-if="item.courier?.name" class="min-w-0">
         <p class="text-core-500 text-xs">Courier</p>
-        <p class="truncate text-sm font-medium">{{ item.courier_name }}</p>
+        <p class="truncate text-sm font-medium">{{ item.courier.name }}</p>
       </div>
       <div>
         <p class="text-core-500 text-xs">
