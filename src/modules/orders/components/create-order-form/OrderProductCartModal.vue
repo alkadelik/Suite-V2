@@ -266,9 +266,7 @@ const headerImage = computed(() => props.product?.images?.[0]?.image)
 const totalStock = computed(() => {
   if (!props.product?.variants) return 0
   return props.product.variants.reduce((sum, v) => {
-    const sellable = Number(v.sellable_stock ?? v.available_stock ?? 0)
-    const taken = Number((v as { popup_quantity_taken?: number }).popup_quantity_taken ?? 0)
-    return sum + Math.max(0, sellable - taken)
+    return sum + Math.max(0, v.sellable_stock)
   }, 0)
 })
 </script>
