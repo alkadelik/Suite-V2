@@ -4,7 +4,7 @@
     :title="drawerTitle"
     :position="drawerPosition"
     max-width="xl"
-    @close="emit('update:modelValue', false)"
+    @close="handleDrawerClose"
   >
     <IconHeader icon-name="shop-add" :title="getHeaderTitle" :subtext="getHeaderText" />
 
@@ -31,9 +31,7 @@
           v-model="variants"
           :product-name="form.name"
           :hide-stock="true"
-          :hide-weight="isNewVariantPricingFlow"
-          :disable-cost-price="!isNewVariantPricingFlow"
-          :force-variant-layout="isNewVariantPricingFlow"
+          :disable-cost-price="true"
           :errors="submitAttempted ? currentStepValidation.inventoryErrors : undefined"
         />
 
@@ -56,7 +54,7 @@
             :errors="submitAttempted ? currentStepValidation.variantConfigurationErrors : undefined"
           />
 
-          <!-- Step 2 for variants mode: Inventory & Pricing -->
+          <!-- Step 2 for variants mode: Combinations review -->
           <ProductManageCombinationsForm
             v-else-if="step === 2"
             v-model="variants"
@@ -71,8 +69,19 @@
             :errors="submitAttempted ? currentStepValidation.inventoryErrors : undefined"
           />
 
-          <!-- Step 3 for variants mode: Product Images -->
-          <ProductImagesForm v-else-if="step === 3" v-model="form.images" />
+          <!-- Step 3 for variants mode: Pricing for the newly added variants.
+               Nothing is persisted until this step submits, so closing the
+               drawer mid-flow never leaves variants created without prices. -->
+          <ProductManageCombinationsForm
+            v-else-if="step === 3"
+            v-model="newVariantsForPricing"
+            :product-name="form.name"
+            :hide-stock="true"
+            :hide-weight="true"
+            :hide-reorder="true"
+            :force-variant-layout="true"
+            :errors="submitAttempted ? currentStepValidation.inventoryErrors : undefined"
+          />
         </template>
 
         <!-- Full Edit Mode (multi-step) -->
@@ -167,6 +176,19 @@
       :teleport="false"
       @success="handleCategoryCreated"
     />
+
+    <!-- Confirm before abandoning the variants flow: nothing is persisted
+         until the final step, so exiting discards every change. -->
+    <ConfirmationModal
+      v-model="showExitConfirmation"
+      header="Exit variant editing?"
+      paragraph="Your variant changes haven't been saved. If you exit now, none of them will be applied."
+      variant="warning"
+      action-label="Exit"
+      info-message=""
+      z-class="z-[1200]"
+      @confirm="confirmExit"
+    />
   </Drawer>
 </template>
 
@@ -188,6 +210,7 @@ import ProductManageCombinationsForm from "./ProductForm/ProductManageCombinatio
 import ProductImagesForm from "./ProductForm/ProductImagesForm.vue"
 import ProductVariantsForm from "./ProductForm/ProductVariantsForm.vue"
 import AddCategoryModal from "./AddCategoryModal.vue"
+import ConfirmationModal from "@components/ConfirmationModal.vue"
 import {
   useUpdateProduct,
   useUpdateVariant,
@@ -217,13 +240,10 @@ import { useVariantConfiguration } from "../composables/useVariantConfiguration"
 import { useVariantValidation } from "../composables/useVariantValidation"
 import { useVariantProcessing } from "../composables/useVariantProcessing"
 import { useProductDrawerUtilities } from "../composables/useProductDrawerUtilities"
-import { inventoryCache } from "../cache"
-import { normalizeProductResponse } from "../normalizers"
-import {
-  filterVariantsByAttributeKeys,
-  getNewVariantAttributeKeys,
-  getVariantAttributeKey,
-} from "../utils/variant-editing"
+import { inventoryCache, type TVariantFieldPatch } from "../cache"
+import { inventoryKeys } from "../queryKeys"
+import { extractCreatedVariants, normalizeProductResponse } from "../normalizers"
+import { getVariantAttributeKey } from "../utils/variant-editing"
 
 type TProductEditMode = "product-details" | "variant-details" | "variants" | "images"
 
@@ -238,8 +258,6 @@ interface Props {
   editMode?: TProductEditMode
   /** Variant to edit (required for variant-details mode) */
   variant?: IProductVariantDetails | null
-  /** Variant attribute keys to show in variant-details mode */
-  variantAttributeKeys?: string[]
 }
 
 interface Emits {
@@ -251,8 +269,6 @@ interface Emits {
   "add-category": []
   /** Emitted when a new category is successfully created */
   "category-created": [category: { label: string; value: string }]
-  /** Emitted when variants are updated and should trigger editing variant details */
-  "edit-variant-details": [variantAttributeKeys: string[]]
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -260,7 +276,6 @@ const props = withDefaults(defineProps<Props>(), {
   product: null,
   editMode: "product-details",
   variant: null,
-  variantAttributeKeys: () => [],
 })
 
 const emit = defineEmits<Emits>()
@@ -277,6 +292,24 @@ const productDetailsRef = ref<{
 
 const showAddCategoryModal = ref(false)
 const submitAttempted = ref(false)
+const showExitConfirmation = ref(false)
+
+/**
+ * The variants flow persists nothing until its final step, so ask for
+ * confirmation before closing it; other modes close immediately.
+ */
+const handleDrawerClose = () => {
+  if (props.editMode === "variants") {
+    showExitConfirmation.value = true
+    return
+  }
+  emit("update:modelValue", false)
+}
+
+const confirmExit = () => {
+  showExitConfirmation.value = false
+  emit("update:modelValue", false)
+}
 
 // API mutations
 const { mutateAsync: updateProduct, isPending: isUpdating } = useUpdateProduct()
@@ -335,11 +368,44 @@ const expectedProductUid = ref<string | null>(null)
 // Track if the product originally had variants (for button label in variants edit mode)
 const productOriginallyHadVariants = ref(false)
 
-const isNewVariantPricingFlow = computed(() => props.variantAttributeKeys.length > 0)
+/**
+ * Whether a variant's attribute combination didn't exist on the product before
+ * this editing session (no tracked uid), i.e. it will be created on submit.
+ */
+const isNewCombination = (variant: IProductVariant): boolean =>
+  !originalVariantUids.value.has(getVariantAttributeKey(variant.attributes))
+
+/**
+ * Whether the variants edit flow produced newly added combinations. Adds the
+ * in-drawer pricing step (step 3) so new variants are never persisted without
+ * their selling/cost prices.
+ */
+const hasNewVariants = computed(
+  () =>
+    props.editMode === "variants" &&
+    originalVariantUids.value.size > 0 &&
+    variants.value.some(isNewCombination),
+)
+
+/**
+ * The newly added combinations, exposed as the model of the pricing step. The
+ * combinations form emits full replacement arrays, so the setter merges the
+ * priced rows back into the main variants array by position.
+ */
+const newVariantsForPricing = computed<IProductVariant[]>({
+  get: () => variants.value.filter(isNewCombination),
+  set: (updated) => {
+    let cursor = 0
+    variants.value = variants.value.map((variant) =>
+      isNewCombination(variant) ? (updated[cursor++] ?? variant) : variant,
+    )
+  },
+})
 
 const { step, previousStep } = useProductDrawerUtilities().useStepManagement({
   hasVariants,
   editMode: props.editMode,
+  hasNewVariants,
 })
 
 const { getHeaderTitle, getHeaderText, getSubmitButtonLabel } =
@@ -349,6 +415,7 @@ const { getHeaderTitle, getHeaderText, getSubmitButtonLabel } =
     editMode: props.editMode,
     mode: "edit",
     productOriginallyHadVariants,
+    hasNewVariants,
   })
 
 const variantConfigHelpers = useVariantConfiguration(
@@ -364,9 +431,7 @@ const { currentStepValidation, validateAllUIDs } = useVariantValidation({
   variants,
   step,
   editMode: props.editMode,
-  // Weight is hidden in the new-variant pricing handoff (new variants inherit
-  // the product's default weight), so don't validate it there.
-  requireVariantDetailsWeight: computed(() => !isNewVariantPricingFlow.value),
+  pricingVariants: newVariantsForPricing,
 })
 
 const variantProcessor = useVariantProcessing(variantConfiguration, {
@@ -496,7 +561,7 @@ const isNewVariant = (variant: IProductVariant): boolean => {
 
 // Watch for product data to populate form
 watch(
-  () => [productData.value, props.editMode, props.variantAttributeKeys] as const,
+  () => [productData.value, props.editMode] as const,
   ([data]) => {
     if (data?.data) {
       const product = data.data
@@ -529,10 +594,7 @@ watch(
         product.is_variable && product.variants && product.variants.length > 1
 
       const productVariants = product.variants || []
-      const variantsForForm =
-        props.editMode === "variant-details"
-          ? filterVariantsByAttributeKeys(productVariants, props.variantAttributeKeys)
-          : productVariants
+      const variantsForForm = productVariants
 
       // Populate original variant UIDs map and store full variant details
       originalVariantUids.value.clear()
@@ -715,6 +777,7 @@ watch(
     if (!isOpen && wasOpen) {
       step.value = 1
       submitAttempted.value = false
+      showExitConfirmation.value = false
     }
   },
 )
@@ -752,12 +815,19 @@ const handleSubmit = async () => {
     }
 
     try {
-      await updateProduct({ uid: productUid, ...payload } as IProductFormPayload & { uid: string })
+      const response = await updateProduct({
+        uid: productUid,
+        ...payload,
+      } as IProductFormPayload & {
+        uid: string
+      })
       toast.success("Product details updated successfully")
       submitAttempted.value = false
       resetFormState()
       emit("update:modelValue", false)
-      inventoryCache.productUpdated(queryClient, productUid)
+      // Reconcile caches from the response so the change renders instantly;
+      // falls back to invalidation when the response isn't a full product.
+      inventoryCache.productUpdated(queryClient, productUid, normalizeProductResponse(response))
     } catch (error) {
       displayError(error)
     }
@@ -766,9 +836,7 @@ const handleSubmit = async () => {
 
   // Variant Details Mode
   if (props.editMode === "variant-details") {
-    // The new-variant pricing handoff always bulk-updates, so it doesn't need a
-    // specific variant prop — only the manual single-variant edit does.
-    if ((!props.variant && !isNewVariantPricingFlow.value) || variants.value.length === 0) {
+    if (!props.variant || variants.value.length === 0) {
       toast.error("No variant data to update")
       return
     }
@@ -779,17 +847,36 @@ const handleSubmit = async () => {
       return
     }
 
-    const shouldBulkUpdateVariants =
-      variantDetailsWithUids.value.length > 1 || isNewVariantPricingFlow.value
+    // Optimistic cache patch mirroring the submitted variant fields, so price
+    // edits render instantly without refetch dimming.
+    const toVariantFieldPatch = (uid: string, variantData: IProductVariant): TVariantFieldPatch => {
+      const reorderPoint = Number(variantData.reorder_point)
+      return {
+        uid,
+        name: variantData.name,
+        price: variantData.price,
+        cost_price: variantData.cost_price,
+        weight: variantData.weight,
+        length: variantData.length,
+        width: variantData.width,
+        height: variantData.height,
+        ...(variantData.reorder_point !== "" && Number.isFinite(reorderPoint)
+          ? { reorder_point: reorderPoint }
+          : {}),
+      }
+    }
 
     try {
-      if (shouldBulkUpdateVariants) {
+      const patches: TVariantFieldPatch[] = []
+
+      if (variantDetailsWithUids.value.length > 1) {
         // For complex products, use bulk update endpoint
         const bulkPayload = variantDetailsWithUids.value
           .map((variantDetail, index) => {
             const variantData = variants.value[index]
             if (!variantData) return null
 
+            patches.push(toVariantFieldPatch(variantDetail.uid, variantData))
             return {
               uid: variantDetail.uid,
               price: variantData.price,
@@ -825,12 +912,13 @@ const handleSubmit = async () => {
         }
 
         await updateVariant({ uid: variantUid, ...payload })
+        patches.push(toVariantFieldPatch(variantUid, variantData))
         toast.success("Variant updated successfully")
       }
 
       submitAttempted.value = false
       emit("update:modelValue", false)
-      inventoryCache.variantsChanged(queryClient, productUid)
+      inventoryCache.variantsUpdated(queryClient, productUid, patches)
     } catch (error) {
       displayError(error)
     }
@@ -964,7 +1052,9 @@ const handleSubmit = async () => {
 
   // Full Edit Mode or Variants Mode - Multi-step submission
   const isVariantsMode = props.editMode === "variants"
-  const totalSteps = isVariantsMode ? 2 : hasVariants.value ? 4 : 3
+  // Variants mode gains a third (pricing) step when new combinations were added,
+  // so nothing is persisted until prices have been entered.
+  const totalSteps = isVariantsMode ? (hasNewVariants.value ? 3 : 2) : hasVariants.value ? 4 : 3
   const isLast = step.value === totalSteps
 
   if (isLast) {
@@ -998,11 +1088,6 @@ const handleSubmit = async () => {
             toAdd.push(variant)
           }
         })
-
-        const newVariantAttributeKeys = getNewVariantAttributeKeys(
-          toAdd,
-          originalVariantUids.value.keys(),
-        )
 
         // Map variants to the correct format for the API
         const mappedToAdd = toAdd.map((variant) => ({
@@ -1044,8 +1129,9 @@ const handleSubmit = async () => {
         // Step 1: Call bulk operations for deletions AND additions in same payload
         // This handles: delete-only, add-only, OR delete+add together
         const hasBulkOperations = toDelete.length > 0 || mappedToAdd.length > 0
+        let bulkResponse: unknown = null
         if (hasBulkOperations) {
-          await bulkVariantOperations({
+          bulkResponse = await bulkVariantOperations({
             productUid,
             to_delete: toDelete.length > 0 ? toDelete : undefined,
             to_add: mappedToAdd.length > 0 ? mappedToAdd : undefined,
@@ -1069,16 +1155,23 @@ const handleSubmit = async () => {
         }
 
         submitAttempted.value = false
-        inventoryCache.variantsChanged(queryClient, productUid)
-        if (newVariantAttributeKeys.length > 0) {
-          // Hand off to the pricing step IN PLACE: the host switches editMode to
-          // "variant-details" (remounting this drawer via :key) so the user sets
-          // prices as a next step — do not close the drawer here.
-          emit("edit-variant-details", newVariantAttributeKeys)
-        } else {
-          resetFormState()
-          emit("update:modelValue", false)
+        if (hasBulkOperations) {
+          // Reconcile the caches from the response's created variants (which
+          // carry the server-assigned uids) so the change renders instantly.
+          // Fall back to invalidation if variants were added but the response
+          // didn't return every one of them.
+          const createdVariants = extractCreatedVariants(bulkResponse)
+          if (mappedToAdd.length === 0 || createdVariants?.length === mappedToAdd.length) {
+            inventoryCache.variantsBulkChanged(queryClient, productUid, {
+              deletedUids: toDelete,
+              createdVariants: createdVariants ?? [],
+            })
+          } else {
+            inventoryCache.variantsChanged(queryClient, productUid)
+          }
         }
+        resetFormState()
+        emit("update:modelValue", false)
       } catch (error) {
         console.error("Failed to update variants:", error)
         displayError(error)
@@ -1238,8 +1331,20 @@ const handleSubmit = async () => {
         toast.success("Product updated successfully")
       }
 
-      inventoryCache.productUpdated(queryClient, productUid)
-      inventoryCache.variantsChanged(queryClient, productUid)
+      // The response can only reconcile the caches when no images were uploaded
+      // after the PATCH (uploads aren't reflected in the response product).
+      const uploadedMedia = productImagePayloads.length > 0 || variantImagePayloads.length > 0
+      if (updatedProduct && !mediaFailed && !uploadedMedia) {
+        // Reconcile caches from the response so the edit renders instantly.
+        inventoryCache.productUpdated(queryClient, productUid, updatedProduct)
+        void queryClient.invalidateQueries({
+          queryKey: inventoryKeys.products.dashboard(),
+          refetchType: "active",
+        })
+      } else {
+        inventoryCache.productUpdated(queryClient, productUid)
+        inventoryCache.variantsChanged(queryClient, productUid)
+      }
     } catch (error) {
       displayError(error)
     }
@@ -1269,6 +1374,14 @@ const handleSubmit = async () => {
         // Deleted variants are IProductVariant[] without UIDs
         // UIDs will be looked up from originalVariantUids map when needed
         deletedVariants.value = deleted
+
+        // Show newly added combinations first on the review step (stable sort
+        // keeps the generated order within each group).
+        if (isVariantsMode) {
+          variants.value = [...variants.value].sort(
+            (a, b) => Number(isNewCombination(b)) - Number(isNewCombination(a)),
+          )
+        }
 
         console.log("Generated Variants Array:", {
           step: step.value + 1,
