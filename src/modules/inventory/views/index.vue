@@ -272,9 +272,7 @@
       :product="product"
       :edit-mode="editMode"
       :variant="variantForEdit"
-      :variant-attribute-keys="variantAttributeKeysForEdit"
       @add-category="showAddCategoryModal = true"
-      @edit-variant-details="handleEditVariantDetails"
     />
     <FilterDrawer
       v-if="showFilterDrawer || hasOpenedFilterDrawer"
@@ -322,7 +320,6 @@ import AddCategoryModal from "../components/AddCategoryModal.vue"
 import InventoryRequests from "../components/InventoryRequests.vue"
 import ReceiveRequestModal from "../components/ReceiveRequestModal.vue"
 import { inventoryCache } from "../cache"
-import { inventoryKeys } from "../queryKeys"
 import ProductCard from "../components/ProductCard.vue"
 import ManageStockModal from "../components/ManageStockModal.vue"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
@@ -469,7 +466,6 @@ const editMode = ref<"product-details" | "variant-details" | "variants" | "image
   "product-details",
 )
 const variantForEdit = ref<IProductVariantDetails | null>(null)
-const variantAttributeKeysForEdit = ref<string[]>([])
 const productUidForManageStock = ref<string | null>(null)
 const productUidForEdit = ref<string | null>(null)
 
@@ -538,7 +534,6 @@ watch(
       // Clear the edit request when drawer closes
       productUidForEdit.value = null
       variantForEdit.value = null
-      variantAttributeKeysForEdit.value = []
     }
   },
 )
@@ -610,7 +605,6 @@ const getStockStatus = (item: TProduct) => {
 const openProductEditDrawer = (item: TProduct) => {
   product.value = { ...item }
   editMode.value = "product-details"
-  variantAttributeKeysForEdit.value = []
   setTimeout(() => {
     showProductEditDrawer.value = true
   }, 0)
@@ -619,16 +613,14 @@ const openProductEditDrawer = (item: TProduct) => {
 const openImagesEditDrawer = (item: TProduct) => {
   product.value = { ...item }
   editMode.value = "images"
-  variantAttributeKeysForEdit.value = []
   setTimeout(() => {
     showProductEditDrawer.value = true
   }, 0)
 }
 
-const openPriceWeightEdit = (item: TProduct, variantAttributeKeys: string[] = []) => {
+const openPriceWeightEdit = (item: TProduct) => {
   // Set edit mode first
   editMode.value = "variant-details"
-  variantAttributeKeysForEdit.value = variantAttributeKeys
   // Trigger fetch of full product details (watcher will handle opening drawer)
   productUidForEdit.value = item.uid
 }
@@ -636,22 +628,9 @@ const openPriceWeightEdit = (item: TProduct, variantAttributeKeys: string[] = []
 const openVariantsManage = (item: TProduct) => {
   product.value = { ...item }
   editMode.value = "variants"
-  variantAttributeKeysForEdit.value = []
   setTimeout(() => {
     showProductEditDrawer.value = true
   }, 0)
-}
-
-// After the variants step saves, the drawer stays open and emits the new
-// variants' keys — switch it to the pricing step in place (the :key remounts it
-// in variant-details mode) once the refreshed product is in the cache (LYW-2679).
-const handleEditVariantDetails = (variantAttributeKeys: string[]) => {
-  const item = product.value
-  if (!item) return
-  void (async () => {
-    await queryClient.refetchQueries({ queryKey: inventoryKeys.products.detail(item.uid) })
-    openPriceWeightEdit(item, variantAttributeKeys)
-  })()
 }
 
 const openManageStockModal = (item: TProduct) => {
