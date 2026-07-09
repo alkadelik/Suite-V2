@@ -56,6 +56,14 @@ export function useGetShipments(
   })
 }
 
+/** Get Waybill document for a ShipBubble shipment */
+export function useGetWaybillDocument() {
+  return useMutation({
+    mutationFn: (uid: string): Promise<{ data: { data?: { waybill_url?: string } } }> =>
+      baseApi.get(`/shipping/orders/${uid}/waybill/`),
+  })
+}
+
 /** Fetch order statistics */
 export function useGetOrderDashboard() {
   return useApiQuery<OrderDashboardStats>({

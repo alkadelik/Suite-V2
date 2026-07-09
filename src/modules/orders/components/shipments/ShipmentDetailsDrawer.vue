@@ -11,7 +11,7 @@ import { formatDate, checkIfDateIsPast } from "@/utils/formatDate"
 import { startCase } from "@/utils/format-strings"
 import { clipboardCopy } from "@/utils/others"
 import { displayError } from "@/utils/error-handler"
-import { useCreateShipbubbleShipment } from "../../api"
+import { useCreateShipbubbleShipment, useGetWaybillDocument } from "../../api"
 import { SHIPMENT_STATUS_COLORS } from "../../constants"
 import { TShipmentRow } from "../../types"
 
@@ -71,6 +71,14 @@ const canFulfil = computed(
       order.value.fulfilment_status === "partially_fulfilled"),
 )
 
+const shipbubbleAction = computed<"create" | "waybill" | "track" | null>(() => {
+  if (mode.value !== "shipbubble" || !shipment.value) return null
+  if (canCreateShipment.value) return "create"
+  if (shipment.value.status === "delivered" || shipment.value.status === "cancelled")
+    return "waybill"
+  return "track"
+})
+
 // Timeline for ShipBubble shipments
 const STATUS_ORDER = [
   "awaiting_shipment",
@@ -83,25 +91,25 @@ const STATUS_ORDER = [
 const timelineSteps = computed(() => {
   if (!shipment.value) return []
   const statusIndex = STATUS_ORDER.indexOf(shipment.value.status)
+  const isCancelled = shipment.value.status === "cancelled"
 
   return [
     {
-      label: "Order Created",
-      detail: formatDate(order.value.created_at),
-      done: true,
-    },
-    {
-      label: "Shipment",
-      detail: statusIndex >= 1 ? formatDate(shipment.value.created_at) : "",
-      done: statusIndex >= 1,
+      label: "Shipped",
+      detail: statusIndex >= 1 || isCancelled ? formatDate(shipment.value.created_at) : "",
+      done: statusIndex >= 1 || isCancelled,
       chip: quoteChip.value,
     },
     {
       label: "Pickup",
-      detail: shipment.value.pickup_date
-        ? formatDate(shipment.value.pickup_date)
-        : "Earliest Available",
+      detail: shipment.value.pickup_date ? formatDate(shipment.value.pickup_date) : "",
       done: statusIndex >= 2,
+      cancelled: isCancelled,
+    },
+    {
+      label: "In-transit",
+      detail: "",
+      done: statusIndex >= 3,
     },
     {
       label: "Delivered",
@@ -137,7 +145,7 @@ const detailRows = computed(() => {
       { label: "Courier", value: order.value.courier_name || "-" },
       {
         label: "Delivery Type",
-        value: order.value.manual_delivery_type ? startCase(order.value.manual_delivery_type) : "-",
+        value: order.value.manual_delivery_type || order.value.delivery_method || "-",
       },
       {
         label: "Delivery Fee",
@@ -149,7 +157,7 @@ const detailRows = computed(() => {
 
   return [
     { label: "Pickup Location", value: order.value.location_name || "-" },
-    { label: "Amount", value: format(Number(order.value.total_amount), { kobo: true }) },
+    { label: "Order Total", value: format(Number(order.value.total_amount), { kobo: true }) },
     { label: "Order Date", value: formatDate(order.value.order_date || order.value.created_at) },
   ]
 })
@@ -175,6 +183,35 @@ const handleSuccessDone = () => {
   showSuccess.value = false
   emit("refresh")
   emit("close")
+}
+
+const handleTrackOrder = () => {
+  if (!shipment.value?.tracking_url) {
+    displayError("Tracking link not available yet.")
+    return
+  }
+  window.open(shipment.value.tracking_url, "_blank")
+}
+
+const { mutate: getWaybillDoc, isPending: isGettingWaybillDoc } = useGetWaybillDocument()
+
+const handleGetWaybillDoc = () => {
+  if (!shipment.value) return
+  if (shipment.value.waybill_document_url) {
+    window.open(shipment.value.waybill_document_url, "_blank")
+    return
+  }
+  getWaybillDoc(shipment.value.uid, {
+    onSuccess: (response) => {
+      const url = response.data?.data?.waybill_url
+      if (url) {
+        window.open(url, "_blank")
+      } else {
+        displayError("Waybill document not available.")
+      }
+    },
+    onError: displayError,
+  })
 }
 </script>
 
@@ -204,11 +241,13 @@ const handleSuccessDone = () => {
       <div class="space-y-4">
         <!-- ShipBubble support notice -->
         <InfoBox v-if="mode === 'shipbubble'" title="Heads up!" message="">
-          <p class="text-xs font-semibold md:text-sm">
-            For help with your delivery, please reach out to ShipBubble at
-            <a href="mailto:hello@shipbubble.com" class="underline">hello@shipbubble.com</a>. Leyyow
-            does not handle delivery directly.
-          </p>
+          <div class="text-xs font-medium md:text-sm">
+            <p>
+              For help with your delivery, please reach out to ShipBubble at
+              <a href="mailto:hello@shipbubble.com" class="underline">hello@shipbubble.com</a>.
+            </p>
+            <p>Leyyow does not handle delivery directly.</p>
+          </div>
         </InfoBox>
 
         <!-- Order & shipment details -->
@@ -293,49 +332,80 @@ const handleSuccessDone = () => {
             <div class="flex flex-col items-center">
               <span
                 :class="[
-                  'flex size-5 shrink-0 items-center justify-center rounded-full border-2',
-                  step.done
-                    ? 'border-primary-600 bg-primary-600 text-white'
-                    : 'border-core-300 bg-white',
+                  'flex size-5 shrink-0 items-center justify-center rounded-full border-2 bg-white',
+                  step.cancelled
+                    ? 'border-error-600'
+                    : step.done
+                      ? 'border-primary-600'
+                      : 'border-core-300',
                 ]"
               >
-                <Icon v-if="step.done" name="check" size="12" />
+                <span
+                  :class="[
+                    'size-2 rounded-full',
+                    step.cancelled ? 'bg-error-600' : step.done ? 'bg-primary-600' : 'bg-core-300',
+                  ]"
+                />
               </span>
               <span
                 v-if="idx < timelineSteps.length - 1"
-                :class="['w-0.5 flex-1', step.done ? 'bg-primary-600' : 'bg-core-200']"
+                class="border-core-300 min-h-6 flex-1 border-l-2 border-dashed"
               />
             </div>
-            <div class="flex-1 pb-5">
-              <div class="flex items-center justify-between">
-                <p class="text-sm font-medium">{{ step.label }}</p>
+            <div class="flex flex-1 items-start justify-between gap-2 pb-5">
+              <p class="text-sm font-medium">{{ step.label }}</p>
+              <p class="text-core-500 flex items-center gap-1.5 text-xs">
                 <Chip
                   v-if="step.chip"
                   :label="step.chip.label"
                   :color="step.chip.color"
                   size="sm"
                 />
-              </div>
-              <p v-if="step.detail" class="text-core-500 text-xs">{{ step.detail }}</p>
+                <template v-if="step.cancelled">
+                  <span class="text-error-600 font-medium">Cancelled</span>
+                  <span v-if="step.detail">•</span>
+                </template>
+                {{ step.detail || "" }}
+              </p>
             </div>
           </div>
         </div>
       </div>
 
-      <template v-if="canCreateShipment || canFulfil" #footer>
+      <template v-if="canFulfil || shipbubbleAction" #footer>
         <AppButton
-          v-if="canCreateShipment"
+          v-if="canFulfil"
+          label="Mark as Fulfilled"
+          class="w-full"
+          @click="emit('fulfil')"
+        />
+
+        <AppButton
+          v-else-if="shipbubbleAction === 'create'"
           label="Create Shipment"
           class="w-full"
           :loading="isCreating"
           @click="handleCreateShipment"
         />
+
         <AppButton
-          v-else
-          :label="mode === 'pickup' ? 'Mark as Picked Up' : 'Mark as Delivered'"
+          v-else-if="shipbubbleAction === 'waybill'"
+          label="Get Waybill Doc"
           class="w-full"
-          @click="emit('fulfil')"
+          :loading="isGettingWaybillDoc"
+          @click="handleGetWaybillDoc"
         />
+
+        <div v-else-if="shipbubbleAction === 'track'" class="flex w-full gap-4">
+          <AppButton
+            label="Get Waybill Doc"
+            class="w-full"
+            variant="outlined"
+            :loading="isGettingWaybillDoc"
+            @click="handleGetWaybillDoc"
+          />
+          <AppButton label="Track Order" class="w-full" @click="handleTrackOrder" />
+        </div>
       </template>
     </Drawer>
 

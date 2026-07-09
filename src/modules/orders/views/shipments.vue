@@ -32,7 +32,7 @@ import { useRouter } from "vue-router"
 const pageTabs = [
   { title: "ShipBubble", key: "shipbubble" },
   { title: "Manual", key: "manual" },
-  { title: "Pickup", key: "pickup" },
+  { title: "Pickups", key: "pickup" },
 ]
 const activeTab = ref("shipbubble")
 
@@ -196,7 +196,7 @@ const getActionItems = (item: TShipmentRow) => {
   return [
     viewAction,
     {
-      label: activeTab.value === "pickup" ? "Mark as picked up" : "Mark as delivered",
+      label: "Mark as fulfilled",
       icon: "box",
       action: () => {
         selectedShipment.value = item
@@ -245,7 +245,7 @@ watch(rows, (newRows) => {
       <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
         <h3 class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
           {{ pageTabs.find((tab) => tab.key === activeTab)?.title }}
-          {{ activeTab === "pickup" ? "orders" : "shipments" }}
+          {{ activeTab === "pickup" ? "" : "deliveries" }}
           <Chip v-if="totalCount" :label="totalCount" />
         </h3>
         <div class="flex items-center gap-2">
