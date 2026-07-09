@@ -628,7 +628,7 @@ const productMetrics = computed(
 
     return [
       {
-        label: "Actual Inventory",
+        label: "On Hand Inventory",
         value: totalAvailableStock,
         prev_value: 0,
         icon: "shop",

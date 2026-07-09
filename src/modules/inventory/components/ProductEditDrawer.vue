@@ -4,7 +4,7 @@
     :title="drawerTitle"
     :position="drawerPosition"
     max-width="xl"
-    @close="emit('update:modelValue', false)"
+    @close="handleDrawerClose"
   >
     <IconHeader icon-name="shop-add" :title="getHeaderTitle" :subtext="getHeaderText" />
 
@@ -176,6 +176,19 @@
       :teleport="false"
       @success="handleCategoryCreated"
     />
+
+    <!-- Confirm before abandoning the variants flow: nothing is persisted
+         until the final step, so exiting discards every change. -->
+    <ConfirmationModal
+      v-model="showExitConfirmation"
+      header="Exit variant editing?"
+      paragraph="Your variant changes haven't been saved. If you exit now, none of them will be applied."
+      variant="warning"
+      action-label="Exit"
+      info-message=""
+      z-class="z-[1200]"
+      @confirm="confirmExit"
+    />
   </Drawer>
 </template>
 
@@ -197,6 +210,7 @@ import ProductManageCombinationsForm from "./ProductForm/ProductManageCombinatio
 import ProductImagesForm from "./ProductForm/ProductImagesForm.vue"
 import ProductVariantsForm from "./ProductForm/ProductVariantsForm.vue"
 import AddCategoryModal from "./AddCategoryModal.vue"
+import ConfirmationModal from "@components/ConfirmationModal.vue"
 import {
   useUpdateProduct,
   useUpdateVariant,
@@ -278,6 +292,24 @@ const productDetailsRef = ref<{
 
 const showAddCategoryModal = ref(false)
 const submitAttempted = ref(false)
+const showExitConfirmation = ref(false)
+
+/**
+ * The variants flow persists nothing until its final step, so ask for
+ * confirmation before closing it; other modes close immediately.
+ */
+const handleDrawerClose = () => {
+  if (props.editMode === "variants") {
+    showExitConfirmation.value = true
+    return
+  }
+  emit("update:modelValue", false)
+}
+
+const confirmExit = () => {
+  showExitConfirmation.value = false
+  emit("update:modelValue", false)
+}
 
 // API mutations
 const { mutateAsync: updateProduct, isPending: isUpdating } = useUpdateProduct()
@@ -745,6 +777,7 @@ watch(
     if (!isOpen && wasOpen) {
       step.value = 1
       submitAttempted.value = false
+      showExitConfirmation.value = false
     }
   },
 )
@@ -1341,6 +1374,14 @@ const handleSubmit = async () => {
         // Deleted variants are IProductVariant[] without UIDs
         // UIDs will be looked up from originalVariantUids map when needed
         deletedVariants.value = deleted
+
+        // Show newly added combinations first on the review step (stable sort
+        // keeps the generated order within each group).
+        if (isVariantsMode) {
+          variants.value = [...variants.value].sort(
+            (a, b) => Number(isNewCombination(b)) - Number(isNewCombination(a)),
+          )
+        }
 
         console.log("Generated Variants Array:", {
           step: step.value + 1,

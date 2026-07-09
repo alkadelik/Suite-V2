@@ -42,7 +42,7 @@
         <span class="text-core-800 font-semibold">{{ variant.reserved_stock }}</span>
       </div>
       <div class="flex items-center gap-1 ps-2">
-        <span class="text-core-600">Available Stock:</span>
+        <span class="text-core-600">On Hand Inventory:</span>
         <span class="text-core-800 font-semibold">{{ variant.available_stock }}</span>
       </div>
     </div>

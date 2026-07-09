@@ -27,7 +27,7 @@ export const VARIANT_COLUMNS: TableColumn<IProductVariantDetails>[] = [
   { header: "Price", accessor: "price" },
   { header: "Sellable Stock", accessor: "sellable_stock" },
   { header: "Reserved Stock", accessor: "reserved_stock" },
-  { header: "Available Stock", accessor: "available_stock" },
+  { header: "On Hand Inventory", accessor: "available_stock" },
   { header: "", accessor: "action" },
 ]
 
