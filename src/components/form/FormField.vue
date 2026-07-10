@@ -153,6 +153,18 @@
       @update:model-value="handleChange"
     />
 
+    <!-- Date & Time Field -->
+    <DateTimeField
+      v-else-if="type === 'datetime'"
+      :model-value="field.value"
+      :label="hideLabel ? '' : label || startCase(name)"
+      :placeholder="placeholder"
+      :required="isRequired"
+      :error="fieldErrors[0]"
+      :hint="hintText"
+      @update:model-value="field.value = $event"
+    />
+
     <!-- Text Field (default for all other types) -->
     <TextField
       v-else
@@ -191,6 +203,7 @@ import TextAreaField from "./TextAreaField.vue"
 import OtpField from "./OtpField.vue"
 import RadioInputField from "./RadioInputField.vue"
 import StepperField from "./StepperField.vue"
+import DateTimeField from "@components/form/DateTimeField.vue"
 import { startCase } from "@/utils/format-strings"
 import { computed, toRefs } from "vue"
 import FileUploadField from "./FileUploadField.vue"
@@ -219,6 +232,7 @@ export type FormFieldType =
   | "url"
   | "date"
   | "time"
+  | "datetime"
   | "datetime-local"
   | "month"
   | "week"
