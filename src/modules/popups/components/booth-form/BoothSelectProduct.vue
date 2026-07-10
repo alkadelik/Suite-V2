@@ -41,7 +41,7 @@ const currentViewMode = computed({
 })
 
 const { data, isPending, isFetchingNextPage, fetchNextPage, hasNextPage } =
-  useGetProductCatalogsInfinite(50, debouncedSearch)
+  useGetProductCatalogsInfinite(20, debouncedSearch)
 
 // Flatten all pages into a single products array
 const products = computed(() => {
@@ -107,14 +107,13 @@ const handleNext = () => {
   scrollToAndFocusValidationTarget("booth-select-product")
 }
 
-// Get available quantity for a product (sellable_stock - popup_quantity_taken across all variants)
+// Get available quantity for a product (sellable_stock across all variants)
 const getAvailableProductQty = (product: IProductCatalogue) => {
   if (!product.variants || product.variants.length === 0) return 0
 
   return product.variants.reduce((total, variant) => {
     const sellableStock = Number(variant.sellable_stock ?? variant.available_stock ?? 0)
-    const popupQtyTaken = Number(variant.popup_quantity_taken ?? 0)
-    return total + Math.max(0, sellableStock - popupQtyTaken)
+    return total + Math.max(0, sellableStock)
   }, 0)
 }
 

@@ -600,7 +600,7 @@ const hasNotLiveBanner = computed(() => {
                 :label="
                   productTotalQty(product) > 0
                     ? productTotalQty(product) + ' in cart · Edit'
-                    : 'See option'
+                    : 'Select variant(s)'
                 "
                 class="w-full"
                 :disabled="getAvailableStock(product) === 0"

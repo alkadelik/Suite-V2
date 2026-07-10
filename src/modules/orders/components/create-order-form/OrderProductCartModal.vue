@@ -71,7 +71,6 @@ const isEditing = computed(() => props.existingItems.length > 0)
 
 const buildVariantState = (v: IProductCatalogue["variants"][number]): VariantState => {
   const sellable = Number(v.sellable_stock ?? v.available_stock ?? 0)
-  const taken = Number((v as { popup_quantity_taken?: number }).popup_quantity_taken ?? 0)
   const variant: VariantRef = {
     uid: v.uid,
     name: v.name,
@@ -82,14 +81,12 @@ const buildVariantState = (v: IProductCatalogue["variants"][number]): VariantSta
   }
   return {
     variant,
-    available: Math.max(0, sellable - taken),
+    available: Math.max(0, sellable),
     quantity: 1,
     unit_price: parseFloat(v.price),
   }
 }
 
-// For an existing item carried over from the parent we don't know `popup_quantity_taken`
-// any more, so fall back to `sellable_stock` as the upper bound.
 const fromExistingItem = (item: OrderItem): VariantState | null => {
   if (!item.variant) return null
   return {

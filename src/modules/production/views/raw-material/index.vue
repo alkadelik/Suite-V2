@@ -31,7 +31,7 @@ import { displayError } from "@/utils/error-handler"
 import SelectComponentName from "@modules/production/components/raw-material/SelectComponentName.vue"
 import { toast } from "@/composables/useToast"
 import { startCase } from "@/utils/format-strings"
-import { usePremiumAccess } from "@/composables/usePremiumAccess"
+// import { usePremiumAccess } from "@/composables/usePremiumAccess"
 
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 const { truncate } = useFormatCurrency()
@@ -97,10 +97,10 @@ const materialStats = computed(() => [
 const router = useRouter()
 const route = useRoute()
 
-const { checkPremiumAccess } = usePremiumAccess()
+// const { checkPremiumAccess } = usePremiumAccess()
 
 const handleOpenCreate = () => {
-  if (!checkPremiumAccess()) return
+  // if (!checkPremiumAccess()) return
   showAddDrawer.value = "create"
 }
 
