@@ -40,6 +40,12 @@
           required
         />
 
+        <ExpenseRecordCard
+          v-model="recordExpense"
+          :quantity="values.quantity"
+          :unit-cost="values.unit_cost"
+        />
+
         <FormField
           name="note"
           label="Reason for Manual Entry"
@@ -80,7 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from "vue"
+import { computed, ref, watch } from "vue"
 import { useForm } from "vee-validate"
 import * as yup from "yup"
 import { useMediaQuery } from "@vueuse/core"
@@ -89,6 +95,7 @@ import AppButton from "@components/AppButton.vue"
 import FormField from "@components/form/FormField.vue"
 import IconHeader from "@components/IconHeader.vue"
 import Chip from "@components/Chip.vue"
+import ExpenseRecordCard from "./ExpenseRecordCard.vue"
 import { useAddStock, useReduceStock } from "../api"
 import { useQueryClient } from "@tanstack/vue-query"
 import { inventoryCache } from "../cache"
@@ -140,7 +147,10 @@ interface FormValues {
   loss_type: { label: string; value: string } | null
 }
 
-const { handleSubmit, resetForm } = useForm<FormValues>({
+// Whether the stock purchase should also be recorded as an expense (default on, per design)
+const recordExpense = ref(true)
+
+const { handleSubmit, resetForm, values } = useForm<FormValues>({
   validationSchema: computed(() =>
     yup.object({
       quantity: yup
@@ -185,6 +195,7 @@ watch(
   (isOpen) => {
     if (isOpen) {
       resetForm()
+      recordExpense.value = true
     }
   },
 )
@@ -202,6 +213,7 @@ const onSubmit = handleSubmit((values) => {
       quantity: values.quantity,
       unit_cost: values.unit_cost,
       note: values.note,
+      create_expense: recordExpense.value,
     }
 
     const onSuccess = () => {
