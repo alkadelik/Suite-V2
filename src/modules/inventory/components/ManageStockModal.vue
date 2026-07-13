@@ -104,6 +104,11 @@
             placeholder="Enter unit cost"
             required
           />
+          <ExpenseRecordCard
+            v-model="recordExpense"
+            :quantity="values.quantity"
+            :unit-cost="values.unit_cost"
+          />
           <FormField
             name="note"
             label="Reason for Manual Entry"
@@ -206,7 +211,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from "vue"
+import { computed, ref, watch } from "vue"
 import { useForm } from "vee-validate"
 import { useMediaQuery } from "@vueuse/core"
 import * as yup from "yup"
@@ -216,6 +221,7 @@ import AppButton from "@components/AppButton.vue"
 import FormField from "@components/form/FormField.vue"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
+import ExpenseRecordCard from "./ExpenseRecordCard.vue"
 import {
   useAddStock,
   useReduceStock,
@@ -442,6 +448,9 @@ const { handleSubmit, resetForm, values, setFieldValue } = useForm<FormValues>({
   keepValuesOnUnmount: true,
 })
 
+// Whether the stock purchase should also be recorded as an expense (default on, per design)
+const recordExpense = ref(true)
+
 // Get selected action value
 const selectedAction = computed(() => values.action?.value)
 
@@ -552,6 +561,7 @@ watch(
       })
 
       resetForm({ values: initialValues })
+      recordExpense.value = true
     }
   },
 )
@@ -584,6 +594,7 @@ const onSubmit = handleSubmit((formValues) => {
       quantity: formValues.quantity,
       unit_cost: formValues.unit_cost,
       note: formValues.note,
+      create_expense: recordExpense.value,
     }
 
     const onSuccess = () => {

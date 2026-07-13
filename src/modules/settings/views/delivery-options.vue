@@ -360,7 +360,7 @@ const handleRefresh = () => {
                     class="text-primary-600 hidden text-sm underline md:block"
                     @click="openPickup = true"
                   >
-                    Manage address
+                    Manage pickup settings
                   </button>
                 </h3>
                 <p class="text-core-600 text-sm">
@@ -372,7 +372,7 @@ const handleRefresh = () => {
                   class="text-primary-600 block text-sm font-semibold underline md:hidden"
                   @click="openPickup = true"
                 >
-                  Manage address
+                  Manage pickup settings
                 </button>
               </div>
               <Switch
