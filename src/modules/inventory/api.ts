@@ -25,7 +25,7 @@ import {
 import { inventoryKeys } from "./queryKeys"
 
 /** Get categories api request */
-export function useGetCategories() {
+export function useGetCategories(enabled: MaybeRefOrGetter<boolean> = true) {
   return useQuery<TPaginatedResponse<IProductCategory>>({
     queryKey: inventoryKeys.categories.list(),
     queryFn: async () => {
@@ -34,6 +34,7 @@ export function useGetCategories() {
     },
     retry: false,
     refetchOnWindowFocus: false,
+    enabled: computed(() => toValue(enabled)),
   })
 }
 
@@ -112,6 +113,7 @@ export function useUpdateVariantImage() {
 /** get products api request */
 export function useGetProducts(
   params?: MaybeRefOrGetter<Record<string, string | number | boolean> | undefined>,
+  enabled: MaybeRefOrGetter<boolean> = true,
 ) {
   return useQuery({
     queryKey: computed(() => inventoryKeys.products.list(toValue(params))),
@@ -124,6 +126,7 @@ export function useGetProducts(
     },
     retry: false,
     refetchOnWindowFocus: false,
+    enabled: computed(() => toValue(enabled)),
   })
 }
 

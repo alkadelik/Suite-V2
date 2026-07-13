@@ -153,8 +153,10 @@ const { handleSubmit, resetForm, values, setFieldValue, validateField, setFieldT
             originalValue === "" ? undefined : Number(String(originalValue).replace(/,/g, "")),
           )
           .typeError("Default purchase price must be a number")
-          .when("source", {
-            is: (source: { value: string }) => source?.value === "supplier",
+          // Cost is only captured when there's opening stock; with 0 stock the
+          // field is hidden and the cost is assumed to be 0.
+          .when("qty_in_stock", {
+            is: (qty: number) => Number(qty) > 0,
             then: (schema) =>
               schema
                 .required("Default purchase price is required")
@@ -268,21 +270,23 @@ const onSubmit = handleSubmit((values) => {
     ? floatDecimal(Number(values.qty_in_stock) * Number(conversion.rate)).toString()
     : values.qty_in_stock
 
-  // unit cost for each material is stored in purchase unit, so convert if needed
-  let default_cost = null
+  // unit cost for each material is stored in purchase unit, so convert if needed.
+  // With zero opening stock the cost field is hidden and the cost is assumed to be 0.
   const is_sub_assembly = values.source?.value === "manufacture"
-  if (!is_sub_assembly || (is_sub_assembly && values.qty_in_stock)) {
-    default_cost = floatDecimal(
-      Number(values.default_cost.replace(/[^0-9.]/g, "")) / (conversion ? +conversion.rate : 1),
-    )
-  }
+  const hasStock = Number(values.qty_in_stock) > 0
+  const default_cost = hasStock
+    ? floatDecimal(
+        Number(values.default_cost.replace(/[^0-9.]/g, "")) / (conversion ? +conversion.rate : 1),
+      )
+    : 0
 
   const payload = {
     name: values.name,
     unit: values.production_unit?.value || "",
     qty_in_stock,
     is_sub_assembly,
-    ...(default_cost ? { default_cost } : {}),
+    // On create, send the assumed 0 explicitly; on edit, keep omitting falsy cost
+    ...(default_cost || !isEditMode.value ? { default_cost } : {}),
     ...(values.suppliers.length ? { suppliers: values.suppliers.map((x) => x.value) } : {}),
     ...(values.expiry_date ? { expiry_date: values.expiry_date } : {}),
     ...(values.reorder_threshold ? { reorder_threshold: values.reorder_threshold } : {}),
@@ -435,10 +439,8 @@ watch(
 const validateStepOne = async () => {
   const stepOneFields: Array<keyof FormValues> = ["name", "unit", "qty_in_stock", "source"]
 
-  if (
-    values.source?.value === "supplier" ||
-    (+values.qty_in_stock > 0 && values.source?.value === "manufacture")
-  ) {
+  // Cost only applies when there's opening stock (hidden and assumed 0 otherwise)
+  if (+values.qty_in_stock > 0) {
     stepOneFields.push("default_cost")
   }
 
@@ -730,7 +732,7 @@ const handleAddFromSearch = (search: string, close: () => void) => {
 
             <div v-if="mode !== 'edit'">
               <FormField
-                v-if="+values.qty_in_stock > 0 || values.source?.value === 'supplier'"
+                v-if="+values.qty_in_stock > 0"
                 type="number"
                 name="default_cost"
                 format="currency"

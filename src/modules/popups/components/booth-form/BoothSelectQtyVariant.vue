@@ -87,11 +87,7 @@ const getVariantOptions = (product: IProductCatalogue) => {
   if (!product.variants) return []
   return product.variants
     .filter((v) => !props.existingVariantSkus?.includes(v.sku))
-    .filter(
-      (v) =>
-        Number(v.sellable_stock ?? v.available_stock ?? 0) - Number(v.popup_quantity_taken ?? 0) >
-        0,
-    )
+    .filter((v) => Number(v.sellable_stock ?? v.available_stock ?? 0) > 0)
     .map((v) => ({
       label:
         v.attributes.length > 0
@@ -120,9 +116,7 @@ onMounted(() => {
     // Restore previously saved variants for this product
     if (saved && saved.length > 0 && saved[0].variant) {
       const variantItems: VariantItem[] = saved.map((item) => {
-        const availableStock =
-          Number(item.variant!.sellable_stock ?? item.variant!.stock) -
-          Number(item.variant!.popup_quantity_taken ?? 0)
+        const availableStock = Number(item.variant!.sellable_stock ?? item.variant!.stock)
         return {
           variant: {
             ...item.variant!,
@@ -152,8 +146,7 @@ onMounted(() => {
       product.variants[0].attributes.length === 0
     ) {
       const src = product.variants[0]
-      const availableStock =
-        Number(src.sellable_stock ?? src.available_stock) - Number(src.popup_quantity_taken ?? 0)
+      const availableStock = Number(src.sellable_stock ?? src.available_stock)
       const defaultVariant = {
         uid: src.uid,
         name: src.name,
@@ -219,9 +212,9 @@ const onVariantChange = (
       // Check if this variant already exists to preserve qty/price
       const existing = selectedVariants.value.get(product.uid)?.find((v) => v.variant.uid === uid)
 
-      const availableStock =
-        Number(selectedVariant.sellable_stock ?? selectedVariant.available_stock) -
-        Number(selectedVariant.popup_quantity_taken ?? 0)
+      const availableStock = Number(
+        selectedVariant.sellable_stock ?? selectedVariant.available_stock,
+      )
 
       variantItems.push({
         variant: {
@@ -260,9 +253,7 @@ const removeItem = (index: number) => {
 
 // Validate a single variant item
 const validateVariantItem = async (variantItem: VariantItem) => {
-  const maxAvailable =
-    Number(variantItem.variant.sellable_stock ?? variantItem.variant.stock) -
-    Number(variantItem.variant.popup_quantity_taken ?? 0)
+  const maxAvailable = Number(variantItem.variant.sellable_stock ?? variantItem.variant.stock)
   const schema = yup.object({
     quantity: yup
       .number()
@@ -349,9 +340,7 @@ watch(
           product.variants[0].attributes.length === 0
         ) {
           const src = product.variants[0]
-          const availableStock =
-            Number(src.sellable_stock ?? src.available_stock) -
-            Number(src.popup_quantity_taken ?? 0)
+          const availableStock = Number(src.sellable_stock ?? src.available_stock)
           const defaultVariant = {
             uid: src.uid,
             name: src.name,

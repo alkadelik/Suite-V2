@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed } from "vue"
 import Drawer from "@components/Drawer.vue"
-import Modal from "@components/Modal.vue"
 import AppButton from "@components/AppButton.vue"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
@@ -11,7 +10,7 @@ import { formatDate, checkIfDateIsPast } from "@/utils/formatDate"
 import { startCase } from "@/utils/format-strings"
 import { clipboardCopy } from "@/utils/others"
 import { displayError } from "@/utils/error-handler"
-import { useCreateShipbubbleShipment, useGetWaybillDocument } from "../../api"
+import { useGetWaybillDocument } from "../../api"
 import { SHIPMENT_STATUS_COLORS } from "../../constants"
 import { TShipmentRow } from "../../types"
 
@@ -24,6 +23,7 @@ const emit = defineEmits<{
   refresh: []
   fulfil: []
   "view-order": []
+  "create-shipment": []
 }>()
 
 const { format } = useFormatCurrency()
@@ -162,29 +162,6 @@ const detailRows = computed(() => {
   ]
 })
 
-// Create shipment (book the ShipBubble quote)
-const { mutate: createShipment, isPending: isCreating } = useCreateShipbubbleShipment()
-
-const showSuccess = ref(false)
-const createdTrackingNumber = ref("")
-
-const handleCreateShipment = () => {
-  if (!shipment.value) return
-  createShipment(shipment.value.uid, {
-    onSuccess: (response) => {
-      createdTrackingNumber.value = response.data?.data?.tracking_number || ""
-      showSuccess.value = true
-    },
-    onError: displayError,
-  })
-}
-
-const handleSuccessDone = () => {
-  showSuccess.value = false
-  emit("refresh")
-  emit("close")
-}
-
 const handleTrackOrder = () => {
   if (!shipment.value?.tracking_url) {
     displayError("Tracking link not available yet.")
@@ -203,7 +180,7 @@ const handleGetWaybillDoc = () => {
   }
   getWaybillDoc(shipment.value.uid, {
     onSuccess: (response) => {
-      const url = response.data?.data?.waybill_url
+      const url: string = response.data?.data?.waybill_url || ""
       if (url) {
         window.open(url, "_blank")
       } else {
@@ -375,7 +352,7 @@ const handleGetWaybillDoc = () => {
       <template v-if="canFulfil || shipbubbleAction" #footer>
         <AppButton
           v-if="canFulfil"
-          label="Mark as Fulfilled"
+          label="Fulfill Shipment"
           class="w-full"
           @click="emit('fulfil')"
         />
@@ -384,8 +361,7 @@ const handleGetWaybillDoc = () => {
           v-else-if="shipbubbleAction === 'create'"
           label="Create Shipment"
           class="w-full"
-          :loading="isCreating"
-          @click="handleCreateShipment"
+          @click="emit('create-shipment')"
         />
 
         <AppButton
@@ -408,33 +384,5 @@ const handleGetWaybillDoc = () => {
         </div>
       </template>
     </Drawer>
-
-    <!-- Shipment created success dialog -->
-    <Modal :open="showSuccess" :show-header="false" max-width="sm" @close="handleSuccessDone">
-      <div class="space-y-4 py-4 text-center">
-        <p class="text-5xl">🎉</p>
-        <h3 class="text-lg font-semibold">Shipment Created Successfully</h3>
-        <p class="text-core-600 text-sm">
-          Pickup has been booked with {{ shipment?.courier?.name || "your courier" }}. Tracking
-          details have been generated and sent to the customer.
-        </p>
-        <div
-          v-if="createdTrackingNumber"
-          class="border-core-300 bg-core-25 mx-auto max-w-60 rounded-xl border px-4 py-3"
-        >
-          <p class="text-core-500 text-xs">Tracking Number</p>
-          <p class="flex items-center justify-center gap-1 text-sm font-semibold">
-            {{ createdTrackingNumber }}
-            <Icon
-              name="copy"
-              size="14"
-              class="text-primary-600 cursor-pointer"
-              @click="clipboardCopy(createdTrackingNumber)"
-            />
-          </p>
-        </div>
-        <AppButton label="Done" class="w-full" @click="handleSuccessDone" />
-      </div>
-    </Modal>
   </div>
 </template>

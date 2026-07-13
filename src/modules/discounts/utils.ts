@@ -1,0 +1,305 @@
+import type {
+  TCoupon,
+  TCouponDetail,
+  TCouponScope,
+  TCouponStatus,
+  TCouponTargetType,
+  ICouponFormModel,
+  ICouponPayload,
+  TApiDiscountType,
+  TDiscount,
+  TDiscountTargetType,
+  IDiscountFormModel,
+  IDiscountPayload,
+} from "./types"
+
+/** SelectField emits the whole option object; pull a scalar value safely. */
+export function optionValue<T = string>(v: unknown, key = "value"): T {
+  if (v && typeof v === "object" && key in (v as Record<string, unknown>)) {
+    return (v as Record<string, unknown>)[key] as T
+  }
+  return v as T
+}
+
+/** Random uppercase alphanumeric coupon code. */
+export function generateCouponCode(length = 10): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+  let out = ""
+  const arr = new Uint32Array(length)
+  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+    crypto.getRandomValues(arr)
+    for (let i = 0; i < length; i++) out += chars[arr[i] % chars.length]
+  } else {
+    for (let i = 0; i < length; i++) out += chars[Math.floor(Math.random() * chars.length)]
+  }
+  return out
+}
+
+/** Category uids, whether the source is a list row (uid strings) or a detail (summaries). */
+export function couponCategoryUids(c: Pick<TCoupon | TCouponDetail, "categories">): string[] {
+  return (c.categories ?? []).map((cat) => (typeof cat === "string" ? cat : cat.uid))
+}
+
+export function deriveScope(
+  c: Pick<TCoupon | TCouponDetail, "target_type" | "applicable_products" | "categories">,
+): TCouponScope {
+  // Prefer the backend `target_type`; fall back to the target arrays for older rows.
+  if (c.target_type) return c.target_type === "order" ? "order" : "products"
+  const hasTargets = (c.applicable_products?.length ?? 0) > 0 || (c.categories?.length ?? 0) > 0
+  return hasTargets ? "products" : "order"
+}
+
+export function deriveStatus(c: Pick<TCoupon, "is_active" | "valid_until">): TCouponStatus {
+  if (c.valid_until && new Date(c.valid_until).getTime() < Date.now()) return "expired"
+  return c.is_active ? "active" : "disabled"
+}
+
+/** Map the UI wizard model to the API payload. */
+export function buildCouponPayload(m: ICouponFormModel): ICouponPayload {
+  let discount_type: TApiDiscountType
+  let percentage_discount: string | null = null
+  let flat_discount: string | null = null
+  let discount_cap: string | null = null
+
+  if (m.discountKind === "percentage") {
+    discount_type = "percentage"
+    percentage_discount = m.percentage_off
+    // Optional max-discount cap is now its own field (no more `combined` hack).
+    discount_cap = m.max_discount_amount || null
+  } else {
+    discount_type = "flat"
+    flat_discount = m.flat_amount
+  }
+
+  const isProducts = m.scope === "products"
+  const applicable_products = isProducts && m.targetMode === "products" ? m.productUids : []
+  const categories = isProducts && m.targetMode === "categories" ? m.categoryUids : []
+  const target_type: TCouponTargetType = !isProducts
+    ? "order"
+    : m.targetMode === "categories"
+      ? "categories"
+      : m.targetMode === "products"
+        ? "products"
+        : "all_products"
+
+  return {
+    code: m.code.trim().toUpperCase(),
+    name: m.name.trim(),
+    target_type,
+    discount_type,
+    percentage_discount,
+    flat_discount,
+    discount_cap,
+    is_global: true,
+    applicable_products,
+    categories,
+    exclude_promo_products: false,
+    min_order_amount: m.enable_min_amount && m.min_order_amount ? m.min_order_amount : null,
+    min_order_quantity: m.enable_min_items && m.min_cart_items ? Number(m.min_cart_items) : null,
+    max_usage: m.max_usage ? Number(m.max_usage) : null,
+    max_usage_per_customer: m.max_usage_per_customer ? Number(m.max_usage_per_customer) : 0,
+    valid_from: m.valid_from,
+    valid_until: m.valid_until || null,
+    is_active: true,
+  }
+}
+
+/** Hydrate a wizard model from an existing coupon (Edit / Duplicate). */
+export function couponToFormModel(c: TCoupon | TCouponDetail): ICouponFormModel {
+  const kind = c.discount_type === "flat" ? "fixed" : "percentage"
+  // % cap: prefer the dedicated `discount_cap`; fall back to legacy `combined` rows.
+  const cap = c.discount_cap ?? (c.discount_type === "combined" ? (c.flat_discount ?? "") : "")
+  return {
+    scope: deriveScope(c),
+    name: c.name,
+    code: c.code,
+    discountKind: kind,
+    percentage_off: c.percentage_discount ?? "",
+    max_discount_amount: cap,
+    flat_amount: c.discount_type === "flat" ? (c.flat_discount ?? "") : "",
+    valid_from: c.valid_from,
+    valid_until: c.valid_until ?? "",
+    // Prefer the backend target_type; fall back to the target arrays for older rows.
+    targetMode:
+      c.target_type === "all_products"
+        ? "all"
+        : c.target_type === "categories" || (c.categories?.length ?? 0) > 0
+          ? "categories"
+          : c.target_type === "products" || (c.applicable_products?.length ?? 0) > 0
+            ? "products"
+            : "all",
+    productUids: c.applicable_products ?? [],
+    variantSelections: {},
+    categoryUids: couponCategoryUids(c),
+    max_usage: c.max_usage != null ? String(c.max_usage) : "",
+    max_usage_per_customer: c.max_usage_per_customer ? String(c.max_usage_per_customer) : "",
+    enable_min_amount: c.min_order_amount != null,
+    min_order_amount: c.min_order_amount ?? "",
+    enable_min_items: c.min_order_quantity != null,
+    min_cart_items: c.min_order_quantity != null ? String(c.min_order_quantity) : "",
+  }
+}
+
+const _MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+]
+function _ord(d: number) {
+  if (d > 3 && d < 21) return "th"
+  switch (d % 10) {
+    case 1:
+      return "st"
+    case 2:
+      return "nd"
+    case 3:
+      return "rd"
+    default:
+      return "th"
+  }
+}
+/** "20%" for percentage/combined, formatted currency for flat. */
+export function couponValueLabel(
+  c: Pick<TCoupon, "discount_type" | "percentage_discount" | "flat_discount">,
+  format: (n: number) => string,
+): string {
+  if (c.discount_type === "percentage" || c.discount_type === "combined") {
+    return `${c.percentage_discount ?? 0}%`
+  }
+  return format(Number(c.flat_discount ?? 0))
+}
+
+/** "27th May, 2026" */
+export function formatCouponDate(iso: string | null | undefined): string {
+  if (!iso) return "--"
+  const d = new Date(iso)
+  return `${d.getDate()}${_ord(d.getDate())} ${_MONTHS[d.getMonth()]}, ${d.getFullYear()}`
+}
+
+/** "12/05/2026" (DD/MM/YYYY) */
+export function formatNumericDate(iso: string | null | undefined): string {
+  if (!iso) return "--"
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return "--"
+  const p = (n: number) => String(n).padStart(2, "0")
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`
+}
+
+/** "9:37:00 am" */
+export function formatTimeOfDay(iso: string | null | undefined): string {
+  if (!iso) return "--"
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return "--"
+  let h = d.getHours()
+  const ampm = h >= 12 ? "pm" : "am"
+  h = h % 12 || 12
+  return `${h}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")} ${ampm}`
+}
+
+/** Normalize whatever the list endpoint returns into { results, count }. */
+export function normalizeCouponList(body: unknown): { results: TCoupon[]; count: number } {
+  type TListShape = {
+    data?: { results?: TCoupon[]; count?: number }
+    results?: TCoupon[]
+    count?: number
+  }
+  const b = body as TListShape
+  if (b?.data?.results)
+    return { results: b.data.results, count: b.data.count ?? b.data.results.length }
+  if (b?.results) return { results: b.results, count: b.count ?? b.results.length }
+  if (Array.isArray(b)) return { results: b as TCoupon[], count: (b as TCoupon[]).length }
+  return { results: [], count: 0 }
+}
+
+// ============================================================================
+// DISCOUNTS — live contract helpers. Status comes from the backend (no
+// deriveStatus); value is a single field (no flat/percentage split).
+// ============================================================================
+
+/** Map the wizard target mode to the API `target_type`. */
+function discountTargetTypeFor(mode: IDiscountFormModel["targetMode"]): TDiscountTargetType {
+  if (mode === "categories") return "categories"
+  if (mode === "all") return "storefront"
+  return "products"
+}
+
+export function deriveDiscountScope(d: Pick<TDiscount, "target_type">): TDiscountTargetType {
+  return d.target_type
+}
+
+/** "20%" for percentage, formatted currency for fixed_amount. */
+export function discountValueLabel(
+  d: Pick<TDiscount, "discount_type" | "value">,
+  format: (n: number) => string,
+): string {
+  return d.discount_type === "percentage" ? `${d.value}%` : format(Number(d.value))
+}
+
+/**
+ * Map the discount wizard model to the API payload.
+ * - products:   send the resolved `variantUids`
+ * - categories: send the selected category UIDs (backend resolves the variants)
+ * - storefront: send neither (applies to the whole store)
+ */
+export function buildDiscountPayload(
+  m: IDiscountFormModel,
+  variantUids: string[],
+  forceOverwrite = false,
+): IDiscountPayload {
+  const target_type = discountTargetTypeFor(m.targetMode)
+  const payload: IDiscountPayload = {
+    name: m.name.trim(),
+    discount_type: m.discountKind === "percentage" ? "percentage" : "fixed_amount",
+    value: m.value,
+    max_discount_amount:
+      m.discountKind === "percentage" && m.max_discount_amount ? m.max_discount_amount : null,
+    start_at: m.start_at,
+    end_at: m.end_at || null,
+    is_enabled: true,
+    target_type,
+    force_overwrite: forceOverwrite,
+  }
+  if (target_type === "products") payload.variants = variantUids
+  else if (target_type === "categories") payload.categories = m.categoryUids
+  return payload
+}
+
+/** Pre-fill the (limited) Edit form from an existing discount. */
+export function discountToFormModel(d: TDiscount): IDiscountFormModel {
+  return {
+    name: d.name,
+    discountKind: d.discount_type === "fixed_amount" ? "fixed" : "percentage",
+    value: d.value,
+    max_discount_amount: d.max_discount_amount ?? "",
+    start_at: d.start_at,
+    end_at: d.end_at ?? "",
+    targetMode: d.target_type === "storefront" ? "all" : d.target_type,
+    productUids: [],
+    variantSelections: {},
+    categoryUids: [],
+  }
+}
+
+/** Normalize whatever the list endpoint returns into { results, count }. */
+export function normalizeDiscountList(body: unknown): { results: TDiscount[]; count: number } {
+  type TListShape = {
+    data?: { results?: TDiscount[]; count?: number }
+    results?: TDiscount[]
+    count?: number
+  }
+  const b = body as TListShape
+  if (b?.data?.results)
+    return { results: b.data.results, count: b.data.count ?? b.data.results.length }
+  if (b?.results) return { results: b.results, count: b.count ?? b.results.length }
+  if (Array.isArray(b)) return { results: b as TDiscount[], count: (b as TDiscount[]).length }
+  return { results: [], count: 0 }
+}

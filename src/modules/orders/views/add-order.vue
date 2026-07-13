@@ -80,9 +80,7 @@ const products = computed(() => {
 const getAvailableStock = (product: IProductCatalogue) => {
   if (!product.variants || product.variants.length === 0) return 0
   return product.variants.reduce((total, v) => {
-    const sellable = Number(v.sellable_stock ?? v.available_stock ?? 0)
-    // const taken = Number((v as { popup_quantity_taken?: number }).popup_quantity_taken ?? 0)
-    return total + Math.max(0, sellable)
+    return total + Math.max(0, v.sellable_stock)
   }, 0)
 }
 
@@ -575,6 +573,13 @@ const hasNotLiveBanner = computed(() => {
                 class="absolute top-2 right-2"
                 radius="md"
               />
+              <Chip
+                v-else
+                color="success"
+                :label="`${getAvailableStock(product)} in Stock`"
+                class="absolute top-2 right-2"
+                radius="md"
+              />
             </div>
 
             <!-- Info + controls -->
@@ -595,7 +600,7 @@ const hasNotLiveBanner = computed(() => {
                 :label="
                   productTotalQty(product) > 0
                     ? productTotalQty(product) + ' in cart · Edit'
-                    : 'See option'
+                    : 'Select variant(s)'
                 "
                 class="w-full"
                 :disabled="getAvailableStock(product) === 0"
