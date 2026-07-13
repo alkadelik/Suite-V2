@@ -435,6 +435,8 @@ export interface IAddStockPayload {
   unit_cost: string
   reference?: string
   note: string
+  /** Record this stock purchase as an expense (backend defaults to false when omitted) */
+  create_expense: boolean
 }
 
 // Reduce stock payload

@@ -56,7 +56,7 @@ export function useGetExpenseCategories(enabled?: MaybeRefOrGetter<boolean>) {
 /** Fetch expense vendor */
 export function useGetExpenseVendors() {
   return useApiQuery<TPaginatedResponse<{ uid: string; name: string }>>({
-    url: `/expenses/vendors/`,
+    url: `/expenses/categories/?limit=50&offset=0`,
     key: `expenses-vendors`,
   })
 }
