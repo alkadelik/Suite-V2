@@ -71,6 +71,32 @@ export const normalizeProductResponse = (response: unknown): IProductDetails | n
   return null
 }
 
+const isVariantDetails = (value: unknown): value is IProductVariantDetails =>
+  !!value &&
+  typeof value === "object" &&
+  typeof (value as { uid?: unknown }).uid === "string" &&
+  Array.isArray((value as { attributes?: unknown }).attributes)
+
+/**
+ * Pull the `created_variants` array out of a bulk-variants response, walking
+ * through any wrapping envelopes. Returns null when the response doesn't carry
+ * a usable variants array (callers should fall back to invalidation).
+ */
+export const extractCreatedVariants = (response: unknown): IProductVariantDetails[] | null => {
+  let current: unknown = response
+
+  for (let depth = 0; depth < 4 && current && typeof current === "object"; depth += 1) {
+    const candidate = (current as { created_variants?: unknown }).created_variants
+    if (Array.isArray(candidate)) {
+      return candidate.every(isVariantDetails) ? candidate : null
+    }
+    if (!hasData(current)) break
+    current = current.data
+  }
+
+  return null
+}
+
 export const productDetailsToListItem = (product: IProductDetails): TProduct => {
   const primaryImage = product.images.find((image) => image.is_primary) ?? product.images[0] ?? null
   const prices = product.variants

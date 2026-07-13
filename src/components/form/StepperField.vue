@@ -8,7 +8,7 @@
     <div class="flex items-center gap-2">
       <!-- Decrement Button -->
       <AppButton
-        icon="placeholder"
+        icon="minus"
         size="sm"
         type="button"
         @click.prevent="decrementValue"
@@ -58,7 +58,7 @@
 
       <!-- Increment Button -->
       <AppButton
-        icon="placeholder"
+        icon="add"
         size="sm"
         type="button"
         @click.prevent="incrementValue"

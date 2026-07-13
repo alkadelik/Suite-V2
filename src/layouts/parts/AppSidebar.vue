@@ -218,9 +218,11 @@ const isHQ = computed(() => activeLocation.value?.is_hq)
 const salesSuiteItems = computed(() =>
   [
     { icon: "box", label: "Orders", to: "/orders" },
+    { icon: "truck-fast-outline", label: "Shipments", to: "/shipments" },
     { icon: "folder", label: "Inventory", to: "/inventory" },
     { icon: "calendar-tick", label: "Popups", to: "/popups" },
     { icon: "people", label: "Customers", to: "/customers" },
+    { icon: "tag-2", label: "Discounts", to: "/discounts" },
   ].filter((item) => {
     if (item.label === "Popups") return activeLocation.value?.is_hq
     return true

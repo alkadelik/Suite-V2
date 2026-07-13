@@ -220,15 +220,51 @@ export interface OrderDashboardStats {
   }
 }
 
-export type TShipment = {
+/** ShipBubble shipment record from GET /shipping/orders/ */
+export type TShipbubbleShipment = {
   uid: string
+  shipbubble_order_id: string
+  order: TOrder
+  merchant_name: string
+  courier: { name: string; email: string; phone: string }
+  price: string
+  service_charge: string
+  total_shipping_cost: string
+  prepaid_delivery_fee: string
+  fee_variance: string
+  variance_type: string
+  status: string
+  tracking_url: string | null
+  waybill_document_url: string | null
+  tracking_data: string | null
+  last_status_update: string | null
+  quote_expires_at: string | null
+  quote_status: string | null
+  quote_hours_remaining: string | null
+  is_suite_order: boolean
+  pickup_date: string | null
+  delivery_estimate: string | null
+  created_at: string
+}
+
+export type TShipbubbleShipmentResponse = {
+  results: TShipbubbleShipment[]
+  count: number
+  next: string | null
+  previous: string | null
+}
+
+/** Normalized row rendered by the shipments tables — ShipBubble rows carry the
+ * shipment record, manual/pickup rows are plain orders (shipment is null). */
+export type TShipmentRow = {
+  uid: string
+  order_number: string
   customer_name: string
-  courier: {
-    name: string
-    image_url: string
-  }
-  delivery_fee: number
-  pickup_date: string
-  delivery_date: string
-  status: "in_transit" | "delivered" | "cancelled" | "awaiting_pickup"
+  courier: { name: string; email?: string; phone?: string } | null
+  fee: string | number
+  amount: string | number
+  date: string
+  status: string
+  order: TOrder
+  shipment: TShipbubbleShipment | null
 }

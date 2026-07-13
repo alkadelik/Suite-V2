@@ -36,6 +36,10 @@ const originalValues = ref({
 })
 
 const openPickup = ref(false)
+// Whether the pickup modal completed a successful save (it emits `refresh`
+// only on success). Pickup may only stay enabled after a save, which requires
+// a pickup location and at least one active pickup day.
+const pickupSaved = ref(false)
 const openDelivery = ref(false)
 const openNewDelivery = ref(false)
 const openManualDelivery = ref(false)
@@ -246,8 +250,19 @@ const openManualDeliveryModal = (mode: "manual" | "express") => {
 
 // Watch pickup modal to refetch store details when it closes
 watch(openPickup, (newOpen, oldOpen) => {
+  if (oldOpen === false && newOpen === true) {
+    pickupSaved.value = false
+  }
   if (oldOpen === true && newOpen === false) {
+    // Closing the modal without saving must not leave the pickup toggle on —
+    // revert it to its persisted state (a save flips it via the refetch below).
+    if (!pickupSaved.value) {
+      form.value.allow_pickup = originalValues.value.allow_pickup
+    }
     refetchStoreDetails()
+    // "Manage address" is driven by the live-status payload, so refresh it too
+    // or a newly saved pickup location won't surface the link.
+    refetchLiveStatus()
   }
 })
 
@@ -615,7 +630,7 @@ const handleRefresh = () => {
       </div>
     </section>
 
-    <ConfigurePickupModal v-model="openPickup" />
+    <ConfigurePickupModal v-model="openPickup" @refresh="pickupSaved = true" />
     <ManageShipBubbleModal v-model="openDelivery" />
     <ConfigureDeliveryModal v-model="openNewDelivery" @refresh="handleRefresh" />
     <ManageManualDeliveryModal

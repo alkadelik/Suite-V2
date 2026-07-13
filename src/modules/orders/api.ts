@@ -8,6 +8,7 @@ import {
   TOrder,
   TOrderMemo,
   TOrderResponse,
+  TShipbubbleShipmentResponse,
 } from "./types"
 import baseApi, { TPaginatedResponse, useApiQuery } from "@/composables/baseApi"
 import { MaybeRefOrGetter, computed, toValue } from "vue"
@@ -22,8 +23,45 @@ export function useCreateOrder() {
 /** Fetch orders */
 export function useGetOrders(
   params?: MaybeRefOrGetter<Record<string, string | number | boolean> | undefined>,
+  enabled?: MaybeRefOrGetter<boolean>,
 ) {
-  return useApiQuery<TOrderResponse>({ url: "/orders/", params, key: "orders", selectData: true })
+  return useApiQuery<TOrderResponse>({
+    url: "/orders/",
+    params,
+    key: "orders",
+    selectData: true,
+    enabled,
+  })
+}
+
+/** Book a ShipBubble shipment from its quote */
+export function useCreateShipbubbleShipment() {
+  return useMutation({
+    mutationFn: (uid: string): Promise<{ data: { data?: { tracking_number?: string } } }> =>
+      baseApi.post(`/shipping/orders/${uid}/create/`),
+  })
+}
+
+/** Fetch ShipBubble shipments */
+export function useGetShipments(
+  params?: MaybeRefOrGetter<Record<string, string | number | boolean> | undefined>,
+  enabled?: MaybeRefOrGetter<boolean>,
+) {
+  return useApiQuery<TShipbubbleShipmentResponse>({
+    url: "/shipping/orders/",
+    params,
+    key: "shipments",
+    selectData: true,
+    enabled,
+  })
+}
+
+/** Get Waybill document for a ShipBubble shipment */
+export function useGetWaybillDocument() {
+  return useMutation({
+    mutationFn: (uid: string): Promise<{ data: { data?: { waybill_url?: string } } }> =>
+      baseApi.get(`/shipping/orders/${uid}/waybill/`),
+  })
 }
 
 /** Fetch order statistics */

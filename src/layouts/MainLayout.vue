@@ -38,7 +38,7 @@
             (isMobile && !showAppHeader && !isInner) || (isMobile && $route.path === '/dashboard')
           "
           class="fixed right-0 bottom-0 left-0 max-h-16 border-t border-gray-200 bg-white"
-          :class="openMore || openActions ? 'z-[1500]' : 'z-30'"
+          :class="openMore || openActions ? 'z-[1000]' : 'z-30'"
         >
           <div class="flex items-center justify-around px-2 py-2">
             <SidebarLink icon="house" label="Home" to="/dashboard" @click="openMore = false" />
@@ -265,8 +265,8 @@ const materialSingular = computed(() => useProductionStore().componentSingular)
 const recipeSingularLabel = computed(() => useProductionStore().recipeSingularLabel)
 
 const actionMenuItems = computed(() => {
-  const onNavigate = (path: string) => {
-    if (!checkPremiumAccess()) return
+  const onNavigate = (path: string, skipPremiumCheck?: boolean) => {
+    if (!skipPremiumCheck && !checkPremiumAccess()) return
     if (!path.startsWith("/"))
       return toast.info("This module is coming soon!", { title: "Discounts" })
     router.push(path)
@@ -323,7 +323,7 @@ const actionMenuItems = computed(() => {
       icon: "document-normal-filled",
       class: "!bg-warning-50 !text-warning-800",
       iconClass: "!text-primary-700",
-      action: () => onNavigate("/production/raw-materials?create=true"),
+      action: () => onNavigate("/production/raw-materials?create=true", true),
       hqOnly: true,
     },
     {
