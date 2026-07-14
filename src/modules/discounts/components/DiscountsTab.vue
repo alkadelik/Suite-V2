@@ -142,7 +142,7 @@ import {
   formatCouponDate,
   normalizeDiscountList,
 } from "../utils"
-import { useGetDiscounts, useDeleteDiscount, useToggleDiscount } from "../api"
+import { useGetDiscounts, useDeleteDiscount, useSetDiscountEnabled } from "../api"
 import type { TDiscount, TDiscountRow } from "../types"
 import { toast } from "@/composables/useToast"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
@@ -232,20 +232,24 @@ const handleRowClick = (d: TDiscountRow) => {
   router.push(`/discounts/discount/${d.uid}`)
 }
 
-// toggle (disable/enable) — assumed endpoint, degrades gracefully
-const { mutate: toggleDiscount } = useToggleDiscount()
+// Toggle through the documented endpoint; DiscountUpdate requires the current name.
+const { mutateAsync: setDiscountEnabled } = useSetDiscountEnabled()
+const toggleInFlight = ref(false)
 const handleToggle = (d: TDiscountRow) => {
-  const next = !d.is_enabled
-  toggleDiscount(
-    { uid: d.uid },
-    {
-      onSuccess: () => {
-        toast.success(next ? "Discount enabled" : "Discount disabled")
-        refetch()
-      },
-      onError: () => toast.error("Could not update discount status"),
-    },
-  )
+  if (toggleInFlight.value) return
+  void (async () => {
+    toggleInFlight.value = true
+    const next = !d.is_enabled
+    try {
+      await setDiscountEnabled({ uid: d.uid, name: d.name, is_enabled: next })
+      toast.success(next ? "Discount enabled" : "Discount disabled")
+      await refetch()
+    } catch {
+      toast.error("Could not update discount status")
+    } finally {
+      toggleInFlight.value = false
+    }
+  })()
 }
 
 // delete

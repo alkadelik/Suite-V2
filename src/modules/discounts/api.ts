@@ -2,6 +2,7 @@ import baseApi from "@/composables/baseApi"
 import { useMutation, useQuery } from "@tanstack/vue-query"
 import { toValue, type MaybeRefOrGetter } from "vue"
 import type { ICouponPayload, IDiscountPayload, IDiscountUpdatePayload } from "./types"
+import { buildDiscountTogglePayload } from "./discount-toggle"
 
 /** List coupons (search, ordering, limit, offset). Returns the raw response body. */
 export function useGetCoupons(
@@ -122,10 +123,11 @@ export function useUpdateDiscount() {
   })
 }
 
-// Toggle enabled/disabled — POST {id}/toggle/ flips the current state (no body).
-export function useToggleDiscount() {
+// Set enabled/disabled explicitly through the documented discount update endpoint.
+export function useSetDiscountEnabled() {
   return useMutation({
-    mutationFn: ({ uid }: { uid: string }) => baseApi.post(`/discounts/${uid}/toggle/`, {}),
+    mutationFn: ({ uid, name, is_enabled }: { uid: string; name: string; is_enabled: boolean }) =>
+      baseApi.patch(`/discounts/${uid}/`, buildDiscountTogglePayload(name, is_enabled)),
   })
 }
 
