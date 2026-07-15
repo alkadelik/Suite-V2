@@ -69,14 +69,7 @@
         @toggle="expandedGroup = expandedGroup === 'sales-suite' ? null : 'sales-suite'"
       />
 
-      <SidebarGroup
-        v-if="activeLocation?.is_hq"
-        icon="trend-up-outline"
-        label="Marketing"
-        :children="marketingItems"
-        :is-expanded="expandedGroup === 'marketing'"
-        @toggle="expandedGroup = expandedGroup === 'marketing' ? null : 'marketing'"
-      />
+      <SidebarLink v-if="activeLocation?.is_hq" icon="sms" label="Email List" to="/email-list" />
 
       <SidebarGroup
         v-if="isHQ"
@@ -222,15 +215,12 @@ const salesSuiteItems = computed(() =>
     { icon: "folder", label: "Inventory", to: "/inventory" },
     { icon: "calendar-tick", label: "Popups", to: "/popups" },
     { icon: "people", label: "Customers", to: "/customers" },
-    { icon: "tag-2", label: "Discounts", to: "/discounts" },
+    { icon: "tag-3", label: "Discounts", to: "/discounts" },
   ].filter((item) => {
     if (item.label === "Popups") return activeLocation.value?.is_hq
     return true
   }),
 )
-
-// Marketing items
-const marketingItems = computed(() => [{ icon: "sms", label: "Email List", to: "/email-list" }])
 
 // Production items
 const productionItems = computed(() => {
@@ -260,8 +250,6 @@ watch(
     const isMatch = (to: string) => path === to || path.startsWith(to + "/")
     if (salesSuiteItems.value.some((item) => isMatch(item.to))) {
       expandedGroup.value = "sales-suite"
-    } else if (marketingItems.value.some((item) => isMatch(item.to))) {
-      expandedGroup.value = "marketing"
     } else if (productionItems.value.some((item) => isMatch(item.to))) {
       expandedGroup.value = "production"
     } else if (reportsItems.value.some((item) => isMatch(item.to))) {

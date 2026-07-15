@@ -389,7 +389,7 @@ onClickOutside(productDropdownRef, () => (productOpen.value = false))
 const productSearch = ref("")
 const debouncedProductSearch = useDebouncedRef(productSearch, 600)
 
-const { data: productsData, isFetching: productsLoading } = useGetProductCatalogsInfinite(
+const { data: productsData, isPending: productsLoading } = useGetProductCatalogsInfinite(
   20,
   debouncedProductSearch,
 )

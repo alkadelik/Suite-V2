@@ -243,6 +243,7 @@ export function useVariantValidation(options: IVariantValidationOptions) {
   const buildInventoryValidation = (
     config: {
       requireStock: boolean
+      requireCost: boolean
       requirePrice: boolean
       requireWeight: boolean
       requireDimensions: boolean
@@ -292,11 +293,16 @@ export function useVariantValidation(options: IVariantValidationOptions) {
         firstErrorTarget ??= `variant-opening-stock-${index}`
       }
 
-      if (variant.cost_price && variant.cost_price.trim() !== "") {
-        if (!isValidNonNegativeNumber(variant.cost_price)) {
-          errors.variants[index].cost_price = "Enter a valid cost price."
-          firstErrorTarget ??= `variant-cost-price-${index}`
-        }
+      if (config.requireCost && !isValidNonNegativeNumber(variant.cost_price)) {
+        errors.variants[index].cost_price = "Enter a valid cost price."
+        firstErrorTarget ??= `variant-cost-price-${index}`
+      } else if (
+        variant.cost_price &&
+        variant.cost_price.trim() !== "" &&
+        !isValidNonNegativeNumber(variant.cost_price)
+      ) {
+        errors.variants[index].cost_price = "Enter a valid cost price."
+        firstErrorTarget ??= `variant-cost-price-${index}`
       }
 
       if (config.requirePrice && !isValidNonNegativeNumber(variant.price)) {
@@ -331,6 +337,7 @@ export function useVariantValidation(options: IVariantValidationOptions) {
       const requireWeight = requireVariantDetailsWeight?.value ?? true
       return buildInventoryValidation({
         requireStock: false,
+        requireCost: false,
         requirePrice: true,
         requireWeight,
         requireDimensions: requireWeight,
@@ -348,6 +355,7 @@ export function useVariantValidation(options: IVariantValidationOptions) {
         return buildInventoryValidation(
           {
             requireStock: false,
+            requireCost: true,
             requirePrice: true,
             requireWeight: false,
             requireDimensions: false,
@@ -378,6 +386,7 @@ export function useVariantValidation(options: IVariantValidationOptions) {
     if ((step.value === 2 && !hasVariants.value) || (step.value === 3 && hasVariants.value)) {
       return buildInventoryValidation({
         requireStock: true,
+        requireCost: false,
         requirePrice: true,
         requireWeight: true,
         requireDimensions: true,

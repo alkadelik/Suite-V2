@@ -40,18 +40,18 @@
           required
         />
 
-        <ExpenseRecordCard
-          v-model="recordExpense"
-          :quantity="values.quantity"
-          :unit-cost="values.unit_cost"
-        />
-
         <FormField
           name="note"
           label="Reason for Manual Entry"
           type="textarea"
           placeholder="Enter reason"
           required
+        />
+
+        <ExpenseRecordCard
+          v-model="recordExpense"
+          :quantity="values.quantity"
+          :unit-cost="values.unit_cost"
         />
       </template>
 
@@ -95,7 +95,7 @@ import AppButton from "@components/AppButton.vue"
 import FormField from "@components/form/FormField.vue"
 import IconHeader from "@components/IconHeader.vue"
 import Chip from "@components/Chip.vue"
-import ExpenseRecordCard from "./ExpenseRecordCard.vue"
+import ExpenseRecordCard from "@modules/shared/components/ExpenseRecordCard.vue"
 import { useAddStock, useReduceStock } from "../api"
 import { useQueryClient } from "@tanstack/vue-query"
 import { inventoryCache } from "../cache"
@@ -103,6 +103,7 @@ import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
 import type { IAddStockPayload, IReduceStockPayload, IProductVariantAttribute } from "../types"
 import { useSettingsStore } from "@modules/settings/store"
+import { getAddStockDefaults } from "../stock-form"
 
 interface Props {
   open: boolean
@@ -111,7 +112,7 @@ interface Props {
   productName: string
   productUid?: string
   variantAttributes?: IProductVariantAttribute[]
-  variantPrice?: string
+  variantCostPrice?: string
   availableStock?: number
 }
 
@@ -148,7 +149,17 @@ interface FormValues {
 }
 
 // Whether the stock purchase should also be recorded as an expense (default on, per design)
-const recordExpense = ref(true)
+const getInitialValues = (): FormValues => {
+  const defaults = getAddStockDefaults(props.variantCostPrice)
+  return {
+    quantity: 0,
+    unit_cost: props.type === "add" ? defaults.unitCost : "",
+    note: props.type === "add" ? defaults.note : "",
+    loss_type: null,
+  }
+}
+
+const recordExpense = ref(getAddStockDefaults().recordExpense)
 
 const { handleSubmit, resetForm, values } = useForm<FormValues>({
   validationSchema: computed(() =>
@@ -181,12 +192,7 @@ const { handleSubmit, resetForm, values } = useForm<FormValues>({
           }),
     }),
   ),
-  initialValues: {
-    quantity: 0,
-    unit_cost: props.variantPrice || "",
-    note: "",
-    loss_type: null,
-  },
+  initialValues: getInitialValues(),
 })
 
 // Reset form when modal opens
@@ -194,8 +200,9 @@ watch(
   () => props.open,
   (isOpen) => {
     if (isOpen) {
-      resetForm()
-      recordExpense.value = true
+      const defaults = getAddStockDefaults(props.variantCostPrice)
+      resetForm({ values: getInitialValues() })
+      recordExpense.value = defaults.recordExpense
     }
   },
 )

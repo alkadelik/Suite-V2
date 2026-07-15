@@ -61,7 +61,7 @@ const quickActions = computed(() => {
     },
     {
       label: "Add Discount",
-      icon: "tag-2-filled",
+      icon: "tag-3",
       color: "bg-primary-50 text-primary-800 border-primary-100",
       action: () => onNavigate("Discounts"),
       hqOnly: true,

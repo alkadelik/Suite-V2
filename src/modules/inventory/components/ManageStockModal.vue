@@ -104,17 +104,17 @@
             placeholder="Enter unit cost"
             required
           />
-          <ExpenseRecordCard
-            v-model="recordExpense"
-            :quantity="values.quantity"
-            :unit-cost="values.unit_cost"
-          />
           <FormField
             name="note"
             label="Reason for Manual Entry"
             type="textarea"
             placeholder="Enter reason"
             required
+          />
+          <ExpenseRecordCard
+            v-model="recordExpense"
+            :quantity="values.quantity"
+            :unit-cost="values.unit_cost"
           />
         </template>
 
@@ -221,7 +221,7 @@ import AppButton from "@components/AppButton.vue"
 import FormField from "@components/form/FormField.vue"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
-import ExpenseRecordCard from "./ExpenseRecordCard.vue"
+import ExpenseRecordCard from "@modules/shared/components/ExpenseRecordCard.vue"
 import {
   useAddStock,
   useReduceStock,
@@ -241,6 +241,7 @@ import type {
   IProductDetails,
 } from "../types"
 import { useSettingsStore } from "@modules/settings/store"
+import { getAddStockDefaults } from "../stock-form"
 
 interface Props {
   open: boolean
@@ -449,7 +450,7 @@ const { handleSubmit, resetForm, values, setFieldValue } = useForm<FormValues>({
 })
 
 // Whether the stock purchase should also be recorded as an expense (default on, per design)
-const recordExpense = ref(true)
+const recordExpense = ref(getAddStockDefaults().recordExpense)
 
 // Get selected action value
 const selectedAction = computed(() => values.action?.value)
@@ -546,6 +547,7 @@ watch(
   () => props.open,
   (isOpen) => {
     if (isOpen) {
+      const defaults = getAddStockDefaults()
       const initialValues: FormValues = {
         action: null,
         quantity: 0,
@@ -561,17 +563,27 @@ watch(
       })
 
       resetForm({ values: initialValues })
-      recordExpense.value = true
+      recordExpense.value = defaults.recordExpense
     }
   },
 )
+
+// Only add-stock uses the purchase reason default. Other stock actions must not
+// inherit it when the merchant switches actions in the shared modal.
+watch(selectedAction, (action, previousAction) => {
+  if (action === "add") {
+    setFieldValue("note", getAddStockDefaults().note)
+  } else if (previousAction === "add") {
+    setFieldValue("note", "")
+  }
+})
 
 // Update unit cost when variant is selected for add stock
 watch(
   [selectedVariant, selectedAction],
   ([variant, action]) => {
     if (action === "add" && variant) {
-      setFieldValue("unit_cost", variant.price)
+      setFieldValue("unit_cost", getAddStockDefaults(variant.cost_price).unitCost)
     }
   },
   { immediate: true },

@@ -143,7 +143,7 @@
           v-else
           :data="filteredProducts"
           :columns="PRODUCT_COLUMNS"
-          :loading="isFetching"
+          :loading="isPending"
           :show-pagination="true"
           :items-per-page="itemsPerPage"
           :current-page="page"
@@ -404,9 +404,9 @@ const combinedParams = computed(() => {
   return params
 })
 
-// isFetching (not just isPending) so the table also shows its loading state during
-// background refetches, e.g. right after a successful stock change invalidates the list.
-const { data: products, isPending, isFetching } = useGetProducts(combinedParams)
+// Keep cached rows visible while stale data refreshes in the background. The table
+// loader is reserved for the first request, when no cached response exists (LYW-2842).
+const { data: products, isPending } = useGetProducts(combinedParams)
 const { data: productDashboard, isPending: isLoadingDashboard } = useGetProductDashboard()
 const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct()
 const { mutate: updateProduct, isPending: isUpdatingProduct } = useUpdateProduct()
