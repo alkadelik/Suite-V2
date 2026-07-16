@@ -54,7 +54,7 @@
             />
           </div>
 
-          <div class="max-h-72 overflow-auto">
+          <div ref="productListRef" class="max-h-72 overflow-auto">
             <div v-if="productsLoading" class="text-core-400 py-4 text-center text-sm">
               Loading products...
             </div>
@@ -92,6 +92,13 @@
                 </span>
               </li>
             </ul>
+            <div
+              v-if="isFetchingNextPage"
+              class="text-core-400 flex items-center justify-center gap-2 py-3 text-sm"
+            >
+              <Icon name="loader" size="16" class="text-primary-600 animate-spin" />
+              Loading more products...
+            </div>
           </div>
         </div>
       </div>
@@ -301,6 +308,7 @@ import Icon from "@components/Icon.vue"
 import ProductVariantPicker from "./ProductVariantPicker.vue"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
+import { useInfinitePagination } from "@/composables/useInfinitePagination"
 import { useGetProductCatalogsInfinite, useGetCategories } from "@modules/inventory/api"
 import type { IProductCatalogue, IProductCategory } from "@modules/inventory/types"
 import { APPLIES_TO_OPTIONS } from "../constants"
@@ -389,10 +397,15 @@ onClickOutside(productDropdownRef, () => (productOpen.value = false))
 const productSearch = ref("")
 const debouncedProductSearch = useDebouncedRef(productSearch, 600)
 
-const { data: productsData, isPending: productsLoading } = useGetProductCatalogsInfinite(
-  20,
-  debouncedProductSearch,
-)
+const {
+  data: productsData,
+  isPending: productsLoading,
+  isFetchingNextPage,
+  fetchNextPage,
+  hasNextPage,
+} = useGetProductCatalogsInfinite(20, debouncedProductSearch)
+
+const productListRef = useInfinitePagination(fetchNextPage, hasNextPage, 80).el
 
 const products = computed<IProductCatalogue[]>(
   () => productsData.value?.pages?.flatMap((page) => page.results) ?? [],

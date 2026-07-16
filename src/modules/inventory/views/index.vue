@@ -293,10 +293,12 @@
       @close="showReceiveRequestModal = false"
     />
     <ManageStockModal
-      v-if="productDetailsForStock?.data"
       :open="showManageStockModal"
-      :product="productDetailsForStock.data"
+      :product="productDetailsForStock?.data ?? null"
+      :loading="isLoadingProductDetailsForStock && !productDetailsForStock?.data"
+      :error="isProductDetailsForStockError && !productDetailsForStock?.data"
       @close="showManageStockModal = false"
+      @retry="refetchProductDetailsForStock()"
     />
   </div>
 </template>
@@ -473,9 +475,17 @@ const productUidForEdit = ref<string | null>(null)
 // (not the modal-open flag) so the query stays active through the post-mutation
 // refetch and isn't disabled in the same tick the cache is invalidated (LYW-2647).
 const productUidForFetch = computed(() => productUidForManageStock.value || "")
-const { data: productDetailsForStock } = useGetProduct(productUidForFetch, {
+const {
+  data: productDetailsForStock,
+  isPending: isPendingProductDetailsForStock,
+  isError: isProductDetailsForStockError,
+  refetch: refetchProductDetailsForStock,
+} = useGetProduct(productUidForFetch, {
   enabled: () => !!productUidForManageStock.value,
 })
+const isLoadingProductDetailsForStock = computed(
+  () => !!productUidForManageStock.value && isPendingProductDetailsForStock.value,
+)
 
 // Fetch product details for edit drawer when needed
 const productUidForEditFetch = computed(() => productUidForEdit.value || "")
