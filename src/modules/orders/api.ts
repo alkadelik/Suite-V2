@@ -5,6 +5,7 @@ import {
   IPaymentPayload,
   OrderDashboardStats,
   OrderPayload,
+  TCreateShipmentPayload,
   TOrder,
   TOrderMemo,
   TOrderResponse,
@@ -34,11 +35,17 @@ export function useGetOrders(
   })
 }
 
-/** Book a ShipBubble shipment from its quote */
+/** Book a ShipBubble shipment from its quote (shipping fee is paid via Paystack first) */
 export function useCreateShipbubbleShipment() {
   return useMutation({
-    mutationFn: (uid: string): Promise<{ data: { data?: { tracking_number?: string } } }> =>
-      baseApi.post(`/shipping/orders/${uid}/create/`),
+    mutationFn: ({
+      uid,
+      body,
+    }: {
+      uid: string
+      body: TCreateShipmentPayload
+    }): Promise<{ data: { data?: { tracking_number?: string } } }> =>
+      baseApi.post(`/shipping/orders/${uid}/create/`, body),
   })
 }
 

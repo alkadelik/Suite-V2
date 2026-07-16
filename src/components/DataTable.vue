@@ -163,6 +163,7 @@ const columns = [
               checked: table.getIsAllRowsSelected(),
               indeterminate: table.getIsSomeRowsSelected(),
               onChange: table.getToggleAllRowsSelectedHandler(),
+              onClick: (e: Event) => e.stopPropagation(),
             })
           },
           cell: ({ row }: { row: Row<T> }) => {
@@ -172,6 +173,7 @@ const columns = [
               checked: row.getIsSelected(),
               disabled: !row.getCanSelect(),
               onChange: row.getToggleSelectedHandler(),
+              onClick: (e: Event) => e.stopPropagation(),
             })
           },
         },

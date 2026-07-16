@@ -116,7 +116,7 @@ const rows = computed<TShipmentRow[]>(() => {
       fee: shipment.total_shipping_cost,
       amount: shipment.order?.total_amount ?? 0,
       date: shipment.delivery_estimate || shipment.created_at,
-      status: shipment.status || "awaiting_shipment",
+      status: shipment.status,
       order: shipment.order,
       shipment,
     }))
@@ -247,10 +247,6 @@ const emptyStateDescription = computed(() => {
   }
   return "You don't have any unfulfilled pickup order. Pickup orders will appear here."
 })
-
-watch(rows, (newRows) => {
-  console.log("Rows updated:", newRows)
-})
 </script>
 
 <template>
@@ -310,10 +306,16 @@ watch(rows, (newRows) => {
       >
         <template #cell:courier_name="{ item }">
           <div class="flex items-center gap-2">
-            <span class="bg-core-200 flex size-10 items-center justify-center rounded-lg">
+            <img
+              v-if="item.courier?.courier_image"
+              :src="item.courier.courier_image"
+              alt="Courier"
+              class="size-10 rounded-lg object-cover"
+            />
+            <span v-else class="bg-core-200 flex size-10 items-center justify-center rounded-lg">
               <Icon name="truck-fast" size="20" class="text-core-600" />
             </span>
-            <span>{{ item.courier?.name || "-" }}</span>
+            <span>{{ item.courier?.courier_name || item.courier?.name || "-" }}</span>
           </div>
         </template>
 
@@ -324,6 +326,7 @@ watch(rows, (newRows) => {
             icon="truck-fast-outline"
             :color="statusColor(item.status)"
           />
+          <span v-else>--</span>
         </template>
 
         <template #cell:actions="{ item }">

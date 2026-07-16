@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, useTemplateRef, toValue } from "vue"
+import { ref, computed, watch, useTemplateRef, toValue } from "vue"
 import { useRouter } from "vue-router"
 import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
@@ -28,7 +28,6 @@ import { displayError } from "@/utils/error-handler"
 import { useCreateOrder } from "../api"
 import { toast } from "@/composables/useToast"
 import type { IShippingCourier } from "@modules/shared/types"
-import { handlePayStackPayment, loadPaystackScript } from "../utilities"
 import { useSettingsStore } from "@modules/settings/store"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import Chip from "@components/Chip.vue"
@@ -396,29 +395,16 @@ const onCreateOrder = () => {
     onError: displayError,
   }
 
+  // Shipbubble shipping is paid for later, when the shipment is booked from the
+  // Shipments page — order creation just stores the quote (rate + courier).
   if (delivery_method === "shipbubble") {
-    const payData = {
-      shipping_price: (Number(shippingInfo.value.delivery_fee || 0) * 100).toFixed(2),
-      customer_name:
-        selectedCustomer.value?.full_name ||
-        `${selectedCustomer.value?.first_name || ""} ${selectedCustomer.value?.last_name || ""}`.trim() ||
-        "Customer",
-      customer_email: shippingInfo.value.customer_email || selectedCustomer.value?.email || "",
-      shipping_address:
-        typeof shippingInfo.value.delivery_address === "string"
-          ? shippingInfo.value.delivery_address
-          : (shippingInfo.value.delivery_address as { label: string; value: string }).label,
-    }
-    handlePayStackPayment(payData, (payResponse) => {
-      createOrder(
-        {
-          ...payload,
-          reference: payResponse.reference,
-          delivery_fee: Number(shippingInfo.value.delivery_fee).toFixed(2),
-        } as OrderPayload,
-        handler,
-      )
-    })
+    createOrder(
+      {
+        ...payload,
+        delivery_fee: Number(shippingInfo.value.delivery_fee).toFixed(2),
+      } as OrderPayload,
+      handler,
+    )
   } else {
     createOrder(payload as OrderPayload, handler)
   }
@@ -437,10 +423,6 @@ watch(
   },
   { immediate: true },
 )
-
-onMounted(() => {
-  loadPaystackScript()
-})
 
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 

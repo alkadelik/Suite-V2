@@ -88,6 +88,13 @@ export function useEditExpense() {
   })
 }
 
+/** Mark multiple expenses as paid in one action */
+export function useBulkCompleteExpenses() {
+  return useMutation({
+    mutationFn: (payload: { items: string[] }) => baseApi.post("/expenses/bulk-complete/", payload),
+  })
+}
+
 /** Delete expense api request */
 export function useDeleteExpense() {
   return useMutation({

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, onMounted, ref } from "vue"
 import Drawer from "@components/Drawer.vue"
 import Modal from "@components/Modal.vue"
 import AppButton from "@components/AppButton.vue"
@@ -10,6 +10,7 @@ import { formatDate, checkIfDateIsPast } from "@/utils/formatDate"
 import { clipboardCopy } from "@/utils/others"
 import { displayError } from "@/utils/error-handler"
 import { useCreateShipbubbleShipment } from "../../api"
+import { handlePayStackPayment, loadPaystackScript } from "../../utilities"
 import { TShipmentRow } from "../../types"
 
 const props = defineProps<{
@@ -66,21 +67,51 @@ const pickupRows = computed(() => [
   },
 ])
 
-// Book the ShipBubble quote
+// Book the ShipBubble quote — shipping fee is paid via Paystack first, then the
+// payment reference is sent along with the booking
 const { mutate: createShipment, isPending: isCreating } = useCreateShipbubbleShipment()
 
 const showSuccess = ref(false)
 const createdTrackingNumber = ref("")
 
+onMounted(() => {
+  loadPaystackScript()
+})
+
 const handleCreateShipment = () => {
   if (!shipment.value) return
-  createShipment(shipment.value.uid, {
-    onSuccess: (response) => {
-      createdTrackingNumber.value = response.data?.data?.tracking_number || ""
-      showSuccess.value = true
+  const currentShipment = shipment.value
+  const currentOrder = order.value
+
+  handlePayStackPayment(
+    {
+      // Paystack expects the amount in kobo
+      shipping_price: (Number(currentShipment.total_shipping_cost) * 100).toFixed(2),
+      customer_name: currentOrder.customer_name || "Customer",
+      customer_email: currentOrder.customer_email || "",
+      shipping_address: currentOrder.customer_address || "",
     },
-    onError: displayError,
-  })
+    (payResponse) => {
+      createShipment(
+        {
+          uid: currentShipment.uid,
+          body: {
+            order: currentOrder.uid,
+            rate: currentOrder.rate,
+            courier: currentOrder.courier,
+            payment_reference: payResponse.reference,
+          },
+        },
+        {
+          onSuccess: (response) => {
+            createdTrackingNumber.value = response.data?.data?.tracking_number || ""
+            showSuccess.value = true
+          },
+          onError: displayError,
+        },
+      )
+    },
+  )
 }
 
 const successRows = computed(() => [

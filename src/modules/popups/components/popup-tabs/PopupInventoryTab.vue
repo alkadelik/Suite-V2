@@ -13,13 +13,12 @@ import {
   getPopupPriceRange,
   POPUP_INVENTORY_COLUMNS,
 } from "@modules/popups/constants"
-import { useMediaQuery } from "@vueuse/core"
 import { computed, onMounted, ref, watch } from "vue"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import { useRoute } from "vue-router"
 import SetupPopupBoothDrawer from "../SetupPopupBoothDrawer.vue"
 import ManagePopupProductModal from "../ManagePopupProductModal.vue"
-import AppButton from "@components/AppButton.vue"
+// import AppButton from "@components/AppButton.vue"
 import TextField from "@components/form/TextField.vue"
 import DataTable from "@components/DataTable.vue"
 import ProductAvatar from "@components/ProductAvatar.vue"
@@ -43,7 +42,7 @@ const props = defineProps<{ popup: PopupEvent }>()
 const isClosed = computed(() => props.popup.status === "closed")
 
 const route = useRoute()
-const isMobile = useMediaQuery("(max-width: 768px)")
+// const isMobile = useMediaQuery("(max-width: 768px)")
 
 const {
   data: popupInventory,
@@ -202,13 +201,16 @@ watch(
   />
 
   <section v-else>
-    <div
-      class="mt-4 space-y-4 overflow-hidden rounded-xl border-gray-200 pt-3 md:border md:bg-white"
-    >
+    <div class="space-y-4 overflow-hidden rounded-xl border-gray-200 pt-3 md:border md:bg-white">
       <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
-        <h3 class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
-          All Products <Chip :label="popupInventory?.length || 0" />
-        </h3>
+        <div class="flex items-center gap-2">
+          <span class="bg-leyyow-100 flex size-10 items-center justify-center rounded-2xl">
+            <Icon name="box" size="28" class="text-primary-700" />
+          </span>
+          <h3 class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
+            Popup Inventory <Chip :label="popupInventory?.length || 0" />
+          </h3>
+        </div>
         <div class="flex items-center gap-2">
           <TextField
             left-icon="search-lg"
@@ -218,14 +220,14 @@ watch(
             v-model="searchQuery"
           />
 
-          <AppButton
+          <!-- <AppButton
             v-if="!isClosed"
             icon="add"
             size="sm"
             class="flex-shrink-0"
             :label="isMobile ? '' : 'Add Product'"
             @click="openAddProduct = true"
-          />
+          /> -->
         </div>
       </div>
 
@@ -233,7 +235,7 @@ watch(
         :data="popupInventory || []"
         :columns="POPUP_INVENTORY_COLUMNS"
         :loading="isFetching"
-        :show-pagination="true"
+        :show-pagination="false"
       >
         <template #cell:name="{ item }">
           <ProductAvatar

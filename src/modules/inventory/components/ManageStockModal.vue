@@ -9,17 +9,6 @@
     @close="emit('close')"
   >
     <div class="space-y-4">
-      <!-- Action Selector -->
-      <FormField
-        name="action"
-        label="Select Action"
-        type="select"
-        placeholder="Select action"
-        :options="actionOptions"
-        placement="auto"
-        required
-      />
-
       <!-- Product Info Card -->
       <div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div class="flex items-center gap-3 border-b border-gray-200 p-4">
@@ -55,6 +44,17 @@
         </div>
       </div>
 
+      <!-- Action Selector -->
+      <FormField
+        name="action"
+        label="Select Action"
+        type="select"
+        placeholder="Select action"
+        :options="actionOptions"
+        placement="auto"
+        required
+      />
+
       <!-- Attribute Selection for Complex Products -->
       <div v-if="isComplexProduct && selectedAction" class="space-y-3">
         <!-- Single attribute - full width -->
@@ -88,27 +88,30 @@
       <template v-if="canShowActionFields">
         <!-- Add Stock Fields -->
         <template v-if="selectedAction === 'add'">
-          <FormField
-            name="quantity"
-            label="Quantity to add"
-            type="number"
-            placeholder="Enter quantity"
-            required
-          />
-          <FormField
-            name="unit_cost"
-            label="Unit Cost"
-            type="number"
-            format="currency"
-            step="0.01"
-            placeholder="Enter unit cost"
-            required
-          />
-          <ExpenseRecordCard
+          <div class="grid grid-cols-2 gap-2">
+            <FormField
+              name="quantity"
+              label="Quantity to add"
+              type="number"
+              placeholder="Enter quantity"
+              required
+            />
+            <FormField
+              name="unit_cost"
+              label="Unit Cost"
+              type="number"
+              format="currency"
+              step="0.01"
+              placeholder="Enter unit cost"
+              required
+            />
+          </div>
+
+          <RecordExpenseToggle
             v-model="recordExpense"
-            :quantity="values.quantity"
-            :unit-cost="values.unit_cost"
+            :amount="Number(values.quantity || 0) * Number(values.unit_cost || 0)"
           />
+
           <FormField
             name="note"
             label="Reason for Manual Entry"
@@ -221,7 +224,6 @@ import AppButton from "@components/AppButton.vue"
 import FormField from "@components/form/FormField.vue"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
-import ExpenseRecordCard from "./ExpenseRecordCard.vue"
 import {
   useAddStock,
   useReduceStock,
@@ -241,6 +243,7 @@ import type {
   IProductDetails,
 } from "../types"
 import { useSettingsStore } from "@modules/settings/store"
+import RecordExpenseToggle from "@modules/expenses/components/RecordExpenseToggle.vue"
 
 interface Props {
   open: boolean

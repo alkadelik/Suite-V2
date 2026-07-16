@@ -11,6 +11,7 @@ import { TRawMaterial } from "../../types"
 import * as yup from "yup"
 import RadioInputField from "@components/form/RadioInputField.vue"
 import FormField from "@components/form/FormField.vue"
+import RecordExpenseToggle from "@modules/expenses/components/RecordExpenseToggle.vue"
 import { Field, useForm } from "vee-validate"
 import { onInvalidSubmit } from "@/utils/validations"
 import {
@@ -114,6 +115,19 @@ const { handleSubmit, resetForm, values, setFieldValue } = useForm<FormValues>({
 
 const { mutate: adjustStock, isPending: isAdjusting } = useAdjustMaterialStock()
 
+// Optionally record a stock purchase as an expense (only offered for "New Purchase" additions)
+const recordAsExpense = ref(true)
+
+const showExpenseOption = computed(
+  () => adjustmentType.value === "add" && values.reason?.value === "purchase",
+)
+
+const expenseAmount = computed(() => {
+  const quantity = Number(values.quantity) || 0
+  const unitCost = Number(String(values.unit_cost).replace(/,/g, "")) || 0
+  return quantity * unitCost
+})
+
 // Get available reasons based on adjustment type
 const availableReasons = computed(() => {
   if (!adjustmentType.value) return []
@@ -135,9 +149,7 @@ const decrementQuantity = () => {
 
 // Save adjustment
 const onSubmit = handleSubmit((values) => {
-  console.log("HElloo")
   if (!selectedMaterial.value) return
-  console.log("After")
 
   const payload = {
     movement_type: adjustmentType.value,
@@ -148,6 +160,9 @@ const onSubmit = handleSubmit((values) => {
         : null,
     reason: values.reason!.value,
     notes: values.notes || "",
+    ...(adjustmentType.value === "add"
+      ? { create_expense: showExpenseOption.value && recordAsExpense.value }
+      : {}),
   }
 
   adjustStock(
@@ -166,6 +181,7 @@ const onSubmit = handleSubmit((values) => {
 // Close modal
 const closeModal = () => {
   resetForm()
+  recordAsExpense.value = true
   emit("close")
 }
 
@@ -293,6 +309,12 @@ watch(
           label="Notes (Optional)"
           placeholder="Add any additional notes..."
           :rows="3"
+        />
+
+        <RecordExpenseToggle
+          v-if="showExpenseOption"
+          v-model="recordAsExpense"
+          :amount="expenseAmount"
         />
       </div>
     </div>
