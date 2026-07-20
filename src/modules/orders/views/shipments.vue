@@ -19,6 +19,7 @@ import { toast } from "@/composables/useToast"
 import ShipmentCard from "../components/shipments/ShipmentCard.vue"
 import ShipmentFiltersDrawer from "../components/shipments/ShipmentFiltersDrawer.vue"
 import ShipmentDetailsDrawer from "../components/shipments/ShipmentDetailsDrawer.vue"
+import CreateShipmentDrawer from "../components/shipments/CreateShipmentDrawer.vue"
 import FulfilOrderModal from "../components/FulfilOrderModal.vue"
 import { TShipmentRow } from "../types"
 import { useGetOrders, useGetShipments } from "../api"
@@ -78,6 +79,7 @@ const orderParams = computed(() => {
     ...paginationParams.value,
     fulfilment_status: "unfulfilled",
     fulfilment_method: activeTab.value === "pickup" ? "pickup" : "delivery",
+    ...(activeTab.value === "manual" ? { delivery_method: "custom" } : {}),
   }
   if (debouncedSearch.value) params.search = debouncedSearch.value
   return params
@@ -145,6 +147,16 @@ const statusColor = (status: string): TChipColor => SHIPMENT_STATUS_COLORS[statu
 const selectedShipment = ref<TShipmentRow | null>(null)
 const openFulfil = ref(false)
 const openDetails = ref(false)
+const openCreate = ref(false)
+
+const canCreateShipment = (item: TShipmentRow) =>
+  !!item.shipment && (item.shipment.status === "awaiting_shipment" || !item.shipment.status)
+
+const createShipment = (item: TShipmentRow) => {
+  selectedShipment.value = item
+  openDetails.value = false
+  openCreate.value = true
+}
 
 const router = useRouter()
 
@@ -175,6 +187,15 @@ const getActionItems = (item: TShipmentRow) => {
   if (item.shipment) {
     return [
       viewAction,
+      ...(canCreateShipment(item)
+        ? [
+            {
+              label: "Create shipment",
+              icon: "truck-fast-outline",
+              action: () => createShipment(item),
+            },
+          ]
+        : []),
       {
         label: "Track shipment",
         icon: "truck-fast-outline",
@@ -196,7 +217,7 @@ const getActionItems = (item: TShipmentRow) => {
   return [
     viewAction,
     {
-      label: "Mark as fulfilled",
+      label: "Fulfill order (shipment)",
       icon: "box",
       action: () => {
         selectedShipment.value = item
@@ -333,12 +354,21 @@ watch(rows, (newRows) => {
       @close="openDetails = false"
       @refresh="handleRefresh"
       @view-order="viewOrder(selectedShipment)"
+      @create-shipment="createShipment(selectedShipment)"
       @fulfil="
         () => {
           openDetails = false
           openFulfil = true
         }
       "
+    />
+
+    <CreateShipmentDrawer
+      v-if="selectedShipment"
+      :open="openCreate"
+      :item="selectedShipment"
+      @close="openCreate = false"
+      @refresh="handleRefresh"
     />
 
     <FulfilOrderModal

@@ -143,10 +143,17 @@ const MANUAL_DELIVERY_LOCATIONS = computed(
     })) ?? [],
 )
 
+const isAnonymousCustomer = computed(() => props.customer?.uid === anonymousCustomer.uid)
+
 const DELIVERY_METHOD_OPTIONS = computed(() =>
   [
     { label: "Manual", value: "manual", description: "Select your delivery location" },
-    { label: "Shipbubble", value: "shipbubble", description: "" },
+    {
+      label: "Shipbubble",
+      value: "shipbubble",
+      description: "",
+      disabled: isAnonymousCustomer.value,
+    },
     { label: "Custom", value: "custom", description: "GIG, Bolt, Gokada, etc" },
   ].filter((x) => {
     const { shipping_account, delivery_enabled, manual_delivery_enabled } =
@@ -538,6 +545,21 @@ watch(
   { immediate: true },
 )
 
+// Anonymous customers can't use Shipbubble (no one to deliver to) and don't need
+// a delivery address — move them off shipbubble and clear any stale address.
+watch(
+  [isAnonymousCustomer, localDeliveryMethod],
+  ([anon, method]) => {
+    if (!anon) return
+    if (shippingInfo.value.delivery_address) updateShipping("delivery_address", null)
+    if (method === "shipbubble") {
+      const fallback = DELIVERY_METHOD_OPTIONS.value.find((o) => o.value !== "shipbubble")?.value
+      localDeliveryMethod.value = (fallback ?? "custom") as ShippingInfo["delivery_method"]
+    }
+  },
+  { immediate: true },
+)
+
 watch(
   () => shippingInfo.value.fulfilment_method,
   (val) => {
@@ -874,6 +896,17 @@ const handleSave = async () => {
                 </RadioInputField>
               </div>
 
+              <div
+                v-if="
+                  isAnonymousCustomer &&
+                  DELIVERY_METHOD_OPTIONS.some((o) => o.value === 'shipbubble')
+                "
+                class="flex items-start gap-2 rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600"
+              >
+                <Icon name="info-circle" size="16" class="mt-0.5 shrink-0" />
+                <span> Shipbubble is unavailable for Unknown customers. </span>
+              </div>
+
               <!-- Manual delivery location -->
               <template v-if="localDeliveryMethod === 'manual'">
                 <RadioInputField
@@ -1149,7 +1182,14 @@ const handleSave = async () => {
                   (localDeliveryMethod === 'manual' || localDeliveryMethod === 'custom'))
               "
             >
-              <Field v-slot="{ field, errors: fieldErrors }" name="delivery_address">
+              <div
+                v-if="isAnonymousCustomer"
+                class="flex items-start gap-2 rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600"
+              >
+                <Icon name="info-circle" size="16" class="mt-0.5 shrink-0" />
+                <span> No delivery address needed for Unknown customers. </span>
+              </div>
+              <Field v-else v-slot="{ field, errors: fieldErrors }" name="delivery_address">
                 <SelectField
                   v-bind="field"
                   :model-value="shippingInfo.delivery_address"

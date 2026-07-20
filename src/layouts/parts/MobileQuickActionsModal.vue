@@ -19,8 +19,8 @@ const materialSingular = computed(() => useProductionStore().componentSingular)
 const recipeSingularLabel = computed(() => useProductionStore().recipeSingularLabel)
 
 const quickActions = computed(() => {
-  const onNavigate = (path: string) => {
-    if (!checkPremiumAccess()) return
+  const onNavigate = (path: string, skipPremiumCheck?: boolean) => {
+    if (!skipPremiumCheck && !checkPremiumAccess()) return
     if (!path.startsWith("/"))
       return toast.info("This module is coming soon!", { title: "Discounts" })
     router.push(path)
@@ -61,7 +61,7 @@ const quickActions = computed(() => {
     },
     {
       label: "Add Discount",
-      icon: "tag-2-filled",
+      icon: "tag-3",
       color: "bg-primary-50 text-primary-800 border-primary-100",
       action: () => onNavigate("Discounts"),
       hqOnly: true,
@@ -70,7 +70,7 @@ const quickActions = computed(() => {
       label: `Add ${startCase(materialSingular.value)}`,
       icon: "document-normal-filled",
       color: "bg-warning-50 text-warning-800 border-warning-100",
-      action: () => onNavigate("/production/raw-materials?create=true"),
+      action: () => onNavigate("/production/raw-materials?create=true", true),
       hqOnly: true,
     },
     {

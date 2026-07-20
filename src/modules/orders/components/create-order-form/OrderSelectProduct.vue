@@ -94,14 +94,11 @@ const handleNext = () => {
   })
 }
 
-// Get available quantity for a product (sellable_stock - popup_quantity_taken across all variants)
+// Get available quantity for a product (sellable_stock across all variants)
 const getAvailableProductQty = (product: IProductCatalogue) => {
   if (!product.variants || product.variants.length === 0) return 0
-
-  return product.variants.reduce((total, variant) => {
-    const sellableStock = Number(variant.sellable_stock ?? variant.available_stock ?? 0)
-    const popupQtyTaken = Number(variant.popup_quantity_taken ?? 0)
-    return total + Math.max(0, sellableStock - popupQtyTaken)
+  return product.variants.reduce((total, v) => {
+    return total + Math.max(0, v.sellable_stock)
   }, 0)
 }
 

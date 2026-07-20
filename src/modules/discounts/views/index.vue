@@ -21,19 +21,16 @@
       <template #discounts>
         <EmptyState
           v-if="discountsEmpty"
-          title="You don't have any discount or promo yet!"
-          description="Add a new discount type for your orders by clicking the button below."
+          title="You don't have any discounts yet!"
+          description="Create a discount or promotion for eligible orders."
         >
           <template #action>
-            <div class="flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <AppButton
-                label="Add a discount"
-                icon="add"
-                variant="outlined"
-                @click="openCreateDiscount"
-              />
-              <AppButton label="Add a Coupon" icon="add" variant="outlined" @click="openCreate" />
-            </div>
+            <AppButton
+              label="Add a discount"
+              icon="add"
+              variant="outlined"
+              @click="openCreateDiscount"
+            />
           </template>
         </EmptyState>
 
@@ -50,19 +47,11 @@
       <template #coupons>
         <EmptyState
           v-if="couponsEmpty"
-          title="You don't have any discount or promo yet!"
-          description="Add a new discount type for your orders by clicking the button below."
+          title="You don't have any coupons yet!"
+          description="Create a coupon code for customers to use on eligible orders."
         >
           <template #action>
-            <div class="flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <AppButton
-                label="Add a discount"
-                icon="add"
-                variant="outlined"
-                @click="openCreateDiscount"
-              />
-              <AppButton label="Add a Coupon" icon="add" variant="outlined" @click="openCreate" />
-            </div>
+            <AppButton label="Add a Coupon" icon="add" variant="outlined" @click="openCreate" />
           </template>
         </EmptyState>
 
@@ -110,9 +99,14 @@ import CreateDiscountDrawer from "../components/CreateDiscountDrawer.vue"
 import { useDiscountsStore } from "../store"
 import { toast } from "@/composables/useToast"
 import type { TCoupon, TDiscount } from "../types"
+import { useGetProductCatalogsInfinite } from "@modules/inventory/api"
 
 const store = useDiscountsStore()
 const { activeTab } = storeToRefs(store)
+
+// Warm and retain the exact catalog query used by TargetSelector. Opening either
+// creation flow can render cached products immediately while freshness work stays hidden.
+useGetProductCatalogsInfinite()
 
 // --- Coupons ---
 const couponsEmpty = ref(false)

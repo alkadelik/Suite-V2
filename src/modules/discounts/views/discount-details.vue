@@ -108,7 +108,7 @@ import DeleteConfirmationModal from "@components/DeleteConfirmationModal.vue"
 import CreateDiscountDrawer from "../components/CreateDiscountDrawer.vue"
 import DiscountSettingsCard from "../components/discount/DiscountSettingsCard.vue"
 import DiscountTargetCard from "../components/discount/DiscountTargetCard.vue"
-import { useGetDiscount, useToggleDiscount, useDeleteDiscount } from "../api"
+import { useGetDiscount, useSetDiscountEnabled, useDeleteDiscount } from "../api"
 import { deriveDiscountScope } from "../utils"
 import { DISCOUNT_STATUS_META, DISCOUNT_SCOPE_META, discountScopeHeaderLabel } from "../constants"
 import { toast } from "@/composables/useToast"
@@ -157,20 +157,28 @@ function onSaved() {
   void refetch()
 }
 
-const { mutate: toggleDiscount } = useToggleDiscount()
+const { mutateAsync: setDiscountEnabled } = useSetDiscountEnabled()
+const toggleInFlight = ref(false)
 function toggleActive() {
-  if (!discount.value) return
-  const next = !discount.value.is_enabled
-  toggleDiscount(
-    { uid: uid.value },
-    {
-      onSuccess: () => {
-        toast.success(next ? "Discount enabled" : "Discount disabled")
-        void refetch()
-      },
-      onError: () => toast.error("Could not update discount status"),
-    },
-  )
+  if (!discount.value || toggleInFlight.value) return
+  const currentDiscount = discount.value
+  void (async () => {
+    toggleInFlight.value = true
+    const next = !currentDiscount.is_enabled
+    try {
+      await setDiscountEnabled({
+        uid: uid.value,
+        name: currentDiscount.name,
+        is_enabled: next,
+      })
+      toast.success(next ? "Discount enabled" : "Discount disabled")
+      await refetch()
+    } catch {
+      toast.error("Could not update discount status")
+    } finally {
+      toggleInFlight.value = false
+    }
+  })()
 }
 
 const { mutate: deleteDiscount, isPending: isDeleting } = useDeleteDiscount()
