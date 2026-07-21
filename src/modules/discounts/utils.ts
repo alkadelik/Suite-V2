@@ -8,9 +8,11 @@ import type {
   ICouponPayload,
   TApiDiscountType,
   TDiscount,
+  TDiscountDetail,
   TDiscountTargetType,
   IDiscountFormModel,
   IDiscountPayload,
+  IDiscountUpdatePayload,
 } from "./types"
 
 /** SelectField emits the whole option object; pull a scalar value safely. */
@@ -273,8 +275,40 @@ export function buildDiscountPayload(
   return payload
 }
 
-/** Pre-fill the (limited) Edit form from an existing discount. */
-export function discountToFormModel(d: TDiscount): IDiscountFormModel {
+/**
+ * Map the editable discount fields and the full desired target set to PATCH.
+ * The update contract does not accept target_type, discount type/value, or start_at.
+ */
+export function buildDiscountUpdatePayload(
+  m: IDiscountFormModel,
+  variantUids: string[],
+  forceOverwrite = false,
+): IDiscountUpdatePayload {
+  const targetType = discountTargetTypeFor(m.targetMode)
+  const payload: IDiscountUpdatePayload = {
+    name: m.name.trim(),
+    end_at: m.end_at || null,
+    force_overwrite: forceOverwrite,
+  }
+  if (targetType === "products") payload.variants = variantUids
+  else if (targetType === "categories") payload.categories = m.categoryUids
+  return payload
+}
+
+/** Hydrate Edit / Duplicate from DiscountDetail, including its current target sets. */
+export function discountToFormModel(d: TDiscount | TDiscountDetail): IDiscountFormModel {
+  const variants = "variants" in d && Array.isArray(d.variants) ? d.variants : []
+  const categories = "categories" in d && Array.isArray(d.categories) ? d.categories : []
+  const productUids: string[] = []
+  const variantSelections: Record<string, string[]> = {}
+
+  for (const variant of variants) {
+    if (!productUids.includes(variant.product_uid)) productUids.push(variant.product_uid)
+    const selectedVariants = variantSelections[variant.product_uid] ?? []
+    selectedVariants.push(variant.uid)
+    variantSelections[variant.product_uid] = selectedVariants
+  }
+
   return {
     name: d.name,
     discountKind: d.discount_type === "fixed_amount" ? "fixed" : "percentage",
@@ -283,9 +317,9 @@ export function discountToFormModel(d: TDiscount): IDiscountFormModel {
     start_at: d.start_at,
     end_at: d.end_at ?? "",
     targetMode: d.target_type === "storefront" ? "all" : d.target_type,
-    productUids: [],
-    variantSelections: {},
-    categoryUids: [],
+    productUids,
+    variantSelections,
+    categoryUids: categories.map((category) => category.uid),
   }
 }
 

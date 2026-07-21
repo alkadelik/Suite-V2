@@ -210,11 +210,16 @@ export interface IDiscountPayload {
   force_overwrite?: boolean
 }
 
-// PATCH /discounts/{uid}/ body — only these are editable
+// PATCH /discounts/{uid}/ body (PatchedDiscountUpdate).
+// `variants` / `categories` are full desired replacement sets; target_type itself
+// remains immutable on update.
 export interface IDiscountUpdatePayload {
   name?: string
   end_at?: string | null
   is_enabled?: boolean
+  variants?: string[] | null
+  categories?: string[] | null
+  force_overwrite?: boolean
 }
 
 // Normalized wizard form model (UI-side; mapped to IDiscountPayload on submit)

@@ -5,6 +5,8 @@
       :model-value="appliesToOption"
       :options="appliesToOptions"
       label="Discount Applies to"
+      :disabled="lockMode"
+      :hint="lockMode ? 'The discount target type cannot be changed.' : undefined"
       @update:model-value="onModeChange"
     />
 
@@ -323,11 +325,37 @@ export interface ITargetSelectorModel {
   categoryUids: string[]
 }
 
+/** Existing discount targets used to seed selected rows before catalog search loads them. */
+export interface ITargetProductSummary {
+  uid: string
+  name: string
+  image?: string | null
+  variants: Array<{
+    uid: string
+    name: string
+    price: string | number | null
+    attributes?: { attribute_value?: string | null }[]
+  }>
+}
+
+export interface ITargetCategorySummary {
+  uid: string
+  name: string
+  product_count?: string | number
+}
+
+type TSelectableProduct = {
+  uid: string
+  name: string
+  images: Array<{ uid?: string; image: string; is_primary: boolean }>
+  variants: ITargetProductSummary["variants"]
+}
+
 /** Category may carry a product-count field not present in the base type. */
-type TCategoryWithCount = IProductCategory & {
-  products_count?: number
-  product_count?: number
-  total_products?: number
+type TSelectableCategory = Pick<IProductCategory, "uid" | "name"> & {
+  products_count?: string | number
+  product_count?: string | number
+  total_products?: string | number
 }
 
 const props = withDefaults(
@@ -337,10 +365,17 @@ const props = withDefaults(
     appliesToOptions?: { label: string; value: string }[]
     /** Helper text shown for the "all" mode. */
     allHelpText?: string
+    /** target_type is immutable on discount PATCH; selections remain editable. */
+    lockMode?: boolean
+    initialProducts?: ITargetProductSummary[]
+    initialCategories?: ITargetCategorySummary[]
   }>(),
   {
     appliesToOptions: () => APPLIES_TO_OPTIONS,
     allHelpText: "This coupon applies to all products.",
+    lockMode: false,
+    initialProducts: () => [],
+    initialCategories: () => [],
   },
 )
 const emit = defineEmits<{ "update:modelValue": [value: ITargetSelectorModel] }>()
@@ -366,20 +401,20 @@ const onModeChange = (v: unknown): void => {
 // ---------------------------------------------------------------------------
 // Product price / image helpers (catalog products use variants for pricing)
 // ---------------------------------------------------------------------------
-function primaryImage(product: IProductCatalogue): string | null {
+function primaryImage(product: TSelectableProduct): string | null {
   const images = product.images ?? []
   return images.find((img) => img.is_primary)?.image ?? images[0]?.image ?? null
 }
 
 /** Numeric, finite, positive prices derived from a product's variants. */
-function variantPrices(product: IProductCatalogue): number[] {
+function variantPrices(product: TSelectableProduct): number[] {
   return (product.variants ?? [])
     .map((v) => Number(v.price))
     .filter((n) => Number.isFinite(n) && n > 0)
 }
 
 /** Single price, a min–max range, or "--" — never "₦NaN". */
-function priceLabel(product: IProductCatalogue): string {
+function priceLabel(product: TSelectableProduct): string {
   const prices = variantPrices(product)
   if (prices.length === 0) return "--"
   const min = Math.min(...prices)
@@ -412,20 +447,28 @@ const products = computed<IProductCatalogue[]>(
 )
 
 /** Cache fetched products so selected rows render even after search changes. */
-const productCache = ref<Record<string, IProductCatalogue>>({})
+const productCache = ref<Record<string, TSelectableProduct>>({})
 watch(
-  products,
-  (list) => {
+  [products, () => props.initialProducts] as const,
+  ([list, initialProducts]) => {
+    for (const product of initialProducts) {
+      productCache.value[product.uid] = {
+        uid: product.uid,
+        name: product.name,
+        images: product.image ? [{ uid: product.uid, image: product.image, is_primary: true }] : [],
+        variants: product.variants,
+      }
+    }
     for (const p of list) productCache.value[p.uid] = p
   },
   { immediate: true },
 )
 
-const selectedProducts = computed<IProductCatalogue[]>(() =>
+const selectedProducts = computed<TSelectableProduct[]>(() =>
   props.modelValue.productUids.map(
     (uid) =>
       productCache.value[uid] ??
-      ({ uid, name: "", images: [], variants: [] } as unknown as IProductCatalogue),
+      ({ uid, name: "", images: [], variants: [] } as TSelectableProduct),
   ),
 )
 
@@ -433,7 +476,7 @@ function isProductSelected(uid: string): boolean {
   return props.modelValue.productUids.includes(uid)
 }
 
-function toggleProduct(product: IProductCatalogue): void {
+function toggleProduct(product: TSelectableProduct): void {
   const uid = product.uid
   const has = isProductSelected(uid)
   const productUids = has
@@ -464,7 +507,7 @@ function setVariants(uid: string, variantUids: string[]): void {
   updateModel({ variantSelections })
 }
 
-function variantSummary(product: IProductCatalogue): string {
+function variantSummary(product: TSelectableProduct): string {
   const selected = props.modelValue.variantSelections[product.uid] ?? []
   const total = product.variants?.length ?? 0
   if (selected.length === 0) return "All variants selected"
@@ -481,8 +524,18 @@ onClickOutside(categoryDropdownRef, () => (categoryOpen.value = false))
 
 const categorySearch = ref("")
 const { data: categoriesData, isFetching: categoriesLoading } = useGetCategories()
-const categories = computed<TCategoryWithCount[]>(
-  () => (categoriesData.value?.data?.results as TCategoryWithCount[] | undefined) ?? [],
+const categories = computed<TSelectableCategory[]>(
+  () => (categoriesData.value?.data?.results as TSelectableCategory[] | undefined) ?? [],
+)
+
+const categoryCache = ref<Record<string, TSelectableCategory>>({})
+watch(
+  [categories, () => props.initialCategories] as const,
+  ([list, initialCategories]) => {
+    for (const category of initialCategories) categoryCache.value[category.uid] = category
+    for (const category of list) categoryCache.value[category.uid] = category
+  },
+  { immediate: true },
 )
 
 const filteredCategories = computed(() => {
@@ -491,10 +544,10 @@ const filteredCategories = computed(() => {
   return categories.value.filter((c) => c.name.toLowerCase().includes(term))
 })
 
-const selectedCategories = computed<TCategoryWithCount[]>(() =>
+const selectedCategories = computed<TSelectableCategory[]>(() =>
   props.modelValue.categoryUids
-    .map((uid) => categories.value.find((c) => c.uid === uid))
-    .filter((c): c is TCategoryWithCount => !!c),
+    .map((uid) => categoryCache.value[uid])
+    .filter((c): c is TSelectableCategory => !!c),
 )
 
 function isCategorySelected(uid: string): boolean {
@@ -513,9 +566,10 @@ function unselectAllCategories(): void {
 }
 
 /** Real count field if present, otherwise null (renders name only). */
-function categoryProductCount(category: TCategoryWithCount): number | null {
+function categoryProductCount(category: TSelectableCategory): number | null {
   const count = category.products_count ?? category.product_count ?? category.total_products
-  return typeof count === "number" ? count : null
+  const parsed = Number(count)
+  return Number.isFinite(parsed) ? parsed : null
 }
 
 // ---------------------------------------------------------------------------

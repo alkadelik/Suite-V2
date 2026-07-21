@@ -73,7 +73,8 @@ export function useDeleteCoupon() {
 // List supports server-side filters (status, target_type, discount_type,
 // is_enabled, is_applied) plus search/ordering/limit/offset. Create accepts
 // variants[] (products), categories[] (categories), or neither (storefront).
-// PATCH is limited to name/end_at/is_enabled; POST {id}/toggle/ flips enabled.
+// PATCH accepts name/end_at/is_enabled plus full replacement target sets through
+// variants[] or categories[]. target_type/type/value/start_at remain immutable.
 // ============================================================================
 export function useGetDiscounts(
   params?: MaybeRefOrGetter<Record<string, string | number | boolean> | undefined>,
@@ -115,7 +116,7 @@ export function useCreateDiscount() {
   })
 }
 
-// PATCH only accepts name / end_at / is_enabled (type/value/targeting are immutable).
+// PATCH accepts the editable settings and full replacement target sets.
 export function useUpdateDiscount() {
   return useMutation({
     mutationFn: ({ uid, ...body }: IDiscountUpdatePayload & { uid: string }) =>
