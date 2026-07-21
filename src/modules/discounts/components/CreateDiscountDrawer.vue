@@ -42,20 +42,37 @@
       </div>
     </div>
 
-    <!-- Step 0: Details (type/value/start locked in edit) -->
-    <DiscountDetailsStep v-if="activeStep === 0" v-model="model" :lock-fields="mode === 'edit'" />
-
-    <!-- Step 1: Applies-to (target) — create/duplicate only -->
-    <div v-else class="space-y-4">
-      <IconHeader icon-name="tag-2" subtext="Choose where this discount applies." />
-      <TargetSelector
-        ref="targetSelectorRef"
-        :model-value="targetModel"
-        :applies-to-options="DISCOUNT_APPLIES_TO_OPTIONS"
-        all-help-text="This discount applies to your entire storefront."
-        @update:model-value="setTarget"
-      />
+    <div v-if="loadingDiscount" class="space-y-3 py-2">
+      <div class="h-16 animate-pulse rounded-xl bg-gray-100" />
+      <div class="h-16 animate-pulse rounded-xl bg-gray-100" />
+      <div class="h-16 animate-pulse rounded-xl bg-gray-100" />
     </div>
+
+    <div v-else-if="discountLoadFailed" class="flex flex-col items-center py-10 text-center">
+      <Icon name="danger" class="text-error-500 h-8 w-8" />
+      <p class="text-core-800 mt-3 text-sm font-medium">Could not load the discount targets.</p>
+      <AppButton label="Retry" variant="outlined" class="mt-4" @click="refetchDiscount()" />
+    </div>
+
+    <template v-else>
+      <!-- Step 0: Details (type/value/start locked in edit) -->
+      <DiscountDetailsStep v-if="activeStep === 0" v-model="model" :lock-fields="mode === 'edit'" />
+
+      <!-- Step 1: Applies-to target selections -->
+      <div v-else class="space-y-4">
+        <IconHeader icon-name="tag-2" subtext="Choose where this discount applies." />
+        <TargetSelector
+          ref="targetSelectorRef"
+          :model-value="targetModel"
+          :applies-to-options="DISCOUNT_APPLIES_TO_OPTIONS"
+          :lock-mode="mode === 'edit'"
+          :initial-products="initialTargetProducts"
+          :initial-categories="initialTargetCategories"
+          all-help-text="This discount applies to your entire storefront."
+          @update:model-value="setTarget"
+        />
+      </div>
+    </template>
 
     <!-- Footer: pinned step navigation -->
     <template #footer>
@@ -65,7 +82,7 @@
         :label="submitLabel"
         class="w-full"
         :loading="busy"
-        :disabled="!detailsValid"
+        :disabled="loadingDiscount || discountLoadFailed || !detailsValid"
         @click="onSubmit"
       />
       <!-- multi-step, details: Continue -->
@@ -73,7 +90,7 @@
         v-else-if="activeStep === 0"
         label="Continue"
         class="w-full"
-        :disabled="!detailsValid"
+        :disabled="loadingDiscount || discountLoadFailed || !detailsValid"
         @click="goNext"
       />
       <!-- multi-step, last step: Back + submit -->
@@ -121,15 +138,19 @@ import IconHeader from "@components/IconHeader.vue"
 import AppButton from "@components/AppButton.vue"
 import DiscountDetailsStep from "./discount/DiscountDetailsStep.vue"
 import TargetSelector from "./TargetSelector.vue"
-import type { ITargetSelectorModel } from "./TargetSelector.vue"
+import type {
+  ITargetCategorySummary,
+  ITargetProductSummary,
+  ITargetSelectorModel,
+} from "./TargetSelector.vue"
 import DiscountConflictModal from "./discount/DiscountConflictModal.vue"
 import type { TDiscountConflict } from "./discount/DiscountConflictModal.vue"
 import OverwriteProductsModal from "./discount/OverwriteProductsModal.vue"
-import { buildDiscountPayload, discountToFormModel } from "../utils"
+import { buildDiscountPayload, buildDiscountUpdatePayload, discountToFormModel } from "../utils"
 import { DISCOUNT_APPLIES_TO_OPTIONS } from "../constants"
-import { useCreateDiscount, useUpdateDiscount } from "../api"
+import { useCreateDiscount, useGetDiscount, useUpdateDiscount } from "../api"
 import { toast } from "@/composables/useToast"
-import type { IDiscountFormModel, TDiscount } from "../types"
+import type { IDiscountFormModel, TDiscount, TDiscountDetail } from "../types"
 
 const props = defineProps<{
   open: boolean
@@ -158,27 +179,102 @@ const model = ref<IDiscountFormModel>(blankModel())
 const activeStep = ref(0)
 const targetSelectorRef = ref<InstanceType<typeof TargetSelector> | null>(null)
 
+const discountUid = computed(() => props.discount?.uid ?? "")
+const shouldLoadDiscount = computed(
+  () => props.open && props.mode !== "create" && Boolean(discountUid.value),
+)
+const {
+  data: discountData,
+  isPending: discountPending,
+  isError: discountError,
+  refetch: refetchDiscount,
+} = useGetDiscount(discountUid, { enabled: shouldLoadDiscount })
+
+function unwrapDiscountDetail(body: unknown): TDiscountDetail | null {
+  const raw = body as { data?: TDiscountDetail } | TDiscountDetail | undefined
+  if (!raw) return null
+  const candidate = "uid" in raw ? raw : raw.data
+  if (!candidate || candidate.uid !== discountUid.value) return null
+  return Array.isArray(candidate.variants) && Array.isArray(candidate.categories) ? candidate : null
+}
+
+const propDiscountDetail = computed(() => unwrapDiscountDetail(props.discount))
+const fetchedDiscountDetail = computed(() => unwrapDiscountDetail(discountData.value))
+const editableDiscount = computed(() => fetchedDiscountDetail.value ?? propDiscountDetail.value)
+const loadingDiscount = computed(
+  () => shouldLoadDiscount.value && !editableDiscount.value && discountPending.value,
+)
+const discountLoadFailed = computed(
+  () => shouldLoadDiscount.value && !editableDiscount.value && discountError.value,
+)
+
+const initialTargetProducts = computed<ITargetProductSummary[]>(() => {
+  const products = new Map<string, ITargetProductSummary>()
+  for (const variant of editableDiscount.value?.variants ?? []) {
+    const current = products.get(variant.product_uid) ?? {
+      uid: variant.product_uid,
+      name: variant.product_name,
+      image: variant.product_image ?? variant.image,
+      variants: [],
+    }
+    current.variants.push({ uid: variant.uid, name: variant.name, price: variant.price })
+    products.set(variant.product_uid, current)
+  }
+  return Array.from(products.values())
+})
+
+const initialTargetCategories = computed<ITargetCategorySummary[]>(() =>
+  (editableDiscount.value?.categories ?? []).map((category) => ({
+    uid: category.uid,
+    name: category.name,
+    product_count: category.product_count,
+  })),
+)
+
+const hasInitializedDiscount = ref(false)
+
+function resetTransientState(): void {
+  activeStep.value = 0
+  showConflict.value = false
+  showOverwrite.value = false
+  pendingVariants.value = []
+  hasInitializedDiscount.value = false
+}
+
+function initializeFromDiscount(discount: TDiscountDetail): void {
+  model.value = discountToFormModel(discount)
+  if (props.mode === "duplicate") {
+    model.value = { ...model.value, name: `${model.value.name} (Copy)` }
+  }
+  hasInitializedDiscount.value = true
+}
+
 watch(
   () => props.open,
   (isOpen) => {
     if (!isOpen) return
-    activeStep.value = 0
-    showConflict.value = false
-    showOverwrite.value = false
-    pendingVariants.value = []
-    if (props.discount && (props.mode === "edit" || props.mode === "duplicate")) {
-      model.value = discountToFormModel(props.discount)
-      if (props.mode === "duplicate") {
-        model.value = { ...model.value, name: `${model.value.name} (Copy)` }
-      }
-    } else {
+    resetTransientState()
+    if (props.mode === "create") {
       model.value = blankModel()
+    } else if (editableDiscount.value) {
+      initializeFromDiscount(editableDiscount.value)
     }
   },
 )
 
-// Edit is limited (PATCH only name/end_at) → single step, no targeting.
-const steps = computed(() => (props.mode === "edit" ? ["Details"] : ["Details", "Applies to"]))
+watch(editableDiscount, (discount) => {
+  if (props.open && props.mode !== "create" && discount && !hasInitializedDiscount.value) {
+    initializeFromDiscount(discount)
+  }
+})
+
+// target_type stays immutable on PATCH. Existing product/category target sets can
+// be replaced; storefront discounts have no individual target selection step.
+const steps = computed(() =>
+  props.mode === "edit" && props.discount?.target_type === "storefront"
+    ? ["Details"]
+    : ["Details", "Applies to"],
+)
 
 const title = computed(() =>
   props.mode === "edit"
@@ -239,7 +335,8 @@ function setTarget(v: ITargetSelectorModel): void {
 // Submit + Conflict → Overwrite flow (force_overwrite).
 // On a DISCOUNT_CONFLICT response the backend returns the conflicting variants +
 // the discount they're already on; we surface those in the modal and re-POST
-// with force_overwrite once the user confirms.
+// with force_overwrite once the user confirms. This applies to both POST and
+// target-replacement PATCH requests.
 // ---------------------------------------------------------------------------
 const showConflict = ref(false)
 const showOverwrite = ref(false)
@@ -270,25 +367,9 @@ function parseConflict(err: unknown): { conflicts: TDiscountConflict[]; message:
 }
 
 function onSubmit(): void {
-  // Edit: limited PATCH (name + end date only).
-  if (props.mode === "edit" && props.discount) {
-    update(
-      {
-        uid: props.discount.uid,
-        name: model.value.name.trim(),
-        end_at: model.value.end_at || null,
-      },
-      {
-        onSuccess: () => emit("saved"),
-        onError: () => toast.error("Could not update the discount."),
-      },
-    )
-    return
-  }
-
   // Products mode targets specific ProductVariant UIDs (resolved from the
   // selector). Categories + Storefront are resolved server-side, so no variants
-  // are sent — buildDiscountPayload sends category UIDs / a storefront target.
+  // are sent. The create/update payload builders send category UIDs directly.
   let variants: string[] = []
   if (model.value.targetMode === "products") {
     variants = targetSelectorRef.value?.getResolvedVariantUids() ?? []
@@ -298,28 +379,46 @@ function onSubmit(): void {
     }
   }
   pendingVariants.value = variants
-  doCreate(false)
+  doSave(false)
 }
 
-function doCreate(force: boolean): void {
-  const payload = buildDiscountPayload(model.value, pendingVariants.value, force)
-  create(payload, {
+function saveOptions(force: boolean) {
+  return {
     onSuccess: () => {
       showConflict.value = false
       showOverwrite.value = false
       emit("saved")
     },
-    onError: (err) => {
+    onError: (err: unknown) => {
       const conflict = parseConflict(err)
       if (!force && conflict) {
         conflicts.value = conflict.conflicts
         conflictMessage.value = conflict.message
         showConflict.value = true
       } else {
-        toast.error("Could not create the discount. Please try again.")
+        toast.error(
+          props.mode === "edit"
+            ? "Could not update the discount. Please try again."
+            : "Could not create the discount. Please try again.",
+        )
       }
     },
-  })
+  }
+}
+
+function doSave(force: boolean): void {
+  if (props.mode === "edit" && props.discount) {
+    update(
+      {
+        uid: props.discount.uid,
+        ...buildDiscountUpdatePayload(model.value, pendingVariants.value, force),
+      },
+      saveOptions(force),
+    )
+    return
+  }
+
+  create(buildDiscountPayload(model.value, pendingVariants.value, force), saveOptions(force))
 }
 
 function onOverwrite(): void {
@@ -328,6 +427,6 @@ function onOverwrite(): void {
 }
 
 function onComplete(): void {
-  doCreate(true)
+  doSave(true)
 }
 </script>
