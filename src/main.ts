@@ -6,6 +6,7 @@ import piniaPluginPersistedstate from "pinia-plugin-persistedstate"
 import { VueQueryPlugin } from "@tanstack/vue-query"
 import FloatingVue from "floating-vue"
 import "floating-vue/dist/style.css"
+import "@modules/walkthrough/walkthrough.css"
 import * as Sentry from "@sentry/vue"
 
 // Create Vue app instance

@@ -1,5 +1,10 @@
 <template>
-  <PageHeader title="Discounts" />
+  <PageHeader
+    title="Discounts"
+    :show-tutorial="true"
+    data-walkthrough="discounts-nav"
+    @tutorial="startDiscountTutorial"
+  />
 
   <div class="p-4 md:p-6">
     <!-- desktop header -->
@@ -7,7 +12,18 @@
       title="Discounts"
       subtitle="Manage all your discounts and promos"
       class="hidden md:flex"
-    />
+    >
+      <template #action>
+        <AppButton
+          label="Tutorial"
+          icon="info-circle"
+          size="sm"
+          color="alt"
+          variant="outlined"
+          @click="startDiscountTutorial"
+        />
+      </template>
+    </SectionHeader>
 
     <Tabs
       :tabs="[
@@ -29,6 +45,7 @@
               label="Add a discount"
               icon="add"
               variant="outlined"
+              data-walkthrough="discount-add"
               @click="openCreateDiscount"
             />
           </template>
@@ -78,7 +95,7 @@
       :open="showDiscountDrawer"
       :mode="discountDrawerMode"
       :discount="discountEditTarget"
-      @close="showDiscountDrawer = false"
+      @close="closeDiscountDrawer"
       @saved="onDiscountSaved"
     />
   </div>
@@ -100,8 +117,12 @@ import { useDiscountsStore } from "../store"
 import { toast } from "@/composables/useToast"
 import type { TCoupon, TDiscount } from "../types"
 import { useGetProductCatalogsInfinite } from "@modules/inventory/api"
+import { useAuthStore } from "@modules/auth/store"
+import { useWalkthroughStore } from "@modules/walkthrough/store"
 
 const store = useDiscountsStore()
+const walkthrough = useWalkthroughStore()
+const authStore = useAuthStore()
 const { activeTab } = storeToRefs(store)
 
 // Warm and retain the exact catalog query used by TargetSelector. Opening either
@@ -148,6 +169,22 @@ const openCreateDiscount = () => {
   discountDrawerMode.value = "create"
   discountEditTarget.value = null
   showDiscountDrawer.value = true
+  walkthrough.report("discount-create-opened")
+}
+
+const closeDiscountDrawer = () => {
+  showDiscountDrawer.value = false
+  const step = walkthrough.activeProgress?.stepIndex
+  if (walkthrough.activeId === "discounts" && (step === 2 || step === 3)) {
+    walkthrough.dismiss()
+  }
+}
+
+const startDiscountTutorial = () => {
+  if (!authStore.user?.uid) return
+  store.setActiveTab("discounts")
+  walkthrough.markReleaseSeen(authStore.user.uid)
+  walkthrough.start("discounts", authStore.user.uid)
 }
 const openEditDiscount = (discount: TDiscount) => {
   discountDrawerMode.value = "edit"

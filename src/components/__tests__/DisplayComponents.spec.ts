@@ -150,6 +150,10 @@ describe("layout and display components", () => {
       attrs: { class: "h-5 w-5 text-primary-600" },
     })
     expect(classSized.find("svg").attributes("width")).toBeUndefined()
+
+    const swipeGesture = mount(Icon, { props: { name: "swipe-gesture", size: 18 } })
+    expect(swipeGesture.find("svg").exists()).toBe(true)
+    expect(swipeGesture.find("svg").attributes("width")).toBe("18px")
   })
 
   it("IconHeader, InfoBox, and WarningBox render their public content contracts", () => {
@@ -204,6 +208,10 @@ describe("layout and display components", () => {
     expect(wrapper.text()).toContain("Products")
     expect(wrapper.text()).toContain("4 items")
     expect(wrapper.text()).not.toContain("Tutorial")
+
+    await wrapper.setProps({ showTutorial: true })
+    await wrapper.find('button[aria-label="Start tutorial"]').trigger("click")
+    expect(wrapper.emitted("tutorial")).toHaveLength(1)
 
     await wrapper.setProps({ inner: true, backLink: "/inventory" })
     await wrapper.findComponent(IconStub).trigger("click")

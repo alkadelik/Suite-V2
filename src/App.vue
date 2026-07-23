@@ -2,6 +2,7 @@
   <div>
     <!--  -->
     <router-view />
+    <WalkthroughHost />
     <!--  -->
     <ToastContainer />
     <SupportModal />
@@ -30,6 +31,7 @@ import SupportModal from "@components/core/SupportModal.vue"
 import ToastContainer from "@components/core/ToastContainer.vue"
 import { useAuthStore } from "@modules/auth/store"
 import PlansModal from "@modules/settings/components/PlansModal.vue"
+import WalkthroughHost from "@modules/walkthrough/components/WalkthroughHost.vue"
 import { useSettingsStore } from "@modules/settings/store"
 import { computed } from "vue"
 

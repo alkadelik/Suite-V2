@@ -4,6 +4,8 @@
     :triggers="['click']"
     :auto-placement="props.placement === 'auto'"
     :auto-hide="closeOnClickOutside"
+    v-bind="controlledVisibility"
+    @update:shown="handleVisibilityChange"
   >
     <template #default="{ toggle, shown }">
       <!-- Trigger Button -->
@@ -160,6 +162,8 @@ interface Props {
   triggerClass?: string
   /** Custom CSS classes for the dropdown menu */
   menuClass?: string
+  /** Optional controlled open state. */
+  open?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -181,9 +185,20 @@ const emit = defineEmits<{
   close: []
   /** Emitted when dropdown visibility changes */
   toggle: [open: boolean]
+  /** Enables a parent to control dropdown visibility. */
+  "update:open": [open: boolean]
   /** Emitted when an item is selected */
   select: [item: DropdownItem, index: number]
 }>()
+
+const controlledVisibility = computed(() => (props.open === undefined ? {} : { shown: props.open }))
+
+const handleVisibilityChange = (shown: boolean) => {
+  emit("update:open", shown)
+  emit("toggle", shown)
+  if (shown) emit("open")
+  else emit("close")
+}
 
 // Styling computed properties
 // const triggerClasses = computed(() => {

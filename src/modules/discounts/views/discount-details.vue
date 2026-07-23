@@ -1,5 +1,11 @@
 <template>
-  <PageHeader inner title="Discount Details" back-link="/discounts" :show-tutorial="true" />
+  <PageHeader
+    inner
+    title="Discount Details"
+    back-link="/discounts"
+    :show-tutorial="true"
+    @tutorial="startDiscountTutorial"
+  />
 
   <div class="px-4 pt-2 pb-4 md:p-6">
     <!-- Loading -->
@@ -45,8 +51,9 @@
         </div>
 
         <!-- Manage Discount -->
-        <div class="shrink-0">
+        <div class="shrink-0" data-walkthrough="discount-manage">
           <DropdownMenu
+            v-model:open="manageOpen"
             :items="manageItems"
             placement="bottom-end"
             menu-width="auto"
@@ -113,9 +120,22 @@ import { deriveDiscountScope } from "../utils"
 import { DISCOUNT_STATUS_META, DISCOUNT_SCOPE_META, discountScopeHeaderLabel } from "../constants"
 import { toast } from "@/composables/useToast"
 import type { TDiscountDetail } from "../types"
+import { useWalkthroughStore } from "@modules/walkthrough/store"
+import { useAuthStore } from "@modules/auth/store"
 
 const route = useRoute()
 const router = useRouter()
+const walkthrough = useWalkthroughStore()
+const authStore = useAuthStore()
+
+const manageOpen = ref(false)
+
+function startDiscountTutorial() {
+  if (!authStore.user?.uid) return
+  walkthrough.markReleaseSeen(authStore.user.uid)
+  walkthrough.start("discounts", authStore.user.uid)
+  void router.push("/discounts")
+}
 
 const uid = computed(() => String(route.params.uid))
 
