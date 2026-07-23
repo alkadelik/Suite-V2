@@ -26,17 +26,6 @@
     </div>
 
     <div v-else class="space-y-4">
-      <!-- Action Selector -->
-      <FormField
-        name="action"
-        label="Select Action"
-        type="select"
-        placeholder="Select action"
-        :options="actionOptions"
-        placement="auto"
-        required
-      />
-
       <!-- Product Info Card -->
       <div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div class="flex items-center gap-3 border-b border-gray-200 p-4">
@@ -135,11 +124,6 @@
             />
           </div>
 
-          <RecordExpenseToggle
-            v-model="recordExpense"
-            :amount="Number(values.quantity || 0) * Number(values.unit_cost || 0)"
-          />
-
           <FormField
             name="note"
             label="Reason for Manual Entry"
@@ -147,10 +131,10 @@
             placeholder="Enter reason"
             required
           />
-          <ExpenseRecordCard
+
+          <RecordExpenseToggle
             v-model="recordExpense"
-            :quantity="values.quantity"
-            :unit-cost="values.unit_cost"
+            :amount="Number(values.quantity || 0) * Number(values.unit_cost || 0)"
           />
         </template>
 
@@ -258,7 +242,6 @@ import AppButton from "@components/AppButton.vue"
 import FormField from "@components/form/FormField.vue"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
-import ExpenseRecordCard from "@modules/shared/components/ExpenseRecordCard.vue"
 import ManageStockSkeleton from "./skeletons/ManageStockSkeleton.vue"
 import {
   useAddStock,
