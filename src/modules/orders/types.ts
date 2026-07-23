@@ -16,7 +16,7 @@ export type TOrderItem = {
   qty_fulfilled: number
   notes: string
   attributes?: string | null
-  product_images?: string | null
+  product_images?: { image: string }[]
 }
 
 export type TOrder = {
@@ -45,6 +45,7 @@ export type TOrder = {
   memos_count: number
   outstanding_balance: number
   payment_status: "unpaid" | "paid" | "partially_paid"
+  payment_source?: string
   rate: string
   source: "internal" | "external"
   store: string

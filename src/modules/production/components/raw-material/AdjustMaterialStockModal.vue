@@ -65,6 +65,7 @@ interface FormValues {
   unit_cost: string
   reason: { label: string; value: string } | null
   notes: string
+  expiry_date?: string
 }
 
 const adjustmentType = ref<"add" | "remove">("add")
@@ -103,6 +104,7 @@ const { handleSubmit, resetForm, values, setFieldValue } = useForm<FormValues>({
         .nullable()
         .required("Reason is required"),
       notes: yup.string().optional(),
+      expiry_date: yup.string().optional(),
     }),
   ),
   initialValues: {
@@ -110,6 +112,7 @@ const { handleSubmit, resetForm, values, setFieldValue } = useForm<FormValues>({
     unit_cost: "",
     reason: null,
     notes: "",
+    expiry_date: "",
   },
 })
 
@@ -119,7 +122,17 @@ const { mutate: adjustStock, isPending: isAdjusting } = useAdjustMaterialStock()
 const recordAsExpense = ref(true)
 
 const showExpenseOption = computed(
-  () => adjustmentType.value === "add" && values.reason?.value === "purchase",
+  () =>
+    adjustmentType.value === "add" &&
+    ["purchase", "adjustment"].includes(values.reason?.value ?? ""),
+)
+
+// Stock count adjustments are rarely an actual spend, so the toggle starts off for them
+watch(
+  () => values.reason?.value,
+  (reason) => {
+    recordAsExpense.value = reason !== "adjustment"
+  },
 )
 
 const expenseAmount = computed(() => {
@@ -163,6 +176,7 @@ const onSubmit = handleSubmit((values) => {
     ...(adjustmentType.value === "add"
       ? { create_expense: showExpenseOption.value && recordAsExpense.value }
       : {}),
+    ...(values.expiry_date ? { expiry_date: values.expiry_date } : {}),
   }
 
   adjustStock(
@@ -309,6 +323,13 @@ watch(
           label="Notes (Optional)"
           placeholder="Add any additional notes..."
           :rows="3"
+        />
+
+        <FormField
+          type="date"
+          name="expiry_date"
+          label="Expiry Date (optional)"
+          placeholder="Select expiry date"
         />
 
         <RecordExpenseToggle

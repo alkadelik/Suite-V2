@@ -10,7 +10,7 @@ withDefaults(
     description?: string
   }>(),
   {
-    title: "Record this purchase as an expense",
+    title: "Record this as an expense",
     description: "in your expense records for reporting and profit tracking.",
   },
 )

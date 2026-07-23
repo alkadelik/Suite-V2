@@ -123,13 +123,11 @@ const timelineSteps = computed(() => {
 const detailRows = computed(() => {
   if (mode.value === "shipbubble" && shipment.value) {
     return [
-      { label: "Shipment ID", value: shipment.value.shipbubble_order_id },
+      { label: "Shipment ID", value: shipment.value.shipbubble_order_id || "N/A" },
       { label: "Courier", value: shipment.value.courier?.name || order.value.courier_name || "-" },
       {
         label: "Pickup Date",
-        value: shipment.value.pickup_date
-          ? formatDate(shipment.value.pickup_date)
-          : "Earliest Available",
+        value: shipment.value.pickup_date ? formatDate(shipment.value.pickup_date) : "--",
       },
       {
         label: "Expected Delivery Date",
@@ -251,7 +249,11 @@ const handleGetWaybillDoc = () => {
           <p v-if="mode === 'shipbubble' && shipment" class="flex justify-between text-sm">
             <span class="text-core-600">Delivery Fee</span>
             <span class="flex items-center gap-2 font-medium">
-              {{ format(Number(shipment.total_shipping_cost), { kobo: true }) }}
+              {{
+                format(+shipment.total_shipping_cost || +order?.delivery_fee, {
+                  kobo: true,
+                })
+              }}
               <Chip v-if="quoteChip" :label="quoteChip.label" :color="quoteChip.color" size="sm" />
             </span>
           </p>
@@ -269,7 +271,7 @@ const handleGetWaybillDoc = () => {
           <p v-if="mode !== 'pickup'" class="flex justify-between gap-6 text-sm">
             <span class="text-core-600 shrink-0">Receiver's Address</span>
             <span class="text-right font-medium">
-              {{ order.customer_address || "-" }}
+              {{ order.customer_address || order.delivery_address || "-" }}
             </span>
           </p>
           <p v-else class="flex justify-between text-sm">

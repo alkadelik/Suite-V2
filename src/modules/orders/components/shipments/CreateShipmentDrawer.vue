@@ -29,7 +29,7 @@ const order = computed(() => props.item.order)
 
 // Order items summary — first item leads, the rest collapse into a "+N items" chip
 const firstItem = computed(() => order.value.items?.[0])
-const firstItemImage = computed(() => firstItem.value?.product_images?.split(",")[0] || "")
+const firstItemImage = computed(() => firstItem.value?.product_images?.[0]?.image || "")
 const extraItemsCount = computed(() => {
   const total = (order.value.items ?? []).reduce((sum, item) => sum + item.quantity, 0)
   return total - (firstItem.value?.quantity ?? 0)
@@ -86,7 +86,9 @@ const handleCreateShipment = () => {
   handlePayStackPayment(
     {
       // Paystack expects the amount in kobo
-      shipping_price: (Number(currentShipment.total_shipping_cost) * 100).toFixed(2),
+      shipping_price: (
+        (Number(currentShipment.total_shipping_cost) || Number(currentOrder.delivery_fee)) * 100
+      ).toFixed(2),
       customer_name: currentOrder.customer_name || "Customer",
       customer_email: currentOrder.customer_email || "",
       shipping_address: currentOrder.customer_address || "",
@@ -94,13 +96,10 @@ const handleCreateShipment = () => {
     (payResponse) => {
       createShipment(
         {
-          uid: currentShipment.uid,
-          body: {
-            order: currentOrder.uid,
-            rate: currentOrder.rate,
-            courier: currentOrder.courier,
-            payment_reference: payResponse.reference,
-          },
+          order: currentOrder.uid,
+          rate: currentOrder.rate,
+          courier: currentOrder.courier,
+          payment_reference: payResponse.reference,
         },
         {
           onSuccess: (response) => {
@@ -117,10 +116,13 @@ const handleCreateShipment = () => {
 const successRows = computed(() => [
   { label: "Order ID", value: `#${order.value.order_number}` },
   { label: "Shipment ID", value: shipment.value?.shipbubble_order_id || "-" },
-  { label: "Courier", value: shipment.value?.courier?.name || "-" },
+  { label: "Courier", value: shipment.value?.courier?.courier_name || "-" },
   {
     label: "Shipping Fee",
-    value: format(Number(shipment.value?.total_shipping_cost), { kobo: true }),
+    value: format(
+      Number(shipment.value?.total_shipping_cost) || Number(order.value?.delivery_fee),
+      { kobo: true },
+    ),
   },
   {
     label: "Expected Delivery Date",
@@ -187,28 +189,41 @@ const handleSuccessDone = () => {
             <span class="text-core-600 shrink-0">{{ row.label }}</span>
             <span class="text-right font-medium">{{ row.value }}</span>
           </p>
-        </div>
 
-        <!-- Courier quote -->
-        <div
-          v-if="shipment"
-          class="border-core-300 flex items-center gap-3 rounded-xl border bg-white p-4"
-        >
-          <span
-            class="bg-core-200 flex size-10 flex-shrink-0 items-center justify-center rounded-lg"
+          <!-- Courier quote -->
+          <div
+            v-if="shipment"
+            class="border-core-100 flex items-center gap-3 rounded-xl border bg-white p-4"
           >
-            <Icon name="truck-fast" size="20" class="text-core-600" />
-          </span>
-          <div class="min-w-0 flex-1">
-            <p class="truncate text-sm font-medium">{{ shipment.courier?.name || "-" }}</p>
-            <p class="text-core-500 mt-0.5 flex items-center gap-1.5 text-xs">
-              <Chip v-if="quoteChip" :label="quoteChip.label" :color="quoteChip.color" size="sm" />
-              <span>Created: {{ formatDate(shipment.created_at) }}</span>
-            </p>
+            <span
+              class="bg-core-200 flex size-10 flex-shrink-0 items-center justify-center rounded-lg"
+            >
+              <Icon name="truck-fast" size="20" class="text-core-600" />
+            </span>
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-medium">
+                {{ shipment.courier?.courier_name || "-" }}
+              </p>
+              <p class="text-core-500 mt-0.5 flex items-center gap-1.5 text-xs">
+                <Chip
+                  v-if="quoteChip"
+                  :label="quoteChip.label"
+                  :color="quoteChip.color"
+                  size="sm"
+                />
+              </p>
+            </div>
+            <div class="flex-shrink-0 text-right">
+              <p class="text-sm font-semibold">
+                {{
+                  format(Number(shipment.total_shipping_cost) || +order.delivery_fee, {
+                    kobo: true,
+                  })
+                }}
+              </p>
+              <span class="text-xs">Created: {{ formatDate(shipment.created_at) }}</span>
+            </div>
           </div>
-          <p class="flex-shrink-0 text-sm font-semibold">
-            {{ format(Number(shipment.total_shipping_cost), { kobo: true }) }}
-          </p>
         </div>
       </div>
 
@@ -224,13 +239,13 @@ const handleSuccessDone = () => {
     </Drawer>
 
     <!-- Shipment created success dialog -->
-    <Modal :open="showSuccess" :show-header="false" max-width="sm" @close="handleSuccessDone">
+    <Modal :open="showSuccess" max-width="sm" @close="handleSuccessDone">
       <div class="space-y-4 py-4 text-center">
         <p class="text-5xl">🎉</p>
         <h3 class="text-lg font-semibold">Shipment Created Successfully</h3>
         <p class="text-core-600 text-sm">
-          Pickup has been booked with {{ shipment?.courier?.name || "your courier" }}. Tracking
-          details have been generated and sent to the customer.
+          Pickup has been booked with {{ shipment?.courier?.courier_name || "your courier" }}.
+          Tracking details have been generated and sent to the customer.
         </p>
 
         <div class="border-core-300 bg-core-25 space-y-3 rounded-xl border p-4">
@@ -240,13 +255,10 @@ const handleSuccessDone = () => {
           </p>
         </div>
 
-        <div
-          v-if="createdTrackingNumber"
-          class="border-warning-200 bg-warning-25 rounded-xl border px-4 py-3"
-        >
+        <div class="border-primary-200 bg-primary-25 rounded-xl border px-4 py-3">
           <p class="text-core-500 text-xs">Tracking Number</p>
           <p class="flex items-center justify-center gap-1 text-sm font-semibold">
-            {{ createdTrackingNumber }}
+            {{ createdTrackingNumber || "--" }}
             <Icon
               name="copy"
               size="14"

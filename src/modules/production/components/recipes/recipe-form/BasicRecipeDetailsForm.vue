@@ -94,7 +94,7 @@ watch(
 )
 
 // ─── Recipe name uniqueness check ────────────────────────────────────────
-const { mutate: validateRecipeName, isPending: isValidatingName } = useValidateRecipeName()
+const { mutateAsync: validateRecipeName, isPending: isValidatingName } = useValidateRecipeName()
 // null = not checked (empty name / unchanged in edit mode / result stale)
 const nameIsUnique = ref<boolean | null>(null)
 
@@ -102,22 +102,34 @@ const nameExistsError = computed(
   () => `A ${recipeSingularLabel.value.toLowerCase()} with this name already exists`,
 )
 
-const onNameBlur = () => {
+// Nothing to validate: empty (optional field) or unchanged name in edit mode
+const nameNeedsCheck = computed(() => {
   const name = String(values.name || "").trim()
-  // Nothing to validate: empty (optional field) or unchanged name in edit mode
-  if (!name || (props.isEditMode && name === (props.initialValues.name || "").trim())) {
+  return !!name && !(props.isEditMode && name === (props.initialValues.name || "").trim())
+})
+
+/** Runs the uniqueness check and returns whether the name may be used. */
+const checkNameIsUnique = async (): Promise<boolean> => {
+  if (!nameNeedsCheck.value) {
     nameIsUnique.value = null
-    return
+    return true
   }
-  validateRecipeName(name, {
-    onSuccess: ({ data }) => {
-      nameIsUnique.value = !!data.is_unique
-      if (!data.is_unique) setFieldError("name", nameExistsError.value)
-    },
-    onError: () => {
-      nameIsUnique.value = null
-    },
-  })
+  try {
+    const res = await validateRecipeName(String(values.name).trim())
+    const data = res.data.data
+    nameIsUnique.value = !!data.is_unique
+    if (!data.is_unique) setFieldError("name", nameExistsError.value)
+    return !!data.is_unique
+  } catch {
+    // Couldn't verify — treat as unchecked and let the user retry
+    nameIsUnique.value = null
+    setFieldError("name", "Could not verify this name. Please try again.")
+    return false
+  }
+}
+
+const onNameBlur = () => {
+  checkNameIsUnique()
 }
 
 // A previous check no longer applies once the name changes
@@ -214,14 +226,17 @@ watch(
 )
 
 // ─── Submit handler ─────────────────────────────────────────────────────
-const handleNext = handleSubmit((formValues) => {
-  // Block while the name uniqueness check is in flight or has failed.
+const handleNext = handleSubmit(async (formValues) => {
+  // Block while the name uniqueness check is in flight, and never proceed on an
+  // unverified name — if it was never checked (or the check errored), run it now.
   // handleSubmit re-runs the schema (which clears setFieldError), so re-apply it here.
   if (isValidatingName.value) return
   if (nameIsUnique.value === false) {
     setFieldError("name", nameExistsError.value)
     return
   }
+  if (nameIsUnique.value === null && !(await checkNameIsUnique())) return
+
   const item = formValues.outputItem as ItemOption
   const unit = formValues.unit as ItemOption
   emit("next", {
@@ -291,14 +306,24 @@ const handleNext = handleSubmit((formValues) => {
       @search-change="matSearchInput = $event"
     />
 
-    <FormField
-      name="name"
-      :label="`Custom ${recipeSingularLabel} Name (optional)`"
-      placeholder="e.g. Vanila Cake"
-      :required="false"
-      :hint="isValidatingName ? 'Checking name availability...' : undefined"
-      @blur="onNameBlur"
-    />
+    <div>
+      <FormField
+        name="name"
+        :label="`Custom ${recipeSingularLabel} Name (optional)`"
+        placeholder="e.g. Vanila Cake"
+        :required="false"
+        :variant="nameIsUnique === true ? 'success' : 'default'"
+        :hint="isValidatingName ? 'Checking name availability...' : undefined"
+        @blur="onNameBlur"
+      />
+      <p
+        v-if="nameIsUnique === true && !isValidatingName"
+        class="mt-1 flex items-center gap-1 text-sm text-green-600"
+      >
+        <Icon name="tick-circle" size="16" />
+        This name is available
+      </p>
+    </div>
 
     <div v-if="values.outputItemType !== 'sub_assembly'">
       <Field v-slot="{ field, errors: fieldErrors }" name="unit">

@@ -149,9 +149,6 @@ const openFulfil = ref(false)
 const openDetails = ref(false)
 const openCreate = ref(false)
 
-const canCreateShipment = (item: TShipmentRow) =>
-  !!item.shipment && (item.shipment.status === "awaiting_shipment" || !item.shipment.status)
-
 const createShipment = (item: TShipmentRow) => {
   selectedShipment.value = item
   openDetails.value = false
@@ -187,15 +184,6 @@ const getActionItems = (item: TShipmentRow) => {
   if (item.shipment) {
     return [
       viewAction,
-      ...(canCreateShipment(item)
-        ? [
-            {
-              label: "Create shipment",
-              icon: "truck-fast-outline",
-              action: () => createShipment(item),
-            },
-          ]
-        : []),
       {
         label: "Track shipment",
         icon: "truck-fast-outline",
@@ -250,15 +238,13 @@ const emptyStateDescription = computed(() => {
 </script>
 
 <template>
-  <div class="space-y-8 px-3 pb-6 lg:pt-6">
+  <div class="space-y-6 px-3 pb-6 lg:pt-6">
     <PageHeader v-if="isMobile" title="Shipments" :count="totalCount" />
     <SectionHeader v-else title="Shipments" subtitle="Manage all your shipment types" />
 
     <Tabs v-model="activeTab" :tabs="pageTabs" class="max-w-md" />
 
-    <div
-      class="mt-4 space-y-4 overflow-hidden rounded-xl border-gray-200 pt-3 md:border md:bg-white"
-    >
+    <div class="mt-4 space-y-4 overflow-hidden rounded-xl border-gray-200 md:border md:bg-white">
       <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
         <h3 class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
           {{ pageTabs.find((tab) => tab.key === activeTab)?.title }}
