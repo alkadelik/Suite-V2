@@ -1,5 +1,11 @@
 <template>
-  <PageHeader inner title="Discount Details" back-link="/discounts" :show-tutorial="true" />
+  <PageHeader
+    inner
+    title="Discount Details"
+    back-link="/discounts"
+    :show-tutorial="true"
+    @tutorial="startDiscountTutorial"
+  />
 
   <div class="px-4 pt-2 pb-4 md:p-6">
     <!-- Loading -->
@@ -45,8 +51,9 @@
         </div>
 
         <!-- Manage Discount -->
-        <div class="shrink-0">
+        <div class="shrink-0" data-walkthrough="discount-manage">
           <DropdownMenu
+            v-model:open="manageOpen"
             :items="manageItems"
             placement="bottom-end"
             menu-width="auto"
@@ -108,14 +115,27 @@ import DeleteConfirmationModal from "@components/DeleteConfirmationModal.vue"
 import CreateDiscountDrawer from "../components/CreateDiscountDrawer.vue"
 import DiscountSettingsCard from "../components/discount/DiscountSettingsCard.vue"
 import DiscountTargetCard from "../components/discount/DiscountTargetCard.vue"
-import { useGetDiscount, useToggleDiscount, useDeleteDiscount } from "../api"
+import { useGetDiscount, useSetDiscountEnabled, useDeleteDiscount } from "../api"
 import { deriveDiscountScope } from "../utils"
 import { DISCOUNT_STATUS_META, DISCOUNT_SCOPE_META, discountScopeHeaderLabel } from "../constants"
 import { toast } from "@/composables/useToast"
 import type { TDiscountDetail } from "../types"
+import { useWalkthroughStore } from "@modules/walkthrough/store"
+import { useAuthStore } from "@modules/auth/store"
 
 const route = useRoute()
 const router = useRouter()
+const walkthrough = useWalkthroughStore()
+const authStore = useAuthStore()
+
+const manageOpen = ref(false)
+
+function startDiscountTutorial() {
+  if (!authStore.user?.uid) return
+  walkthrough.markReleaseSeen(authStore.user.uid)
+  walkthrough.start("discounts", authStore.user.uid)
+  void router.push("/discounts")
+}
 
 const uid = computed(() => String(route.params.uid))
 
@@ -157,20 +177,28 @@ function onSaved() {
   void refetch()
 }
 
-const { mutate: toggleDiscount } = useToggleDiscount()
+const { mutateAsync: setDiscountEnabled } = useSetDiscountEnabled()
+const toggleInFlight = ref(false)
 function toggleActive() {
-  if (!discount.value) return
-  const next = !discount.value.is_enabled
-  toggleDiscount(
-    { uid: uid.value },
-    {
-      onSuccess: () => {
-        toast.success(next ? "Discount enabled" : "Discount disabled")
-        void refetch()
-      },
-      onError: () => toast.error("Could not update discount status"),
-    },
-  )
+  if (!discount.value || toggleInFlight.value) return
+  const currentDiscount = discount.value
+  void (async () => {
+    toggleInFlight.value = true
+    const next = !currentDiscount.is_enabled
+    try {
+      await setDiscountEnabled({
+        uid: uid.value,
+        name: currentDiscount.name,
+        is_enabled: next,
+      })
+      toast.success(next ? "Discount enabled" : "Discount disabled")
+      await refetch()
+    } catch {
+      toast.error("Could not update discount status")
+    } finally {
+      toggleInFlight.value = false
+    }
+  })()
 }
 
 const { mutate: deleteDiscount, isPending: isDeleting } = useDeleteDiscount()

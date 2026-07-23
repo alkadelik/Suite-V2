@@ -8,7 +8,35 @@
     title="Manage Stock"
     @close="emit('close')"
   >
-    <div class="space-y-4">
+    <ManageStockSkeleton v-if="loading || (!product && !error)" />
+
+    <div
+      v-else-if="error && !product"
+      class="flex min-h-[360px] flex-col items-center justify-center gap-3 px-6 text-center"
+      role="alert"
+    >
+      <span class="bg-error-50 flex h-12 w-12 items-center justify-center rounded-full">
+        <Icon name="warning-2" size="24" class="text-error-600" />
+      </span>
+      <div class="space-y-1">
+        <h3 class="text-core-800 font-semibold">Unable to load stock details</h3>
+        <p class="text-core-500 text-sm">Check your connection and try again.</p>
+      </div>
+      <AppButton label="Try Again" variant="outlined" @click="emit('retry')" />
+    </div>
+
+    <div v-else class="space-y-4">
+      <!-- Action Selector -->
+      <FormField
+        name="action"
+        label="Select Action"
+        type="select"
+        placeholder="Select action"
+        :options="actionOptions"
+        placement="auto"
+        required
+      />
+
       <!-- Product Info Card -->
       <div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div class="flex items-center gap-3 border-b border-gray-200 p-4">
@@ -17,7 +45,7 @@
             <img
               v-if="displayImage"
               :src="displayImage"
-              :alt="product.name"
+              :alt="product?.name ?? ''"
               class="h-full w-full object-cover"
             />
             <div v-else class="flex h-full w-full items-center justify-center">
@@ -26,7 +54,7 @@
           </div>
 
           <div class="flex h-full min-w-0 flex-1 flex-col justify-between gap-2">
-            <p class="truncate font-medium">{{ product.name }}</p>
+            <p class="truncate font-medium">{{ product?.name }}</p>
             <!-- Price and stock only show when variant is selected or for simple products -->
             <template v-if="showPriceAndStock">
               <div class="flex items-center gap-2">
@@ -119,6 +147,11 @@
             placeholder="Enter reason"
             required
           />
+          <ExpenseRecordCard
+            v-model="recordExpense"
+            :quantity="values.quantity"
+            :unit-cost="values.unit_cost"
+          />
         </template>
 
         <!-- Reduce Stock Fields -->
@@ -203,6 +236,7 @@
 
     <template #footer>
       <AppButton
+        v-if="product && !loading"
         :label="submitButtonLabel"
         :loading="isPending"
         class="w-full"
@@ -224,6 +258,8 @@ import AppButton from "@components/AppButton.vue"
 import FormField from "@components/form/FormField.vue"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
+import ExpenseRecordCard from "@modules/shared/components/ExpenseRecordCard.vue"
+import ManageStockSkeleton from "./skeletons/ManageStockSkeleton.vue"
 import {
   useAddStock,
   useReduceStock,
@@ -244,17 +280,25 @@ import type {
 } from "../types"
 import { useSettingsStore } from "@modules/settings/store"
 import RecordExpenseToggle from "@modules/expenses/components/RecordExpenseToggle.vue"
+import { getAddStockDefaults } from "../stock-form"
 
 interface Props {
   open: boolean
-  product: IProductDetails
+  product?: IProductDetails | null
+  loading?: boolean
+  error?: boolean
 }
 
 interface Emits {
   (e: "close"): void
+  (e: "retry"): void
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  product: null,
+  loading: false,
+  error: false,
+})
 const emit = defineEmits<Emits>()
 const { format } = useFormatCurrency()
 
@@ -327,12 +371,12 @@ const locationOptions = computed(() => {
 
 // Check if product has multiple variants (complex product)
 const isComplexProduct = computed(() => {
-  return props.product.variants.length > 1
+  return (props.product?.variants?.length ?? 0) > 1
 })
 
 // Get product attributes for selection
 const productAttributes = computed(() => {
-  if (!isComplexProduct.value) return []
+  if (!props.product || !isComplexProduct.value) return []
   return getProductAttributesForSelect(props.product)
 })
 
@@ -452,13 +496,14 @@ const { handleSubmit, resetForm, values, setFieldValue } = useForm<FormValues>({
 })
 
 // Whether the stock purchase should also be recorded as an expense (default on, per design)
-const recordExpense = ref(true)
+const recordExpense = ref(getAddStockDefaults().recordExpense)
 
 // Get selected action value
 const selectedAction = computed(() => values.action?.value)
 
 // Get selected variant based on attribute selection
 const selectedVariant = computed(() => {
+  if (!props.product) return null
   if (!isComplexProduct.value) {
     // Simple product - return the single variant
     return props.product.variants[0]
@@ -491,7 +536,7 @@ const displayImage = computed(() => {
   if (selectedVariant.value?.image) {
     return selectedVariant.value.image
   }
-  return props.product.images?.[0]?.image || null
+  return props.product?.images?.[0]?.image || null
 })
 
 // Get display price
@@ -544,37 +589,47 @@ const submitButtonLabel = computed(() => {
   }
 })
 
-// Reset form when modal opens
-watch(
-  () => props.open,
-  (isOpen) => {
-    if (isOpen) {
-      const initialValues: FormValues = {
-        action: null,
-        quantity: 0,
-        unit_cost: "",
-        note: "",
-        loss_type: null,
-        to_location: null,
-      }
-
-      // Reset attribute fields
-      productAttributes.value.forEach((attr) => {
-        initialValues[attr.attribute_uid] = null
-      })
-
-      resetForm({ values: initialValues })
-      recordExpense.value = true
+// Reset when the modal opens and again when asynchronously loaded product details
+// first become available. Watching the UID avoids resetting an in-progress form
+// during background refetches of the same product.
+watch([() => props.open, () => props.product?.uid], ([isOpen]) => {
+  if (isOpen) {
+    const defaults = getAddStockDefaults()
+    const initialValues: FormValues = {
+      action: null,
+      quantity: 0,
+      unit_cost: "",
+      note: "",
+      loss_type: null,
+      to_location: null,
     }
-  },
-)
+
+    // Reset attribute fields
+    productAttributes.value.forEach((attr) => {
+      initialValues[attr.attribute_uid] = null
+    })
+
+    resetForm({ values: initialValues })
+    recordExpense.value = defaults.recordExpense
+  }
+})
+
+// Only add-stock uses the purchase reason default. Other stock actions must not
+// inherit it when the merchant switches actions in the shared modal.
+watch(selectedAction, (action, previousAction) => {
+  if (action === "add") {
+    setFieldValue("note", getAddStockDefaults().note)
+  } else if (previousAction === "add") {
+    setFieldValue("note", "")
+  }
+})
 
 // Update unit cost when variant is selected for add stock
 watch(
   [selectedVariant, selectedAction],
   ([variant, action]) => {
     if (action === "add" && variant) {
-      setFieldValue("unit_cost", variant.price)
+      setFieldValue("unit_cost", getAddStockDefaults(variant.cost_price).unitCost)
     }
   },
   { immediate: true },
@@ -602,7 +657,7 @@ const onSubmit = handleSubmit((formValues) => {
 
     const onSuccess = () => {
       toast.success("Stock added successfully")
-      inventoryCache.stockChanged(queryClient, props.product.uid)
+      if (props.product) inventoryCache.stockChanged(queryClient, props.product.uid)
       emit("close")
     }
 
@@ -626,7 +681,7 @@ const onSubmit = handleSubmit((formValues) => {
 
     const onSuccess = () => {
       toast.success("Stock reduced successfully")
-      inventoryCache.stockChanged(queryClient, props.product.uid)
+      if (props.product) inventoryCache.stockChanged(queryClient, props.product.uid)
       emit("close")
     }
 
@@ -650,7 +705,9 @@ const onSubmit = handleSubmit((formValues) => {
     const onSuccess = () => {
       toast.success(`Stock ${action === "transfer" ? "transferred" : "request sent"} successfully`)
       // A direct transfer moves stock; a request only creates a transfer request.
-      inventoryCache.transferChanged(queryClient, action === "transfer", props.product.uid)
+      if (props.product) {
+        inventoryCache.transferChanged(queryClient, action === "transfer", props.product.uid)
+      }
       emit("close")
     }
 

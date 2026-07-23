@@ -54,7 +54,7 @@ const quickActionGroups = computed<ActionGroup[]>(() => {
         { label: "Popups", icon: "calendar-tick", to: "/popups", hqOnly: true },
         {
           label: "Discounts",
-          icon: "tag",
+          icon: "tag-3",
           action: () => toast.info("This module is coming soon!", { title: "Discounts" }),
         },
         { label: "Expenses", icon: "receipt-text", to: "/expenses" },

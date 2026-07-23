@@ -39,9 +39,18 @@
           size="sm"
           label="Add Discount"
           class="!hidden md:!inline-flex"
+          data-walkthrough="discount-add"
           @click="emit('add')"
         />
-        <AppButton icon="add" size="sm" label="" class="md:hidden" @click="emit('add')" />
+        <AppButton
+          icon="add"
+          size="sm"
+          label=""
+          class="md:hidden"
+          data-walkthrough="discount-add"
+          aria-label="Add Discount"
+          @click="emit('add')"
+        />
       </div>
     </div>
 
@@ -54,6 +63,7 @@
       :total-items-count="count"
       :total-page-count="Math.ceil(count / itemsPerPage) || 1"
       :server-pagination="true"
+      :row-attrs="rowAttributes"
       @pagination-change="(d) => (page = d.currentPage)"
       @row-click="handleRowClick"
     >
@@ -142,11 +152,12 @@ import {
   formatCouponDate,
   normalizeDiscountList,
 } from "../utils"
-import { useGetDiscounts, useDeleteDiscount, useToggleDiscount } from "../api"
+import { useGetDiscounts, useDeleteDiscount, useSetDiscountEnabled } from "../api"
 import type { TDiscount, TDiscountRow } from "../types"
 import { toast } from "@/composables/useToast"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
+import { useWalkthroughStore } from "@modules/walkthrough/store"
 
 const emit = defineEmits<{
   add: []
@@ -156,6 +167,7 @@ const emit = defineEmits<{
 }>()
 
 const router = useRouter()
+const walkthrough = useWalkthroughStore()
 const { format } = useFormatCurrency()
 
 // search + filters + pagination state
@@ -229,23 +241,34 @@ const isEmpty = computed(
 watch(isEmpty, (v) => emit("empty", v), { immediate: true })
 
 const handleRowClick = (d: TDiscountRow) => {
+  walkthrough.report("discount-row-opened")
   router.push(`/discounts/discount/${d.uid}`)
 }
 
-// toggle (disable/enable) — assumed endpoint, degrades gracefully
-const { mutate: toggleDiscount } = useToggleDiscount()
+const rowAttributes = (discount: TDiscountRow) => ({
+  "data-walkthrough": "discount-row",
+  "data-walkthrough-discount-row": discount.uid,
+  tabindex: 0,
+})
+
+// Toggle through the documented endpoint; DiscountUpdate requires the current name.
+const { mutateAsync: setDiscountEnabled } = useSetDiscountEnabled()
+const toggleInFlight = ref(false)
 const handleToggle = (d: TDiscountRow) => {
-  const next = !d.is_enabled
-  toggleDiscount(
-    { uid: d.uid },
-    {
-      onSuccess: () => {
-        toast.success(next ? "Discount enabled" : "Discount disabled")
-        refetch()
-      },
-      onError: () => toast.error("Could not update discount status"),
-    },
-  )
+  if (toggleInFlight.value) return
+  void (async () => {
+    toggleInFlight.value = true
+    const next = !d.is_enabled
+    try {
+      await setDiscountEnabled({ uid: d.uid, name: d.name, is_enabled: next })
+      toast.success(next ? "Discount enabled" : "Discount disabled")
+      await refetch()
+    } catch {
+      toast.error("Could not update discount status")
+    } finally {
+      toggleInFlight.value = false
+    }
+  })()
 }
 
 // delete

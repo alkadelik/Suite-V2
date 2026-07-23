@@ -49,6 +49,7 @@ interface ChildItem {
   icon: string
   label: string
   to: string
+  walkthrough?: string
 }
 
 interface Props {

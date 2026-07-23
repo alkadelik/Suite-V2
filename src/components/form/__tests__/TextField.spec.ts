@@ -135,6 +135,22 @@ describe("TextField", () => {
       expect(wrapper.text()).toContain("₦")
     })
 
+    it("keeps the currency prefix visible when an errored input receives focus", async () => {
+      const wrapper = mountField({
+        type: "number",
+        format: "currency",
+        error: "enter a valid cost price",
+      })
+      const input = wrapper.find("input")
+      const prefix = input.element.previousElementSibling
+
+      await input.trigger("focus")
+
+      expect(input.classes()).toContain("min-w-0")
+      expect(prefix?.textContent?.trim()).toBe("₦")
+      expect(prefix?.classList.contains("shrink-0")).toBe(true)
+    })
+
     it("shows the symbol for the store currency", () => {
       const wrapper = mountField({ type: "number", format: "currency" }, "USD")
       expect(wrapper.text()).toContain("$")

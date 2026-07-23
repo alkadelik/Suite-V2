@@ -156,7 +156,7 @@
       :product-name="product?.data.name || ''"
       :product-uid="uid"
       :variant-attributes="selectedVariant.attributes"
-      :variant-price="selectedVariant.price"
+      :variant-cost-price="selectedVariant.cost_price"
       :available-stock="selectedVariant.sellable_stock || selectedVariant.available_stock || 0"
       @close="showAddReduceStockModal = false"
     />
