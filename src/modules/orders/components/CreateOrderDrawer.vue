@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Drawer from "@components/Drawer.vue"
 import StepperWizard from "@components/StepperWizard.vue"
-import { ref, computed, onMounted, watch } from "vue"
+import { ref, computed, watch } from "vue"
 import type { IProductCatalogue } from "@modules/inventory/types"
 import type { ICustomer } from "@modules/customers/types"
 import type { OrderPayload, OrderItemPayload } from "@modules/orders/types"
@@ -21,7 +21,6 @@ import { useCreateOrder } from "../api"
 import { toast } from "@/composables/useToast"
 import type { IShippingCourier } from "@modules/shared/types"
 import type { PopupInventory } from "@modules/popups/types"
-import { handlePayStackPayment, loadPaystackScript } from "../utilities"
 import { useSettingsStore } from "@modules/settings/store"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
 
@@ -345,34 +344,16 @@ const onCreateOrder = () => {
     onError: displayError,
   }
 
+  // Shipbubble shipping is paid for later, when the shipment is booked from the
+  // Shipments page — order creation just stores the quote (rate + courier).
   if (delivery_method === "shipbubble") {
-    const payData = {
-      shipping_price: (Number(shippingInfo.value.delivery_fee || 0) * 100).toFixed(2), // convert to kobo
-      customer_name:
-        selectedCustomer.value?.full_name ||
-        `${selectedCustomer.value?.first_name || ""} ${selectedCustomer.value?.last_name || ""}`.trim() ||
-        "Customer",
-      customer_email: shippingInfo.value.customer_email || selectedCustomer.value?.email || "",
-      shipping_address:
-        typeof shippingInfo.value.delivery_address === "string"
-          ? shippingInfo.value.delivery_address
-          : (shippingInfo.value.delivery_address as { label: string; value: string }).label,
-    }
-
-    handlePayStackPayment(payData, (payResponse) => {
-      // money paid... time to create order
-      console.log("Payment successful:", payResponse)
-      const reference = payResponse.reference
-
-      createOrder(
-        {
-          ...payload,
-          reference,
-          delivery_fee: Number(shippingInfo.value.delivery_fee).toFixed(2),
-        } as OrderPayload,
-        handler,
-      )
-    })
+    createOrder(
+      {
+        ...payload,
+        delivery_fee: Number(shippingInfo.value.delivery_fee).toFixed(2),
+      } as OrderPayload,
+      handler,
+    )
   } else {
     createOrder(payload as OrderPayload, handler)
   }
@@ -391,10 +372,6 @@ const resetForm = () => {
 }
 
 // load paystack script on mounted
-onMounted(() => {
-  loadPaystackScript()
-})
-
 // Sync customer email and phone to shippingInfo whenever customer changes
 watch(
   () => selectedCustomer.value,

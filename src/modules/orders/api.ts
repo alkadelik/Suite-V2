@@ -5,6 +5,7 @@ import {
   IPaymentPayload,
   OrderDashboardStats,
   OrderPayload,
+  TCreateShipmentPayload,
   TOrder,
   TOrderMemo,
   TOrderResponse,
@@ -34,11 +35,13 @@ export function useGetOrders(
   })
 }
 
-/** Book a ShipBubble shipment from its quote */
+/** Book a ShipBubble shipment from its quote (shipping fee is paid via Paystack first) */
 export function useCreateShipbubbleShipment() {
   return useMutation({
-    mutationFn: (uid: string): Promise<{ data: { data?: { tracking_number?: string } } }> =>
-      baseApi.post(`/shipping/orders/${uid}/create/`),
+    mutationFn: (
+      body: TCreateShipmentPayload,
+    ): Promise<{ data: { data?: { tracking_number?: string } } }> =>
+      baseApi.post(`/shipping/orders/`, body),
   })
 }
 
@@ -103,6 +106,13 @@ export function useVoidOrder() {
   return useMutation({
     mutationFn: ({ id, void_reason }: { id: string; void_reason: string }) =>
       baseApi.post(`/orders/${id}/void/`, { void_reason }),
+  })
+}
+
+/** Cancel order api request (offline orders) */
+export function useCancelOrder() {
+  return useMutation({
+    mutationFn: (orderNumber: string) => baseApi.post(`/orders/public/${orderNumber}/cancel/`),
   })
 }
 

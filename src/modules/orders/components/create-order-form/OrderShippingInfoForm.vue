@@ -5,7 +5,6 @@ import TextField from "@components/form/TextField.vue"
 import PhoneInput from "@components/form/PhoneInput.vue"
 import SelectField from "@components/form/SelectField.vue"
 import RadioInputField from "@components/form/RadioInputField.vue"
-import GooglePlacesAutocomplete from "@components/GooglePlacesAutocomplete.vue"
 import Icon from "@components/Icon.vue"
 import Chip from "@components/Chip.vue"
 import EmptyState from "@components/EmptyState.vue"
@@ -484,7 +483,6 @@ const handleNext = async () => {
 // Shipbubble integration
 const shipBubbleRates = ref<{ couriers: IShippingCourier[] }>({ couriers: [] })
 const shippingRateErrors = ref({ email: "", phone: "", address: "" })
-const delivery_address = ref(props.shippingInfo.delivery_address || "")
 
 const { mutate: getShippingRates, isPending: isGettingRates } = useGetShippingRates()
 
@@ -497,7 +495,10 @@ const validateFetchRates = async (): Promise<boolean> => {
       {
         customer_phone: props.shippingInfo.customer_phone,
         customer_email: props.shippingInfo.customer_email,
-        delivery_address: props.shippingInfo.delivery_address,
+        delivery_address:
+          typeof props.shippingInfo.delivery_address === "string"
+            ? props.shippingInfo.delivery_address
+            : props.shippingInfo.delivery_address?.label || "",
       },
       { abortEarly: false },
     )
@@ -966,21 +967,39 @@ const isMobile = useMediaQuery("(max-width: 768px)")
                   required
                 />
 
-                <GooglePlacesAutocomplete
+                <SelectField
                   name="delivery_address"
                   label="Delivery Address"
-                  placeholder="Enter delivery address"
-                  :modelValue="delivery_address"
-                  @update:modelValue="delivery_address = $event"
-                  @selected="
-                    (item: any) => {
-                      updateField('delivery_address', item.description)
+                  placeholder="Select an address"
+                  :options="CUSTOMER_ADDRESSES"
+                  value-key="value"
+                  label-key="label"
+                  :model-value="shippingInfo.delivery_address"
+                  :error="shippingRateErrors.address"
+                  @update:model-value="
+                    (value) => {
+                      updateField('delivery_address', value as { label: string; value: string })
                       shippingRateErrors.address = ''
                     }
                   "
-                  :error="shippingRateErrors.address"
-                  required
-                />
+                >
+                  <template #prepend="{ close }">
+                    <div
+                      class="hover:bg-core-25 cursor-pointer border-b border-gray-200 px-4 py-2 text-sm transition-colors duration-150"
+                      @click="
+                        () => {
+                          close()
+                          emit('openAddAddress')
+                        }
+                      "
+                    >
+                      <div class="flex items-center justify-between">
+                        <span class="text-primary-600 font-semibold">Add New Address</span>
+                        <Icon name="add" class="text-primary-600 h-4 w-4" />
+                      </div>
+                    </div>
+                  </template>
+                </SelectField>
 
                 <div class="flex justify-end">
                   <AppButton

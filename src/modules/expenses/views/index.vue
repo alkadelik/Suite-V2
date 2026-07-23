@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AppButton from "@components/AppButton.vue"
 import DataTable from "@components/DataTable.vue"
+import Tabs from "@components/Tabs.vue"
 import EmptyState from "@components/EmptyState.vue"
 import TextField from "@components/form/TextField.vue"
 import SectionHeader from "@components/SectionHeader.vue"
@@ -11,7 +12,13 @@ import DropdownMenu from "@components/DropdownMenu.vue"
 import Chip from "@components/Chip.vue"
 import { TExpense } from "../types"
 import CreateExpenseDrawer from "../components/CreateExpenseDrawer.vue"
-import { useDeleteExpense, useEditExpense, useGetExpenseDashboard, useGetExpenses } from "../api"
+import {
+  useBulkCompleteExpenses,
+  useDeleteExpense,
+  useEditExpense,
+  useGetExpenseDashboard,
+  useGetExpenses,
+} from "../api"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
 import {
@@ -56,7 +63,40 @@ const currentMonthLabel = computed(() =>
   new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
 )
 
-const statsParams = computed(() => currentMonthRange.value)
+const isMobile = useMediaQuery("(max-width: 1024px)")
+
+const showFilter = ref(false)
+
+const pageTabs = [
+  { title: "All", key: "all" },
+  { title: "Payables", key: "payables" },
+]
+const activeTab = ref("all")
+const isPayablesTab = computed(() => activeTab.value === "payables")
+
+const page = ref(1)
+const itemsPerPage = ref(10)
+const searchQuery = ref("")
+const debouncedSearch = useDebouncedRef(searchQuery, 750)
+const activeFilters = ref<Record<string, string>>({})
+
+const activeFilterCount = computed(() => Object.keys(activeFilters.value).length)
+
+const handleApplyFilters = (filters: Record<string, string>) => {
+  activeFilters.value = filters
+  page.value = 1
+}
+
+// All tab: current-month summary. Payables tab: totals for unpaid expenses
+// matching the applied filters/search (no date range)
+const statsParams = computed(() => {
+  if (isPayablesTab.value) {
+    const params: Record<string, string> = { ...activeFilters.value, status: "unpaid" }
+    if (debouncedSearch.value) params.search = debouncedSearch.value
+    return params
+  }
+  return currentMonthRange.value
+})
 
 const {
   data: expenseDashboard,
@@ -64,10 +104,27 @@ const {
   refetch: refetchStats,
 } = useGetExpenseDashboard(statsParams)
 
-const isMobile = useMediaQuery("(max-width: 1024px)")
-
 const expenseMetrics = computed(() => {
   const stat = expenseDashboard?.value
+
+  if (isPayablesTab.value) {
+    return [
+      {
+        label: "Total Payables",
+        value: isMobile.value
+          ? truncate(stat?.current.total_amount || 0)
+          : format(stat?.current.total_amount || 0),
+        icon: "wallet-money",
+        iconClass: "md:text-orange-700",
+      },
+      {
+        label: "Payables Count",
+        value: String(stat?.current.expense_count || 0),
+        icon: "receipt-text",
+        iconClass: "md:text-blue-700",
+      },
+    ]
+  }
 
   const biggestExpenseCategory = stat?.category_breakdown?.length
     ? stat.category_breakdown.reduce((prev, current) =>
@@ -96,32 +153,50 @@ const expenseMetrics = computed(() => {
   ]
 })
 
-const showFilter = ref(false)
-
-const page = ref(1)
-const itemsPerPage = ref(10)
-const searchQuery = ref("")
-const debouncedSearch = useDebouncedRef(searchQuery, 750)
-const activeFilters = ref<Record<string, string>>({})
-
-const activeFilterCount = computed(() => Object.keys(activeFilters.value).length)
-
-const handleApplyFilters = (filters: Record<string, string>) => {
-  activeFilters.value = filters
-  page.value = 1
-}
-
 const computedParams = computed(() => {
   const params: Record<string, string> = {}
   if (debouncedSearch.value) params.search = debouncedSearch.value
   params.offset = ((debouncedSearch.value ? 0 : page.value - 1) * itemsPerPage.value).toString()
   params.limit = itemsPerPage.value.toString()
   Object.assign(params, activeFilters.value)
+  // Payables shows only unpaid expenses — this overrides any status picked in the filter drawer
+  if (isPayablesTab.value) params.status = "unpaid"
   return params
+})
+
+// Switching tabs restarts pagination and drops filters, search and selection
+watch(activeTab, () => {
+  page.value = 1
+  activeFilters.value = {}
+  searchQuery.value = ""
+  selectedPayables.value = []
 })
 
 const { data: expenses, isPending, isFetching, refetch } = useGetExpenses(computedParams)
 const { checkPremiumAccess } = usePremiumAccess()
+
+// Payables multi-select (rows come from DataTable's row-selection)
+const dataTableRef = ref<{ selectAllRows: () => void; clearRowSelection: () => void } | null>(null)
+const selectedPayables = ref<TExpense[]>([])
+const openBulkPaid = ref(false)
+
+const { mutate: bulkCompleteExpenses, isPending: isBulkCompleting } = useBulkCompleteExpenses()
+
+const handleBulkMarkPaid = () => {
+  const count = selectedPayables.value.length
+  bulkCompleteExpenses(
+    { items: selectedPayables.value.map((expense) => expense.uid) },
+    {
+      onSuccess: () => {
+        toast.success(`${count} expense${count === 1 ? "" : "s"} marked as paid`)
+        openBulkPaid.value = false
+        dataTableRef.value?.clearRowSelection()
+        handleRefresh()
+      },
+      onError: displayError,
+    },
+  )
+}
 
 // Function to handle opening create order drawer
 const handleOpenCreate = () => {
@@ -151,7 +226,7 @@ const getActionItems = (item: TExpense) => [
         },
         { divider: true },
       ]),
-  ...(item.status !== "paid"
+  ...(item.status !== "paid" && item.entry_type === "manual"
     ? [
         {
           label: "Mark as paid",
@@ -267,9 +342,15 @@ watch(
         <SectionHeader title="Expenses" subtitle="Review your expenses." />
       </div>
 
+      <Tabs v-model="activeTab" :tabs="pageTabs" class="max-w-xs" />
+
       <EmptyState
         v-if="
-          !expenses?.results?.length && !debouncedSearch && !isPending && activeFilterCount === 0
+          !isPayablesTab &&
+          !expenses?.results?.length &&
+          !debouncedSearch &&
+          !isPending &&
+          activeFilterCount === 0
         "
         :title="`No expenses recorded yet`"
         :description="`Your expenses will be automatically added as they come in. You can also add one manually to get started.`"
@@ -289,15 +370,22 @@ watch(
 
       <section v-else class="flex flex-col gap-5 lg:gap-8">
         <div
-          v-if="!isMobile && expenseDashboard?.current.total_amount"
+          v-if="!isMobile && (isPayablesTab || expenseDashboard?.current.total_amount)"
           class="rounded-xl border border-gray-200 bg-white p-4"
         >
           <div class="mb-4">
             <h3 class="text-core-800 flex items-center gap-2 text-base font-medium">
-              Summary <Chip :label="currentMonthLabel" color="blue" />
+              Summary
+              <Chip v-if="isPayablesTab" label="Unpaid" color="warning" />
+              <Chip v-else :label="currentMonthLabel" color="blue" />
             </h3>
             <p class="text-core-600 mt-1 text-sm">
-              <span> See <b class="text-core-800">Menu > Reports</b> for previous months </span>
+              <span v-if="isPayablesTab">
+                Sum of all unpaid expenses matching your applied filters
+              </span>
+              <span v-else>
+                See <b class="text-core-800">Menu > Reports</b> for previous months
+              </span>
             </p>
           </div>
 
@@ -316,9 +404,10 @@ watch(
           </div>
         </div>
 
-        <div v-if="isMobile && expenseDashboard?.current.total_amount">
+        <div v-if="isMobile && (isPayablesTab || expenseDashboard?.current.total_amount)">
           <ExpenseStackedBarChart
             :total-expense="expenseDashboard?.current.total_amount || 0"
+            :total-label="isPayablesTab ? 'Total Payables' : undefined"
             :category_breakdown="expenseDashboard?.category_breakdown"
           />
         </div>
@@ -328,7 +417,7 @@ watch(
         >
           <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
             <h3 class="mb-2 hidden items-center gap-1 text-lg font-semibold md:mb-0 lg:flex">
-              All Expenses
+              {{ isPayablesTab ? "Payables" : "All Expenses" }}
               <Chip v-if="expenses?.count" :label="expenses?.count" />
             </h3>
             <div class="flex items-center gap-2">
@@ -351,6 +440,18 @@ watch(
               />
 
               <AppButton
+                v-if="isPayablesTab"
+                icon="tick-circle"
+                size="sm"
+                color="success"
+                class="flex-shrink-0"
+                :label="`Mark ${selectedPayables.length ? ` (${selectedPayables.length})` : ''} as Paid`"
+                :disabled="!selectedPayables.length"
+                @click="openBulkPaid = true"
+              />
+
+              <AppButton
+                v-else
                 icon="add"
                 size="sm"
                 class="flex-shrink-0"
@@ -361,16 +462,21 @@ watch(
           </div>
 
           <DataTable
+            :key="activeTab"
+            ref="dataTableRef"
             :data="expenses?.results ?? []"
             :columns="EXPENSE_COLUMN"
             :loading="isFetching"
-            :enable-row-selection="false"
+            :enable-row-selection="isPayablesTab"
+            @row-selection-change="(rows) => (selectedPayables = rows)"
             :empty-state="{
-              title: 'No Expense Found',
+              title: isPayablesTab ? 'No Payables Found' : 'No Expense Found',
               description:
                 searchQuery || activeFilterCount
                   ? 'Try adjusting your filters or search query'
-                  : `Your expenses will be automatically added as they come in. You can also add one manually to get started.`,
+                  : isPayablesTab
+                    ? `You have no unpaid expenses right now. Unpaid expenses will appear here.`
+                    : `Your expenses will be automatically added as they come in. You can also add one manually to get started.`,
             }"
             :row-class="
               (row) => (row.status === 'void' ? 'opacity-70! bg-gray-100! grayscale!' : '')
@@ -546,6 +652,23 @@ watch(
           class="bg-core-25! rounded-2xl px-3"
           :show-actions="false"
         />
+      </template>
+    </ConfirmationModal>
+
+    <ConfirmationModal
+      v-model="openBulkPaid"
+      :loading="isBulkCompleting"
+      header="Mark Payables as Paid"
+      action-label="Mark as Paid"
+      variant="success"
+      @confirm="handleBulkMarkPaid"
+    >
+      <template #paragraph>
+        <p class="mb-4 text-sm text-gray-600">
+          You're about to mark
+          <b>{{ selectedPayables.length }} expense{{ selectedPayables.length === 1 ? "" : "s" }}</b>
+          as paid. They will be removed from Payables and their status updated across the app.
+        </p>
       </template>
     </ConfirmationModal>
 

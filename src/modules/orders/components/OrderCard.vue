@@ -13,6 +13,8 @@ const props = withDefaults(
   defineProps<{
     order: TOrder
     showActions?: boolean
+    /** Offer the "Cancel Order" action (offline orders only) */
+    showCancel?: boolean
     customActions?: Array<{
       label?: string
       icon?: string
@@ -39,6 +41,7 @@ const emit = defineEmits([
   "fulfill",
   "void-order",
   "delete-order",
+  "cancel-order",
 ])
 
 const { format, truncate } = useFormatCurrency()
@@ -91,7 +94,19 @@ const menuItems = computed(() => {
         ...(isFulfilled.value
           ? []
           : [{ label: "Fulfill Order", icon: "money-add", action: () => emit("fulfill") }]),
-        ...(showVoid || showDelete ? [{ divider: true }] : []),
+        ...(showVoid || showDelete || props.showCancel ? [{ divider: true }] : []),
+        // Cancel order - offline orders only
+        ...(props.showCancel
+          ? [
+              {
+                label: "Cancel Order",
+                icon: "trash",
+                class: "text-red-600 hover:bg-red-50",
+                iconClass: "text-red-600",
+                action: () => emit("cancel-order"),
+              },
+            ]
+          : []),
         ...(showVoid
           ? [
               {

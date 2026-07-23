@@ -181,7 +181,9 @@ export function useUpdateRecipe() {
 export function useValidateRecipeName() {
   return useMutation({
     mutationFn: (name: string) =>
-      baseApi.get<{ is_unique: boolean }>(`/recipes/validate-name/`, { params: { name } }),
+      baseApi.get<{ data: { is_unique: boolean } }>(`/recipes/validate-name/`, {
+        params: { name },
+      }),
   })
 }
 

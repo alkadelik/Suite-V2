@@ -38,14 +38,16 @@ const { format } = useFormatCurrency()
 
       <span class="ml-auto" />
       <span class="ml-4 flex-1 text-right text-base font-semibold">
-        {{ format(Number(item.shipment ? item.fee : item.amount), { kobo: true }) }}
+        {{ format(Number(item.order?.delivery_fee), { kobo: true }) }}
       </span>
       <DropdownMenu :items="actions" @toggle="emit('toggle')" />
     </div>
-    <div class="grid grid-cols-2 gap-3 p-3">
-      <div v-if="item.courier?.name" class="min-w-0">
+    <div class="grid grid-cols-3 gap-3 p-3">
+      <div v-if="item.courier" class="min-w-0">
         <p class="text-core-500 text-xs">Courier</p>
-        <p class="truncate text-sm font-medium">{{ item.courier.name }}</p>
+        <p class="truncate text-sm font-medium">
+          {{ item.courier?.courier_name || item.courier?.name || "--" }}
+        </p>
       </div>
       <div>
         <p class="text-core-500 text-xs">
@@ -53,9 +55,16 @@ const { format } = useFormatCurrency()
         </p>
         <p class="text-sm font-medium">{{ getSmartDateLabel(item.date) }}</p>
       </div>
-      <div>
+
+      <div class="min-w-0">
         <p class="text-core-500 text-xs">Status</p>
-        <Chip :label="startCase(item.status)" :color="statusColor ?? 'primary'" size="sm" />
+        <Chip
+          v-if="item.status"
+          :label="startCase(item.status)"
+          :color="statusColor ?? 'primary'"
+          size="sm"
+        />
+        <span v-else>--</span>
       </div>
     </div>
   </div>

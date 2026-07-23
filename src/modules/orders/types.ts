@@ -16,7 +16,7 @@ export type TOrderItem = {
   qty_fulfilled: number
   notes: string
   attributes?: string | null
-  product_images?: string | null
+  product_images?: { image: string }[]
 }
 
 export type TOrder = {
@@ -45,6 +45,7 @@ export type TOrder = {
   memos_count: number
   outstanding_balance: number
   payment_status: "unpaid" | "paid" | "partially_paid"
+  payment_source?: string
   rate: string
   source: "internal" | "external"
   store: string
@@ -226,7 +227,13 @@ export type TShipbubbleShipment = {
   shipbubble_order_id: string
   order: TOrder
   merchant_name: string
-  courier: { name: string; email: string; phone: string }
+  courier: {
+    name: string
+    email: string
+    phone: string
+    courier_name?: string
+    courier_image?: string
+  }
   price: string
   service_charge: string
   total_shipping_cost: string
@@ -247,6 +254,14 @@ export type TShipbubbleShipment = {
   created_at: string
 }
 
+/** Body for POST /shipping/orders/{uid}/create/ — payment_reference comes from Paystack */
+export type TCreateShipmentPayload = {
+  order: string
+  rate: string
+  courier: string
+  payment_reference: string
+}
+
 export type TShipbubbleShipmentResponse = {
   results: TShipbubbleShipment[]
   count: number
@@ -260,7 +275,13 @@ export type TShipmentRow = {
   uid: string
   order_number: string
   customer_name: string
-  courier: { name: string; email?: string; phone?: string } | null
+  courier: {
+    name: string
+    email?: string
+    phone?: string
+    courier_name?: string
+    courier_image?: string
+  } | null
   fee: string | number
   amount: string | number
   date: string

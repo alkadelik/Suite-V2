@@ -169,7 +169,7 @@ const handleProductCreated = (newProduct: IProductCatalogue | null) => {
           @click="currentViewMode = currentViewMode === 'grid' ? 'list' : 'grid'"
         />
         <AppButton
-          icon="add"
+          icon="box-add"
           class="flex-shrink-0"
           :loading="isTransferringStock"
           :disabled="isTransferringStock"

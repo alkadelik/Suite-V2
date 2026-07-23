@@ -120,7 +120,7 @@ const SHIPMENT_BASE_COLUMNS: TableColumn<TShipmentRow>[] = [
 export const SHIPBUBBLE_SHIPMENT_COLUMNS: TableColumn<TShipmentRow>[] = [
   ...SHIPMENT_BASE_COLUMNS,
   { header: "Courier", accessor: "courier_name" },
-  { header: "Shipping Cost", accessor: "fee", cell: shipmentCurrencyCell },
+  { header: "Shipping Cost", accessor: "order.delivery_fee", cell: shipmentCurrencyCell },
   { header: "Delivery Estimate", accessor: "date", cell: shipmentDateCell },
   { header: "Status", accessor: "status" },
   { header: "", accessor: "actions" },

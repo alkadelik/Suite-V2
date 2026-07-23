@@ -9,7 +9,7 @@ import { displayError } from "@/utils/error-handler"
 import { onInvalidSubmit } from "@/utils/validations"
 import { PopupEvent, PopupPayload } from "../types"
 import { useCreatePopup, useUpdatePopup } from "../api"
-import { validationSchema } from "../schemas"
+import { getValidationSchema } from "../schemas"
 import Drawer from "@components/Drawer.vue"
 import { useSettingsStore } from "@modules/settings/store"
 
@@ -97,8 +97,18 @@ const prepareFormData = (currentData: Partial<PopupPayload>): FormData => {
 }
 
 // Initialize VeeValidate form - start with empty values
-const { handleSubmit, resetForm } = useForm({
-  validationSchema: validationSchema,
+const { handleSubmit, resetForm, values } = useForm({
+  validationSchema: computed(() => getValidationSchema(props.isEditMode)),
+})
+
+const todayStr = new Date().toLocaleDateString("en-CA")
+
+// Editing tolerates a past start date, but flag it when the user actively picks one
+const showPastStartDateWarning = computed(() => {
+  if (!props.isEditMode) return false
+  const startDate = values.start_date as string | undefined
+  if (!startDate || startDate === initialValues.value.start_date) return false
+  return startDate < todayStr
 })
 
 const onSubmit = handleSubmit((data) => {
@@ -185,10 +195,21 @@ watch(
           name="start_date"
           type="date"
           required
-          :min="new Date().toLocaleDateString('en-CA')"
+          :min="isEditMode ? undefined : todayStr"
         />
 
         <FormField name="end_date" type="date" required />
+      </div>
+
+      <div
+        v-if="showPastStartDateWarning"
+        class="border-warning-200 bg-warning-50 text-warning-600 flex items-start gap-2 rounded-lg border p-3 text-sm"
+      >
+        <Icon name="info-circle" size="16" class="mt-0.5 shrink-0" />
+        <span>
+          The start date you selected is in the past. You can still save it, but the popup will show
+          as already started.
+        </span>
       </div>
 
       <FormField name="event_address" required />
