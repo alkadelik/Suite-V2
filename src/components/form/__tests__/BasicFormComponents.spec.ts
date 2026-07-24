@@ -130,6 +130,8 @@ describe("basic reusable form components", () => {
         hint: "Choose one",
         error: "Selection required",
         orientation: "vertical",
+        optionsContainerClass: "responsive-options",
+        optionItemClass: "responsive-option",
       },
     })
     expect(wrapper.text()).toContain("Available?")
@@ -137,6 +139,8 @@ describe("basic reusable form components", () => {
     expect(wrapper.text()).toContain("Choose one")
     expect(wrapper.text()).toContain("Selection required")
     expect(wrapper.find("div.flex.gap-4").classes()).toContain("!flex-col")
+    expect(wrapper.find("div.flex.gap-4").classes()).toContain("responsive-options")
+    expect(wrapper.findAll("div.flex.flex-1")[0].classes()).toContain("responsive-option")
     expect(wrapper.findAll("input")[0].attributes()).toHaveProperty("checked")
     expect(wrapper.findAll("input")[1].attributes()).toHaveProperty("disabled")
 
