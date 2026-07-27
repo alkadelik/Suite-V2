@@ -103,7 +103,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import PageHeader from "@components/PageHeader.vue"
 import BackButton from "@components/BackButton.vue"
@@ -122,6 +122,7 @@ import { toast } from "@/composables/useToast"
 import type { TDiscountDetail } from "../types"
 import { useWalkthroughStore } from "@modules/announcements/store"
 import { useAuthStore } from "@modules/auth/store"
+import { buildDiscountTourDetail, DISCOUNT_TOUR_UID } from "../components/discountTourDemo"
 
 const route = useRoute()
 const router = useRouter()
@@ -139,14 +140,34 @@ function startDiscountTutorial() {
 
 const uid = computed(() => String(route.params.uid))
 
-const { data, isLoading, refetch } = useGetDiscount(uid)
+// The walkthrough's demo discount only exists client-side — render it straight
+// from the sample and never ask the API for it.
+const isTourDemo = computed(() => uid.value === DISCOUNT_TOUR_UID)
+
+const {
+  data,
+  isLoading: isFetching,
+  refetch,
+} = useGetDiscount(uid, { enabled: () => !isTourDemo.value })
+
+const isLoading = computed(() => !isTourDemo.value && isFetching.value)
 
 const discount = computed<TDiscountDetail | null>(() => {
+  if (isTourDemo.value) return buildDiscountTourDetail()
   const raw = data.value as { data?: TDiscountDetail } | TDiscountDetail | undefined
   if (!raw) return null
   if ("uid" in raw) return raw
   return raw.data ?? null
 })
+
+// Leaving the sample behind once the tour finishes or is dismissed — it isn't a
+// page the merchant should be able to linger on.
+watch(
+  () => walkthrough.activeId === "discounts",
+  (isTour, wasTour) => {
+    if (wasTour && !isTour && isTourDemo.value) void router.push("/discounts")
+  },
+)
 
 const scope = computed(() => (discount.value ? deriveDiscountScope(discount.value) : "products"))
 const statusMeta = computed(() => {
@@ -214,16 +235,27 @@ function confirmDelete() {
   })
 }
 
+/** Manage actions are inert on the tutorial's sample discount. */
+function guarded(action: () => void) {
+  return () => {
+    if (isTourDemo.value) {
+      toast.info("This is a sample discount from the tutorial — nothing to change here.")
+      return
+    }
+    action()
+  }
+}
+
 const manageItems = computed(() => {
   const isActive = discount.value?.is_enabled ?? false
   return [
-    { id: "edit", label: "Edit Discount", icon: "edit", action: openEdit },
-    { id: "duplicate", label: "Duplicate Discount", icon: "copy", action: openDuplicate },
+    { id: "edit", label: "Edit Discount", icon: "edit", action: guarded(openEdit) },
+    { id: "duplicate", label: "Duplicate Discount", icon: "copy", action: guarded(openDuplicate) },
     {
       id: "toggle",
       label: isActive ? "Disable Discount" : "Enable Discount",
       icon: isActive ? "disable" : "check-circle",
-      action: toggleActive,
+      action: guarded(toggleActive),
     },
     { divider: true },
     {
@@ -232,7 +264,7 @@ const manageItems = computed(() => {
       icon: "trash",
       class: "text-red-600 hover:bg-red-50",
       iconClass: "text-red-600",
-      action: () => (showDelete.value = true),
+      action: guarded(() => (showDelete.value = true)),
     },
   ]
 })

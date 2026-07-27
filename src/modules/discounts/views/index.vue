@@ -208,10 +208,15 @@ const openDuplicateDiscount = (discount: TDiscount) => {
 }
 const onDiscountSaved = () => {
   showDiscountDrawer.value = false
+  store.setActiveTab("discounts")
+  // The tour's discount is a sample — say so, and skip the refetch it can't affect.
+  if (walkthrough.activeId === "discounts" && discountDrawerMode.value === "create") {
+    toast.success("Sample discount created — it's only here for the tutorial.")
+    return
+  }
   toast.success(
     discountDrawerMode.value === "edit" ? "Discount updated!" : "Success! New discount created!",
   )
-  store.setActiveTab("discounts")
   discountsTabRef.value?.refetch?.()
 }
 </script>

@@ -132,6 +132,7 @@ import { useCreateDiscount, useUpdateDiscount } from "../api"
 import { toast } from "@/composables/useToast"
 import type { IDiscountFormModel, TDiscount } from "../types"
 import { useWalkthroughStore } from "@modules/announcements/store"
+import { buildDiscountTourFormModel, DISCOUNT_TOUR_UID } from "./discountTourDemo"
 
 const props = defineProps<{
   open: boolean
@@ -161,6 +162,9 @@ const model = ref<IDiscountFormModel>(blankModel())
 const activeStep = ref(0)
 const targetSelectorRef = ref<InstanceType<typeof TargetSelector> | null>(null)
 
+// The tour runs on a pre-filled sample and never hits the create endpoint.
+const isDiscountTour = computed(() => walkthrough.activeId === "discounts")
+
 watch(
   () => props.open,
   (isOpen) => {
@@ -169,7 +173,9 @@ watch(
     showConflict.value = false
     showOverwrite.value = false
     pendingVariants.value = []
-    if (props.discount && (props.mode === "edit" || props.mode === "duplicate")) {
+    if (isDiscountTour.value && props.mode === "create") {
+      model.value = buildDiscountTourFormModel()
+    } else if (props.discount && (props.mode === "edit" || props.mode === "duplicate")) {
       model.value = discountToFormModel(props.discount)
       if (props.mode === "duplicate") {
         model.value = { ...model.value, name: `${model.value.name} (Copy)` }
@@ -320,6 +326,14 @@ function parseConflict(err: unknown): { conflicts: TDiscountConflict[]; message:
 }
 
 function onSubmit(): void {
+  // Tour: fake the create so the merchant sees the whole flow without a real
+  // discount landing on their storefront.
+  if (isDiscountTour.value && props.mode === "create") {
+    walkthrough.report("discount-created", { uid: DISCOUNT_TOUR_UID })
+    emit("saved", DISCOUNT_TOUR_UID)
+    return
+  }
+
   // Edit: limited PATCH (name + end date only).
   if (props.mode === "edit" && props.discount) {
     update(

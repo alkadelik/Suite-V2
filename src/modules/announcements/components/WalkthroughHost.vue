@@ -208,25 +208,39 @@ function scheduleAnnouncement(delay = 900): void {
   }, delay)
 }
 
+// Finishing any tour hands the merchant back to the feature picker — position in
+// the list makes no difference, the last one (shipments) included. Only when
+// there's no picker left to show does the walkthrough just end.
 watch(
   () => walkthrough.completedId,
   async (id) => {
     if (!id) return
     walkthrough.clearCompletion()
-    if (!eligibleFeatures.value.includes(id)) return
-    announcementFeature.value = id
+    const features = eligibleFeatures.value
+    if (!features.length) return
+    announcementFeature.value = features.includes(id) ? id : features[0]
     announcementMobileStartView.value = "features"
     await nextTick()
     announcementOpen.value = true
   },
 )
 
+// `eligibleFeatures` rebuilds its array on every settings/auth change, so this
+// watcher fires far more often than the list actually changes — key it on the
+// contents. Only a different user may close an open announcement: a settings
+// refetch landing just after a tour completes (the pickup save refetches store
+// details, for one) must not tear down the modal we just reopened.
+const eligibleKey = computed(() => eligibleFeatures.value.join(","))
+
 watch(
-  [userId, eligibleFeatures],
-  ([id, features]) => {
-    announcementOpen.value = false
+  [userId, eligibleKey],
+  ([id], previous) => {
+    // `previous` is undefined on the immediate run — that counts as a user change.
+    const userChanged = id !== previous?.[0]
+    if (userChanged) announcementOpen.value = false
     if (!id) return
-    walkthrough.resumeForUser(id)
+    if (userChanged) walkthrough.resumeForUser(id)
+    const features = eligibleFeatures.value
     if (!walkthrough.hasSeenRelease(id) && features.length) {
       if (!features.includes(announcementFeature.value)) announcementFeature.value = features[0]
       scheduleAnnouncement()
