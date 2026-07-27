@@ -120,7 +120,7 @@ import { deriveDiscountScope } from "../utils"
 import { DISCOUNT_STATUS_META, DISCOUNT_SCOPE_META, discountScopeHeaderLabel } from "../constants"
 import { toast } from "@/composables/useToast"
 import type { TDiscountDetail } from "../types"
-import { useWalkthroughStore } from "@modules/walkthrough/store"
+import { useWalkthroughStore } from "@modules/announcements/store"
 import { useAuthStore } from "@modules/auth/store"
 
 const route = useRoute()

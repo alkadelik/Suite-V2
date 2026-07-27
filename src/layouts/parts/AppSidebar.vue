@@ -92,6 +92,8 @@
     </section>
 
     <section class="mt-auto px-4 pb-4">
+      <SidebarLink icon="announcement" label="What's New" to="/changelog" class="w-full" />
+
       <SidebarLink
         icon="life-buoy"
         label="Support"
@@ -211,7 +213,12 @@ const isHQ = computed(() => activeLocation.value?.is_hq)
 const salesSuiteItems = computed(() =>
   [
     { icon: "box", label: "Orders", to: "/orders" },
-    { icon: "truck-fast-outline", label: "Shipments", to: "/shipments" },
+    {
+      icon: "truck-fast-outline",
+      label: "Shipments",
+      to: "/shipments",
+      walkthrough: "shipments-nav",
+    },
     { icon: "folder", label: "Inventory", to: "/inventory" },
     { icon: "calendar-tick", label: "Popups", to: "/popups" },
     { icon: "people", label: "Customers", to: "/customers" },

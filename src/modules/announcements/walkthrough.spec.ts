@@ -1,18 +1,20 @@
 import { createPinia, setActivePinia } from "pinia"
 import { readFileSync } from "node:fs"
-import { mount } from "@vue/test-utils"
-import { defineComponent } from "vue"
 import { beforeEach, describe, expect, it } from "vitest"
-import { WALKTHROUGHS } from "./registry"
-import { computeCoachmarkLayout } from "./positioning"
+import { WALKTHROUGHS } from "./constants"
 import { useWalkthroughStore } from "./store"
-import WalkthroughCoachmark from "./components/WalkthroughCoachmark.vue"
-import WalkthroughSpotlight from "./components/WalkthroughSpotlight.vue"
 import { hasVisibleModalDialog } from "./dom"
+import {
+  buildDriverSteps,
+  buildPopover,
+  isMobileViewport,
+  placementToSide,
+  resolveAnchor,
+} from "./driverAdapter"
 
 describe("walkthrough registry", () => {
   it("locks the coachmark's exact design colors", () => {
-    const css = readFileSync(`${process.cwd()}/src/modules/walkthrough/walkthrough.css`, "utf8")
+    const css = readFileSync(`${process.cwd()}/src/modules/announcements/walkthrough.css`, "utf8")
     expect(css).toContain("--walkthrough-surface: #1a1919")
     expect(css).toContain("--walkthrough-divider: #312623")
     expect(css).toContain("--walkthrough-close: #866f6e")
@@ -29,32 +31,12 @@ describe("walkthrough registry", () => {
       "pickup-save",
     ])
     expect(WALKTHROUGHS.discounts.steps).toHaveLength(6)
+    expect(WALKTHROUGHS.shipments.steps).toHaveLength(7)
     for (const definition of Object.values(WALKTHROUGHS)) {
       expect(new Set(definition.steps.map((step) => step.anchor)).size).toBe(
         definition.steps.length,
       )
     }
-  })
-
-  it("encodes the required circular and mobile outline treatments", () => {
-    const pickup = WALKTHROUGHS["pickup-times"].steps
-    expect(pickup[0].highlight).toMatchObject({ mode: "circle", color: "#F9B324" })
-    expect(pickup.map((step) => step.highlight.mode)).toEqual(["circle", "spotlight", "spotlight"])
-    expect(pickup[1].highlight.mobile).toMatchObject({ mode: "outline" })
-    expect(pickup[2].highlight.mobile).toMatchObject({ mode: "outline", width: 2 })
-    expect(WALKTHROUGHS.discounts.steps.map((step) => step.highlight.mode)).toEqual([
-      "spotlight",
-      "outline",
-      "spotlight",
-      "outline",
-      "spotlight",
-      "spotlight",
-    ])
-  })
-
-  it("keeps both current walkthroughs clear of a dimming backdrop", () => {
-    expect(WALKTHROUGHS["pickup-times"].backdrop).toBe(false)
-    expect(WALKTHROUGHS.discounts.backdrop).toBe(false)
   })
 
   it("keeps every coachmark title and body identical to the saved design", () => {
@@ -98,23 +80,6 @@ describe("walkthrough registry", () => {
         body: "Track your discount details, monitor activity and update the promotion whenever your campaign changes.",
       },
     ])
-    expect(WALKTHROUGHS.discounts.steps[2]).toMatchObject({
-      id: "discount-type",
-      anchor: "discount-type",
-      mobileDock: "bottom",
-    })
-    expect(WALKTHROUGHS.discounts.steps[0]).toMatchObject({
-      mobileDock: "bottom",
-      mobileStandalone: true,
-      mobileHideTail: true,
-    })
-    expect(WALKTHROUGHS.discounts.steps[3]).toMatchObject({
-      mobileDock: "above-target",
-    })
-    expect(WALKTHROUGHS.discounts.steps[5]).toMatchObject({
-      mobileDock: "bottom",
-      desktopPosition: { left: 18, top: 260 },
-    })
     expect(WALKTHROUGHS.discounts.steps.map((step) => step.instruction)).toEqual([
       undefined,
       'Click the "Add Discount" button to continue.',
@@ -183,157 +148,90 @@ describe("walkthrough progress", () => {
   })
 })
 
-describe("coachmark positioning", () => {
-  const rect = (left: number, top: number, width: number, height: number) =>
-    ({
-      left,
-      top,
-      width,
-      height,
-      right: left + width,
-      bottom: top + height,
-      x: left,
-      y: top,
-      toJSON: () => ({}),
-    }) as DOMRect
+describe("driver adapter", () => {
+  const discountSteps = WALKTHROUGHS.discounts.steps
 
-  it("flips and clamps a card inside narrow and wide viewports", () => {
-    const desktop = computeCoachmarkLayout(rect(30, 300, 50, 40), "left", 220, 1440, 900)
-    expect(desktop.side).toBe("right")
-    expect(desktop.left).toBeGreaterThanOrEqual(16)
-
-    const mobile = computeCoachmarkLayout(rect(350, 700, 40, 40), "bottom", 260, 375, 740)
-    expect(mobile.width).toBe(343)
-    expect(mobile.left).toBeGreaterThanOrEqual(16)
-    expect(mobile.top).toBeLessThanOrEqual(464)
+  it("maps placement to a driver side", () => {
+    expect(placementToSide({ placement: "top" } as never)).toBe("top")
+    expect(placementToSide({ placement: "left" } as never)).toBe("left")
+    expect(placementToSide({ placement: "right" } as never)).toBe("right")
+    expect(placementToSide({ placement: "bottom" } as never)).toBe("bottom")
   })
 
-  it("shrinks beside a drawer when a docked side panel narrows the desktop viewport", () => {
-    const drawerField = rect(354, 220, 654, 48)
-    const layout = computeCoachmarkLayout(drawerField, "left", 250, 1024, 768)
-
-    expect(layout.side).toBe("left")
-    expect(layout.width).toBe(324)
-    expect(layout.left + layout.width + 14).toBeLessThanOrEqual(drawerField.left)
+  it("flags small viewports as mobile", () => {
+    expect(isMobileViewport(500)).toBe(true)
+    expect(isMobileViewport(1023)).toBe(true)
+    expect(isMobileViewport(1024)).toBe(false)
+    expect(isMobileViewport(1440)).toBe(false)
   })
 
-  it("docks a requested mobile coachmark at the viewport bottom with an upward tail", () => {
-    const layout = computeCoachmarkLayout(rect(16, 220, 343, 48), "left", 210, 375, 740, {
-      mobileDock: "bottom",
+  it("renders the body and, when present, a bold instruction line with Back hidden on step one", () => {
+    const welcome = buildPopover(discountSteps[0], {
+      stepNumber: 1,
+      totalSteps: 6,
+      usingFallback: false,
+      showBack: false,
+      isLast: false,
     })
+    expect(welcome.title).toBe("Welcome to Discounts")
+    expect(welcome.description).toContain("driver-lw-body")
+    expect(welcome.description).not.toContain("driver-lw-instruction")
+    expect(welcome.showButtons).not.toContain("previous")
 
-    expect(layout).toMatchObject({ left: 16, top: 514, side: "bottom", tailOffset: 32, width: 343 })
+    const create = buildPopover(discountSteps[1], {
+      stepNumber: 2,
+      totalSteps: 6,
+      usingFallback: false,
+      showBack: true,
+      isLast: false,
+    })
+    expect(create.description).toContain("driver-lw-instruction")
+    expect(create.description).toContain("Add Discount")
+    expect(create.showButtons).toContain("previous")
+    expect(create.side).toBe("top")
   })
 
-  it("keeps a requested mobile coachmark above its action with a downward tail", () => {
-    const target = rect(16, 680, 343, 48)
-    const layout = computeCoachmarkLayout(target, "left", 210, 375, 740, {
-      mobileDock: "above-target",
+  it("swaps to the fallback copy when the fallback anchor is used", () => {
+    const pickupHours = WALKTHROUGHS["pickup-times"].steps[1]
+    const popover = buildPopover(pickupHours, {
+      stepNumber: 2,
+      totalSteps: 3,
+      usingFallback: true,
+      showBack: true,
+      isLast: false,
     })
-
-    expect(layout).toMatchObject({ left: 16, top: 456, side: "top", width: 343 })
-    expect(layout.top + 210 + 14).toBeLessThanOrEqual(target.top)
+    expect(popover.title).toBe(pickupHours.fallbackTitle)
+    expect(popover.description).toContain("Turn on at least one day")
+    // The instruction is suppressed while on the fallback anchor.
+    expect(popover.description).not.toContain("driver-lw-instruction")
   })
 
-  it("uses a design-specific desktop position while retaining the requested tail side", () => {
-    const layout = computeCoachmarkLayout(rect(1260, 100, 180, 52), "left", 212, 1502, 1067, {
-      desktopPosition: { left: 18, top: 260 },
+  it("builds one driver step per definition step and resolves live anchors", () => {
+    const steps = buildDriverSteps(WALKTHROUGHS.discounts, {
+      getProgress: () => null,
+      currentIndex: 1,
+      showBackFor: () => true,
     })
+    expect(steps).toHaveLength(6)
+    expect(typeof steps[1].element).toBe("function")
 
-    expect(layout).toMatchObject({ left: 18, top: 260, side: "left", width: 380 })
-  })
-})
-
-describe("coachmark anatomy", () => {
-  it("keeps the close control in a separate header above the divider", () => {
-    const IconStub = defineComponent({
-      props: { name: String },
-      template: '<span class="icon" :data-name="name" />',
-    })
-    const anchor = {
-      left: 100,
-      top: 100,
-      right: 144,
-      bottom: 124,
-      width: 44,
-      height: 24,
-      x: 100,
-      y: 100,
-      toJSON: () => ({}),
-    } as DOMRect
-    const wrapper = mount(WalkthroughCoachmark, {
-      props: {
-        stepId: "sample-step",
-        anchorRect: anchor,
-        placement: "bottom",
-        title: "Sample title",
-        body: "Sample body",
-        stepNumber: 1,
-        totalSteps: 3,
-      },
-      global: { stubs: { Icon: IconStub } },
-    })
-    const header = wrapper.find("header")
-    expect(header.text()).toContain("Sample title")
-    expect(header.find('button[aria-label="Close walkthrough"]').exists()).toBe(true)
-    expect(header.find('[data-name="x-close"]').exists()).toBe(true)
-    expect(header.element.nextElementSibling?.className).toContain("walkthrough-divider")
-    expect(wrapper.find("[data-walkthrough-tail]").exists()).toBe(true)
-
-    wrapper.setProps({ hideTail: true })
-    return wrapper.vm.$nextTick().then(() => {
-      expect(wrapper.find("[data-walkthrough-tail]").exists()).toBe(false)
-    })
-  })
-})
-
-describe("target highlighting", () => {
-  it("turns a rectangular switch target into a true circular ring", () => {
-    const rect = {
-      left: 100,
-      top: 100,
-      right: 144,
-      bottom: 124,
-      width: 44,
-      height: 24,
-      x: 100,
-      y: 100,
-      toJSON: () => ({}),
-    } as DOMRect
-    const wrapper = mount(WalkthroughSpotlight, {
-      props: {
-        rect,
-        highlight: { mode: "circle", color: "#F9B324", padding: 7 },
-      },
-    })
-    const ringStyle = wrapper.find(".border-solid").attributes("style")
-    expect(ringStyle).toContain("width: 58px")
-    expect(ringStyle).toContain("height: 58px")
-    expect(ringStyle).toContain("border-radius: 9999px")
-  })
-
-  it("can keep an outline while omitting every dimming panel", () => {
-    const rect = {
-      left: 100,
-      top: 100,
-      right: 220,
-      bottom: 140,
-      width: 120,
-      height: 40,
-      x: 100,
-      y: 100,
-      toJSON: () => ({}),
-    } as DOMRect
-    const wrapper = mount(WalkthroughSpotlight, {
-      props: {
-        rect,
-        backdrop: false,
-        highlight: { mode: "outline", color: "#F9B324", padding: 4 },
-      },
-    })
-
-    expect(wrapper.findAll("[data-walkthrough-backdrop-panel]")).toHaveLength(0)
-    expect(wrapper.find(".border-solid").exists()).toBe(true)
+    const anchor = document.createElement("button")
+    anchor.setAttribute("data-walkthrough", "discount-add")
+    anchor.getBoundingClientRect = () =>
+      ({
+        left: 10,
+        top: 10,
+        right: 90,
+        bottom: 42,
+        width: 80,
+        height: 32,
+        x: 10,
+        y: 10,
+        toJSON: () => ({}),
+      }) as DOMRect
+    document.body.append(anchor)
+    expect(resolveAnchor(discountSteps[1]).element).toBe(anchor)
+    anchor.remove()
   })
 })
 

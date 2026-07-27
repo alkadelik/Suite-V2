@@ -197,7 +197,12 @@ const handleGetWaybillDoc = () => {
         <div class="px-6 py-4">
           <div class="flex items-center gap-2">
             <h2 class="text-core-800 text-lg font-semibold">{{ drawerTitle }}</h2>
-            <Chip icon="truck-fast-outline" :label="startCase(item.status)" :color="statusColor" />
+            <Chip
+              icon="truck-fast-outline"
+              :label="startCase(item.status)"
+              :color="statusColor"
+              data-walkthrough="shipment-status"
+            />
 
             <button
               type="button"
@@ -226,7 +231,10 @@ const handleGetWaybillDoc = () => {
         </InfoBox>
 
         <!-- Order & shipment details -->
-        <div class="border-core-300 bg-core-25 space-y-3 rounded-xl border p-4">
+        <div
+          class="border-core-300 bg-core-25 space-y-3 rounded-xl border p-4"
+          data-walkthrough="shipment-details"
+        >
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Order ID</span>
             <span class="font-medium">
@@ -363,6 +371,7 @@ const handleGetWaybillDoc = () => {
           v-else-if="shipbubbleAction === 'create'"
           label="Create Shipment"
           class="w-full"
+          data-walkthrough="shipment-create-btn"
           @click="emit('create-shipment')"
         />
 

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import pickupArtwork from "@/assets/images/walkthrough/pickup-times.png"
 import discountsArtwork from "@/assets/images/walkthrough/discounts.png"
+import shipmentsArtwork from "@/assets/images/walkthrough/shipments.png"
 import Icon from "@components/Icon.vue"
-import { WALKTHROUGH_FEATURES } from "@modules/walkthrough/registry"
-import type { WalkthroughFeature, WalkthroughId } from "@modules/walkthrough/types"
+import { WALKTHROUGH_FEATURES } from "@modules/announcements/constants"
+import type { WalkthroughFeature, WalkthroughId } from "@modules/announcements/types"
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue"
 
 type MobileStartView = "intro" | "features"
@@ -29,6 +30,7 @@ const emit = defineEmits<{
 const artwork: Record<WalkthroughId, string> = {
   "pickup-times": pickupArtwork,
   discounts: discountsArtwork,
+  shipments: shipmentsArtwork,
 }
 
 const availableFeatures = computed<WalkthroughFeature[]>(() =>
@@ -234,22 +236,30 @@ onBeforeUnmount(() => {
               <p class="mt-4 max-w-xl text-[15px] leading-6 text-[var(--walkthrough-body)]">
                 {{ selected.description }}
               </p>
-              <div class="mt-10 flex justify-end gap-3">
-                <button
-                  type="button"
-                  data-whats-new-desktop-got-it
-                  class="min-w-28 rounded-xl border border-[var(--walkthrough-secondary-border)] px-5 py-3 text-sm font-semibold"
-                  @click="acknowledgeFeature(selectedId)"
+              <div class="mt-10 flex items-center justify-between gap-3">
+                <a
+                  href="/changelog"
+                  class="text-sm font-medium text-[var(--walkthrough-body)] underline-offset-4 hover:text-white hover:underline"
                 >
-                  Got It
-                </button>
-                <button
-                  type="button"
-                  class="min-w-28 rounded-xl bg-[var(--walkthrough-action)] px-5 py-3 text-sm font-semibold hover:bg-[var(--walkthrough-action-hover)]"
-                  @click="showFeature(selectedId)"
-                >
-                  Show Me
-                </button>
+                  See full changelog
+                </a>
+                <div class="flex gap-3">
+                  <button
+                    type="button"
+                    data-whats-new-desktop-got-it
+                    class="min-w-28 rounded-xl border border-[var(--walkthrough-secondary-border)] px-5 py-3 text-sm font-semibold"
+                    @click="acknowledgeFeature(selectedId)"
+                  >
+                    Got It
+                  </button>
+                  <button
+                    type="button"
+                    class="min-w-28 rounded-xl bg-[var(--walkthrough-action)] px-5 py-3 text-sm font-semibold hover:bg-[var(--walkthrough-action-hover)]"
+                    @click="showFeature(selectedId)"
+                  >
+                    Show Me
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -361,6 +371,12 @@ onBeforeUnmount(() => {
                     Show Me
                   </button>
                 </div>
+                <a
+                  href="/changelog"
+                  class="mt-3 block text-center text-sm font-medium text-[var(--walkthrough-body)] underline-offset-4 hover:text-white hover:underline"
+                >
+                  See full changelog
+                </a>
               </div>
             </template>
           </div>

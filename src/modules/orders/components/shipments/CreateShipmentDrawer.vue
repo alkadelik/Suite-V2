@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue"
+import { computed, onMounted, ref, watch } from "vue"
 import Drawer from "@components/Drawer.vue"
 import Modal from "@components/Modal.vue"
 import AppButton from "@components/AppButton.vue"
@@ -12,15 +12,21 @@ import { displayError } from "@/utils/error-handler"
 import { useCreateShipbubbleShipment } from "../../api"
 import { handlePayStackPayment, loadPaystackScript } from "../../utilities"
 import { TShipmentRow } from "../../types"
+import { useWalkthroughStore } from "@modules/announcements/store"
+import { SHIPMENT_TOUR_TRACKING_NUMBER } from "./shipmentTourDemo"
 
 const props = defineProps<{
   open: boolean
   item: TShipmentRow
+  tourMode?: boolean
+  previewSuccess?: boolean
 }>()
 const emit = defineEmits<{
   close: []
   refresh: []
 }>()
+
+const walkthrough = useWalkthroughStore()
 
 const { format } = useFormatCurrency()
 
@@ -78,7 +84,25 @@ onMounted(() => {
   loadPaystackScript()
 })
 
+// Tour preview: the walkthrough forces the success dialog (with sample tracking)
+// instead of running a real Paystack payment / booking.
+watch(
+  () => props.previewSuccess,
+  (show) => {
+    showSuccess.value = !!show
+    if (show && !createdTrackingNumber.value) {
+      createdTrackingNumber.value = SHIPMENT_TOUR_TRACKING_NUMBER
+    }
+  },
+  { immediate: true },
+)
+
 const handleCreateShipment = () => {
+  // During the walkthrough, "create" only advances the tour — no charge, no booking.
+  if (props.tourMode) {
+    walkthrough.report("shipment-created")
+    return
+  }
   if (!shipment.value) return
   const currentShipment = shipment.value
   const currentOrder = order.value
@@ -131,6 +155,10 @@ const successRows = computed(() => [
 ])
 
 const handleSuccessDone = () => {
+  if (props.tourMode) {
+    walkthrough.report("shipment-success-done")
+    return
+  }
   showSuccess.value = false
   emit("refresh")
   emit("close")
@@ -168,7 +196,10 @@ const handleSuccessDone = () => {
         </div>
 
         <!-- Order & receiver details -->
-        <div class="border-core-300 bg-core-25 space-y-3 rounded-xl border p-4">
+        <div
+          class="border-core-300 bg-core-25 space-y-3 rounded-xl border p-4"
+          data-walkthrough="shipment-review"
+        >
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Order ID</span>
             <span class="font-medium">#{{ order.order_number }}</span>
@@ -231,8 +262,9 @@ const handleSuccessDone = () => {
         <AppButton
           label="Create Shipment"
           class="w-full"
+          data-walkthrough="shipment-submit-btn"
           :loading="isCreating"
-          :disabled="isQuoteExpired"
+          :disabled="!tourMode && isQuoteExpired"
           @click="handleCreateShipment"
         />
       </template>
@@ -268,7 +300,12 @@ const handleSuccessDone = () => {
           </p>
         </div>
 
-        <AppButton label="Done" class="w-full" @click="handleSuccessDone" />
+        <AppButton
+          label="Done"
+          class="w-full"
+          data-walkthrough="shipment-success-done"
+          @click="handleSuccessDone"
+        />
       </div>
     </Modal>
   </div>

@@ -1,12 +1,88 @@
+// Announcement session state: the merchant's flags + created_at + onboarding,
+// read once per session from `GET /api/me`. Surfaces derive from it via
+// `resolve()` / `showBanner()` — no further network calls for release content.
+
 import { defineStore } from "pinia"
 import { computed, ref } from "vue"
-import { getWalkthrough, WALKTHROUGH_RELEASE_VERSION } from "./registry"
+import { fetchMe, postFlag } from "./api"
+import { getWalkthrough, RELEASES, WALKTHROUGH_RELEASE_VERSION } from "./constants"
+import { resolve, showBanner } from "./utils"
 import type {
+  Release,
+  ReleaseFeature,
+  ResolveResult,
   WalkthroughCommand,
   WalkthroughEvent,
   WalkthroughId,
   WalkthroughProgress,
 } from "./types"
+
+const EMPTY_RESULT: ResolveResult = { showPill: false, autoOpen: false, dot: false }
+
+export const useAnnouncementsStore = defineStore("announcements", () => {
+  /** Dismissal / tour-completion flags, e.g. `modal:discounts-v1`. */
+  const flags = ref<Set<string>>(new Set())
+  const createdAt = ref<string | null>(null)
+  const onboardingComplete = ref(false)
+  const loaded = ref(false)
+
+  /** Load flags + user timing once per session; repeat calls are no-ops. */
+  async function loadSession(): Promise<void> {
+    if (loaded.value) return
+    const me = await fetchMe()
+    createdAt.value = me.created_at
+    onboardingComplete.value = me.onboarding_complete
+    flags.value = new Set(me.flags)
+    loaded.value = true
+  }
+
+  /** Set a flag: update local state immediately (no refetch), then persist. Idempotent. */
+  async function setFlag(key: string): Promise<void> {
+    if (flags.value.has(key)) return
+    flags.value = new Set(flags.value).add(key)
+    try {
+      await postFlag(key)
+    } catch {
+      // Idempotent server-side; keep local state so the surface stays gone.
+    }
+  }
+
+  /** Release-level state for the current merchant, or an inert result before load. */
+  const resolved = computed<ResolveResult>(() =>
+    createdAt.value
+      ? resolve(
+          RELEASES,
+          { created_at: createdAt.value, onboarding_complete: onboardingComplete.value },
+          flags.value,
+        )
+      : EMPTY_RESULT,
+  )
+
+  /** Whether a given feature's banner should render on its page for this merchant. */
+  function bannerVisible(release: Release, feature: ReleaseFeature): boolean {
+    if (!createdAt.value) return false
+    return showBanner(
+      release,
+      feature,
+      RELEASES,
+      { created_at: createdAt.value, onboarding_complete: onboardingComplete.value },
+      flags.value,
+    )
+  }
+
+  return {
+    flags,
+    createdAt,
+    onboardingComplete,
+    loaded,
+    loadSession,
+    setFlag,
+    resolved,
+    bannerVisible,
+  }
+})
+
+// Walkthrough tour progress, persisted per user. Drives WalkthroughHost.vue.
 
 type UserProgress = Partial<Record<WalkthroughId, WalkthroughProgress>>
 

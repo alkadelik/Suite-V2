@@ -19,7 +19,7 @@ import ManageShipBubbleModal from "@modules/shared/components/ManageShipBubbleMo
 import ManageManualDeliveryModal from "@modules/shared/components/ManageManualDeliveryModal.vue"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
-import { useWalkthroughStore } from "@modules/walkthrough/store"
+import { useWalkthroughStore } from "@modules/announcements/store"
 
 import { computed, ref, watch } from "vue"
 

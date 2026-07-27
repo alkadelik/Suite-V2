@@ -131,7 +131,7 @@ import { DISCOUNT_APPLIES_TO_OPTIONS } from "../constants"
 import { useCreateDiscount, useUpdateDiscount } from "../api"
 import { toast } from "@/composables/useToast"
 import type { IDiscountFormModel, TDiscount } from "../types"
-import { useWalkthroughStore } from "@modules/walkthrough/store"
+import { useWalkthroughStore } from "@modules/announcements/store"
 
 const props = defineProps<{
   open: boolean
@@ -223,15 +223,29 @@ const detailsValid = computed(() => {
 watch(
   () => walkthrough.commandNonce,
   () => {
-    if (walkthrough.command !== "discount-next-form" || !props.open || activeStep.value !== 0) {
+    if (!props.open) return
+    // Next on the "choose type" step advances the form to the "applies to" step.
+    if (walkthrough.command === "discount-next-form" && activeStep.value === 0) {
+      walkthrough.clearCommand()
+      if (detailsValid.value) {
+        goNext()
+        return
+      }
+      toast.error("Complete the required discount details to continue.")
       return
     }
-    walkthrough.clearCommand()
-    if (detailsValid.value) {
-      goNext()
-      return
+    // Next on the "create your discount" step submits the form, like the button.
+    if (
+      walkthrough.command === "discount-submit-form" &&
+      activeStep.value === steps.value.length - 1
+    ) {
+      walkthrough.clearCommand()
+      if (appliesToValid.value) {
+        onSubmit()
+        return
+      }
+      toast.error("Choose what this discount applies to before continuing.")
     }
-    toast.error("Complete the required discount details to continue.")
   },
 )
 

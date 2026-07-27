@@ -102,7 +102,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue"
+import { ref, watch } from "vue"
 import { storeToRefs } from "pinia"
 import PageHeader from "@components/PageHeader.vue"
 import SectionHeader from "@components/SectionHeader.vue"
@@ -118,7 +118,7 @@ import { toast } from "@/composables/useToast"
 import type { TCoupon, TDiscount } from "../types"
 import { useGetProductCatalogsInfinite } from "@modules/inventory/api"
 import { useAuthStore } from "@modules/auth/store"
-import { useWalkthroughStore } from "@modules/walkthrough/store"
+import { useWalkthroughStore } from "@modules/announcements/store"
 
 const store = useDiscountsStore()
 const walkthrough = useWalkthroughStore()
@@ -171,6 +171,16 @@ const openCreateDiscount = () => {
   showDiscountDrawer.value = true
   walkthrough.report("discount-create-opened")
 }
+
+// Tour "Next" on the create step opens the drawer, exactly like the real button.
+watch(
+  () => walkthrough.commandNonce,
+  () => {
+    if (walkthrough.command !== "discount-open-create") return
+    walkthrough.clearCommand()
+    if (!showDiscountDrawer.value) openCreateDiscount()
+  },
+)
 
 const closeDiscountDrawer = () => {
   showDiscountDrawer.value = false

@@ -8,11 +8,7 @@ import {
   useGetPopupInventory,
   useUpdatePopupProduct,
 } from "@modules/popups/api"
-import {
-  getInventoryVisibility,
-  getPopupPriceRange,
-  POPUP_INVENTORY_COLUMNS,
-} from "@modules/popups/constants"
+import { getInventoryVisibility, getPopupPriceRange } from "@modules/popups/constants"
 import { computed, onMounted, ref, watch } from "vue"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import { useRoute } from "vue-router"
@@ -20,8 +16,6 @@ import SetupPopupBoothDrawer from "../SetupPopupBoothDrawer.vue"
 import ManagePopupProductModal from "../ManagePopupProductModal.vue"
 // import AppButton from "@components/AppButton.vue"
 import TextField from "@components/form/TextField.vue"
-import DataTable from "@components/DataTable.vue"
-import ProductAvatar from "@components/ProductAvatar.vue"
 import { PopupEvent, PopupInventory } from "@modules/popups/types"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
 import { displayError } from "@/utils/error-handler"
@@ -166,13 +160,17 @@ const getItemQty = (item: PopupInventory) => {
 
 const getStockStatus = (item: PopupInventory) => {
   const qty = getItemQty(item)
-  if (qty === 0) {
-    return { label: "Out of Stock", color: "error" as const }
-  } else if (qty < 5) {
-    return { label: `${qty} in Stock`, color: "warning" as const }
-  } else {
-    return { label: `${qty} in Stock`, color: "success" as const }
+  return {
+    label: `${qty} units`,
+    color: qty === 0 ? ("error" as const) : qty < 5 ? ("warning" as const) : ("blue" as const),
   }
+}
+
+const getVisibilityColor = (item: PopupInventory) => {
+  const status = getInventoryVisibility(item)
+  if (status === "Available") return "success" as const
+  if (status === "Unavailable") return "error" as const
+  return "primary" as const
 }
 
 onMounted(() => {
@@ -202,12 +200,12 @@ watch(
 
   <section v-else>
     <div class="space-y-4 overflow-hidden rounded-xl border-gray-200 pt-3 md:border md:bg-white">
-      <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
+      <div class="flex flex-col justify-between gap-3 md:flex-row md:items-center md:px-4">
         <div class="flex items-center gap-2">
-          <span class="bg-leyyow-100 flex size-10 items-center justify-center rounded-2xl">
-            <Icon name="box" size="28" class="text-primary-700" />
+          <span class="bg-leyyow-100 flex size-10 items-center justify-center rounded-lg">
+            <Icon name="box" size="24" class="text-primary-700" />
           </span>
-          <h3 class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
+          <h3 class="flex items-center gap-1 text-lg font-semibold md:mb-0">
             Popup Inventory <Chip :label="popupInventory?.length || 0" />
           </h3>
         </div>
@@ -231,105 +229,83 @@ watch(
         </div>
       </div>
 
-      <DataTable
-        :data="popupInventory || []"
-        :columns="POPUP_INVENTORY_COLUMNS"
-        :loading="isFetching"
-        :show-pagination="false"
+      <!-- Card list: compact rows that adapt between mobile and desktop -->
+      <div
+        :class="[
+          'flex flex-col gap-2 transition-opacity md:gap-0 md:divide-y md:divide-gray-100',
+          isFetching ? 'opacity-60' : '',
+        ]"
       >
-        <template #cell:name="{ item }">
-          <ProductAvatar
-            :name="item.name"
-            shape="rounded"
-            :url="item.images?.[0]?.image"
-            :variants-count="item.variants?.length > 1 ? item.variants?.length : undefined"
-          />
-        </template>
-
-        <template #cell:total_stock="{ value }">
-          <span class="text-sm font-semibold">{{ value }}</span>
-        </template>
-
-        <template #cell:is_visible="{ item }">
-          <Chip
-            showDot
-            :label="getInventoryVisibility(item)"
-            :color="
-              getInventoryVisibility(item) === 'Available'
-                ? 'success'
-                : getInventoryVisibility(item) === 'Unavailable'
-                  ? 'error'
-                  : 'primary'
-            "
-            size="sm"
-          />
-        </template>
-
-        <template #cell:action="{ item }">
-          <div class="flex items-center gap-2">
-            <DropdownMenu
-              v-if="!isClosed"
-              :items="getActionMenu(item)"
-              size="sm"
-              @action="(action: string) => handleAction(action, item)"
+        <div
+          v-for="item in popupInventory"
+          :key="item.uid"
+          class="flex items-start gap-3 rounded-xl border border-gray-200 p-3 md:items-center md:gap-4 md:rounded-none md:border-0 md:px-4 md:py-3"
+        >
+          <!-- Product image -->
+          <span
+            class="flex size-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100"
+          >
+            <img
+              v-if="item.images?.[0]?.image"
+              :src="item.images?.[0]?.image"
+              :alt="item.name"
+              class="h-full w-full object-cover"
+              loading="lazy"
             />
-          </div>
-        </template>
+            <Icon v-else name="shop-add" :size="20" class="text-primary-700" />
+          </span>
 
-        <!-- mobile view cell templates -->
-        <template #mobile="{ item }">
-          <div :class="['border-warning-200 cursor-pointer rounded-xl border']">
-            <div class="bg-warning-50 flex items-center gap-2.5 rounded-t-xl p-2">
-              <span class="bg-warning-100 flex size-10 items-center justify-center rounded-xl">
-                <img
-                  v-if="item.images?.[0]?.image"
-                  :src="item.images?.[0]?.image"
-                  :alt="item.name"
-                  class="h-full w-full rounded-xl object-cover"
-                  loading="lazy"
-                />
-                <Icon v-else name="shop-add" :size="24" class="text-primary-700" />
-              </span>
-              <h3 class="!font-outfit truncate text-sm font-medium">
+          <!-- Content: stacks on mobile, single row on desktop -->
+          <div class="flex min-w-0 flex-1 flex-col gap-2 md:flex-row md:items-center md:gap-4">
+            <!-- Name + (mobile) price + menu on one line -->
+            <div class="flex min-w-0 items-center gap-2 md:flex-1">
+              <h4 class="!font-outfit min-w-0 flex-1 truncate text-sm font-medium capitalize">
                 {{ item.name }}
-              </h3>
-              <span class="ml-auto" />
-              <span class="text-base font-semibold">{{ getPopupPriceRange(item) }}</span>
+              </h4>
+              <span class="flex-shrink-0 text-sm font-semibold whitespace-nowrap md:hidden">
+                {{ getPopupPriceRange(item) }}
+              </span>
               <DropdownMenu
                 v-if="!isClosed"
+                class="md:hidden"
                 :items="getActionMenu(item)"
                 size="sm"
                 @action="(action: string) => handleAction(action, item)"
               />
             </div>
-            <div class="flex flex-wrap items-center gap-2 p-5 pb-3">
+
+            <!-- Price (desktop) -->
+            <span class="hidden flex-shrink-0 text-sm font-semibold whitespace-nowrap md:block">
+              {{ getPopupPriceRange(item) }}
+            </span>
+
+            <!-- Stock + availability chips -->
+            <div class="flex flex-wrap items-center gap-1.5 md:flex-shrink-0">
               <Chip
+                size="sm"
                 icon="box"
                 :color="getStockStatus(item).color"
                 :label="getStockStatus(item).label"
               />
               <Chip
-                v-if="item.variants?.length > 1"
-                icon="shapes"
-                color="blue"
-                :label="`${item.variants.length} Variants`"
-              />
-              <Chip
                 showDot
-                :label="getInventoryVisibility(item)"
-                :color="
-                  getInventoryVisibility(item) === 'Available'
-                    ? 'success'
-                    : getInventoryVisibility(item) === 'Unavailable'
-                      ? 'error'
-                      : 'primary'
-                "
                 size="sm"
+                :label="getInventoryVisibility(item)"
+                :color="getVisibilityColor(item)"
               />
             </div>
+
+            <!-- Menu (desktop) -->
+            <DropdownMenu
+              v-if="!isClosed"
+              class="hidden md:flex"
+              :items="getActionMenu(item)"
+              size="sm"
+              @action="(action: string) => handleAction(action, item)"
+            />
           </div>
-        </template>
-      </DataTable>
+        </div>
+      </div>
     </div>
   </section>
 

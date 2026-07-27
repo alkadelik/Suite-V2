@@ -1,0 +1,428 @@
+[
+  {
+    "id": "history-backfill",
+    "published_at": "2026-01-10T10:00:00Z",
+    "retired_at": null,
+    "announce": false,
+    "template": "single",
+    "title": "Earlier improvements",
+    "body": "A summary of changes shipped before the changelog existed.",
+    "media": null,
+    "changelog": "## Earlier improvements\nA record of platform work shipped before this changelog existed.\n\n- Faster dashboard loading across large stores\n- Refreshed order tables with clearer statuses\n- Assorted reliability and performance fixes",
+    "features": []
+  },
+  {
+    "id": "orders-refresh",
+    "published_at": "2026-05-05T12:00:00Z",
+    "retired_at": "2026-06-20T09:00:00Z",
+    "announce": true,
+    "template": "single",
+    "title": "A cleaner orders workspace",
+    "body": "Orders got a faster table, clearer statuses, and quicker filters.",
+    "media": null,
+    "changelog": "## A cleaner orders workspace\nThe orders screen was rebuilt from the ground up.\n\n- A faster table that stays smooth on large stores\n- Clearer status pills so you can scan orders at a glance\n- Filters now apply instantly, without a full page reload",
+    "features": [
+      {
+        "key": "orders",
+        "route": "/orders",
+        "banner": "The orders workspace has been refreshed",
+        "bannerRetiredAt": null,
+        "deltaTour": [
+          {
+            "anchor": "orders.status-filter",
+            "text": "Filter by status here."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pickup-times-v1",
+    "published_at": "2026-06-20T15:00:00Z",
+    "retired_at": null,
+    "announce": true,
+    "template": "single",
+    "title": "Pickup times just got more flexible",
+    "body": "Manage pickup availability by day of the week and set the hours that work for your business.",
+    "media": null,
+    "changelog": "## Pickup times just got more flexible\nManage pickup availability by day of the week, each with its own hours.\n\n- Turn pickup on or off for individual days\n- Set pickup start and end times per day\n- Save a weekly schedule that fits your business",
+    "features": [
+      {
+        "key": "pickup-times",
+        "route": "/settings/delivery-options",
+        "label": "Pickup Times",
+        "title": "Pickup times just got more flexible",
+        "description": "You can now manage pickup availability by day of the week. Turn pickup on or off for individual days and set pickup hours that work for your business.",
+        "banner": "Pickup availability has changed",
+        "bannerRetiredAt": null,
+        "deltaTour": [
+          {
+            "anchor": "pickup.day-toggle",
+            "text": "Turn pickup on or off for each day here."
+          },
+          {
+            "anchor": "pickup.time-range",
+            "text": "Set the pickup hours for active days."
+          }
+        ],
+        "walkthrough": {
+          "version": "pickup-times-v1",
+          "backdrop": false,
+          "steps": [
+            {
+              "id": "pickup-day-availability",
+              "route": "/settings/delivery-options",
+              "anchor": "pickup-day-toggle",
+              "placement": "bottom",
+              "title": "Control pickup availability by day",
+              "body": "Use the toggle beside each day to choose when pickup is available.",
+              "showBack": true,
+              "highlight": {
+                "mode": "circle",
+                "color": "#F9B324",
+                "width": 1,
+                "padding": 7,
+                "radius": 999
+              }
+            },
+            {
+              "id": "pickup-hours",
+              "route": "/settings/delivery-options",
+              "anchor": "pickup-time-range",
+              "fallbackAnchor": "pickup-day-toggle",
+              "placement": "left",
+              "title": "Set pickup hours",
+              "body": "For active days, select the pickup start and end times that work for your business.",
+              "fallbackTitle": "Enable a pickup day",
+              "fallbackBody": "Turn on at least one day to choose its pickup start and end times.",
+              "highlight": {
+                "mode": "spotlight",
+                "padding": 4,
+                "radius": "target",
+                "mobile": {
+                  "mode": "outline",
+                  "color": "#F9B324",
+                  "width": 1,
+                  "padding": 4,
+                  "radius": 14
+                }
+              }
+            },
+            {
+              "id": "pickup-save",
+              "route": "/settings/delivery-options",
+              "anchor": "pickup-save",
+              "placement": "top",
+              "title": "Save your schedule",
+              "body": "Review your pickup days and hours, then save your changes when you're ready.",
+              "highlight": {
+                "mode": "spotlight",
+                "padding": 3,
+                "radius": "target",
+                "mobile": {
+                  "mode": "outline",
+                  "color": "#F9B324",
+                  "width": 2,
+                  "padding": 4,
+                  "radius": 14
+                }
+              },
+              "advanceOn": "pickup-settings-saved"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "shipments-v2",
+    "published_at": "2026-07-02T16:00:00Z",
+    "retired_at": null,
+    "announce": true,
+    "template": "single",
+    "title": "Shipments just got easier",
+    "body": "We've redesigned shipments so you can find, track, and manage deliveries faster.",
+    "media": null,
+    "changelog": "## Shipments, redesigned\nCreate, track, and manage deliveries from a single screen.\n\n## What changed\n- One flow from order to delivery, no more separate pages\n- Live tracking on the same screen where you create the shipment\n- Faster search across all your shipments",
+    "features": [
+      {
+        "key": "shipments",
+        "route": "/shipments",
+        "label": "Shipments",
+        "title": "Shipments just got easier",
+        "description": "We've redesigned shipments so you can find, track, and manage deliveries faster.",
+        "banner": "Shipments has a new look",
+        "bannerRetiredAt": null,
+        "deltaTour": [
+          {
+            "anchor": "shipments.create",
+            "text": "Create a shipment from a ready order here."
+          },
+          {
+            "anchor": "shipments.tracking",
+            "text": "Track delivery status on the same screen."
+          }
+        ],
+        "walkthrough": {
+          "version": "shipments-v1",
+          "backdrop": false,
+          "steps": [
+            {
+              "id": "shipment-open-order",
+              "route": "/shipments",
+              "anchor": "shipments-nav",
+              "placement": "right",
+              "mobileDock": "bottom",
+              "mobileStandalone": true,
+              "mobileHideTail": true,
+              "title": "Open an order that's ready to ship",
+              "body": "Orders awaiting shipment appear here. Open one to review its details and create a shipment.",
+              "highlight": {
+                "mode": "spotlight",
+                "padding": 4,
+                "radius": 12
+              }
+            },
+            {
+              "id": "shipment-status",
+              "route": "/shipments",
+              "anchor": "shipment-status",
+              "placement": "left",
+              "mobileDock": "bottom",
+              "title": "Check the shipment status",
+              "body": "This order is currently Awaiting Shipment, meaning it's ready for you to create a shipment.",
+              "highlight": {
+                "mode": "spotlight",
+                "padding": 4,
+                "radius": "target"
+              }
+            },
+            {
+              "id": "shipment-create",
+              "route": "/shipments",
+              "anchor": "shipment-create-btn",
+              "placement": "top",
+              "mobileDock": "above-target",
+              "title": "Create a shipment",
+              "body": "When an order is ready to leave your store, create a shipment to begin the delivery process.",
+              "instruction": "Click the \"Create Shipment\" button to continue.",
+              "highlight": {
+                "mode": "outline",
+                "color": "#F9B324",
+                "width": 1,
+                "padding": 5,
+                "radius": 12
+              },
+              "advanceOn": "shipment-create-opened"
+            },
+            {
+              "id": "shipment-review",
+              "route": "/shipments",
+              "anchor": "shipment-review",
+              "placement": "left",
+              "mobileDock": "bottom",
+              "title": "Review shipment details",
+              "body": "Confirm the shipping information before creating the shipment. We've pre-filled this example so you can focus on understanding the process.",
+              "highlight": {
+                "mode": "spotlight",
+                "padding": 4,
+                "radius": "target"
+              }
+            },
+            {
+              "id": "shipment-confirm",
+              "route": "/shipments",
+              "anchor": "shipment-submit-btn",
+              "placement": "top",
+              "mobileDock": "above-target",
+              "title": "Create the shipment",
+              "body": "Everything looks good. Create the shipment to start tracking its delivery.",
+              "instruction": "Click the \"Create Shipment\" button to continue.",
+              "highlight": {
+                "mode": "outline",
+                "color": "#F9B324",
+                "width": 1,
+                "padding": 5,
+                "radius": 12
+              },
+              "advanceOn": "shipment-created"
+            },
+            {
+              "id": "shipment-success",
+              "route": "/shipments",
+              "anchor": "shipment-success-done",
+              "placement": "top",
+              "mobileDock": "above-target",
+              "title": "Shipment created successfully",
+              "body": "Your shipment has been created and is now ready to be tracked. Return to the shipment details to view its updated status.",
+              "instruction": "Click the \"Done\" button to continue.",
+              "highlight": {
+                "mode": "outline",
+                "color": "#F9B324",
+                "width": 1,
+                "padding": 5,
+                "radius": 12
+              },
+              "advanceOn": "shipment-success-done"
+            },
+            {
+              "id": "shipment-manage",
+              "route": "/shipments",
+              "anchor": "shipment-details",
+              "placement": "left",
+              "mobileDock": "bottom",
+              "title": "Track and manage your shipment",
+              "body": "Your shipment is now active. From here, you can monitor its status, review tracking details, and manage delivery updates.",
+              "highlight": {
+                "mode": "spotlight",
+                "padding": 4,
+                "radius": "target"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "discounts-v1",
+    "published_at": "2026-07-09T09:00:00Z",
+    "retired_at": null,
+    "announce": true,
+    "template": "single",
+    "title": "Create discounts in minutes",
+    "body": "Reward loyal customers or run promotions using percentage, fixed amount, or coupon discounts.",
+    "media": null,
+    "changelog": "## Discounts & coupons are here\nReward loyal customers and run promotions in minutes.\n\n## What you can do\n- Create percentage, fixed-amount, or coupon-based discounts\n- Track each discount performance from one place\n- Apply discounts across products or your whole store",
+    "features": [
+      {
+        "key": "discounts",
+        "route": "/discounts",
+        "label": "Discounts & Coupons",
+        "title": "Create discounts in minutes",
+        "description": "Reward loyal customers or run promotions using percentage, fixed amount, or coupon discounts.",
+        "banner": "Discounts are here",
+        "bannerRetiredAt": null,
+        "deltaTour": [
+          {
+            "anchor": "discounts.add",
+            "text": "Create your first discount here."
+          },
+          {
+            "anchor": "discounts.type",
+            "text": "Choose percentage, fixed, or coupon."
+          }
+        ],
+        "walkthrough": {
+          "version": "discounts-v1",
+          "backdrop": false,
+          "steps": [
+            {
+              "id": "discounts-welcome",
+              "route": "/discounts",
+              "anchor": "discounts-nav",
+              "placement": "right",
+              "mobileDock": "bottom",
+              "mobileStandalone": true,
+              "mobileHideTail": true,
+              "title": "Welcome to Discounts",
+              "body": "Manage all your discounts and promotional offers from one place. You'll be able to create, track, and update promotions anytime.",
+              "highlight": {
+                "mode": "spotlight",
+                "padding": 4,
+                "radius": 12
+              }
+            },
+            {
+              "id": "discount-create",
+              "route": "/discounts",
+              "anchor": "discount-add",
+              "placement": "top",
+              "title": "Create your first discount",
+              "body": "Create discounts to encourage more purchases and reward your customers.",
+              "instruction": "Click the \"Add Discount\" button to continue.",
+              "highlight": {
+                "mode": "outline",
+                "color": "#F9B324",
+                "width": 1,
+                "padding": 5,
+                "radius": 12
+              },
+              "advanceOn": "discount-create-opened",
+              "nextCommand": "discount-open-create"
+            },
+            {
+              "id": "discount-type",
+              "route": "/discounts",
+              "anchor": "discount-type",
+              "placement": "left",
+              "mobileDock": "bottom",
+              "title": "Choose the discount type",
+              "body": "Select the kind of promotion you want to offer. Discounts can be percentage-based, fixed amount, or other supported types.",
+              "highlight": {
+                "mode": "spotlight",
+                "padding": 4,
+                "radius": "target"
+              },
+              "advanceOn": "discount-targeting-opened",
+              "nextCommand": "discount-next-form"
+            },
+            {
+              "id": "discount-submit",
+              "route": "/discounts",
+              "anchor": "discount-submit",
+              "placement": "left",
+              "mobileDock": "above-target",
+              "title": "Create your discount",
+              "body": "Everything looks ready. Save your discount to make it available for customers.",
+              "instruction": "Click the \"Create Discount\" button to continue.",
+              "highlight": {
+                "mode": "outline",
+                "color": "#F9B324",
+                "width": 1,
+                "padding": 5,
+                "radius": 12
+              },
+              "advanceOn": "discount-created",
+              "nextCommand": "discount-submit-form"
+            },
+            {
+              "id": "discount-list",
+              "route": "/discounts",
+              "anchor": "discount-row",
+              "placement": "bottom",
+              "title": "Manage all your discounts in one place",
+              "body": "View each discount's status, type and performance from this list. Select any discount to see more details or make changes.",
+              "instruction": "Click the discount row to continue.",
+              "highlight": {
+                "mode": "spotlight",
+                "padding": 3,
+                "radius": "target"
+              },
+              "advanceOn": "discount-row-opened",
+              "nextCommand": "discount-open-row"
+            },
+            {
+              "id": "discount-manage",
+              "route": "/discounts/discount/",
+              "anchor": "discount-manage",
+              "placement": "left",
+              "mobileDock": "bottom",
+              "desktopPosition": {
+                "left": 18,
+                "top": 260
+              },
+              "title": "Review and manage your discount",
+              "body": "Track your discount details, monitor activity and update the promotion whenever your campaign changes.",
+              "highlight": {
+                "mode": "spotlight",
+                "padding": 4,
+                "radius": "target"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

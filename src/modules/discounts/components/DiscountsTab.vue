@@ -157,7 +157,7 @@ import type { TDiscount, TDiscountRow } from "../types"
 import { toast } from "@/composables/useToast"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
-import { useWalkthroughStore } from "@modules/walkthrough/store"
+import { useWalkthroughStore } from "@modules/announcements/store"
 
 const emit = defineEmits<{
   add: []
@@ -244,6 +244,19 @@ const handleRowClick = (d: TDiscountRow) => {
   walkthrough.report("discount-row-opened")
   router.push(`/discounts/discount/${d.uid}`)
 }
+
+// Tour "Next" on the list step opens the discount created earlier in the tour.
+watch(
+  () => walkthrough.commandNonce,
+  () => {
+    if (walkthrough.command !== "discount-open-row") return
+    walkthrough.clearCommand()
+    const uid = walkthrough.activeProgress?.context?.createdDiscountUid
+    if (!uid) return
+    walkthrough.report("discount-row-opened")
+    router.push(`/discounts/discount/${uid}`)
+  },
+)
 
 const rowAttributes = (discount: TDiscountRow) => ({
   "data-walkthrough": "discount-row",
