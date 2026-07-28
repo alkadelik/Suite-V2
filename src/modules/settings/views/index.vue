@@ -92,6 +92,7 @@ import { clipboardCopy } from "@/utils/others"
 import Icon from "@components/Icon.vue"
 import { useAuthStore } from "@modules/auth/store"
 import LogoutModal from "@components/core/LogoutModal.vue"
+import { getSettingsNavigationLinks } from "../navigation"
 
 const route = useRoute()
 const { data: rolesData } = useGetRoles()
@@ -119,35 +120,11 @@ watch(
 
 const isInternational = computed(() => useSettingsStore().isInternational)
 
-const INTERNATIONAL_HIDDEN_LINKS = [
-  "Plans & Billing",
-  "Storefront Design",
-  "Delivery Options",
-  "Domains",
-]
-
 const LINKS = computed(() =>
-  [
-    { label: "Profile", path: "/settings/profile" },
-    { label: "Store Details", path: "/settings/store-details" },
-    { label: "Password", path: "/settings/password" },
-    { label: "Teams", path: "/settings/teams" },
-    { label: "Plans & Billing", path: "/settings/billing" },
-    { label: "Locations", path: "/settings/locations" },
-    { label: "Taxes", path: "/settings/taxes" },
-    { label: "Storefront Design", path: "/settings/design" },
-    { label: "Domains", path: "/settings/domains" },
-    { label: "Delivery Options", path: "/settings/delivery-options" },
-    { label: "Production", path: "/settings/production" },
-  ].filter((link) => {
-    const { activeLocation } = useSettingsStore()
-    if (!activeLocation?.is_hq) {
-      return ["Profile", "Password"].includes(link.label)
-    }
-    if (isInternational.value && INTERNATIONAL_HIDDEN_LINKS.includes(link.label)) {
-      return false
-    }
-    return true
+  getSettingsNavigationLinks({
+    isHq: Boolean(useSettingsStore().activeLocation?.is_hq),
+    isInternational: isInternational.value,
+    surface: "desktop",
   }),
 )
 

@@ -74,7 +74,7 @@
       </template>
 
       <template #cell:usage="{ item }">
-        <CouponUsageBar :used="Number(item.usage_count ?? 0)" :limit="item.max_usage" />
+        {{ Number(item.usage_count ?? 0) }}
       </template>
 
       <template #cell:status="{ item }">
@@ -138,7 +138,6 @@ import TextField from "@components/form/TextField.vue"
 import AppButton from "@components/AppButton.vue"
 import DeleteConfirmationModal from "@components/DeleteConfirmationModal.vue"
 import CouponCard from "./coupon/CouponCard.vue"
-import CouponUsageBar from "./coupon/CouponUsageBar.vue"
 import CouponFilterDrawer from "./CouponFilterDrawer.vue"
 import { COUPON_COLUMNS, COUPON_STATUS_META, COUPON_SCOPE_META } from "../constants"
 import {

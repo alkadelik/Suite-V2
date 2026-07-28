@@ -85,7 +85,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import { storeToRefs } from "pinia"
 import PageHeader from "@components/PageHeader.vue"
 import SectionHeader from "@components/SectionHeader.vue"
@@ -100,9 +100,32 @@ import { useDiscountsStore } from "../store"
 import { toast } from "@/composables/useToast"
 import type { TCoupon, TDiscount } from "../types"
 import { useGetProductCatalogsInfinite } from "@modules/inventory/api"
+import { useAuthStore } from "@modules/auth/store"
+import { useSettingsStore } from "@modules/settings/store"
 
 const store = useDiscountsStore()
 const { activeTab } = storeToRefs(store)
+
+const authStore = useAuthStore()
+const settingsStore = useSettingsStore()
+
+// Discounts & coupons are a paid feature — only Bloom/Burst plans (or international accounts)
+// can create them; everyone else gets the upgrade modal. Mirrors settings/locations.vue.
+const hasBloomAccess = computed(() => {
+  const subscription = authStore.user?.subscription
+  if (!subscription?.is_active && !subscription?.trial_mode) return false
+  const planName = subscription?.plan_name?.toLowerCase()
+  return planName === "bloom" || planName === "burst"
+})
+
+// Returns false (and opens the upgrade modal) when the current plan can't create discounts/coupons.
+const ensurePaidAccess = () => {
+  if (!hasBloomAccess.value && !settingsStore.isInternational) {
+    settingsStore.setPlanUpgradeModal(true)
+    return false
+  }
+  return true
+}
 
 // Warm and retain the exact catalog query used by TargetSelector. Opening either
 // creation flow can render cached products immediately while freshness work stays hidden.
@@ -116,6 +139,7 @@ const drawerMode = ref<"create" | "edit" | "duplicate">("create")
 const editTarget = ref<TCoupon | null>(null)
 
 const openCreate = () => {
+  if (!ensurePaidAccess()) return
   drawerMode.value = "create"
   editTarget.value = null
   showCreateDrawer.value = true
@@ -145,6 +169,7 @@ const discountDrawerMode = ref<"create" | "edit" | "duplicate">("create")
 const discountEditTarget = ref<TDiscount | null>(null)
 
 const openCreateDiscount = () => {
+  if (!ensurePaidAccess()) return
   discountDrawerMode.value = "create"
   discountEditTarget.value = null
   showDiscountDrawer.value = true
