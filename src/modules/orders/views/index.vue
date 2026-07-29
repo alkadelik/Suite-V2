@@ -285,24 +285,20 @@ const { mutate: generateReceipt } = useGenerateReceipt()
 const { mutate: generateInvoice } = useGenerateInvoice()
 const { mutate: markAsPaid, isPending: isMarkingPaid } = useMarkOrderAsPaid()
 
-// Get invoice link for an order
-const getInvoiceLink = (order: TOrder) => {
-  const isLocal = window.location.hostname === "localhost"
-  return isLocal
-    ? `http://localhost:8080/pay/${order.order_number}`
-    : `https://suite-v2.vercel.app/pay/${order.order_number}`
-}
+// Get invoice link for an order. The /pay/:id route is served by this same app, so the link is
+// derived from the current origin — correct on localhost, staging and production alike. The old
+// hardcoded staging host (suite-v2.vercel.app) leaked into production payment links.
+const getInvoiceLink = (order: TOrder) => `${window.location.origin}/pay/${order.order_number}`
 
 // Share payment link using Web Share API
 const handleSharePaymentLink = async (order: TOrder) => {
   const link = getInvoiceLink(order)
   if (navigator.share) {
     try {
-      await navigator.share({
-        title: `Payment Link for Order #${order.order_number}`,
-        text: `Complete your payment for order #${order.order_number}`,
-        url: link,
-      })
+      // Share the bare URL only. Picking "Copy" in the native share sheet concatenates
+      // title/text with the url, which would put extra prose on the clipboard instead of
+      // just the link.
+      await navigator.share({ url: link })
     } catch {
       // User cancelled or share failed, fallback to copy
       navigator.clipboard.writeText(link).then(() => {
@@ -357,17 +353,13 @@ const handleShareInvoice = (order: TOrder): Promise<void> => {
       onSuccess: (response) => {
         const invoiceUrl = response.data?.data.url as string | undefined
         if (invoiceUrl && navigator.share) {
-          navigator
-            .share({
-              title: `Invoice for Order #${order.order_number}`,
-              text: `Invoice for order #${order.order_number}`,
-              url: invoiceUrl,
+          // Share the bare URL only — see handleSharePaymentLink: title/text would end up on
+          // the clipboard alongside the link when the user picks "Copy".
+          navigator.share({ url: invoiceUrl }).catch(() => {
+            navigator.clipboard.writeText(invoiceUrl).then(() => {
+              toast.info("Invoice link copied to clipboard!")
             })
-            .catch(() => {
-              navigator.clipboard.writeText(invoiceUrl).then(() => {
-                toast.info("Invoice link copied to clipboard!")
-              })
-            })
+          })
         } else if (invoiceUrl) {
           navigator.clipboard.writeText(invoiceUrl).then(() => {
             toast.info("Invoice link copied to clipboard!")
