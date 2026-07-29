@@ -320,17 +320,13 @@ const handleShareReceipt = (order: TOrder): Promise<void> => {
       onSuccess: (response) => {
         const receiptUrl = response.data?.data.url as string | undefined
         if (receiptUrl && navigator.share) {
-          navigator
-            .share({
-              title: `Receipt for Order #${order.order_number}`,
-              text: `Receipt for order #${order.order_number}`,
-              url: receiptUrl,
+          // Share the bare URL only — see handleSharePaymentLink: title/text would end up on
+          // the clipboard alongside the link when the user picks "Copy".
+          navigator.share({ url: receiptUrl }).catch(() => {
+            navigator.clipboard.writeText(receiptUrl).then(() => {
+              toast.info("Receipt link copied to clipboard!")
             })
-            .catch(() => {
-              navigator.clipboard.writeText(receiptUrl).then(() => {
-                toast.info("Receipt link copied to clipboard!")
-              })
-            })
+          })
         } else if (receiptUrl) {
           navigator.clipboard.writeText(receiptUrl).then(() => {
             toast.info("Receipt link copied to clipboard!")
