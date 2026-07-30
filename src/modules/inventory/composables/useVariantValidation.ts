@@ -155,6 +155,13 @@ export function useVariantValidation(options: IVariantValidationOptions) {
     return Number.isInteger(num) && num >= 0
   }
 
+  /** A variant "has stock" when its opening stock parses to a positive quantity. */
+  const hasStockQuantity = (value: string): boolean => {
+    if (!value || value.trim() === "") return false
+    const num = Number(value)
+    return Number.isFinite(num) && num > 0
+  }
+
   const buildProductDetailsValidation = (): ICurrentProductStepValidation => {
     const errors = EMPTY_PRODUCT_DETAILS_ERRORS()
     let firstErrorTarget: string | undefined
@@ -247,6 +254,12 @@ export function useVariantValidation(options: IVariantValidationOptions) {
       requirePrice: boolean
       requireWeight: boolean
       requireDimensions: boolean
+      /**
+       * Whether a cost price is compulsory for variants carrying stock. Only enabled where the
+       * field is actually editable — the edit drawer disables cost price in most modes, and
+       * requiring a disabled field would make the drawer impossible to submit.
+       */
+      requireCostPrice?: boolean
     },
     variantsToValidate: IProductVariant[] = variants.value,
   ): ICurrentProductStepValidation => {
@@ -293,15 +306,22 @@ export function useVariantValidation(options: IVariantValidationOptions) {
         firstErrorTarget ??= `variant-opening-stock-${index}`
       }
 
-      if (config.requireCost && !isValidNonNegativeNumber(variant.cost_price)) {
+      // Cost-price rules (reconciled across branches):
+      //  - If a cost price is entered, it must be a valid non-negative number.
+      //  - If it's missing, it's required either when the field is always mandatory
+      //    (requireCost, e.g. the new-variant pricing step) or when the variant
+      //    carries stock (requireCostPrice — simple products validate here too, as a
+      //    single variant, covering both simple and variable products).
+      if (variant.cost_price && variant.cost_price.trim() !== "") {
+        if (!isValidNonNegativeNumber(variant.cost_price)) {
+          errors.variants[index].cost_price = "Enter a valid cost price."
+          firstErrorTarget ??= `variant-cost-price-${index}`
+        }
+      } else if (config.requireCost) {
         errors.variants[index].cost_price = "Enter a valid cost price."
         firstErrorTarget ??= `variant-cost-price-${index}`
-      } else if (
-        variant.cost_price &&
-        variant.cost_price.trim() !== "" &&
-        !isValidNonNegativeNumber(variant.cost_price)
-      ) {
-        errors.variants[index].cost_price = "Enter a valid cost price."
+      } else if (config.requireCostPrice && hasStockQuantity(variant.opening_stock)) {
+        errors.variants[index].cost_price = "Enter a cost price for items with stock."
         firstErrorTarget ??= `variant-cost-price-${index}`
       }
 
@@ -341,6 +361,9 @@ export function useVariantValidation(options: IVariantValidationOptions) {
         requirePrice: true,
         requireWeight,
         requireDimensions: requireWeight,
+        // The edit drawer disables cost price outside the new-variant pricing handoff, and this
+        // step doesn't collect stock, so it stays optional here.
+        requireCostPrice: false,
       })
     }
 
@@ -390,6 +413,7 @@ export function useVariantValidation(options: IVariantValidationOptions) {
         requirePrice: true,
         requireWeight: true,
         requireDimensions: true,
+        requireCostPrice: true,
       })
     }
 
