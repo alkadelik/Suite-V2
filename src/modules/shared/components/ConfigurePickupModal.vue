@@ -46,11 +46,21 @@
               <span class="text-core-800 order-1 text-base font-semibold md:order-2">
                 {{ day.label }}
               </span>
-              <Switch v-model="day.enabled" class="order-2 md:order-1" />
+              <Switch
+                v-model="day.enabled"
+                class="order-2 md:order-1"
+                :data-walkthrough="day.dayOfWeek === 0 ? 'pickup-day-toggle' : undefined"
+              />
             </div>
 
             <!-- Times when enabled -->
-            <div v-if="day.enabled" class="grid grid-cols-2 gap-3 md:flex md:gap-3">
+            <div
+              v-if="day.enabled"
+              class="grid grid-cols-2 gap-3 md:flex md:gap-3"
+              :data-walkthrough="
+                day.dayOfWeek === firstEnabledDay ? 'pickup-time-range' : undefined
+              "
+            >
               <TimeField label="From" v-model="day.from" class="md:min-w-[150px]" />
               <TimeField label="To" v-model="day.to" class="md:min-w-[150px]" />
             </div>
@@ -77,6 +87,7 @@
             :loading="saving"
             :disabled="saving || !pickup_location || !hasActiveDay"
             class="w-full md:w-40"
+            data-walkthrough="pickup-save"
             @click="onSubmit"
           />
         </div>
@@ -209,6 +220,7 @@ watch([schedulesData, storeDetails], () => {
 
 // Pickups require at least one active pickup day (plus a pickup location).
 const hasActiveDay = computed(() => days.value.some((day) => day.enabled))
+const firstEnabledDay = computed(() => days.value.find((day) => day.enabled)?.dayOfWeek ?? -1)
 
 const isDayChanged = (day: DaySchedule): boolean => {
   const original = loadedSchedules.value[day.uid]

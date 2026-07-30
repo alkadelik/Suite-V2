@@ -67,6 +67,7 @@ describe("data visualization and table components", () => {
         showMobileView: false,
         showPagination: false,
         rowClass: (row) => `row-${String(row.status)}`,
+        rowAttrs: (row) => ({ "data-row-id": row.id }),
       },
       global: {
         stubs: { Icon: IconStub, AppButton: AppButtonStub, EmptyState: EmptyStateStub },
@@ -79,6 +80,7 @@ describe("data visualization and table components", () => {
     expect(wrapper.text()).toContain("--")
     expect(wrapper.find("tbody tr").classes()).toContain("row-active")
     expect(wrapper.find("tbody tr").classes()).toContain("cursor-pointer")
+    expect(wrapper.find("tbody tr").attributes("data-row-id")).toBe("1")
     await wrapper.find("tbody tr").trigger("click")
     expect(wrapper.emitted("row-click")).toEqual([[rows[0]]])
   })

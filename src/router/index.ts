@@ -23,6 +23,7 @@ import { isStaging } from "@/utils/others"
 import reportsRoutes from "@modules/reports/routes"
 import productionRoutes from "@modules/production/routes"
 import discountsRoutes from "@modules/discounts/routes"
+import announcementsRoutes from "@modules/announcements/routes"
 
 const routes: RouteRecordRaw[] = [
   { path: "/", redirect: "/dashboard" },
@@ -47,6 +48,8 @@ const routes: RouteRecordRaw[] = [
     ],
   },
   { path: "/", meta: { requiresAuth: true }, children: [...settingsRoutes] },
+  // public changelog — no auth, no layout
+  ...announcementsRoutes,
   // payment page
   { path: "/pay/:id", component: () => import("@modules/landing/views/payment-link.vue") },
   // landing pages

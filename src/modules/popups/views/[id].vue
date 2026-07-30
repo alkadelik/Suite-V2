@@ -23,6 +23,7 @@ import ClosePopupModal from "../components/ClosePopupModal.vue"
 import BackButton from "@components/BackButton.vue"
 import AppButton from "@components/AppButton.vue"
 import StatCard from "@components/StatCard.vue"
+import Modal from "@components/Modal.vue"
 
 const route = useRoute()
 const router = useRouter()
@@ -38,7 +39,7 @@ watch(
   },
 )
 
-const { format } = useFormatCurrency()
+const { format, truncate } = useFormatCurrency()
 const storefrontUrl = computed(() => useSettingsStore().displayDomain)
 const isMobile = useMediaQuery("(max-width: 768px)")
 
@@ -74,7 +75,7 @@ const metrics = computed(() => {
   return [
     {
       label: "Total Revenue",
-      value: format(revenue),
+      value: isMobile.value ? truncate(revenue) : format(revenue),
       icon: "moneys-solid",
       iconClass: "lg:text-green-700",
       chip: totalOrders ? `${totalOrders} orders` : undefined,
@@ -108,11 +109,9 @@ const metrics = computed(() => {
   ]
 })
 
-// Mobile shows the first two metrics until "See More" expands the rest
-const showAllMetrics = ref(false)
-const visibleMetrics = computed(() =>
-  isMobile.value && !showAllMetrics.value ? metrics.value.slice(0, 2) : metrics.value,
-)
+// Mobile shows the first two metrics; "See More" opens a bottom sheet with the rest
+const showMetricsModal = ref(false)
+const visibleMetrics = computed(() => (isMobile.value ? metrics.value.slice(0, 2) : metrics.value))
 
 const canRecordActions = computed(() =>
   ["upcoming", "active"].includes(popupEvt.value?.status || ""),
@@ -245,7 +244,7 @@ const downloadQrCode = async () => {
           />
           <AppButton
             v-if="canRecordActions"
-            label="Record Sales"
+            label="Record Sale"
             icon="shopping-cart-outline"
             size="sm"
             class="flex-1 md:flex-none"
@@ -262,14 +261,10 @@ const downloadQrCode = async () => {
           <button
             type="button"
             class="text-primary-700 flex cursor-pointer items-center gap-1 text-sm font-medium"
-            @click="showAllMetrics = !showAllMetrics"
+            @click="showMetricsModal = true"
           >
-            {{ showAllMetrics ? "See Less" : "See More" }}
-            <Icon
-              name="chevron-down"
-              size="16"
-              :class="['transition-transform', showAllMetrics ? 'rotate-180' : '']"
-            />
+            See More
+            <Icon name="chevron-down" size="16" />
           </button>
         </div>
         <div class="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-5">
@@ -291,7 +286,21 @@ const downloadQrCode = async () => {
             </div>
 
             <div class="md:sticky md:top-4 md:w-md md:flex-shrink-0">
-              <Collapsible header="Popup Details" :default-open="true">
+              <Collapsible :default-open="true">
+                <template #trigger>
+                  <div class="flex items-center justify-between bg-white px-4 py-3">
+                    <div class="flex items-center gap-2">
+                      <span
+                        class="bg-leyyow-100 flex size-10 items-center justify-center rounded-lg"
+                      >
+                        <Icon name="message-text" size="24" class="text-primary-700" />
+                      </span>
+                      <h3 class="mb-2 text-lg font-semibold md:mb-0">Popup Details</h3>
+                    </div>
+
+                    <!-- <Icon name="chevron-down" size="20" /> -->
+                  </div>
+                </template>
                 <template #body>
                   <div class="divide-core-100 divide-y">
                     <div
@@ -361,5 +370,17 @@ const downloadQrCode = async () => {
       :event="popupEvt"
       @refresh="refetch"
     />
+
+    <!-- Full metrics (mobile bottom sheet) -->
+    <Modal
+      :open="showMetricsModal"
+      variant="bottom-nav"
+      title="Metrics"
+      @close="showMetricsModal = false"
+    >
+      <div class="grid grid-cols-2 gap-3">
+        <StatCard v-for="metric in metrics" :key="metric.label" :stat="metric" />
+      </div>
+    </Modal>
   </section>
 </template>

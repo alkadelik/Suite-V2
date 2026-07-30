@@ -39,9 +39,18 @@
           size="sm"
           label="Add Discount"
           class="!hidden md:!inline-flex"
+          data-walkthrough="discount-add"
           @click="emit('add')"
         />
-        <AppButton icon="add" size="sm" label="" class="md:hidden" @click="emit('add')" />
+        <AppButton
+          icon="add"
+          size="sm"
+          label=""
+          class="md:hidden"
+          data-walkthrough="discount-add"
+          aria-label="Add Discount"
+          @click="emit('add')"
+        />
       </div>
     </div>
 
@@ -54,6 +63,7 @@
       :total-items-count="count"
       :total-page-count="Math.ceil(count / itemsPerPage) || 1"
       :server-pagination="true"
+      :row-attrs="rowAttributes"
       @pagination-change="(d) => (page = d.currentPage)"
       @row-click="handleRowClick"
     >
@@ -147,6 +157,8 @@ import type { TDiscount, TDiscountRow } from "../types"
 import { toast } from "@/composables/useToast"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
+import { useWalkthroughStore } from "@modules/announcements/store"
+import { buildDiscountTourRow, DISCOUNT_TOUR_UID } from "./discountTourDemo"
 
 const emit = defineEmits<{
   add: []
@@ -156,6 +168,7 @@ const emit = defineEmits<{
 }>()
 
 const router = useRouter()
+const walkthrough = useWalkthroughStore()
 const { format } = useFormatCurrency()
 
 // search + filters + pagination state
@@ -195,12 +208,21 @@ const params = computed<Record<string, string | number>>(() => {
 const { data, isFetching, refetch } = useGetDiscounts(params)
 
 const normalized = computed(() => normalizeDiscountList(data.value))
-const rows = computed<TDiscountRow[]>(() =>
+const baseRows = computed<TDiscountRow[]>(() =>
   normalized.value.results.map((d) => ({
     ...d,
     scope: deriveDiscountScope(d),
     status: d.status,
   })),
+)
+
+// --- Discounts walkthrough (non-persisting preview) ---
+// The tour runs on a demo discount, so nothing is ever created on the merchant's
+// store. Prepending the demo row keeps the "open a discount" step anchored even
+// when the merchant has no discounts of their own yet.
+const isDiscountTour = computed(() => walkthrough.activeId === "discounts")
+const rows = computed<TDiscountRow[]>(() =>
+  isDiscountTour.value ? [buildDiscountTourRow(), ...baseRows.value] : baseRows.value,
 )
 const count = computed(() => normalized.value.count)
 
@@ -229,8 +251,34 @@ const isEmpty = computed(
 watch(isEmpty, (v) => emit("empty", v), { immediate: true })
 
 const handleRowClick = (d: TDiscountRow) => {
-  router.push(`/discounts/discount/${d.uid}`)
+  // Any row click during the tour lands on the demo discount, never a real one.
+  const uid = isDiscountTour.value ? DISCOUNT_TOUR_UID : d.uid
+  walkthrough.report("discount-row-opened")
+  router.push(`/discounts/discount/${uid}`)
 }
+
+// Tour "Next" on the list step opens the demo discount from earlier in the tour.
+watch(
+  () => walkthrough.commandNonce,
+  () => {
+    if (walkthrough.command !== "discount-open-row") return
+    walkthrough.clearCommand()
+    const uid = walkthrough.activeProgress?.context?.createdDiscountUid ?? DISCOUNT_TOUR_UID
+    walkthrough.report("discount-row-opened")
+    router.push(`/discounts/discount/${uid}`)
+  },
+)
+
+// During the tour only the demo row carries the anchor, so the coachmark can't
+// latch onto one of the merchant's real discounts.
+const rowAttributes = (discount: TDiscountRow) =>
+  isDiscountTour.value && discount.uid !== DISCOUNT_TOUR_UID
+    ? { "data-walkthrough-discount-row": discount.uid, tabindex: 0 }
+    : {
+        "data-walkthrough": "discount-row",
+        "data-walkthrough-discount-row": discount.uid,
+        tabindex: 0,
+      }
 
 // Toggle through the documented endpoint; DiscountUpdate requires the current name.
 const { mutateAsync: setDiscountEnabled } = useSetDiscountEnabled()

@@ -142,15 +142,82 @@ describe("interactive reusable components", () => {
     expect(wrapper.emitted("update:modelValue")).toEqual([[false], [false], [false]])
   })
 
-  it("WhatsNewModal forwards close and renders the release content", async () => {
+  it("WhatsNewModal presents both walkthroughs and acknowledges each desktop item in order", async () => {
     const wrapper = shallowMount(WhatsNewModal, {
       props: { open: true },
-      global: { stubs: { Modal: MessageModalStub, AppButton: AppButtonStub } },
+      global: { stubs: { Teleport: true, Transition: false, Icon: IconStub } },
     })
-    expect(wrapper.text()).toContain("What's New on Leyyow")
-    expect(wrapper.findComponent(AppButtonStub).props("label")).toBe("Next")
-    await wrapper.findComponent(MessageModalStub).find(".close-modal").trigger("click")
+    expect(wrapper.text()).toContain("What’s new on Leyyow")
+    expect(wrapper.text()).toContain("Pickup Times")
+    expect(wrapper.text()).toContain("Discounts & Coupons")
+    const showButtons = wrapper.findAll("button").filter((button) => button.text() === "Show Me")
+    await showButtons[0].trigger("click")
+    expect(wrapper.emitted("show")).toEqual([["pickup-times"]])
+    const gotIt = wrapper.find("[data-whats-new-desktop-got-it]")
+    await gotIt.trigger("click")
+    expect(wrapper.emitted("close")).toBeUndefined()
+    expect(wrapper.find("h2").text()).toBe("Create discounts in minutes")
+    await gotIt.trigger("click")
     expect(wrapper.emitted("close")).toHaveLength(1)
+  })
+
+  it("keeps the mobile intro outside its two-feature carousel and supports pointer swipes", async () => {
+    const wrapper = shallowMount(WhatsNewModal, {
+      props: { open: true },
+      global: { stubs: { Teleport: true, Transition: false, Icon: IconStub } },
+    })
+
+    expect(wrapper.find("[data-mobile-intro]").exists()).toBe(true)
+    expect(wrapper.findAll('[aria-label^="Show "]')).toHaveLength(0)
+    expect(wrapper.findComponent(IconStub).attributes("data-name")).toBe("swipe-gesture")
+
+    const swipeRegion = wrapper.find("[data-mobile-swipe-region]")
+    await swipeRegion.trigger("pointerdown", {
+      pointerId: 1,
+      pointerType: "touch",
+      clientX: 280,
+      clientY: 300,
+    })
+    await swipeRegion.trigger("pointerup", {
+      pointerId: 1,
+      pointerType: "touch",
+      clientX: 120,
+      clientY: 304,
+    })
+
+    expect(wrapper.find("[data-mobile-feature]").exists()).toBe(true)
+    expect(wrapper.findAll('[aria-label^="Show "]')).toHaveLength(2)
+    expect(wrapper.find("[data-mobile-controls]").classes()).toContain("shrink-0")
+    expect(wrapper.find("[data-mobile-feature] h2").text()).toBe(
+      "Pickup times just got more flexible",
+    )
+
+    await swipeRegion.trigger("pointerdown", {
+      pointerId: 2,
+      pointerType: "mouse",
+      button: 0,
+      clientX: 280,
+      clientY: 300,
+    })
+    await swipeRegion.trigger("pointerup", {
+      pointerId: 2,
+      pointerType: "mouse",
+      button: 0,
+      clientX: 120,
+      clientY: 304,
+    })
+    expect(wrapper.find("[data-mobile-feature] h2").text()).toBe("Create discounts in minutes")
+  })
+
+  it("can reopen mobile directly on the completed feature screen", () => {
+    const wrapper = shallowMount(WhatsNewModal, {
+      props: { open: true, initialFeature: "discounts", mobileStartView: "features" },
+      global: { stubs: { Teleport: true, Transition: false, Icon: IconStub } },
+    })
+
+    expect(wrapper.find("[data-mobile-intro]").exists()).toBe(false)
+    expect(wrapper.find("[data-mobile-feature] h2").text()).toBe("Create discounts in minutes")
+    expect(wrapper.findAll('[aria-label^="Show "]')).toHaveLength(2)
   })
 
   it("Tabs normalizes string tabs, renders counts, switches slots, and emits selection", async () => {

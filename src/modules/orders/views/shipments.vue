@@ -29,6 +29,12 @@ import DropdownMenu from "@components/DropdownMenu.vue"
 import type { TChipColor } from "@modules/shared/types"
 import { useQueryClient } from "@tanstack/vue-query"
 import { useRouter } from "vue-router"
+import { useWalkthroughStore } from "@modules/announcements/store"
+import { useAuthStore } from "@modules/auth/store"
+import {
+  buildShipmentTourRow,
+  SHIPMENT_TOUR_CREATED_STATUS,
+} from "../components/shipments/shipmentTourDemo"
 
 const pageTabs = [
   { title: "ShipBubble", key: "shipbubble" },
@@ -39,6 +45,8 @@ const activeTab = ref("shipbubble")
 
 const isMobile = useMediaQuery("(max-width: 768px)")
 const queryClient = useQueryClient()
+const walkthrough = useWalkthroughStore()
+const authStore = useAuthStore()
 
 const page = ref(1)
 const itemsPerPage = ref(10)
@@ -106,7 +114,7 @@ const totalCount = computed(() =>
 )
 
 // Normalize both sources into a single row shape so all tabs share one table
-const rows = computed<TShipmentRow[]>(() => {
+const baseRows = computed<TShipmentRow[]>(() => {
   if (isShipbubbleTab.value) {
     return (shipments.value?.results ?? []).map((shipment) => ({
       uid: shipment.uid,
@@ -148,8 +156,86 @@ const selectedShipment = ref<TShipmentRow | null>(null)
 const openFulfil = ref(false)
 const openDetails = ref(false)
 const openCreate = ref(false)
+const previewSuccess = ref(false)
+
+// --- Shipments walkthrough (non-charging preview) ---
+// The tour drives the drawers/success purely from its step index and operates on
+// a pre-filled demo row, so no ShipBubble/Paystack call is ever made.
+const isShipmentTour = computed(() => walkthrough.activeId === "shipments")
+const tourStepIndex = computed(() =>
+  isShipmentTour.value ? (walkthrough.activeProgress?.stepIndex ?? 0) : -1,
+)
+const tourRow = computed(() =>
+  buildShipmentTourRow(
+    tourStepIndex.value >= 6 ? SHIPMENT_TOUR_CREATED_STATUS : "awaiting_shipment",
+  ),
+)
+
+const startShipmentTutorial = () => {
+  if (!authStore.user?.uid) return
+  activeTab.value = "shipbubble"
+  walkthrough.markReleaseSeen(authStore.user.uid)
+  walkthrough.start("shipments", authStore.user.uid)
+}
+
+// Drive drawer/modal visibility for each tour step.
+watch(
+  tourStepIndex,
+  (idx) => {
+    if (idx < 0) return
+    activeTab.value = "shipbubble"
+    selectedShipment.value = tourRow.value
+    openFulfil.value = false
+    if (idx <= 0) {
+      openDetails.value = false
+      openCreate.value = false
+      previewSuccess.value = false
+    } else if (idx <= 2) {
+      openCreate.value = false
+      previewSuccess.value = false
+      openDetails.value = true
+    } else if (idx <= 4) {
+      openDetails.value = false
+      previewSuccess.value = false
+      openCreate.value = true
+    } else if (idx === 5) {
+      openDetails.value = false
+      openCreate.value = true
+      previewSuccess.value = true
+    } else {
+      openCreate.value = false
+      previewSuccess.value = false
+      openDetails.value = true
+    }
+  },
+  { immediate: true },
+)
+
+// Reset everything when the tour ends or is dismissed.
+watch(isShipmentTour, (on, was) => {
+  if (was && !on) {
+    openDetails.value = false
+    openCreate.value = false
+    previewSuccess.value = false
+    selectedShipment.value = null
+  }
+})
+
+// Prepend the demo row during the tour so the "open an order" step always anchors.
+const rows = computed<TShipmentRow[]>(() =>
+  isShipmentTour.value ? [tourRow.value, ...baseRows.value] : baseRows.value,
+)
+
+const rowAttrs = (row: TShipmentRow) =>
+  isShipmentTour.value && row.uid === tourRow.value.uid
+    ? { "data-walkthrough": "shipment-row" }
+    : {}
 
 const createShipment = (item: TShipmentRow) => {
+  if (isShipmentTour.value) {
+    walkthrough.report("shipment-create-opened")
+    return
+  }
   selectedShipment.value = item
   openDetails.value = false
   openCreate.value = true
@@ -158,6 +244,10 @@ const createShipment = (item: TShipmentRow) => {
 const router = useRouter()
 
 const viewDetails = (item: TShipmentRow) => {
+  if (isShipmentTour.value) {
+    walkthrough.report("shipment-row-opened")
+    return
+  }
   selectedShipment.value = item
   openDetails.value = true
 }
@@ -239,8 +329,19 @@ const emptyStateDescription = computed(() => {
 
 <template>
   <div class="space-y-6 px-3 pb-6 lg:pt-6">
-    <PageHeader v-if="isMobile" title="Shipments" :count="totalCount" />
-    <SectionHeader v-else title="Shipments" subtitle="Manage all your shipment types" />
+    <PageHeader
+      v-if="isMobile"
+      title="Shipments"
+      :count="totalCount"
+      data-walkthrough="shipments-nav"
+      @tutorial="startShipmentTutorial"
+    />
+    <div v-else class="flex items-start justify-between gap-4">
+      <SectionHeader title="Shipments" subtitle="Manage all your shipment types" />
+      <button type="button" aria-label="Start tutorial" @click="startShipmentTutorial">
+        <Chip icon="info-circle" label="Tutorial" />
+      </button>
+    </div>
 
     <Tabs v-model="activeTab" :tabs="pageTabs" class="max-w-md" />
 
@@ -283,6 +384,7 @@ const emptyStateDescription = computed(() => {
         :total-items-count="totalCount"
         :total-page-count="Math.ceil(totalCount / itemsPerPage) || 1"
         :server-pagination="true"
+        :row-attrs="rowAttrs"
         @pagination-change="(d) => (page = d.currentPage)"
         @row-click="viewDetails"
         :empty-state="{
@@ -356,6 +458,8 @@ const emptyStateDescription = computed(() => {
       v-if="selectedShipment"
       :open="openCreate"
       :item="selectedShipment"
+      :tour-mode="isShipmentTour"
+      :preview-success="previewSuccess"
       @close="openCreate = false"
       @refresh="handleRefresh"
     />
