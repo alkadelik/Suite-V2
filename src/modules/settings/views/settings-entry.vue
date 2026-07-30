@@ -6,6 +6,7 @@ import BackButton from "@components/BackButton.vue"
 import LogoutModal from "@components/core/LogoutModal.vue"
 import { clipboardCopy } from "@/utils/others"
 import { useSettingsStore } from "../store"
+import { getSettingsNavigationLinks } from "../navigation"
 
 const router = useRouter()
 
@@ -19,38 +20,11 @@ onMounted(() => {
 
 const isInternational = computed(() => useSettingsStore().isInternational)
 
-const INTERNATIONAL_HIDDEN_LINKS = ["Plans & Billing", "Storefront Design", "Delivery Options"]
-
 const settingsLinks = computed(() =>
-  [
-    { label: "Profile", path: "/settings/profile", icon: "profile-circle" },
-    { label: "Store Details", path: "/settings/store-details", icon: "shop-outline" },
-    { label: "Password", path: "/settings/password", icon: "key" },
-    { label: "Teams", path: "/settings/teams", icon: "people" },
-    { label: "Plans & Billing", path: "/settings/billing", icon: "star-fast" },
-    { label: "Locations", path: "/settings/locations", icon: "map" },
-    {
-      label: "Storefront Design",
-      path: "/settings/design",
-      icon: "designtools",
-      subLinks: [
-        { label: "Themes", path: "/settings/design/themes", icon: "shapes-02" },
-        { label: "Theme Settings", path: "/settings/design/theme-settings", icon: "shapes-01" },
-        { label: "Landing Page", path: "/settings/design/landing-page", icon: "message-text" },
-        // { label: "Pop Up", path: "/settings/design/popup", icon: "information" },
-      ],
-    },
-    { label: "Delivery Options", path: "/settings/delivery-options", icon: "truck-fast-outline" },
-    { label: "Production", path: "/settings/production", icon: "building-outline" },
-  ].filter((link) => {
-    const { activeLocation } = useSettingsStore()
-    if (!activeLocation?.is_hq) {
-      return ["Profile", "Password"].includes(link.label)
-    }
-    if (isInternational.value && INTERNATIONAL_HIDDEN_LINKS.includes(link.label)) {
-      return false
-    }
-    return true
+  getSettingsNavigationLinks({
+    isHq: Boolean(useSettingsStore().activeLocation?.is_hq),
+    isInternational: isInternational.value,
+    surface: "mobile",
   }),
 )
 
