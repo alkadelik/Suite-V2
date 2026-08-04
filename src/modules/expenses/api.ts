@@ -56,7 +56,7 @@ export function useGetExpenseCategories(enabled?: MaybeRefOrGetter<boolean>) {
 /** Fetch expense vendor */
 export function useGetExpenseVendors() {
   return useApiQuery<TPaginatedResponse<{ uid: string; name: string }>>({
-    url: `/expenses/categories/?limit=50&offset=0`,
+    url: `/expenses/vendors/?limit=50&offset=0`,
     key: `expenses-vendors`,
   })
 }
@@ -91,7 +91,7 @@ export function useEditExpense() {
 /** Mark multiple expenses as paid in one action */
 export function useBulkCompleteExpenses() {
   return useMutation({
-    mutationFn: (payload: { items: string[] }) => baseApi.post("/expenses/bulk-complete/", payload),
+    mutationFn: (payload: { items: string[] }) => baseApi.post("/expenses/mark-paid/", payload),
   })
 }
 

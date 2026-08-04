@@ -25,6 +25,7 @@ import {
   EXPENSE_CATEGORY_ICON,
   EXPENSE_COLUMN,
   getExpenseStatusColor,
+  isTaxCategory,
   isTaxLikeSubcategory,
 } from "../constants"
 import { useRoute } from "vue-router"
@@ -226,7 +227,9 @@ const getActionItems = (item: TExpense) => [
         },
         { divider: true },
       ]),
-  ...(item.status !== "paid" && item.entry_type === "manual"
+  // Manual expenses can always be settled by hand; auto entries can't, except for
+  // taxes, which are remitted outside the app and still need marking.
+  ...(item.status !== "paid" && (item.entry_type === "manual" || isTaxCategory(item.category_name))
     ? [
         {
           label: "Mark as paid",
