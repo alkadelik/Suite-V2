@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from "vue"
 import Drawer from "@components/Drawer.vue"
 import Modal from "@components/Modal.vue"
+import ConfirmationModal from "@components/ConfirmationModal.vue"
 import AppButton from "@components/AppButton.vue"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
@@ -73,12 +74,22 @@ const pickupRows = computed(() => [
   },
 ])
 
-// Book the ShipBubble quote — shipping fee is paid via Paystack first, then the
-// payment reference is sent along with the booking
+// Book the ShipBubble quote. A paid order already collected the shipping fee at
+// checkout, so it books straight away with an empty payment reference; anything
+// else (manual orders, part payments) has to settle the fee through Paystack first.
 const { mutate: createShipment, isPending: isCreating } = useCreateShipbubbleShipment()
 
 const showSuccess = ref(false)
+const showPaymentConfirm = ref(false)
 const createdTrackingNumber = ref("")
+
+const isShippingPrepaid = computed(() => order.value.payment_status === "paid")
+
+const shippingFeeLabel = computed(() =>
+  format(Number(shipment.value?.total_shipping_cost) || Number(order.value.delivery_fee), {
+    kobo: true,
+  }),
+)
 
 onMounted(() => {
   loadPaystackScript()
@@ -97,15 +108,31 @@ watch(
   { immediate: true },
 )
 
-const handleCreateShipment = () => {
-  // During the walkthrough, "create" only advances the tour — no charge, no booking.
-  if (props.tourMode) {
-    walkthrough.report("shipment-created")
-    return
-  }
-  if (!shipment.value) return
+/** Book the quote with ShipBubble. `reference` is empty when nothing was charged. */
+const bookShipment = (reference: string) => {
+  const currentOrder = order.value
+  createShipment(
+    {
+      order: currentOrder.uid,
+      rate: currentOrder.rate,
+      courier: currentOrder.courier as string,
+      payment_reference: reference,
+    },
+    {
+      onSuccess: (response) => {
+        createdTrackingNumber.value = response.data?.data?.tracking_number || ""
+        showSuccess.value = true
+      },
+      onError: displayError,
+    },
+  )
+}
+
+/** Collect the shipping fee through Paystack, then book once it succeeds. */
+const payThenBook = () => {
   const currentShipment = shipment.value
   const currentOrder = order.value
+  if (!currentShipment) return
 
   handlePayStackPayment(
     {
@@ -117,24 +144,31 @@ const handleCreateShipment = () => {
       customer_email: currentOrder.customer_email || "",
       shipping_address: currentOrder.customer_address || "",
     },
-    (payResponse) => {
-      createShipment(
-        {
-          order: currentOrder.uid,
-          rate: currentOrder.rate,
-          courier: currentOrder.courier,
-          payment_reference: payResponse.reference,
-        },
-        {
-          onSuccess: (response) => {
-            createdTrackingNumber.value = response.data?.data?.tracking_number || ""
-            showSuccess.value = true
-          },
-          onError: displayError,
-        },
-      )
-    },
+    (payResponse) => bookShipment(payResponse.reference),
   )
+}
+
+const handleCreateShipment = () => {
+  // During the walkthrough, "create" only advances the tour — no charge, no booking.
+  if (props.tourMode) {
+    walkthrough.report("shipment-created")
+    return
+  }
+  if (!shipment.value) return
+
+  // Paid orders settled the shipping fee at checkout — book with no reference.
+  if (isShippingPrepaid.value) {
+    bookShipment("")
+    return
+  }
+
+  // Otherwise warn before handing the merchant off to Paystack.
+  showPaymentConfirm.value = true
+}
+
+const handleConfirmPayment = () => {
+  showPaymentConfirm.value = false
+  payThenBook()
 }
 
 const successRows = computed(() => [
@@ -269,6 +303,19 @@ const handleSuccessDone = () => {
         />
       </template>
     </Drawer>
+
+    <!-- Shipping payment confirmation — only for orders that never collected it -->
+    <ConfirmationModal
+      v-model="showPaymentConfirm"
+      max-width="md"
+      z-class="z-[1200]"
+      header-icon="wallet-money"
+      header="Shipping payment required"
+      paragraph="Because this order was created manually, no shipping payment was collected. To create the shipment with Shipbubble, you'll be taken to a secure payment page to complete the payment. Once payment is successful, we'll create the shipment automatically."
+      :info-message="`Shipping fee: ${shippingFeeLabel}`"
+      action-label="Continue to Payment"
+      @confirm="handleConfirmPayment"
+    />
 
     <!-- Shipment created success dialog -->
     <Modal :open="showSuccess" max-width="sm" @close="handleSuccessDone">

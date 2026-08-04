@@ -21,7 +21,7 @@ import ShipmentFiltersDrawer from "../components/shipments/ShipmentFiltersDrawer
 import ShipmentDetailsDrawer from "../components/shipments/ShipmentDetailsDrawer.vue"
 import CreateShipmentDrawer from "../components/shipments/CreateShipmentDrawer.vue"
 import FulfilOrderModal from "../components/FulfilOrderModal.vue"
-import { TShipmentRow } from "../types"
+import { TShipmentRow, TOrderCourier } from "../types"
 import { useGetOrders, useGetShipments } from "../api"
 import Icon from "@components/Icon.vue"
 import Chip from "@components/Chip.vue"
@@ -120,7 +120,7 @@ const baseRows = computed<TShipmentRow[]>(() => {
       uid: shipment.uid,
       order_number: shipment.order?.order_number || "-",
       customer_name: shipment.order?.customer_name || "Unknown Anonymous",
-      courier: shipment.courier || null,
+      courier: (shipment.order?.courier as TOrderCourier) || shipment.courier || null,
       fee: shipment.total_shipping_cost,
       amount: shipment.order?.total_amount ?? 0,
       date: shipment.delivery_estimate || shipment.created_at,
@@ -272,6 +272,20 @@ const getActionItems = (item: TShipmentRow) => {
   }
 
   if (item.shipment) {
+    // Awaiting shipment = quote booked but not yet paid for, so the create/pay flow
+    // is the only action available — the same rule as the details drawer's CTA.
+    // There's no waybill or tracking link until the shipment is actually booked.
+    if (item.shipment.status === "awaiting_shipment") {
+      return [
+        viewAction,
+        {
+          label: "Create shipment",
+          icon: "box",
+          action: () => createShipment(item),
+        },
+      ]
+    }
+
     return [
       viewAction,
       {
@@ -345,8 +359,8 @@ const emptyStateDescription = computed(() => {
 
     <Tabs v-model="activeTab" :tabs="pageTabs" class="max-w-md" />
 
-    <div class="mt-4 space-y-4 overflow-hidden rounded-xl border-gray-200 md:border md:bg-white">
-      <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
+    <div class="space-y-4 overflow-hidden rounded-xl border-gray-200 md:border md:bg-white">
+      <div class="flex flex-col justify-between pt-4 md:flex-row md:items-center md:px-4">
         <h3 class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
           {{ pageTabs.find((tab) => tab.key === activeTab)?.title }}
           {{ activeTab === "pickup" ? "" : "deliveries" }}
