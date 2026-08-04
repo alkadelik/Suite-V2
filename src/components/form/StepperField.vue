@@ -8,7 +8,7 @@
     <div class="flex items-center gap-2">
       <!-- Decrement Button -->
       <AppButton
-        icon="placeholder"
+        icon="minus"
         size="sm"
         type="button"
         @click.prevent="decrementValue"
@@ -58,7 +58,7 @@
 
       <!-- Increment Button -->
       <AppButton
-        icon="placeholder"
+        icon="add"
         size="sm"
         type="button"
         @click.prevent="incrementValue"
@@ -222,7 +222,7 @@ const containerClasses = computed(() => {
 
 const inputClasses = computed(() => {
   const baseClasses =
-    "flex-1 border-0 bg-transparent focus:outline-none focus:ring-0 placeholder-core-400 text-core-800"
+    "min-w-0 flex-1 border-0 bg-transparent focus:outline-none focus:ring-0 placeholder-core-400 text-core-800"
 
   const paddingClasses = {
     sm: `${props.leftIcon || props.prefix ? "pl-0" : "pl-2"} ${props.rightIcon || props.suffix ? "pr-0" : "pr-2"} py-2 text-base`,
@@ -235,7 +235,7 @@ const inputClasses = computed(() => {
 
 const prefixClasses = computed(() => {
   const baseClasses =
-    "border-core-100 bg-inherit mr-2 flex items-center border-r px-3 text-gray-400"
+    "border-core-100 bg-inherit mr-2 flex shrink-0 items-center border-r px-3 text-gray-400"
 
   const sizeClasses = {
     sm: "py-2 text-sm",

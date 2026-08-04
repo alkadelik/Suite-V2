@@ -143,7 +143,7 @@
           v-else
           :data="filteredProducts"
           :columns="PRODUCT_COLUMNS"
-          :loading="isFetching"
+          :loading="isPending"
           :show-pagination="true"
           :items-per-page="itemsPerPage"
           :current-page="page"
@@ -272,9 +272,7 @@
       :product="product"
       :edit-mode="editMode"
       :variant="variantForEdit"
-      :variant-attribute-keys="variantAttributeKeysForEdit"
       @add-category="showAddCategoryModal = true"
-      @edit-variant-details="handleEditVariantDetails"
     />
     <FilterDrawer
       v-if="showFilterDrawer || hasOpenedFilterDrawer"
@@ -295,10 +293,12 @@
       @close="showReceiveRequestModal = false"
     />
     <ManageStockModal
-      v-if="productDetailsForStock?.data"
       :open="showManageStockModal"
-      :product="productDetailsForStock.data"
+      :product="productDetailsForStock?.data ?? null"
+      :loading="isLoadingProductDetailsForStock && !productDetailsForStock?.data"
+      :error="isProductDetailsForStockError && !productDetailsForStock?.data"
       @close="showManageStockModal = false"
+      @retry="refetchProductDetailsForStock()"
     />
   </div>
 </template>
@@ -322,7 +322,6 @@ import AddCategoryModal from "../components/AddCategoryModal.vue"
 import InventoryRequests from "../components/InventoryRequests.vue"
 import ReceiveRequestModal from "../components/ReceiveRequestModal.vue"
 import { inventoryCache } from "../cache"
-import { inventoryKeys } from "../queryKeys"
 import ProductCard from "../components/ProductCard.vue"
 import ManageStockModal from "../components/ManageStockModal.vue"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
@@ -407,9 +406,9 @@ const combinedParams = computed(() => {
   return params
 })
 
-// isFetching (not just isPending) so the table also shows its loading state during
-// background refetches, e.g. right after a successful stock change invalidates the list.
-const { data: products, isPending, isFetching } = useGetProducts(combinedParams)
+// Keep cached rows visible while stale data refreshes in the background. The table
+// loader is reserved for the first request, when no cached response exists (LYW-2842).
+const { data: products, isPending } = useGetProducts(combinedParams)
 const { data: productDashboard, isPending: isLoadingDashboard } = useGetProductDashboard()
 const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct()
 const { mutate: updateProduct, isPending: isUpdatingProduct } = useUpdateProduct()
@@ -469,7 +468,6 @@ const editMode = ref<"product-details" | "variant-details" | "variants" | "image
   "product-details",
 )
 const variantForEdit = ref<IProductVariantDetails | null>(null)
-const variantAttributeKeysForEdit = ref<string[]>([])
 const productUidForManageStock = ref<string | null>(null)
 const productUidForEdit = ref<string | null>(null)
 
@@ -477,9 +475,17 @@ const productUidForEdit = ref<string | null>(null)
 // (not the modal-open flag) so the query stays active through the post-mutation
 // refetch and isn't disabled in the same tick the cache is invalidated (LYW-2647).
 const productUidForFetch = computed(() => productUidForManageStock.value || "")
-const { data: productDetailsForStock } = useGetProduct(productUidForFetch, {
+const {
+  data: productDetailsForStock,
+  isPending: isPendingProductDetailsForStock,
+  isError: isProductDetailsForStockError,
+  refetch: refetchProductDetailsForStock,
+} = useGetProduct(productUidForFetch, {
   enabled: () => !!productUidForManageStock.value,
 })
+const isLoadingProductDetailsForStock = computed(
+  () => !!productUidForManageStock.value && isPendingProductDetailsForStock.value,
+)
 
 // Fetch product details for edit drawer when needed
 const productUidForEditFetch = computed(() => productUidForEdit.value || "")
@@ -538,7 +544,6 @@ watch(
       // Clear the edit request when drawer closes
       productUidForEdit.value = null
       variantForEdit.value = null
-      variantAttributeKeysForEdit.value = []
     }
   },
 )
@@ -610,7 +615,6 @@ const getStockStatus = (item: TProduct) => {
 const openProductEditDrawer = (item: TProduct) => {
   product.value = { ...item }
   editMode.value = "product-details"
-  variantAttributeKeysForEdit.value = []
   setTimeout(() => {
     showProductEditDrawer.value = true
   }, 0)
@@ -619,16 +623,14 @@ const openProductEditDrawer = (item: TProduct) => {
 const openImagesEditDrawer = (item: TProduct) => {
   product.value = { ...item }
   editMode.value = "images"
-  variantAttributeKeysForEdit.value = []
   setTimeout(() => {
     showProductEditDrawer.value = true
   }, 0)
 }
 
-const openPriceWeightEdit = (item: TProduct, variantAttributeKeys: string[] = []) => {
+const openPriceWeightEdit = (item: TProduct) => {
   // Set edit mode first
   editMode.value = "variant-details"
-  variantAttributeKeysForEdit.value = variantAttributeKeys
   // Trigger fetch of full product details (watcher will handle opening drawer)
   productUidForEdit.value = item.uid
 }
@@ -636,22 +638,9 @@ const openPriceWeightEdit = (item: TProduct, variantAttributeKeys: string[] = []
 const openVariantsManage = (item: TProduct) => {
   product.value = { ...item }
   editMode.value = "variants"
-  variantAttributeKeysForEdit.value = []
   setTimeout(() => {
     showProductEditDrawer.value = true
   }, 0)
-}
-
-// After the variants step saves, the drawer stays open and emits the new
-// variants' keys — switch it to the pricing step in place (the :key remounts it
-// in variant-details mode) once the refreshed product is in the cache (LYW-2679).
-const handleEditVariantDetails = (variantAttributeKeys: string[]) => {
-  const item = product.value
-  if (!item) return
-  void (async () => {
-    await queryClient.refetchQueries({ queryKey: inventoryKeys.products.detail(item.uid) })
-    openPriceWeightEdit(item, variantAttributeKeys)
-  })()
 }
 
 const openManageStockModal = (item: TProduct) => {

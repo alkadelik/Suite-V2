@@ -46,7 +46,7 @@ const menuItems = computed(() => {
               },
               { divider: true },
             ]),
-        ...(props.expense.status !== "paid"
+        ...(props.expense.status !== "paid" && props.expense.entry_type === "manual"
           ? [
               {
                 label: "Mark as paid",

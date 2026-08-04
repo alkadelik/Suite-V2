@@ -14,6 +14,7 @@ import CreateOrderDrawer from "../components/CreateOrderDrawer.vue"
 import VoidDeleteOrder from "../components/VoidDeleteOrder.vue"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
 import {
+  useCancelOrder,
   useDeleteOrder,
   useGenerateInvoice,
   useGenerateReceipt,
@@ -44,7 +45,6 @@ import { usePremiumAccess } from "@/composables/usePremiumAccess"
 import { useQueryClient } from "@tanstack/vue-query"
 import OrderDetailsDrawer from "../components/OrderDetailsDrawer.vue"
 import StatCard from "@components/StatCard.vue"
-import OrderShipmentTab from "../components/OrderShipmentTab.vue"
 import OrderFiltersDrawer from "../components/OrderFiltersDrawer.vue"
 import SelectField from "@components/form/SelectField.vue"
 import Icon from "@components/Icon.vue"
@@ -57,6 +57,7 @@ const openFulfil = ref(false)
 const openPayment = ref(false)
 const openDetails = ref(false)
 const openMarkPaid = ref(false)
+const openCancel = ref(false)
 const markPaidMethod = ref(ORDER_PAYMENT_METHODS[0])
 const selectedOrder = ref<TOrder | null>(null)
 const status = ref(ORDER_STATUS_TAB[0].key)
@@ -163,6 +164,12 @@ const handleRefresh = () => {
   refetchStats()
 }
 
+// An offline order is an unpaid order whose payment source is offline. The list
+// response may omit payment_source, so fall back to the active "Offline" tab.
+const isOfflineOrder = (item: TOrder) =>
+  item.payment_status === "unpaid" &&
+  (item.payment_source === "offline" || status.value === "offline")
+
 const getActionItems = (item: TOrder) => [
   {
     label: "View memos",
@@ -256,6 +263,21 @@ const getActionItems = (item: TOrder) => [
         },
       ]
     : []),
+  // Cancel Order - offline (unpaid) orders only
+  ...(isOfflineOrder(item)
+    ? [
+        {
+          label: "Cancel Order",
+          icon: "trash",
+          class: "text-red-600 hover:bg-red-50",
+          iconClass: "text-red-600",
+          action: () => {
+            selectedOrder.value = item
+            openCancel.value = true
+          },
+        },
+      ]
+    : []),
   ...(item.fulfilment_status !== "fulfilled" &&
   item.payment_status === "unpaid" &&
   !item.source?.includes("storefront")
@@ -284,6 +306,7 @@ const { mutate: deleteOrder, isPending: isDeleting } = useDeleteOrder()
 const { mutate: generateReceipt } = useGenerateReceipt()
 const { mutate: generateInvoice } = useGenerateInvoice()
 const { mutate: markAsPaid, isPending: isMarkingPaid } = useMarkOrderAsPaid()
+const { mutate: cancelOrder, isPending: isCancelling } = useCancelOrder()
 
 // Get invoice link for an order. The /pay/:id route is served by this same app, so the link is
 // derived from the current origin — correct on localhost, staging and production alike. The old
@@ -410,6 +433,17 @@ const handleMarkAsPaid = () => {
   )
 }
 
+const handleCancelOrder = () => {
+  cancelOrder(selectedOrder.value?.order_number || "", {
+    onSuccess: () => {
+      toast.success("Order cancelled successfully")
+      openCancel.value = false
+      handleRefresh()
+    },
+    onError: displayError,
+  })
+}
+
 const route = useRoute()
 
 const router = useRouter()
@@ -472,6 +506,9 @@ const handleAction = (action: string, order: TOrder) => {
       break
     case "delete-order":
       openDelete.value = true
+      break
+    case "cancel-order":
+      openCancel.value = true
       break
   }
 }
@@ -564,11 +601,7 @@ const handleDetailsMarkAsPaid = () => {
         <Tabs v-model="status" :tabs="ORDER_STATUS_TAB" />
       </div>
 
-      <!-- Order statuses excluding shipment -->
-      <div
-        v-if="status !== 'shipments'"
-        class="space-y-4 overflow-hidden rounded-xl border-gray-200 pt-3 md:border md:bg-white"
-      >
+      <div class="space-y-4 overflow-hidden rounded-xl border-gray-200 pt-3 md:border md:bg-white">
         <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
           <h3 v-if="!isMobile" class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
             {{ ORDER_STATUS_TAB.find((tab) => tab.key === status)?.title }} Orders
@@ -683,6 +716,8 @@ const handleDetailsMarkAsPaid = () => {
           <template #mobile="{ item }">
             <OrderCard
               :order="item"
+              :show-cancel="isOfflineOrder(item)"
+              @cancel-order="handleAction('cancel-order', item)"
               @click="handleAction('click', item)"
               @view-memos="handleAction('view-memos', item)"
               @mark-as-paid="handleAction('mark-as-paid', item)"
@@ -697,9 +732,6 @@ const handleDetailsMarkAsPaid = () => {
           </template>
         </DataTable>
       </div>
-
-      <!-- order shipment tab -->
-      <OrderShipmentTab v-if="status === 'shipments'" />
     </section>
 
     <!--  -->
@@ -737,6 +769,25 @@ const handleDetailsMarkAsPaid = () => {
             :options="ORDER_PAYMENT_METHODS"
           />
         </div>
+      </template>
+    </ConfirmationModal>
+
+    <ConfirmationModal
+      v-if="selectedOrder"
+      v-model="openCancel"
+      header="Cancel Order"
+      action-label="Yes, Cancel Order"
+      variant="error"
+      info-message=""
+      :loading="isCancelling"
+      @confirm="handleCancelOrder"
+    >
+      <template #paragraph>
+        <p class="text-sm">
+          Are you sure you want to cancel order
+          <span class="font-medium">#{{ selectedOrder.order_number }}</span
+          >? This action cannot be undone.
+        </p>
       </template>
     </ConfirmationModal>
 

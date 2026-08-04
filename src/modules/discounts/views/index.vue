@@ -1,0 +1,245 @@
+<template>
+  <PageHeader
+    title="Discounts"
+    :show-tutorial="true"
+    data-walkthrough="discounts-nav"
+    @tutorial="startDiscountTutorial"
+  />
+
+  <div class="p-4 md:p-6">
+    <!-- desktop header -->
+    <SectionHeader
+      title="Discounts"
+      subtitle="Manage all your discounts and promos"
+      class="hidden md:flex"
+    >
+      <template #action>
+        <AppButton
+          label="Tutorial"
+          icon="info-circle"
+          size="sm"
+          color="alt"
+          variant="outlined"
+          @click="startDiscountTutorial"
+        />
+      </template>
+    </SectionHeader>
+
+    <Tabs
+      :tabs="[
+        { key: 'discounts', title: 'Discounts' },
+        { key: 'coupons', title: 'Coupons' },
+      ]"
+      v-model="activeTab"
+      class="mt-4"
+      header-class="md:w-1/2"
+    >
+      <template #discounts>
+        <EmptyState
+          v-if="discountsEmpty"
+          title="You don't have any discounts yet!"
+          description="Create a discount or promotion for eligible orders."
+        >
+          <template #action>
+            <AppButton
+              label="Add a discount"
+              icon="add"
+              variant="outlined"
+              data-walkthrough="discount-add"
+              @click="openCreateDiscount"
+            />
+          </template>
+        </EmptyState>
+
+        <DiscountsTab
+          v-show="!discountsEmpty"
+          ref="discountsTabRef"
+          @add="openCreateDiscount"
+          @edit="openEditDiscount"
+          @duplicate="openDuplicateDiscount"
+          @empty="(v) => (discountsEmpty = v)"
+        />
+      </template>
+
+      <template #coupons>
+        <EmptyState
+          v-if="couponsEmpty"
+          title="You don't have any coupons yet!"
+          description="Create a coupon code for customers to use on eligible orders."
+        >
+          <template #action>
+            <AppButton label="Add a Coupon" icon="add" variant="outlined" @click="openCreate" />
+          </template>
+        </EmptyState>
+
+        <CouponsTab
+          v-show="!couponsEmpty"
+          ref="couponsTabRef"
+          @add="openCreate"
+          @edit="openEdit"
+          @duplicate="openDuplicate"
+          @empty="(v) => (couponsEmpty = v)"
+        />
+      </template>
+    </Tabs>
+
+    <CreateCouponDrawer
+      :open="showCreateDrawer"
+      :mode="drawerMode"
+      :coupon="editTarget"
+      @close="showCreateDrawer = false"
+      @saved="onSaved"
+    />
+
+    <CreateDiscountDrawer
+      :open="showDiscountDrawer"
+      :mode="discountDrawerMode"
+      :discount="discountEditTarget"
+      @close="closeDiscountDrawer"
+      @saved="onDiscountSaved"
+    />
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed, ref, watch } from "vue"
+import { storeToRefs } from "pinia"
+import PageHeader from "@components/PageHeader.vue"
+import SectionHeader from "@components/SectionHeader.vue"
+import Tabs from "@components/Tabs.vue"
+import EmptyState from "@components/EmptyState.vue"
+import AppButton from "@components/AppButton.vue"
+import DiscountsTab from "../components/DiscountsTab.vue"
+import CouponsTab from "../components/CouponsTab.vue"
+import CreateCouponDrawer from "../components/CreateCouponDrawer.vue"
+import CreateDiscountDrawer from "../components/CreateDiscountDrawer.vue"
+import { useDiscountsStore } from "../store"
+import { toast } from "@/composables/useToast"
+import type { TCoupon, TDiscount } from "../types"
+import { useGetProductCatalogsInfinite } from "@modules/inventory/api"
+import { useAuthStore } from "@modules/auth/store"
+import { useSettingsStore } from "@modules/settings/store"
+import { useWalkthroughStore } from "@modules/announcements/store"
+
+const store = useDiscountsStore()
+const walkthrough = useWalkthroughStore()
+const authStore = useAuthStore()
+const settingsStore = useSettingsStore()
+
+const { activeTab } = storeToRefs(store)
+
+// Discounts & coupons are a paid feature — only Bloom/Burst plans (or international accounts)
+// can create them; everyone else gets the upgrade modal. Mirrors settings/locations.vue.
+const hasBloomAccess = computed(() => {
+  const subscription = authStore.user?.subscription
+  if (!subscription?.is_active && !subscription?.trial_mode) return false
+  const planName = subscription?.plan_name?.toLowerCase()
+  return planName === "bloom" || planName === "burst"
+})
+
+// Returns false (and opens the upgrade modal) when the current plan can't create discounts/coupons.
+const ensurePaidAccess = () => {
+  if (!hasBloomAccess.value && !settingsStore.isInternational) {
+    settingsStore.setPlanUpgradeModal(true)
+    return false
+  }
+  return true
+}
+
+// Warm and retain the exact catalog query used by TargetSelector. Opening either
+// creation flow can render cached products immediately while freshness work stays hidden.
+useGetProductCatalogsInfinite()
+
+// --- Coupons ---
+const couponsEmpty = ref(false)
+const couponsTabRef = ref<InstanceType<typeof CouponsTab> | null>(null)
+const showCreateDrawer = ref(false)
+const drawerMode = ref<"create" | "edit" | "duplicate">("create")
+const editTarget = ref<TCoupon | null>(null)
+
+const openCreate = () => {
+  if (!ensurePaidAccess()) return
+  drawerMode.value = "create"
+  editTarget.value = null
+  showCreateDrawer.value = true
+}
+const openEdit = (coupon: TCoupon) => {
+  drawerMode.value = "edit"
+  editTarget.value = coupon
+  showCreateDrawer.value = true
+}
+const openDuplicate = (coupon: TCoupon) => {
+  drawerMode.value = "duplicate"
+  editTarget.value = coupon
+  showCreateDrawer.value = true
+}
+const onSaved = () => {
+  showCreateDrawer.value = false
+  toast.success(drawerMode.value === "edit" ? "Coupon updated!" : "Success! New coupon created!")
+  store.setActiveTab("coupons")
+  couponsTabRef.value?.refetch?.()
+}
+
+// --- Discounts ---
+const discountsEmpty = ref(false)
+const discountsTabRef = ref<InstanceType<typeof DiscountsTab> | null>(null)
+const showDiscountDrawer = ref(false)
+const discountDrawerMode = ref<"create" | "edit" | "duplicate">("create")
+const discountEditTarget = ref<TDiscount | null>(null)
+
+const openCreateDiscount = () => {
+  if (!ensurePaidAccess()) return
+  discountDrawerMode.value = "create"
+  discountEditTarget.value = null
+  showDiscountDrawer.value = true
+  walkthrough.report("discount-create-opened")
+}
+
+// Tour "Next" on the create step opens the drawer, exactly like the real button.
+watch(
+  () => walkthrough.commandNonce,
+  () => {
+    if (walkthrough.command !== "discount-open-create") return
+    walkthrough.clearCommand()
+    if (!showDiscountDrawer.value) openCreateDiscount()
+  },
+)
+
+const closeDiscountDrawer = () => {
+  showDiscountDrawer.value = false
+  const step = walkthrough.activeProgress?.stepIndex
+  if (walkthrough.activeId === "discounts" && (step === 2 || step === 3)) {
+    walkthrough.dismiss()
+  }
+}
+
+const startDiscountTutorial = () => {
+  if (!authStore.user?.uid) return
+  store.setActiveTab("discounts")
+  walkthrough.markReleaseSeen(authStore.user.uid)
+  walkthrough.start("discounts", authStore.user.uid)
+}
+const openEditDiscount = (discount: TDiscount) => {
+  discountDrawerMode.value = "edit"
+  discountEditTarget.value = discount
+  showDiscountDrawer.value = true
+}
+const openDuplicateDiscount = (discount: TDiscount) => {
+  discountDrawerMode.value = "duplicate"
+  discountEditTarget.value = discount
+  showDiscountDrawer.value = true
+}
+const onDiscountSaved = () => {
+  showDiscountDrawer.value = false
+  store.setActiveTab("discounts")
+  // The tour's discount is a sample — say so, and skip the refetch it can't affect.
+  if (walkthrough.activeId === "discounts" && discountDrawerMode.value === "create") {
+    toast.success("Sample discount created — it's only here for the tutorial.")
+    return
+  }
+  toast.success(
+    discountDrawerMode.value === "edit" ? "Discount updated!" : "Success! New discount created!",
+  )
+  discountsTabRef.value?.refetch?.()
+}
+</script>

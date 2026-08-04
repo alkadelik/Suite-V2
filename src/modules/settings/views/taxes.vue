@@ -169,6 +169,8 @@ const handleSave = () => {
             :options="vatDisplayOptions"
             :disabled="!hasBloomAccess"
             orientation="horizontal"
+            options-container-class="!flex-col md:!flex-row"
+            option-item-class="w-full !flex-none md:!flex-1"
             variant="white"
           />
         </div>

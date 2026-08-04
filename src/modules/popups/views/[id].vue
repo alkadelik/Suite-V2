@@ -19,11 +19,11 @@ import { clipboardCopy } from "@/utils/others"
 import { useMediaQuery } from "@vueuse/core"
 import Collapsible from "@components/Collapsible.vue"
 import { useSettingsStore } from "@modules/settings/store"
-import popupEmpty from "@/assets/images/popup-empty.svg?url"
-import popupBanner from "@/assets/images/popup-banner.svg?url"
 import ClosePopupModal from "../components/ClosePopupModal.vue"
 import BackButton from "@components/BackButton.vue"
 import AppButton from "@components/AppButton.vue"
+import StatCard from "@components/StatCard.vue"
+import Modal from "@components/Modal.vue"
 
 const route = useRoute()
 const router = useRouter()
@@ -39,19 +39,90 @@ watch(
   },
 )
 
-const { format } = useFormatCurrency()
+const { format, truncate } = useFormatCurrency()
 const storefrontUrl = computed(() => useSettingsStore().displayDomain)
+const isMobile = useMediaQuery("(max-width: 768px)")
 
 const { data: popupEvt, isPending, refetch } = useGetPopupEventById(route.params.id as string)
 
 const overviewInfo = computed(() => {
   return {
+    Date: `${formatDate(popupEvt.value?.start_date || "")} - ${formatDate(popupEvt.value?.end_date || "")}`,
     "Participation Fee": Number(popupEvt.value?.participation_fee)
       ? format(popupEvt.value?.participation_fee || 0)
       : "Free",
     Description: popupEvt.value?.description || "N/A",
   }
 })
+
+const popupUrl = computed(() => `${storefrontUrl.value}/events/${popupEvt.value?.slug}`)
+
+const statusColor = computed(() => {
+  if (popupEvt.value?.status === "upcoming") return "primary"
+  if (popupEvt.value?.status === "active") return "success"
+  if (popupEvt.value?.status === "closed") return "error"
+  return "alt"
+})
+
+// Popup summary metrics
+const metrics = computed(() => {
+  const evt = popupEvt.value
+  const revenue = evt?.total_sales_amount || 0
+  const totalOrders = evt?.total_orders || 0
+  const totalUnits = evt?.total_items_count || 0
+  const unitsSold = evt?.items_sold_count || 0
+
+  return [
+    {
+      label: "Total Revenue",
+      value: isMobile.value ? truncate(revenue) : format(revenue),
+      icon: "moneys-solid",
+      iconClass: "lg:text-green-700",
+      chip: totalOrders ? `${totalOrders} orders` : undefined,
+    },
+    {
+      label: "Avg Order Value",
+      value: format(totalOrders ? revenue / totalOrders : 0),
+      icon: "trend-up",
+      iconClass: "lg:text-blue-700",
+    },
+    {
+      label: "Total Products",
+      value: String(evt?.products_count || 0),
+      icon: "box",
+      iconClass: "lg:text-purple-700",
+      chip: totalUnits ? `${totalUnits} units` : undefined,
+    },
+    {
+      label: "Total Units Sold",
+      value: String(unitsSold),
+      icon: "bag-2",
+      iconClass: "lg:text-orange-700",
+      chip: totalUnits ? `${Math.round((unitsSold / totalUnits) * 100)}% of stock sold` : undefined,
+    },
+    {
+      label: "Total Customers",
+      value: String(evt?.customer_count || 0),
+      icon: "people",
+      iconClass: "lg:text-pink-700",
+    },
+  ]
+})
+
+// Mobile shows the first two metrics; "See More" opens a bottom sheet with the rest
+const showMetricsModal = ref(false)
+const visibleMetrics = computed(() => (isMobile.value ? metrics.value.slice(0, 2) : metrics.value))
+
+const canRecordActions = computed(() =>
+  ["upcoming", "active"].includes(popupEvt.value?.status || ""),
+)
+
+const goToAddProduct = () => {
+  router.replace({ query: { ...route.query, tab: "overview", action: "add-products" } })
+}
+const goToRecordSales = () => {
+  router.replace({ query: { ...route.query, tab: "sales", action: "add-sale" } })
+}
 
 const actionMenu = computed(() => {
   const actions = []
@@ -100,8 +171,6 @@ const actionMenu = computed(() => {
   return actions
 })
 
-const isMobile = useMediaQuery("(max-width: 768px)")
-
 const downloadQrCode = async () => {
   if (!popupEvt.value?.qr_code) return
   try {
@@ -137,85 +206,69 @@ const downloadQrCode = async () => {
 
   <section v-else class="flex flex-col px-4 py-4 md:px-8 md:py-6">
     <section>
-      <div
-        class="bg-primary-800 mb-6 flex gap-4 rounded-xl p-3 text-white md:gap-6 md:p-6"
-        :style="{
-          backgroundImage: `url(${popupBanner})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }"
-      >
-        <div class="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded">
-          <img
-            :src="popupEvt?.banner_image || popupEmpty"
-            alt="Popup Banner"
-            class="h-full w-full rounded object-contain"
-          />
-        </div>
-        <div class="min-w-0 flex-1">
-          <div class="mb-2 flex items-center gap-2">
-            <h3
-              class="min-w-0 flex-1 truncate text-base font-semibold capitalize md:flex-none md:text-xl"
-            >
-              {{ popupEvt?.name }}
-            </h3>
+      <!-- Header: name, status, storefront link + actions -->
+      <div class="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <h2 class="min-w-0 truncate text-xl font-semibold capitalize md:text-2xl">
+              {{ popupEvt.name }}
+            </h2>
             <Chip
-              v-if="!isMobile"
               :label="popupEvt.status"
               size="sm"
               class="flex-shrink-0 capitalize"
               show-dot
-              :color="
-                popupEvt.status === 'upcoming'
-                  ? 'primary'
-                  : popupEvt.status === 'active'
-                    ? 'success'
-                    : popupEvt.status === 'closed'
-                      ? 'error'
-                      : 'alt'
-              "
+              :color="statusColor"
             />
           </div>
-          <div class="space-y-1">
-            <p class="flex items-center gap-2 text-xs md:text-sm">
-              <Icon name="calendar" class="!h-4 !w-4 flex-shrink-0 md:h-5! md:w-4!" />
-              <span class="min-w-0 truncate">
-                {{ formatDate(popupEvt?.start_date || "") }} -
-                {{ formatDate(popupEvt?.end_date || "") }}
-              </span>
-            </p>
-            <p class="flex items-center gap-2 text-xs md:text-sm">
-              <span class="min-w-0 truncate">
-                {{ `${storefrontUrl}/events/${popupEvt?.slug}` }}
-              </span>
-              <Icon
-                name="copy"
-                size="20"
-                class="flex-shrink-0 cursor-pointer"
-                @click="clipboardCopy(`${storefrontUrl}/events/${popupEvt?.slug}`)"
-              />
-            </p>
-            <Chip
-              v-if="isMobile"
-              :label="popupEvt.status"
-              size="sm"
-              class="capitalize"
-              show-dot
-              :color="
-                popupEvt.status === 'upcoming'
-                  ? 'primary'
-                  : popupEvt.status === 'active'
-                    ? 'success'
-                    : popupEvt.status === 'closed'
-                      ? 'error'
-                      : 'alt'
-              "
+          <p class="text-core-600 mt-1.5 flex items-center gap-2 text-xs md:text-sm">
+            <span class="min-w-0 truncate">{{ popupUrl }}</span>
+            <Icon
+              name="copy"
+              size="18"
+              class="flex-shrink-0 cursor-pointer"
+              @click="clipboardCopy(popupUrl)"
             />
-          </div>
+          </p>
         </div>
 
-        <div v-if="popupEvt.status !== 'closed'" class="flex flex-shrink-0 items-start">
-          <DropdownMenu :items="actionMenu" />
+        <div class="flex flex-shrink-0 items-center gap-3">
+          <AppButton
+            v-if="canRecordActions"
+            label="Add Product"
+            icon="box-add"
+            color="alt"
+            size="sm"
+            class="flex-1 md:flex-none"
+            @click="goToAddProduct"
+          />
+          <AppButton
+            v-if="canRecordActions"
+            label="Record Sale"
+            icon="shopping-cart-outline"
+            size="sm"
+            class="flex-1 md:flex-none"
+            @click="goToRecordSales"
+          />
+          <DropdownMenu v-if="popupEvt.status !== 'closed'" :items="actionMenu" />
+        </div>
+      </div>
+
+      <!-- Popup summary metrics -->
+      <div class="mb-6">
+        <div class="mb-3 flex items-center justify-between md:hidden">
+          <h3 class="text-base font-semibold">Metrics</h3>
+          <button
+            type="button"
+            class="text-primary-700 flex cursor-pointer items-center gap-1 text-sm font-medium"
+            @click="showMetricsModal = true"
+          >
+            See More
+            <Icon name="chevron-down" size="16" />
+          </button>
+        </div>
+        <div class="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-5">
+          <StatCard v-for="metric in visibleMetrics" :key="metric.label" :stat="metric" />
         </div>
       </div>
 
@@ -233,7 +286,21 @@ const downloadQrCode = async () => {
             </div>
 
             <div class="md:sticky md:top-4 md:w-md md:flex-shrink-0">
-              <Collapsible header="Popup Details" :default-open="true">
+              <Collapsible :default-open="true">
+                <template #trigger>
+                  <div class="flex items-center justify-between bg-white px-4 py-3">
+                    <div class="flex items-center gap-2">
+                      <span
+                        class="bg-leyyow-100 flex size-10 items-center justify-center rounded-lg"
+                      >
+                        <Icon name="message-text" size="24" class="text-primary-700" />
+                      </span>
+                      <h3 class="mb-2 text-lg font-semibold md:mb-0">Popup Details</h3>
+                    </div>
+
+                    <!-- <Icon name="chevron-down" size="20" /> -->
+                  </div>
+                </template>
                 <template #body>
                   <div class="divide-core-100 divide-y">
                     <div
@@ -303,5 +370,17 @@ const downloadQrCode = async () => {
       :event="popupEvt"
       @refresh="refetch"
     />
+
+    <!-- Full metrics (mobile bottom sheet) -->
+    <Modal
+      :open="showMetricsModal"
+      variant="bottom-nav"
+      title="Metrics"
+      @close="showMetricsModal = false"
+    >
+      <div class="grid grid-cols-2 gap-3">
+        <StatCard v-for="metric in metrics" :key="metric.label" :stat="metric" />
+      </div>
+    </Modal>
   </section>
 </template>

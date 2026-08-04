@@ -8,7 +8,7 @@ import AppButton from "@components/AppButton.vue"
 import Modal from "@components/Modal.vue"
 import TextField from "@components/form/TextField.vue"
 import { useSearchProducts } from "@modules/inventory/api"
-import { useSearchRawMaterial } from "@modules/production/api"
+import { useSearchRawMaterial, useValidateRecipeName } from "@modules/production/api"
 import type { BasicDetails } from "../AddNewRecipeDrawer.vue"
 import { computed, nextTick, ref, watch } from "vue"
 import { Field, useForm } from "vee-validate"
@@ -58,7 +58,7 @@ const schema = yup.object({
   notes: yup.string().default(""),
 })
 
-const { handleSubmit, values, errors, setFieldValue, resetForm } = useForm({
+const { handleSubmit, values, errors, setFieldValue, setFieldError, resetForm } = useForm({
   validationSchema: schema,
   initialValues: {
     name: props.initialValues.name || "",
@@ -90,6 +90,53 @@ watch(
     nextTick(() => {
       isResetting = false
     })
+  },
+)
+
+// ─── Recipe name uniqueness check ────────────────────────────────────────
+const { mutateAsync: validateRecipeName, isPending: isValidatingName } = useValidateRecipeName()
+// null = not checked (empty name / unchanged in edit mode / result stale)
+const nameIsUnique = ref<boolean | null>(null)
+
+const nameExistsError = computed(
+  () => `A ${recipeSingularLabel.value.toLowerCase()} with this name already exists`,
+)
+
+// Nothing to validate: empty (optional field) or unchanged name in edit mode
+const nameNeedsCheck = computed(() => {
+  const name = String(values.name || "").trim()
+  return !!name && !(props.isEditMode && name === (props.initialValues.name || "").trim())
+})
+
+/** Runs the uniqueness check and returns whether the name may be used. */
+const checkNameIsUnique = async (): Promise<boolean> => {
+  if (!nameNeedsCheck.value) {
+    nameIsUnique.value = null
+    return true
+  }
+  try {
+    const res = await validateRecipeName(String(values.name).trim())
+    const data = res.data.data
+    nameIsUnique.value = !!data.is_unique
+    if (!data.is_unique) setFieldError("name", nameExistsError.value)
+    return !!data.is_unique
+  } catch {
+    // Couldn't verify — treat as unchecked and let the user retry
+    nameIsUnique.value = null
+    setFieldError("name", "Could not verify this name. Please try again.")
+    return false
+  }
+}
+
+const onNameBlur = () => {
+  checkNameIsUnique()
+}
+
+// A previous check no longer applies once the name changes
+watch(
+  () => values.name,
+  () => {
+    nameIsUnique.value = null
   },
 )
 
@@ -179,7 +226,17 @@ watch(
 )
 
 // ─── Submit handler ─────────────────────────────────────────────────────
-const handleNext = handleSubmit((formValues) => {
+const handleNext = handleSubmit(async (formValues) => {
+  // Block while the name uniqueness check is in flight, and never proceed on an
+  // unverified name — if it was never checked (or the check errored), run it now.
+  // handleSubmit re-runs the schema (which clears setFieldError), so re-apply it here.
+  if (isValidatingName.value) return
+  if (nameIsUnique.value === false) {
+    setFieldError("name", nameExistsError.value)
+    return
+  }
+  if (nameIsUnique.value === null && !(await checkNameIsUnique())) return
+
   const item = formValues.outputItem as ItemOption
   const unit = formValues.unit as ItemOption
   emit("next", {
@@ -249,12 +306,24 @@ const handleNext = handleSubmit((formValues) => {
       @search-change="matSearchInput = $event"
     />
 
-    <FormField
-      name="name"
-      :label="`Custom ${recipeSingularLabel} Name (optional)`"
-      placeholder="e.g. Vanila Cake"
-      :required="false"
-    />
+    <div>
+      <FormField
+        name="name"
+        :label="`Custom ${recipeSingularLabel} Name (optional)`"
+        placeholder="e.g. Vanila Cake"
+        :required="false"
+        :variant="nameIsUnique === true ? 'success' : 'default'"
+        :hint="isValidatingName ? 'Checking name availability...' : undefined"
+        @blur="onNameBlur"
+      />
+      <p
+        v-if="nameIsUnique === true && !isValidatingName"
+        class="mt-1 flex items-center gap-1 text-sm text-green-600"
+      >
+        <Icon name="tick-circle" size="16" />
+        This name is available
+      </p>
+    </div>
 
     <div v-if="values.outputItemType !== 'sub_assembly'">
       <Field v-slot="{ field, errors: fieldErrors }" name="unit">
@@ -267,7 +336,6 @@ const handleNext = handleSubmit((formValues) => {
           required
           searchable
           :error="fieldErrors[0]"
-          :hint="isEditMode ? 'Unit cannot be changed in EDIT mode' : undefined"
           @update:model-value="field.value = $event"
         >
           <template #label>
@@ -349,7 +417,12 @@ const handleNext = handleSubmit((formValues) => {
     >
       <div class="grid grid-cols-2 gap-3">
         <AppButton label="Back" color="alt" icon="arrow-left" @click="emit('close')" />
-        <AppButton label="Next" type="submit" />
+        <AppButton
+          label="Next"
+          type="submit"
+          :loading="isValidatingName"
+          :disabled="isValidatingName || nameIsUnique === false"
+        />
       </div>
     </div>
 

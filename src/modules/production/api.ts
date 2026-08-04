@@ -177,6 +177,16 @@ export function useUpdateRecipe() {
   })
 }
 
+/** Validate recipe name uniqueness (GET, but exposed as a mutation so it can be fired imperatively, e.g. on blur) */
+export function useValidateRecipeName() {
+  return useMutation({
+    mutationFn: (name: string) =>
+      baseApi.get<{ data: { is_unique: boolean } }>(`/recipes/validate-name/`, {
+        params: { name },
+      }),
+  })
+}
+
 export function useCreateRecipe() {
   return useMutation({
     mutationFn: (body: IRecipePayload) => baseApi.post(`/recipes/`, body),

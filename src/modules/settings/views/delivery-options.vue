@@ -19,6 +19,7 @@ import ManageShipBubbleModal from "@modules/shared/components/ManageShipBubbleMo
 import ManageManualDeliveryModal from "@modules/shared/components/ManageManualDeliveryModal.vue"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
+import { useWalkthroughStore } from "@modules/announcements/store"
 
 import { computed, ref, watch } from "vue"
 
@@ -36,6 +37,11 @@ const originalValues = ref({
 })
 
 const openPickup = ref(false)
+const walkthrough = useWalkthroughStore()
+// Whether the pickup modal completed a successful save (it emits `refresh`
+// only on success). Pickup may only stay enabled after a save, which requires
+// a pickup location and at least one active pickup day.
+const pickupSaved = ref(false)
 const openDelivery = ref(false)
 const openNewDelivery = ref(false)
 const openManualDelivery = ref(false)
@@ -53,6 +59,27 @@ const storeSlug = computed(
   () => useSettingsStore().storeDetails?.slug || useAuthStore().user?.store_slug || "",
 )
 const storeUid = computed(() => useAuthStore().user?.store_uid || "")
+const userUid = computed(() => useAuthStore().user?.uid || "")
+
+const startPickupTutorial = () => {
+  if (!userUid.value) return
+  walkthrough.markReleaseSeen(userUid.value)
+  walkthrough.start("pickup-times", userUid.value)
+  openPickup.value = true
+}
+
+const handlePickupSaved = () => {
+  pickupSaved.value = true
+  walkthrough.report("pickup-settings-saved")
+}
+
+watch(
+  () => [walkthrough.activeId, walkthrough.activeProgress?.stepIndex] as const,
+  ([id]) => {
+    if (id === "pickup-times") openPickup.value = true
+  },
+  { immediate: true },
+)
 
 const {
   data: liveStatus,
@@ -246,8 +273,19 @@ const openManualDeliveryModal = (mode: "manual" | "express") => {
 
 // Watch pickup modal to refetch store details when it closes
 watch(openPickup, (newOpen, oldOpen) => {
+  if (oldOpen === false && newOpen === true) {
+    pickupSaved.value = false
+  }
   if (oldOpen === true && newOpen === false) {
+    // Closing the modal without saving must not leave the pickup toggle on —
+    // revert it to its persisted state (a save flips it via the refetch below).
+    if (!pickupSaved.value) {
+      form.value.allow_pickup = originalValues.value.allow_pickup
+    }
     refetchStoreDetails()
+    // "Manage address" is driven by the live-status payload, so refresh it too
+    // or a newly saved pickup location won't surface the link.
+    refetchLiveStatus()
   }
 })
 
@@ -322,7 +360,18 @@ const handleRefresh = () => {
         title="Delivery Options"
         size="sm"
         subtitle="Manage how your orders are fulfilled—pickup, delivery, or a mix of both."
-      />
+      >
+        <template #action>
+          <AppButton
+            label="Tutorial"
+            icon="info-circle"
+            size="sm"
+            color="alt"
+            variant="outlined"
+            @click="startPickupTutorial"
+          />
+        </template>
+      </SectionHeader>
 
       <div class="border-core-100 mt-6 rounded-2xl border bg-white">
         <div class="grid gap-10 p-4 md:p-6">
@@ -345,7 +394,7 @@ const handleRefresh = () => {
                     class="text-primary-600 hidden text-sm underline md:block"
                     @click="openPickup = true"
                   >
-                    Manage address
+                    Manage pickup settings
                   </button>
                 </h3>
                 <p class="text-core-600 text-sm">
@@ -357,7 +406,7 @@ const handleRefresh = () => {
                   class="text-primary-600 block text-sm font-semibold underline md:hidden"
                   @click="openPickup = true"
                 >
-                  Manage address
+                  Manage pickup settings
                 </button>
               </div>
               <Switch
@@ -615,7 +664,7 @@ const handleRefresh = () => {
       </div>
     </section>
 
-    <ConfigurePickupModal v-model="openPickup" />
+    <ConfigurePickupModal v-model="openPickup" @refresh="handlePickupSaved" />
     <ManageShipBubbleModal v-model="openDelivery" />
     <ConfigureDeliveryModal v-model="openNewDelivery" @refresh="handleRefresh" />
     <ManageManualDeliveryModal

@@ -136,8 +136,12 @@ export interface ICreateMaterialPayload {
 export interface IAdjustStockPayload {
   movement_type: "add" | "remove"
   quantity: number
+  unit_cost?: number | null
   reason: string
   notes?: string
+  expiry_date?: string
+  /** Add-stock purchases only: also record the purchase as an expense */
+  create_expense?: boolean
 }
 
 // ======= Recipes submodule ========

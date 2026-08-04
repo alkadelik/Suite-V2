@@ -294,6 +294,7 @@ watch(
 
       <ConfirmationModal
         :model-value="!!showDisableModal"
+        @update:model-value="() => (showDisableModal = null)"
         :loading="isUpdating"
         :header="`${capitalize(showDisableModal || '')} ${recipeLabel}`"
         :paragraph="`Are you sure you want to ${showDisableModal} this ${recipeLabel.toLowerCase()}?  `"

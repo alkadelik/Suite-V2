@@ -46,11 +46,21 @@
               <span class="text-core-800 order-1 text-base font-semibold md:order-2">
                 {{ day.label }}
               </span>
-              <Switch v-model="day.enabled" class="order-2 md:order-1" />
+              <Switch
+                v-model="day.enabled"
+                class="order-2 md:order-1"
+                :data-walkthrough="day.dayOfWeek === 0 ? 'pickup-day-toggle' : undefined"
+              />
             </div>
 
             <!-- Times when enabled -->
-            <div v-if="day.enabled" class="grid grid-cols-2 gap-3 md:flex md:gap-3">
+            <div
+              v-if="day.enabled"
+              class="grid grid-cols-2 gap-3 md:flex md:gap-3"
+              :data-walkthrough="
+                day.dayOfWeek === firstEnabledDay ? 'pickup-time-range' : undefined
+              "
+            >
               <TimeField label="From" v-model="day.from" class="md:min-w-[150px]" />
               <TimeField label="To" v-model="day.to" class="md:min-w-[150px]" />
             </div>
@@ -64,6 +74,10 @@
               <span class="text-sm text-gray-400">Closed</span>
             </div>
           </div>
+
+          <p v-if="!hasActiveDay" class="text-error-600 text-sm">
+            Enable at least one pickup day to turn on pickups.
+          </p>
         </div>
 
         <div class="flex justify-end">
@@ -71,8 +85,9 @@
             type="submit"
             label="Save Settings"
             :loading="saving"
-            :disabled="saving || !pickup_location"
+            :disabled="saving || !pickup_location || !hasActiveDay"
             class="w-full md:w-40"
+            data-walkthrough="pickup-save"
             @click="onSubmit"
           />
         </div>
@@ -82,7 +97,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from "vue"
+import { computed, ref, watch } from "vue"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 import AppButton from "@/components/AppButton.vue"
@@ -203,6 +218,10 @@ watch([schedulesData, storeDetails], () => {
   if (props.modelValue) hydrate()
 })
 
+// Pickups require at least one active pickup day (plus a pickup location).
+const hasActiveDay = computed(() => days.value.some((day) => day.enabled))
+const firstEnabledDay = computed(() => days.value.find((day) => day.enabled)?.dayOfWeek ?? -1)
+
 const isDayChanged = (day: DaySchedule): boolean => {
   const original = loadedSchedules.value[day.uid]
   return (
@@ -214,6 +233,11 @@ const isDayChanged = (day: DaySchedule): boolean => {
 }
 
 const onSubmit = async () => {
+  if (!hasActiveDay.value) {
+    toast.error("Enable at least one pickup day to turn on pickups.")
+    return
+  }
+
   saving.value = true
   try {
     // 1. Pickup address lives on the store record.

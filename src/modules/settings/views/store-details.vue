@@ -220,9 +220,12 @@ const INDUSTRIES = computed(() => {
                 Store Slug <span class="text-red-500">*</span>
                 <Icon
                   v-if="isSlugLockedByCustomDomain"
-                  v-tooltip="
-                    'This cannot be edited because your store slug is overridden by your custom domain'
-                  "
+                  v-tooltip="{
+                    content:
+                      'This cannot be edited because your store slug is overridden by your custom domain',
+                    // Match the field label size (text-sm)
+                    popperClass: 'text-sm',
+                  }"
                   name="info-circle"
                   size="14"
                   class="cursor-pointer text-gray-400"

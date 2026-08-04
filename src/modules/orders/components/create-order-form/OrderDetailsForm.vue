@@ -5,7 +5,6 @@ import TextField from "@components/form/TextField.vue"
 import PhoneInput from "@components/form/PhoneInput.vue"
 import SelectField from "@components/form/SelectField.vue"
 import RadioInputField from "@components/form/RadioInputField.vue"
-import GooglePlacesAutocomplete from "@components/GooglePlacesAutocomplete.vue"
 import FieldGroupError from "@components/form/FieldGroupError.vue"
 import Icon from "@components/Icon.vue"
 import Chip from "@components/Chip.vue"
@@ -143,10 +142,17 @@ const MANUAL_DELIVERY_LOCATIONS = computed(
     })) ?? [],
 )
 
+const isAnonymousCustomer = computed(() => props.customer?.uid === anonymousCustomer.uid)
+
 const DELIVERY_METHOD_OPTIONS = computed(() =>
   [
     { label: "Manual", value: "manual", description: "Select your delivery location" },
-    { label: "Shipbubble", value: "shipbubble", description: "" },
+    {
+      label: "Shipbubble",
+      value: "shipbubble",
+      description: "",
+      disabled: isAnonymousCustomer.value,
+    },
     { label: "Custom", value: "custom", description: "GIG, Bolt, Gokada, etc" },
   ].filter((x) => {
     const { shipping_account, delivery_enabled, manual_delivery_enabled } =
@@ -336,7 +342,10 @@ const validateFetchRates = async (): Promise<boolean> => {
       {
         customer_phone: shippingInfo.value.customer_phone,
         customer_email: shippingInfo.value.customer_email,
-        delivery_address: shippingInfo.value.delivery_address,
+        delivery_address:
+          typeof shippingInfo.value.delivery_address === "string"
+            ? shippingInfo.value.delivery_address
+            : shippingInfo.value.delivery_address?.label || "",
       },
       { abortEarly: false },
     )
@@ -419,7 +428,6 @@ const canProceedShipping = computed(() => {
 
 // ─── Shipbubble rates ────────────────────────────────────────────────────────
 const shipBubbleRates = ref<{ couriers: IShippingCourier[] }>({ couriers: [] })
-const delivery_address = ref(shippingInfo.value.delivery_address || "")
 const { mutate: getShippingRates, isPending: isGettingRates } = useGetShippingRates()
 
 const fetchShippingRates = async () => {
@@ -533,6 +541,21 @@ watch(
     } else {
       updateShipping("customer_email", "")
       updateShipping("customer_phone", "")
+    }
+  },
+  { immediate: true },
+)
+
+// Anonymous customers can't use Shipbubble (no one to deliver to) and don't need
+// a delivery address — move them off shipbubble and clear any stale address.
+watch(
+  [isAnonymousCustomer, localDeliveryMethod],
+  ([anon, method]) => {
+    if (!anon) return
+    if (shippingInfo.value.delivery_address) updateShipping("delivery_address", null)
+    if (method === "shipbubble") {
+      const fallback = DELIVERY_METHOD_OPTIONS.value.find((o) => o.value !== "shipbubble")?.value
+      localDeliveryMethod.value = (fallback ?? "custom") as ShippingInfo["delivery_method"]
     }
   },
   { immediate: true },
@@ -874,6 +897,17 @@ const handleSave = async () => {
                 </RadioInputField>
               </div>
 
+              <div
+                v-if="
+                  isAnonymousCustomer &&
+                  DELIVERY_METHOD_OPTIONS.some((o) => o.value === 'shipbubble')
+                "
+                class="flex items-start gap-2 rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600"
+              >
+                <Icon name="info-circle" size="16" class="mt-0.5 shrink-0" />
+                <span> Shipbubble is unavailable for Unknown customers. </span>
+              </div>
+
               <!-- Manual delivery location -->
               <template v-if="localDeliveryMethod === 'manual'">
                 <RadioInputField
@@ -944,21 +978,42 @@ const handleSave = async () => {
                     :error="shippingRateErrors.email"
                     required
                   />
-                  <GooglePlacesAutocomplete
+                  <SelectField
                     name="delivery_address"
                     label="Delivery Address"
-                    placeholder="Enter delivery address"
-                    :modelValue="delivery_address"
-                    @update:modelValue="delivery_address = $event"
-                    @selected="
-                      (item: any) => {
-                        updateShipping('delivery_address', item.description)
+                    placeholder="Select an address"
+                    :options="CUSTOMER_ADDRESSES"
+                    value-key="value"
+                    label-key="label"
+                    :model-value="shippingInfo.delivery_address"
+                    :error="shippingRateErrors.address"
+                    @update:model-value="
+                      (value) => {
+                        updateShipping(
+                          'delivery_address',
+                          value as { label: string; value: string },
+                        )
                         shippingRateErrors.address = ''
                       }
                     "
-                    :error="shippingRateErrors.address"
-                    required
-                  />
+                  >
+                    <template #prepend="{ close }">
+                      <div
+                        class="hover:bg-core-25 cursor-pointer border-b border-gray-200 px-4 py-2 text-sm transition-colors duration-150"
+                        @click="
+                          () => {
+                            close()
+                            emit('openAddAddress')
+                          }
+                        "
+                      >
+                        <div class="flex items-center justify-between">
+                          <span class="text-primary-600 font-semibold">Add New Address</span>
+                          <Icon name="add" class="text-primary-600 h-4 w-4" />
+                        </div>
+                      </div>
+                    </template>
+                  </SelectField>
                   <div class="flex justify-end">
                     <AppButton
                       label="Fetch Rates"
@@ -1149,7 +1204,14 @@ const handleSave = async () => {
                   (localDeliveryMethod === 'manual' || localDeliveryMethod === 'custom'))
               "
             >
-              <Field v-slot="{ field, errors: fieldErrors }" name="delivery_address">
+              <div
+                v-if="isAnonymousCustomer"
+                class="flex items-start gap-2 rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600"
+              >
+                <Icon name="info-circle" size="16" class="mt-0.5 shrink-0" />
+                <span> No delivery address needed for Unknown customers. </span>
+              </div>
+              <Field v-else v-slot="{ field, errors: fieldErrors }" name="delivery_address">
                 <SelectField
                   v-bind="field"
                   :model-value="shippingInfo.delivery_address"
