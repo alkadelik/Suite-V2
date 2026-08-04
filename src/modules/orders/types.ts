@@ -19,11 +19,19 @@ export type TOrderItem = {
   product_images?: { image: string }[]
 }
 
+export type TOrderCourier = {
+  name: string
+  email?: string
+  phone?: string
+  courier_name?: string
+  courier_image?: string
+}
+
 export type TOrder = {
   uid: string
   order_number: string
   coupon: string | null
-  courier: string
+  courier: TOrderCourier | string
   courier_name?: string
   created_at: string
   order_date: string
@@ -275,13 +283,7 @@ export type TShipmentRow = {
   uid: string
   order_number: string
   customer_name: string
-  courier: {
-    name: string
-    email?: string
-    phone?: string
-    courier_name?: string
-    courier_image?: string
-  } | null
+  courier: TOrderCourier | null
   fee: string | number
   amount: string | number
   date: string
