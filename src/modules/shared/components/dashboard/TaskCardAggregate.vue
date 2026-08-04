@@ -1,7 +1,10 @@
 <template>
   <div class="overflow-hidden rounded-2xl border bg-white" :class="borderClass">
-    <!-- tone header -->
-    <div class="flex items-start justify-between gap-3 px-4 py-4 md:px-5" :class="headerBgClass">
+    <!-- tone header (with a colored bottom divider into the rows) -->
+    <div
+      class="flex items-start justify-between gap-3 border-b px-4 py-4 md:px-5"
+      :class="headerBgClass"
+    >
       <div class="min-w-0">
         <div class="flex flex-wrap items-center gap-2">
           <h3 class="text-core-900 font-sato text-base font-bold md:text-lg">{{ task.title }}</h3>
@@ -82,7 +85,9 @@ const borderClass = computed(() =>
   props.task.tone === "danger" ? "border-error-200" : "border-warning-300",
 )
 const headerBgClass = computed(() =>
-  props.task.tone === "danger" ? "bg-error-50" : "bg-warning-50",
+  props.task.tone === "danger"
+    ? "bg-error-50 border-error-200"
+    : "bg-warning-50 border-warning-300",
 )
 
 function onRowAction(row: ITaskRow) {

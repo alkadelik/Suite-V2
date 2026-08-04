@@ -3,8 +3,10 @@
     <!-- Mobile page header (reuses the app-wide PageHeader like Inventory et al.) -->
     <PageHeader title="Health Center" />
 
-    <div class="px-4 py-5 md:p-6">
-      <div class="mx-auto w-full max-w-[1240px] space-y-6">
+    <div class="p-4 pt-5 md:pt-4">
+      <div class="space-y-6">
+        <!-- <div class="px-4 py-5 md:p-6">
+      <div class="mx-auto w-full max-w-[1240px] space-y-6"> -->
         <!-- Full-width top section -->
         <DashboardGreeting
           :first-name="worklist?.firstName"
@@ -35,8 +37,8 @@
             <AwarenessRail class="xl:hidden" />
           </div>
 
-          <!-- Desktop rail -->
-          <AwarenessRail class="hidden shrink-0 xl:block xl:w-[340px]" />
+          <!-- Desktop rail: ~30% width, sticky so it stays in view while the worklist scrolls -->
+          <AwarenessRail class="hidden shrink-0 xl:sticky xl:top-4 xl:block xl:w-[32%]" />
         </div>
       </div>
     </div>

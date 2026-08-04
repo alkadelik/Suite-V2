@@ -1,6 +1,6 @@
 <template>
-  <section>
-    <div class="mb-3 flex items-center gap-2">
+  <section class="rounded-2xl border border-gray-200 bg-white p-4 md:p-5">
+    <div class="mb-4 flex items-center gap-2">
       <h2 class="text-core-800 font-sato text-base font-semibold">Today's Worklist</h2>
       <Chip
         v-if="!loading"
