@@ -719,7 +719,7 @@ const handleAddFromSearch = (search: string, close: () => void) => {
               </div>
             </section>
 
-            <div v-if="!isEditMode">
+            <template v-if="!isEditMode">
               <FormField
                 name="qty_in_stock"
                 label="Quantity in Stock"
@@ -728,9 +728,7 @@ const handleAddFromSearch = (search: string, close: () => void) => {
                 required
                 type="decimal"
               />
-            </div>
 
-            <div v-if="mode !== 'edit'">
               <FormField
                 v-if="+values.qty_in_stock > 0"
                 type="number"
@@ -742,7 +740,16 @@ const handleAddFromSearch = (search: string, close: () => void) => {
                 placeholder="e.g. 25"
                 required
               />
-            </div>
+
+              <FormField
+                v-if="+values.qty_in_stock > 0"
+                type="date"
+                name="expiry_date"
+                label="Estimated Expiry Date"
+                placeholder="Select expiry date"
+                :hint="`Leave empty if this ${materialSingular} does not expire`"
+              />
+            </template>
           </form>
         </div>
 
@@ -804,15 +811,6 @@ const handleAddFromSearch = (search: string, close: () => void) => {
                   </template>
                 </SelectField>
               </Field>
-            </div>
-
-            <div>
-              <FormField
-                type="date"
-                name="expiry_date"
-                label="Expiry Date (optional)"
-                placeholder="Select expiry date"
-              />
             </div>
 
             <div>
