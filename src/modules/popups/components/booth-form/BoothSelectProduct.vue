@@ -161,7 +161,7 @@ watch(
           class="shrink-0"
           @click="currentViewMode = currentViewMode === 'grid' ? 'list' : 'grid'"
         />
-        <AppButton icon="add" class="flex-shrink-0" @click="showAdd = true" />
+        <AppButton icon="box-add" class="flex-shrink-0" @click="showAdd = true" />
       </div>
     </div>
 
