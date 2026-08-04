@@ -284,6 +284,19 @@ watch(rowSelection, (newVal) => {
   emit("row-selection-change", selected)
 })
 
+// Selection state lives in here, so parents driving bulk actions need handles to
+// reset it (e.g. clearing the checkboxes once a bulk update succeeds). Both go
+// through the table API, so `row-selection-change` fires just like a user click.
+function clearRowSelection(): void {
+  table.value.resetRowSelection()
+}
+
+function selectAllRows(): void {
+  table.value.toggleAllRowsSelected(true)
+}
+
+defineExpose({ clearRowSelection, selectAllRows })
+
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 
 // Computed property for pagination pages

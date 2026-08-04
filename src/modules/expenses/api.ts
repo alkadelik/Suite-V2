@@ -91,7 +91,8 @@ export function useEditExpense() {
 /** Mark multiple expenses as paid in one action */
 export function useBulkCompleteExpenses() {
   return useMutation({
-    mutationFn: (payload: { items: string[] }) => baseApi.post("/expenses/mark-paid/", payload),
+    mutationFn: (payload: { expense_uids: string[] }) =>
+      baseApi.post("/expenses/mark-paid/", payload),
   })
 }
 

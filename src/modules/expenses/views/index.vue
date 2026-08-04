@@ -165,11 +165,13 @@ const computedParams = computed(() => {
   return params
 })
 
-// Switching tabs restarts pagination and drops filters, search and selection
+// Switching tabs restarts pagination and drops filters, search and selection.
+// The table owns the checkboxes, so clear there and let it emit the empty selection.
 watch(activeTab, () => {
   page.value = 1
   activeFilters.value = {}
   searchQuery.value = ""
+  dataTableRef.value?.clearRowSelection()
   selectedPayables.value = []
 })
 
@@ -186,7 +188,7 @@ const { mutate: bulkCompleteExpenses, isPending: isBulkCompleting } = useBulkCom
 const handleBulkMarkPaid = () => {
   const count = selectedPayables.value.length
   bulkCompleteExpenses(
-    { items: selectedPayables.value.map((expense) => expense.uid) },
+    { expense_uids: selectedPayables.value.map((expense) => expense.uid) },
     {
       onSuccess: () => {
         toast.success(`${count} expense${count === 1 ? "" : "s"} marked as paid`)
