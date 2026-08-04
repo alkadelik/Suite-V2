@@ -1,12 +1,5 @@
 <template>
   <div class="bg-white lg:bg-gray-50">
-    <!-- Mobile overlay -->
-    <!-- <div
-        v-if="isMobile && mobileSidebarOpen"
-        class="fixed inset-0 z-30 bg-black/40 lg:hidden"
-        @click="mobileSidebarOpen = false"
-      /> -->
-
     <div class="flex h-[100dvh] overflow-hidden lg:h-screen">
       <!-- Sidebar -->
       <AppSidebar
@@ -19,7 +12,7 @@
       <div
         :class="[
           'flex h-full flex-1 flex-col overflow-hidden transition-all duration-200',
-          showAppHeader || isInner ? 'pt-14' : 'pt-20',
+          showAppHeader || isInner ? 'pt-14' : 'pt-16',
           sidebarPadding,
           isMobile && !showAppHeader && isInner ? 'pb-0' : 'pb-16 lg:pb-2',
         ]"
@@ -45,7 +38,7 @@
             (isMobile && !showAppHeader && !isInner) || (isMobile && $route.path === '/dashboard')
           "
           class="fixed right-0 bottom-0 left-0 max-h-16 border-t border-gray-200 bg-white"
-          :class="openMore || openActions ? 'z-[1500]' : 'z-30'"
+          :class="openMore || openActions ? 'z-[1000]' : 'z-30'"
         >
           <div class="flex items-center justify-around px-2 py-2">
             <SidebarLink icon="house" label="Home" to="/dashboard" @click="openMore = false" />
@@ -82,7 +75,7 @@
         </nav>
 
         <!-- FAB -->
-        <div v-if="!isMobile" class="fixed right-4 bottom-4 z-[50] hidden lg:inline-block">
+        <div v-if="showDesktopFab" class="fixed right-4 bottom-4 z-[50] hidden lg:inline-block">
           <DropdownMenu :items="actionMenuItems">
             <template #trigger="{ open }">
               <AppButton
@@ -101,8 +94,6 @@
   <LogoutModal :open="logout" @close="logout = false" />
 
   <template v-if="!isInternational">
-    <PlansModal :model-value="showPlans" @update:model-value="(val) => setPlanUpgradeModal(val)" />
-
     <TrialActivationModal
       :open="openTrial"
       :subscription="profile?.subscription || null"
@@ -117,7 +108,7 @@
     @refresh="handleLocationRefresh"
   />
 
-  <MobileMenuDrawer :open="openMore" @close="openMore = false" />
+  <MobileMenuDrawer v-if="isMobile" :open="openMore" @close="openMore = false" />
 
   <MobileQuickActionsModal :open="openActions" @close="openActions = false" />
 
@@ -126,7 +117,7 @@
     v-model="confirmSwitch"
     header="Switch Location?"
     :paragraph="`Are you sure you want to switch to ${pendingLocation?.name?.toUpperCase()}? This will reload the page.`"
-    info-message="You can reverse this action later by switching to another location."
+    info-message=""
     action-label="Switch Location"
     :loading="false"
     @confirm="confirmLocationSwitch"
@@ -163,7 +154,6 @@ import {
   updateProductAttributeOptions,
 } from "@modules/inventory/constants"
 import { ICategoriesApiResponse, IProductAttributesApiResponse } from "@modules/inventory/types"
-import PlansModal from "@modules/settings/components/PlansModal.vue"
 import AddLocationModal from "@modules/settings/components/AddLocationModal.vue"
 import TrialActivationModal from "@modules/shared/components/TrialActivationModal.vue"
 import MobileMenuDrawer from "./parts/MobileMenuDrawer.vue"
@@ -178,12 +168,15 @@ import {
   useMarkNotificationAsRead,
 } from "@modules/shared/api"
 import type { INotification } from "@modules/shared/types"
+import { toast } from "@/composables/useToast.ts"
+import { startCase } from "@/utils/format-strings.ts"
+import { usePremiumAccess } from "@/composables/usePremiumAccess.ts"
+import { useProductionStore } from "@modules/production/store.ts"
 // import WhatsNewModal from "@components/WhatsNewModal.vue"
 const isMobile = useMediaQuery("(max-width: 1024px)")
 
 const mobileSidebarOpen = ref(false)
 const logout = ref(false)
-const openMore = ref(false)
 const openActions = ref(false)
 const showNotification = ref(false)
 // const whatNew = ref(true)
@@ -249,7 +242,11 @@ const showAppHeader = computed(() => {
   return !hide || !isMobile.value
 })
 
-const isInner = computed(() => !!route.params.id)
+const isInner = computed(() => !!route.params.id || route.path.endsWith("/add"))
+
+const showDesktopFab = computed(() => {
+  return !isMobile.value && !isInner.value
+})
 
 const MENU_ITEMS = computed(() => {
   const allSuites = [
@@ -263,14 +260,25 @@ const MENU_ITEMS = computed(() => {
   return allSuites.filter((suite) => !suite.hqOnly || isHQ.value)
 })
 
+const { checkPremiumAccess } = usePremiumAccess()
+const materialSingular = computed(() => useProductionStore().componentSingular)
+const recipeSingularLabel = computed(() => useProductionStore().recipeSingularLabel)
+
 const actionMenuItems = computed(() => {
+  const onNavigate = (path: string, skipPremiumCheck?: boolean) => {
+    if (!skipPremiumCheck && !checkPremiumAccess()) return
+    if (!path.startsWith("/"))
+      return toast.info("This module is coming soon!", { title: "Discounts" })
+    router.push(path)
+  }
+
   const allActions = [
     {
       label: "Add a product",
       icon: "box",
       class: "!bg-blue-50 !text-blue-700 mb-1",
       iconClass: "!text-blue-700",
-      action: () => router.push("/inventory?create=true"),
+      action: () => onNavigate("/inventory?create=true"),
       hqOnly: true,
     },
     {
@@ -278,14 +286,14 @@ const actionMenuItems = computed(() => {
       icon: "bag",
       class: "!bg-green-50 !text-green-700 mb-1",
       iconClass: "!text-green-700",
-      action: () => router.push("/orders?create=true"),
+      action: () => onNavigate("/orders?create=true"),
     },
     {
       label: "Create popup",
       icon: "calendar-tick",
       class: "!bg-purple-50 !text-purple-700 mb-1",
       iconClass: "!text-purple-700",
-      action: () => router.push("/popups?create=true"),
+      action: () => onNavigate("/popups?create=true"),
       hqOnly: true,
     },
     {
@@ -293,30 +301,70 @@ const actionMenuItems = computed(() => {
       icon: "profile-add",
       class: "!bg-primary-50 !text-primary-700 mb-1",
       iconClass: "!text-primary-700",
-      action: () => router.push("/customers?create=true"),
+      action: () => onNavigate("/customers?create=true"),
     },
     {
       label: "Record expense",
       icon: "receipt-add",
       class: "!bg-pink-50 !text-pink-700",
       iconClass: "!text-primary-700",
-      action: () => {
-        router.push("/expenses?create=true")
-      },
+      action: () => onNavigate("/expenses?create=true"),
+    },
+    {
+      label: "Add discount",
+      icon: "tag-2-filled",
+      class: "!bg-primary-50 !text-primary-800",
+      iconClass: "!text-primary-700",
+      action: () => onNavigate("Discount"),
+      hqOnly: true,
+    },
+    {
+      label: `Add ${startCase(materialSingular.value)}`,
+      icon: "document-normal-filled",
+      class: "!bg-warning-50 !text-warning-800",
+      iconClass: "!text-primary-700",
+      action: () => onNavigate("/production/raw-materials?create=true", true),
+      hqOnly: true,
+    },
+    {
+      label: `Add ${startCase(recipeSingularLabel.value)}`,
+      icon: "clipboard-text-filled",
+      class: "!bg-core-25 !text-[#432A1E]",
+      iconClass: "!text-primary-700",
+      action: () => onNavigate("/production/recipes?create=true"),
+      hqOnly: true,
+    },
+    {
+      label: "Add Run",
+      icon: "chart-filled",
+      class: "!bg-error-50 !text-error-800",
+      iconClass: "!text-primary-700",
+      action: () => onNavigate("/production/runs?create=true"),
+      hqOnly: true,
     },
   ]
 
   return allActions.filter((action) => !action.hqOnly || isHQ.value)
 })
 
-const { setPlanUpgradeModal, setAddLocationModal, setLocationForEdit, setLiveStatus } =
-  useSettingsStore()
+const settingsStore = useSettingsStore()
+const {
+  setPlanUpgradeModal,
+  setAddLocationModal,
+  setLocationForEdit,
+  setLiveStatus,
+  setMobileMenu,
+} = settingsStore
+
+const openMore = computed({
+  get: () => settingsStore.showMobileMenu,
+  set: (val) => setMobileMenu(val),
+})
 const { updateAuthUser } = useAuthStore()
 
 const { data: categories } = useGetCategories()
 const { data: attributes } = useGetAttributes()
 const { data: profile } = useGetProfile()
-const showPlans = computed(() => useSettingsStore().showPlanUpgradeModal)
 const isInternational = computed(() => useSettingsStore().isInternational)
 const showAddLocationModal = computed(() => useSettingsStore().showAddLocationModal)
 const locationForEdit = computed(() => useSettingsStore().locationForEdit)
@@ -328,7 +376,11 @@ const handleLocationRefresh = () => {
   setAddLocationModal(false)
   setLocationForEdit(null)
 }
-const storeSlug = useAuthStore().user?.store_slug || ""
+// Prefer the live storeDetails slug (refreshed after a slug edit) over the
+// persisted auth snapshot, so live-status isn't polled with a stale slug.
+const storeSlug = computed(
+  () => useSettingsStore().storeDetails?.slug || useAuthStore().user?.store_slug || "",
+)
 const { data: liveStatusData } = useGetLiveStatus(storeSlug)
 
 const storeUid = computed(() => useAuthStore().user?.store_uid || "")

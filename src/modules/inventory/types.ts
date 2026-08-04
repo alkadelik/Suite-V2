@@ -45,6 +45,12 @@ export type TProduct = {
   memo_count: number
   return_count: number
   is_best_seller?: boolean
+  /**
+   * Units of this product's inventory currently committed to popups (HQ only).
+   * Used to render a "N in Popups" pill on the products list. Optional because
+   * it is only present when the list endpoint returns popup data.
+   */
+  popup_quantity_taken?: number
 }
 
 // Detailed product type (used in single product view/edit)
@@ -429,6 +435,8 @@ export interface IAddStockPayload {
   unit_cost: string
   reference?: string
   note: string
+  /** Record this stock purchase as an expense (backend defaults to false when omitted) */
+  create_expense: boolean
 }
 
 // Reduce stock payload

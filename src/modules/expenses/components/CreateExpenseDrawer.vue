@@ -7,7 +7,6 @@ import SelectField from "@components/form/SelectField.vue"
 import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
 import Modal from "@components/Modal.vue"
-import { useMediaQuery } from "@vueuse/core"
 import { Field } from "vee-validate"
 import {
   useCreateExpense,
@@ -99,8 +98,6 @@ const hasSubCategories = computed(() => {
   return (category?.sub_categories?.length ?? 0) > 0
 })
 
-const isMobile = useMediaQuery("(max-width: 1028px)")
-
 interface FormValues {
   name: string
   amount: string
@@ -122,7 +119,9 @@ const { handleSubmit, resetForm, values, setFieldValue } = useForm<FormValues>({
         .min(3, "Name must be at least 3 characters"),
       amount: yup
         .number()
-        .transform((value, originalValue) => (originalValue === "" ? undefined : value))
+        .transform((_, originalValue) =>
+          originalValue === "" ? undefined : Number(String(originalValue).replace(/,/g, "")),
+        )
         .typeError("Amount must be a number")
         .required("Amount is required")
         .positive("Amount must be greater than 0"),
@@ -341,12 +340,10 @@ const handleAddFromSearch = (search: string, close: () => void) => {
 </script>
 
 <template>
-  <component
-    :is="isMobile ? Modal : Drawer"
+  <Drawer
     :open="open"
     :title="isEditMode ? 'Edit Expense' : 'Create Expense'"
     max-width="2xl"
-    variant="fullscreen"
     @close="emit('close')"
   >
     <div>
@@ -557,5 +554,5 @@ const handleAddFromSearch = (search: string, close: () => void) => {
         </div>
       </template>
     </Modal>
-  </component>
+  </Drawer>
 </template>

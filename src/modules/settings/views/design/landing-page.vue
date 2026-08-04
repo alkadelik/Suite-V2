@@ -339,10 +339,10 @@
     <ConfirmationModal
       v-model="showHideConfirmation"
       variant="warning"
-      :header="`${sectionToHideVisibility ? 'Hide' : 'Unhide'} ${sectionToHideLabel} Section`"
-      :paragraph="`Are you sure you want to ${sectionToHideVisibility ? 'hide' : 'unhide'} the '${sectionToHideLabel}' section on your landing page?.`"
-      :info-message="`You can ${sectionToHideVisibility ? 'unhide' : 'hide'} this section later from the settings.`"
-      :action-label="sectionToHideVisibility ? 'Hide Section' : 'Unhide Section'"
+      :header="`${sectionToHideVisibility ? 'Hide' : 'Show'} ${sectionToHideLabel} Section`"
+      :paragraph="`Are you sure you want to ${sectionToHideVisibility ? 'hide' : 'show'} the '${sectionToHideLabel}' section on your landing page?.`"
+      :info-message="`You can ${sectionToHideVisibility ? 'show' : 'hide'} this section later from the settings.`"
+      :action-label="sectionToHideVisibility ? 'Hide Section' : 'Show Section'"
       :loading="isHiding"
       @confirm="confirmHideSection"
     />
@@ -560,7 +560,7 @@ const confirmHideSection = (): void => {
 
   updateLandingPageItemsOrder(payload, {
     onSuccess: () => {
-      toast.success("Section hidden successfully")
+      toast.success(`Section ${sectionToHide.is_visible ? "hidden" : "shown"} successfully`)
       // optimally hide section
       sectionToHide.is_visible = !sectionToHide.is_visible
       isHiding.value = false

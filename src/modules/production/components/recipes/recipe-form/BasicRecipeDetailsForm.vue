@@ -5,18 +5,28 @@ import SelectField from "@components/form/SelectField.vue"
 import FormField from "@components/form/FormField.vue"
 import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
-import { useSearchProductCatalogs } from "@modules/inventory/api"
-import { useSearchRawMaterial } from "@modules/production/api"
+import Modal from "@components/Modal.vue"
+import TextField from "@components/form/TextField.vue"
+import { useSearchProducts } from "@modules/inventory/api"
+import { useSearchRawMaterial, useValidateRecipeName } from "@modules/production/api"
 import type { BasicDetails } from "../AddNewRecipeDrawer.vue"
-import { computed, ref, watch } from "vue"
-import { useForm } from "vee-validate"
+import { computed, nextTick, ref, watch } from "vue"
+import { Field, useForm } from "vee-validate"
 import * as yup from "yup"
 import { UNITS_OF_MEASURE } from "@modules/production/constant"
+import { useSharedStore } from "@modules/shared/store"
+import { useProductionStore } from "@modules/production/store"
+import { getPurchaseUnit } from "@modules/production/utils.ts"
+import { TRawMaterial } from "@modules/production/types"
 
-type ItemOption = { label: string; value: string }
+const recipeSingularLabel = computed(() => useProductionStore().recipeSingularLabel)
+
+type ItemOption = { label: string; value: string; item?: Record<string, unknown> }
 
 const props = defineProps<{
   initialValues: BasicDetails
+  isEditMode?: boolean
+  unitLockedByHistory?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -24,8 +34,11 @@ const emit = defineEmits<{
   (e: "close"): void
 }>()
 
+const sharedStore = useSharedStore()
+
 // ─── Form validation ─────────────────────────────────────────────────────
 const schema = yup.object({
+  name: yup.string().optional().default(""),
   outputItemType: yup.string().oneOf(["product", "sub_assembly"]).required(),
   // store the full option object so SelectField can display the label
   outputItem: yup
@@ -45,9 +58,10 @@ const schema = yup.object({
   notes: yup.string().default(""),
 })
 
-const { handleSubmit, values, errors, setFieldValue, resetForm } = useForm({
+const { handleSubmit, values, errors, setFieldValue, setFieldError, resetForm } = useForm({
   validationSchema: schema,
   initialValues: {
+    name: props.initialValues.name || "",
     outputItemType: props.initialValues.outputItemType,
     outputItem: (props.initialValues.outputItemOption ?? null) as ItemOption | null,
     outputQuantity: props.initialValues.outputQuantity || (undefined as unknown as number),
@@ -56,12 +70,16 @@ const { handleSubmit, values, errors, setFieldValue, resetForm } = useForm({
   },
 })
 
+let isResetting = false
+
 // Re-initialize when parent repopulates (e.g. drawer reopens in edit/duplicate mode)
 watch(
   () => props.initialValues,
   (iv) => {
+    isResetting = true
     resetForm({
       values: {
+        name: iv.name || "",
         outputItemType: iv.outputItemType,
         outputItem: (iv.outputItemOption ?? null) as ItemOption | null,
         outputQuantity: iv.outputQuantity || (undefined as unknown as number),
@@ -69,6 +87,56 @@ watch(
         notes: iv.notes,
       },
     })
+    nextTick(() => {
+      isResetting = false
+    })
+  },
+)
+
+// ─── Recipe name uniqueness check ────────────────────────────────────────
+const { mutateAsync: validateRecipeName, isPending: isValidatingName } = useValidateRecipeName()
+// null = not checked (empty name / unchanged in edit mode / result stale)
+const nameIsUnique = ref<boolean | null>(null)
+
+const nameExistsError = computed(
+  () => `A ${recipeSingularLabel.value.toLowerCase()} with this name already exists`,
+)
+
+// Nothing to validate: empty (optional field) or unchanged name in edit mode
+const nameNeedsCheck = computed(() => {
+  const name = String(values.name || "").trim()
+  return !!name && !(props.isEditMode && name === (props.initialValues.name || "").trim())
+})
+
+/** Runs the uniqueness check and returns whether the name may be used. */
+const checkNameIsUnique = async (): Promise<boolean> => {
+  if (!nameNeedsCheck.value) {
+    nameIsUnique.value = null
+    return true
+  }
+  try {
+    const res = await validateRecipeName(String(values.name).trim())
+    const data = res.data.data
+    nameIsUnique.value = !!data.is_unique
+    if (!data.is_unique) setFieldError("name", nameExistsError.value)
+    return !!data.is_unique
+  } catch {
+    // Couldn't verify — treat as unchecked and let the user retry
+    nameIsUnique.value = null
+    setFieldError("name", "Could not verify this name. Please try again.")
+    return false
+  }
+}
+
+const onNameBlur = () => {
+  checkNameIsUnique()
+}
+
+// A previous check no longer applies once the name changes
+watch(
+  () => values.name,
+  () => {
+    nameIsUnique.value = null
   },
 )
 
@@ -76,68 +144,135 @@ watch(
 const productSearchInput = ref("")
 const productSearchQuery = useDebouncedRef(productSearchInput, 400)
 const { data: prodSearchResults, isFetching: isSearchingProd } =
-  useSearchProductCatalogs(productSearchQuery)
+  useSearchProducts(productSearchQuery)
 
-const productOptions = computed<ItemOption[]>(() => {
+const productOptions = computed(() => {
   if (!prodSearchResults.value?.results) return []
-  return prodSearchResults.value.results.map((p) => ({ label: p.name, value: p.uid || "" }))
+  return prodSearchResults.value.results.map((p) => ({
+    label: p.name,
+    value: p.uid || "",
+    item: p,
+  }))
 })
 
 // ─── Raw material search (sub-assemblies only) ───────────────────────────
 const matSearchInput = ref("")
 const matSearchQuery = useDebouncedRef(matSearchInput, 400)
-const { data: matSearchResults, isFetching: isSearchingMat } = useSearchRawMaterial(matSearchQuery)
+const { data: matSearchResults, isFetching: isSearchingMat } = useSearchRawMaterial(
+  matSearchQuery,
+  true, // is_sub_assembly
+)
 
 const materialOptions = computed<ItemOption[]>(() => {
   if (!matSearchResults.value?.results) return []
-  return matSearchResults.value.results
-    .filter((m) => m.is_sub_assembly)
-    .map((m) => ({ label: m.name, value: m.uid || "" }))
+  return matSearchResults.value.results.map((m) => ({ label: m.name, value: m.uid || "", item: m }))
+  // .filter((m) => m.is_sub_assembly)
 })
 
 // ─── Unit options ─────────────────────────────────────────────────────────
-const unitOptions = UNITS_OF_MEASURE
+const unitOptions = ref(UNITS_OF_MEASURE)
 
-// ─── Clear output item when type changes ─────────────────────────────────
+// ─── Add new unit ─────────────────────────────────────────────────────────
+const showAddUnit = ref(false)
+const showSalesUnitInfo = ref(false)
+const newUnitName = ref("")
+
+const createNewUnit = () => {
+  const unit = newUnitName.value.trim()
+  const newUnit = { label: unit, value: unit.toLowerCase().replace(/\s+/g, "_") }
+  unitOptions.value.push(newUnit)
+  setFieldValue("unit", newUnit)
+  showAddUnit.value = false
+  newUnitName.value = ""
+}
+
+// ─── Auto-fill unit from selected output item ────────────────────────────
+// A sub-assembly is just a higher-level raw material — its "unit" field
+// stores the production usage unit, so the recipe's output (sales) unit
+// must come from the material's purchase unit instead.
+const selectedItemUnit = computed<string | null>(() => {
+  const selected = values.outputItem
+  if (!selected?.item) return null
+  if (values.outputItemType === "sub_assembly") {
+    return getPurchaseUnit(selected.item as TRawMaterial) || null
+  }
+  return (selected.item.unit as string) || null
+})
+
+const selectedItemHasBeenProduced = computed(
+  () => !!values.outputItem?.item?.has_been_produced || !!props.unitLockedByHistory,
+)
+
+watch(selectedItemUnit, (unit) => {
+  if (isResetting) return
+  if (unit) {
+    const match = UNITS_OF_MEASURE.find((u) => u.value === unit)
+    setFieldValue("unit", match ?? { label: unit, value: unit })
+  } else {
+    // New output item has no unit (e.g. not yet produced) — clear the
+    // previously selected item's unit instead of leaving it prefilled.
+    setFieldValue("unit", null)
+  }
+})
+
+// ─── Clear output item when type changes (skip during programmatic reset) ────
 watch(
   () => values.outputItemType,
   () => {
+    if (isResetting) return
     setFieldValue("outputItem", null)
+    setFieldValue("unit", null)
   },
 )
 
 // ─── Submit handler ─────────────────────────────────────────────────────
-const handleNext = handleSubmit((formValues) => {
+const handleNext = handleSubmit(async (formValues) => {
+  // Block while the name uniqueness check is in flight, and never proceed on an
+  // unverified name — if it was never checked (or the check errored), run it now.
+  // handleSubmit re-runs the schema (which clears setFieldError), so re-apply it here.
+  if (isValidatingName.value) return
+  if (nameIsUnique.value === false) {
+    setFieldError("name", nameExistsError.value)
+    return
+  }
+  if (nameIsUnique.value === null && !(await checkNameIsUnique())) return
+
   const item = formValues.outputItem as ItemOption
   const unit = formValues.unit as ItemOption
   emit("next", {
+    name: formValues.name || "",
     outputItemType: formValues.outputItemType as "product" | "sub_assembly",
     outputItem: item.value,
+    // Preserve the underlying item (incl. has_been_produced) so the unit-lock
+    // state survives navigating to the next step and back.
+    outputItemOption: { label: item.label, value: item.value, item: item.item },
     outputQuantity: formValues.outputQuantity,
     unit: unit.value,
+    unitOption: { label: unit.label, value: unit.value },
     notes: formValues.notes || "",
   })
 })
 </script>
 
 <template>
-  <form @submit.prevent="handleNext" class="flex flex-col gap-4">
-    <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
-      <Icon name="box" size="28" />
+  <form @submit.prevent="handleNext" class="flex flex-col gap-5">
+    <div>
+      <span class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
+        <Icon name="box-filled" size="28" />
+      </span>
+      <p class="text-sm">Basic {{ recipeSingularLabel }} Details</p>
     </div>
-    <p class="mb-4 text-sm">Basic Recipe Details</p>
 
-    <div class="mb-4">
-      <RadioInputField
-        :model-value="values.outputItemType"
-        :options="[
-          { label: 'Product', value: 'product' },
-          { label: 'Sub-assembly', value: 'sub_assembly' },
-        ]"
-        label="Output Item Type"
-        @update:model-value="setFieldValue('outputItemType', $event as 'product' | 'sub_assembly')"
-      />
-    </div>
+    <RadioInputField
+      :model-value="values.outputItemType"
+      :options="[
+        { label: 'Product', value: 'product' },
+        { label: 'Sub-assembly', value: 'sub_assembly' },
+      ]"
+      label="Output Item Type"
+      :disabled="isEditMode"
+      @update:model-value="setFieldValue('outputItemType', $event as 'product' | 'sub_assembly')"
+    />
 
     <SelectField
       v-if="values.outputItemType === 'product'"
@@ -149,6 +284,8 @@ const handleNext = handleSubmit((formValues) => {
       :loading="isSearchingProd"
       searchable
       required
+      :hint="isEditMode ? 'Output item cannot be changed in EDIT mode' : undefined"
+      :disabled="isEditMode"
       @update:model-value="setFieldValue('outputItem', $event as ItemOption)"
       @search-change="productSearchInput = $event"
     />
@@ -164,25 +301,111 @@ const handleNext = handleSubmit((formValues) => {
       :loading="isSearchingMat"
       searchable
       required
+      :disabled="isEditMode"
       @update:model-value="setFieldValue('outputItem', $event as ItemOption)"
       @search-change="matSearchInput = $event"
     />
 
-    <FormField
-      name="outputQuantity"
-      type="number"
-      label="Output Quantity"
-      placeholder="e.g. 100"
-      required
-    />
+    <div>
+      <FormField
+        name="name"
+        :label="`Custom ${recipeSingularLabel} Name (optional)`"
+        placeholder="e.g. Vanila Cake"
+        :required="false"
+        :variant="nameIsUnique === true ? 'success' : 'default'"
+        :hint="isValidatingName ? 'Checking name availability...' : undefined"
+        @blur="onNameBlur"
+      />
+      <p
+        v-if="nameIsUnique === true && !isValidatingName"
+        class="mt-1 flex items-center gap-1 text-sm text-green-600"
+      >
+        <Icon name="tick-circle" size="16" />
+        This name is available
+      </p>
+    </div>
+
+    <div v-if="values.outputItemType !== 'sub_assembly'">
+      <Field v-slot="{ field, errors: fieldErrors }" name="unit">
+        <SelectField
+          v-bind="field"
+          :model-value="field.value"
+          placeholder="e.g. kg, liters, pieces"
+          :options="unitOptions"
+          :disabled="selectedItemHasBeenProduced"
+          required
+          searchable
+          :error="fieldErrors[0]"
+          @update:model-value="field.value = $event"
+        >
+          <template #label>
+            <span class="inline-flex items-center gap-1.5">
+              Sales Unit
+              <button
+                type="button"
+                class="text-primary-600 text-xs font-medium hover:underline"
+                @click.stop="showSalesUnitInfo = true"
+              >
+                Learn more
+              </button>
+            </span>
+          </template>
+          <template #prepend="{ close }">
+            <div
+              class="hover:bg-core-25 cursor-pointer border-b border-gray-200 px-4 py-2 text-sm transition-colors duration-150"
+              @click="
+                () => {
+                  close()
+                  showAddUnit = true
+                }
+              "
+            >
+              <div class="flex items-center justify-between">
+                <span class="text-primary-600 font-semibold">Add New Unit</span>
+                <Icon name="add" class="text-primary-600 h-4 w-4" />
+              </div>
+            </div>
+          </template>
+          <template #no-options="{ search, close }">
+            <p>
+              No results found.
+              <button
+                class="text-primary-600 ml-1 hover:underline"
+                @click="
+                  () => {
+                    close()
+                    showAddUnit = true
+                    newUnitName = search
+                  }
+                "
+              >
+                Add <span class="font-semibold">"{{ search }}"</span>
+              </button>
+              as a unit?
+            </p>
+          </template>
+        </SelectField>
+      </Field>
+      <p v-if="selectedItemHasBeenProduced" class="mt-1 text-sm text-gray-500">
+        Unit cannot be changed once a recipe has been used in a production run.
+        <button
+          type="button"
+          class="text-primary-600 underline"
+          @click="sharedStore.openSupportModal()"
+        >
+          Contact support
+        </button>
+        to make changes.
+      </p>
+    </div>
 
     <FormField
-      name="unit"
-      type="select"
-      label="Unit"
-      placeholder="e.g. kg, liters, pieces"
-      :options="unitOptions"
+      name="outputQuantity"
+      type="decimal"
+      :label="`How many ${values.unit?.value ?? 'units'} does this recipe produce?`"
+      placeholder="e.g. 100"
       required
+      :suffix="values.unit?.value"
     />
 
     <FormField name="notes" type="textarea" label="Notes (optional)" />
@@ -194,8 +417,65 @@ const handleNext = handleSubmit((formValues) => {
     >
       <div class="grid grid-cols-2 gap-3">
         <AppButton label="Back" color="alt" icon="arrow-left" @click="emit('close')" />
-        <AppButton label="Next" type="submit" />
+        <AppButton
+          label="Next"
+          type="submit"
+          :loading="isValidatingName"
+          :disabled="isValidatingName || nameIsUnique === false"
+        />
       </div>
     </div>
+
+    <!-- Create new Unit Modal -->
+    <Modal :open="showAddUnit" title="Add New Unit" max-width="md" @close="showAddUnit = false">
+      <div class="space-y-4">
+        <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
+          <Icon name="profile-add" size="28" />
+        </div>
+        <p class="text-sm text-gray-600">Create a new unit of measurement</p>
+
+        <TextField v-model="newUnitName" label="Unit Name" placeholder="e.g. Kilogram" required />
+      </div>
+
+      <template #footer>
+        <div class="flex gap-3">
+          <AppButton
+            label="Cancel"
+            variant="outlined"
+            class="flex-1"
+            @click="showAddUnit = false"
+          />
+          <AppButton
+            label="Add Unit"
+            class="flex-1"
+            :disabled="!newUnitName.trim()"
+            @click="createNewUnit"
+          />
+        </div>
+      </template>
+    </Modal>
+
+    <!-- Sales Unit Info Modal -->
+    <Modal
+      :open="showSalesUnitInfo"
+      title="What is a Sales Unit?"
+      max-width="md"
+      @close="showSalesUnitInfo = false"
+    >
+      <div class="space-y-4 text-sm text-gray-600">
+        <p>Sales Unit refers to the unit in which an item is sold to customers.</p>
+        <p>For example:</p>
+        <ul class="list-disc space-y-2 pl-5">
+          <li>Coca-Cola is sold in <b>bottles</b>, not centilitres (cl).</li>
+          <li>Perfumes are sold in <b>pieces</b>, not millilitres (ml).</li>
+          <li>Petrol is sold in <b>litres</b>, not kegs.</li>
+        </ul>
+        <p>
+          Use the unit that best represents how the item is sold, rather than how its quantity or
+          volume is measured.
+        </p>
+        <AppButton label="Got it" class="w-full" @click="showSalesUnitInfo = false" />
+      </div>
+    </Modal>
   </form>
 </template>

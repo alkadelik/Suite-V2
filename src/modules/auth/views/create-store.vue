@@ -60,7 +60,14 @@
           (val: { label: string; value: string }) =>
             onCountryChange(val, setFieldValue, validateField)
         "
-      />
+      >
+        <template #option="{ option, label: optionLabel }">
+          <div class="flex w-full items-center justify-between gap-2">
+            <span>{{ optionLabel }}</span>
+            <Chip v-if="isCountryRestricted(option)" label="Restricted" color="warning" size="sm" />
+          </div>
+        </template>
+      </FormField>
 
       <FormField
         name="currency"
@@ -85,6 +92,7 @@ import { toast } from "@/composables/useToast"
 import AppForm from "@components/form/AppForm.vue"
 import FormField from "@components/form/FormField.vue"
 import AppButton from "@components/AppButton.vue"
+import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
 import { useCreateStoreApi } from "../api"
 import {
@@ -123,8 +131,23 @@ const { data: countries } = useGetCountries()
 
 const countryOptions = computed(() => {
   if (!countries.value) return []
-  return countries.value.map((c) => ({ label: c.name, value: c.code }))
+  // Pin Nigeria to the top — it's the primary supported country; everything
+  // else is in restricted rollout (see the "Restricted" chip below).
+  const sorted = [...countries.value].sort((a, b) => {
+    if (a.code === "NG") return -1
+    if (b.code === "NG") return 1
+    return 0
+  })
+  return sorted.map((c) => ({ label: c.name, value: c.code }))
 })
+
+// Non-NG accounts are still in limited rollout — surface a "Restricted" chip
+// in the dropdown so users know there are caveats before they pick.
+const isCountryRestricted = (option: unknown): boolean => {
+  if (!option || typeof option !== "object" || !("value" in option)) return false
+  const value = (option as { value: unknown }).value
+  return typeof value === "string" && value !== "NG"
+}
 
 // Track selected country
 const selectedCountryCode = ref<string | null>(null)
@@ -255,7 +278,11 @@ const onSubmit = (values: IStoreFormData) => {
       }
       // check for redirect query param
       const redirectPath = router.currentRoute.value.query.redirect as string
-      window.location.href = redirectPath || "/onboarding"
+      // International accounts skip onboarding — most onboarding criteria
+      // (bank account, KYC, delivery options) are Nigerian-only flows. They
+      // go straight to the dashboard. See router guard for the matching block.
+      const defaultLanding = isInternational ? "/dashboard" : "/onboarding"
+      window.location.href = redirectPath || defaultLanding
     },
     onError: displayError,
   })

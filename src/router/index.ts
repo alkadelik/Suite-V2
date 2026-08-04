@@ -22,6 +22,8 @@ import marketingRoutes from "@modules/marketing/routes"
 import { isStaging } from "@/utils/others"
 import reportsRoutes from "@modules/reports/routes"
 import productionRoutes from "@modules/production/routes"
+import discountsRoutes from "@modules/discounts/routes"
+import announcementsRoutes from "@modules/announcements/routes"
 
 const routes: RouteRecordRaw[] = [
   { path: "/", redirect: "/dashboard" },
@@ -42,9 +44,12 @@ const routes: RouteRecordRaw[] = [
       ...productionRoutes,
       ...marketingRoutes,
       ...reportsRoutes,
+      ...discountsRoutes,
     ],
   },
   { path: "/", meta: { requiresAuth: true }, children: [...settingsRoutes] },
+  // public changelog — no auth, no layout
+  ...announcementsRoutes,
   // payment page
   { path: "/pay/:id", component: () => import("@modules/landing/views/payment-link.vue") },
   // landing pages
@@ -113,7 +118,7 @@ router.beforeEach((to, from, next) => {
       return next({ path: "/dashboard" })
     }
 
-    const hQOnlyPages = ["/popups", "/onboarding"]
+    const hQOnlyPages = ["/popups", "/onboarding", "/email-list"]
     // Restrict HQ-only pages to HQ users
     if (hQOnlyPages.includes(to.path)) {
       const { activeLocation } = useSettingsStore()
@@ -148,13 +153,20 @@ router.beforeEach((to, from, next) => {
       "/settings/design",
       "/settings/billing",
       "/settings/delivery-options",
+      // Onboarding criteria (bank account, KYC, delivery options) are
+      // Nigerian-only — international accounts can't complete them, so
+      // /onboarding is hidden and they're sent to the dashboard instead.
+      "/onboarding",
     ]
     if (useSettingsStore().isInternational) {
       const blocked = internationalBlockedPaths.some(
         (p) => to.path === p || to.path.startsWith(p + "/"),
       )
       if (blocked) {
-        return next({ path: "/settings/profile" })
+        // Onboarding sends to dashboard; the rest of the blocked settings
+        // pages still send to the profile (existing behaviour).
+        const fallback = to.path === "/onboarding" ? "/dashboard" : "/settings/profile"
+        return next({ path: fallback })
       }
     }
   }
@@ -177,6 +189,36 @@ router.beforeEach((to, from, next) => {
   }
 
   next()
+})
+
+/**
+ * Recover from stale chunk references after a new deployment.
+ *
+ * When a fresh build ships, the hashed chunk filenames change. A client still
+ * running the previous `index.html` will fail to fetch the old chunk on
+ * navigation. A one-time reload pulls the new `index.html` (and chunk names);
+ * the sessionStorage flag guards against an infinite reload loop.
+ */
+router.onError((error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error)
+  const pattern = /Failed to fetch dynamically imported module|Importing a module script failed/i
+
+  if (pattern.test(message)) {
+    const hasReloaded = sessionStorage.getItem("reload-attempted")
+
+    if (!hasReloaded) {
+      sessionStorage.setItem("reload-attempted", "true")
+
+      // Strip redirect from the current URL before reloading
+      const url = new URL(window.location.href)
+      url.searchParams.delete("redirect")
+
+      window.location.href = url.toString()
+    } else {
+      sessionStorage.removeItem("reload-attempted")
+      console.error("Failed to load page after refresh.", error)
+    }
+  }
 })
 
 export default router

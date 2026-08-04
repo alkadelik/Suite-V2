@@ -26,6 +26,22 @@
       </div>
     </div>
 
+    <!-- Reorder Threshold — product-level for multi-variant products, applies to all variants (LYW-2648) -->
+    <div v-if="!isSingleVariant && !props.hideReorder">
+      <TextField
+        :model-value="globalReorderPoint"
+        name="product-reorder-point"
+        label="Reorder Threshold"
+        placeholder="e.g. 5"
+        type="number"
+        min="0"
+        @update:model-value="updateGlobalReorderPoint"
+      />
+      <p class="mt-1 text-xs text-gray-600">
+        Applies to all variants. You'll get a low-stock alert when stock falls to this level.
+      </p>
+    </div>
+
     <!-- Weight Section (hidden when Weight attribute is in variants - auto-populated, or when hideWeight prop is true) -->
     <div v-if="!hasWeightAttributeInVariants && !props.hideWeight" class="space-y-4">
       <div data-validation-target="product-weight">
@@ -144,6 +160,24 @@
         required
         :error="props.errors?.variants?.[0]?.opening_stock"
       />
+
+      <!-- Reorder Threshold — under Available Stock for simple products (LYW-2648) -->
+      <div v-if="!props.hideReorder">
+        <TextField
+          :model-value="singleVariantForm.reorder_point"
+          name="variant-reorder-point-0"
+          @update:model-value="
+            updateSingleVariantField('reorder_point', removeLeadingZeros($event))
+          "
+          label="Reorder Threshold"
+          placeholder="e.g. 5"
+          type="number"
+          min="0"
+        />
+        <p class="mt-1 text-xs text-gray-600">
+          You'll get a low-stock alert when stock falls to this level.
+        </p>
+      </div>
     </div>
 
     <!-- Multiple Variants View - Table Layout (for editing existing variants) -->
@@ -173,12 +207,21 @@
         >
           <!-- Variant Name with Chips -->
           <div class="flex-1">
-            <div class="flex flex-wrap gap-2">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex flex-wrap gap-2">
+                <Chip
+                  v-for="(attributeValue, attrIndex) in getVariantDisplayValues(variant)"
+                  :key="`attr-${attrIndex}`"
+                  :label="attributeValue"
+                  size="sm"
+                />
+              </div>
               <Chip
-                v-for="(attributeValue, attrIndex) in getVariantDisplayValues(variant)"
-                :key="`attr-${attrIndex}`"
-                :label="attributeValue"
+                v-if="props.isNewVariant?.(variant)"
+                label="New"
+                color="success"
                 size="sm"
+                class="shrink-0"
               />
             </div>
           </div>
@@ -198,6 +241,14 @@
               "
               @blur="handleStockBlur(index, $event)"
             />
+            <button
+              v-if="index === 0 && variants.length > 1 && variant.opening_stock"
+              type="button"
+              class="text-primary-600 mt-1 block w-full truncate text-[10px] underline"
+              @click="applyToAll('opening_stock', variant.opening_stock)"
+            >
+              Apply to all
+            </button>
           </div>
 
           <!-- Cost Price Input -->
@@ -217,8 +268,18 @@
               @update:model-value="
                 updateVariantField(index, 'cost_price', removeLeadingZeros($event))
               "
-              @blur="handleCostPriceBlur(index, $event)"
+              @blur="handleCostPriceBlur(index)"
             />
+            <button
+              v-if="
+                index === 0 && variants.length > 1 && !props.disableCostPrice && variant.cost_price
+              "
+              type="button"
+              class="text-primary-600 mt-1 block w-full truncate text-[10px] underline"
+              @click="applyToAll('cost_price', variant.cost_price)"
+            >
+              Apply to all
+            </button>
           </div>
 
           <!-- Selling Price Input -->
@@ -236,8 +297,16 @@
               :disabled="props.disablePrice"
               :error="props.errors?.variants?.[index]?.price"
               @update:model-value="updateVariantField(index, 'price', removeLeadingZeros($event))"
-              @blur="handlePriceBlur(index, $event)"
+              @blur="handlePriceBlur(index)"
             />
+            <button
+              v-if="index === 0 && variants.length > 1 && !props.disablePrice && variant.price"
+              type="button"
+              class="text-primary-600 mt-1 block w-full truncate text-[10px] underline"
+              @click="applyToAll('price', variant.price)"
+            >
+              Apply to all
+            </button>
           </div>
         </div>
       </div>
@@ -253,12 +322,21 @@
       >
         <!-- Top Section - Variant Chips -->
         <div class="p-4">
-          <div class="flex flex-wrap gap-2">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex flex-wrap gap-2">
+              <Chip
+                v-for="(attributeValue, attrIndex) in getVariantDisplayValues(variant)"
+                :key="`attr-${attrIndex}`"
+                :label="attributeValue"
+                size="sm"
+              />
+            </div>
             <Chip
-              v-for="(attributeValue, attrIndex) in getVariantDisplayValues(variant)"
-              :key="`attr-${attrIndex}`"
-              :label="attributeValue"
+              v-if="props.isNewVariant?.(variant)"
+              label="New"
+              color="success"
               size="sm"
+              class="shrink-0"
             />
           </div>
         </div>
@@ -284,6 +362,14 @@
               "
               @blur="handleStockBlur(index, $event)"
             />
+            <button
+              v-if="index === 0 && variants.length > 1 && variant.opening_stock"
+              type="button"
+              class="text-primary-600 mt-1 text-xs underline"
+              @click="applyToAll('opening_stock', variant.opening_stock)"
+            >
+              Apply to all
+            </button>
           </div>
 
           <!-- Cost Price -->
@@ -304,8 +390,18 @@
               @update:model-value="
                 updateVariantField(index, 'cost_price', removeLeadingZeros($event))
               "
-              @blur="handleCostPriceBlur(index, $event)"
+              @blur="handleCostPriceBlur(index)"
             />
+            <button
+              v-if="
+                index === 0 && variants.length > 1 && !props.disableCostPrice && variant.cost_price
+              "
+              type="button"
+              class="text-primary-600 mt-1 text-xs underline"
+              @click="applyToAll('cost_price', variant.cost_price)"
+            >
+              Apply to all
+            </button>
           </div>
 
           <!-- Selling Price -->
@@ -324,8 +420,16 @@
               :disabled="props.disablePrice"
               :error="props.errors?.variants?.[index]?.price"
               @update:model-value="updateVariantField(index, 'price', removeLeadingZeros($event))"
-              @blur="handlePriceBlur(index, $event)"
+              @blur="handlePriceBlur(index)"
             />
+            <button
+              v-if="index === 0 && variants.length > 1 && !props.disablePrice && variant.price"
+              type="button"
+              class="text-primary-600 mt-1 text-xs underline"
+              @click="applyToAll('price', variant.price)"
+            >
+              Apply to all
+            </button>
             <p v-if="costPriceWarnings[index]" class="mt-1 text-xs text-amber-600">
               {{ costPriceWarnings[index] }}
             </p>
@@ -349,6 +453,7 @@ import { IProductVariant, IProductVariantDetails } from "../../types"
 import { useWeightBasedDimensions } from "../../composables/useWeightBasedDimensions"
 import type { IInventoryValidationErrors } from "../../composables/useVariantValidation"
 import { useSettingsStore } from "@modules/settings/store"
+import { shouldUseSingleVariantLayout } from "../../utils/variant-editing"
 
 interface Props {
   /** Variants array - for no variants case, should contain single variant */
@@ -365,10 +470,16 @@ interface Props {
   hidePrice?: boolean
   /** Hide the weight section (for variants edit mode) */
   hideWeight?: boolean
+  /** Hide the reorder threshold field (for variants edit mode) */
+  hideReorder?: boolean
+  /** Predicate marking a variant as newly added — renders a "New" chip on its row */
+  isNewVariant?: (variant: IProductVariant) => boolean
   /** Deleted variants to display (only in edit mode) - no UIDs, just attributes */
   deletedVariants?: IProductVariant[]
   /** Use table layout instead of card layout (for editing existing variants) */
   useTableLayout?: boolean
+  /** Keep variant-product layout even when the visible variant subset has one item */
+  forceVariantLayout?: boolean
   /** Inline validation errors shown after a failed submit attempt */
   errors?: IInventoryValidationErrors
 }
@@ -442,7 +553,10 @@ watch(
 
 // Check if we have a single variant
 const isSingleVariant = computed(() => {
-  return !props.modelValue || props.modelValue.length <= 1
+  return shouldUseSingleVariantLayout({
+    variantCount: props.modelValue?.length || 0,
+    forceVariantLayout: props.forceVariantLayout ?? false,
+  })
 })
 
 // Check if we have deleted variants
@@ -459,10 +573,33 @@ const currencySymbol = computed(() => {
   return symbols[currency] || currency
 })
 
+/**
+ * Parse a price-shaped value, tolerating thousands separators and stray
+ * whitespace. `parseFloat("1,000")` returns 1, which caused LYW-2508 — the
+ * warning fired with cost=10, sell=1,000 because sell parsed to 1.
+ */
+const parsePrice = (val: string | number | null | undefined): number => {
+  if (val === null || val === undefined) return NaN
+  const str = (typeof val === "number" ? val.toString() : val).trim().replace(/[^\d.-]/g, "")
+  if (!str) return NaN
+  return parseFloat(str)
+}
+
 const costPriceWarnings = computed(() => {
-  return variants.value.map((v) => {
-    const cost = parseFloat(v.cost_price)
-    const sell = parseFloat(v.price)
+  return variants.value.map((v, i) => {
+    const cost = parsePrice(v.cost_price)
+    const sell = parsePrice(v.price)
+    // TEMP LYW-2508 INVESTIGATION: log raw values so the source of any
+    // comma-formatted prices can be traced. Remove once confirmed clean.
+    if (
+      typeof v.cost_price === "string" &&
+      (v.cost_price.includes(",") || /\s/.test(v.cost_price))
+    ) {
+      console.warn(`[LYW-2508] variant[${i}].cost_price contains separators:`, v.cost_price)
+    }
+    if (typeof v.price === "string" && (v.price.includes(",") || /\s/.test(v.price))) {
+      console.warn(`[LYW-2508] variant[${i}].price contains separators:`, v.price)
+    }
     if (isFinite(cost) && isFinite(sell) && cost > 0 && sell > 0 && sell < cost) {
       return "Note: Selling price is lower than cost price"
     }
@@ -621,6 +758,33 @@ const updateVariantField = (index: number, field: keyof IProductVariant, value: 
   }
 }
 
+/**
+ * LYW-2509: copy a field's value from the first variant to every other variant,
+ * overwriting whatever the others hold. Used by the "Apply to all" link shown
+ * below each price/cost/stock field on the first variant.
+ */
+const applyToAll = (field: "opening_stock" | "cost_price" | "price", value: string) => {
+  if (!props.modelValue || props.modelValue.length < 2) return
+  const updatedVariants = props.modelValue.map((variant, index) => {
+    if (index === 0) return variant
+    return { ...variant, [field]: value }
+  })
+  emit("update:modelValue", updatedVariants)
+}
+
+// Product-level reorder threshold for multi-variant products — one value applies
+// to every variant (LYW-2648).
+const globalReorderPoint = computed(() => props.modelValue?.[0]?.reorder_point || "")
+
+const updateGlobalReorderPoint = (value: string) => {
+  if (!props.modelValue || props.modelValue.length === 0) return
+  const clean = removeLeadingZeros(value)
+  emit(
+    "update:modelValue",
+    props.modelValue.map((variant) => ({ ...variant, reorder_point: clean })),
+  )
+}
+
 // Update global dimensions and apply to all variants
 const updateGlobalDimension = (field: string, value: string) => {
   globalDimensions.value = {
@@ -679,9 +843,9 @@ const handleStockBlur = (currentIndex: number, event: Event) => {
 }
 
 // Handle cost price blur - auto-fill other variants if they're empty
-const handleCostPriceBlur = (currentIndex: number, event: Event) => {
-  const target = event.target as HTMLInputElement
-  const value = target.value.trim()
+const handleCostPriceBlur = (currentIndex: number) => {
+  // Read raw value from the variant model (not the DOM, which contains formatted commas)
+  const value = (props.modelValue[currentIndex]?.cost_price || "").trim()
 
   if (!value || value === "0") return
 
@@ -705,9 +869,9 @@ const handleCostPriceBlur = (currentIndex: number, event: Event) => {
 }
 
 // Handle price blur - auto-fill other variants if they're empty
-const handlePriceBlur = (currentIndex: number, event: Event) => {
-  const target = event.target as HTMLInputElement
-  const value = target.value.trim()
+const handlePriceBlur = (currentIndex: number) => {
+  // Read raw value from the variant model (not the DOM, which contains formatted commas)
+  const value = (props.modelValue[currentIndex]?.price || "").trim()
 
   if (!value || value === "0") return
 

@@ -75,6 +75,7 @@ export interface ILoginResponse {
     subscription: ISubscription | null
     store_uid: string
     store_slug: string
+    is_international?: boolean
   }
 }
 

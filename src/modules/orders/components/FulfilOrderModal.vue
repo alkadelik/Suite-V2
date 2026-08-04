@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AppButton from "@components/AppButton.vue"
 import Modal from "@components/Modal.vue"
+import ConfirmationModal from "@components/ConfirmationModal.vue"
 import { TOrderItem } from "../types"
 import Icon from "@components/Icon.vue"
 import Chip from "@components/Chip.vue"
@@ -45,6 +46,16 @@ watch(
   { immediate: true },
 )
 
+// Initialize when modal opens (items may already be loaded at that point)
+watch(
+  () => props.open,
+  (isOpen) => {
+    if (isOpen && props.items.length > 0) {
+      initializeQuantities()
+    }
+  },
+)
+
 // Compute unfulfilled items
 const unfulfilledItems = computed(() =>
   props.items.filter((item) => item.qty_fulfilled < item.quantity),
@@ -59,9 +70,12 @@ const canFulfill = computed(() => Object.values(itemQuantities.value).some((qty)
 const { mutate: markAllFulfilled, isPending: isMarkingAll } = useMarkAllFulfilled()
 const { mutate: partiallyFulfill, isPending: isFulfilling } = usePartiallyFulfill()
 
+const showConfirmAll = ref(false)
+
 const handleMarkAll = () => {
   markAllFulfilled(props.orderId, {
     onSuccess: () => {
+      showConfirmAll.value = false
       toast.success("All items marked as fulfilled")
       emit("refresh")
       emit("close")
@@ -121,13 +135,8 @@ const handleFulfill = () => {
   )
 }
 
-// Re-initialize when modal opens
-const handleModalChange = (isOpen: boolean) => {
-  if (!isOpen) {
-    emit("close")
-  } else {
-    initializeQuantities()
-  }
+const handleModalChange = () => {
+  emit("close")
 }
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
@@ -138,7 +147,7 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
     :open="open"
     max-width="xl"
     title="Fulfill Order"
-    @close="handleModalChange(false)"
+    @close="handleModalChange"
     body-class="!px-4 md:!px-6"
     variant="bottom-nav"
   >
@@ -161,7 +170,7 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
         size="sm"
         :loading="isMarkingAll"
         :disabled="isMarkingAll"
-        @click="handleMarkAll"
+        @click="showConfirmAll = true"
       />
     </div>
 
@@ -201,7 +210,7 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
 
           <TextField
             type="number"
-            :model-value="String(itemQuantities[item.uid])"
+            :model-value="itemQuantities[item.uid]"
             :suffix="`/ ${item.quantity - item.qty_fulfilled}`"
             input-class="max-w-[32px] md:max-w-[60px] text-center"
             class="w-[88px] md:w-32"
@@ -228,6 +237,17 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
         <p class="text-core-400 text-xs">This order has been completely fulfilled</p>
       </div>
     </div>
+
+    <ConfirmationModal
+      v-model="showConfirmAll"
+      header="Fulfill All Items"
+      paragraph="This will mark all unfulfilled items in this order as fulfilled. This action cannot be undone."
+      action-label="Fulfill All"
+      info-message=""
+      variant="warning"
+      :loading="isMarkingAll"
+      @confirm="handleMarkAll"
+    />
 
     <template #footer>
       <div class="flex gap-2">

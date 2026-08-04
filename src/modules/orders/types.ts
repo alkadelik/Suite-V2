@@ -16,7 +16,7 @@ export type TOrderItem = {
   qty_fulfilled: number
   notes: string
   attributes?: string | null
-  product_images?: string | null
+  product_images?: { image: string }[]
 }
 
 export type TOrder = {
@@ -35,14 +35,17 @@ export type TOrder = {
   delivery_address: string | null
   delivery_fee: string
   delivery_method: "manual" | "shipbubble" | "custom"
+  delivery_payment_option: string
   discount_amount: string
   fulfilment_method: "pickup" | "delivery"
   fulfilment_status: "unfulfilled" | "fulfilled" | "partially_fulfilled" | "voided"
   items: TOrderItem[]
   location: string
   location_name: string
+  memos_count: number
   outstanding_balance: number
   payment_status: "unpaid" | "paid" | "partially_paid"
+  payment_source?: string
   rate: string
   source: "internal" | "external"
   store: string
@@ -218,15 +221,71 @@ export interface OrderDashboardStats {
   }
 }
 
-export type TShipment = {
+/** ShipBubble shipment record from GET /shipping/orders/ */
+export type TShipbubbleShipment = {
   uid: string
+  shipbubble_order_id: string
+  order: TOrder
+  merchant_name: string
+  courier: {
+    name: string
+    email: string
+    phone: string
+    courier_name?: string
+    courier_image?: string
+  }
+  price: string
+  service_charge: string
+  total_shipping_cost: string
+  prepaid_delivery_fee: string
+  fee_variance: string
+  variance_type: string
+  status: string
+  tracking_url: string | null
+  waybill_document_url: string | null
+  tracking_data: string | null
+  last_status_update: string | null
+  quote_expires_at: string | null
+  quote_status: string | null
+  quote_hours_remaining: string | null
+  is_suite_order: boolean
+  pickup_date: string | null
+  delivery_estimate: string | null
+  created_at: string
+}
+
+/** Body for POST /shipping/orders/{uid}/create/ — payment_reference comes from Paystack */
+export type TCreateShipmentPayload = {
+  order: string
+  rate: string
+  courier: string
+  payment_reference: string
+}
+
+export type TShipbubbleShipmentResponse = {
+  results: TShipbubbleShipment[]
+  count: number
+  next: string | null
+  previous: string | null
+}
+
+/** Normalized row rendered by the shipments tables — ShipBubble rows carry the
+ * shipment record, manual/pickup rows are plain orders (shipment is null). */
+export type TShipmentRow = {
+  uid: string
+  order_number: string
   customer_name: string
   courier: {
     name: string
-    image_url: string
-  }
-  delivery_fee: number
-  pickup_date: string
-  delivery_date: string
-  status: "in_transit" | "delivered" | "cancelled" | "awaiting_pickup"
+    email?: string
+    phone?: string
+    courier_name?: string
+    courier_image?: string
+  } | null
+  fee: string | number
+  amount: string | number
+  date: string
+  status: string
+  order: TOrder
+  shipment: TShipbubbleShipment | null
 }

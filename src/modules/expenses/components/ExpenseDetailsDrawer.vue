@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import Drawer from "@components/Drawer.vue"
-import Modal from "@components/Modal.vue"
-import { useMediaQuery } from "@vueuse/core"
 import { TExpense } from "../types"
 import Chip from "@components/Chip.vue"
 import { formatDate } from "@/utils/formatDate"
@@ -14,12 +12,10 @@ defineProps<{ open: boolean; expense: TExpense }>()
 const emit = defineEmits(["close", "refresh"])
 
 const { format } = useFormatCurrency()
-const isMobile = useMediaQuery("(max-width: 1028px)")
 </script>
 
 <template>
-  <component
-    :is="isMobile ? Modal : Drawer"
+  <Drawer
     :open="open"
     title="Expense Details"
     max-width="2xl"
@@ -65,6 +61,10 @@ const isMobile = useMediaQuery("(max-width: 1028px)")
           <span class="text-core-600">Sub-category</span>
           <Chip :label="expense.sub_category_name" color="pink" />
         </p>
+        <p v-if="expense.produced_item_name" class="flex justify-between text-sm">
+          <span class="text-core-600">Item produced</span>
+          <Chip :label="expense.produced_item_name" color="blue" />
+        </p>
       </div>
 
       <div class="border-core-300 bg-core-25 my-6 space-y-3 rounded-xl border p-4">
@@ -85,9 +85,9 @@ const isMobile = useMediaQuery("(max-width: 1028px)")
       <div class="border-core-300 bg-core-25 my-6 space-y-3 rounded-xl border p-4">
         <p class="flex flex-col text-sm">
           <span class="text-core-600">Notes</span>
-          <span class="font-medium">{{ expense.notes || "-" }}</span>
+          <span class="font-medium whitespace-pre-wrap">{{ expense.notes || "-" }}</span>
         </p>
       </div>
     </div>
-  </component>
+  </Drawer>
 </template>

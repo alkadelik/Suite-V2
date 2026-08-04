@@ -10,7 +10,7 @@
     <div v-else class="space-y-4 rounded-xl border-gray-200 pt-3 md:border md:bg-white">
       <div class="flex items-center justify-between md:px-4">
         <h3 class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
-          All Movements <Chip :label="String(movements.length)" />
+          All Movements <Chip :label="String(movementsCount)" />
         </h3>
         <div class="flex items-center gap-2">
           <AppButton
@@ -20,7 +20,7 @@
             :variant="activeFilterCount ? 'outlined' : 'filled'"
             label="Filter"
             :badge="activeFilterCount || undefined"
-            class="!hidden md:!inline-flex"
+            class="!hidden flex-shrink-0 md:!inline-flex"
             @click="showFilter = true"
           />
           <AppButton
@@ -30,26 +30,31 @@
             :variant="activeFilterCount ? 'outlined' : 'filled'"
             label=""
             :badge="activeFilterCount || undefined"
-            class="md:hidden"
+            class="flex-shrink-0 md:hidden"
             @click="showFilter = true"
           />
-          <AppButton icon="share-06" size="sm" label="Export" class="!hidden md:!inline-flex" />
-          <AppButton icon="share-06" size="sm" label="" class="md:hidden" />
+          <AppButton
+            icon="share-06"
+            size="sm"
+            label="Export"
+            class="!hidden flex-shrink-0 md:!inline-flex"
+          />
+          <AppButton icon="share-06" size="sm" label="" class="flex-shrink-0 md:hidden" />
         </div>
       </div>
-
-      <ListFilterDrawer
-        v-model="showFilter"
-        :filter-groups="filterGroups"
-        @apply="handleApplyFilters"
-      />
 
       <DataTable
         :data="movements"
         :columns="movementColumns"
         :loading="loading"
-        :show-pagination="true"
+        :show-pagination="movementsCount > itemsPerPage"
+        :server-pagination="true"
+        :items-per-page="itemsPerPage"
+        :current-page="page"
+        :total-items-count="movementsCount"
+        :total-page-count="Math.ceil(movementsCount / itemsPerPage) || 1"
         :enable-row-selection="false"
+        @pagination-change="(d) => (page = d.currentPage)"
         :empty-state="{
           title: 'No results match this filter',
           description: 'Try adjusting or clearing your filters.',
@@ -124,6 +129,12 @@
       :variant-info="selectedMovement ? getVariantFromId(selectedMovement.variant) : undefined"
       @close="showMovementModal = false"
     />
+
+    <ListFilterDrawer
+      v-model="showFilter"
+      :filter-groups="filterGroups"
+      @apply="handleApplyFilters"
+    />
   </div>
 </template>
 
@@ -154,8 +165,16 @@ const { format } = useFormatCurrency()
 const showFilter = ref(false)
 const activeFilters = ref<Record<string, string | null>>({})
 
+// Server-side pagination — without limit/offset the backend returns only its
+// default first page (20), silently hiding the rest of the logs.
+const page = ref(1)
+const itemsPerPage = ref(10)
+
 const movementParams = computed(() => {
-  const params: Record<string, string | number> = {}
+  const params: Record<string, string | number> = {
+    limit: itemsPerPage.value,
+    offset: (page.value - 1) * itemsPerPage.value,
+  }
   if (activeFilters.value.type) params.type = activeFilters.value.type
   if (activeFilters.value.reason) params.reason = activeFilters.value.reason
   return params
@@ -167,6 +186,7 @@ const { data: movementsData, isFetching: loading } = useGetProductMovements(
 )
 
 const movements = computed(() => movementsData.value?.data?.results || [])
+const movementsCount = computed(() => movementsData.value?.data?.count || 0)
 
 const filterGroups: FilterGroup[] = [
   {
@@ -197,10 +217,12 @@ const activeFilterCount = computed(() => {
 
 const handleApplyFilters = (filters: Record<string, string | null>) => {
   activeFilters.value = filters
+  page.value = 1
 }
 
 const clearFilters = () => {
   activeFilters.value = {}
+  page.value = 1
 }
 
 const showMovementModal = ref(false)

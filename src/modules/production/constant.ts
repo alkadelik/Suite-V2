@@ -13,7 +13,9 @@ import componentPng from "@/assets/images/components.png"
 import ingredientPng from "@/assets/images/ingredients.png"
 import materialPng from "@/assets/images/materials.png"
 import { formatDate } from "@/utils/formatDate"
-import { startCase } from "@/utils/format-strings"
+import { removeUnderscores, startCase } from "@/utils/format-strings"
+import { convertNumToPurchaseUnit, convertNumToUsageUnit, getPurchaseUnit } from "./utils"
+import { floatDecimal } from "@/utils/others"
 
 // =================================================
 // ================ RAW MATERIALS =========================
@@ -23,14 +25,19 @@ export const RAW_MATERIALS_COLUMN: TableColumn<TRawMaterial>[] = [
   {
     header: "Stock",
     accessor: "stock",
-    cell: ({ item }) => Number(item.current_stock).toLocaleString() + item.unit,
+    cell: ({ item }) =>
+      floatDecimal(convertNumToPurchaseUnit(+item.current_stock, item as TRawMaterial)) +
+      " " +
+      removeUnderscores(getPurchaseUnit(item as TRawMaterial)),
   },
   {
     header: "Last Cost",
     accessor: "last_cost",
     cell: ({ item }) => {
       const { format } = useFormatCurrency()
-      return Number(item.last_cost) ? `${format(Number(item.last_cost))}/${item.unit}` : "-"
+      return Number(item.last_cost)
+        ? `${format(+convertNumToUsageUnit(+item.last_cost, item as TRawMaterial))}/${removeUnderscores(getPurchaseUnit(item as TRawMaterial))}`
+        : "-"
     },
   },
   {
@@ -38,7 +45,9 @@ export const RAW_MATERIALS_COLUMN: TableColumn<TRawMaterial>[] = [
     accessor: "average_cost",
     cell: ({ item }) => {
       const { format } = useFormatCurrency()
-      return Number(item.last_cost) ? `${format(Number(item.avg_cost))}/${item.unit}` : "-"
+      return Number(item.avg_cost)
+        ? `${format(+convertNumToUsageUnit(+item.avg_cost, item as TRawMaterial))}/${removeUnderscores(getPurchaseUnit(item as TRawMaterial))}`
+        : "-"
     },
   },
   { header: "", accessor: "actions" },
@@ -82,13 +91,9 @@ export const USAGE_HISTORY_COLUMN: TableColumn<TMovement>[] = [
 ]
 
 export const LINKED_RECIPES_COLUMN: TableColumn<TLinkedRecipe>[] = [
-  { header: "Item", accessor: "item" },
-  { header: "Type", accessor: "type" },
-  {
-    header: "Quantity per Batch",
-    accessor: "quantity_per_batch",
-    cell: ({ item }) => `${item.quantity_per_batch}/${item.unit}`,
-  },
+  { header: "Output Item", accessor: "output_item_name" },
+  { header: "Type", accessor: "item_type" },
+  { header: "Actions", accessor: "actions" },
 ]
 
 export const componentOptions = [
@@ -118,10 +123,15 @@ export const componentOptions = [
   },
 ]
 
+// Temporary: conversion rates can corrupt stock/cost records if edited after
+// creation, so we lock them post-save until proper recalculation is in place.
+// Flip to false to fall back to the previous (always-editable) behavior.
+export const LOCK_CONVERSION_RATE_EDITING = true
+
 export const UNITS_OF_MEASURE = [
   { label: "Kilograms (kg)", value: "kg" },
   { label: "Grams (g)", value: "g" },
-  { label: "Liters (l)", value: "l" },
+  { label: "Liters (L)", value: "L" },
   { label: "Milliliters (ml)", value: "ml" },
   { label: "Pieces (pcs)", value: "pcs" },
   { label: "Meters (m)", value: "m" },
@@ -134,16 +144,21 @@ export const UNITS_OF_MEASURE = [
 // ================ RECIPES =========================
 
 export const RECIPES_COLUMN: TableColumn<TRecipe>[] = [
+  // { header: "Recipe Name", accessor: "name" },
   { header: "Output Item", accessor: "output_item_name" },
   { header: "Ingredient Count", accessor: "ingredient_count" },
-  { header: "Cost Processes", accessor: "process_cost_count" },
   {
     header: "Status",
     accessor: "is_active",
     cell: ({ item }) => (item.is_active ? "Active" : "Disabled"),
   },
   {
-    header: "Last Edited",
+    header: "Last Used",
+    accessor: "last_used",
+    cell: ({ item }) => (item.last_used ? formatDate(item.last_used as string) : "--"),
+  },
+  {
+    header: "Date Modified",
     accessor: "updated_at",
     cell: ({ item }) => formatDate(item.updated_at as string),
   },
@@ -189,21 +204,23 @@ export const recipeNameOptions = [
 // ================ PRODUCTION RUNS =========================
 
 export const PROD_RUNS_COLUMN: TableColumn<TProdRun>[] = [
-  { header: "Run ID", accessor: "run_id" },
-  { header: "Output Item", accessor: "output_item_name" },
-  { header: "", accessor: "damaged_quantity" },
+  // { header: "Run ID", accessor: "run_id" },
+  { header: "Item", accessor: "output_item_name" },
+  // { header: "Variant", accessor: "output_variant" },
   {
-    header: "Output Quantity",
+    header: "Quantity",
     accessor: "quantity_to_produce",
-    cell: ({ value }) => parseInt(value as string),
+    cell: ({ item }) =>
+      parseInt(item.quantity_to_produce as string).toLocaleString() + item.output_unit,
   },
+  // {
+  //   header: "Usable Quantity",
+  //   accessor: "usable_quantity",
+  //   cell: ({ item }) =>
+  //     parseInt(item.usable_quantity as string).toLocaleString() + item.output_unit,
+  // },
   {
-    header: "Usable Quantity",
-    accessor: "usable_quantity",
-    cell: ({ value }) => parseInt(value as string),
-  },
-  {
-    header: "Total Cost",
+    header: "Cost",
     accessor: "last_cost",
     cell: ({ item }) => {
       const { format } = useFormatCurrency()
@@ -216,9 +233,9 @@ export const PROD_RUNS_COLUMN: TableColumn<TProdRun>[] = [
     cell: ({ item }) => startCase(item.status as string),
   },
   {
-    header: "Date created",
-    accessor: "date_created",
-    cell: ({ item }) => formatDate(item.created_at as string),
+    header: "Date Finalized",
+    accessor: "finalized_at",
+    cell: ({ item }) => (item.finalized_at ? formatDate(item.finalized_at as string) : "-"),
   },
   { header: "", accessor: "actions" },
 ]
@@ -228,24 +245,29 @@ export const PROD_RUN_INGREDIENT_COLUMN: TableColumn<TProdRunIngredientUsed>[] =
   {
     header: "Quantity Used",
     accessor: "quantity_required",
-    cell: ({ item }) => `${parseInt(String(item.quantity_required))} ${item.unit}`,
+    cell: ({ item }) => {
+      const ing = item as TProdRunIngredientUsed
+      return `${floatDecimal(ing.quantity_required)} ${item.unit}`
+    },
   },
   {
     header: "Average Cost",
-    accessor: "actual_unit_cost",
+    accessor: "avg_cost",
     cell: ({ item }) => {
       const { format } = useFormatCurrency()
-      return Number(item.actual_unit_cost)
-        ? format(Number(item.actual_unit_cost)) + "/" + item.unit
+      return Number(item.estimated_cost)
+        ? format(Number(+item.estimated_cost / parseInt(String(item.quantity_required)))) +
+            "/" +
+            item.unit
         : "-"
     },
   },
   {
     header: "Total Cost",
-    accessor: "actual_total_cost",
+    accessor: "estimated_cost",
     cell: ({ item }) => {
       const { format } = useFormatCurrency()
-      return Number(item.actual_total_cost) ? format(Number(item.actual_total_cost)) : "-"
+      return Number(item.estimated_cost) ? format(+item.estimated_cost, { kobo: true }) : "-"
     },
   },
 ]

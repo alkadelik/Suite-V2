@@ -3,9 +3,9 @@
     <AppHeader show-logo :is-live="isLive" @logout="logout = true" />
 
     <Container class="flex min-h-0 flex-1 overflow-hidden">
-      <div class="flex min-h-0 flex-1 rounded-xl bg-white p-4 pb-0 2xl:px-8">
+      <div class="flex min-h-0 min-w-0 flex-1 rounded-xl bg-white p-4 pb-0 2xl:px-8">
         <!-- Fixed Header Section -->
-        <div class="flex min-h-0 flex-1 flex-col">
+        <div class="flex min-h-0 min-w-0 flex-1 flex-col">
           <header
             class="mb-4 hidden flex-shrink-0 border-b border-gray-200 pb-4 md:block md:text-left"
           >
@@ -26,7 +26,7 @@
           </header>
 
           <BackButton
-            v-if="route.path !== '/settings'"
+            v-if="route.path !== '/settings' && !route.path.startsWith('/settings/domains/')"
             label="Back"
             to="/settings"
             class="mb-3 flex-shrink-0 md:hidden"
@@ -58,7 +58,7 @@
             </aside>
 
             <!-- Scrollable main content -->
-            <main class="min-h-0 flex-1 overflow-y-auto px-3 md:py-3">
+            <main class="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-3 md:py-3">
               <router-view />
             </main>
           </div>
@@ -67,12 +67,6 @@
     </Container>
 
     <!--  -->
-    <PlansModal
-      v-if="!isInternational"
-      :model-value="showPlans"
-      @update:model-value="(val) => setPlanUpgradeModal(val)"
-    />
-
     <AddLocationModal
       :open="showAddLocationModal"
       :location="locationForEdit"
@@ -91,7 +85,6 @@ import BackButton from "@components/BackButton.vue"
 import { useRoute } from "vue-router"
 import { useSettingsStore } from "../store"
 import { computed, ref, watch } from "vue"
-import PlansModal from "../components/PlansModal.vue"
 import AddLocationModal from "../components/AddLocationModal.vue"
 import { useGetLiveStatus, useGetRoles } from "@modules/shared/api"
 import { updateStoreRoleOptions } from "@modules/shared/constants"
@@ -99,13 +92,18 @@ import { clipboardCopy } from "@/utils/others"
 import Icon from "@components/Icon.vue"
 import { useAuthStore } from "@modules/auth/store"
 import LogoutModal from "@components/core/LogoutModal.vue"
+import { getSettingsNavigationLinks } from "../navigation"
 
 const route = useRoute()
 const { data: rolesData } = useGetRoles()
 
 const logout = ref(false)
 
-const storeSlug = useAuthStore().user?.store_slug || ""
+// Prefer the live storeDetails slug (refreshed after a slug edit) over the
+// persisted auth snapshot, so live-status isn't polled with a stale slug.
+const storeSlug = computed(
+  () => useSettingsStore().storeDetails?.slug || useAuthStore().user?.store_slug || "",
+)
 const { data: liveStatusData } = useGetLiveStatus(storeSlug)
 const isLive = computed(() => liveStatusData.value?.data?.is_live || false)
 
@@ -122,37 +120,20 @@ watch(
 
 const isInternational = computed(() => useSettingsStore().isInternational)
 
-const INTERNATIONAL_HIDDEN_LINKS = ["Plans & Billing", "Storefront Design", "Delivery Options"]
-
 const LINKS = computed(() =>
-  [
-    { label: "Profile", path: "/settings/profile" },
-    { label: "Store Details", path: "/settings/store-details" },
-    { label: "Password", path: "/settings/password" },
-    { label: "Teams", path: "/settings/teams" },
-    { label: "Plans & Billing", path: "/settings/billing" },
-    { label: "Locations", path: "/settings/locations" },
-    { label: "Taxes", path: "/settings/taxes" },
-    { label: "Storefront Design", path: "/settings/design" },
-    { label: "Delivery Options", path: "/settings/delivery-options" },
-    { label: "Production", path: "/settings/production" },
-  ].filter((link) => {
-    const { activeLocation } = useSettingsStore()
-    if (!activeLocation?.is_hq) {
-      return ["Profile", "Password"].includes(link.label)
-    }
-    if (isInternational.value && INTERNATIONAL_HIDDEN_LINKS.includes(link.label)) {
-      return false
-    }
-    return true
+  getSettingsNavigationLinks({
+    isHq: Boolean(useSettingsStore().activeLocation?.is_hq),
+    isInternational: isInternational.value,
+    surface: "desktop",
   }),
 )
 
-const { setPlanUpgradeModal, setAddLocationModal, setLocationForEdit } = useSettingsStore()
-const showPlans = computed(() => useSettingsStore().showPlanUpgradeModal)
+const settingsStore = useSettingsStore()
+const { setAddLocationModal, setLocationForEdit } = settingsStore
 const showAddLocationModal = computed(() => useSettingsStore().showAddLocationModal)
 const locationForEdit = computed(() => useSettingsStore().locationForEdit)
-const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
+// Prefer the connected custom domain when one is active (LYW-2618).
+const storefrontUrl = computed(() => useSettingsStore().displayDomain)
 
 // Handle location refresh after adding/updating location
 const handleLocationRefresh = () => {

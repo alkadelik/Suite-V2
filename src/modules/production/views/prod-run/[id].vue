@@ -3,6 +3,7 @@ import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 import { formatDate } from "@/utils/formatDate"
+import { floatDecimal } from "@/utils/others"
 import AppButton from "@components/AppButton.vue"
 import BackButton from "@components/BackButton.vue"
 import Chip from "@components/Chip.vue"
@@ -62,9 +63,18 @@ const costBreakdown = computed(() => {
 
 const economicsBreakdown = computed(() => {
   return {
-    "Produced Units": parseInt(prodRun.value?.quantity_to_produce || "0"),
-    "Usable Units": parseInt(prodRun.value?.usable_quantity || "0"),
-    "Cost per Unit": format(prodRun.value?.cost_per_unit || 0, { kobo: true }),
+    "Quantity produced":
+      floatDecimal(prodRun.value?.quantity_to_produce || "0") +
+      " " +
+      (prodRun.value?.output_unit || ""),
+    "Usable Quantity":
+      floatDecimal(prodRun.value?.usable_quantity || "0") +
+      " " +
+      (prodRun.value?.output_unit || ""),
+    [`Cost per ${prodRun.value?.output_unit || "unit"}`]: format(
+      prodRun.value?.cost_per_unit || 0,
+      { kobo: true },
+    ),
   }
 })
 
@@ -86,7 +96,7 @@ const onFinaliseRun = () => {
 
 <template>
   <div class="px-3 pb-6 lg:px-6 lg:pt-8">
-    <PageHeader v-if="isMobile" :title="`Run Details`" inner />
+    <PageHeader v-if="isMobile" :title="`Run Details`" inner back-link="/production/runs" />
 
     <BackButton v-else :label="`Back to Runs`" to="/production/runs" />
 
@@ -105,7 +115,7 @@ const onFinaliseRun = () => {
           <h2 class="mb-4 text-2xl font-semibold capitalize">{{ prodRun.output_item_name }}</h2>
           <div class="flex gap-1">
             <Chip
-              :label="parseInt(prodRun.quantity_to_produce) + ' ' + prodRun.output_unit"
+              :label="floatDecimal(prodRun.quantity_to_produce) + ' ' + prodRun.output_unit"
               color="blue"
             />
             <Chip
@@ -153,7 +163,13 @@ const onFinaliseRun = () => {
               </span>
               <h3 class="!font-outfit truncate font-medium">Process Cost/Expenses</h3>
               <span class="ml-auto" />
-              <button type="button" class="text-primary-600 text-sm underline">View note</button>
+              <button
+                v-if="prodRun.notes"
+                type="button"
+                class="text-primary-600 flex-shrink-0 text-sm underline"
+              >
+                View note
+              </button>
             </div>
 
             <section class="mt-4 divide-y divide-gray-200 rounded-xl bg-gray-50 px-4">
@@ -208,40 +224,9 @@ const onFinaliseRun = () => {
               <Chip
                 icon="danger"
                 color="error"
-                :label="`${parseInt(prodRun.damaged_quantity)} units`"
+                :label="`${floatDecimal(prodRun.damaged_quantity)} ${prodRun.output_unit}`"
               />
             </div>
-
-            <!-- <section class="mt-6">
-              <h4 class="text-core-700 mb-2">Reason(s) Recorded</h4>
-              <div class="divide-y divide-gray-200 rounded-xl bg-gray-50 px-4">
-                <div v-for="v in 1" :key="v" class="flex justify-between py-4 text-sm">
-                  <p>
-                    <span class="font-medium">Chill Roasting {{ v }}</span>
-                  </p>
-                  <p class="space-x-1">
-                    <span class="font-medium">{{ format(4000) }}</span>
-                    <Icon v-if="false" name="note" class="text-primary-600" />
-                    <span v-else class="px-2"></span>
-                  </p>
-                </div>
-              </div>
-            </section>
-            <section class="mt-6">
-              <h4 class="text-core-700 mb-2">Cost Impact</h4>
-              <div class="divide-y divide-gray-200 rounded-xl bg-gray-50 px-4">
-                <div v-for="v in 1" :key="v" class="flex justify-between py-4 text-sm">
-                  <p>
-                    <span class="font-medium">Chill Roasting {{ v }}</span>
-                  </p>
-                  <p class="space-x-1">
-                    <span class="font-medium">{{ format(4000) }}</span>
-                    <Icon v-if="false" name="note" class="text-primary-600" />
-                    <span v-else class="px-2"></span>
-                  </p>
-                </div>
-              </div>
-            </section> -->
           </div>
         </div>
 
@@ -321,6 +306,7 @@ const onFinaliseRun = () => {
         :open="!!showCreateModal"
         :mode="showCreateModal"
         :run="prodRun"
+        :has-full-details="true"
         @close="showCreateModal = null"
         @refresh="refetch"
       />

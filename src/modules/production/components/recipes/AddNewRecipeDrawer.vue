@@ -1,22 +1,30 @@
 <script setup lang="ts">
 import Drawer from "@components/Drawer.vue"
-import Modal from "@components/Modal.vue"
 import StepperWizard from "@components/StepperWizard.vue"
 import { useProductionStore } from "@modules/production/store"
-import { useMediaQuery } from "@vueuse/core"
 import { ref, computed, watch, capitalize } from "vue"
 import { toast } from "@/composables/useToast"
 import BasicRecipeDetailsForm from "./recipe-form/BasicRecipeDetailsForm.vue"
 import AddIngredientsForm from "./recipe-form/AddIngredientsForm.vue"
 import ProcessCostForm from "./recipe-form/ProcessCostForm.vue"
 import { displayError } from "@/utils/error-handler"
-import { IRecipePayload, TRecipe } from "@modules/production/types"
-import { useCreateRecipe, useUpdateRecipe } from "@modules/production/api"
+import { IRecipePayload, TConversion, TRecipe } from "@modules/production/types"
+import { useCreateRecipe, useUpdateRecipe, useGetSingleRecipe } from "@modules/production/api"
 import { UNITS_OF_MEASURE } from "@modules/production/constant"
+import ConfirmationModal from "@components/ConfirmationModal.vue"
 
 export type IngredientRow = {
   id: string
-  ingredient: { label: string; value: string; unit?: string; cost_per_unit: number; kind: string }
+  ingredient: {
+    label: string
+    value: string
+    unit: string
+    cost_per_unit: number
+    kind: string
+    conversions?: TConversion[]
+    base_unit?: string
+    base_cost_per_unit?: number
+  }
   qty: number
 }
 
@@ -28,36 +36,38 @@ export type ProcessRow = {
 }
 
 export type BasicDetails = {
+  name?: string
   outputItemType: "product" | "sub_assembly"
   outputItem: string
-  outputItemOption?: { label: string; value: string } | null
+  outputItemOption?: { label: string; value: string; item?: Record<string, unknown> } | null
   outputQuantity: number
   unit: string
   unitOption?: { label: string; value: string } | null
   notes: string
+  lastUsed?: string | null
 }
 
 export type RecipeDrawerProps = {
   open: boolean
   recipe?: TRecipe | null
   mode: "create" | "edit" | "duplicate" | null
+  hasFullDetails?: boolean // if true, expects recipe prop to be fully hydrated with all details (for edit mode). if false, will fetch details using uid (for duplicate mode)
 }
 
 const props = withDefaults(defineProps<RecipeDrawerProps>(), { mode: "create" })
 const emit = defineEmits(["close", "refresh"])
-
-const isMobile = computed(() => useMediaQuery("(max-width: 1028px)").value)
 const isEditMode = computed(() => props.mode === "edit" && !!props.recipe)
-
-const drawerTitle = computed(() => {
-  if (isEditMode.value) return `Edit ${capitalize(recipeNameValue.value)}`
-  return `Add ${capitalize(recipeNameValue.value)}`
-})
-
-const steps = ["Basic details", "Ingredients", "Process cost"]
-const activeStep = ref(0)
+const recipeSingular = computed(() => useProductionStore().recipeSingularLabel)
+const materialLabel = computed(() => useProductionStore().componentLabel)
 
 const recipeNameValue = computed(() => useProductionStore().recipeValue)
+const drawerTitle = computed(() => {
+  if (isEditMode.value) return `Edit ${recipeSingular.value}`
+  return `Add ${recipeSingular.value}`
+})
+
+const steps = computed(() => ["Basic details", materialLabel.value, "Process cost"])
+const activeStep = ref(0)
 
 // ─── Shared state across steps ─────────────────────────────────────────────
 const basicDetails = ref<BasicDetails>({
@@ -71,6 +81,53 @@ const basicDetails = ref<BasicDetails>({
 const ingredientRowsState = ref<IngredientRow[]>([])
 const processRowsState = ref<ProcessRow[]>([])
 const isPending = ref(false)
+
+const seedFromRecipe = (recipe: TRecipe) => {
+  const itemUid = recipe.output_product || recipe.output_raw_material || ""
+  const unitOption =
+    UNITS_OF_MEASURE.find((u) => u.value?.toLowerCase() === recipe.output_unit?.toLowerCase()) ??
+    (recipe.output_unit ? { label: recipe.output_unit, value: recipe.output_unit } : null)
+  basicDetails.value = {
+    name: recipe.name || "",
+    outputItemType: recipe.item_type,
+    outputItem: itemUid,
+    outputItemOption: itemUid ? { label: recipe.output_item_name, value: itemUid } : null,
+    outputQuantity: parseInt(recipe.output_quantity),
+    unit: recipe.output_unit,
+    unitOption,
+    notes: recipe.notes || "",
+    lastUsed: recipe.last_used ?? null,
+  }
+  ingredientRowsState.value = (recipe.ingredients ?? []).map((ing) => ({
+    id: ing.uid,
+    ingredient: {
+      label: ing.material_name,
+      value: ing.material_uid,
+      unit: ing.unit,
+      cost_per_unit: ing.unit_cost,
+      kind: "raw_material" as string,
+      conversions: ing.conversions,
+    },
+    qty: ing.quantity,
+  }))
+  processRowsState.value = (recipe.process_costs ?? []).map((pc) => ({
+    id: pc.uid,
+    name: pc.name,
+    cost: String(pc.cost_per_batch),
+    note: pc.notes,
+  }))
+}
+
+// Fetch full recipe when hasFullDetails is false (e.g. edit from list without hydrated data)
+const fetchUid = computed(() =>
+  !props.hasFullDetails && props.open && isEditMode.value ? (props.recipe?.uid ?? "") : "",
+)
+const { data: fetchedRecipe, isFetching: isLoadingRecipe } = useGetSingleRecipe(fetchUid)
+
+watch(fetchedRecipe, (recipe) => {
+  console.log("Fetched recipe:", recipe)
+  if (recipe) seedFromRecipe(recipe)
+})
 
 // ─── Reset or populate when drawer opens ───────────────────────────────────
 watch([() => props.open, () => props.recipe], ([isOpen]) => {
@@ -91,38 +148,10 @@ watch([() => props.open, () => props.recipe], ([isOpen]) => {
     return
   }
 
-  // edit / duplicate – use fully-hydrated recipe passed by the caller
-  const recipe = props.recipe
-  const itemUid = recipe.output_product || recipe.output_raw_material || ""
-  const unitOption =
-    UNITS_OF_MEASURE.find((u) => u.value === recipe.output_unit) ??
-    (recipe.output_unit ? { label: recipe.output_unit, value: recipe.output_unit } : null)
-  basicDetails.value = {
-    outputItemType: recipe.item_type,
-    outputItem: itemUid,
-    outputItemOption: itemUid ? { label: recipe.output_item_name, value: itemUid } : null,
-    outputQuantity: parseInt(recipe.output_quantity),
-    unit: recipe.output_unit,
-    unitOption,
-    notes: recipe.notes || "",
+  // Only seed immediately if the caller guarantees full details
+  if (props.hasFullDetails) {
+    seedFromRecipe(props.recipe)
   }
-  ingredientRowsState.value = (recipe.ingredients ?? []).map((ing) => ({
-    id: ing.uid,
-    ingredient: {
-      label: ing.material_name,
-      value: ing.material_uid,
-      unit: ing.unit,
-      cost_per_unit: ing.unit_cost,
-      kind: "raw_material" as string,
-    },
-    qty: ing.quantity,
-  }))
-  processRowsState.value = (recipe.process_costs ?? []).map((pc) => ({
-    id: pc.uid,
-    name: pc.name,
-    cost: String(pc.cost_per_batch),
-    note: pc.notes,
-  }))
 })
 const { mutate: createRecipe, isPending: isCreating } = useCreateRecipe()
 const { mutate: updateRecipe, isPending: isUpdating } = useUpdateRecipe()
@@ -131,13 +160,17 @@ const onSubmit = () => {
   const details = basicDetails.value
   const ingredients: IRecipePayload["ingredients"] = ingredientRowsState.value
     .filter((r) => r.qty > 0)
-    .map((r) => ({ material_uid: r.ingredient.value, quantity: r.qty }))
+    .map((r) => ({
+      material_uid: r.ingredient.value,
+      quantity: r.qty,
+    }))
 
   const processCosts: IRecipePayload["process_costs"] = processRowsState.value
     .filter((p) => p.name.trim())
     .map((p) => ({ name: p.name, cost_per_batch: p.cost, notes: p.note }))
 
   const payload: IRecipePayload = {
+    name: details.name || undefined,
     output_item_type: details.outputItemType,
     output_item_uid: details.outputItem,
     output_quantity: details.outputQuantity,
@@ -161,57 +194,107 @@ const onSubmit = () => {
     createRecipe(payload, { onSuccess, onError: displayError })
   }
 }
+
+const confirmClose = ref(false)
+
+const handleClose = () => {
+  if (activeStep.value >= 1) {
+    confirmClose.value = true
+  } else {
+    emit("close")
+  }
+}
+
+const forceClose = () => {
+  confirmClose.value = false
+  emit("close")
+}
 </script>
 
 <template>
-  <component
-    :is="isMobile ? Modal : Drawer"
-    :open="open"
-    :title="drawerTitle"
-    max-width="2xl"
-    variant="fullscreen"
-    @close="emit('close')"
-  >
+  <Drawer :open="open" :title="drawerTitle" max-width="2xl" @close="handleClose">
     <StepperWizard v-model="activeStep" :steps="steps" :showIndicators="false">
       <template #default="{ step, onPrev, onNext }">
-        <!-- step 0: basic details -->
-        <BasicRecipeDetailsForm
-          v-if="step == 0"
-          :initial-values="basicDetails"
-          @next="
-            (details: BasicDetails) => {
-              basicDetails = details
-              onNext()
-            }
-          "
-          @close="emit('close')"
-        />
-        <!-- step 1: ingredients -->
-        <AddIngredientsForm
-          v-if="step == 1"
-          :initial-rows="ingredientRowsState"
-          @next="
-            (rows: IngredientRow[]) => {
-              ingredientRowsState = rows
-              onNext()
-            }
-          "
-          @prev="onPrev"
-        />
-        <!-- step 2: process cost -->
-        <ProcessCostForm
-          v-if="step == 2"
-          :initial-rows="processRowsState"
-          :loading="isCreating || isUpdating"
-          @prev="onPrev"
-          @submit="
-            (rows: ProcessRow[]) => {
-              processRowsState = rows
-              onSubmit()
-            }
-          "
-        />
+        <!-- loading skeleton while fetching full recipe details -->
+        <div v-if="isLoadingRecipe" class="space-y-4 p-4">
+          <div v-for="n in 6" :key="n" class="h-12 animate-pulse rounded-xl bg-gray-200" />
+        </div>
+
+        <template v-else>
+          <!-- step 0: basic details -->
+          <BasicRecipeDetailsForm
+            v-if="step == 0"
+            :initial-values="basicDetails"
+            :is-edit-mode="isEditMode"
+            :unit-locked-by-history="isEditMode && !!basicDetails.lastUsed"
+            @next="
+              (details: BasicDetails) => {
+                basicDetails = details
+                onNext()
+              }
+            "
+            @close="handleClose"
+          />
+          <!-- step 1: ingredients -->
+          <AddIngredientsForm
+            v-if="step == 1"
+            :initial-rows="ingredientRowsState"
+            :exclude-uid="basicDetails.outputItem"
+            :output-item-details="{
+              name: basicDetails.outputItemOption?.label || '',
+              qty: basicDetails.outputQuantity,
+              unit: basicDetails.unit,
+              type: basicDetails.outputItemType,
+            }"
+            @next="
+              (rows: IngredientRow[]) => {
+                ingredientRowsState = rows
+                onNext()
+              }
+            "
+            @prev="
+              (rows: IngredientRow[]) => {
+                ingredientRowsState = rows
+                onPrev()
+              }
+            "
+          />
+          <!-- step 2: process cost -->
+          <ProcessCostForm
+            v-if="step == 2"
+            :initial-rows="processRowsState"
+            :loading="isCreating || isUpdating"
+            :output-item-details="{
+              name: basicDetails.outputItemOption?.label || '',
+              qty: basicDetails.outputQuantity,
+              unit: basicDetails.unit,
+              type: basicDetails.outputItemType,
+            }"
+            @prev="
+              (rows: ProcessRow[]) => {
+                processRowsState = rows
+                onPrev()
+              }
+            "
+            @submit="
+              (rows: ProcessRow[]) => {
+                processRowsState = rows
+                onSubmit()
+              }
+            "
+          />
+
+          <ConfirmationModal
+            v-model="confirmClose"
+            :header="`Discard ${capitalize(recipeNameValue)}?`"
+            :paragraph="`You have unsaved progress on this ${recipeNameValue}. Closing now will lose everything you've entered.`"
+            action-label="Discard"
+            variant="warning"
+            info-message="This action cannot be reversed."
+            @confirm="forceClose"
+          />
+        </template>
       </template>
     </StepperWizard>
-  </component>
+  </Drawer>
 </template>

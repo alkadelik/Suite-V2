@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Drawer from "@components/Drawer.vue"
 import StepperWizard from "@components/StepperWizard.vue"
-import { ref, computed, onMounted, watch } from "vue"
+import { ref, computed, watch } from "vue"
 import type { IProductCatalogue } from "@modules/inventory/types"
 import type { ICustomer } from "@modules/customers/types"
 import type { OrderPayload, OrderItemPayload } from "@modules/orders/types"
@@ -21,14 +21,13 @@ import { useCreateOrder } from "../api"
 import { toast } from "@/composables/useToast"
 import type { IShippingCourier } from "@modules/shared/types"
 import type { PopupInventory } from "@modules/popups/types"
-import { useMediaQuery } from "@vueuse/core"
-import Modal from "@components/Modal.vue"
-import { handlePayStackPayment, loadPaystackScript } from "../utilities"
 import { useSettingsStore } from "@modules/settings/store"
+import ConfirmationModal from "@components/ConfirmationModal.vue"
 
 const props = defineProps({
   open: { type: Boolean, required: true },
   popupEventId: { type: String, default: undefined },
+  popupEventName: { type: String },
 })
 const emit = defineEmits(["close", "refresh"])
 
@@ -262,6 +261,7 @@ const onCreateOrder = () => {
         delete deliveryFields.delivery_address
       } else if (delivery_method === "custom") {
         // Custom delivery: send courier name and delivery_fee
+        deliveryFields.delivery_method = "custom"
         deliveryFields.delivery_fee = shippingInfo.value.delivery_fee
         deliveryFields.courier = shippingInfo.value.courier
           ? {
@@ -344,34 +344,16 @@ const onCreateOrder = () => {
     onError: displayError,
   }
 
+  // Shipbubble shipping is paid for later, when the shipment is booked from the
+  // Shipments page — order creation just stores the quote (rate + courier).
   if (delivery_method === "shipbubble") {
-    const payData = {
-      shipping_price: (Number(shippingInfo.value.delivery_fee || 0) * 100).toFixed(2), // convert to kobo
-      customer_name:
-        selectedCustomer.value?.full_name ||
-        `${selectedCustomer.value?.first_name || ""} ${selectedCustomer.value?.last_name || ""}`.trim() ||
-        "Customer",
-      customer_email: shippingInfo.value.customer_email || selectedCustomer.value?.email || "",
-      shipping_address:
-        typeof shippingInfo.value.delivery_address === "string"
-          ? shippingInfo.value.delivery_address
-          : (shippingInfo.value.delivery_address as { label: string; value: string }).label,
-    }
-
-    handlePayStackPayment(payData, (payResponse) => {
-      // money paid... time to create order
-      console.log("Payment successful:", payResponse)
-      const reference = payResponse.reference
-
-      createOrder(
-        {
-          ...payload,
-          reference,
-          delivery_fee: Number(shippingInfo.value.delivery_fee).toFixed(2),
-        } as OrderPayload,
-        handler,
-      )
-    })
+    createOrder(
+      {
+        ...payload,
+        delivery_fee: Number(shippingInfo.value.delivery_fee).toFixed(2),
+      } as OrderPayload,
+      handler,
+    )
   } else {
     createOrder(payload as OrderPayload, handler)
   }
@@ -389,13 +371,7 @@ const resetForm = () => {
   productViewMode.value = "grid"
 }
 
-const isMobile = useMediaQuery("(max-width: 1028px)")
-
 // load paystack script on mounted
-onMounted(() => {
-  loadPaystackScript()
-})
-
 // Sync customer email and phone to shippingInfo whenever customer changes
 watch(
   () => selectedCustomer.value,
@@ -417,6 +393,27 @@ watch(
   { immediate: true },
 )
 
+const confirmClose = ref(false)
+
+const handleClose = () => {
+  if (activeStep.value >= 1) {
+    confirmClose.value = true
+  } else {
+    emit("close")
+  }
+}
+
+const forceClose = () => {
+  confirmClose.value = false
+  emit("close")
+}
+
+// Keep popupOrderItems in sync when products are added/removed from step 0
+watch(selectedPopupProducts, (products) => {
+  const selectedUids = new Set(products.map((p) => p.uid))
+  popupOrderItems.value = popupOrderItems.value.filter((item) => selectedUids.has(item.product.uid))
+})
+
 // reset form when drawer is closed
 watch(
   () => props.open,
@@ -427,13 +424,12 @@ watch(
 </script>
 
 <template>
-  <component
-    :is="isMobile ? Modal : Drawer"
+  <Drawer
     :open="open"
-    :title="isPopupOrder ? 'Add Popup Order' : 'Create Order'"
+    :title="isPopupOrder ? `Add Order to ${popupEventName || 'Popup'}` : 'Create Order'"
     max-width="2xl"
     variant="fullscreen"
-    @close="emit('close')"
+    @close="handleClose"
   >
     <StepperWizard v-model="activeStep" :steps="steps" :showIndicators="false">
       <template #default="{ step, onPrev, onNext }">
@@ -442,6 +438,7 @@ watch(
           v-if="step === 0 && isPopupOrder"
           v-model:selectedProducts="selectedPopupProducts"
           v-model:viewMode="productViewMode"
+          :popup-event-id="props.popupEventId"
           @next="onNext"
         />
         <OrderSelectProduct
@@ -483,6 +480,7 @@ watch(
           v-model:shipping-info="shippingInfo"
           :customer="selectedCustomer"
           :orderItems="isPopupOrder ? (popupOrderItems as any) : orderItems"
+          :is-popup-order="isPopupOrder"
           @next="onNext"
           @prev="onPrev"
           @openAddAddress="showAddAddressModal = true"
@@ -522,9 +520,20 @@ watch(
           @prev="onPrev"
           @submit="onCreateOrder"
         />
+
+        <!--  -->
+        <ConfirmationModal
+          v-model="confirmClose"
+          header="Discard Order?"
+          paragraph="You have unsaved progress on this order. Closing now will lose everything you've entered."
+          action-label="Discard"
+          variant="warning"
+          info-message="This action cannot be reversed."
+          @confirm="forceClose"
+        />
       </template>
     </StepperWizard>
-  </component>
+  </Drawer>
 
   <!-- Add Customer Address Modal (outside drawer to avoid nesting) -->
   <OrderAddCustomerAddress

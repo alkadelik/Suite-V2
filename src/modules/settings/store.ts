@@ -12,6 +12,8 @@ export const useSettingsStore = defineStore(
     const locations = ref<TLocation[] | null>(null)
     const activeLocation = ref<TLocation | null>(null)
     const showPlanUpgradeModal = ref(false)
+    const showPlanLimitModal = ref(false)
+    const showMobileMenu = ref(false)
     const showAddLocationModal = ref(false)
     const locationForEdit = ref<TLocation | null>(null)
     const storeDetails = ref<IStoreDetails | null>(null)
@@ -22,6 +24,19 @@ export const useSettingsStore = defineStore(
     const storefrontUrl = computed(
       () =>
         `${isStaging ? "storefronts-v2.vercel.app" : "buy.leyyow.com"}/${storeDetails.value?.slug || "your-store"}`,
+    )
+
+    // Connected custom domain (only set when an ACTIVE domain exists). Hydrated from
+    // LocationDropdown, which fetches custom domains on every authenticated page.
+    const activeCustomDomain = ref<string | null>(null)
+
+    // The storefront domain shown across the app (sidebar, more menu, settings header):
+    // prefer a connected custom domain (scheme stripped to match the bare-URL contract),
+    // else fall back to the built-in storefront URL (LYW-2618).
+    const displayDomain = computed(() =>
+      activeCustomDomain.value
+        ? activeCustomDomain.value.replace(/^https?:\/\//, "")
+        : storefrontUrl.value,
     )
 
     // Actions
@@ -37,6 +52,15 @@ export const useSettingsStore = defineStore(
 
     const setPlanUpgradeModal = (value: boolean) => {
       showPlanUpgradeModal.value = value
+    }
+
+    const setPlanLimitModal = (value: boolean) => {
+      showPlanLimitModal.value = value
+      if (value) showMobileMenu.value = false
+    }
+
+    const setMobileMenu = (value: boolean) => {
+      showMobileMenu.value = value
     }
 
     const setAddLocationModal = (value: boolean) => {
@@ -55,6 +79,10 @@ export const useSettingsStore = defineStore(
       locationForEdit.value = location
     }
 
+    const setActiveCustomDomain = (domain: string | null) => {
+      activeCustomDomain.value = domain
+    }
+
     return {
       locations,
       activeLocation,
@@ -62,6 +90,10 @@ export const useSettingsStore = defineStore(
       setActiveLocation,
       showPlanUpgradeModal,
       setPlanUpgradeModal,
+      showPlanLimitModal,
+      setPlanLimitModal,
+      showMobileMenu,
+      setMobileMenu,
       showAddLocationModal,
       setAddLocationModal,
       locationForEdit,
@@ -69,6 +101,9 @@ export const useSettingsStore = defineStore(
       setStoreDetails,
       storeDetails,
       storefrontUrl,
+      activeCustomDomain,
+      setActiveCustomDomain,
+      displayDomain,
       isInternational,
       liveStatus,
       setLiveStatus,

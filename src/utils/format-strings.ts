@@ -51,3 +51,7 @@ export function getFullName(obj: TNameObj = {}, fallback: string = "Unknown User
 export function capitalizeFirstChar(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1)
 }
+
+export function removeUnderscores(str: string = ""): string {
+  return str.replace(/_/g, " ")
+}

@@ -11,22 +11,32 @@ import { TRawMaterial } from "../../types"
 import * as yup from "yup"
 import RadioInputField from "@components/form/RadioInputField.vue"
 import FormField from "@components/form/FormField.vue"
+import RecordExpenseToggle from "@modules/expenses/components/RecordExpenseToggle.vue"
 import { Field, useForm } from "vee-validate"
 import { onInvalidSubmit } from "@/utils/validations"
+import {
+  convertNumToPurchaseUnit,
+  convertNumToUsageUnit,
+  getPurchaseUnit,
+} from "@modules/production/utils"
+import { useProductionStore } from "@modules/production/store"
+import { removeUnderscores } from "@/utils/format-strings"
 
 interface Props {
   open: boolean
   material: TRawMaterial | null
+  addOnly?: boolean
 }
 
 const props = defineProps<Props>()
 const emit = defineEmits<{
   close: []
-  refresh: []
+  refresh: [quantity?: number]
 }>()
 const { format } = useFormatCurrency()
 
 const selectedMaterial = computed(() => props.material)
+const materialSingular = computed(() => useProductionStore().componentSingular)
 
 // Adjustment type options
 const adjustmentTypeOptions = [
@@ -55,6 +65,7 @@ interface FormValues {
   unit_cost: string
   reason: { label: string; value: string } | null
   notes: string
+  expiry_date?: string
 }
 
 const adjustmentType = ref<"add" | "remove">("add")
@@ -81,9 +92,11 @@ const { handleSubmit, resetForm, values, setFieldValue } = useForm<FormValues>({
         }),
       unit_cost: yup
         .number()
-        .transform((value, originalValue) => (originalValue === "" ? undefined : value))
+        .transform((_, originalValue) =>
+          originalValue === "" ? undefined : Number(String(originalValue).replace(/,/g, "")),
+        )
         .typeError("unit cost must be a number")
-        .required("unit cost is required")
+        .optional()
         .positive("unit cost must be greater than 0"),
       reason: yup
         .object()
@@ -91,6 +104,7 @@ const { handleSubmit, resetForm, values, setFieldValue } = useForm<FormValues>({
         .nullable()
         .required("Reason is required"),
       notes: yup.string().optional(),
+      expiry_date: yup.string().optional(),
     }),
   ),
   initialValues: {
@@ -98,10 +112,34 @@ const { handleSubmit, resetForm, values, setFieldValue } = useForm<FormValues>({
     unit_cost: "",
     reason: null,
     notes: "",
+    expiry_date: "",
   },
 })
 
 const { mutate: adjustStock, isPending: isAdjusting } = useAdjustMaterialStock()
+
+// Optionally record a stock purchase as an expense (only offered for "New Purchase" additions)
+const recordAsExpense = ref(true)
+
+const showExpenseOption = computed(
+  () =>
+    adjustmentType.value === "add" &&
+    ["purchase", "adjustment"].includes(values.reason?.value ?? ""),
+)
+
+// Stock count adjustments are rarely an actual spend, so the toggle starts off for them
+watch(
+  () => values.reason?.value,
+  (reason) => {
+    recordAsExpense.value = reason !== "adjustment"
+  },
+)
+
+const expenseAmount = computed(() => {
+  const quantity = Number(values.quantity) || 0
+  const unitCost = Number(String(values.unit_cost).replace(/,/g, "")) || 0
+  return quantity * unitCost
+})
 
 // Get available reasons based on adjustment type
 const availableReasons = computed(() => {
@@ -128,10 +166,17 @@ const onSubmit = handleSubmit((values) => {
 
   const payload = {
     movement_type: adjustmentType.value,
-    quantity: Number(values.quantity),
-    unit_cost: Number(values.unit_cost),
+    quantity: convertNumToUsageUnit(+values.quantity, selectedMaterial.value),
+    unit_cost:
+      adjustmentType.value === "add"
+        ? convertNumToPurchaseUnit(+values.unit_cost.replace(/,/g, ""), selectedMaterial.value)
+        : null,
     reason: values.reason!.value,
     notes: values.notes || "",
+    ...(adjustmentType.value === "add"
+      ? { create_expense: showExpenseOption.value && recordAsExpense.value }
+      : {}),
+    ...(values.expiry_date ? { expiry_date: values.expiry_date } : {}),
   }
 
   adjustStock(
@@ -139,7 +184,7 @@ const onSubmit = handleSubmit((values) => {
     {
       onSuccess: () => {
         toast.success("Stock adjusted successfully")
-        emit("refresh")
+        emit("refresh", Number(values.quantity))
         closeModal()
       },
       onError: displayError,
@@ -150,19 +195,32 @@ const onSubmit = handleSubmit((values) => {
 // Close modal
 const closeModal = () => {
   resetForm()
+  recordAsExpense.value = true
   emit("close")
 }
 
-// Watch adjustment type changes to reset reason
 watch(adjustmentType, () => {
   setFieldValue("reason", null)
 })
+
+watch(
+  selectedMaterial,
+  (material) => {
+    if (material?.avg_cost) {
+      setFieldValue(
+        "unit_cost",
+        String(convertNumToUsageUnit(+material.avg_cost, material).toLocaleString()),
+      )
+    }
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
   <Modal
     :open="props.open"
-    title="Adjust Stock"
+    title="Add/Remove Stock"
     max-width="lg"
     variant="bottom-nav"
     @close="closeModal"
@@ -175,21 +233,36 @@ watch(adjustmentType, () => {
         class="bg-warning-50 border-warning-200 flex flex-wrap justify-between gap-x-8 gap-y-2 rounded-xl border p-5 text-sm"
       >
         <p>
-          <span class="font-semibold">Material:</span>
-          {{ selectedMaterial.name }} &bullet; {{ selectedMaterial.unit }}
+          <span class="font-semibold capitalize">{{ materialSingular }}:</span>
+          {{ selectedMaterial.name }}
         </p>
         <p>
           <span class="font-semibold">Current Stock:</span>
-          {{ Number(selectedMaterial.current_stock).toLocaleString() }}{{ selectedMaterial.unit }}
+          {{
+            Number(
+              convertNumToPurchaseUnit(selectedMaterial.current_stock, selectedMaterial),
+            ).toLocaleString()
+          }}
+          {{ removeUnderscores(getPurchaseUnit(selectedMaterial)) }}
         </p>
       </div>
 
-      <RadioInputField v-model="adjustmentType" :options="adjustmentTypeOptions" />
+      <RadioInputField
+        v-if="!props.addOnly"
+        v-model="adjustmentType"
+        :options="adjustmentTypeOptions"
+      />
 
       <!-- Adjustment Form -->
       <div class="space-y-4 border-t border-gray-200 pt-4">
         <div>
-          <label class="mb-2 block text-sm font-medium text-gray-700">Quantity</label>
+          <label class="mb-2 block text-sm font-medium text-gray-700"
+            >Quantity ({{
+              convertNumToUsageUnit(+values.quantity || 0, selectedMaterial) +
+              " " +
+              removeUnderscores(selectedMaterial.unit)
+            }})</label
+          >
           <div
             class="flex items-center justify-between gap-6 rounded-2xl border border-gray-200 bg-white p-3"
           >
@@ -209,7 +282,9 @@ watch(adjustmentType, () => {
                   placeholder="0"
                 />
               </Field>
-              <span class="text-gray-500">({{ selectedMaterial.unit }})</span>
+              <span class="text-gray-500"
+                >({{ removeUnderscores(getPurchaseUnit(selectedMaterial)) }})</span
+              >
             </div>
 
             <button
@@ -226,9 +301,11 @@ watch(adjustmentType, () => {
         </div>
 
         <FormField
-          type="text"
+          v-if="adjustmentType === 'add'"
+          type="number"
+          format="currency"
           name="unit_cost"
-          label="unit cost"
+          :label="`Unit Cost per ${removeUnderscores(getPurchaseUnit(selectedMaterial))}`"
           :placeholder="`e.g. ${format(12400)}`"
         />
 
@@ -247,11 +324,29 @@ watch(adjustmentType, () => {
           placeholder="Add any additional notes..."
           :rows="3"
         />
+
+        <FormField
+          type="date"
+          name="expiry_date"
+          label="Expiry Date (optional)"
+          placeholder="Select expiry date"
+        />
+
+        <RecordExpenseToggle
+          v-if="showExpenseOption"
+          v-model="recordAsExpense"
+          :amount="expenseAmount"
+        />
       </div>
     </div>
 
     <template #footer>
-      <AppButton label="Adjust Stock" class="w-full" :loading="isAdjusting" @click="onSubmit" />
+      <AppButton
+        :label="adjustmentType === 'add' ? 'Add Stock' : 'Remove Stock'"
+        class="w-full"
+        :loading="isAdjusting"
+        @click="onSubmit"
+      />
     </template>
   </Modal>
 </template>

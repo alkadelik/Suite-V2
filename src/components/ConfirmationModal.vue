@@ -1,5 +1,10 @@
 <template>
-  <MessageModal :open="modelValue" :max-width="maxWidth" @close="emit('update:modelValue', false)">
+  <MessageModal
+    :open="modelValue"
+    :max-width="maxWidth"
+    :z-class="zClass"
+    @close="emit('update:modelValue', false)"
+  >
     <div :class="headerIconContainerClasses">
       <div :class="headerIconInnerClasses">
         <Icon :name="displayHeaderIcon" size="16" :class="headerIconClasses" />
@@ -13,7 +18,7 @@
       <p class="mt-2 text-xs md:text-sm">{{ paragraph }}</p>
     </slot>
 
-    <div :class="infoBoxClasses">
+    <div v-if="props.infoMessage !== ''" :class="infoBoxClasses">
       <div :class="infoIconContainerClasses">
         <div :class="infoIconInnerClasses">
           <Icon name="info-circle-filled" size="20" :class="infoIconClasses" />
@@ -54,7 +59,7 @@ export interface ConfirmationModalProps {
   /** Paragraph text for the modal */
   paragraph?: string
   /** Loading state for the action button */
-  loading: boolean
+  loading?: boolean
   /**
    * The modal variant affecting colors and styling
    * - warning: Yellow/orange color scheme for warnings (default)
@@ -91,11 +96,15 @@ export interface ConfirmationModalProps {
    * @default "lg"
    */
   maxWidth?: string
+
+  /** Tailwind z-index class for the overlay (e.g., 'z-[9999]') */
+  zClass?: string
 }
 
 const props = withDefaults(defineProps<ConfirmationModalProps>(), {
   variant: "warning",
   maxWidth: "lg",
+  zClass: "z-40",
 })
 
 const emit = defineEmits<{

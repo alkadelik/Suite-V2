@@ -13,6 +13,8 @@ const props = withDefaults(
   defineProps<{
     order: TOrder
     showActions?: boolean
+    /** Offer the "Cancel Order" action (offline orders only) */
+    showCancel?: boolean
     customActions?: Array<{
       label?: string
       icon?: string
@@ -39,6 +41,7 @@ const emit = defineEmits([
   "fulfill",
   "void-order",
   "delete-order",
+  "cancel-order",
 ])
 
 const { format, truncate } = useFormatCurrency()
@@ -91,7 +94,19 @@ const menuItems = computed(() => {
         ...(isFulfilled.value
           ? []
           : [{ label: "Fulfill Order", icon: "money-add", action: () => emit("fulfill") }]),
-        ...(showVoid || showDelete ? [{ divider: true }] : []),
+        ...(showVoid || showDelete || props.showCancel ? [{ divider: true }] : []),
+        // Cancel order - offline orders only
+        ...(props.showCancel
+          ? [
+              {
+                label: "Cancel Order",
+                icon: "trash",
+                class: "text-red-600 hover:bg-red-50",
+                iconClass: "text-red-600",
+                action: () => emit("cancel-order"),
+              },
+            ]
+          : []),
         ...(showVoid
           ? [
               {
@@ -115,10 +130,6 @@ const menuItems = computed(() => {
             ]
           : []),
       ]
-})
-
-const itemsNoteCount = computed(() => {
-  return props.order.items?.filter((item) => item.notes).length || 0
 })
 
 const showOrderItems = ref<Record<string, boolean>>({})
@@ -174,20 +185,6 @@ const outstandingBalance = computed(() => {
 
     <!-- body -->
     <div class="px-5 py-3">
-      <div
-        v-if="itemsNoteCount > 0"
-        class="border-core-50 flex flex-wrap items-center gap-2 space-y-3 border-b pb-2 text-sm"
-      >
-        <!-- memos count -->
-        <Chip
-          v-if="itemsNoteCount > 0"
-          icon="message-2"
-          color="purple"
-          :label="`${itemsNoteCount} ${pluralize('memo', itemsNoteCount)}`"
-          variant="outlined"
-        />
-      </div>
-
       <!-- Items Section -->
       <div v-if="showOrderItems[order.order_number]" class="space-y-3">
         <div
@@ -296,6 +293,19 @@ const outstandingBalance = computed(() => {
       <hr v-if="showOrderItems[order.order_number]" class="border-core-300 my-2 border-dashed" />
 
       <div>
+        <div
+          v-if="order.memos_count"
+          class="border-core-200 mb-2 flex flex-wrap items-center gap-2 border-b pb-2 text-sm"
+        >
+          <!-- memos count -->
+          <Chip
+            v-if="order.memos_count > 0"
+            icon="message-2"
+            color="blue"
+            :label="`${order.memos_count} ${pluralize('memo', order.memos_count)}`"
+            variant="outlined"
+          />
+        </div>
         <div class="mb-2 flex justify-between">
           <h4 class="text-core-700 !font-outfit text-sm">Order state</h4>
         </div>
@@ -337,7 +347,7 @@ const outstandingBalance = computed(() => {
             <Chip
               dense
               variant="outlined"
-              :icon="order.source === 'internal' ? 'clipboard-text' : 'global'"
+              :icon="order.source?.includes('internal') ? 'clipboard-text' : 'global'"
               :label="orderSourceMap[order.source] || order.source"
             />
           </div>

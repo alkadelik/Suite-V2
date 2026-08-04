@@ -32,7 +32,7 @@ const itemsPerPage = ref(50)
 const computedParams = computed(() => {
   const params: Record<string, string> = {}
   if (debouncedSearch.value) params.search = debouncedSearch.value
-  params.offset = ((page.value - 1) * itemsPerPage.value).toString()
+  params.offset = ((debouncedSearch.value ? 0 : page.value - 1) * itemsPerPage.value).toString()
   params.limit = itemsPerPage.value.toString()
   return params
 })
@@ -92,7 +92,7 @@ watch(
           placeholder="Find a customer by name, email or phone"
           v-model="searchQuery"
         />
-        <AppButton icon="add" class="flex-shrink-0" @click="openAdd = true" />
+        <AppButton icon="user-add" class="flex-shrink-0" @click="openAdd = true" />
       </div>
     </div>
 

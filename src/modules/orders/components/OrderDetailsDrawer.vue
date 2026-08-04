@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import Drawer from "@components/Drawer.vue"
-import Modal from "@components/Modal.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
-import { useMediaQuery } from "@vueuse/core"
 import { TOrder, TOrderItem } from "../types"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { formatDate } from "@/utils/formatDate"
@@ -39,8 +37,6 @@ const emit = defineEmits([
   "delete-order",
 ])
 
-const isMobile = useMediaQuery("(max-width: 1028px)")
-
 const { format } = useFormatCurrency()
 
 const customerName = computed(() => {
@@ -69,6 +65,13 @@ const productsTotal = computed(() => {
 
 const deliveryFee = computed(() => {
   return Number(props.order.delivery_fee)
+})
+
+const isFreeShipping = computed(() => {
+  return (
+    props.order.fulfilment_method === "delivery" &&
+    props.order.delivery_payment_option === "free_shipping"
+  )
 })
 
 // Get store's default VAT rate as fallback
@@ -148,13 +151,7 @@ const menuItems = computed(() => {
 </script>
 
 <template>
-  <component
-    :is="isMobile ? Modal : Drawer"
-    :open="open"
-    max-width="2xl"
-    variant="fullscreen"
-    @close="emit('close')"
-  >
+  <Drawer :open="open" max-width="2xl" variant="fullscreen" @close="emit('close')">
     <template #header>
       <div class="flex items-center justify-between px-6 py-4">
         <h2 class="text-core-800 text-lg font-semibold">
@@ -271,8 +268,11 @@ const menuItems = computed(() => {
           <span class="font-medium">{{ format(productsTotal, { kobo: true }) }}</span>
         </p>
         <p class="flex justify-between text-sm">
-          <span class="text-core-600">Delivery Fee</span>
-          <span class="font-medium">{{
+          <span class="text-core-600"
+            >Delivery Fee
+            <span v-if="isFreeShipping" class="text-primary-600 text-xs">(Free Shipping)</span>
+          </span>
+          <span class="font-medium" :class="{ 'font-normal! line-through': isFreeShipping }">{{
             deliveryFee > 0 ? format(deliveryFee, { kobo: true }) : "-"
           }}</span>
         </p>
@@ -293,10 +293,16 @@ const menuItems = computed(() => {
           <span class="font-medium">-{{ format(Number(order.discount_amount)) }}</span>
         </p>
         <div class="border-core-200 my-2 border-t border-dashed"></div>
-        <p class="flex justify-between text-lg font-semibold">
+        <div class="flex justify-between text-lg font-semibold">
           <span>Total:</span>
-          <span class="text-primary-600">{{ format(order.total_amount, { kobo: true }) }}</span>
-        </p>
+          <div class="text-right">
+            <span class="text-primary-600">{{ format(order.total_amount, { kobo: true }) }}</span>
+            <br />
+            <span class="text-core-600 text-sm font-normal line-through" v-if="isFreeShipping">
+              {{ format(Number(order.total_amount) + deliveryFee, { kobo: true }) }}
+            </span>
+          </div>
+        </div>
       </div>
 
       <!-- Payment Information -->
@@ -387,5 +393,5 @@ const menuItems = computed(() => {
         </div>
       </div>
     </div>
-  </component>
+  </Drawer>
 </template>

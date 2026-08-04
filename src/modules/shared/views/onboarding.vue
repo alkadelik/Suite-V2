@@ -104,7 +104,11 @@ import { useSettingsStore } from "@modules/settings/store"
 const router = useRouter()
 
 const authStore = useAuthStore()
-const storeSlug = authStore.user?.store_slug || ""
+// Prefer the live storeDetails slug (refreshed after a slug edit) over the
+// persisted auth snapshot, so live-status isn't polled with a stale slug.
+const storeSlug = computed(
+  () => useSettingsStore().storeDetails?.slug || authStore.user?.store_slug || "",
+)
 
 const {
   data: liveStatusData,
@@ -195,7 +199,11 @@ const tasks = computed(() => {
     {
       id: 4,
       title: "Allow Delivery?",
-      completed: criteria?.delivery_options?.status || false,
+      completed:
+        criteria?.delivery_options?.details?.delivery_enabled ||
+        criteria?.delivery_options?.details?.manual_delivery_enabled ||
+        criteria?.delivery_options?.details?.express_delivery_enabled ||
+        false,
       subtext: "Offer delivery to your customers.",
       isButton: false,
       buttonLabel: "",

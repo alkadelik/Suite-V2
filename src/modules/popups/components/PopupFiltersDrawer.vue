@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import AppButton from "@components/AppButton.vue"
 import Drawer from "@components/Drawer.vue"
-import Modal from "@components/Modal.vue"
 // import RadioInputField from "@components/form/RadioInputField.vue"
 import TextField from "@components/form/TextField.vue"
-import { useMediaQuery } from "@vueuse/core"
 import { computed, ref } from "vue"
 
 defineProps<{ open: boolean }>()
@@ -12,8 +10,6 @@ const emit = defineEmits<{
   close: []
   apply: [filters: Record<string, string>]
 }>()
-
-const isMobile = useMediaQuery("(max-width: 1028px)")
 
 // const ORGANIZER_EVENT_OPTIONS = [
 //   { value: "true", label: "Eventful Only" },
@@ -55,8 +51,7 @@ const clearFilters = () => {
 </script>
 
 <template>
-  <component
-    :is="isMobile ? Modal : Drawer"
+  <Drawer
     :open="open"
     title="Filter Popups"
     max-width="lg"
@@ -96,5 +91,5 @@ const clearFilters = () => {
         />
       </div>
     </template>
-  </component>
+  </Drawer>
 </template>

@@ -8,6 +8,7 @@ import {
   PopupEventResponse,
   PopupInventory,
   PopupOrderPayload,
+  TQrcodeResponse,
 } from "./types"
 import { useMutation } from "@tanstack/vue-query"
 import { TOrderResponse } from "@modules/orders/types"
@@ -97,6 +98,15 @@ export function useGetPopupInventory(popupId: string, search?: MaybeRefOrGetter<
   })
 }
 
+export function useGetPopupQrcode(popupId: MaybeRefOrGetter<string | undefined>) {
+  return useApiQuery<TQrcodeResponse>({
+    url: () => `/popup-events/${toValue(popupId)}/qr-code/`,
+    key: () => `popup-qrcode-${toValue(popupId)}`,
+    enabled: () => !!toValue(popupId),
+    selectData: true,
+  })
+}
+
 export function useAddProductsToPopup() {
   return useMutation({
     mutationFn: (payload: { popup_event: string; items: AddProductsPayload[] }) =>
@@ -134,7 +144,8 @@ export function useCreatePopupOrder() {
 
 export function useMarkPopupOrderAsPaid() {
   return useMutation({
-    mutationFn: (orderId: string) => baseApi.post(`/orders/${orderId}/mark-paid/`),
+    mutationFn: ({ id, payment_source }: { id: string; payment_source: string }) =>
+      baseApi.post(`/orders/${id}/mark-paid/`, { payment_source }),
   })
 }
 

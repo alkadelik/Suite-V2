@@ -9,8 +9,13 @@
         'hover:border-primary-400 cursor-pointer border-gray-300 hover:bg-gray-50':
           !image && !isSlotDisabled(index),
         'cursor-not-allowed border-gray-200 bg-gray-50': !image && isSlotDisabled(index),
+        'border-primary-500 bg-primary-100': dragOverIndex === index && !isSlotDisabled(index),
       }"
       @click="!isSlotDisabled(index) && !processingSlots.has(index) && triggerFileInput(index)"
+      @dragenter.prevent="handleDragEnter(index)"
+      @dragover.prevent="handleDragOver(index)"
+      @dragleave.prevent="handleDragLeave(index)"
+      @drop.prevent="handleDrop($event, index)"
     >
       <!-- File input (hidden) -->
       <input
@@ -179,6 +184,41 @@ const images = reactive<(File | string | null)[]>(
 // Track which slots are currently processing
 const processingSlots = reactive<Set<number>>(new Set())
 
+// Index of the slot currently being dragged over (null when none) — LYW-2434
+const dragOverIndex = ref<number | null>(null)
+
+const handleDragEnter = (index: number) => {
+  if (isSlotDisabled.value(index) || processingSlots.has(index)) return
+  dragOverIndex.value = index
+}
+
+const handleDragOver = (index: number) => {
+  if (isSlotDisabled.value(index) || processingSlots.has(index)) return
+  dragOverIndex.value = index
+}
+
+const handleDragLeave = (index: number) => {
+  if (dragOverIndex.value === index) {
+    dragOverIndex.value = null
+  }
+}
+
+const handleDrop = async (event: DragEvent, index: number) => {
+  dragOverIndex.value = null
+  if (isSlotDisabled.value(index) || processingSlots.has(index)) return
+
+  const files = Array.from(event.dataTransfer?.files ?? [])
+  if (files.length === 0) return
+
+  // Reuse the existing file-processing pipeline by synthesising an Event with
+  // `target.files` so we don't duplicate validation/conversion logic.
+  const synthetic = {
+    target: { files, value: "" },
+  } as unknown as Event
+
+  await handleFileSelect(synthetic, index)
+}
+
 // Refs for file inputs
 const fileInputRefs = ref<(HTMLInputElement | null)[]>([])
 
@@ -250,8 +290,13 @@ const handleFileSelect = async (event: Event, startIndex: number) => {
 
   if (files.length === 0) return
 
-  // Calculate how many slots are available from the clicked position
-  const availableSlots = props.numberOfImages - startIndex
+  // Calculate how many slots are available from the clicked position. In
+  // product image mode, slots beyond `enabledSlots` are Bloom-gated and must
+  // not accept uploads — cap by the lower of (numberOfImages, enabledSlots).
+  const enabledLimit = props.productImageMode
+    ? Math.min(props.numberOfImages, props.enabledSlots ?? props.numberOfImages)
+    : props.numberOfImages
+  const availableSlots = Math.max(0, enabledLimit - startIndex)
 
   // Show error if too many files were uploaded
   if (files.length > availableSlots) {
@@ -266,33 +311,36 @@ const handleFileSelect = async (event: Event, startIndex: number) => {
     const file = filesToProcess[fileIndex]
     const targetIndex = startIndex + fileIndex
 
-    if (targetIndex < props.numberOfImages) {
-      const validationError = validateFile(file)
+    // Defensive: skip disabled slots even if the cap above missed them (e.g.
+    // future code that disables non-trailing slots).
+    if (targetIndex >= props.numberOfImages || isSlotDisabled.value(targetIndex)) continue
 
-      if (validationError) {
-        toast.error(validationError)
-      } else {
-        let processedFile = file
+    const validationError = validateFile(file)
 
-        // Convert and compress in product image mode
-        if (props.productImageMode) {
-          processingSlots.add(targetIndex)
-          try {
-            processedFile = await convertAndCompressImage(file)
-          } catch (error) {
-            console.error("Failed to process image:", error)
-            const errorMessage = error instanceof Error ? error.message : "Failed to process image"
-            toast.error(errorMessage)
-            processingSlots.delete(targetIndex)
-            // Skip this file on error
-            continue
-          }
-          processingSlots.delete(targetIndex)
-        }
-
-        images[targetIndex] = processedFile
-      }
+    if (validationError) {
+      toast.error(validationError)
+      continue
     }
+
+    let processedFile = file
+
+    // Convert and compress in product image mode
+    if (props.productImageMode) {
+      processingSlots.add(targetIndex)
+      try {
+        processedFile = await convertAndCompressImage(file)
+      } catch (error) {
+        console.error("Failed to process image:", error)
+        const errorMessage = error instanceof Error ? error.message : "Failed to process image"
+        toast.error(errorMessage)
+        processingSlots.delete(targetIndex)
+        // Skip this file on error
+        continue
+      }
+      processingSlots.delete(targetIndex)
+    }
+
+    images[targetIndex] = processedFile
   }
 
   // Clear the file input

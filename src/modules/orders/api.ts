@@ -5,9 +5,11 @@ import {
   IPaymentPayload,
   OrderDashboardStats,
   OrderPayload,
+  TCreateShipmentPayload,
   TOrder,
   TOrderMemo,
   TOrderResponse,
+  TShipbubbleShipmentResponse,
 } from "./types"
 import baseApi, { TPaginatedResponse, useApiQuery } from "@/composables/baseApi"
 import { MaybeRefOrGetter, computed, toValue } from "vue"
@@ -22,8 +24,47 @@ export function useCreateOrder() {
 /** Fetch orders */
 export function useGetOrders(
   params?: MaybeRefOrGetter<Record<string, string | number | boolean> | undefined>,
+  enabled?: MaybeRefOrGetter<boolean>,
 ) {
-  return useApiQuery<TOrderResponse>({ url: "/orders/", params, key: "orders", selectData: true })
+  return useApiQuery<TOrderResponse>({
+    url: "/orders/",
+    params,
+    key: "orders",
+    selectData: true,
+    enabled,
+  })
+}
+
+/** Book a ShipBubble shipment from its quote (shipping fee is paid via Paystack first) */
+export function useCreateShipbubbleShipment() {
+  return useMutation({
+    mutationFn: (
+      body: TCreateShipmentPayload,
+    ): Promise<{ data: { data?: { tracking_number?: string } } }> =>
+      baseApi.post(`/shipping/orders/`, body),
+  })
+}
+
+/** Fetch ShipBubble shipments */
+export function useGetShipments(
+  params?: MaybeRefOrGetter<Record<string, string | number | boolean> | undefined>,
+  enabled?: MaybeRefOrGetter<boolean>,
+) {
+  return useApiQuery<TShipbubbleShipmentResponse>({
+    url: "/shipping/orders/",
+    params,
+    key: "shipments",
+    selectData: true,
+    enabled,
+  })
+}
+
+/** Get Waybill document for a ShipBubble shipment */
+export function useGetWaybillDocument() {
+  return useMutation({
+    mutationFn: (uid: string): Promise<{ data: { data?: { waybill_url?: string } } }> =>
+      baseApi.get(`/shipping/orders/${uid}/waybill/`),
+  })
 }
 
 /** Fetch order statistics */
@@ -68,6 +109,13 @@ export function useVoidOrder() {
   })
 }
 
+/** Cancel order api request (offline orders) */
+export function useCancelOrder() {
+  return useMutation({
+    mutationFn: (orderNumber: string) => baseApi.post(`/orders/public/${orderNumber}/cancel/`),
+  })
+}
+
 /** Create order memo api request */
 export function useCreateOrderMemo() {
   return useMutation({
@@ -77,10 +125,10 @@ export function useCreateOrderMemo() {
 }
 
 /** Fetch order memos */
-export function useGetOrderMemos(id: string) {
+export function useGetOrderMemos(id: MaybeRefOrGetter<string>) {
   return useApiQuery<TPaginatedResponse<TOrderMemo>["data"]>({
-    url: `/orders/${id}/memos/`,
-    key: "orderMemos",
+    url: computed(() => `/orders/${toValue(id)}/memos/`),
+    key: computed(() => `orderMemos_${toValue(id)}`),
     selectData: true,
   })
 }
@@ -159,6 +207,7 @@ export function useGenerateInvoice() {
 /** Mark order as paid */
 export function useMarkOrderAsPaid() {
   return useMutation({
-    mutationFn: (orderId: string) => baseApi.post(`/orders/${orderId}/mark-paid/`),
+    mutationFn: ({ id, payment_source }: { id: string; payment_source: string }) =>
+      baseApi.post(`/orders/${id}/mark-paid/`, { payment_source }),
   })
 }

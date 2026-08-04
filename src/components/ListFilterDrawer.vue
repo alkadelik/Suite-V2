@@ -138,8 +138,12 @@ const toggleOption = (group: FilterGroup, value: string) => {
   localFilters.value[group.key] = localFilters.value[group.key] === value ? null : value
 }
 
+// Clear all filters: reset local state, sync the parent so the list refetches
+// without active filters, and close the drawer (matches Apply behaviour).
 const clearFilters = () => {
   localFilters.value = {}
+  emit("apply", {})
+  emit("update:modelValue", false)
 }
 
 const applyFilters = () => {

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import Modal from "@components/Modal.vue"
 import { ref } from "vue"
 import { useCreateOrderMemo } from "../api"
 import { displayError } from "@/utils/error-handler"
@@ -9,7 +8,6 @@ import SelectField from "@components/form/SelectField.vue"
 import TextField from "@components/form/TextField.vue"
 import AppButton from "@components/AppButton.vue"
 import TextAreaField from "@components/form/TextAreaField.vue"
-import { useMediaQuery } from "@vueuse/core"
 import Drawer from "@components/Drawer.vue"
 
 const props = defineProps<{ open: boolean; orderId: string }>()
@@ -21,12 +19,14 @@ const statusOptions = [
   { label: "Customer Action Required", value: "customer-action" },
 ]
 
-const memoForm = ref({
+const emptyForm = () => ({
   title: "",
   status: statusOptions[0],
   severity: "low" as "low" | "medium" | "high",
   content: "",
 })
+
+const memoForm = ref(emptyForm())
 
 const { mutate: createMemo, isPending } = useCreateOrderMemo()
 
@@ -35,26 +35,29 @@ const onSubmit = () => {
     { id: props.orderId, body: { ...memoForm.value, status: memoForm.value.status.value } },
     {
       onSuccess: () => {
+        memoForm.value = emptyForm()
         toast.success("Memo created successfully!")
-        emit("close")
         emit("refresh")
+        emit("close")
       },
       onError: displayError,
     },
   )
 }
 
-const isMobile = useMediaQuery("(max-width: 1024px)")
+const handleClose = () => {
+  memoForm.value = emptyForm()
+  emit("close")
+}
 </script>
 
 <template>
-  <component
-    :is="isMobile ? Modal : Drawer"
+  <Drawer
     :open="open"
     title="Create Memo"
     max-width="2xl"
     variant="fullscreen"
-    @close="emit('close')"
+    @close="handleClose"
   >
     <div class="space-y-5">
       <!-- Title -->
@@ -100,5 +103,5 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
         :disabled="!memoForm.title || !memoForm.content"
       />
     </template>
-  </component>
+  </Drawer>
 </template>

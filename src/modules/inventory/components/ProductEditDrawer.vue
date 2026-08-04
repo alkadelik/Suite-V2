@@ -4,7 +4,7 @@
     :title="drawerTitle"
     :position="drawerPosition"
     max-width="xl"
-    @close="emit('update:modelValue', false)"
+    @close="handleDrawerClose"
   >
     <IconHeader icon-name="shop-add" :title="getHeaderTitle" :subtext="getHeaderText" />
 
@@ -54,7 +54,7 @@
             :errors="submitAttempted ? currentStepValidation.variantConfigurationErrors : undefined"
           />
 
-          <!-- Step 2 for variants mode: Inventory & Pricing -->
+          <!-- Step 2 for variants mode: Combinations review -->
           <ProductManageCombinationsForm
             v-else-if="step === 2"
             v-model="variants"
@@ -62,13 +62,26 @@
             :hide-stock="true"
             :hide-price="true"
             :hide-weight="true"
+            :hide-reorder="true"
+            :is-new-variant="isNewVariant"
             :deleted-variants="deletedVariants"
             :use-table-layout="productOriginallyHadVariants"
             :errors="submitAttempted ? currentStepValidation.inventoryErrors : undefined"
           />
 
-          <!-- Step 3 for variants mode: Product Images -->
-          <ProductImagesForm v-else-if="step === 3" v-model="form.images" />
+          <!-- Step 3 for variants mode: Pricing for the newly added variants.
+               Nothing is persisted until this step submits, so closing the
+               drawer mid-flow never leaves variants created without prices. -->
+          <ProductManageCombinationsForm
+            v-else-if="step === 3"
+            v-model="newVariantsForPricing"
+            :product-name="form.name"
+            :hide-stock="true"
+            :hide-weight="true"
+            :hide-reorder="true"
+            :force-variant-layout="true"
+            :errors="submitAttempted ? currentStepValidation.inventoryErrors : undefined"
+          />
         </template>
 
         <!-- Full Edit Mode (multi-step) -->
@@ -163,6 +176,19 @@
       :teleport="false"
       @success="handleCategoryCreated"
     />
+
+    <!-- Confirm before abandoning the variants flow: nothing is persisted
+         until the final step, so exiting discards every change. -->
+    <ConfirmationModal
+      v-model="showExitConfirmation"
+      header="Exit variant editing?"
+      paragraph="Your variant changes haven't been saved. If you exit now, none of them will be applied."
+      variant="warning"
+      action-label="Exit"
+      info-message=""
+      z-class="z-[1200]"
+      @confirm="confirmExit"
+    />
   </Drawer>
 </template>
 
@@ -184,6 +210,7 @@ import ProductManageCombinationsForm from "./ProductForm/ProductManageCombinatio
 import ProductImagesForm from "./ProductForm/ProductImagesForm.vue"
 import ProductVariantsForm from "./ProductForm/ProductVariantsForm.vue"
 import AddCategoryModal from "./AddCategoryModal.vue"
+import ConfirmationModal from "@components/ConfirmationModal.vue"
 import {
   useUpdateProduct,
   useUpdateVariant,
@@ -213,6 +240,10 @@ import { useVariantConfiguration } from "../composables/useVariantConfiguration"
 import { useVariantValidation } from "../composables/useVariantValidation"
 import { useVariantProcessing } from "../composables/useVariantProcessing"
 import { useProductDrawerUtilities } from "../composables/useProductDrawerUtilities"
+import { inventoryCache, type TVariantFieldPatch } from "../cache"
+import { inventoryKeys } from "../queryKeys"
+import { extractCreatedVariants, normalizeProductResponse } from "../normalizers"
+import { getVariantAttributeKey } from "../utils/variant-editing"
 
 type TProductEditMode = "product-details" | "variant-details" | "variants" | "images"
 
@@ -238,8 +269,6 @@ interface Emits {
   "add-category": []
   /** Emitted when a new category is successfully created */
   "category-created": [category: { label: string; value: string }]
-  /** Emitted when variants are updated and should trigger editing variant details */
-  "edit-variant-details": []
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -263,21 +292,40 @@ const productDetailsRef = ref<{
 
 const showAddCategoryModal = ref(false)
 const submitAttempted = ref(false)
+const showExitConfirmation = ref(false)
+
+/**
+ * The variants flow persists nothing until its final step, so ask for
+ * confirmation before closing it; other modes close immediately.
+ */
+const handleDrawerClose = () => {
+  if (props.editMode === "variants") {
+    showExitConfirmation.value = true
+    return
+  }
+  emit("update:modelValue", false)
+}
+
+const confirmExit = () => {
+  showExitConfirmation.value = false
+  emit("update:modelValue", false)
+}
 
 // API mutations
-const { mutate: updateProduct, isPending: isUpdating } = useUpdateProduct()
-const { mutate: updateVariant, isPending: isUpdatingVariant } = useUpdateVariant()
+const { mutateAsync: updateProduct, isPending: isUpdating } = useUpdateProduct()
+const { mutateAsync: updateVariant, isPending: isUpdatingVariant } = useUpdateVariant()
 const { mutate: createAttribute, isPending: isCreatingAttribute } = useCreateAttribute()
 const { mutate: createAttributeValues, isPending: isCreatingAttributeValues } =
   useCreateAttributeValues()
-const { mutate: addProductImages, isPending: isAddingProductImages } = useAddProductImage()
-const { mutate: updateProductImage, isPending: isUpdatingImage } = useUpdateProductImage()
-const { mutate: deleteProductImage, isPending: isDeletingImage } = useDeleteProductImage()
+const { mutateAsync: addProductImages, isPending: isAddingProductImages } = useAddProductImage()
+const { mutateAsync: updateProductImage, isPending: isUpdatingImage } = useUpdateProductImage()
+const { mutateAsync: deleteProductImage, isPending: isDeletingImage } = useDeleteProductImage()
 const { mutateAsync: bulkVariantOperations, isPending: isBulkOperating } =
   useBulkVariantOperations()
 const { mutateAsync: updateVariantImage, isPending: isUpdatingVariantImage } =
   useUpdateVariantImage()
-const { mutate: bulkUpdateVariants, isPending: isBulkUpdatingVariants } = useBulkUpdateVariants()
+const { mutateAsync: bulkUpdateVariants, isPending: isBulkUpdatingVariants } =
+  useBulkUpdateVariants()
 
 // Product fetching
 const productUidToFetch = ref<string>("")
@@ -311,9 +359,6 @@ const existingImageIds = ref<Array<string | null>>([])
 // Track removed image UIDs
 const removedImageIds = ref<string[]>([])
 
-// Track if variant images were uploaded (to force refetch on reopen)
-const variantImagesWereUploaded = ref(false)
-
 // Track if existing images were reordered (to know if we need to update sort_order/is_primary)
 const imagesWereReordered = ref(false)
 
@@ -323,9 +368,44 @@ const expectedProductUid = ref<string | null>(null)
 // Track if the product originally had variants (for button label in variants edit mode)
 const productOriginallyHadVariants = ref(false)
 
+/**
+ * Whether a variant's attribute combination didn't exist on the product before
+ * this editing session (no tracked uid), i.e. it will be created on submit.
+ */
+const isNewCombination = (variant: IProductVariant): boolean =>
+  !originalVariantUids.value.has(getVariantAttributeKey(variant.attributes))
+
+/**
+ * Whether the variants edit flow produced newly added combinations. Adds the
+ * in-drawer pricing step (step 3) so new variants are never persisted without
+ * their selling/cost prices.
+ */
+const hasNewVariants = computed(
+  () =>
+    props.editMode === "variants" &&
+    originalVariantUids.value.size > 0 &&
+    variants.value.some(isNewCombination),
+)
+
+/**
+ * The newly added combinations, exposed as the model of the pricing step. The
+ * combinations form emits full replacement arrays, so the setter merges the
+ * priced rows back into the main variants array by position.
+ */
+const newVariantsForPricing = computed<IProductVariant[]>({
+  get: () => variants.value.filter(isNewCombination),
+  set: (updated) => {
+    let cursor = 0
+    variants.value = variants.value.map((variant) =>
+      isNewCombination(variant) ? (updated[cursor++] ?? variant) : variant,
+    )
+  },
+})
+
 const { step, previousStep } = useProductDrawerUtilities().useStepManagement({
   hasVariants,
   editMode: props.editMode,
+  hasNewVariants,
 })
 
 const { getHeaderTitle, getHeaderText, getSubmitButtonLabel } =
@@ -335,6 +415,7 @@ const { getHeaderTitle, getHeaderText, getSubmitButtonLabel } =
     editMode: props.editMode,
     mode: "edit",
     productOriginallyHadVariants,
+    hasNewVariants,
   })
 
 const variantConfigHelpers = useVariantConfiguration(
@@ -350,6 +431,7 @@ const { currentStepValidation, validateAllUIDs } = useVariantValidation({
   variants,
   step,
   editMode: props.editMode,
+  pricingVariants: newVariantsForPricing,
 })
 
 const variantProcessor = useVariantProcessing(variantConfiguration, {
@@ -399,12 +481,7 @@ watch(
       // Set the expected product UID for race condition prevention
       expectedProductUid.value = product.uid
 
-      // Drawer is opening - always invalidate to ensure fresh data
-      queryClient.invalidateQueries({ queryKey: ["products", product.uid] })
       productUidToFetch.value = product.uid
-
-      // Reset variant images uploaded flag
-      variantImagesWereUploaded.value = false
 
       // Reset deleted variants when drawer opens
       deletedVariants.value = []
@@ -464,17 +541,28 @@ watch(
  * Generate a unique key for a variant based on its attributes
  * Used to match variants before and after regeneration
  */
-const generateVariantKey = (attributes: { attribute: string; value: string }[]): string => {
-  return attributes
-    .map((attr) => `${attr.attribute}:${attr.value}`)
-    .sort()
-    .join("|")
+const generateVariantKey = (
+  attributes: { attribute: string; value: string }[] | null | undefined,
+): string => {
+  return getVariantAttributeKey(attributes)
+}
+
+/**
+ * Whether a combination is newly added in variants mode (its attribute key has
+ * no tracked existing uid). Used to badge new rows with a "New" chip on step 2.
+ */
+const isNewVariant = (variant: IProductVariant): boolean => {
+  if (props.editMode !== "variants" || originalVariantUids.value.size === 0) return false
+  if (!variant.attributes || variant.attributes.length === 0) {
+    return !originalVariantUids.value.has("__single_variant__")
+  }
+  return !originalVariantUids.value.has(generateVariantKey(variant.attributes))
 }
 
 // Watch for product data to populate form
 watch(
-  () => productData.value,
-  (data) => {
+  () => [productData.value, props.editMode] as const,
+  ([data]) => {
     if (data?.data) {
       const product = data.data
 
@@ -505,18 +593,15 @@ watch(
       productOriginallyHadVariants.value =
         product.is_variable && product.variants && product.variants.length > 1
 
+      const productVariants = product.variants || []
+      const variantsForForm = productVariants
+
       // Populate original variant UIDs map and store full variant details
-      if (product.variants && product.variants.length > 0) {
-        originalVariantUids.value.clear()
-        variantDetailsWithUids.value = product.variants
-        product.variants.forEach((variant) => {
-          if (variant.attributes && variant.attributes.length > 0) {
-            const key = generateVariantKey(variant.attributes)
-            originalVariantUids.value.set(key, variant.uid)
-          } else {
-            // Track single variant (no attributes) with a special key
-            originalVariantUids.value.set("__single_variant__", variant.uid)
-          }
+      originalVariantUids.value.clear()
+      variantDetailsWithUids.value = variantsForForm
+      if (productVariants.length > 0) {
+        productVariants.forEach((variant) => {
+          originalVariantUids.value.set(generateVariantKey(variant.attributes), variant.uid)
         })
         console.log(
           `Tracked ${originalVariantUids.value.size} original variant UIDs`,
@@ -539,9 +624,7 @@ watch(
 
       // Prepare variant images (indices 5+)
       const variantImages =
-        product.variants && product.variants.length > 0
-          ? product.variants.map((variant) => variant.image || null)
-          : []
+        variantsForForm.length > 0 ? variantsForForm.map((variant) => variant.image || null) : []
 
       populateFormState({
         name: product.name || "",
@@ -555,8 +638,8 @@ watch(
         images: [...productImages, ...variantImages],
         hasVariants: product.is_variable || false,
         variants:
-          product.variants && product.variants.length > 0
-            ? product.variants.map((variant) => ({
+          variantsForForm.length > 0
+            ? variantsForForm.map((variant) => ({
                 name: variant.name || "",
                 sku: variant.sku || "",
                 price: variant.price || "",
@@ -694,6 +777,7 @@ watch(
     if (!isOpen && wasOpen) {
       step.value = 1
       submitAttempted.value = false
+      showExitConfirmation.value = false
     }
   },
 )
@@ -713,6 +797,12 @@ const handleSubmit = async () => {
 
   // Product Details Mode
   if (props.editMode === "product-details") {
+    const productUid = productUidToFetch.value
+    if (!productUid) {
+      toast.error("No product ID found")
+      return
+    }
+
     const payload: IProductDetailsUpdatePayload = {
       name: form.name,
       description: htmlToMarkdown(form.description),
@@ -724,21 +814,23 @@ const handleSubmit = async () => {
       requires_approval: form.requires_approval || false,
     }
 
-    updateProduct(
-      { uid: productUidToFetch.value, ...payload } as IProductFormPayload & { uid: string },
-      {
-        onSuccess: () => {
-          toast.success("Product details updated successfully")
-          // Invalidate the product query to ensure fresh data on next open
-          queryClient.invalidateQueries({ queryKey: ["products"] })
-          submitAttempted.value = false
-          resetFormState()
-          emit("update:modelValue", false)
-          emit("refresh")
-        },
-        onError: displayError,
-      },
-    )
+    try {
+      const response = await updateProduct({
+        uid: productUid,
+        ...payload,
+      } as IProductFormPayload & {
+        uid: string
+      })
+      toast.success("Product details updated successfully")
+      submitAttempted.value = false
+      resetFormState()
+      emit("update:modelValue", false)
+      // Reconcile caches from the response so the change renders instantly;
+      // falls back to invalidation when the response isn't a full product.
+      inventoryCache.productUpdated(queryClient, productUid, normalizeProductResponse(response))
+    } catch (error) {
+      displayError(error)
+    }
     return
   }
 
@@ -749,67 +841,86 @@ const handleSubmit = async () => {
       return
     }
 
-    // Check if this is a complex product (multiple variants)
-    const isComplexProduct = variantDetailsWithUids.value.length > 1
+    const productUid = productUidToFetch.value
+    if (!productUid) {
+      toast.error("No product ID found")
+      return
+    }
 
-    if (isComplexProduct) {
-      // For complex products, use bulk update endpoint
-      const bulkPayload = variantDetailsWithUids.value
-        .map((variantDetail, index) => {
-          const variantData = variants.value[index]
-          if (!variantData) return null
-
-          return {
-            uid: variantDetail.uid,
-            price: variantData.price,
-            weight: variantData.weight,
-            length: variantData.length,
-            width: variantData.width,
-            height: variantData.height,
-          }
-        })
-        .filter((item): item is NonNullable<typeof item> => item !== null)
-
-      bulkUpdateVariants(
-        { variants: bulkPayload },
-        {
-          onSuccess: () => {
-            toast.success(
-              `All ${variantDetailsWithUids.value.length} variants updated successfully`,
-            )
-            queryClient.invalidateQueries({ queryKey: ["products"] })
-            submitAttempted.value = false
-            emit("update:modelValue", false)
-            emit("refresh")
-          },
-          onError: displayError,
-        },
-      )
-    } else {
-      // For simple products, update single variant
-      const variantData = variants.value[0]
-      const payload: Partial<IProductVariant> = {
+    // Optimistic cache patch mirroring the submitted variant fields, so price
+    // edits render instantly without refetch dimming.
+    const toVariantFieldPatch = (uid: string, variantData: IProductVariant): TVariantFieldPatch => {
+      const reorderPoint = Number(variantData.reorder_point)
+      return {
+        uid,
         name: variantData.name,
         price: variantData.price,
+        cost_price: variantData.cost_price,
         weight: variantData.weight,
         length: variantData.length,
         width: variantData.width,
         height: variantData.height,
+        ...(variantData.reorder_point !== "" && Number.isFinite(reorderPoint)
+          ? { reorder_point: reorderPoint }
+          : {}),
+      }
+    }
+
+    try {
+      const patches: TVariantFieldPatch[] = []
+
+      if (variantDetailsWithUids.value.length > 1) {
+        // For complex products, use bulk update endpoint
+        const bulkPayload = variantDetailsWithUids.value
+          .map((variantDetail, index) => {
+            const variantData = variants.value[index]
+            if (!variantData) return null
+
+            patches.push(toVariantFieldPatch(variantDetail.uid, variantData))
+            return {
+              uid: variantDetail.uid,
+              price: variantData.price,
+              cost_price: variantData.cost_price,
+              weight: variantData.weight,
+              length: variantData.length,
+              width: variantData.width,
+              height: variantData.height,
+              reorder_point: variantData.reorder_point,
+            }
+          })
+          .filter((item): item is NonNullable<typeof item> => item !== null)
+
+        await bulkUpdateVariants({ variants: bulkPayload })
+        toast.success(`All ${bulkPayload.length} variants updated successfully`)
+      } else {
+        // For simple products, update single variant
+        const variantData = variants.value[0]
+        const variantUid = variantDetailsWithUids.value[0]?.uid || props.variant?.uid
+        if (!variantUid) {
+          toast.error("No variant data to update")
+          return
+        }
+        const payload: Partial<IProductVariant> = {
+          name: variantData.name,
+          price: variantData.price,
+          cost_price: variantData.cost_price,
+          weight: variantData.weight,
+          length: variantData.length,
+          width: variantData.width,
+          height: variantData.height,
+          reorder_point: variantData.reorder_point,
+        }
+
+        await updateVariant({ uid: variantUid, ...payload })
+        patches.push(toVariantFieldPatch(variantUid, variantData))
+        toast.success("Variant updated successfully")
       }
 
-      updateVariant(
-        { uid: props.variant.uid, ...payload },
-        {
-          onSuccess: () => {
-            toast.success("Variant updated successfully")
-            queryClient.invalidateQueries({ queryKey: ["products"] })
-            submitAttempted.value = false
-            emit("update:modelValue", false)
-            emit("refresh")
-          },
-          onError: displayError,
-        },
-      )
+      submitAttempted.value = false
+      emit("update:modelValue", false)
+      inventoryCache.variantsUpdated(queryClient, productUid, patches)
+    } catch (error) {
+      displayError(error)
     }
     return
   }
@@ -827,12 +938,7 @@ const handleSubmit = async () => {
       // Step 1: Delete removed images
       if (removedImageIds.value.length > 0) {
         for (const imageId of removedImageIds.value) {
-          await new Promise<void>((resolve, reject) => {
-            deleteProductImage(imageId, {
-              onSuccess: () => resolve(),
-              onError: (error: unknown) => reject(new Error(String(error))),
-            })
-          })
+          await deleteProductImage(imageId)
         }
         console.log(`Deleted ${removedImageIds.value.length} images`)
       }
@@ -846,18 +952,10 @@ const handleSubmit = async () => {
 
         if (primaryImage && typeof primaryImage === "string" && primaryImageId) {
           // This is an existing image at primary position that was swapped
-          await new Promise<void>((resolve, reject) => {
-            updateProductImage(
-              {
-                uid: primaryImageId,
-                is_primary: true,
-                sort_order: 1,
-              },
-              {
-                onSuccess: () => resolve(),
-                onError: (error: unknown) => reject(new Error(String(error))),
-              },
-            )
+          await updateProductImage({
+            uid: primaryImageId,
+            is_primary: true,
+            sort_order: 1,
           })
           primaryImageUpdated = true
           console.log("Updated primary image")
@@ -870,18 +968,10 @@ const handleSubmit = async () => {
 
           // Only update if it's an existing image (string URL with ID)
           if (image && typeof image === "string" && imageId) {
-            await new Promise<void>((resolve, reject) => {
-              updateProductImage(
-                {
-                  uid: imageId,
-                  is_primary: false,
-                  sort_order: i + 1,
-                },
-                {
-                  onSuccess: () => resolve(),
-                  onError: (error: unknown) => reject(new Error(String(error))),
-                },
-              )
+            await updateProductImage({
+              uid: imageId,
+              is_primary: false,
+              sort_order: i + 1,
             })
           }
         }
@@ -903,19 +993,11 @@ const handleSubmit = async () => {
       if (newImages.length > 0) {
         for (const { image, index } of newImages) {
           const renamedImage = renameProductImage(image as File, storeName)
-          await new Promise<void>((resolve, reject) => {
-            addProductImages(
-              {
-                product: productUid,
-                image: renamedImage,
-                is_primary: index === 0,
-                sort_order: index + 1,
-              },
-              {
-                onSuccess: () => resolve(),
-                onError: (error: unknown) => reject(new Error(String(error))),
-              },
-            )
+          await addProductImages({
+            product: productUid,
+            image: renamedImage,
+            is_primary: index === 0,
+            sort_order: index + 1,
           })
         }
         console.log(`Uploaded ${newImages.length} new product images`)
@@ -940,8 +1022,6 @@ const handleSubmit = async () => {
         }
         if (variantImagesUploaded.length > 0) {
           console.log(`Uploaded ${variantImagesUploaded.length} variant images`)
-          // Mark that variant images were uploaded so we refetch on next open
-          variantImagesWereUploaded.value = true
         }
       }
 
@@ -960,12 +1040,10 @@ const handleSubmit = async () => {
         toast.info("No changes to images")
       }
 
-      // Invalidate the product query to ensure fresh data on next open
-      queryClient.invalidateQueries({ queryKey: ["products"] })
       submitAttempted.value = false
       resetFormState()
       emit("update:modelValue", false)
-      emit("refresh")
+      inventoryCache.productUpdated(queryClient, productUid)
     } catch (error) {
       displayError(error)
     }
@@ -974,7 +1052,9 @@ const handleSubmit = async () => {
 
   // Full Edit Mode or Variants Mode - Multi-step submission
   const isVariantsMode = props.editMode === "variants"
-  const totalSteps = isVariantsMode ? 2 : hasVariants.value ? 4 : 3
+  // Variants mode gains a third (pricing) step when new combinations were added,
+  // so nothing is persisted until prices have been entered.
+  const totalSteps = isVariantsMode ? (hasNewVariants.value ? 3 : 2) : hasVariants.value ? 4 : 3
   const isLast = step.value === totalSteps
 
   if (isLast) {
@@ -990,18 +1070,9 @@ const handleSubmit = async () => {
         // Identify variants to delete by looking up their UIDs from originalVariantUids map
         const toDelete: string[] = []
         deletedVariants.value.forEach((variant) => {
-          if (variant.attributes && variant.attributes.length > 0) {
-            const key = generateVariantKey(variant.attributes)
-            const uid = originalVariantUids.value.get(key)
-            if (uid) {
-              toDelete.push(uid)
-            }
-          } else {
-            // Handle single variant deletion using the special key
-            const uid = originalVariantUids.value.get("__single_variant__")
-            if (uid) {
-              toDelete.push(uid)
-            }
+          const uid = originalVariantUids.value.get(generateVariantKey(variant.attributes))
+          if (uid) {
+            toDelete.push(uid)
           }
         })
 
@@ -1009,16 +1080,6 @@ const handleSubmit = async () => {
         const toAdd: IProductVariant[] = []
 
         variants.value.forEach((variant) => {
-          if (!variant.attributes || variant.attributes.length === 0) {
-            // Single variant case - check if it existed before using the special key
-            const existingUid = originalVariantUids.value.get("__single_variant__")
-            if (!existingUid) {
-              // New variant - no existing UID
-              toAdd.push(variant)
-            }
-            return
-          }
-
           const key = generateVariantKey(variant.attributes)
           const existingUid = originalVariantUids.value.get(key)
 
@@ -1068,8 +1129,9 @@ const handleSubmit = async () => {
         // Step 1: Call bulk operations for deletions AND additions in same payload
         // This handles: delete-only, add-only, OR delete+add together
         const hasBulkOperations = toDelete.length > 0 || mappedToAdd.length > 0
+        let bulkResponse: unknown = null
         if (hasBulkOperations) {
-          await bulkVariantOperations({
+          bulkResponse = await bulkVariantOperations({
             productUid,
             to_delete: toDelete.length > 0 ? toDelete : undefined,
             to_add: mappedToAdd.length > 0 ? mappedToAdd : undefined,
@@ -1092,14 +1154,24 @@ const handleSubmit = async () => {
           toast.info("No variant changes to apply")
         }
 
-        // Invalidate the product query to ensure fresh data on next open
-        queryClient.invalidateQueries({ queryKey: ["products"] })
         submitAttempted.value = false
+        if (hasBulkOperations) {
+          // Reconcile the caches from the response's created variants (which
+          // carry the server-assigned uids) so the change renders instantly.
+          // Fall back to invalidation if variants were added but the response
+          // didn't return every one of them.
+          const createdVariants = extractCreatedVariants(bulkResponse)
+          if (mappedToAdd.length === 0 || createdVariants?.length === mappedToAdd.length) {
+            inventoryCache.variantsBulkChanged(queryClient, productUid, {
+              deletedUids: toDelete,
+              createdVariants: createdVariants ?? [],
+            })
+          } else {
+            inventoryCache.variantsChanged(queryClient, productUid)
+          }
+        }
         resetFormState()
         emit("update:modelValue", false)
-        emit("refresh")
-        // Emit event to trigger editing variant details
-        emit("edit-variant-details")
       } catch (error) {
         console.error("Failed to update variants:", error)
         displayError(error)
@@ -1107,17 +1179,38 @@ const handleSubmit = async () => {
       return
     }
 
-    // Handle Full Edit Mode (original logic)
-    const payload: IProductFormPayload = {
+    // Handle Full Edit Mode
+    const productUid = productUidToFetch.value
+    if (!productUid) {
+      toast.error("No product ID found")
+      return
+    }
+
+    const submittedForm = {
       name: form.name,
-      description: htmlToMarkdown(form.description),
-      story: form.story || "",
-      category: form.category?.value as string,
-      brand: form.brand || "",
+      description: form.description,
+      story: form.story,
+      category: form.category ? { ...form.category } : null,
+      brand: form.brand,
+      requires_approval: form.requires_approval,
+    }
+    const submittedHasVariants = hasVariants.value
+    const submittedImages = [...form.images]
+    const submittedVariants = variants.value.map((variant) => ({
+      ...variant,
+      attributes: [...(variant.attributes || [])],
+    }))
+
+    const payload: IProductFormPayload = {
+      name: submittedForm.name,
+      description: htmlToMarkdown(submittedForm.description),
+      story: submittedForm.story || "",
+      category: submittedForm.category?.value as string,
+      brand: submittedForm.brand || "",
       is_active: true,
-      is_variable: hasVariants.value,
-      requires_approval: form.requires_approval || false,
-      variants: variants.value.map((variant) => ({
+      is_variable: submittedHasVariants,
+      requires_approval: submittedForm.requires_approval || false,
+      variants: submittedVariants.map((variant) => ({
         name: variant.name,
         sku: variant.sku || `SKU-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
         price: variant.price,
@@ -1149,104 +1242,112 @@ const handleSubmit = async () => {
       })),
     }
 
-    const handleProductSuccess = () => {
-      toast.success("Product updated successfully")
-      submitAttempted.value = false
-      step.value = 1
-      hasVariants.value = false
+    try {
+      const response = await updateProduct({ uid: productUid, ...payload })
+      let updatedProduct = normalizeProductResponse(response)
+      let mediaPreparationFailed = false
 
-      const productUid = productUidToFetch.value
+      const seenFiles = new Set<File>()
+      const productImagePayloads = submittedImages
+        .slice(0, 5)
+        .map((image, index) => ({ image, index }))
+        .filter(({ image }) => {
+          if (!(image instanceof File) || seenFiles.has(image)) return false
+          seenFiles.add(image)
+          return true
+        })
+        .map(({ image, index }) => ({
+          product: productUid,
+          image: image as File,
+          is_primary: index === 0,
+          sort_order: index + 1,
+        }))
 
-      if (productUid && form.images.length > 0) {
-        ;(async () => {
-          try {
-            // Step 1: Upload product images (indices 0-4)
-            const productImages = form.images
-              .slice(0, 5)
-              .map((image, index) => ({ image, index }))
-              .filter(({ image }) => image && image instanceof File)
+      const variantImageFiles = submittedImages.slice(5)
+      const requestedVariantImages = submittedHasVariants
+        ? variantImageFiles.filter((image) => image instanceof File).length
+        : 0
 
-            if (productImages.length > 0) {
-              for (const { image, index } of productImages) {
-                const renamedImage = renameProductImage(image as File, storeName)
-                await new Promise<void>((resolve, reject) => {
-                  addProductImages(
-                    {
-                      product: productUid,
-                      image: renamedImage,
-                      is_primary: index === 0,
-                      sort_order: index + 1,
-                    },
-                    {
-                      onSuccess: () => resolve(),
-                      onError: (error: unknown) => reject(new Error(String(error))),
-                    },
-                  )
-                })
-              }
-              console.log(`Uploaded ${productImages.length} product images`)
-            }
-
-            // Step 2: Check if there are variant images to upload (indices 5+)
-            const hasVariantImages = form.images.slice(5).some((img) => img && img instanceof File)
-
-            if (hasVariantImages && hasVariants.value) {
-              // Fetch fresh product data to get variant UIDs
-              console.log("Fetching product data to get variant UIDs for image upload...")
-              const { data: freshProductData } = await baseApi.get<IGetProductResponse>(
-                `/inventory/products/${productUid}/`,
-              )
-
-              if (freshProductData?.data?.variants) {
-                const fetchedVariants = freshProductData.data.variants
-                let variantImagesUploaded = 0
-
-                // Upload variant images
-                for (let i = 0; i < fetchedVariants.length; i++) {
-                  const variantImageIndex = 5 + i
-                  const variantImage = form.images[variantImageIndex]
-                  const variant = fetchedVariants[i]
-
-                  if (variantImage && variantImage instanceof File && variant?.uid) {
-                    await updateVariantImage({
-                      variantUid: variant.uid,
-                      image: renameProductImage(variantImage, storeName),
-                    })
-                    variantImagesUploaded++
-                  }
-                }
-
-                if (variantImagesUploaded > 0) {
-                  console.log(`Uploaded ${variantImagesUploaded} variant images`)
-                  // Mark that variant images were uploaded so we refetch on next open
-                  variantImagesWereUploaded.value = true
-                }
-              }
-            }
-
-            const totalUploaded = productImages.length
-            if (totalUploaded > 0 || hasVariantImages) {
-              toast.success("All images uploaded successfully")
-            }
-          } catch (error) {
-            console.error("Failed to upload some images:", error)
-            toast.error("Product updated but some images failed to upload")
-          }
-        })()
+      if (requestedVariantImages > 0 && (!updatedProduct || updatedProduct.variants.length === 0)) {
+        try {
+          const { data } = await baseApi.get<IGetProductResponse>(
+            `/inventory/products/${productUid}/`,
+          )
+          updatedProduct = data.data
+        } catch (error) {
+          mediaPreparationFailed = true
+          console.error("Failed to load updated variants for image upload:", error)
+        }
       }
 
-      resetFormState()
-      emit("update:modelValue", false)
-      emit("refresh")
-    }
+      const variantUidByAttrKey = new Map<string, string>()
+      updatedProduct?.variants.forEach((variant) => {
+        variantUidByAttrKey.set(generateVariantKey(variant.attributes), variant.uid)
+      })
 
-    updateProduct(
-      { uid: productUidToFetch.value, ...payload },
-      {
-        onSuccess: handleProductSuccess,
-        onError: displayError,
-      },
-    )
+      const variantImagePayloads = submittedHasVariants
+        ? submittedVariants.flatMap((variant, index) => {
+            const image = variantImageFiles[index]
+            if (!(image instanceof File)) return []
+
+            const variantUid = variantUidByAttrKey.get(generateVariantKey(variant.attributes || []))
+            return variantUid ? [{ variantUid, image }] : []
+          })
+        : []
+
+      const mediaResults = await Promise.allSettled([
+        ...productImagePayloads.map((imagePayload) =>
+          Promise.resolve().then(() =>
+            addProductImages({
+              ...imagePayload,
+              image: renameProductImage(imagePayload.image, storeName),
+            }),
+          ),
+        ),
+        ...variantImagePayloads.map(({ variantUid, image }) =>
+          Promise.resolve().then(() =>
+            updateVariantImage({
+              variantUid,
+              image: renameProductImage(image, storeName),
+            }),
+          ),
+        ),
+      ])
+      const mediaFailed =
+        mediaPreparationFailed ||
+        variantImagePayloads.length < requestedVariantImages ||
+        mediaResults.some((result) => result.status === "rejected")
+
+      resetFormState()
+      submitAttempted.value = false
+      step.value = 1
+      emit("update:modelValue", false)
+
+      if (mediaFailed) {
+        toast.info("Product updated, but some images could not be uploaded.", {
+          title: "Warning",
+        })
+      } else {
+        toast.success("Product updated successfully")
+      }
+
+      // The response can only reconcile the caches when no images were uploaded
+      // after the PATCH (uploads aren't reflected in the response product).
+      const uploadedMedia = productImagePayloads.length > 0 || variantImagePayloads.length > 0
+      if (updatedProduct && !mediaFailed && !uploadedMedia) {
+        // Reconcile caches from the response so the edit renders instantly.
+        inventoryCache.productUpdated(queryClient, productUid, updatedProduct)
+        void queryClient.invalidateQueries({
+          queryKey: inventoryKeys.products.dashboard(),
+          refetchType: "active",
+        })
+      } else {
+        inventoryCache.productUpdated(queryClient, productUid)
+        inventoryCache.variantsChanged(queryClient, productUid)
+      }
+    } catch (error) {
+      displayError(error)
+    }
   } else {
     // Handle step progression with variant processing
     const shouldProcessVariants =
@@ -1264,11 +1365,23 @@ const handleSubmit = async () => {
           )
         }
 
+        // Refresh attribute/attribute-value caches once, at the end of variant
+        // processing, rather than after every low-level create.
+        inventoryCache.attributeChanged(queryClient)
+
         // Generate combinations and capture deleted variants
         const deleted = variantConfigHelpers.generateVariantCombinations()
         // Deleted variants are IProductVariant[] without UIDs
         // UIDs will be looked up from originalVariantUids map when needed
         deletedVariants.value = deleted
+
+        // Show newly added combinations first on the review step (stable sort
+        // keeps the generated order within each group).
+        if (isVariantsMode) {
+          variants.value = [...variants.value].sort(
+            (a, b) => Number(isNewCombination(b)) - Number(isNewCombination(a)),
+          )
+        }
 
         console.log("Generated Variants Array:", {
           step: step.value + 1,

@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
-import { startCase } from "@/utils/format-strings"
+import { removeUnderscores, startCase } from "@/utils/format-strings"
 import { formatDate } from "@/utils/formatDate"
+import { floatDecimal } from "@/utils/others"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
 import { TBatch, TRawMaterial } from "@modules/production/types"
+import { convertNumToPurchaseUnit, getPurchaseUnit } from "@modules/production/utils"
 import { HTMLAttributes } from "vue"
 
 const props = defineProps<{
@@ -12,11 +14,13 @@ const props = defineProps<{
   material?: TRawMaterial
   class?: HTMLAttributes["class"]
 }>()
+const emit = defineEmits<{ click: [] }>()
+
 const { format } = useFormatCurrency()
 </script>
 
 <template>
-  <div :class="['cursor-pointer bg-transparent py-2.5', props.class]">
+  <div @click="emit('click')" :class="['cursor-pointer bg-transparent py-2.5', props.class]">
     <div>
       <div class="flex items-center gap-3">
         <span class="bg-core-200 relative flex size-12 items-center justify-center rounded-xl">
@@ -26,12 +30,16 @@ const { format } = useFormatCurrency()
         <div class="flex flex-1 flex-col gap-2 truncate">
           <div class="flex justify-between">
             <h4 class="truncate text-left text-sm font-semibold capitalize">
-              Batch-{{ item.uid.slice(0, 8) }}
+              {{ formatDate(item.date_added) }}
             </h4>
 
             <div class="flex items-center justify-end gap-2">
               <span class="text-success-600 text-sm font-semibold">
-                {{ Number(item.quantity).toLocaleString() + props.material?.unit }}
+                {{
+                  floatDecimal(convertNumToPurchaseUnit(+item.quantity, props.material!)) +
+                  " " +
+                  removeUnderscores(getPurchaseUnit(props.material!))
+                }}
               </span>
             </div>
           </div>
@@ -39,13 +47,8 @@ const { format } = useFormatCurrency()
             <!-- status -->
             <Chip v-if="item.source_type" :label="startCase(item.source_type)" color="blue" />
 
-            <!-- date -->
-            <p class="ml-auto pl-4 text-xs font-medium">
-              {{ formatDate(item.date_added) }}
-            </p>
-            <span class="text-lg">&bull;</span>
-            <p class="text-xs font-medium">
-              {{ format(Number(item.unit_cost)) }}
+            <p class="ml-auto text-xs font-medium">
+              {{ format(item.total_cost) }}
             </p>
           </div>
         </div>

@@ -74,6 +74,7 @@
 </template>
 
 <script setup lang="ts">
+import { allowDecimalInput } from "@/utils/form-validation"
 import { capitalizeFirstChar } from "@/utils/format-strings"
 import Icon from "@components/Icon.vue"
 import { useSettingsStore } from "@modules/settings/store"
@@ -205,6 +206,7 @@ const handleBeforeInput = (event: Event) => {
 
 const handleKeydown = (event: Event) => {
   const keyboardEvent = event as KeyboardEvent
+  if (props.type === "decimal") allowDecimalInput(keyboardEvent)
   if (props.type !== "number" || keyboardEvent.key !== ",") return
   if (props.format) return // allow commas in formatted mode
   keyboardEvent.preventDefault()
@@ -321,7 +323,7 @@ const containerClasses = computed(() => {
 
 const inputClasses = computed(() => {
   const baseClasses =
-    "flex-1 border-0 bg-transparent focus:outline-none focus:ring-0 placeholder-core-400 text-core-800"
+    "min-w-0 flex-1 border-0 bg-transparent focus:outline-none focus:ring-0 placeholder-core-400 text-core-800"
 
   // Adjust padding based on icons/prefix/suffix
   const paddingClasses = {
@@ -335,7 +337,7 @@ const inputClasses = computed(() => {
 
 const prefixClasses = computed(() => {
   const baseClasses =
-    "border-core-100 bg-inherit mr-2 flex items-center border-r px-3 text-gray-400"
+    "border-core-100 bg-inherit mr-2 flex shrink-0 items-center border-r px-3 text-gray-400"
 
   const sizeClasses = {
     sm: "py-2 text-sm",

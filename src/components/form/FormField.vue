@@ -1,9 +1,9 @@
 <template>
-  <Field v-slot="{ field, errors: fieldErrors }" :name="name">
+  <Field v-slot="{ field, errors: fieldErrors, handleChange }" :name="name">
     <!-- Select Field -->
     <SelectField
       v-if="type === 'select'"
-      v-bind="{ ...field, ...$attrs }"
+      v-bind="{ ...fieldListeners(field), ...$attrs }"
       :model-value="field.value"
       :label="hideLabel ? '' : label || startCase(name)"
       :options="optionsData || []"
@@ -18,13 +18,17 @@
       :size="size"
       :clearable="clearable"
       :placement="isMobile && searchable ? 'top' : placement"
-      @update:model-value="field.value = $event"
-    />
+      @update:model-value="handleChange"
+    >
+      <template v-if="$slots.option" #option="optionSlotProps">
+        <slot name="option" v-bind="optionSlotProps" />
+      </template>
+    </SelectField>
 
     <!-- Select Tags Field -->
     <SelectTagsField
       v-else-if="type === 'tags'"
-      v-bind="{ ...field, ...$attrs }"
+      v-bind="{ ...fieldListeners(field), ...$attrs }"
       :model-value="field.value"
       :label="hideLabel ? '' : label || startCase(name)"
       :options="normalizedTagOptions"
@@ -39,13 +43,14 @@
       :searchable="searchable"
       :clearable="clearable"
       :placement="placement"
-      @update:model-value="field.value = $event"
+      @update:model-value="handleChange"
     />
 
     <!-- Other field types remain the same... -->
     <TextAreaField
       v-else-if="type === 'textarea'"
-      v-bind="{ ...field, ...$attrs }"
+      v-bind="{ ...fieldListeners(field), ...$attrs }"
+      :model-value="field.value"
       :label="hideLabel ? '' : label || startCase(name)"
       :placeholder="placeholder"
       :required="isRequired"
@@ -61,12 +66,13 @@
       :minlength="minlength"
       :show-character-count="showCharacterCount"
       :auto-resize="autoResize"
+      @update:model-value="handleChange"
     />
 
     <!-- File Field -->
     <FileUploadField
       v-else-if="type === 'file'"
-      v-bind="{ ...field, ...$attrs }"
+      v-bind="{ ...fieldListeners(field), ...$attrs }"
       :model-value="field.value"
       :label="hideLabel ? '' : label || startCase(name)"
       :required="isRequired"
@@ -78,13 +84,14 @@
       :accept="accept"
       :max-size="maxSize"
       :placeholder="placeholder"
-      @update:model-value="field.value = $event"
+      @update:model-value="handleChange"
     />
 
     <!-- OTP Field -->
     <OtpField
       v-else-if="type === 'otp'"
-      v-bind="{ ...field, ...$attrs }"
+      v-bind="{ ...fieldListeners(field), ...$attrs }"
+      :model-value="field.value"
       :label="hideLabel ? '' : label || startCase(name)"
       :required="isRequired"
       :disabled="isDisabled"
@@ -95,12 +102,13 @@
       :length="otpLength"
       :digits-only="digitsOnly"
       :separator="separator"
+      @update:model-value="handleChange"
     />
 
     <!-- Radio Input Field -->
     <RadioInputField
       v-else-if="type === 'radio'"
-      v-bind="{ ...field, ...$attrs }"
+      v-bind="{ ...fieldListeners(field), ...$attrs }"
       :model-value="field.value"
       :label="hideLabel ? '' : label || startCase(name)"
       :options="radioOptions || []"
@@ -110,13 +118,13 @@
       :error="fieldErrors[0]"
       :hint="hintText"
       :size="size"
-      @update:model-value="field.value = $event"
+      @update:model-value="handleChange"
     />
 
     <!-- Stepper Field -->
     <StepperField
       v-else-if="type === 'stepper'"
-      v-bind="{ ...field, ...$attrs }"
+      v-bind="{ ...fieldListeners(field), ...$attrs }"
       :model-value="field.value"
       :label="hideLabel ? '' : label || startCase(name)"
       :placeholder="placeholder"
@@ -128,7 +136,7 @@
       :variant="variant"
       :size="size"
       :description="description"
-      @update:model-value="field.value = $event"
+      @update:model-value="handleChange"
     />
 
     <!-- Phone Input -->
@@ -142,15 +150,27 @@
       :disabled="isDisabled"
       :error="fieldErrors[0]"
       :size="size"
+      @update:model-value="handleChange"
+    />
+
+    <!-- Date & Time Field -->
+    <DateTimeField
+      v-else-if="type === 'datetime'"
+      :model-value="field.value"
+      :label="hideLabel ? '' : label || startCase(name)"
+      :placeholder="placeholder"
+      :required="isRequired"
+      :error="fieldErrors[0]"
+      :hint="hintText"
       @update:model-value="field.value = $event"
     />
 
     <!-- Text Field (default for all other types) -->
     <TextField
       v-else
-      v-bind="{ ...field, ...$attrs }"
+      v-bind="{ ...fieldListeners(field), ...$attrs }"
       :model-value="field.value"
-      :type="type"
+      :type="type === 'decimal' ? 'text' : type"
       :label="hideLabel ? '' : label || startCase(name)"
       :placeholder="placeholder"
       :required="isRequired"
@@ -167,7 +187,8 @@
       :step="step"
       :autocomplete="autocomplete"
       :description="description"
-      @update:model-value="field.value = $event"
+      @update:model-value="handleChange"
+      @keydown="onKeyDown"
     />
   </Field>
 </template>
@@ -182,11 +203,13 @@ import TextAreaField from "./TextAreaField.vue"
 import OtpField from "./OtpField.vue"
 import RadioInputField from "./RadioInputField.vue"
 import StepperField from "./StepperField.vue"
+import DateTimeField from "@components/form/DateTimeField.vue"
 import { startCase } from "@/utils/format-strings"
 import { computed, toRefs } from "vue"
 import FileUploadField from "./FileUploadField.vue"
 import { TChipColor } from "@modules/shared/types"
 import { useMediaQuery } from "@vueuse/core"
+import { allowDecimalInput } from "@/utils/form-validation.ts"
 
 // Import or define the ISelectOption interface to match your existing type
 interface ISelectOption {
@@ -201,6 +224,7 @@ interface ISelectOption {
  */
 export type FormFieldType =
   | "text"
+  | "decimal"
   | "email"
   | "password"
   | "number"
@@ -208,6 +232,7 @@ export type FormFieldType =
   | "url"
   | "date"
   | "time"
+  | "datetime"
   | "datetime-local"
   | "month"
   | "week"
@@ -423,4 +448,24 @@ const isDisabled = computed(() => props.disabled ?? false)
 const isRequired = computed(() => props.required ?? false)
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
+
+const onKeyDown = (e: KeyboardEvent) => {
+  if (props.type === "decimal") allowDecimalInput(e)
+  else return undefined
+}
+
+// vee-validate's `field` binding carries `value`/`onInput`/`onChange` meant for a
+// native <input>. Spreading those through double-handles the DOM input event — the raw
+// (unformatted) value from `field.onInput` can race with a component's own formatted
+// display value (e.g. TextField's currency formatting) and overwrite it with a value
+// vee-validate never sanitized. Instead, each branch feeds vee-validate through the
+// slot's `handleChange` on `update:model-value` (assigning to `field.value` is a no-op —
+// the slot object is a snapshot). Only pass through what's still needed (onBlur).
+const fieldListeners = (field: object) => {
+  const rest = { ...(field as Record<string, unknown>) }
+  delete rest.value
+  delete rest.onInput
+  delete rest.onChange
+  return rest
+}
 </script>

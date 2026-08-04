@@ -63,3 +63,23 @@ export const validateConfirmPassword = (originalPassword: string) => {
 export const validateRequired = (value: string): true | string => {
   return value?.trim() ? true : "This field is required"
 }
+
+/**
+ * Allow decimal input
+ * @param e
+ */
+
+export const allowDecimalInput = (e: KeyboardEvent) => {
+  const allowed = /^[0-9.]$/
+  const ctrl = e.ctrlKey || e.metaKey
+  if (
+    !allowed.test(e.key) &&
+    !ctrl &&
+    !["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)
+  ) {
+    e.preventDefault()
+  }
+  if (e.key === "." && (e.target as HTMLInputElement).value.includes(".")) {
+    e.preventDefault()
+  }
+}

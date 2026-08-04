@@ -35,7 +35,7 @@ export interface ChipProps {
    * The chip size
    * - sm: 24px height
    * - md: 32px height (default)
-   * @default "md"
+   * @default "sm"
    */
   size?: "sm" | "md"
 
@@ -43,7 +43,7 @@ export interface ChipProps {
    * The chip visual variant
    * - filled: Solid background with contrasting text
    * - outlined: Light background with border
-   * @default "filled"
+   * @default "outlined"
    */
   variant?: "filled" | "outlined"
 

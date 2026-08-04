@@ -4,17 +4,16 @@ import { formatDate } from "@/utils/formatDate"
 import Chip from "@components/Chip.vue"
 import DataTable from "@components/DataTable.vue"
 import Drawer from "@components/Drawer.vue"
-import Modal from "@components/Modal.vue"
 import { TMovement, TRawMaterial } from "@modules/production/types"
-import { useMediaQuery } from "@vueuse/core"
 import { ref } from "vue"
 import RMUsageCard from "./RMUsageCard.vue"
 import { USAGE_HISTORY_COLUMN } from "@modules/production/constant"
+import { convertNumToPurchaseUnit, getPurchaseUnit } from "@modules/production/utils"
+import { floatDecimal } from "@/utils/others"
+import { removeUnderscores } from "@/utils/format-strings.ts"
 
-const props = defineProps<{ usage: TMovement[]; material: TRawMaterial }>()
+const props = defineProps<{ material: TRawMaterial }>()
 const { format } = useFormatCurrency()
-
-const isMobile = useMediaQuery("(max-width: 1024px)")
 
 const openDetails = ref(false)
 const selectedHistory = ref<TMovement | null>(null)
@@ -23,28 +22,34 @@ const onRowClick = (batch: TMovement) => {
   selectedHistory.value = batch
   openDetails.value = true
 }
+
+const formatReason = (reason: string) => {
+  if (reason.toLowerCase().startsWith("production")) return "Production Run"
+  else return reason
+}
 </script>
 
 <template>
   <div>
     <div class="space-y-4 overflow-hidden rounded-xl border-gray-200 md:border md:bg-white">
       <DataTable
-        :data="props.usage ?? []"
+        :data="material?.movements ?? []"
         :columns="USAGE_HISTORY_COLUMN"
         :loading="false"
         :enable-row-selection="false"
         :empty-state="{
-          title: `No Usage History Available`,
-          description: `Start tracking your usage history by adding them to the system.`,
+          title: `No Logs Available`,
+          description: `Start tracking your logs by adding them to the system.`,
         }"
         :show-pagination="false"
         @row-click="onRowClick"
       >
         <template #cell:quantity="{ item }">
-          {{ Number(item.quantity).toLocaleString() }} {{ props.material?.unit }}
+          {{ floatDecimal(convertNumToPurchaseUnit(+item.quantity, props.material)) }}
+          {{ removeUnderscores(getPurchaseUnit(props.material)) }}
         </template>
         <template #cell:reason="{ item }">
-          <Chip :label="item.reason" color="blue" />
+          <Chip :label="formatReason(item.reason)" color="blue" class="capitalize" />
         </template>
         <template #cell:movement_type="{ item }">
           <Chip
@@ -57,16 +62,20 @@ const onRowClick = (batch: TMovement) => {
         </template>
 
         <template #mobile="{ item }">
-          <RMUsageCard :item="item" :material="props.material" />
+          <RMUsageCard
+            :item="item"
+            class="border-b border-gray-200 pb-4!"
+            :material="props.material"
+            @click="onRowClick(item)"
+          />
         </template>
       </DataTable>
     </div>
 
     <!-- Details -->
-    <component
-      :is="isMobile ? Modal : Drawer"
+    <Drawer
       :open="openDetails"
-      title="Usage History Details"
+      title="Log Details"
       max-width="2xl"
       variant="fullscreen"
       @close="openDetails = false"
@@ -81,7 +90,8 @@ const onRowClick = (batch: TMovement) => {
             radius="md"
           />
           <h4 class="text-3xl font-bold md:text-4xl">
-            {{ Number(selectedHistory.quantity).toLocaleString() }} {{ props.material?.unit }}
+            {{ floatDecimal(convertNumToPurchaseUnit(+selectedHistory.quantity, props.material)) }}
+            {{ removeUnderscores(getPurchaseUnit(props.material)) }}
           </h4>
           <p class="text-sm font-medium md:text-base">
             {{ formatDate(new Date(selectedHistory.created_at)) }}
@@ -91,20 +101,20 @@ const onRowClick = (batch: TMovement) => {
         <div class="border-core-300 bg-core-25 my-6 space-y-3 rounded-xl border p-4">
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Reason</span>
-            <Chip :label="selectedHistory.reason" color="blue" />
+            <Chip :label="formatReason(selectedHistory.reason)" color="blue" class="capitalize" />
           </p>
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Quantity</span>
             <span class="font-medium capitalize"
-              >{{ Number(selectedHistory.quantity).toLocaleString() }}
-              {{ props.material?.unit }}</span
+              >{{
+                floatDecimal(convertNumToPurchaseUnit(+selectedHistory.quantity, props.material))
+              }}
+              {{ removeUnderscores(getPurchaseUnit(props.material)) }}</span
             >
           </p>
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Cost</span>
-            <span class="font-medium">{{
-              format(Number(selectedHistory.unit_cost) * Number(selectedHistory.quantity))
-            }}</span>
+            <span class="font-medium">{{ format(Number(selectedHistory.total_cost)) }}</span>
           </p>
           <p v-if="selectedHistory.performed_by" class="flex justify-between text-sm">
             <span class="text-core-600">Performed By</span>
@@ -124,6 +134,6 @@ const onRowClick = (batch: TMovement) => {
           </p>
         </div>
       </div>
-    </component>
+    </Drawer>
   </div>
 </template>

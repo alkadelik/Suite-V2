@@ -45,7 +45,7 @@ export function useGetExpenseDashboard(params?: TQueryArg["params"]) {
 /** Fetch expense categories */
 export function useGetExpenseCategories(enabled?: MaybeRefOrGetter<boolean>) {
   return useApiQuery<TExpenseCategoryResponse>({
-    url: `/expenses/categories/`,
+    url: `/expenses/categories/?limit=50&offset=0`,
     key: `expenses-categories`,
     selectData: true,
     refetchOnWindowFocus: false,
@@ -56,7 +56,7 @@ export function useGetExpenseCategories(enabled?: MaybeRefOrGetter<boolean>) {
 /** Fetch expense vendor */
 export function useGetExpenseVendors() {
   return useApiQuery<TPaginatedResponse<{ uid: string; name: string }>>({
-    url: `/expenses/vendors/`,
+    url: `/expenses/categories/?limit=50&offset=0`,
     key: `expenses-vendors`,
   })
 }
@@ -85,6 +85,13 @@ export function useEditExpense() {
         headers:
           payload instanceof FormData ? { "Content-Type": "multipart/form-data" } : undefined,
       }),
+  })
+}
+
+/** Mark multiple expenses as paid in one action */
+export function useBulkCompleteExpenses() {
+  return useMutation({
+    mutationFn: (payload: { items: string[] }) => baseApi.post("/expenses/bulk-complete/", payload),
   })
 }
 

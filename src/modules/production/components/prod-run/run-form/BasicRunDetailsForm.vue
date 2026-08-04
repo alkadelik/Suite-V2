@@ -11,6 +11,10 @@ import { useForm } from "vee-validate"
 import * as yup from "yup"
 import { BasicRunDetails } from "../form-types"
 import Chip from "@components/Chip.vue"
+import { useProductionStore } from "@modules/production/store"
+import { focusNextOnEnter } from "@/composables/useFocusNextOnEnter"
+
+const recipeSingularLabel = computed(() => useProductionStore().recipeSingularLabel)
 
 type ItemOption = {
   label: string
@@ -19,10 +23,12 @@ type ItemOption = {
   output_quantity?: number | string
   item_type?: "product" | "sub_assembly"
   output_product?: string | null
+  unit?: string
 }
 
 const props = defineProps<{
   initialValues: BasicRunDetails
+  isEditMode?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -44,11 +50,12 @@ const schema = yup.object({
     .transform((value, originalValue) => (originalValue === "" ? undefined : value))
     .typeError("Must be a number")
     .required("Damaged quantity is required")
-    .min(0, "Cannot be negative"),
+    .min(0, "Cannot be negative")
+    .max(yup.ref("outputQuantity"), "Damaged quantity cannot exceed quantity produced"),
   recipe: yup
     .object({ label: yup.string().required(), value: yup.string().required() })
     .nullable()
-    .required("Recipe is required"),
+    .required(`${recipeSingularLabel.value} is required`),
   outputVariantUid: yup
     .object({ label: yup.string().required(), value: yup.string().required() })
     .nullable()
@@ -61,20 +68,33 @@ const { handleSubmit, values, errors, setFieldValue, resetForm } = useForm({
     outputQuantity: props.initialValues.outputQuantity || (undefined as unknown as number),
     damagedQuantity: props.initialValues.damagedQuantity ?? (undefined as unknown as number),
     recipe: (props.initialValues.recipeOption ?? null) as ItemOption | null,
-    outputVariantUid: null as ItemOption | null,
+    outputVariantUid: (props.initialValues.outputVariantOption ?? null) as {
+      label: string
+      value: string
+      price?: number
+    } | null,
   },
 })
+
+// Track the last known recipe UID so we can distinguish a real recipe change
+// from the watch firing on initial mount (which must NOT clear the saved variant).
+const lastKnownRecipeUid = ref(props.initialValues.recipeOption?.value || "")
 
 // Re-initialize when parent repopulates (edit/duplicate reopens)
 watch(
   () => props.initialValues,
   (iv) => {
+    lastKnownRecipeUid.value = iv.recipeOption?.value || ""
     resetForm({
       values: {
         outputQuantity: iv.outputQuantity || (undefined as unknown as number),
         damagedQuantity: iv.damagedQuantity ?? (undefined as unknown as number),
         recipe: (iv.recipeOption ?? null) as ItemOption | null,
-        outputVariantUid: null as ItemOption | null,
+        outputVariantUid: (iv.outputVariantOption ?? null) as {
+          label: string
+          value: string
+          price?: number
+        } | null,
       },
     })
   },
@@ -94,12 +114,13 @@ const recipeOptions = computed<ItemOption[]>(() => {
       const qty = parseInt(m.output_quantity)
       const unit = m.output_unit || ""
       return {
-        label: `${m.output_item_name} - ${qty}${unit}`,
+        label: `${m.name ? `${m.name} - ${m.output_item_name}` : m.output_item_name} - ${qty}${unit}`,
         value: m.uid || "",
-        output_quantity: qty + unit,
-        name: m.output_item_name,
+        output_quantity: qty + " " + unit,
+        name: m.name ? `${m.name} - ${m.output_item_name}` : m.output_item_name,
         item_type: m.item_type,
         output_product: m.output_product,
+        unit,
       }
     }) as ItemOption[]
 })
@@ -118,11 +139,12 @@ const { data: productData, isFetching: isLoadingVariants } = useGetProduct(
   { enabled: () => !!selectedProductUid.value },
 )
 
-const variantOptions = computed<{ label: string; value: string }[]>(() => {
+const variantOptions = computed<{ label: string; value: string; price?: number }[]>(() => {
   if (!productData.value?.data?.variants) return []
   return productData.value.data.variants.map((v) => ({
     label: v.name?.split(productData.value.data.name + " - ")?.[1] || v.name,
     value: v.uid,
+    price: v.price ? Number(v.price) : undefined,
   }))
 })
 
@@ -130,48 +152,83 @@ const variantOptions = computed<{ label: string; value: string }[]>(() => {
 watch(
   () => values.recipe,
   (recipe) => {
-    setFieldValue("outputVariantUid", null)
+    if (props.isEditMode) return
+    const newUid = recipe && typeof recipe === "object" ? String(recipe.value) : ""
+    // Only clear the saved variant when the recipe genuinely changes, not on initial mount
+    if (newUid !== lastKnownRecipeUid.value) {
+      setFieldValue("outputVariantUid", null)
+    }
+    lastKnownRecipeUid.value = newUid
     if (recipe && typeof recipe === "object" && "value" in recipe) {
       emit("recipe-change", String(recipe.value))
     }
   },
 )
 
-// ─── Auto-select variant when options load (edit / duplicate pre-populate) ─
-watch(variantOptions, (opts) => {
-  const preselectedUid = props.initialValues.outputVariantUid
-  if (!preselectedUid || values.outputVariantUid) return
-  const match = opts.find((o) => o.value === preselectedUid)
-  if (match) setFieldValue("outputVariantUid", match)
-})
+// ─── Auto-select variant when options load (edit / first-open fallback) ──
+watch(
+  variantOptions,
+  (opts) => {
+    if (values.outputVariantUid) return
+    // Auto-select when there is only one variant — no need to ask the user
+    if (opts.length === 1) {
+      setFieldValue("outputVariantUid", opts[0])
+      return
+    }
+    // Restore saved selection when returning from a later step
+    const preselectedUid = props.initialValues.outputVariantUid
+    if (!preselectedUid) return
+    const match = opts.find((o) => o.value === preselectedUid)
+    if (match) setFieldValue("outputVariantUid", match)
+  },
+  { immediate: true },
+)
 
 // ─── Submit handler ─────────────────────────────────────────────────────
 const handleNext = handleSubmit((formValues) => {
   const recipe = formValues.recipe as ItemOption
-  const variant = formValues.outputVariantUid
+  const variant = formValues.outputVariantUid as {
+    label: string
+    value: string
+    price?: number
+  } | null
   emit("next", {
     outputQuantity: formValues.outputQuantity,
     damagedQuantity: formValues.damagedQuantity,
     recipeUid: recipe.value,
+    recipeOption: {
+      label: recipe.label,
+      value: recipe.value,
+      item_type: recipe.item_type,
+      output_product: recipe.output_product,
+      unit: recipe.unit,
+    },
     outputVariantUid: variant?.value || "",
+    outputVariantOption: variant
+      ? { label: variant.label, value: variant.value, price: variant.price }
+      : null,
+    outputItemType: recipe.item_type,
+    outputUnit: recipe.unit,
+    variantPrice: variant?.price,
   })
 })
 </script>
 
 <template>
-  <form @submit.prevent="handleNext" class="flex flex-col gap-4">
+  <form @submit.prevent="handleNext" @keydown.enter="focusNextOnEnter" class="flex flex-col gap-4">
     <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
       <Icon name="box" size="28" />
     </div>
-    <p class="mb-4 text-sm">Basic Recipe Details</p>
+    <p class="mb-4 text-sm">Basic Run Details</p>
 
     <SelectField
       :model-value="values.recipe"
-      label="Select Recipe"
+      :label="`Select ${recipeSingularLabel}`"
       placeholder="e.g standard formula v2"
       :options="recipeOptions"
       :error="errors.recipe ? String(errors.recipe) : undefined"
       :loading="isSearchingRecipe"
+      :disabled="isEditMode"
       searchable
       required
       @update:model-value="setFieldValue('recipe', $event as ItemOption)"
@@ -189,10 +246,10 @@ const handleNext = handleSubmit((formValues) => {
     </SelectField>
 
     <SelectField
-      v-if="isProductRecipe"
+      v-if="isProductRecipe && variantOptions.length > 1"
       :model-value="values.outputVariantUid"
       label="Output Variant"
-      placeholder="Select variant"
+      :placeholder="isLoadingVariants ? 'Loading variants...' : 'Select variant'"
       :options="variantOptions"
       :error="errors.outputVariantUid ? String(errors.outputVariantUid) : undefined"
       :loading="isLoadingVariants"
@@ -203,18 +260,20 @@ const handleNext = handleSubmit((formValues) => {
 
     <FormField
       name="outputQuantity"
-      type="number"
+      type="decimal"
       label="Quantity Produced (including damages)"
       placeholder="e.g. 100"
       required
+      :suffix="values.recipe ? values.recipe.unit : undefined"
     />
 
     <FormField
       name="damagedQuantity"
-      type="number"
+      type="decimal"
       label="Quantity Damaged"
       placeholder="e.g. 10"
       required
+      :suffix="values.recipe ? values.recipe.unit : undefined"
     />
 
     <div class="h-40" />

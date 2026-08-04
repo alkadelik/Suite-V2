@@ -5,11 +5,12 @@ import type {
   TOrderPaymentMethod,
   TOrderPaymentStatus,
   TOrderShippingCompany,
-  TShipment,
+  TShipmentRow,
 } from "./types"
 import { TableColumn } from "@components/DataTable.vue"
 import { getSmartDateLabel } from "@/utils/formatDate"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
+import type { TChipColor } from "@modules/shared/types"
 
 export const ORDERS: TOrder[] = []
 
@@ -87,7 +88,8 @@ export const ORDER_COLUMNS: TableColumn<TOrder>[] = [
 export const ORDER_STATUS_TAB = [
   { title: "All", key: "all" },
   { title: "Unpaid", key: "unpaid" },
-  { title: "Shipments", key: "shipments" },
+  { title: "Offline", key: "offline" },
+  // { title: "Shipments", key: "shipments" },
   { title: "Ongoing", key: "unfulfilled" },
   { title: "Paid", key: "paid" },
   { title: "Fulfilled", key: "fulfilled" },
@@ -96,59 +98,69 @@ export const ORDER_STATUS_TAB = [
 ]
 
 export const orderSourceMap: Record<string, string> = {
-  internal: "Internal",
-  storefront: "Storefront",
-  popup_storefront: "Popup",
-  popup_internal: "Popup Internal",
+  internal: "Manual Sale",
+  storefront: "Website",
+  popup_storefront: "Popup Website",
+  popup_internal: "Manual Popup Sale",
 }
 
-export const SAMPLE_SHIPMENTS: TShipment[] = [
-  {
-    uid: "SHP-001",
-    customer_name: "John Doe",
-    courier: {
-      name: "DHL",
-      image_url: "https://example.com/dhl-logo.png",
-    },
-    delivery_fee: 1500,
-    pickup_date: "2024-07-01",
-    delivery_date: "2024-07-03",
-    status: "in_transit",
-  },
-  {
-    uid: "SHP-002",
-    customer_name: "Jane Smith",
-    courier: {
-      name: "Uber",
-      image_url: "",
-    },
-    delivery_fee: 800,
-    pickup_date: "2024-07-02",
-    delivery_date: "2026-02-04",
-    status: "delivered",
-  },
+const shipmentCurrencyCell = ({ value }: { value: unknown }) => {
+  const { format } = useFormatCurrency()
+  return format(Number(value), { kobo: true })
+}
+
+const shipmentDateCell = ({ value }: { value: unknown }) =>
+  getSmartDateLabel(typeof value === "string" ? value : "")
+
+const SHIPMENT_BASE_COLUMNS: TableColumn<TShipmentRow>[] = [
+  { header: "Order ID", accessor: "order_number" },
+  { header: "Customer", accessor: "customer_name", class: "max-w-[200px]" },
 ]
 
-export const ORDER_SHIPMENT_COLUMNS: TableColumn<TShipment>[] = [
-  { header: "Name", accessor: "customer_name" },
-  { header: "Courier", accessor: "courier" },
-  {
-    header: "Delivery Fee",
-    accessor: "delivery_fee",
-    cell: ({ value }) => {
-      const { format } = useFormatCurrency()
-      return format(Number(value), { kobo: true })
-    },
-  },
-  {
-    header: "Pickup Date",
-    accessor: "pickup_date",
-    cell: ({ value }) => getSmartDateLabel(String(value)),
-  },
-  {
-    header: "Delivery Date",
-    accessor: "delivery_date",
-    cell: ({ value }) => getSmartDateLabel(String(value)),
-  },
+export const SHIPBUBBLE_SHIPMENT_COLUMNS: TableColumn<TShipmentRow>[] = [
+  ...SHIPMENT_BASE_COLUMNS,
+  { header: "Courier", accessor: "courier_name" },
+  { header: "Shipping Cost", accessor: "order.delivery_fee", cell: shipmentCurrencyCell },
+  { header: "Delivery Estimate", accessor: "date", cell: shipmentDateCell },
   { header: "Status", accessor: "status" },
+  { header: "", accessor: "actions" },
+]
+
+export const MANUAL_SHIPMENT_COLUMNS: TableColumn<TShipmentRow>[] = [
+  ...SHIPMENT_BASE_COLUMNS,
+  { header: "Courier", accessor: "courier_name" },
+  { header: "Delivery Fee", accessor: "fee", cell: shipmentCurrencyCell },
+  { header: "Order Date", accessor: "date", cell: shipmentDateCell },
+  { header: "Status", accessor: "status" },
+  { header: "", accessor: "actions" },
+]
+
+export const PICKUP_SHIPMENT_COLUMNS: TableColumn<TShipmentRow>[] = [
+  ...SHIPMENT_BASE_COLUMNS,
+  { header: "Amount", accessor: "amount", cell: shipmentCurrencyCell },
+  { header: "Order Date", accessor: "date", cell: shipmentDateCell },
+  { header: "Status", accessor: "status" },
+  { header: "", accessor: "actions" },
+]
+
+export const SHIPMENT_STATUS_COLORS: Record<string, TChipColor> = {
+  awaiting_shipment: "warning",
+  awaiting_pickup: "warning",
+  unfulfilled: "warning",
+  partially_fulfilled: "warning",
+  picked_up: "blue",
+  in_transit: "blue",
+  delivered: "success",
+  fulfilled: "success",
+  cancelled: "error",
+  voided: "error",
+}
+
+export const SHIPMENT_STATUS_OPTIONS: { label: string; value: string }[] = [
+  { label: "Awaiting Shipment", value: "awaiting_shipment" },
+  { label: "Awaiting Pickup", value: "awaiting_pickup" },
+  { label: "Picked Up", value: "picked_up" },
+  { label: "In Transit", value: "in_transit" },
+  { label: "Delivered", value: "delivered" },
+  { label: "Cancelled", value: "cancelled" },
 ]

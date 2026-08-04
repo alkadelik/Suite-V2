@@ -24,7 +24,7 @@ import { useGenerateEODReport, useGetLatestEODReport } from "../api"
 import { useReportsStore } from "../store"
 import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
-import { toast } from "@/composables/useToast"
+// import { toast } from "@/composables/useToast"
 
 const yesterday = new Date()
 yesterday.setDate(yesterday.getDate() - 1)
@@ -130,17 +130,17 @@ onBeforeUnmount(() => {
 })
 
 const handleGenerateReport = () => {
-  const createdAt = settingsStore.storeDetails?.created_at
-  if (createdAt) {
-    const hoursSinceCreation = (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60)
-    if (hoursSinceCreation < 36) {
-      toast.error(
-        "Your store needs at least 36 hours of activity before generating an End of Day report.",
-        { title: "Not Enough Data" },
-      )
-      return
-    }
-  }
+  // const createdAt = settingsStore.storeDetails?.created_at
+  // if (createdAt) {
+  //   const hoursSinceCreation = (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60)
+  //   if (hoursSinceCreation < 36) {
+  //     toast.error(
+  //       "Your store needs at least 36 hours of activity before generating an End of Day report.",
+  //       { title: "Not Enough Data" },
+  //     )
+  //     return
+  //   }
+  // }
 
   generateEODReport(
     { date: activeDate.value },
@@ -187,6 +187,16 @@ const STEPS = computed(() => [
         />
       </template>
     </SectionHeader>
+
+    <div v-if="isMobile" class="flex justify-end pt-4">
+      <TextField
+        type="date"
+        size="sm"
+        v-model="activeDate"
+        :max="yesterday.toISOString().slice(0, 10)"
+        :min="storeCreatedDate"
+      />
+    </div>
 
     <EmptyState
       v-if="!reportData || isCurrentDayGenerating || isPending || isFetching"

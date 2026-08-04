@@ -135,7 +135,6 @@ const statusOptions = [
   { value: "in_stock", label: "In Stock", color: "success" as const },
   { value: "out_of_stock", label: "Out of Stock", color: "error" as const },
   { value: "low_stock", label: "Low Stock", color: "warning" as const },
-  { value: "overstocked", label: "Overstocked", color: "primary" as const },
 ]
 
 // Selected status state
@@ -171,11 +170,18 @@ const drawerPosition = computed(() => {
   return isMobile.value ? "bottom" : "right"
 })
 
-// Clear all filters
+// Clear all filters: reset local state, sync the parent so the list refetches
+// without active filters, and close the drawer (matches Apply behaviour).
 const clearFilters = () => {
   selectedCategory.value = null
   selectedStatus.value = null
   selectedSubCategory.value = null
+  emit("apply", {
+    category: null,
+    status: null,
+    subCategory: null,
+  })
+  emit("update:modelValue", false)
 }
 
 // Apply filters and close drawer

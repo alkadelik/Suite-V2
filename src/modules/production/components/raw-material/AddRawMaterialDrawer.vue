@@ -9,7 +9,8 @@ import Icon from "@components/Icon.vue"
 import { useMediaQuery } from "@vueuse/core"
 import { Field, useForm } from "vee-validate"
 import * as yup from "yup"
-import { watch, computed, ref } from "vue"
+import { watch, computed, ref, nextTick } from "vue"
+import { useQueryClient } from "@tanstack/vue-query"
 import { toast } from "@/composables/useToast"
 import { displayError } from "@/utils/error-handler"
 import { onInvalidSubmit } from "@/utils/validations"
@@ -18,25 +19,39 @@ import {
   useEditRawMaterial,
   useGetSuppliers,
   useCreateSupplier,
+  useGetSingleRawMaterial,
 } from "../../api"
-import { TRawMaterial } from "../../types"
+import { TRawMaterial, type TConversion } from "../../types"
 import SelectField from "@components/form/SelectField.vue"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
-import { UNITS_OF_MEASURE } from "@modules/production/constant"
+import { LOCK_CONVERSION_RATE_EDITING, UNITS_OF_MEASURE } from "@modules/production/constant"
+import { floatDecimal } from "@/utils/others"
+import { useProductionStore } from "@modules/production/store"
+import { removeUnderscores, startCase } from "@/utils/format-strings"
 
-const props = defineProps<{ open: boolean; material?: TRawMaterial | null }>()
+const props = defineProps<{
+  open: boolean
+  mode?: "create" | "edit" | null
+  material?: TRawMaterial | null
+  hasFullDetails?: boolean
+}>()
 const emit = defineEmits(["close", "refresh"])
 
 const isMobile = useMediaQuery("(max-width: 1028px)")
 const isEditMode = computed(() => !!props.material)
 const { currency } = useFormatCurrency()
 
-const steps = ["Add Material", "Suppliers (optional)"]
+const materialSingular = computed(() => useProductionStore().componentSingular)
+const materialLabel = computed(() => useProductionStore().componentLabel)
+const recipeLabel = computed(() => useProductionStore().recipeLabel)
+
+const steps = computed(() => [`Add ${materialLabel.value}`, "Suppliers (optional)"])
 const activeStep = ref(0)
 
 // Supplier management
 const showAddSupplier = ref(false)
 const newSupplierName = ref("")
+const queryClient = useQueryClient()
 
 // unit management
 const showAddUnit = ref<"purchase" | "production" | null>(null)
@@ -120,7 +135,7 @@ const { handleSubmit, resetForm, values, setFieldValue, validateField, setFieldT
       yup.object({
         name: yup
           .string()
-          .required("Material name is required")
+          .required(`${useProductionStore().componentSingular} name is required`)
           .min(3, "Name must be at least 3 characters"),
         unit: yup
           .object()
@@ -134,10 +149,14 @@ const { handleSubmit, resetForm, values, setFieldValue, validateField, setFieldT
           .min(0, "Qty in stock cannot be negative"),
         default_cost: yup
           .number()
-          .transform((value, originalValue) => (originalValue === "" ? undefined : value))
+          .transform((_, originalValue) =>
+            originalValue === "" ? undefined : Number(String(originalValue).replace(/,/g, "")),
+          )
           .typeError("Default purchase price must be a number")
-          .when("source", {
-            is: (source: { value: string }) => source?.value === "supplier",
+          // Cost is only captured when there's opening stock; with 0 stock the
+          // field is hidden and the cost is assumed to be 0.
+          .when("qty_in_stock", {
+            is: (qty: number) => Number(qty) > 0,
             then: (schema) =>
               schema
                 .required("Default purchase price is required")
@@ -206,6 +225,8 @@ const createNewSupplier = () => {
           ...currentSuppliers,
           { label: supplierUid.name, value: supplierUid.uid },
         ])
+        // Invalidate the suppliers cache so the new supplier appears in future selections
+        queryClient.invalidateQueries({ queryKey: ["raw-materials-suppliers"] })
         // Close modal and reset
         showAddSupplier.value = false
         newSupplierName.value = ""
@@ -230,12 +251,12 @@ const buildConversion = (values: FormValues) => {
 
   if (!purchaseUnit || !productionUnit || !fromQty || !toQty) return undefined
 
-  const rate = (Number(toQty) / Number(fromQty)).toString()
+  const rate = (Number(toQty) / Number(fromQty)).toFixed(4)
   const name = values.conversion_name || `${purchaseUnit} to ${productionUnit}`
 
   return {
-    from_unit: purchaseUnit,
-    to_unit: productionUnit,
+    from_unit: productionUnit,
+    to_unit: purchaseUnit,
     rate,
     name,
     is_active: true,
@@ -245,13 +266,27 @@ const buildConversion = (values: FormValues) => {
 const onSubmit = handleSubmit((values) => {
   const conversion = buildConversion(values)
 
+  const qty_in_stock: string = conversion
+    ? floatDecimal(Number(values.qty_in_stock) * Number(conversion.rate)).toString()
+    : values.qty_in_stock
+
+  // unit cost for each material is stored in purchase unit, so convert if needed.
+  // With zero opening stock the cost field is hidden and the cost is assumed to be 0.
+  const is_sub_assembly = values.source?.value === "manufacture"
+  const hasStock = Number(values.qty_in_stock) > 0
+  const default_cost = hasStock
+    ? floatDecimal(
+        Number(values.default_cost.replace(/[^0-9.]/g, "")) / (conversion ? +conversion.rate : 1),
+      )
+    : 0
+
   const payload = {
     name: values.name,
-    unit: values.unit?.value || "",
-    default_cost: values.default_cost,
-    qty_in_stock: values.qty_in_stock,
-    is_sub_assembly: values.source?.value === "manufacture",
-    ...(values.source?.value === "supplier" ? { default_cost: values.default_cost } : {}),
+    unit: values.production_unit?.value || "",
+    qty_in_stock,
+    is_sub_assembly,
+    // On create, send the assumed 0 explicitly; on edit, keep omitting falsy cost
+    ...(default_cost || !isEditMode.value ? { default_cost } : {}),
     ...(values.suppliers.length ? { suppliers: values.suppliers.map((x) => x.value) } : {}),
     ...(values.expiry_date ? { expiry_date: values.expiry_date } : {}),
     ...(values.reorder_threshold ? { reorder_threshold: values.reorder_threshold } : {}),
@@ -260,7 +295,9 @@ const onSubmit = handleSubmit((values) => {
   }
 
   const onSuccess = () => {
-    toast.success(`Material ${isEditMode.value ? "updated" : "added"} successfully!`)
+    toast.success(
+      `${materialSingular.value} ${isEditMode.value ? "updated" : "added"} successfully!`,
+    )
     resetForm()
     emit("close")
     emit("refresh")
@@ -283,37 +320,118 @@ watch([() => values.unit, () => values.production_unit], ([newUnit, newProdUnit]
   }
 })
 
+const seedFromMaterial = (item: TRawMaterial) => {
+  const activeConversion: TConversion | undefined = item.conversions?.find(
+    (c) => c.is_active && c.from_unit !== c.to_unit,
+  )
+  // Reuse the existing option (with its canonical label) when the unit is known,
+  // otherwise add it as a custom option so it can still be selected.
+  const resolveUnit = (unitValue: string) => {
+    const existing = unitOptions.value.find((o) => o.value === unitValue)
+    if (existing) return existing
+    const custom = { label: unitValue, value: unitValue }
+    unitOptions.value.push(custom)
+    return custom
+  }
+
+  const purchaseUnitOption = resolveUnit(item.unit)
+  const productionUnit = activeConversion
+    ? resolveUnit(activeConversion.to_unit)
+    : purchaseUnitOption
+
+  const prefillSuppliers = item.suppliers?.map((s) => ({ label: s.name, value: s.uid })) ?? []
+
+  resetForm({
+    values: {
+      name: item.name,
+      unit: productionUnit,
+      production_unit: purchaseUnitOption,
+      qty_in_stock: activeConversion
+        ? floatDecimal(item.current_stock / Number(activeConversion.rate)).toString()
+        : item.current_stock.toString(),
+      source: item.is_sub_assembly ? sourceOptions[1] : sourceOptions[0],
+      default_cost: activeConversion
+        ? String(item.avg_cost * Number(activeConversion.rate))
+        : item.avg_cost.toString(),
+      suppliers: prefillSuppliers,
+      expiry_date: item.expiry_date ?? "",
+      reorder_threshold: item.reorder_threshold
+        ? parseInt(String(item.reorder_threshold)).toString()
+        : "",
+      notes: item.notes ?? "",
+      conversion_from_qty: "1",
+      conversion_to_qty: activeConversion ? floatDecimal(activeConversion.rate, 4).toString() : "",
+      conversion_name: "",
+    },
+  })
+  if (activeConversion) {
+    nextTick(() => {
+      setFieldValue("conversion_from_qty", "1")
+      setFieldValue("conversion_to_qty", floatDecimal(activeConversion.rate, 4).toString())
+      setFieldValue("conversion_name", activeConversion.name)
+    })
+  }
+}
+
+// Fetch full material when hasFullDetails is false
+const fetchUid = computed(() =>
+  !props.hasFullDetails && props.open && props.mode === "edit" && props.material
+    ? props.material.uid
+    : "",
+)
+const { data: fetchedMaterial, isFetching: isLoadingMaterial } = useGetSingleRawMaterial(fetchUid)
+
+const unitsLocked = computed(
+  () => !!props.material?.linked_recipes?.length || !!fetchedMaterial.value?.linked_recipes?.length,
+)
+
+// Conversion rates can't be edited once set — locking prevents stock/cost
+// drift since downstream records assume a fixed rate.
+const conversionRateLocked = computed(() => LOCK_CONVERSION_RATE_EDITING && isEditMode.value)
+
+// immediate: true handles the case where TanStack Query returns cached data without a change event
+watch(fetchedMaterial, (material) => {
+  if (material && fetchUid.value) seedFromMaterial(material)
+})
+
+const emptyForm = () =>
+  resetForm({
+    values: {
+      name: "",
+      unit: null,
+      production_unit: null,
+      qty_in_stock: "",
+      default_cost: "",
+      source: null,
+      suppliers: [],
+      expiry_date: "",
+      reorder_threshold: "",
+      notes: "",
+      conversion_from_qty: "1",
+      conversion_to_qty: "",
+      conversion_name: "",
+    },
+  })
+
 // Reset form or populate with material data when drawer opens
 watch(
   () => props.open,
   (isOpen) => {
-    if (isOpen) {
-      activeStep.value = 0
-      if (isEditMode.value && props.material) {
-        // Populate form with material data
-        resetForm({
-          values: {
-            name: props.material.name,
-            unit: { label: props.material.unit, value: props.material.unit },
-            production_unit: null,
-            qty_in_stock: props.material.current_stock.toString(),
-            source: props.material.is_sub_assembly ? sourceOptions[1] : sourceOptions[0],
-            default_cost: props.material.avg_cost.toString(),
-            suppliers: props.material.suppliers?.map((supplier) => ({
-              label: supplier.name,
-              value: supplier.uid,
-            })),
-            expiry_date: "",
-            reorder_threshold: "",
-            notes: "",
-            conversion_from_qty: "1",
-            conversion_to_qty: "",
-            conversion_name: "",
-          },
-        })
+    if (!isOpen) return
+    activeStep.value = 0
+    if (props.mode === "edit" && props.material) {
+      if (props.hasFullDetails) {
+        seedFromMaterial(props.material)
       } else {
-        resetForm()
+        // Clear stale data first; if TanStack already has this material cached,
+        // seed immediately — otherwise the fetchedMaterial watcher handles it
+        emptyForm()
+        if (fetchedMaterial.value?.uid === props.material.uid) {
+          seedFromMaterial(fetchedMaterial.value)
+        }
       }
+    } else {
+      emptyForm()
     }
   },
 )
@@ -321,7 +439,8 @@ watch(
 const validateStepOne = async () => {
   const stepOneFields: Array<keyof FormValues> = ["name", "unit", "qty_in_stock", "source"]
 
-  if (values.source?.value === "supplier") {
+  // Cost only applies when there's opening stock (hidden and assumed 0 otherwise)
+  if (+values.qty_in_stock > 0) {
     stepOneFields.push("default_cost")
   }
 
@@ -357,27 +476,40 @@ const goToNextStep = async () => {
 const goToPrevStep = () => {
   activeStep.value = activeStep.value - 1
 }
+
+const handleAddFromSearch = (search: string, close: () => void) => {
+  showAddSupplier.value = true
+  newSupplierName.value = search
+  close()
+}
 </script>
 
 <template>
-  <component
-    :is="isMobile ? Modal : Drawer"
+  <Drawer
     :open="open"
-    :title="isEditMode ? 'Edit Material' : 'Add Material'"
+    :title="
+      isEditMode ? `Edit ${props.material?.name || materialSingular}` : `Add ${materialSingular}`
+    "
     max-width="2xl"
-    variant="fullscreen"
     @close="emit('close')"
   >
     <StepperWizard v-model="activeStep" :steps="steps" :showIndicators="false">
       <template #default="{ step }">
+        <!-- loading skeleton while fetching full material details -->
+        <div v-if="isLoadingMaterial" class="space-y-4 p-4">
+          <div v-for="n in 6" :key="n" class="h-12 animate-pulse rounded-xl bg-gray-200" />
+        </div>
+
         <!-- Step 1: Material Details -->
-        <div v-show="step === 0">
+        <div v-show="step === 0 && !isLoadingMaterial">
           <div>
             <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
               <icon :name="isEditMode ? 'edit' : 'shop-add'" size="28" />
             </div>
             <p class="text-sm text-gray-600">
-              {{ isEditMode ? "Update material details" : "Add a new material" }}
+              {{
+                isEditMode ? `Update ${materialSingular} details` : `Add a new ${materialSingular}`
+              }}
             </p>
           </div>
 
@@ -385,10 +517,41 @@ const goToPrevStep = () => {
             <FormField
               type="text"
               name="name"
-              label="Material Name"
+              :label="`${startCase(materialSingular)} Name`"
               placeholder="e.g. Glass Butter"
               required
             />
+
+            <FormField
+              type="select"
+              name="source"
+              label="Do you make or buy this?"
+              placeholder="Select source"
+              :options="sourceOptions"
+              value-key="value"
+              label-key="label"
+              required
+              :placement="isMobile ? 'top' : 'auto'"
+            />
+
+            <div
+              v-if="values.source?.value === 'manufacture'"
+              class="bg-primary-25 text-warning-700 border-warning-300 flex items-center gap-3 rounded-xl border px-2 py-2 md:px-3"
+            >
+              <span
+                class="border-primary-200 ring-primary-100 flex size-8 flex-shrink-0 items-center justify-center rounded-full border-2 ring-2 ring-offset-2"
+              >
+                <Icon name="info-circle" size="20" />
+              </span>
+              <div class="text-sm">
+                <p class="font-medium">This {{ materialSingular }} is a sub-assembly</p>
+                <p>
+                  Sub-assemblies are partially completed
+                  {{ materialLabel.toLowerCase() }} produced from multiple
+                  {{ materialLabel.toLowerCase() }} before being incoporated into a final product.
+                </p>
+              </div>
+            </div>
 
             <section class="border-core-300 space-y-4 border-y border-dashed py-3">
               <div>
@@ -396,11 +559,12 @@ const goToPrevStep = () => {
                   <SelectField
                     v-bind="field"
                     :model-value="field.value"
-                    :label="`What unit do you buy this in?`"
+                    :label="`What unit do you ${values.source?.value === 'manufacture' ? 'produce' : 'buy'} this in?`"
                     placeholder="Select unit"
                     :options="unitOptions"
                     searchable
                     required
+                    :disabled="unitsLocked"
                     :error="fieldErrors[0]"
                     @update:model-value="field.value = $event"
                   >
@@ -452,6 +616,7 @@ const goToPrevStep = () => {
                     :options="unitOptions"
                     searchable
                     required
+                    :disabled="unitsLocked"
                     :error="fieldErrors[0]"
                     @update:model-value="field.value = $event"
                   >
@@ -495,16 +660,33 @@ const goToPrevStep = () => {
 
               <div v-if="showConversionSection" class="rounded-md bg-gray-200 p-4">
                 <p class="mb-3 flex items-center gap-1 text-sm font-medium">
-                  How many {{ values.unit?.label }} equal {{ values.production_unit?.label }}?
+                  How do you convert {{ removeUnderscores(values.unit?.label) }} to
+                  {{ removeUnderscores(values.production_unit?.label) }}?
+                </p>
+                <p v-if="false" class="mb-3 text-xs text-amber-600">
+                  Units and conversion are locked because this {{ materialSingular }} is used in
+                  {{ props.material?.linked_recipes?.length }} {{ recipeLabel.toLowerCase() }}.
+                </p>
+                <p
+                  v-if="LOCK_CONVERSION_RATE_EDITING && !isEditMode"
+                  class="border-warning-200 bg-warning-50 text-warning-700 mb-3 flex items-start gap-2 rounded-lg border px-3 py-2 text-xs"
+                >
+                  <span>⚠️</span>
+                  <span>
+                    Double-check your conversion before saving. Conversion rates can't be edited
+                    once set, so make sure 1 {{ removeUnderscores(values.unit?.label) }} = the right
+                    number of {{ removeUnderscores(values.production_unit?.label) }}.
+                  </span>
                 </p>
                 <div class="flex items-end gap-2">
                   <div class="min-w-0 flex-1">
                     <FormField
                       name="conversion_from_qty"
-                      type="number"
-                      :label="values.unit?.label"
-                      :suffix="values.unit?.label"
+                      :label="removeUnderscores(values.unit?.label)"
+                      :suffix="removeUnderscores(values.unit?.label)"
                       placeholder="e.g. 1"
+                      :disabled="conversionRateLocked"
+                      type="decimal"
                     />
                   </div>
                   <AppButton
@@ -512,65 +694,51 @@ const goToPrevStep = () => {
                     variant="outlined"
                     size="sm"
                     class="mb-1 flex-shrink-0 hover:cursor-default! focus:ring-0!"
-                    :disabled="false"
                   />
                   <div class="min-w-0 flex-1">
                     <FormField
                       name="conversion_to_qty"
-                      type="number"
-                      :label="values.production_unit?.label"
-                      :suffix="values.production_unit?.label"
+                      :label="removeUnderscores(values.production_unit?.label)"
+                      :suffix="removeUnderscores(values.production_unit?.label)"
                       placeholder="e.g. 12"
+                      :disabled="conversionRateLocked"
+                      type="decimal"
                     />
                   </div>
                 </div>
+                <p
+                  v-if="conversionRateLocked"
+                  class="mt-2 flex items-start gap-1 text-xs text-gray-500"
+                >
+                  <span>🔒</span>
+                  <span>
+                    Conversion rates can't be changed yet — this keeps your stock and cost records
+                    accurate. Please contact support if you need to change this.
+                  </span>
+                </p>
               </div>
             </section>
 
-            <div>
+            <div v-if="!isEditMode">
               <FormField
-                type="number"
                 name="qty_in_stock"
                 label="Quantity in Stock"
+                :suffix="removeUnderscores(values.unit?.label)"
                 placeholder="e.g. 25"
                 required
+                type="decimal"
               />
             </div>
 
-            <FormField
-              type="select"
-              name="source"
-              label="Source of material"
-              placeholder="Select source"
-              :options="sourceOptions"
-              value-key="value"
-              label-key="label"
-              required
-              :placement="isMobile ? 'top' : 'auto'"
-            />
-
-            <div
-              v-if="values.source?.value === 'manufacture'"
-              class="bg-primary-25 text-warning-700 border-warning-300 flex items-center gap-3 rounded-xl border px-3 py-3 md:px-6"
-            >
-              <span
-                class="border-primary-200 ring-primary-100 flex size-8 flex-shrink-0 items-center justify-center rounded-full border-2 ring-2 ring-offset-2"
-              >
-                <Icon name="info-circle" size="20" />
-              </span>
-              <div class="text-sm">
-                <p class="font-medium">This Material is a Sub-assembly</p>
-                <p>This will be the name displayed in the inventory</p>
-              </div>
-            </div>
-
-            <div v-else>
+            <div v-if="mode !== 'edit'">
               <FormField
+                v-if="+values.qty_in_stock > 0"
                 type="number"
                 name="default_cost"
                 format="currency"
                 step="0.01"
-                :label="`Default Purchase price (${currency})`"
+                :label="`Cost per ${removeUnderscores(values.unit?.value) || 'unit'} (${currency})`"
+                :suffix="removeUnderscores(values.unit?.label)"
                 placeholder="e.g. 25"
                 required
               />
@@ -584,7 +752,7 @@ const goToPrevStep = () => {
             <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
               <icon name="profile-add" size="28" />
             </div>
-            <p class="text-sm text-gray-600">Review material details and confirm</p>
+            <p class="text-sm text-gray-600">Review {{ materialSingular }} details and confirm</p>
           </div>
 
           <div class="mt-6 space-y-4">
@@ -622,6 +790,18 @@ const goToPrevStep = () => {
                       </div>
                     </div>
                   </template>
+                  <template #no-options="{ search, close }">
+                    <p>
+                      No results found.
+                      <button
+                        class="text-primary-600 ml-1 hover:underline"
+                        @click="handleAddFromSearch(search, close)"
+                      >
+                        Add <span class="font-semibold">"{{ search }}"</span>
+                      </button>
+                      as a supplier?
+                    </p>
+                  </template>
                 </SelectField>
               </Field>
             </div>
@@ -639,8 +819,9 @@ const goToPrevStep = () => {
               <FormField
                 type="text"
                 name="reorder_threshold"
-                label="Reorder Threshold (optional)"
+                :label="`Reorder Threshold (optional)`"
                 placeholder="Enter reorder threshold"
+                :suffix="values.unit?.label"
               />
             </div>
 
@@ -661,7 +842,7 @@ const goToPrevStep = () => {
       <div class="flex gap-3">
         <AppButton label="Back" color="alt" class="flex-1" @click="goToPrevStep" />
         <AppButton
-          :label="isEditMode ? 'Update Material' : 'Add Material'"
+          :label="isEditMode ? `Update ${materialSingular}` : `Add ${materialSingular}`"
           type="submit"
           class="flex-1"
           :loading="isPending"
@@ -688,7 +869,9 @@ const goToPrevStep = () => {
         <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
           <Icon name="profile-add" size="28" />
         </div>
-        <p class="text-sm text-gray-600">Create a new supplier for your raw materials</p>
+        <p class="text-sm text-gray-600">
+          Create a new supplier for your {{ materialLabel.toLowerCase() }}
+        </p>
 
         <TextField
           v-model="newSupplierName"
@@ -724,7 +907,9 @@ const goToPrevStep = () => {
         <div class="bg-core-50 mb-2 flex size-10 items-center justify-center rounded-xl p-2">
           <Icon name="profile-add" size="28" />
         </div>
-        <p class="text-sm text-gray-600">Create a new unit for your raw materials</p>
+        <p class="text-sm text-gray-600">
+          Create a new unit for your {{ materialLabel.toLowerCase() }}
+        </p>
 
         <TextField v-model="newUnitName" label="Unit Name" placeholder="e.g. Kilogram" required />
       </div>
@@ -741,5 +926,5 @@ const goToPrevStep = () => {
         </div>
       </template>
     </Modal>
-  </component>
+  </Drawer>
 </template>

@@ -66,14 +66,15 @@ export function useGetRawMaterials(
 }
 
 /** search raw-material by name */
-export function useSearchRawMaterial(search: MaybeRefOrGetter<string>) {
+export function useSearchRawMaterial(search: MaybeRefOrGetter<string>, is_sub_assembly?: boolean) {
   return useQuery({
     queryKey: ["rawMaterials", "search", search],
     queryFn: async () => {
       const { data } = await baseApi.get<TPaginatedResponse<TRawMaterial>>(`/raw-materials/`, {
         params: {
           ...(toValue(search) ? { search: toValue(search) } : {}),
-          limit: 10,
+          ...(is_sub_assembly ? { is_sub_assembly } : {}),
+          limit: 20,
         },
       })
       return data.data
@@ -93,11 +94,19 @@ export function useGetRawMaterialsStats() {
 }
 
 /** Fetch single raw material by ID */
-export function useGetSingleRawMaterial(id: string) {
+export function useGetSingleRawMaterial(id: MaybeRefOrGetter<string>) {
   return useApiQuery<TRawMaterial>({
-    url: `/raw-materials/${id}/`,
-    key: `raw-materials/${id}`,
+    url: () => `/raw-materials/${toValue(id)}/`,
+    key: () => `raw-materials/${toValue(id)}`,
+    enabled: () => !!toValue(id),
     selectData: true,
+  })
+}
+
+/** Delete raw material */
+export function useDeleteRawMaterial() {
+  return useMutation({
+    mutationFn: (uid: string) => baseApi.delete(`/raw-materials/${uid}/`),
   })
 }
 
@@ -124,7 +133,7 @@ export function useSearchRecipe(search: MaybeRefOrGetter<string>) {
       const { data } = await baseApi.get<TPaginatedResponse<TRecipe>>(`/recipes/`, {
         params: {
           ...(toValue(search) ? { search: toValue(search) } : {}),
-          limit: 10,
+          limit: 20,
         },
       })
       return data.data
@@ -168,6 +177,16 @@ export function useUpdateRecipe() {
   })
 }
 
+/** Validate recipe name uniqueness (GET, but exposed as a mutation so it can be fired imperatively, e.g. on blur) */
+export function useValidateRecipeName() {
+  return useMutation({
+    mutationFn: (name: string) =>
+      baseApi.get<{ data: { is_unique: boolean } }>(`/recipes/validate-name/`, {
+        params: { name },
+      }),
+  })
+}
+
 export function useCreateRecipe() {
   return useMutation({
     mutationFn: (body: IRecipePayload) => baseApi.post(`/recipes/`, body),
@@ -199,10 +218,11 @@ export function useGetProdRunsStats() {
 }
 
 /** Fetch single production run by uid */
-export function useGetSingleProdRun(uid: string) {
+export function useGetSingleProdRun(uid: MaybeRefOrGetter<string>) {
   return useApiQuery<TProdRun>({
-    url: `/production-runs/${uid}/`,
-    key: `production-runs/${uid}`,
+    url: () => `/production-runs/${toValue(uid)}/`,
+    key: () => `production-runs/${toValue(uid)}`,
+    enabled: () => !!toValue(uid),
     selectData: true,
   })
 }

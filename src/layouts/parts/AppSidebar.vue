@@ -21,7 +21,7 @@
     <!-- Store Info -->
     <div class="bg-gray-50 px-4 py-4">
       <div class="mb-3 flex items-center gap-2">
-        <div class="bg-core-200 flex size-10 items-center justify-center rounded-xl">
+        <div class="bg-core-200 flex size-10 shrink-0 items-center justify-center rounded-xl">
           <Icon name="shop" class="text-primary-800" size="24" />
         </div>
         <div class="min-w-0">
@@ -62,23 +62,18 @@
     <!-- Navigation -->
     <section class="space-y-1 px-4 py-2">
       <SidebarGroup
-        icon="shopping-cart"
+        icon="shopping-cart-outline"
         label="Sales Suite"
         :children="salesSuiteItems"
         :is-expanded="expandedGroup === 'sales-suite'"
         @toggle="expandedGroup = expandedGroup === 'sales-suite' ? null : 'sales-suite'"
       />
 
-      <SidebarGroup
-        icon="trend-up"
-        label="Marketing"
-        :children="marketingItems"
-        :is-expanded="expandedGroup === 'marketing'"
-        @toggle="expandedGroup = expandedGroup === 'marketing' ? null : 'marketing'"
-      />
+      <SidebarLink v-if="activeLocation?.is_hq" icon="sms" label="Email List" to="/email-list" />
 
       <SidebarGroup
-        icon="building"
+        v-if="isHQ"
+        icon="building-outline"
         label="Production"
         :children="productionItems"
         :is-expanded="expandedGroup === 'production'"
@@ -97,6 +92,8 @@
     </section>
 
     <section class="mt-auto px-4 pb-4">
+      <SidebarLink icon="announcement" label="What's New" to="/changelog" class="w-full" />
+
       <SidebarLink
         icon="life-buoy"
         label="Support"
@@ -111,10 +108,13 @@
       <!-- Subscription view -->
       <div v-if="!isInternational" class="relative mt-20">
         <div
-          :class="['relative isolate flex flex-col gap-1 rounded-3xl p-3 pt-12 text-white']"
+          :class="[
+            'relative isolate flex cursor-pointer flex-col gap-1 rounded-3xl p-3 pt-12 text-white',
+          ]"
           style="
             background: linear-gradient(136.41deg, #1a2a6c -3.7%, #b21f1f 53.98%, #fdbb2d 99.39%);
           "
+          @click="$emit('upgrade')"
         >
           <template v-if="subscription && !isActive && !isTrial">
             <h3 class="mb-1 text-sm font-bold">Your trial has ended!</h3>
@@ -138,10 +138,11 @@
             <p class="mb-4 text-sm">Get advanced tools to manage every aspect of your business.</p>
           </template>
 
+          <!--  v-if="isTrial || planNameLower !== 'bloom'" -->
           <AppButton
-            v-if="isTrial || planNameLower !== 'bloom'"
+            v-if="!isActive"
             color="alt"
-            label="Upgrade"
+            :label="planCtaLabel"
             class="w-full flex-row-reverse"
             icon="star"
             @click="$emit('upgrade')"
@@ -203,41 +204,47 @@ const isMobile = useMediaQuery("(max-width: 1024px)")
 // Track which sidebar group is expanded
 const expandedGroup = ref<string | null>("sales-suite")
 
-const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
+// Prefer the connected custom domain when one is active (LYW-2618).
+const storefrontUrl = computed(() => useSettingsStore().displayDomain)
 const isInternational = computed(() => useSettingsStore().isInternational)
+const isHQ = computed(() => activeLocation.value?.is_hq)
 
 // Sales Suite items
 const salesSuiteItems = computed(() =>
   [
     { icon: "box", label: "Orders", to: "/orders" },
+    {
+      icon: "truck-fast-outline",
+      label: "Shipments",
+      to: "/shipments",
+      walkthrough: "shipments-nav",
+    },
     { icon: "folder", label: "Inventory", to: "/inventory" },
     { icon: "calendar-tick", label: "Popups", to: "/popups" },
     { icon: "people", label: "Customers", to: "/customers" },
+    { icon: "tag-3", label: "Discounts", to: "/discounts", walkthrough: "discounts-nav" },
   ].filter((item) => {
     if (item.label === "Popups") return activeLocation.value?.is_hq
     return true
   }),
 )
 
-// Marketing items
-const marketingItems = computed(() => [{ icon: "sms", label: "Email List", to: "/email-list" }])
-
 // Production items
 const productionItems = computed(() => {
   const componentLabel = useProductionStore().componentLabel
   const recipeLabel = useProductionStore().recipeLabel
   return [
-    { icon: "box", label: componentLabel, to: "/production/raw-materials" },
-    { icon: "box", label: recipeLabel, to: "/production/recipes" },
-    { icon: "box", label: "Production run", to: "/production/runs" },
+    { icon: "archive", label: componentLabel, to: "/production/raw-materials" },
+    { icon: "clipboard-text-outline", label: recipeLabel, to: "/production/recipes" },
+    { icon: "chart", label: "Production run", to: "/production/runs" },
   ]
 })
 
 // reports items
 const reportsItems = computed(() => [
+  { icon: "pie-chart", label: "Store Summary", to: "/reports/store-overview" },
   { icon: "pie-chart", label: "End of Day", to: "/reports/end-of-day" },
   { icon: "pie-chart", label: "Monthly", to: "/reports/monthly" },
-  { icon: "pie-chart", label: "Store Overview", to: "/reports/store-overview" },
 ])
 
 const storeDetails = computed(() => useSettingsStore().storeDetails)
@@ -250,8 +257,6 @@ watch(
     const isMatch = (to: string) => path === to || path.startsWith(to + "/")
     if (salesSuiteItems.value.some((item) => isMatch(item.to))) {
       expandedGroup.value = "sales-suite"
-    } else if (marketingItems.value.some((item) => isMatch(item.to))) {
-      expandedGroup.value = "marketing"
     } else if (productionItems.value.some((item) => isMatch(item.to))) {
       expandedGroup.value = "production"
     } else if (reportsItems.value.some((item) => isMatch(item.to))) {
@@ -279,6 +284,11 @@ const isActive = computed(() => !!subscription.value?.is_active)
 
 const planName = computed(() => subscription.value?.plan_name ?? "")
 const planNameLower = computed(() => planName.value.toLowerCase())
+const planCtaLabel = computed(() => {
+  if (isTrial.value) return "Upgrade"
+  return isActive.value ? "Subscribed" : "Subscribe"
+  // return planNameLower.value === "burst" ? "Subscribed" : "Upgrade"
+})
 
 const formattedEnds = computed(() => {
   const until = subscription.value?.active_until

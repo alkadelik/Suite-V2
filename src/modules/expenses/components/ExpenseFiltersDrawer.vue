@@ -2,10 +2,8 @@
 import AppButton from "@components/AppButton.vue"
 import Chip from "@components/Chip.vue"
 import Drawer from "@components/Drawer.vue"
-import Modal from "@components/Modal.vue"
 import SelectField from "@components/form/SelectField.vue"
 import TextField from "@components/form/TextField.vue"
-import { useMediaQuery } from "@vueuse/core"
 import { computed, ref, watch } from "vue"
 import { useGetExpenseCategories } from "../api"
 import { useExpenseStore } from "../store"
@@ -17,8 +15,6 @@ const emit = defineEmits<{
   close: []
   apply: [filters: Record<string, string>]
 }>()
-
-const isMobile = useMediaQuery("(max-width: 1028px)")
 
 const expenseStore = useExpenseStore()
 const { data: apiCategories } = useGetExpenseCategories(
@@ -106,14 +102,7 @@ const clearFilters = () => {
 </script>
 
 <template>
-  <component
-    :is="isMobile ? Modal : Drawer"
-    :open="open"
-    title="Filter Expenses"
-    max-width="lg"
-    variant="fullscreen"
-    @close="emit('close')"
-  >
+  <Drawer :open="open" title="Filter Expenses" max-width="lg" @close="emit('close')">
     <div class="space-y-6">
       <!-- Status -->
       <div>
@@ -205,5 +194,5 @@ const clearFilters = () => {
         />
       </div>
     </template>
-  </component>
+  </Drawer>
 </template>

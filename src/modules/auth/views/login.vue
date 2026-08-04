@@ -105,6 +105,14 @@ const onSubmit = (values: TLoginPayload) => {
 
         // Check live status before redirecting
         const checkLiveStatusAndRedirect = async () => {
+          // International accounts skip onboarding entirely — most onboarding
+          // criteria (bank account, KYC, delivery options) are Nigerian-only
+          // flows. Send them straight to the dashboard.
+          if (user.is_international) {
+            router.push("/dashboard")
+            return
+          }
+
           if (user.store_slug) {
             isCheckingLiveStatus.value = true
             try {

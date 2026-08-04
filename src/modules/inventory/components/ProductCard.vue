@@ -31,6 +31,12 @@
       />
       <Chip icon="tag" color="purple" :label="`${product.category || 'Uncategorized'}`" />
       <Chip v-if="product.is_best_seller" icon="star" color="error" :label="`Best Seller`" />
+      <Chip
+        v-if="(product.popup_quantity_taken ?? 0) > 0"
+        icon="calendar-tick"
+        color="warning"
+        :label="`${product.popup_quantity_taken} in Popups`"
+      />
     </div>
   </div>
   <!-- <div @click="$emit('click')" class="space-y-2 rounded-xl border border-gray-200 bg-white p-4">

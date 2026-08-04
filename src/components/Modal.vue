@@ -165,7 +165,7 @@ const modalClasses = computed(() => {
       baseClasses.push("")
       break
     case "bottom-nav":
-      baseClasses.push("rounded-t-xl md:rounded-2xl mb-0")
+      baseClasses.push("rounded-t-xl! md:rounded-2xl! mb-0")
       break
     case "centered":
     default:

@@ -6,14 +6,14 @@ import AppButton from "@components/AppButton.vue"
 import Icon from "@components/Icon.vue"
 import Chip from "@components/Chip.vue"
 import TextField from "@components/form/TextField.vue"
+import SelectField from "@components/form/SelectField.vue"
+import StepperField from "@components/form/StepperField.vue"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { PopupInventory } from "@modules/popups/types"
 import { useUpdatePopupProduct } from "@modules/popups/api"
-import { useGetProductCatalogs } from "@modules/inventory/api"
+import { useGetProduct } from "@modules/inventory/api"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
-import type { IProductCatalogue } from "@modules/inventory/types"
-import * as yup from "yup"
 import { getPopupPriceRange } from "../constants"
 
 interface Props {
@@ -21,17 +21,25 @@ interface Props {
   selectedProduct: PopupInventory | null
 }
 
+type ActionValue = "add" | "remove" | "update_price"
+
 interface VariantItem {
   uid: string
   popup_inventory_uid: string
   variant_sku: string
   variant_name: string
+  /** Current quantity allocated to this popup */
   quantity: number
+  /** Unsold quantity still available in this popup */
+  popup_available: number
+  /** Stock left in main inventory that can still be moved to popups */
+  main_stock_left: number
   event_price: number
-  available_stock: number
-  sellable_stock: number
-  popup_quantity_taken: number
   original_price: number
+  /** User input: quantity to add/remove (delta) */
+  quantity_input: string | number
+  /** User input: new event price */
+  price_input: string | number
 }
 
 const props = defineProps<Props>()
@@ -44,8 +52,20 @@ const route = useRoute()
 
 const { format } = useFormatCurrency()
 
-// Fetch all products to get the full product details with all variants
-const { data: productsResponse } = useGetProductCatalogs()
+// Fetch full product by uid — only when modal is open
+const { data: fullProduct, isFetching: isLoadingProduct } = useGetProduct(
+  () => props.selectedProduct?.uid ?? "",
+  { enabled: () => props.open && !!props.selectedProduct?.uid },
+)
+
+const actionOptions: { label: string; value: ActionValue }[] = [
+  { label: "Add Stock", value: "add" },
+  { label: "Remove Stock", value: "remove" },
+  { label: "Update Price", value: "update_price" },
+]
+
+const selectedActionOption = ref<{ label: string; value: ActionValue } | null>(null)
+const selectedAction = computed(() => selectedActionOption.value?.value)
 
 // Local state for managing the variants
 const variantItems = ref<VariantItem[]>([])
@@ -55,141 +75,208 @@ const { mutate: updatePopupProduct, isPending: isUpdating } = useUpdatePopupProd
 interface ValidationErrors {
   [variantUid: string]: {
     quantity?: string
-    event_price?: string
+    price?: string
   }
 }
 const validationErrors = ref<ValidationErrors>({})
 
-// Find the full product from the catalogue
-const fullProduct = computed<IProductCatalogue | undefined>(() => {
-  if (!props.selectedProduct || !productsResponse.value) return undefined
-
-  const products = productsResponse.value.results || []
-  return products.find((p: IProductCatalogue) => p.uid === props.selectedProduct?.uid)
-})
-
-// Initialize variant items when modal opens
 const initializeVariants = () => {
   if (!props.selectedProduct || !fullProduct.value) return
 
-  // Map through all variants in the selected product
   variantItems.value = props.selectedProduct.variants.map((popupVariant) => {
-    // Find the corresponding variant in the main catalogue to get accurate stock info
-    const catalogueVariant = fullProduct.value?.variants?.find((v) => v.sku === popupVariant.sku)
+    const catalogueVariant = fullProduct.value?.data?.variants?.find(
+      (v) => v.sku === popupVariant.sku,
+    )
 
-    // Calculate available stock from main catalogue
     const sellableStock = Number(catalogueVariant?.sellable_stock ?? 0)
-    const popupQtyTaken = Number(catalogueVariant?.popup_quantity_taken ?? 0)
-    const currentPopupQuantity = Number(popupVariant.quantity)
-
-    // Available stock = sellable_stock - popup_quantity_taken + current_popup_quantity
-    // We add back the current popup quantity because it's already included in popup_quantity_taken
-    const availableStock = sellableStock - popupQtyTaken + currentPopupQuantity
+    // const popupQtyTaken = Number(catalogueVariant?.popup_quantity_taken ?? 0)
+    const quantity = Number(popupVariant.quantity)
 
     return {
-      uid: popupVariant.uid, // This is the popup_inventory variant uid
-      popup_inventory_uid: popupVariant.popup_inventory_uid, // This is the main popup inventory product uid
+      uid: popupVariant.uid,
+      popup_inventory_uid: popupVariant.popup_inventory_uid,
       variant_sku: popupVariant.sku,
       variant_name: popupVariant.name,
-      quantity: popupVariant.quantity,
+      quantity,
+      popup_available: Math.min(quantity, Number(popupVariant.available_quantity ?? quantity)),
+      main_stock_left: Math.max(0, sellableStock),
       event_price: Number(popupVariant.event_price),
-      available_stock: Math.max(0, availableStock),
-      sellable_stock: sellableStock,
-      popup_quantity_taken: popupQtyTaken,
       original_price: Number(popupVariant.original_price || popupVariant.price),
+      quantity_input: 0,
+      price_input: Number(popupVariant.event_price),
     }
   })
 
   validationErrors.value = {}
 }
 
-// Watch for modal open/close
+watch(fullProduct, (product) => {
+  if (product) initializeVariants()
+})
+
 watch(
   () => props.open,
   (isOpen) => {
-    if (isOpen) {
-      initializeVariants()
-    } else {
+    if (!isOpen) {
       variantItems.value = []
       validationErrors.value = {}
+      selectedActionOption.value = null
     }
   },
 )
 
-// Validate a single variant item
-const validateVariantItem = async (item: VariantItem) => {
-  // For existing items, we include their current quantity in available stock
-  // For new items, popup_quantity_taken already excludes them
-  const maxAvailable = item.available_stock
-
-  const schema = yup.object({
-    quantity: yup
-      .number()
-      .transform((value, originalValue) => (originalValue === "" ? undefined : value))
-      .typeError("Quantity must be a number")
-      .required("Quantity is required")
-      .positive("Quantity must be greater than 0")
-      .integer("Quantity must be a whole number")
-      .max(maxAvailable, `Only ${maxAvailable} available in stock`),
-    event_price: yup
-      .number()
-      .transform((value, originalValue) => (originalValue === "" ? undefined : value))
-      .typeError("Price must be a number")
-      .required("Price is required")
-      .min(0, "Price must be at least 0"),
+// Reset inputs and errors when switching actions
+watch(selectedAction, () => {
+  variantItems.value.forEach((item) => {
+    item.quantity_input = 0
+    item.price_input = item.event_price
   })
+  validationErrors.value = {}
+})
 
-  try {
-    await schema.validate(
-      { quantity: item.quantity, event_price: item.event_price },
-      { abortEarly: false },
-    )
-    delete validationErrors.value[item.uid]
-    return true
-  } catch (err) {
-    if (err instanceof yup.ValidationError) {
-      const errors: { quantity?: string; event_price?: string } = {}
-      err.inner.forEach((error) => {
-        if (error.path) errors[error.path as "quantity" | "event_price"] = error.message
-      })
-      validationErrors.value[item.uid] = errors
+const parseNumber = (value: string | number) => Number(String(value).replace(/,/g, ""))
+
+// Quantity entered by the user (empty input counts as 0 / no change)
+const getQuantityInput = (item: VariantItem) => {
+  if (item.quantity_input === "" || item.quantity_input === null) return 0
+  return parseNumber(item.quantity_input)
+}
+
+// Validate a single variant item for the selected action
+const validateVariantItem = (item: VariantItem) => {
+  const errors: { quantity?: string; price?: string } = {}
+
+  if (selectedAction.value === "add" || selectedAction.value === "remove") {
+    const qty = getQuantityInput(item)
+
+    if (Number.isNaN(qty)) {
+      errors.quantity = "Quantity must be a number"
+    } else if (!Number.isInteger(qty)) {
+      errors.quantity = "Quantity must be a whole number"
+    } else if (qty < 0) {
+      errors.quantity = "Quantity cannot be negative"
+    } else if (selectedAction.value === "add" && qty > item.main_stock_left) {
+      errors.quantity = `Only ${item.main_stock_left} left in your main inventory`
+    } else if (selectedAction.value === "remove" && qty > item.popup_available) {
+      errors.quantity = `Only ${item.popup_available} can be removed`
     }
+  } else if (selectedAction.value === "update_price") {
+    const price = parseNumber(item.price_input)
+
+    if (item.price_input === "" || Number.isNaN(price)) {
+      errors.price = "Price is required"
+    } else if (price < 0) {
+      errors.price = "Price must be at least 0"
+    }
+  }
+
+  if (Object.keys(errors).length > 0) {
+    validationErrors.value[item.uid] = errors
     return false
   }
+
+  delete validationErrors.value[item.uid]
+  return true
 }
 
-// Validate all variant items
-const validateAllItems = async () => {
-  const results = await Promise.all(variantItems.value.map((v) => validateVariantItem(v)))
-  return results.every((r) => r)
+const validateAllItems = () => {
+  return variantItems.value.map((v) => validateVariantItem(v)).every((r) => r)
 }
 
-// Check if form is valid
+// Variants the user has actually changed for the selected action
+const changedItems = computed(() => {
+  if (selectedAction.value === "add" || selectedAction.value === "remove") {
+    return variantItems.value.filter((item) => getQuantityInput(item) > 0)
+  }
+  if (selectedAction.value === "update_price") {
+    return variantItems.value.filter(
+      (item) =>
+        item.price_input !== "" &&
+        !Number.isNaN(parseNumber(item.price_input)) &&
+        parseNumber(item.price_input) !== item.event_price,
+    )
+  }
+  return []
+})
+
 const canSave = computed(() => {
   return (
-    variantItems.value.length > 0 &&
-    variantItems.value.every((v) => v.quantity > 0 && v.event_price >= 0) &&
+    !!selectedAction.value &&
+    !isLoadingProduct.value &&
+    changedItems.value.length > 0 &&
     Object.keys(validationErrors.value).length === 0
   )
 })
 
+// Contextual stock chip per action
+const stockChip = (item: VariantItem) => {
+  if (selectedAction.value === "add") {
+    return {
+      label: `${item.main_stock_left} in inventory`,
+      color: item.main_stock_left < 5 ? ("error" as const) : ("success" as const),
+    }
+  }
+  if (selectedAction.value === "remove") {
+    return {
+      label: `${item.popup_available} in popup`,
+      color: item.popup_available < 5 ? ("error" as const) : ("success" as const),
+    }
+  }
+  return { label: `${item.quantity} in popup`, color: "success" as const }
+}
+
+const infoMessage = computed(() => {
+  switch (selectedAction.value) {
+    case "add":
+      return "Quantities to add are validated against available stock in your main inventory."
+    case "remove":
+      return "Removed quantities are returned to your main inventory."
+    case "update_price":
+      return "Event prices only apply to this popup event."
+    default:
+      return "Select an action to add stock, remove stock or update event prices."
+  }
+})
+
+const submitButtonLabel = computed(() => {
+  return selectedActionOption.value?.label ?? "Save Changes"
+})
+
 // Save changes
-const saveChanges = async () => {
-  const isValid = await validateAllItems()
-  if (!isValid || !canSave.value) return
+const saveChanges = () => {
+  if (!selectedAction.value) return
+  if (!validateAllItems() || changedItems.value.length === 0) return
 
   const updatePayload = {
     popup_event: route.params.id as string,
-    items: variantItems.value.map((item) => ({
-      uid: item.popup_inventory_uid,
-      event_price: item.event_price,
-      quantity: item.quantity,
-    })),
+    items: changedItems.value.map((item) => {
+      const qty = getQuantityInput(item)
+      const newQuantity =
+        selectedAction.value === "add"
+          ? item.quantity + qty
+          : selectedAction.value === "remove"
+            ? item.quantity - qty
+            : item.quantity
+
+      return {
+        uid: item.popup_inventory_uid,
+        quantity: newQuantity,
+        event_price:
+          selectedAction.value === "update_price"
+            ? parseNumber(item.price_input)
+            : item.event_price,
+      }
+    }),
   }
 
   updatePopupProduct(updatePayload, {
     onSuccess: () => {
-      toast.success("Product updated successfully")
+      const messages: Record<ActionValue, string> = {
+        add: "Stock added to popup successfully",
+        remove: "Stock removed from popup successfully",
+        update_price: "Event price updated successfully",
+      }
+      toast.success(messages[selectedAction.value as ActionValue])
       emit("refresh")
       emit("close")
     },
@@ -211,6 +298,15 @@ const closeModal = () => {
     @close="closeModal"
   >
     <div v-if="selectedProduct" class="space-y-4">
+      <!-- Action Selector -->
+      <SelectField
+        v-model="selectedActionOption"
+        label="Select Action"
+        placeholder="Select action"
+        :options="actionOptions"
+        required
+      />
+
       <!-- Product Header -->
       <div class="rounded-xl bg-white">
         <div class="flex gap-4 p-4">
@@ -234,7 +330,22 @@ const closeModal = () => {
 
       <!-- Variant Details -->
       <div class="space-y-3">
-        <div v-for="item in variantItems" :key="item.uid" class="rounded-xl bg-white">
+        <!-- Loading skeleton -->
+        <template v-if="isLoadingProduct">
+          <div
+            v-for="n in selectedProduct.variants.length || 2"
+            :key="n"
+            class="rounded-xl bg-white p-3"
+          >
+            <div class="mb-3 flex items-center justify-between">
+              <div class="h-6 w-32 animate-pulse rounded-full bg-gray-200" />
+              <div class="h-6 w-20 animate-pulse rounded-full bg-gray-200" />
+            </div>
+            <div class="h-10 animate-pulse rounded-lg bg-gray-200" />
+          </div>
+        </template>
+
+        <div v-else v-for="item in variantItems" :key="item.uid" class="rounded-xl bg-white">
           <div class="flex items-center justify-between p-3">
             <div class="flex items-center gap-2">
               <Chip color="primary" :label="item.variant_name" size="sm" />
@@ -244,35 +355,39 @@ const closeModal = () => {
               </span>
             </div>
             <Chip
-              color="success"
-              :label="`${item.available_stock} in Stock`"
+              :color="stockChip(item).color"
+              :label="stockChip(item).label"
               icon="box"
               size="sm"
             />
           </div>
 
-          <div class="border-core-200 grid grid-cols-2 gap-3 border-t p-3">
-            <TextField
-              v-model="item.quantity"
-              name="quantity"
-              type="number"
-              label="Quantity"
-              placeholder="1"
-              :min="1"
-              :max="item.available_stock"
+          <!-- Action-specific fields -->
+          <div
+            v-if="selectedAction === 'add' || selectedAction === 'remove'"
+            class="border-core-200 border-t p-3"
+          >
+            <StepperField
+              v-model="item.quantity_input"
+              :name="`quantity-${item.uid}`"
+              :label="selectedAction === 'add' ? 'Quantity to add' : 'Quantity to remove'"
+              placeholder="0"
               :error="validationErrors[item.uid]?.quantity"
-              @input="validateVariantItem(item)"
+              @update:model-value="validateVariantItem(item)"
             />
+          </div>
+
+          <div v-else-if="selectedAction === 'update_price'" class="border-core-200 border-t p-3">
             <TextField
-              v-model="item.event_price"
-              name="event_price"
+              v-model="item.price_input"
+              :name="`event_price-${item.uid}`"
               type="number"
               format="currency"
               step="0.01"
               label="Event Price"
               placeholder="e.g. 59.99"
               :min="0"
-              :error="validationErrors[item.uid]?.event_price"
+              :error="validationErrors[item.uid]?.price"
               @input="validateVariantItem(item)"
             />
           </div>
@@ -280,10 +395,10 @@ const closeModal = () => {
       </div>
 
       <!-- Info message -->
-      <div class="bg-core-50 rounded-lg p-3">
+      <div v-if="!isLoadingProduct" class="bg-core-50 rounded-lg p-3">
         <p class="text-core-600 text-xs">
           <Icon name="info-circle" class="mr-1 inline h-3 w-3" />
-          Quantities are validated against available stock in your main inventory.
+          {{ infoMessage }}
         </p>
       </div>
     </div>
@@ -292,7 +407,7 @@ const closeModal = () => {
     <template #footer>
       <div class="flex gap-3">
         <AppButton
-          label="Save Changes"
+          :label="submitButtonLabel"
           class="flex-1"
           :loading="isUpdating"
           :disabled="!canSave"

@@ -9,6 +9,18 @@ interface IVariantValidationOptions {
   variants: Ref<IProductVariant[]>
   step: Ref<number>
   editMode?: string
+  /**
+   * Whether variant-details mode requires weight/dimensions. False in the
+   * new-variant pricing handoff, where the weight section is hidden and new
+   * variants inherit the product's default weight. Defaults to true.
+   */
+  requireVariantDetailsWeight?: Ref<boolean>
+  /**
+   * The subset of variants shown on the variants-mode pricing step (step 3):
+   * the newly added combinations. Validation errors are indexed against this
+   * list so they line up with the rendered rows.
+   */
+  pricingVariants?: Ref<IProductVariant[]>
 }
 
 export interface IProductDetailsValidationErrors {
@@ -73,7 +85,16 @@ const EMPTY_INVENTORY_ERRORS = (count: number): IInventoryValidationErrors => ({
 })
 
 export function useVariantValidation(options: IVariantValidationOptions) {
-  const { form, hasVariants, variantConfiguration, variants, step, editMode } = options
+  const {
+    form,
+    hasVariants,
+    variantConfiguration,
+    variants,
+    step,
+    editMode,
+    requireVariantDetailsWeight,
+    pricingVariants,
+  } = options
 
   const getVariantValue = (variant: IVariantConfiguration): string => {
     if (!variant?.name) return ""
@@ -219,16 +240,20 @@ export function useVariantValidation(options: IVariantValidationOptions) {
     }
   }
 
-  const buildInventoryValidation = (config: {
-    requireStock: boolean
-    requirePrice: boolean
-    requireWeight: boolean
-    requireDimensions: boolean
-  }): ICurrentProductStepValidation => {
-    const errors = EMPTY_INVENTORY_ERRORS(variants.value.length)
+  const buildInventoryValidation = (
+    config: {
+      requireStock: boolean
+      requireCost: boolean
+      requirePrice: boolean
+      requireWeight: boolean
+      requireDimensions: boolean
+    },
+    variantsToValidate: IProductVariant[] = variants.value,
+  ): ICurrentProductStepValidation => {
+    const errors = EMPTY_INVENTORY_ERRORS(variantsToValidate.length)
     let firstErrorTarget: string | undefined
 
-    const firstVariant = variants.value[0]
+    const firstVariant = variantsToValidate[0]
 
     if (config.requireWeight && !isValidPositiveNumber(firstVariant?.weight || "")) {
       errors.weight = "Select a product weight to generate dimensions."
@@ -262,17 +287,22 @@ export function useVariantValidation(options: IVariantValidationOptions) {
       }
     }
 
-    variants.value.forEach((variant, index) => {
+    variantsToValidate.forEach((variant, index) => {
       if (config.requireStock && !isValidNonNegativeInteger(variant.opening_stock)) {
         errors.variants[index].opening_stock = "Enter a valid stock quantity."
         firstErrorTarget ??= `variant-opening-stock-${index}`
       }
 
-      if (variant.cost_price && variant.cost_price.trim() !== "") {
-        if (!isValidNonNegativeNumber(variant.cost_price)) {
-          errors.variants[index].cost_price = "Enter a valid cost price."
-          firstErrorTarget ??= `variant-cost-price-${index}`
-        }
+      if (config.requireCost && !isValidNonNegativeNumber(variant.cost_price)) {
+        errors.variants[index].cost_price = "Enter a valid cost price."
+        firstErrorTarget ??= `variant-cost-price-${index}`
+      } else if (
+        variant.cost_price &&
+        variant.cost_price.trim() !== "" &&
+        !isValidNonNegativeNumber(variant.cost_price)
+      ) {
+        errors.variants[index].cost_price = "Enter a valid cost price."
+        firstErrorTarget ??= `variant-cost-price-${index}`
       }
 
       if (config.requirePrice && !isValidNonNegativeNumber(variant.price)) {
@@ -304,17 +334,34 @@ export function useVariantValidation(options: IVariantValidationOptions) {
     }
 
     if (editMode === "variant-details") {
+      const requireWeight = requireVariantDetailsWeight?.value ?? true
       return buildInventoryValidation({
         requireStock: false,
+        requireCost: false,
         requirePrice: true,
-        requireWeight: true,
-        requireDimensions: true,
+        requireWeight,
+        requireDimensions: requireWeight,
       })
     }
 
     if (editMode === "variants") {
       if (step.value === 1) {
         return buildVariantConfigurationValidation()
+      }
+
+      // Step 3: pricing for the newly added combinations. New variants inherit
+      // the product's default weight, so only prices are validated here.
+      if (step.value === 3) {
+        return buildInventoryValidation(
+          {
+            requireStock: false,
+            requireCost: true,
+            requirePrice: true,
+            requireWeight: false,
+            requireDimensions: false,
+          },
+          pricingVariants?.value ?? variants.value,
+        )
       }
 
       return {
@@ -339,6 +386,7 @@ export function useVariantValidation(options: IVariantValidationOptions) {
     if ((step.value === 2 && !hasVariants.value) || (step.value === 3 && hasVariants.value)) {
       return buildInventoryValidation({
         requireStock: true,
+        requireCost: false,
         requirePrice: true,
         requireWeight: true,
         requireDimensions: true,

@@ -6,18 +6,24 @@ import FieldGroupError from "@components/form/FieldGroupError.vue"
 import TextField from "@components/form/TextField.vue"
 import Icon from "@components/Icon.vue"
 import ProductSelectionItem from "@components/ProductSelectionItem.vue"
-import { useGetPopupInventory } from "@modules/popups/api"
-import { PopupInventory } from "@modules/popups/types"
+import { useAddProductsToPopup, useGetPopupInventory } from "@modules/popups/api"
+import { AddProductsPayload, PopupInventory } from "@modules/popups/types"
 import { getPopupPriceRange, getInventoryQty } from "@modules/popups/constants"
 import { computed, ref, watch } from "vue"
 import { useRoute } from "vue-router"
+import { useQueryClient } from "@tanstack/vue-query"
 import { useDebouncedRef } from "@/composables/useDebouncedRef"
 import { scrollToAndFocusValidationTarget } from "@/utils/validations"
+import { displayError } from "@/utils/error-handler"
+import { toast } from "@/composables/useToast"
+import { IProductCatalogue } from "@modules/inventory/types"
+import AddNewProductModal from "@modules/orders/components/create-order-form/AddNewProductModal.vue"
 
 const props = withDefaults(
   defineProps<{
     selectedProducts: PopupInventory[]
     viewMode?: "grid" | "list"
+    popupEventId?: string
   }>(),
   {
     viewMode: "grid",
@@ -25,6 +31,7 @@ const props = withDefaults(
 )
 
 const route = useRoute()
+const showAdd = ref(false)
 
 const searchQuery = ref("")
 const debouncedSearch = useDebouncedRef(searchQuery, 500)
@@ -41,10 +48,15 @@ const currentViewMode = computed({
   set: (value) => emit("update:viewMode", value),
 })
 
+const popupEventId = computed(() => props.popupEventId || (route.params.id as string))
+
 const { data: products, isFetching } = useGetPopupInventory(
   route.params.id as string,
   debouncedSearch,
 )
+
+const queryClient = useQueryClient()
+const { mutate: addProductsToPopup, isPending: isTransferringStock } = useAddProductsToPopup()
 
 // Check if a product is selected
 const isProductSelected = (productUid: string) => {
@@ -92,6 +104,43 @@ watch(
     }
   },
 )
+
+// New products are created directly in the main inventory (with opening stock).
+// Transfer that stock into the popup inventory, then auto-select it here so the
+// merchant can continue the order without extra steps.
+const handleProductCreated = (newProduct: IProductCatalogue | null) => {
+  showAdd.value = false
+  if (!newProduct) return
+
+  const items: AddProductsPayload[] = (newProduct.variants || []).map((variant) => ({
+    variant: variant.uid,
+    quantity: Number(variant.available_stock ?? 0),
+    event_price: Number(variant.price),
+    is_visible: true,
+    is_active: true,
+  }))
+
+  if (!items.length) return
+
+  addProductsToPopup(
+    { popup_event: popupEventId.value, items },
+    {
+      onSuccess: () => {
+        queryClient
+          .invalidateQueries({ queryKey: [`popup-inventory-${popupEventId.value}`] })
+          .then(() => {
+            const addedProduct = products.value?.find((p) => p.uid === newProduct.uid)
+            if (addedProduct) {
+              emit("update:selectedProducts", [...props.selectedProducts, addedProduct])
+            }
+          })
+
+        toast.success(`${newProduct.name} was added and transferred to the popup inventory`)
+      },
+      onError: displayError,
+    },
+  )
+}
 </script>
 
 <template>
@@ -116,7 +165,15 @@ watch(
         <AppButton
           :icon="currentViewMode === 'grid' ? 'list' : 'grid'"
           variant="outlined"
+          class="flex-shrink-0"
           @click="currentViewMode = currentViewMode === 'grid' ? 'list' : 'grid'"
+        />
+        <AppButton
+          icon="box-add"
+          class="flex-shrink-0"
+          :loading="isTransferringStock"
+          :disabled="isTransferringStock"
+          @click="showAdd = true"
         />
       </div>
     </div>
@@ -212,5 +269,13 @@ watch(
         <AppButton label="Next" class="w-full" @click="handleNext" />
       </div>
     </div>
+
+    <!-- Add Product Modal -->
+    <AddNewProductModal
+      v-if="showAdd"
+      :open="showAdd"
+      @close="showAdd = false"
+      @created="handleProductCreated"
+    />
   </div>
 </template>

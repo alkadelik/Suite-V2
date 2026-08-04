@@ -4,18 +4,20 @@ import { formatDate } from "@/utils/formatDate"
 import Chip from "@components/Chip.vue"
 import DataTable from "@components/DataTable.vue"
 import Drawer from "@components/Drawer.vue"
-import Modal from "@components/Modal.vue"
 import { TBatch, TRawMaterial } from "@modules/production/types"
-import { useMediaQuery } from "@vueuse/core"
 import { ref } from "vue"
-import { startCase } from "@/utils/format-strings"
+import { removeUnderscores, startCase } from "@/utils/format-strings"
 import RMBatchCard from "./RMBatchCard.vue"
 import { BATCHES_COLUMN } from "@modules/production/constant"
+import {
+  convertNumToPurchaseUnit,
+  convertNumToUsageUnit,
+  getPurchaseUnit,
+} from "@modules/production/utils"
+import { floatDecimal } from "@/utils/others"
 
-const props = defineProps<{ batches: TBatch[]; material: TRawMaterial }>()
+const props = defineProps<{ material: TRawMaterial }>()
 const { format } = useFormatCurrency()
-
-const isMobile = useMediaQuery("(max-width: 1024px)")
 
 const openDetails = ref(false)
 const selectedBatch = ref<TBatch | null>(null)
@@ -30,7 +32,7 @@ const onRowClick = (batch: TBatch) => {
   <div>
     <div class="space-y-4 overflow-hidden rounded-xl border-gray-200 md:border md:bg-white">
       <DataTable
-        :data="props.batches ?? []"
+        :data="material.batches ? [...material.batches].reverse() : []"
         :columns="BATCHES_COLUMN"
         :loading="false"
         :enable-row-selection="false"
@@ -42,37 +44,44 @@ const onRowClick = (batch: TBatch) => {
         @row-click="onRowClick"
       >
         <template #cell:quantity_added="{ item }">
-          {{ Number(item.quantity).toLocaleString() }} {{ props.material?.unit }}
+          {{ floatDecimal(convertNumToPurchaseUnit(+item.quantity, material)) }}
+          {{ removeUnderscores(getPurchaseUnit(material)) }}
         </template>
         <template #cell:quantity_left="{ item }">
-          {{ Number(item.remaining_quantity).toLocaleString() }} {{ props.material?.unit }}
+          {{ floatDecimal(convertNumToPurchaseUnit(+item.remaining_quantity, material)) }}
+          {{ removeUnderscores(getPurchaseUnit(material)) }}
         </template>
         <template #cell:unit_cost="{ item }">
-          {{ format(Number(item.unit_cost)) }} / {{ props.material?.unit }}
+          {{ format(+convertNumToUsageUnit(+item.unit_cost, material)) }} /
+          {{ removeUnderscores(getPurchaseUnit(material)) }}
         </template>
         <template #cell:source="{ item }">
           <Chip v-if="item.source_type" :label="startCase(item.source_type)" color="blue" />
           <span v-else>N/A</span>
         </template>
         <template #mobile="{ item }">
-          <RMBatchCard class="border-b border-gray-200 py-4!" :item="item" :material="material" />
+          <RMBatchCard
+            @click="
+              () => {
+                selectedBatch = item
+                openDetails = true
+              }
+            "
+            class="border-b border-gray-200 pb-4!"
+            :item="item"
+            :material="material"
+          />
         </template>
       </DataTable>
     </div>
 
     <!-- Details -->
-    <component
-      :is="isMobile ? Modal : Drawer"
-      :open="openDetails"
-      title="Batch Details"
-      max-width="2xl"
-      variant="fullscreen"
-      @close="openDetails = false"
-    >
+    <Drawer :open="openDetails" title="Batch Details" max-width="2xl" @close="openDetails = false">
       <div v-if="selectedBatch" class="space-y-6">
         <div class="flex flex-col items-center justify-center gap-2">
           <h4 class="text-3xl font-bold md:text-4xl">
-            {{ Number(selectedBatch.quantity).toLocaleString() }} {{ props.material?.unit }}
+            {{ floatDecimal(convertNumToPurchaseUnit(+selectedBatch.quantity, props.material)) }}
+            {{ removeUnderscores(getPurchaseUnit(props.material)) }}
           </h4>
           <p class="text-sm font-medium md:text-base">
             {{ formatDate(new Date(selectedBatch.date_added)) }}
@@ -98,29 +107,34 @@ const onRowClick = (batch: TBatch) => {
         <div class="border-core-300 bg-core-25 my-6 space-y-3 rounded-xl border p-4">
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Quantity Added</span>
-            <span class="font-medium capitalize"
-              >{{ Number(selectedBatch.quantity).toLocaleString() }}
-              {{ props.material?.unit }}</span
+            <span class="font-medium"
+              >{{
+                floatDecimal(convertNumToPurchaseUnit(+selectedBatch.quantity, props.material))
+              }}
+              {{ removeUnderscores(getPurchaseUnit(props.material)) }}</span
             >
           </p>
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Quantity Left</span>
-            <span class="font-medium capitalize"
-              >{{ Number(selectedBatch.remaining_quantity).toLocaleString() }}
-              {{ props.material?.unit }}</span
+            <span class="font-medium"
+              >{{
+                floatDecimal(
+                  convertNumToPurchaseUnit(+selectedBatch.remaining_quantity, props.material),
+                )
+              }}
+              {{ removeUnderscores(getPurchaseUnit(props.material)) }}</span
             >
           </p>
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Unit Cost</span>
             <span class="font-medium"
-              >{{ format(Number(selectedBatch.unit_cost)) }} / {{ props.material?.unit }}</span
+              >{{ format(+convertNumToUsageUnit(+selectedBatch.unit_cost, material)) }} /
+              {{ removeUnderscores(getPurchaseUnit(material)) }}</span
             >
           </p>
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Total Cost</span>
-            <span class="font-medium">{{
-              format(Number(selectedBatch.unit_cost) * Number(selectedBatch.quantity))
-            }}</span>
+            <span class="font-medium">{{ format(selectedBatch.total_cost) }}</span>
           </p>
         </div>
 
@@ -136,6 +150,6 @@ const onRowClick = (batch: TBatch) => {
           </p>
         </div>
       </div>
-    </component>
+    </Drawer>
   </div>
 </template>

@@ -111,7 +111,7 @@ const ORDER_COLUMNS: TableColumn<(typeof enrichedOrders.value)[number]>[] = [
       <BackButton label="Back to Customers" />
     </div>
 
-    <PageHeader title="Customer Details" />
+    <PageHeader title="Customer Details" :backLink="`/customers`" />
 
     <EmptyState
       v-if="isFetching || isPending"

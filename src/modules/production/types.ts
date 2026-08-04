@@ -39,6 +39,17 @@ export type TMovement = {
   performed_by?: string
 }
 
+export type TConversion = {
+  uid: string
+  from_unit: string
+  to_unit: string
+  rate: string
+  name: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
 export type TRawMaterial = {
   uid: string
   name: string
@@ -56,8 +67,10 @@ export type TRawMaterial = {
   created_at: string
   updated_at?: string
   suppliers?: TSupplier[]
+  conversions?: TConversion[]
   batches?: TBatch[]
   movements?: TMovement[]
+  linked_recipes?: TLinkedRecipe[]
 }
 
 export interface RawMaterialPayload {
@@ -90,10 +103,13 @@ export type TUsageHistory = {
 }
 
 export type TLinkedRecipe = {
-  item: string
-  type: string
+  output_item_name: string
+  output_quantity: string
+  output_unit: string
+  item_type: "product" | "sub_assembly"
   quantity_per_batch: number
-  unit: string
+  uid: string
+  is_active: boolean
 }
 
 export interface IConversionPayload {
@@ -108,7 +124,7 @@ export interface ICreateMaterialPayload {
   name: string
   unit: string
   qty_in_stock: string
-  default_cost: string
+  default_cost?: string | number
   is_sub_assembly: boolean
   suppliers?: string[]
   expiry_date?: string
@@ -120,14 +136,19 @@ export interface ICreateMaterialPayload {
 export interface IAdjustStockPayload {
   movement_type: "add" | "remove"
   quantity: number
+  unit_cost?: number | null
   reason: string
   notes?: string
+  expiry_date?: string
+  /** Add-stock purchases only: also record the purchase as an expense */
+  create_expense?: boolean
 }
 
 // ======= Recipes submodule ========
 
 export type TRecipe = {
   uid: string
+  name?: string
   output_product?: string | null
   output_raw_material?: string | null
   output_item_name: string
@@ -144,10 +165,10 @@ export type TRecipe = {
   ingredients?: TRecipeIngredient[]
   process_costs?: TRecipeProcessCost[]
   is_active: boolean
+  is_permanently_disabled: boolean
   created_at: string
   updated_at: string
-  // not in api yet
-  last_used_in_production?: string
+  last_used?: string
 }
 
 export type TRecipeIngredient = {
@@ -158,6 +179,9 @@ export type TRecipeIngredient = {
   unit: string
   unit_cost: number
   estimated_cost: number
+  available_stock?: number
+  used_stock?: number
+  conversions?: TConversion[]
 }
 
 export type TRecipeProcessCost = {
@@ -168,6 +192,7 @@ export type TRecipeProcessCost = {
 }
 
 export interface IRecipePayload {
+  name?: string
   output_item_type: "product" | "sub_assembly"
   output_item_uid: string
   output_quantity: string | number
@@ -213,6 +238,7 @@ export type TProdRunIngredientUsed = {
   actual_unit_cost: string
   fifo_breakdown: TProdRunFifoBreakdown[]
   is_adjusted: boolean
+  conversions?: TConversion[]
 }
 
 export type TProdRunProcessCostUsed = {
@@ -289,6 +315,7 @@ export interface IProdRunPayload {
   ingredients?: {
     material_uid: string
     quantity_required: string
+    quantity_used?: string
   }[]
   process_costs?: {
     recipe_process_cost_uid: string

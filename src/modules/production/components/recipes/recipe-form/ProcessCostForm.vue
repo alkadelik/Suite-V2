@@ -6,14 +6,16 @@ import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
 import type { ProcessRow } from "../AddNewRecipeDrawer.vue"
 import { ref } from "vue"
+import Chip from "@components/Chip.vue"
 
 const props = defineProps<{
   initialRows: ProcessRow[]
   loading: boolean
+  outputItemDetails: { name: string; qty: number; unit: string; type: "product" | "sub_assembly" }
 }>()
 
 const emit = defineEmits<{
-  (e: "prev"): void
+  (e: "prev", rows: ProcessRow[]): void
   (e: "submit", rows: ProcessRow[]): void
 }>()
 
@@ -44,12 +46,21 @@ const removeProcessRow = (row: ProcessRow) => {
 const visibleNotes = ref<Set<string>>(new Set())
 
 const openProcessNote = (row: ProcessRow) => {
-  visibleNotes.value.add(row.id as string)
+  const id = row.id as string
+  if (visibleNotes.value.has(id)) {
+    visibleNotes.value.delete(id)
+  } else {
+    visibleNotes.value.add(id)
+  }
 }
 
 const isNoteVisible = (row: ProcessRow) => visibleNotes.value.has(row.id as string) || !!row.note
 
 // ─── Submit ──────────────────────────────────────────────────────────────
+function handlePrev() {
+  emit("prev", [...processRows.value])
+}
+
 function handleSubmit() {
   emit("submit", [...processRows.value])
 }
@@ -61,6 +72,27 @@ function handleSubmit() {
       <Icon name="box" size="28" />
     </div>
     <p class="mb-4 text-sm">Add Process Costs</p>
+
+    <div class="border-core-300 bg-core-25 my-4 rounded-xl border p-4 py-3">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white">
+            <Icon name="box" class="h-5 w-5 text-gray-400" />
+          </div>
+          <div class="flex-1">
+            <h4 class="flex items-center gap-2 text-sm font-medium">
+              {{ outputItemDetails.name }}
+              <Chip
+                v-if="outputItemDetails.type === 'sub_assembly'"
+                label="Sub-assembly"
+                color="purple"
+              />
+            </h4>
+          </div>
+        </div>
+        <Chip :label="`${outputItemDetails.qty} ${outputItemDetails.unit}`" />
+      </div>
+    </div>
 
     <div class="space-y-4">
       <div
@@ -78,8 +110,9 @@ function handleSubmit() {
           <div class="flex items-center gap-3">
             <button
               type="button"
-              class="flex h-9 w-9 items-center justify-center rounded-xl text-gray-700 hover:bg-gray-50"
-              aria-label="Add note"
+              class="flex h-9 w-9 items-center justify-center rounded-xl hover:bg-gray-50"
+              :class="isNoteVisible(row) ? 'text-primary-600' : 'text-gray-700'"
+              :aria-label="isNoteVisible(row) ? 'Hide note' : 'Add note'"
               @click="openProcessNote(row)"
             >
               <Icon name="note-add" size="24" />
@@ -138,7 +171,7 @@ function handleSubmit() {
       class="border-core-200 fixed right-0 bottom-0 left-0 space-y-2 border-t bg-white p-4 md:p-6"
     >
       <div class="flex gap-3">
-        <AppButton label="Back" color="alt" class="w-1/3" icon="arrow-left" @click="emit('prev')" />
+        <AppButton label="Back" color="alt" class="w-1/3" icon="arrow-left" @click="handlePrev" />
         <AppButton label="Save Recipe" class="w-2/3" type="submit" :loading="loading" />
       </div>
     </div>

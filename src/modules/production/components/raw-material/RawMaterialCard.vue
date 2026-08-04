@@ -7,23 +7,30 @@ import { useProductionStore } from "../../store"
 import Chip from "@components/Chip.vue"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { useRouter } from "vue-router"
+import {
+  convertNumToPurchaseUnit,
+  convertNumToUsageUnit,
+  getPurchaseUnit,
+} from "@modules/production/utils"
+import { floatDecimal } from "@/utils/others"
+import { removeUnderscores } from "@/utils/format-strings"
 
 const props = defineProps<{ material: TRawMaterial; class?: string }>()
-const emit = defineEmits(["click", "toggle", "edit", "adjust", "view"])
+const emit = defineEmits(["click", "toggle", "edit", "adjust", "view", "delete"])
 const { format } = useFormatCurrency()
 
 const router = useRouter()
 
-const selectedComponent = computed(() => useProductionStore().selectedComponentOption)
+const materialSingular = computed(() => useProductionStore().componentSingular)
 
 const actionMenus = computed(() => [
   {
-    label: `Edit ${selectedComponent.value?.value || "material"}`,
+    label: `Edit ${materialSingular.value}`,
     icon: "edit",
     action: () => emit("edit"),
   },
   {
-    label: "Adjust stock",
+    label: "Add/Remove Stock",
     icon: "box",
     action: () => emit("adjust"),
   },
@@ -34,6 +41,12 @@ const actionMenus = computed(() => [
       router.push(`/${props.material.uid}?tab=usage`)
     },
   },
+  {
+    label: `Delete ${materialSingular.value}`,
+    icon: "trash",
+    class: "!text-error-600",
+    action: () => emit("delete"),
+  },
 ])
 </script>
 
@@ -42,11 +55,25 @@ const actionMenus = computed(() => [
     @click="emit('click')"
     :class="['border-warning-200 cursor-pointer rounded-xl border', props.class]"
   >
-    <div class="bg-warning-50 flex items-center gap-2.5 rounded-t-xl p-2">
+    <div class="bg-warning-50 flex items-start gap-2.5 rounded-t-xl p-2">
       <span class="bg-warning-100 flex size-10 items-center justify-center rounded-xl">
         <Icon name="box" :size="24" class="text-primary-700" />
       </span>
-      <h3 class="!font-outfit truncate font-medium">{{ material.name }}</h3>
+      <div class="min-w-0">
+        <h3 class="!font-outfit truncate font-medium">{{ material.name }}</h3>
+        <!-- <Chip
+          :label="
+            floatDecimal(convertNumToPurchaseUnit(+material.current_stock, material)) +
+            ' ' +
+            removeUnderscores(getPurchaseUnit(material))
+          "
+          color="blue"
+        /> -->
+        <p class="text-core-600 truncate text-xs">
+          {{ floatDecimal(convertNumToPurchaseUnit(+material.current_stock, material)) }}
+          {{ removeUnderscores(getPurchaseUnit(material)) }}
+        </p>
+      </div>
       <Chip v-if="material.is_sub_assembly" label="Sub-assembly" color="purple" />
       <span class="ml-auto" />
       <Icon
@@ -56,24 +83,28 @@ const actionMenus = computed(() => [
       />
       <DropdownMenu :items="actionMenus" @toggle="emit('toggle')" />
     </div>
-    <div class="flex justify-between p-5 pb-3">
-      <div>
-        <p class="text-sm font-medium">
-          {{ Number(material.current_stock).toLocaleString() + material.unit }}
-        </p>
-        <p class="text-core-600 text-xs">Stock</p>
-      </div>
+    <div class="grid grid-cols-2 gap-3 overflow-hidden p-3 pt-3">
       <!--  -->
-      <div>
-        <p class="text-sm font-medium">
-          {{ format(Number(material.last_cost)) }}/{{ material.unit }}
+      <div class="min-w-0">
+        <p class="truncate text-sm">
+          {{
+            +material.last_cost
+              ? `${format(
+                  +convertNumToUsageUnit(+material.last_cost, material),
+                )}/${removeUnderscores(getPurchaseUnit(material))}`
+              : "-"
+          }}
         </p>
         <p class="text-core-600 text-xs">Last Cost</p>
       </div>
       <!--  -->
-      <div>
-        <p class="text-sm font-medium">
-          {{ format(Number(material.avg_cost)) }}/{{ material.unit }}
+      <div class="min-w-0">
+        <p class="truncate text-sm">
+          {{
+            +material.avg_cost
+              ? `${format(+convertNumToUsageUnit(+material.avg_cost, material))}/${removeUnderscores(getPurchaseUnit(material))}`
+              : "-"
+          }}
         </p>
         <p class="text-core-600 text-xs">Avg Cost</p>
       </div>

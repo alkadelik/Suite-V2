@@ -2,10 +2,8 @@
 import AppButton from "@components/AppButton.vue"
 import Chip from "@components/Chip.vue"
 import Drawer from "@components/Drawer.vue"
-import Modal from "@components/Modal.vue"
 import RadioInputField from "@components/form/RadioInputField.vue"
 import TextField from "@components/form/TextField.vue"
-import { useMediaQuery } from "@vueuse/core"
 import { computed, ref } from "vue"
 import type { TChipColor } from "@modules/shared/types"
 
@@ -14,8 +12,6 @@ const emit = defineEmits<{
   close: []
   apply: [filters: Record<string, string>]
 }>()
-
-const isMobile = useMediaQuery("(max-width: 1028px)")
 
 // const PAYMENT_STATUS_OPTIONS: { value: string; label: string; color: TChipColor }[] = [
 //   { value: "paid", label: "Paid", color: "success" },
@@ -84,14 +80,7 @@ const clearFilters = () => {
 </script>
 
 <template>
-  <component
-    :is="isMobile ? Modal : Drawer"
-    :open="open"
-    title="Filter Orders"
-    max-width="lg"
-    variant="fullscreen"
-    @close="emit('close')"
-  >
+  <Drawer :open="open" title="Filter Orders" max-width="lg" @close="emit('close')">
     <div class="space-y-6">
       <!-- Payment Status -->
       <!-- <div>
@@ -197,5 +186,5 @@ const clearFilters = () => {
         />
       </div>
     </template>
-  </component>
+  </Drawer>
 </template>

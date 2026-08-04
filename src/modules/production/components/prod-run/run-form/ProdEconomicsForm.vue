@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
+import { useProductionStore } from "@modules/production/store"
 import AppButton from "@components/AppButton.vue"
 import Icon from "@components/Icon.vue"
 import Modal from "@components/Modal.vue"
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
+
+const materialLabel = computed(() => useProductionStore().componentLabel)
+const recipeSingularLabel = computed(() => useProductionStore().recipeSingularLabel)
 import type {
   IngredientRow,
   ProcessRow,
@@ -11,6 +15,7 @@ import type {
   BasicRunDetails,
 } from "../form-types"
 import TextField from "@components/form/TextField.vue"
+import { useMediaQuery } from "@vueuse/core"
 
 const props = defineProps<{
   loading: boolean
@@ -19,11 +24,30 @@ const props = defineProps<{
   processRows: ProcessRow[]
   additionalExpenses: AdditionalExpenseRow[]
 }>()
-const emit = defineEmits<{ (e: "prev"): void; (e: "submit", sellingPrice: number): void }>()
+const emit = defineEmits<{
+  (e: "prev"): void
+  (e: "submit", sellingPrice: number, status: string): void
+}>()
 
 const { format } = useFormatCurrency()
 const showEstimator = ref(false)
-const sellingPrice = ref(0)
+const isMobile = computed(() => useMediaQuery("(max-width: 768px)").value)
+
+const outputItemType = computed(() => props.initialValues.outputItemType)
+const isProduct = computed(() => outputItemType.value === "product")
+
+// The output item's unit (e.g. "kg", "pcs"); falls back to "unit" when absent
+const unitLabel = computed(() => props.initialValues.outputUnit?.trim() || "unit")
+
+const sellingPrice = ref(props.initialValues.variantPrice ?? 0)
+
+// Sync whenever the parent changes (e.g. back-navigation resets)
+watch(
+  () => props.initialValues.variantPrice,
+  (val) => {
+    sellingPrice.value = val ?? 0
+  },
+)
 
 const materialsCost = computed(() =>
   props.ingredientRows.reduce((sum, r) => sum + r.qty * r.ingredient.cost_per_unit, 0),
@@ -43,6 +67,10 @@ const usableUnits = computed(
 const costPerUnit = computed(() =>
   usableUnits.value > 0 ? totalCost.value / usableUnits.value : 0,
 )
+const originalSellingPrice = computed(() => props.initialValues.variantPrice ?? 0)
+const originalProfitPerUnit = computed(() => originalSellingPrice.value - costPerUnit.value)
+const originalProfitPerBatch = computed(() => originalProfitPerUnit.value * usableUnits.value)
+
 const profitPerUnit = computed(() => sellingPrice.value - costPerUnit.value)
 const profitPerBatch = computed(() => profitPerUnit.value * usableUnits.value)
 const estimationVerdict = computed(() => {
@@ -62,11 +90,11 @@ const estimationVerdict = computed(() => {
     <div class="border-core-300 bg-core-25 space-y-3 rounded-xl border p-4">
       <h4 class="text-sm font-medium">Production Cost Breakdown</h4>
       <p class="flex justify-between text-sm">
-        <span class="text-core-600">Materials</span>
+        <span class="text-core-600">{{ materialLabel }}</span>
         <span class="font-medium">{{ format(materialsCost, { kobo: true }) }}</span>
       </p>
       <p class="flex justify-between text-sm">
-        <span class="text-core-600">Recipe Process Costs</span>
+        <span class="text-core-600">{{ recipeSingularLabel }} Process Costs</span>
         <span class="font-medium">{{ format(processCostTotal, { kobo: true }) }}</span>
       </p>
       <p class="flex justify-between text-sm">
@@ -86,24 +114,29 @@ const estimationVerdict = computed(() => {
       </p>
       <div class="border-core-200 my-2 border-t border-dashed"></div>
       <div class="flex justify-between text-sm font-semibold">
-        <span class="text-core-600 font-medium">Cost per Unit</span>
+        <span class="text-core-600 font-medium">Cost per {{ unitLabel }}</span>
         <span class="font-medium">{{ format(costPerUnit, { kobo: true }) }}</span>
       </div>
     </div>
 
-    <div class="bg-primary-25 border-primary-200 mt-6 rounded-xl border p-4">
-      <span class="text-core-600 mb-1 block text-sm">Selling Price per Unit</span>
-      <TextField
-        v-model.number="sellingPrice"
-        type="number"
-        format="currency"
-        step="0.01"
-        placeholder="0"
-        min="0"
-      />
+    <!--  -->
+    <div v-if="isProduct" class="border-core-300 bg-core-25 mt-6 space-y-3 rounded-xl border p-4">
+      <h4 class="text-sm font-medium">Projected Profit Breakdown</h4>
+      <p class="flex justify-between text-sm">
+        <span class="text-core-600">Current Selling Price</span>
+        <span class="font-medium">{{ format(originalSellingPrice, { kobo: true }) }}</span>
+      </p>
+      <p class="flex justify-between text-sm">
+        <span class="text-core-600">Estimated profit per {{ unitLabel }}</span>
+        <span class="font-medium">{{ format(originalProfitPerUnit, { kobo: true }) }}</span>
+      </p>
+      <p class="flex justify-between text-sm">
+        <span class="text-core-600">Estimated profit per batch</span>
+        <span class="font-medium">{{ format(originalProfitPerBatch, { kobo: true }) }}</span>
+      </p>
     </div>
 
-    <div class="text-center">
+    <div v-if="isProduct" class="mt-4 text-center">
       <AppButton
         variant="text"
         icon="arrow-right"
@@ -112,14 +145,28 @@ const estimationVerdict = computed(() => {
       />
     </div>
 
+    <div class="py-12" />
+
     <div class="border-core-200 fixed right-0 bottom-0 left-0 border-t bg-white p-4 md:p-6">
-      <div class="mt-6 flex gap-3">
-        <AppButton variant="outlined" label="Back" class="w-1/3" @click="emit('prev')" />
+      <div class="mt-3 flex gap-2">
+        <AppButton
+          color="alt"
+          icon="arrow-left"
+          :label="isMobile ? '' : 'Back'"
+          class="flex-shrink-0"
+          @click="emit('prev')"
+        />
+        <AppButton
+          variant="outlined"
+          label="Save as Draft"
+          class="flex-1"
+          @click="emit('submit', sellingPrice, 'draft')"
+        />
         <AppButton
           label="Create Run"
-          class="w-2/3"
+          class="w-2/5"
           :loading="loading"
-          @click="emit('submit', sellingPrice)"
+          @click="emit('submit', sellingPrice, 'finalized')"
         />
       </div>
     </div>
@@ -129,12 +176,20 @@ const estimationVerdict = computed(() => {
         Calculate the estimated profit you earn based on your selling price
       </p>
 
-      <div class="bg-gray-25 mt-6 rounded-xl border border-gray-200 p-4 text-center">
-        <span class="text-core-600 mb-1 text-sm">Selling Price</span>
-        <p class="text-lg font-semibold">{{ format(sellingPrice, { kobo: true }) }}</p>
+      <div class="bg-gray-25 mt-6 rounded-xl border border-gray-200 p-4">
+        <p class="text-core-600 mb-1 text-sm">Current Selling Price</p>
+        <TextField
+          v-model.number="sellingPrice"
+          type="number"
+          format="currency"
+          step="0.01"
+          placeholder="0"
+          min="0"
+          container-class="border-0"
+        />
       </div>
 
-      <div class="mt-6 grid grid-cols-2 gap-6">
+      <div class="mt-4 grid grid-cols-2 gap-6">
         <div
           class="rounded-xl border p-4"
           :class="{
@@ -143,7 +198,7 @@ const estimationVerdict = computed(() => {
             'bg-gray-25 border-gray-200': estimationVerdict === 'neutral',
           }"
         >
-          <span class="text-core-600 mb-1 text-sm">Estimated Profit per Unit</span>
+          <p class="text-core-600 mb-1 text-sm">Estimated profit / {{ unitLabel }}</p>
           <p
             class="text-lg font-semibold"
             :class="{
@@ -165,7 +220,7 @@ const estimationVerdict = computed(() => {
             'bg-gray-25 border-gray-200': estimationVerdict === 'neutral',
           }"
         >
-          <span class="text-core-600 mb-1 text-sm">Estimated Profit per Batch</span>
+          <p class="text-core-600 mb-1 text-sm">Estimated profit / batch</p>
           <p
             class="text-lg font-semibold"
             :class="{

@@ -5,7 +5,7 @@ import Chip from "@components/Chip.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import Icon from "@components/Icon.vue"
 import { useAuthStore } from "@modules/auth/store"
-import { useGetLocations, useGetStoreDetails } from "@modules/settings/api"
+import { useGetCustomDomains, useGetLocations, useGetStoreDetails } from "@modules/settings/api"
 import { useSettingsStore } from "@modules/settings/store"
 import { useLocationSwitch } from "@/composables/useLocationSwitch"
 import { computed, watch } from "vue"
@@ -39,24 +39,35 @@ watch(
   (details) => {
     if (details) {
       useSettingsStore().setStoreDetails(details)
-      // Set raw material component option in production store for global access
+      // Sync material type to production store (null clears so selection screen shows)
       const materialType = details.material_type
       const fullOption = componentOptions.find((o) => o.value === materialType)
-      if (fullOption) {
-        useProductionStore().setSelectedComponentOption(fullOption)
-      }
-      // set recipe terminology in settings store for global access
+      useProductionStore().setSelectedComponentOption(fullOption ?? null)
+
+      // Sync recipe terminology to production store (null clears so selection screen shows)
       const recipeTerminology = details.recipe_terminology
       const recipeOption = recipeNameOptions.find((o) => o.value === recipeTerminology)
-      if (recipeOption) {
-        useProductionStore().setSelectedRecipeOption(recipeOption)
-      }
+      useProductionStore().setSelectedRecipeOption(recipeOption ?? null)
     }
   },
   { immediate: true },
 )
 
-const storefrontUrl = computed(() => useSettingsStore().storefrontUrl)
+// Prefer the connected custom domain across the app (LYW-2618).
+const storefrontUrl = computed(() => useSettingsStore().displayDomain)
+
+// Hydrate the active custom domain once — this dropdown renders inside both the
+// sidebar and the mobile drawer. Set null when no ACTIVE domain so a disconnected
+// (or stale persisted) value doesn't linger across reloads.
+const { data: customDomainsData } = useGetCustomDomains()
+watch(
+  customDomainsData,
+  (data) => {
+    const active = data?.results?.find((d) => d.status === "ACTIVE")
+    settingsStore.setActiveCustomDomain(active?.domain ?? null)
+  },
+  { immediate: true },
+)
 
 watch(
   locationsData,

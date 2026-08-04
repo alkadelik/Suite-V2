@@ -14,10 +14,13 @@ import {
   IThemeSettings,
   ThemeSection,
   IVersionHistory,
+  TCustomDomain,
+  IPickupSchedule,
+  IUpdatePickupSchedulePayload,
 } from "./types"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query"
 import { IkycInfo, IUser } from "@modules/auth/types"
-import type { Ref } from "vue"
+import { computed, toValue, type MaybeRefOrGetter, type Ref } from "vue"
 
 /** get user profile */
 export function useGetProfile() {
@@ -159,6 +162,28 @@ export function useUpdateStoreDetails() {
       baseApi.patch(`/stores/${id}/`, body, {
         headers: { "Content-Type": "multipart/form-data" },
       }),
+  })
+}
+
+/** List the store's pickup schedules — one record per day of the week (7 total). */
+export function useGetPickupSchedules(enabled: MaybeRefOrGetter<boolean> = true) {
+  return useApiQuery<TPaginatedResponse<IPickupSchedule>["data"]>({
+    url: "/stores/pickup-schedules/",
+    key: "pickup-schedules",
+    selectData: true,
+    enabled,
+  })
+}
+
+/** Enable/disable a single day's pickup and/or update its start/end times. */
+export function useUpdatePickupSchedule() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ uid, body }: { uid: string; body: IUpdatePickupSchedulePayload }) =>
+      baseApi.patch(`/stores/pickup-schedules/${uid}/`, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pickup-schedules"] })
+    },
   })
 }
 
@@ -373,6 +398,112 @@ export function useGetVersionHistory(storefrontUid: Ref<string> | string) {
     enabled: () => {
       const uid = typeof storefrontUid === "string" ? storefrontUid : storefrontUid.value
       return !!uid
+    },
+  })
+}
+
+// --- Custom domains ---
+
+type TCustomDomainList = {
+  count: number
+  next: string | null
+  previous: string | null
+  results: TCustomDomain[]
+}
+
+/**
+ * Probe whether a storefront slug is already taken (LYW-2573). The public
+ * storefront lookup returns 200 when a store owns the slug and 404 when it is
+ * free — 404 is treated as a valid "available" response, not an error.
+ */
+export function useCheckSlugTaken(
+  slug: MaybeRefOrGetter<string>,
+  enabled: MaybeRefOrGetter<boolean>,
+) {
+  return useQuery({
+    queryKey: computed(() => ["slug-availability", toValue(slug)]),
+    queryFn: async () => {
+      const { status } = await baseApi.get(`/storefront/public/slug/${toValue(slug)}/`, {
+        validateStatus: (s) => s === 200 || s === 404,
+      })
+      return status === 200
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
+    enabled: computed(() => toValue(enabled)),
+  })
+}
+
+/** List the store's custom domain(s) — expected to be 0 or 1. */
+export function useGetCustomDomains(enabled = true) {
+  return useApiQuery<TCustomDomainList>({
+    url: "/storefront/custom-domain/",
+    key: "custom-domains",
+    selectData: true,
+    enabled,
+  })
+}
+
+/**
+ * Retrieve / poll a single custom domain.
+ * Pass `refetchInterval` (number ms, `false`, or a getter) to poll during verification.
+ */
+export function useGetCustomDomain(
+  uid: MaybeRefOrGetter<string>,
+  options?: {
+    enabled?: MaybeRefOrGetter<boolean>
+    refetchInterval?: number | false | (() => number | false)
+  },
+) {
+  return useQuery<TCustomDomain>({
+    queryKey: computed(() => ["custom-domain", toValue(uid)]),
+    queryFn: async () => {
+      const { data } = await baseApi.get(`/storefront/custom-domain/${toValue(uid)}/`)
+      // API responses are wrapped in `{ data: ... }`.
+      return (
+        data && typeof data === "object" && "data" in data ? data.data : data
+      ) as TCustomDomain
+    },
+    enabled:
+      options?.enabled !== undefined
+        ? computed(() => toValue(options.enabled))
+        : computed(() => !!toValue(uid)),
+    refetchInterval: options?.refetchInterval,
+    retry: false,
+    refetchOnWindowFocus: false,
+  })
+}
+
+/** Register a custom domain. Response body: `{ data: TCustomDomain }`. */
+export function useCreateCustomDomain() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { domain: string }) => baseApi.post("/storefront/custom-domain/", body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["custom-domains"] })
+    },
+  })
+}
+
+/** Re-trigger DNS verification (also used for "Retry" / "Refresh records"). */
+export function useVerifyCustomDomain() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (uid: string) => baseApi.post(`/storefront/custom-domain/${uid}/verify/`, {}),
+    onSuccess: (_data, uid) => {
+      queryClient.invalidateQueries({ queryKey: ["custom-domain", uid] })
+      queryClient.invalidateQueries({ queryKey: ["custom-domains"] })
+    },
+  })
+}
+
+/** Disconnect (also removes the domain from Vercel). */
+export function useDeleteCustomDomain() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (uid: string) => baseApi.delete(`/storefront/custom-domain/${uid}/`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["custom-domains"] })
     },
   })
 }

@@ -7,6 +7,8 @@ const props = defineProps<{
   category_breakdown?: ExpenseDashboardStats["category_breakdown"]
   showLabel?: boolean
   totalExpense?: number
+  /** Heading under the total amount (default: "Total Expenses") */
+  totalLabel?: string
   class?: string
 }>()
 
@@ -53,11 +55,11 @@ const totalAmount = computed(() => {
       Expense Distribution
     </div>
 
-    <div v-if="props.totalExpense" class="text-center">
+    <div v-if="props.totalExpense || props.totalLabel" class="text-center">
       <h3 class="text-core-800 font-outfit! text-center text-4xl font-bold">
         {{ format(totalAmount) }}
       </h3>
-      <p class="text-core-600 mt-1 text-sm">Total Expenses</p>
+      <p class="text-core-600 mt-1 text-sm">{{ props.totalLabel || "Total Expenses" }}</p>
     </div>
 
     <!-- stacked bar chart -->
