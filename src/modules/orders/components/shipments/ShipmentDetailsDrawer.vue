@@ -242,9 +242,9 @@ const handleGetWaybillDoc = () => {
               <button
                 type="button"
                 class="text-primary-700 ml-1 text-xs underline"
-                @click="emit('view-order')"
+                @click="clipboardCopy(order.order_number)"
               >
-                View Order
+                Copy
               </button>
             </span>
           </p>

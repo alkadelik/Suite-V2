@@ -22,7 +22,7 @@ import ShipmentDetailsDrawer from "../components/shipments/ShipmentDetailsDrawer
 import CreateShipmentDrawer from "../components/shipments/CreateShipmentDrawer.vue"
 import FulfilOrderModal from "../components/FulfilOrderModal.vue"
 import { TShipmentRow, TOrderCourier } from "../types"
-import { useGetOrders, useGetShipments } from "../api"
+import { useGetOrders, useGetShipments, useGetWaybillDocument } from "../api"
 import Icon from "@components/Icon.vue"
 import Chip from "@components/Chip.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
@@ -31,10 +31,13 @@ import { useQueryClient } from "@tanstack/vue-query"
 import { useRouter } from "vue-router"
 import { useWalkthroughStore } from "@modules/announcements/store"
 import { useAuthStore } from "@modules/auth/store"
+import ShipmentSuccessModal from "../components/shipments/ShipmentSuccessModal.vue"
 import {
   buildShipmentTourRow,
   SHIPMENT_TOUR_CREATED_STATUS,
+  SHIPMENT_TOUR_TRACKING_NUMBER,
 } from "../components/shipments/shipmentTourDemo"
+import { displayError } from "@/utils/error-handler"
 
 const pageTabs = [
   { title: "ShipBubble", key: "shipbubble" },
@@ -156,7 +159,24 @@ const selectedShipment = ref<TShipmentRow | null>(null)
 const openFulfil = ref(false)
 const openDetails = ref(false)
 const openCreate = ref(false)
-const previewSuccess = ref(false)
+const showSuccess = ref(false)
+const createdTrackingNumber = ref("")
+
+// Booking succeeded: swap the create drawer for the success modal.
+const handleShipmentCreated = (trackingNumber: string) => {
+  createdTrackingNumber.value = trackingNumber
+  openCreate.value = false
+  showSuccess.value = true
+}
+
+const handleSuccessDone = () => {
+  if (isShipmentTour.value) {
+    walkthrough.report("shipment-success-done")
+    return
+  }
+  showSuccess.value = false
+  handleRefresh()
+}
 
 // --- Shipments walkthrough (non-charging preview) ---
 // The tour drives the drawers/success purely from its step index and operates on
@@ -189,22 +209,24 @@ watch(
     if (idx <= 0) {
       openDetails.value = false
       openCreate.value = false
-      previewSuccess.value = false
+      showSuccess.value = false
     } else if (idx <= 2) {
       openCreate.value = false
-      previewSuccess.value = false
+      showSuccess.value = false
       openDetails.value = true
     } else if (idx <= 4) {
       openDetails.value = false
-      previewSuccess.value = false
+      showSuccess.value = false
       openCreate.value = true
     } else if (idx === 5) {
+      // The real flow closes the drawer behind the success modal — mirror it here.
       openDetails.value = false
-      openCreate.value = true
-      previewSuccess.value = true
+      openCreate.value = false
+      createdTrackingNumber.value = SHIPMENT_TOUR_TRACKING_NUMBER
+      showSuccess.value = true
     } else {
       openCreate.value = false
-      previewSuccess.value = false
+      showSuccess.value = false
       openDetails.value = true
     }
   },
@@ -216,7 +238,8 @@ watch(isShipmentTour, (on, was) => {
   if (was && !on) {
     openDetails.value = false
     openCreate.value = false
-    previewSuccess.value = false
+    showSuccess.value = false
+    createdTrackingNumber.value = ""
     selectedShipment.value = null
   }
 })
@@ -264,6 +287,29 @@ const openExternalLink = (url: string | null | undefined, missingMessage: string
   window.open(url, "_blank", "noopener")
 }
 
+// Mirrors the details drawer: open the cached waybill when there is one, otherwise
+// ask ShipBubble to generate it and open whatever comes back.
+const { mutate: getWaybillDoc } = useGetWaybillDocument()
+
+const handleWaybillDoc = (item: TShipmentRow) => {
+  if (!item.shipment) return
+  if (item.shipment.waybill_document_url) {
+    window.open(item.shipment.waybill_document_url, "_blank")
+    return
+  }
+  getWaybillDoc(item.shipment.uid, {
+    onSuccess: (response) => {
+      const url: string = response.data?.data?.waybill_url || ""
+      if (url) {
+        window.open(url, "_blank")
+      } else {
+        displayError("Waybill document not available.")
+      }
+    },
+    onError: displayError,
+  })
+}
+
 const getActionItems = (item: TShipmentRow) => {
   const viewAction = {
     label: "View details",
@@ -297,11 +343,7 @@ const getActionItems = (item: TShipmentRow) => {
       {
         label: "View waybill",
         icon: "note-2",
-        action: () =>
-          openExternalLink(
-            item.shipment?.waybill_document_url,
-            "No waybill document for this shipment yet",
-          ),
+        action: () => handleWaybillDoc(item),
       },
     ]
   }
@@ -473,9 +515,17 @@ const emptyStateDescription = computed(() => {
       :open="openCreate"
       :item="selectedShipment"
       :tour-mode="isShipmentTour"
-      :preview-success="previewSuccess"
       @close="openCreate = false"
       @refresh="handleRefresh"
+      @created="handleShipmentCreated"
+    />
+
+    <ShipmentSuccessModal
+      v-if="selectedShipment"
+      :open="showSuccess"
+      :item="selectedShipment"
+      :tracking-number="createdTrackingNumber"
+      @done="handleSuccessDone"
     />
 
     <FulfilOrderModal
