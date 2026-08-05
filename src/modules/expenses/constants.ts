@@ -62,6 +62,14 @@ export const EXPENSE_CATEGORY_ICON: Record<string, string> = {
   Shipping: "truck-fast",
 }
 
+/**
+ * Tax expenses are logged automatically but remitted off-platform, so they still
+ * need the manual "Mark as paid" action that other auto entries don't get.
+ * Matches both the current "Taxes" category and the legacy "Tax" one.
+ */
+export const isTaxCategory = (value?: string | null): boolean =>
+  !!value && value.toLowerCase().includes("tax")
+
 export const isTaxLikeSubcategory = (value?: string | null) => {
   if (!value) return false
   const normalized = value.toLowerCase()

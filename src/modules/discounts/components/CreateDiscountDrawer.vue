@@ -89,6 +89,7 @@
         <AppButton
           :label="submitLabel"
           class="flex-1"
+          data-walkthrough="discount-submit"
           :loading="busy"
           :disabled="!appliesToValid"
           @click="onSubmit"
@@ -130,6 +131,8 @@ import { DISCOUNT_APPLIES_TO_OPTIONS } from "../constants"
 import { useCreateDiscount, useUpdateDiscount } from "../api"
 import { toast } from "@/composables/useToast"
 import type { IDiscountFormModel, TDiscount } from "../types"
+import { useWalkthroughStore } from "@modules/announcements/store"
+import { buildDiscountTourFormModel, DISCOUNT_TOUR_UID } from "./discountTourDemo"
 
 const props = defineProps<{
   open: boolean
@@ -137,7 +140,8 @@ const props = defineProps<{
   discount?: TDiscount | null
 }>()
 
-const emit = defineEmits<{ close: []; saved: [] }>()
+const emit = defineEmits<{ close: []; saved: [uid?: string] }>()
+const walkthrough = useWalkthroughStore()
 
 function blankModel(): IDiscountFormModel {
   return {
@@ -158,6 +162,9 @@ const model = ref<IDiscountFormModel>(blankModel())
 const activeStep = ref(0)
 const targetSelectorRef = ref<InstanceType<typeof TargetSelector> | null>(null)
 
+// The tour runs on a pre-filled sample and never hits the create endpoint.
+const isDiscountTour = computed(() => walkthrough.activeId === "discounts")
+
 watch(
   () => props.open,
   (isOpen) => {
@@ -166,7 +173,9 @@ watch(
     showConflict.value = false
     showOverwrite.value = false
     pendingVariants.value = []
-    if (props.discount && (props.mode === "edit" || props.mode === "duplicate")) {
+    if (isDiscountTour.value && props.mode === "create") {
+      model.value = buildDiscountTourFormModel()
+    } else if (props.discount && (props.mode === "edit" || props.mode === "duplicate")) {
       model.value = discountToFormModel(props.discount)
       if (props.mode === "duplicate") {
         model.value = { ...model.value, name: `${model.value.name} (Copy)` }
@@ -191,10 +200,18 @@ const title = computed(() =>
 const submitLabel = computed(() => (props.mode === "edit" ? "Save Changes" : "Create Discount"))
 
 const goNext = (): void => {
-  if (activeStep.value < steps.value.length - 1) activeStep.value++
+  if (activeStep.value < steps.value.length - 1) {
+    activeStep.value++
+    walkthrough.report("discount-targeting-opened")
+  }
 }
 const goPrev = (): void => {
-  if (activeStep.value > 0) activeStep.value--
+  if (activeStep.value > 0) {
+    activeStep.value--
+    if (walkthrough.activeId === "discounts" && walkthrough.activeProgress?.stepIndex === 3) {
+      walkthrough.back()
+    }
+  }
 }
 
 const detailsValid = computed(() => {
@@ -208,6 +225,45 @@ const detailsValid = computed(() => {
   if (m.end_at && new Date(m.end_at) < new Date(m.start_at)) return false
   return true
 })
+
+watch(
+  () => walkthrough.commandNonce,
+  () => {
+    if (!props.open) return
+    // Next on the "choose type" step advances the form to the "applies to" step.
+    if (walkthrough.command === "discount-next-form" && activeStep.value === 0) {
+      walkthrough.clearCommand()
+      if (detailsValid.value) {
+        goNext()
+        return
+      }
+      toast.error("Complete the required discount details to continue.")
+      return
+    }
+    // Next on the "create your discount" step submits the form, like the button.
+    if (
+      walkthrough.command === "discount-submit-form" &&
+      activeStep.value === steps.value.length - 1
+    ) {
+      walkthrough.clearCommand()
+      if (appliesToValid.value) {
+        onSubmit()
+        return
+      }
+      toast.error("Choose what this discount applies to before continuing.")
+    }
+  },
+)
+
+watch(
+  () => walkthrough.activeProgress?.stepIndex,
+  (tourStep) => {
+    if (!props.open || walkthrough.activeId !== "discounts") return
+    if (tourStep === 1) emit("close")
+    if (tourStep === 2) activeStep.value = 0
+    if (tourStep === 3) activeStep.value = 1
+  },
+)
 
 const appliesToValid = computed(() => {
   const m = model.value
@@ -270,6 +326,14 @@ function parseConflict(err: unknown): { conflicts: TDiscountConflict[]; message:
 }
 
 function onSubmit(): void {
+  // Tour: fake the create so the merchant sees the whole flow without a real
+  // discount landing on their storefront.
+  if (isDiscountTour.value && props.mode === "create") {
+    walkthrough.report("discount-created", { uid: DISCOUNT_TOUR_UID })
+    emit("saved", DISCOUNT_TOUR_UID)
+    return
+  }
+
   // Edit: limited PATCH (name + end date only).
   if (props.mode === "edit" && props.discount) {
     update(
@@ -304,10 +368,13 @@ function onSubmit(): void {
 function doCreate(force: boolean): void {
   const payload = buildDiscountPayload(model.value, pendingVariants.value, force)
   create(payload, {
-    onSuccess: () => {
+    onSuccess: (response) => {
       showConflict.value = false
       showOverwrite.value = false
-      emit("saved")
+      const body = response?.data as { uid?: string; data?: { uid?: string } } | undefined
+      const uid = body?.uid ?? body?.data?.uid
+      walkthrough.report("discount-created", { uid })
+      emit("saved", uid)
     },
     onError: (err) => {
       const conflict = parseConflict(err)

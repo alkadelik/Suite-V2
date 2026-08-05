@@ -250,6 +250,7 @@ export function useVariantValidation(options: IVariantValidationOptions) {
   const buildInventoryValidation = (
     config: {
       requireStock: boolean
+      /** Cost price is always compulsory (e.g. the new-variant pricing step). */
       requireCost: boolean
       requirePrice: boolean
       requireWeight: boolean
@@ -382,6 +383,8 @@ export function useVariantValidation(options: IVariantValidationOptions) {
             requirePrice: true,
             requireWeight: false,
             requireDimensions: false,
+            // requireCost above already makes cost compulsory for every new variant.
+            requireCostPrice: false,
           },
           pricingVariants?.value ?? variants.value,
         )

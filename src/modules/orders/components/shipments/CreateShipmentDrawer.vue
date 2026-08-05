@@ -1,26 +1,31 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue"
 import Drawer from "@components/Drawer.vue"
-import Modal from "@components/Modal.vue"
+import ConfirmationModal from "@components/ConfirmationModal.vue"
 import AppButton from "@components/AppButton.vue"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { formatDate, checkIfDateIsPast } from "@/utils/formatDate"
-import { clipboardCopy } from "@/utils/others"
 import { displayError } from "@/utils/error-handler"
 import { useCreateShipbubbleShipment } from "../../api"
 import { handlePayStackPayment, loadPaystackScript } from "../../utilities"
 import { TShipmentRow } from "../../types"
+import { useWalkthroughStore } from "@modules/announcements/store"
 
 const props = defineProps<{
   open: boolean
   item: TShipmentRow
+  tourMode?: boolean
 }>()
 const emit = defineEmits<{
   close: []
   refresh: []
+  /** Booking succeeded — the page closes this drawer and shows the success modal. */
+  created: [trackingNumber: string]
 }>()
+
+const walkthrough = useWalkthroughStore()
 
 const { format } = useFormatCurrency()
 
@@ -67,21 +72,49 @@ const pickupRows = computed(() => [
   },
 ])
 
-// Book the ShipBubble quote — shipping fee is paid via Paystack first, then the
-// payment reference is sent along with the booking
+// Book the ShipBubble quote. A paid order already collected the shipping fee at
+// checkout, so it books straight away with an empty payment reference; anything
+// else (manual orders, part payments) has to settle the fee through Paystack first.
 const { mutate: createShipment, isPending: isCreating } = useCreateShipbubbleShipment()
 
-const showSuccess = ref(false)
-const createdTrackingNumber = ref("")
+const showPaymentConfirm = ref(false)
+
+const isShippingPrepaid = computed(() => order.value.payment_status === "paid")
+
+const shippingFeeLabel = computed(() =>
+  format(Number(shipment.value?.total_shipping_cost) || Number(order.value.delivery_fee), {
+    kobo: true,
+  }),
+)
 
 onMounted(() => {
   loadPaystackScript()
 })
 
-const handleCreateShipment = () => {
-  if (!shipment.value) return
+/** Book the quote with ShipBubble. `reference` is empty when nothing was charged. */
+const bookShipment = (reference: string) => {
+  const currentOrder = order.value
+  createShipment(
+    {
+      order: currentOrder.uid,
+      rate: currentOrder.rate,
+      courier: currentOrder.courier as string,
+      payment_reference: reference,
+    },
+    {
+      // The page owns the success modal, so hand it the tracking number and let
+      // it swap this drawer out.
+      onSuccess: (response) => emit("created", response.data?.data?.tracking_number || ""),
+      onError: displayError,
+    },
+  )
+}
+
+/** Collect the shipping fee through Paystack, then book once it succeeds. */
+const payThenBook = () => {
   const currentShipment = shipment.value
   const currentOrder = order.value
+  if (!currentShipment) return
 
   handlePayStackPayment(
     {
@@ -93,47 +126,31 @@ const handleCreateShipment = () => {
       customer_email: currentOrder.customer_email || "",
       shipping_address: currentOrder.customer_address || "",
     },
-    (payResponse) => {
-      createShipment(
-        {
-          order: currentOrder.uid,
-          rate: currentOrder.rate,
-          courier: currentOrder.courier,
-          payment_reference: payResponse.reference,
-        },
-        {
-          onSuccess: (response) => {
-            createdTrackingNumber.value = response.data?.data?.tracking_number || ""
-            showSuccess.value = true
-          },
-          onError: displayError,
-        },
-      )
-    },
+    (payResponse) => bookShipment(payResponse.reference),
   )
 }
 
-const successRows = computed(() => [
-  { label: "Order ID", value: `#${order.value.order_number}` },
-  { label: "Shipment ID", value: shipment.value?.shipbubble_order_id || "-" },
-  { label: "Courier", value: shipment.value?.courier?.courier_name || "-" },
-  {
-    label: "Shipping Fee",
-    value: format(
-      Number(shipment.value?.total_shipping_cost) || Number(order.value?.delivery_fee),
-      { kobo: true },
-    ),
-  },
-  {
-    label: "Expected Delivery Date",
-    value: shipment.value?.delivery_estimate ? formatDate(shipment.value.delivery_estimate) : "-",
-  },
-])
+const handleCreateShipment = () => {
+  // During the walkthrough, "create" only advances the tour — no charge, no booking.
+  if (props.tourMode) {
+    walkthrough.report("shipment-created")
+    return
+  }
+  if (!shipment.value) return
 
-const handleSuccessDone = () => {
-  showSuccess.value = false
-  emit("refresh")
-  emit("close")
+  // Paid orders settled the shipping fee at checkout — book with no reference.
+  if (isShippingPrepaid.value) {
+    bookShipment("")
+    return
+  }
+
+  // Otherwise warn before handing the merchant off to Paystack.
+  showPaymentConfirm.value = true
+}
+
+const handleConfirmPayment = () => {
+  showPaymentConfirm.value = false
+  payThenBook()
 }
 </script>
 
@@ -168,7 +185,10 @@ const handleSuccessDone = () => {
         </div>
 
         <!-- Order & receiver details -->
-        <div class="border-core-300 bg-core-25 space-y-3 rounded-xl border p-4">
+        <div
+          class="border-core-300 bg-core-25 space-y-3 rounded-xl border p-4"
+          data-walkthrough="shipment-review"
+        >
           <p class="flex justify-between text-sm">
             <span class="text-core-600">Order ID</span>
             <span class="font-medium">#{{ order.order_number }}</span>
@@ -231,45 +251,25 @@ const handleSuccessDone = () => {
         <AppButton
           label="Create Shipment"
           class="w-full"
+          data-walkthrough="shipment-submit-btn"
           :loading="isCreating"
-          :disabled="isQuoteExpired"
+          :disabled="!tourMode && isQuoteExpired"
           @click="handleCreateShipment"
         />
       </template>
     </Drawer>
 
-    <!-- Shipment created success dialog -->
-    <Modal :open="showSuccess" max-width="sm" @close="handleSuccessDone">
-      <div class="space-y-4 py-4 text-center">
-        <p class="text-5xl">🎉</p>
-        <h3 class="text-lg font-semibold">Shipment Created Successfully</h3>
-        <p class="text-core-600 text-sm">
-          Pickup has been booked with {{ shipment?.courier?.courier_name || "your courier" }}.
-          Tracking details have been generated and sent to the customer.
-        </p>
-
-        <div class="border-core-300 bg-core-25 space-y-3 rounded-xl border p-4">
-          <p v-for="row in successRows" :key="row.label" class="flex justify-between text-sm">
-            <span class="text-core-600">{{ row.label }}</span>
-            <span class="font-medium">{{ row.value }}</span>
-          </p>
-        </div>
-
-        <div class="border-primary-200 bg-primary-25 rounded-xl border px-4 py-3">
-          <p class="text-core-500 text-xs">Tracking Number</p>
-          <p class="flex items-center justify-center gap-1 text-sm font-semibold">
-            {{ createdTrackingNumber || "--" }}
-            <Icon
-              name="copy"
-              size="14"
-              class="text-primary-600 cursor-pointer"
-              @click="clipboardCopy(createdTrackingNumber)"
-            />
-          </p>
-        </div>
-
-        <AppButton label="Done" class="w-full" @click="handleSuccessDone" />
-      </div>
-    </Modal>
+    <!-- Shipping payment confirmation — only for orders that never collected it -->
+    <ConfirmationModal
+      v-model="showPaymentConfirm"
+      max-width="md"
+      z-class="z-[1200]"
+      header-icon="wallet-money"
+      :header="`Pay ${shippingFeeLabel} Shipping Fee`"
+      paragraph="This order was created manually, so no shipping fee was collected. You'll be redirected to securely pay for shipping before shipment creation."
+      :info-message="`Shipping fee: ${shippingFeeLabel}`"
+      action-label="Continue to Payment"
+      @confirm="handleConfirmPayment"
+    />
   </div>
 </template>

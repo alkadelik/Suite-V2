@@ -37,6 +37,9 @@ export interface TableColumn<T = Record<string, unknown>> {
 }
 
 export type RowClass<T = Record<string, unknown>> = string | ((row: T) => string)
+export type RowAttributes<T = Record<string, unknown>> =
+  | (HTMLAttributes & Record<string, unknown>)
+  | ((row: T) => HTMLAttributes & Record<string, unknown>)
 
 interface PaginationChangeParams {
   currentPage: number
@@ -89,6 +92,8 @@ interface Props {
   fixLastColumn?: boolean
   /** CSS class(es) to apply to each row - can be a string or function that receives row data */
   rowClass?: RowClass<T>
+  /** HTML attributes to apply to desktop rows and mobile row wrappers. */
+  rowAttrs?: RowAttributes<T>
   /** Whether to show the mobile card view instead of the table on small screens */
   showMobileView?: boolean
 }
@@ -279,6 +284,19 @@ watch(rowSelection, (newVal) => {
   emit("row-selection-change", selected)
 })
 
+// Selection state lives in here, so parents driving bulk actions need handles to
+// reset it (e.g. clearing the checkboxes once a bulk update succeeds). Both go
+// through the table API, so `row-selection-change` fires just like a user click.
+function clearRowSelection(): void {
+  table.value.resetRowSelection()
+}
+
+function selectAllRows(): void {
+  table.value.toggleAllRowsSelected(true)
+}
+
+defineExpose({ clearRowSelection, selectAllRows })
+
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 
 // Computed property for pagination pages
@@ -340,6 +358,11 @@ const getRowClasses = (row: T) => {
   if (!props.rowClass) return ""
   return typeof props.rowClass === "function" ? props.rowClass(row) : props.rowClass
 }
+
+const getRowAttrs = (row: T): HTMLAttributes & Record<string, unknown> => {
+  if (!props.rowAttrs) return {}
+  return typeof props.rowAttrs === "function" ? props.rowAttrs(row) : props.rowAttrs
+}
 </script>
 
 <template>
@@ -385,7 +408,10 @@ const getRowClasses = (row: T) => {
               { 'cursor-pointer': hasRowClick },
               getRowClasses(row.original as T),
             ]"
+            v-bind="getRowAttrs(row.original as T)"
             @click="handleRowClick(row.original as T)"
+            @keydown.enter="handleRowClick(row.original as T)"
+            @keydown.space.prevent="handleRowClick(row.original as T)"
           >
             <td
               v-for="(cell, cellIndex) in row.getVisibleCells()"
@@ -446,7 +472,13 @@ const getRowClasses = (row: T) => {
 
       <!-- Mobile cards with loading opacity -->
       <div v-if="data.length" :class="[{ 'opacity-50': loading }, 'flex flex-col gap-4']">
-        <div v-for="row in table.getRowModel().rows" :key="row.id">
+        <div
+          v-for="row in table.getRowModel().rows"
+          :key="row.id"
+          v-bind="getRowAttrs(row.original as T)"
+          @keydown.enter="handleRowClick(row.original as T)"
+          @keydown.space.prevent="handleRowClick(row.original as T)"
+        >
           <!-- Custom mobile card slot -->
           <slot name="mobile" :item="row.original">
             <!-- default mobile card layout -->

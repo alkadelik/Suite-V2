@@ -3,6 +3,7 @@
     :is="props.to ? 'router-link' : 'button'"
     @click="emit('click')"
     :to="props.to"
+    :data-walkthrough="props.walkthrough"
     :class="[
       'group flex items-center rounded-xl transition-colors duration-200',
       isActive
@@ -29,6 +30,7 @@ interface Props {
   label: string
   to?: string
   class?: string
+  walkthrough?: string
 }
 
 const props = defineProps<Props>()

@@ -815,11 +815,11 @@ const hasNotLiveBanner = computed(() => {
         <div class="space-y-2.5 border-t border-dashed border-gray-200 pt-4 text-sm text-gray-600">
           <div class="flex justify-between">
             <span>Subtotal</span>
-            <span>{{ orderItems.length ? format(productsTotal) : "-" }}</span>
+            <span>{{ orderItems.length ? format(productsTotal, { kobo: true }) : "-" }}</span>
           </div>
           <div v-if="isTaxEnabled" class="flex justify-between">
             <span>VAT ({{ (VAT_RATE * 100).toFixed(1) }}%)</span>
-            <span>{{ isTaxEnabled && orderItems.length ? format(vatAmount) : "-" }}</span>
+            <span>{{ orderItems.length ? format(vatAmount, { kobo: true }) : "-" }}</span>
           </div>
           <div class="flex justify-between">
             <span>Shipping</span>
@@ -828,7 +828,7 @@ const hasNotLiveBanner = computed(() => {
                 shippingInfo.fulfilment_method === "delivery" && orderItems.length
                   ? shippingInfo.delivery_payment_option === "free_shipping"
                     ? "Free"
-                    : format(deliveryFee)
+                    : format(deliveryFee, { kobo: true })
                   : "-"
               }}
             </span>
@@ -841,7 +841,7 @@ const hasNotLiveBanner = computed(() => {
             class="flex justify-between border-t border-gray-200 pt-2.5 font-semibold text-gray-900"
           >
             <span>Total</span>
-            <span>{{ orderItems.length ? format(totalAmount) : "-" }}</span>
+            <span>{{ orderItems.length ? format(totalAmount, { kobo: true }) : "-" }}</span>
           </div>
         </div>
       </div>

@@ -13,14 +13,16 @@
     />
 
     <!-- Discount Type -->
-    <SelectField
-      label="Discount Type"
-      :model-value="model.discountKind"
-      :options="DISCOUNT_TYPE_OPTIONS"
-      required
-      :disabled="lockFields"
-      @update:model-value="(v) => update({ discountKind: optionValue<TCouponDiscountKind>(v) })"
-    />
+    <div data-walkthrough="discount-type">
+      <SelectField
+        label="Discount Type"
+        :model-value="model.discountKind"
+        :options="DISCOUNT_TYPE_OPTIONS"
+        required
+        :disabled="lockFields"
+        @update:model-value="(v) => update({ discountKind: optionValue<TCouponDiscountKind>(v) })"
+      />
+    </div>
 
     <!-- Percentage path -->
     <template v-if="model.discountKind === 'percentage'">

@@ -1,5 +1,10 @@
 <template>
-  <PageHeader title="Discounts" />
+  <PageHeader
+    title="Discounts"
+    :show-tutorial="true"
+    data-walkthrough="discounts-nav"
+    @tutorial="startDiscountTutorial"
+  />
 
   <div class="p-4 md:p-6">
     <!-- desktop header -->
@@ -7,7 +12,18 @@
       title="Discounts"
       subtitle="Manage all your discounts and promos"
       class="hidden md:flex"
-    />
+    >
+      <template #action>
+        <AppButton
+          label="Tutorial"
+          icon="info-circle"
+          size="sm"
+          color="alt"
+          variant="outlined"
+          @click="startDiscountTutorial"
+        />
+      </template>
+    </SectionHeader>
 
     <Tabs
       :tabs="[
@@ -29,6 +45,7 @@
               label="Add a discount"
               icon="add"
               variant="outlined"
+              data-walkthrough="discount-add"
               @click="openCreateDiscount"
             />
           </template>
@@ -78,14 +95,14 @@
       :open="showDiscountDrawer"
       :mode="discountDrawerMode"
       :discount="discountEditTarget"
-      @close="showDiscountDrawer = false"
+      @close="closeDiscountDrawer"
       @saved="onDiscountSaved"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import { storeToRefs } from "pinia"
 import PageHeader from "@components/PageHeader.vue"
 import SectionHeader from "@components/SectionHeader.vue"
@@ -102,12 +119,14 @@ import type { TCoupon, TDiscount } from "../types"
 import { useGetProductCatalogsInfinite } from "@modules/inventory/api"
 import { useAuthStore } from "@modules/auth/store"
 import { useSettingsStore } from "@modules/settings/store"
+import { useWalkthroughStore } from "@modules/announcements/store"
 
 const store = useDiscountsStore()
-const { activeTab } = storeToRefs(store)
-
+const walkthrough = useWalkthroughStore()
 const authStore = useAuthStore()
 const settingsStore = useSettingsStore()
+
+const { activeTab } = storeToRefs(store)
 
 // Discounts & coupons are a paid feature — only Bloom/Burst plans (or international accounts)
 // can create them; everyone else gets the upgrade modal. Mirrors settings/locations.vue.
@@ -173,6 +192,32 @@ const openCreateDiscount = () => {
   discountDrawerMode.value = "create"
   discountEditTarget.value = null
   showDiscountDrawer.value = true
+  walkthrough.report("discount-create-opened")
+}
+
+// Tour "Next" on the create step opens the drawer, exactly like the real button.
+watch(
+  () => walkthrough.commandNonce,
+  () => {
+    if (walkthrough.command !== "discount-open-create") return
+    walkthrough.clearCommand()
+    if (!showDiscountDrawer.value) openCreateDiscount()
+  },
+)
+
+const closeDiscountDrawer = () => {
+  showDiscountDrawer.value = false
+  const step = walkthrough.activeProgress?.stepIndex
+  if (walkthrough.activeId === "discounts" && (step === 2 || step === 3)) {
+    walkthrough.dismiss()
+  }
+}
+
+const startDiscountTutorial = () => {
+  if (!authStore.user?.uid) return
+  store.setActiveTab("discounts")
+  walkthrough.markReleaseSeen(authStore.user.uid)
+  walkthrough.start("discounts", authStore.user.uid)
 }
 const openEditDiscount = (discount: TDiscount) => {
   discountDrawerMode.value = "edit"
@@ -186,10 +231,15 @@ const openDuplicateDiscount = (discount: TDiscount) => {
 }
 const onDiscountSaved = () => {
   showDiscountDrawer.value = false
+  store.setActiveTab("discounts")
+  // The tour's discount is a sample — say so, and skip the refetch it can't affect.
+  if (walkthrough.activeId === "discounts" && discountDrawerMode.value === "create") {
+    toast.success("Sample discount created — it's only here for the tutorial.")
+    return
+  }
   toast.success(
     discountDrawerMode.value === "edit" ? "Discount updated!" : "Success! New discount created!",
   )
-  store.setActiveTab("discounts")
   discountsTabRef.value?.refetch?.()
 }
 </script>

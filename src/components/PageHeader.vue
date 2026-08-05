@@ -16,6 +16,8 @@ withDefaults(defineProps<Props>(), {
   showTutorial: true,
   inner: false,
 })
+
+const emit = defineEmits<{ tutorial: [] }>()
 </script>
 
 <template>
@@ -36,7 +38,15 @@ withDefaults(defineProps<Props>(), {
           <Chip v-if="count && !inner" :label="`${count} ${countLabel || ''}`" color="blue" />
         </div>
       </div>
-      <Chip v-if="showTutorial" icon="info-circle" label="Tutorial" />
+      <button
+        v-if="showTutorial"
+        type="button"
+        class="focus-visible:outline-primary-500 rounded-full focus-visible:outline-2 focus-visible:outline-offset-2"
+        aria-label="Start tutorial"
+        @click="emit('tutorial')"
+      >
+        <Chip icon="info-circle" label="Tutorial" />
+      </button>
     </div>
   </header>
 </template>
