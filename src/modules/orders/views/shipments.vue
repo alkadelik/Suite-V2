@@ -441,7 +441,12 @@ const emptyStateDescription = computed(() => {
         :total-page-count="Math.ceil(totalCount / itemsPerPage) || 1"
         :server-pagination="true"
         :row-attrs="rowAttrs"
-        @pagination-change="(d) => (page = d.currentPage)"
+        @pagination-change="
+          (d) => {
+            page = d.currentPage
+            itemsPerPage = d.itemsPerPage
+          }
+        "
         @row-click="viewDetails"
         :empty-state="{
           // title: `No ${startCase(activeTab)} ${activeTab === 'pickup' ? 'Order' : 'Shipment'} Found`,

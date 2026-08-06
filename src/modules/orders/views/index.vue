@@ -657,7 +657,12 @@ const handleDetailsMarkAsPaid = () => {
           :total-items-count="orders?.count || 0"
           :total-page-count="Math.ceil((orders?.count || 0) / itemsPerPage) || 1"
           :server-pagination="true"
-          @pagination-change="(d) => (page = d.currentPage)"
+          @pagination-change="
+            (d) => {
+              page = d.currentPage
+              itemsPerPage = d.itemsPerPage
+            }
+          "
           @row-click="
             (row) => {
               router.replace({ query: { ...route.query, order_id: row.uid } })

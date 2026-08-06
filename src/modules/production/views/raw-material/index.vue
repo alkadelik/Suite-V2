@@ -304,7 +304,12 @@ const handleDelete = () => {
             :total-items-count="rawMaterials?.count || 0"
             :total-page-count="Math.ceil((rawMaterials?.count || 0) / itemsPerPage) || 1"
             :server-pagination="true"
-            @pagination-change="(d) => (page = d.currentPage)"
+            @pagination-change="
+              (d) => {
+                page = d.currentPage
+                itemsPerPage = d.itemsPerPage
+              }
+            "
             @row-click="(row) => $router.push(`/production/raw-materials/${row.uid}`)"
           >
             <template #cell:name="{ item }">

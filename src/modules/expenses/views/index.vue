@@ -491,7 +491,12 @@ watch(
             :total-items-count="expenses?.count || 0"
             :total-page-count="Math.ceil((expenses?.count || 0) / itemsPerPage) || 1"
             :server-pagination="true"
-            @pagination-change="(d) => (page = d.currentPage)"
+            @pagination-change="
+              (d) => {
+                page = d.currentPage
+                itemsPerPage = d.itemsPerPage
+              }
+            "
             @row-click="
               (row) => {
                 selectedExpense = row

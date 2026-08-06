@@ -38,6 +38,7 @@ export function useGetPopupEvents(params?: ComputedRef<Record<string, string>>) 
     params,
     key: "popups",
     selectData: true,
+    keepPreviousData: true,
   })
 }
 

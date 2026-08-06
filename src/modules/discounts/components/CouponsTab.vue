@@ -45,16 +45,24 @@
       </div>
     </div>
 
+    <!-- `show-pagination` is gated on the smallest per-page option rather than the
+         current one, so raising the page size can never hide the selector that
+         raised it. -->
     <DataTable
       :data="filteredRows"
       :columns="COUPON_COLUMNS"
       :loading="isFetching"
-      :show-pagination="count > itemsPerPage"
+      :show-pagination="count > 5"
       :items-per-page="itemsPerPage"
       :total-items-count="count"
       :total-page-count="Math.ceil(count / itemsPerPage) || 1"
       :server-pagination="true"
-      @pagination-change="(d) => (page = d.currentPage)"
+      @pagination-change="
+        (d) => {
+          page = d.currentPage
+          itemsPerPage = d.itemsPerPage
+        }
+      "
       @row-click="handleRowClick"
     >
       <template #cell:code="{ value }">
