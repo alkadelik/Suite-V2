@@ -11,7 +11,10 @@ import { TShipmentRow } from "../../types"
 const props = defineProps<{
   open: boolean
   item: TShipmentRow
+  /** ShipBubble order id from the booking response */
   trackingNumber?: string
+  /** Delivery estimate from the booking response */
+  expectedDelivery?: string
 }>()
 
 const emit = defineEmits<{ done: [] }>()
@@ -21,9 +24,17 @@ const { format } = useFormatCurrency()
 const shipment = computed(() => props.item.shipment)
 const order = computed(() => props.item.order)
 
+// `item` is the quote row the booking was made from, so anything the booking
+// itself produced comes in as a prop and only falls back to the row.
+const shipmentId = computed(() => props.trackingNumber || shipment.value?.shipbubble_order_id || "")
+
+const deliveryEstimate = computed(
+  () => props.expectedDelivery || shipment.value?.delivery_estimate || "",
+)
+
 const successRows = computed(() => [
   { label: "Order ID", value: `#${order.value.order_number}` },
-  { label: "Shipment ID", value: shipment.value?.shipbubble_order_id || "-" },
+  { label: "Shipment ID", value: shipmentId.value || "-" },
   { label: "Courier", value: shipment.value?.courier?.courier_name || "-" },
   {
     label: "Shipping Fee",
@@ -36,7 +47,7 @@ const successRows = computed(() => [
   },
   {
     label: "Expected Delivery Date",
-    value: shipment.value?.delivery_estimate ? formatDate(shipment.value.delivery_estimate) : "-",
+    value: deliveryEstimate.value ? formatDate(deliveryEstimate.value) : "-",
   },
 ])
 </script>
@@ -61,12 +72,12 @@ const successRows = computed(() => [
       <div class="border-primary-200 bg-primary-25 rounded-xl border px-4 py-3">
         <p class="text-core-500 text-xs">Tracking Number</p>
         <p class="flex items-center justify-center gap-1 text-sm font-semibold">
-          {{ trackingNumber || "--" }}
+          {{ shipmentId || "--" }}
           <Icon
             name="copy"
             size="14"
             class="text-primary-600 cursor-pointer"
-            @click="clipboardCopy(trackingNumber ?? '')"
+            @click="clipboardCopy(shipmentId)"
           />
         </p>
       </div>

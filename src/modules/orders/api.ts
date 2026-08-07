@@ -5,6 +5,7 @@ import {
   IPaymentPayload,
   OrderDashboardStats,
   OrderPayload,
+  TBookedShipment,
   TCreateShipmentPayload,
   TOrder,
   TOrderMemo,
@@ -38,9 +39,7 @@ export function useGetOrders(
 /** Book a ShipBubble shipment from its quote (shipping fee is paid via Paystack first) */
 export function useCreateShipbubbleShipment() {
   return useMutation({
-    mutationFn: (
-      body: TCreateShipmentPayload,
-    ): Promise<{ data: { data?: { tracking_number?: string } } }> =>
+    mutationFn: (body: TCreateShipmentPayload): Promise<{ data: { data?: TBookedShipment } }> =>
       baseApi.post(`/shipping/orders/`, body),
   })
 }
@@ -62,7 +61,7 @@ export function useGetShipments(
 /** Get Waybill document for a ShipBubble shipment */
 export function useGetWaybillDocument() {
   return useMutation({
-    mutationFn: (uid: string): Promise<{ data: { data?: { waybill_url?: string } } }> =>
+    mutationFn: (uid: string): Promise<{ data: { data?: { waybill_document_url?: string } } }> =>
       baseApi.get(`/shipping/orders/${uid}/waybill/`),
   })
 }

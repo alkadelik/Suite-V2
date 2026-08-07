@@ -10,7 +10,7 @@ import { formatDate, checkIfDateIsPast } from "@/utils/formatDate"
 import { displayError } from "@/utils/error-handler"
 import { useCreateShipbubbleShipment } from "../../api"
 import { handlePayStackPayment, loadPaystackScript } from "../../utilities"
-import { TShipmentRow } from "../../types"
+import { TShipmentCreatedDetails, TShipmentRow } from "../../types"
 import { useWalkthroughStore } from "@modules/announcements/store"
 
 const props = defineProps<{
@@ -22,7 +22,7 @@ const emit = defineEmits<{
   close: []
   refresh: []
   /** Booking succeeded — the page closes this drawer and shows the success modal. */
-  created: [trackingNumber: string]
+  created: [details: TShipmentCreatedDetails]
 }>()
 
 const walkthrough = useWalkthroughStore()
@@ -72,14 +72,12 @@ const pickupRows = computed(() => [
   },
 ])
 
-// Book the ShipBubble quote. A paid order already collected the shipping fee at
-// checkout, so it books straight away with an empty payment reference; anything
-// else (manual orders, part payments) has to settle the fee through Paystack first.
+// Book the ShipBubble quote. Every shipment now settles its shipping fee through
+// Paystack first — including orders marked paid, whose checkout total doesn't
+// cover this booking — so booking always carries a payment reference.
 const { mutate: createShipment, isPending: isCreating } = useCreateShipbubbleShipment()
 
 const showPaymentConfirm = ref(false)
-
-const isShippingPrepaid = computed(() => order.value.payment_status === "paid")
 
 const shippingFeeLabel = computed(() =>
   format(Number(shipment.value?.total_shipping_cost) || Number(order.value.delivery_fee), {
@@ -91,7 +89,7 @@ onMounted(() => {
   loadPaystackScript()
 })
 
-/** Book the quote with ShipBubble. `reference` is empty when nothing was charged. */
+/** Book the quote with ShipBubble using the reference of the settled payment. */
 const bookShipment = (reference: string) => {
   const currentOrder = order.value
   createShipment(
@@ -102,9 +100,13 @@ const bookShipment = (reference: string) => {
       payment_reference: reference,
     },
     {
-      // The page owns the success modal, so hand it the tracking number and let
-      // it swap this drawer out.
-      onSuccess: (response) => emit("created", response.data?.data?.tracking_number || ""),
+      onSuccess: (response) => {
+        const booked = response.data?.data
+        emit("created", {
+          trackingNumber: booked?.shipbubble_order_id || "",
+          expectedDelivery: booked?.delivery_estimate || "",
+        })
+      },
       onError: displayError,
     },
   )
@@ -138,13 +140,8 @@ const handleCreateShipment = () => {
   }
   if (!shipment.value) return
 
-  // Paid orders settled the shipping fee at checkout — book with no reference.
-  if (isShippingPrepaid.value) {
-    bookShipment("")
-    return
-  }
-
-  // Otherwise warn before handing the merchant off to Paystack.
+  // Every shipment is paid for on creation, so always confirm the charge before
+  // handing the merchant off to Paystack.
   showPaymentConfirm.value = true
 }
 
@@ -259,14 +256,14 @@ const handleConfirmPayment = () => {
       </template>
     </Drawer>
 
-    <!-- Shipping payment confirmation — only for orders that never collected it -->
+    <!-- Shipping payment confirmation — every shipment settles its fee on creation -->
     <ConfirmationModal
       v-model="showPaymentConfirm"
       max-width="md"
       z-class="z-[1200]"
       header-icon="wallet-money"
       :header="`Pay ${shippingFeeLabel} Shipping Fee`"
-      paragraph="This order was created manually, so no shipping fee was collected. You'll be redirected to securely pay for shipping before shipment creation."
+      paragraph="Shipping fees are settled when the shipment is created. You'll be redirected to securely pay for shipping before your shipment is booked."
       :info-message="`Shipping fee: ${shippingFeeLabel}`"
       action-label="Continue to Payment"
       @confirm="handleConfirmPayment"

@@ -21,7 +21,7 @@ import ShipmentFiltersDrawer from "../components/shipments/ShipmentFiltersDrawer
 import ShipmentDetailsDrawer from "../components/shipments/ShipmentDetailsDrawer.vue"
 import CreateShipmentDrawer from "../components/shipments/CreateShipmentDrawer.vue"
 import FulfilOrderModal from "../components/FulfilOrderModal.vue"
-import { TShipmentRow, TOrderCourier } from "../types"
+import { TShipmentRow, TOrderCourier, TShipmentCreatedDetails } from "../types"
 import { useGetOrders, useGetShipments, useGetWaybillDocument } from "../api"
 import Icon from "@components/Icon.vue"
 import Chip from "@components/Chip.vue"
@@ -161,10 +161,12 @@ const openDetails = ref(false)
 const openCreate = ref(false)
 const showSuccess = ref(false)
 const createdTrackingNumber = ref("")
+const createdExpectedDelivery = ref("")
 
 // Booking succeeded: swap the create drawer for the success modal.
-const handleShipmentCreated = (trackingNumber: string) => {
-  createdTrackingNumber.value = trackingNumber
+const handleShipmentCreated = (details: TShipmentCreatedDetails) => {
+  createdTrackingNumber.value = details.trackingNumber
+  createdExpectedDelivery.value = details.expectedDelivery
   openCreate.value = false
   showSuccess.value = true
 }
@@ -240,6 +242,7 @@ watch(isShipmentTour, (on, was) => {
     openCreate.value = false
     showSuccess.value = false
     createdTrackingNumber.value = ""
+    createdExpectedDelivery.value = ""
     selectedShipment.value = null
   }
 })
@@ -299,11 +302,11 @@ const handleWaybillDoc = (item: TShipmentRow) => {
   }
   getWaybillDoc(item.shipment.uid, {
     onSuccess: (response) => {
-      const url: string = response.data?.data?.waybill_url || ""
+      const url: string = response.data?.data?.waybill_document_url || ""
       if (url) {
         window.open(url, "_blank")
       } else {
-        displayError("Waybill document not available.")
+        toast.info("Waybill document not yet available.")
       }
     },
     onError: displayError,
@@ -530,6 +533,7 @@ const emptyStateDescription = computed(() => {
       :open="showSuccess"
       :item="selectedShipment"
       :tracking-number="createdTrackingNumber"
+      :expected-delivery="createdExpectedDelivery"
       @done="handleSuccessDone"
     />
 
