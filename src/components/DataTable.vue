@@ -276,6 +276,23 @@ watch(
   },
 )
 
+// Same for a parent-controlled `itemsPerPage`.
+watch(
+  () => props.itemsPerPage,
+  (newSize) => {
+    if (newSize && pagination.value.pageSize !== newSize) {
+      pagination.value.pageSize = newSize
+    }
+  },
+)
+
+// Changing the page size has to send the user back to the first page, otherwise
+// the current index can point past the end of the resized list.
+const handlePageSizeChange = (e: Event) => {
+  const pageSize = Number((e.target as HTMLSelectElement).value)
+  pagination.value = { pageIndex: 0, pageSize }
+}
+
 // listen to rowSelection Changes
 watch(rowSelection, (newVal) => {
   const selected = Object.keys(newVal)
@@ -283,6 +300,19 @@ watch(rowSelection, (newVal) => {
     .filter(Boolean)
   emit("row-selection-change", selected)
 })
+
+// Selection state lives in here, so parents driving bulk actions need handles to
+// reset it (e.g. clearing the checkboxes once a bulk update succeeds). Both go
+// through the table API, so `row-selection-change` fires just like a user click.
+function clearRowSelection(): void {
+  table.value.resetRowSelection()
+}
+
+function selectAllRows(): void {
+  table.value.toggleAllRowsSelected(true)
+}
+
+defineExpose({ clearRowSelection, selectAllRows })
 
 const isMobile = computed(() => useMediaQuery("(max-width: 1024px)").value)
 
@@ -523,21 +553,22 @@ const getRowAttrs = (row: T): HTMLAttributes & Record<string, unknown> => {
     <!--  -->
     <div
       v-if="data.length && showPagination"
-      class="text-core-800 items-center justify-between gap-4 border-gray-200 px-5 py-6 md:border-t"
-      :class="`flex`"
+      class="text-core-800 flex flex-wrap items-center gap-4 border-gray-200 px-5 py-6 md:border-t"
     >
-      <!-- Pagination buttons -->
-
-      <!-- Previous button -->
-      <AppButton
-        size="xs"
-        color="alt"
-        class="shrink-0"
-        @click="table.previousPage()"
-        :disabled="!table.getCanPreviousPage()"
-        icon="arrow-narrow-left"
-        :label="isMobile ? '' : 'Previous'"
-      />
+      <!-- Entries per page. The equal `flex-1` on this and the prev/next group
+           is what keeps the page numbers optically centered. -->
+      <div class="flex basis-full items-center gap-2 text-sm md:flex-1 md:basis-0">
+        <span class="whitespace-nowrap">Entries per page</span>
+        <select
+          :value="pagination.pageSize"
+          @change="handlePageSizeChange"
+          class="focus:border-primary-500 h-8 cursor-pointer rounded-lg border border-gray-300 bg-white px-2 text-sm outline-none focus:ring-0"
+        >
+          <option v-for="pageSize in perPageOptions" :key="pageSize" :value="pageSize">
+            {{ pageSize }}
+          </option>
+        </select>
+      </div>
 
       <!-- Page numbers -->
       <div class="flex items-center gap-2">
@@ -556,16 +587,27 @@ const getRowAttrs = (row: T): HTMLAttributes & Record<string, unknown> => {
         </template>
       </div>
 
-      <!-- Next button -->
-      <AppButton
-        size="xs"
-        color="alt"
-        :disabled="!table.getCanNextPage()"
-        @click="() => table.nextPage()"
-        icon="arrow-right"
-        class="shrink-0 flex-row-reverse"
-        :label="isMobile ? '' : 'Next'"
-      />
+      <!-- Previous / Next buttons -->
+      <div class="flex flex-1 items-center justify-end gap-2">
+        <AppButton
+          size="xs"
+          color="alt"
+          @click="table.previousPage()"
+          :disabled="!table.getCanPreviousPage()"
+          icon="arrow-narrow-left"
+          :label="isMobile ? '' : 'Previous'"
+        />
+
+        <AppButton
+          size="xs"
+          color="alt"
+          :disabled="!table.getCanNextPage()"
+          @click="() => table.nextPage()"
+          icon="arrow-right"
+          class="flex-row-reverse"
+          :label="isMobile ? '' : 'Next'"
+        />
+      </div>
     </div>
   </div>
 </template>

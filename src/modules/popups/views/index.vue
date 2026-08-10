@@ -65,6 +65,13 @@ const handleAction = (action: string, item: PopupEvent) => {
 const page = ref(1)
 const itemsPerPage = ref(10)
 
+// The table owns both the page index and the page size, so the query filters
+// have to track both — a page-size change also resets us back to page 1.
+const handlePaginationChange = (d: { currentPage: number; itemsPerPage: number }) => {
+  page.value = d.currentPage
+  itemsPerPage.value = d.itemsPerPage
+}
+
 const computedFilters = computed(() => {
   const filters: Record<string, string> = {}
   if (status.value && status.value !== "all") filters.status = status.value
@@ -75,6 +82,21 @@ const computedFilters = computed(() => {
   return filters
 })
 const { data: popupEvents, isPending, isFetching, refetch } = useGetPopupEvents(computedFilters)
+
+// The page-level empty state replaces the whole table section, so it must only
+// win on a first page with no filters — from page 2 onwards (or once a
+// filter/search is on) an empty response is a table-level empty state, not an
+// empty account. Without the page check, paginating unmounts the section and
+// the table remounts back on page 1.
+const isAccountEmpty = computed(
+  () =>
+    !popupEvents.value?.count &&
+    page.value === 1 &&
+    !status.value &&
+    !searchQuery.value &&
+    !debouncedSearch.value &&
+    !activeFilterCount.value,
+)
 
 const params = computed(() => ({ status: "upcoming", limit: 5 }))
 const { data: eventfulPopups } = useGetEventfulPopups(params)
@@ -231,9 +253,7 @@ const getMenuAction = (item: PopupEvent) => {
     </div>
 
     <EmptyState
-      v-if="
-        !popupEvents?.count && !status && !searchQuery && !debouncedSearch && !activeFilterCount
-      "
+      v-if="isAccountEmpty"
       title="You don't have any popup yet!"
       description="Create a popup event."
       action-label="Create a popup event"
@@ -289,11 +309,12 @@ const getMenuAction = (item: PopupEvent) => {
           fix-last-column
           :loading="isPending || isFetching"
           :show-pagination="true"
+          :current-page="page"
           :items-per-page="itemsPerPage"
           :total-items-count="popupEvents?.count || 0"
           :total-page-count="Math.ceil((popupEvents?.count || 0) / itemsPerPage) || 1"
           :server-pagination="true"
-          @pagination-change="(d) => (page = d.currentPage)"
+          @pagination-change="handlePaginationChange"
           :empty-state="{
             title: 'No Popup Found',
             description:

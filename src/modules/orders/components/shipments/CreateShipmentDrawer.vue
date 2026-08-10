@@ -1,29 +1,28 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue"
+import { computed, onMounted, ref } from "vue"
 import Drawer from "@components/Drawer.vue"
-import Modal from "@components/Modal.vue"
+import ConfirmationModal from "@components/ConfirmationModal.vue"
 import AppButton from "@components/AppButton.vue"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
 import { formatDate, checkIfDateIsPast } from "@/utils/formatDate"
-import { clipboardCopy } from "@/utils/others"
 import { displayError } from "@/utils/error-handler"
 import { useCreateShipbubbleShipment } from "../../api"
 import { handlePayStackPayment, loadPaystackScript } from "../../utilities"
-import { TShipmentRow } from "../../types"
+import { TShipmentCreatedDetails, TShipmentRow } from "../../types"
 import { useWalkthroughStore } from "@modules/announcements/store"
-import { SHIPMENT_TOUR_TRACKING_NUMBER } from "./shipmentTourDemo"
 
 const props = defineProps<{
   open: boolean
   item: TShipmentRow
   tourMode?: boolean
-  previewSuccess?: boolean
 }>()
 const emit = defineEmits<{
   close: []
   refresh: []
+  /** Booking succeeded — the page closes this drawer and shows the success modal. */
+  created: [details: TShipmentCreatedDetails]
 }>()
 
 const walkthrough = useWalkthroughStore()
@@ -73,39 +72,51 @@ const pickupRows = computed(() => [
   },
 ])
 
-// Book the ShipBubble quote — shipping fee is paid via Paystack first, then the
-// payment reference is sent along with the booking
+// Book the ShipBubble quote. Every shipment now settles its shipping fee through
+// Paystack first — including orders marked paid, whose checkout total doesn't
+// cover this booking — so booking always carries a payment reference.
 const { mutate: createShipment, isPending: isCreating } = useCreateShipbubbleShipment()
 
-const showSuccess = ref(false)
-const createdTrackingNumber = ref("")
+const showPaymentConfirm = ref(false)
+
+const shippingFeeLabel = computed(() =>
+  format(Number(shipment.value?.total_shipping_cost) || Number(order.value.delivery_fee), {
+    kobo: true,
+  }),
+)
 
 onMounted(() => {
   loadPaystackScript()
 })
 
-// Tour preview: the walkthrough forces the success dialog (with sample tracking)
-// instead of running a real Paystack payment / booking.
-watch(
-  () => props.previewSuccess,
-  (show) => {
-    showSuccess.value = !!show
-    if (show && !createdTrackingNumber.value) {
-      createdTrackingNumber.value = SHIPMENT_TOUR_TRACKING_NUMBER
-    }
-  },
-  { immediate: true },
-)
+/** Book the quote with ShipBubble using the reference of the settled payment. */
+const bookShipment = (reference: string) => {
+  const currentOrder = order.value
+  createShipment(
+    {
+      order: currentOrder.uid,
+      rate: currentOrder.rate,
+      courier: currentOrder.courier as string,
+      payment_reference: reference,
+    },
+    {
+      onSuccess: (response) => {
+        const booked = response.data?.data
+        emit("created", {
+          trackingNumber: booked?.shipbubble_order_id || "",
+          expectedDelivery: booked?.delivery_estimate || "",
+        })
+      },
+      onError: displayError,
+    },
+  )
+}
 
-const handleCreateShipment = () => {
-  // During the walkthrough, "create" only advances the tour — no charge, no booking.
-  if (props.tourMode) {
-    walkthrough.report("shipment-created")
-    return
-  }
-  if (!shipment.value) return
+/** Collect the shipping fee through Paystack, then book once it succeeds. */
+const payThenBook = () => {
   const currentShipment = shipment.value
   const currentOrder = order.value
+  if (!currentShipment) return
 
   handlePayStackPayment(
     {
@@ -117,51 +128,26 @@ const handleCreateShipment = () => {
       customer_email: currentOrder.customer_email || "",
       shipping_address: currentOrder.customer_address || "",
     },
-    (payResponse) => {
-      createShipment(
-        {
-          order: currentOrder.uid,
-          rate: currentOrder.rate,
-          courier: currentOrder.courier,
-          payment_reference: payResponse.reference,
-        },
-        {
-          onSuccess: (response) => {
-            createdTrackingNumber.value = response.data?.data?.tracking_number || ""
-            showSuccess.value = true
-          },
-          onError: displayError,
-        },
-      )
-    },
+    (payResponse) => bookShipment(payResponse.reference),
   )
 }
 
-const successRows = computed(() => [
-  { label: "Order ID", value: `#${order.value.order_number}` },
-  { label: "Shipment ID", value: shipment.value?.shipbubble_order_id || "-" },
-  { label: "Courier", value: shipment.value?.courier?.courier_name || "-" },
-  {
-    label: "Shipping Fee",
-    value: format(
-      Number(shipment.value?.total_shipping_cost) || Number(order.value?.delivery_fee),
-      { kobo: true },
-    ),
-  },
-  {
-    label: "Expected Delivery Date",
-    value: shipment.value?.delivery_estimate ? formatDate(shipment.value.delivery_estimate) : "-",
-  },
-])
-
-const handleSuccessDone = () => {
+const handleCreateShipment = () => {
+  // During the walkthrough, "create" only advances the tour — no charge, no booking.
   if (props.tourMode) {
-    walkthrough.report("shipment-success-done")
+    walkthrough.report("shipment-created")
     return
   }
-  showSuccess.value = false
-  emit("refresh")
-  emit("close")
+  if (!shipment.value) return
+
+  // Every shipment is paid for on creation, so always confirm the charge before
+  // handing the merchant off to Paystack.
+  showPaymentConfirm.value = true
+}
+
+const handleConfirmPayment = () => {
+  showPaymentConfirm.value = false
+  payThenBook()
 }
 </script>
 
@@ -270,43 +256,17 @@ const handleSuccessDone = () => {
       </template>
     </Drawer>
 
-    <!-- Shipment created success dialog -->
-    <Modal :open="showSuccess" max-width="sm" @close="handleSuccessDone">
-      <div class="space-y-4 py-4 text-center">
-        <p class="text-5xl">🎉</p>
-        <h3 class="text-lg font-semibold">Shipment Created Successfully</h3>
-        <p class="text-core-600 text-sm">
-          Pickup has been booked with {{ shipment?.courier?.courier_name || "your courier" }}.
-          Tracking details have been generated and sent to the customer.
-        </p>
-
-        <div class="border-core-300 bg-core-25 space-y-3 rounded-xl border p-4">
-          <p v-for="row in successRows" :key="row.label" class="flex justify-between text-sm">
-            <span class="text-core-600">{{ row.label }}</span>
-            <span class="font-medium">{{ row.value }}</span>
-          </p>
-        </div>
-
-        <div class="border-primary-200 bg-primary-25 rounded-xl border px-4 py-3">
-          <p class="text-core-500 text-xs">Tracking Number</p>
-          <p class="flex items-center justify-center gap-1 text-sm font-semibold">
-            {{ createdTrackingNumber || "--" }}
-            <Icon
-              name="copy"
-              size="14"
-              class="text-primary-600 cursor-pointer"
-              @click="clipboardCopy(createdTrackingNumber)"
-            />
-          </p>
-        </div>
-
-        <AppButton
-          label="Done"
-          class="w-full"
-          data-walkthrough="shipment-success-done"
-          @click="handleSuccessDone"
-        />
-      </div>
-    </Modal>
+    <!-- Shipping payment confirmation — every shipment settles its fee on creation -->
+    <ConfirmationModal
+      v-model="showPaymentConfirm"
+      max-width="md"
+      z-class="z-[1200]"
+      header-icon="wallet-money"
+      :header="`Pay ${shippingFeeLabel} Shipping Fee`"
+      paragraph="Shipping fees are settled when the shipment is created. You'll be redirected to securely pay for shipping before your shipment is booked."
+      :info-message="`Shipping fee: ${shippingFeeLabel}`"
+      action-label="Continue to Payment"
+      @confirm="handleConfirmPayment"
+    />
   </div>
 </template>

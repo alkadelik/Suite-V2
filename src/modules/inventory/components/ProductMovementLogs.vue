@@ -47,14 +47,19 @@
         :data="movements"
         :columns="movementColumns"
         :loading="loading"
-        :show-pagination="movementsCount > itemsPerPage"
+        :show-pagination="movementsCount > 5"
         :server-pagination="true"
         :items-per-page="itemsPerPage"
         :current-page="page"
         :total-items-count="movementsCount"
         :total-page-count="Math.ceil(movementsCount / itemsPerPage) || 1"
         :enable-row-selection="false"
-        @pagination-change="(d) => (page = d.currentPage)"
+        @pagination-change="
+          (d) => {
+            page = d.currentPage
+            itemsPerPage = d.itemsPerPage
+          }
+        "
         :empty-state="{
           title: 'No results match this filter',
           description: 'Try adjusting or clearing your filters.',

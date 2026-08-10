@@ -13,6 +13,7 @@ import { displayError } from "@/utils/error-handler"
 import { useGetWaybillDocument } from "../../api"
 import { SHIPMENT_STATUS_COLORS } from "../../constants"
 import { TShipmentRow } from "../../types"
+import { toast } from "@/composables/useToast"
 
 const props = defineProps<{
   open: boolean
@@ -178,11 +179,11 @@ const handleGetWaybillDoc = () => {
   }
   getWaybillDoc(shipment.value.uid, {
     onSuccess: (response) => {
-      const url: string = response.data?.data?.waybill_url || ""
+      const url: string = response.data?.data?.waybill_document_url || ""
       if (url) {
         window.open(url, "_blank")
       } else {
-        displayError("Waybill document not available.")
+        toast.info("Waybill document not yet available.")
       }
     },
     onError: displayError,
@@ -242,9 +243,9 @@ const handleGetWaybillDoc = () => {
               <button
                 type="button"
                 class="text-primary-700 ml-1 text-xs underline"
-                @click="emit('view-order')"
+                @click="clipboardCopy(order.order_number)"
               >
-                View Order
+                Copy
               </button>
             </span>
           </p>

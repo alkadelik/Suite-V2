@@ -19,11 +19,19 @@ export type TOrderItem = {
   product_images?: { image: string }[]
 }
 
+export type TOrderCourier = {
+  name: string
+  email?: string
+  phone?: string
+  courier_name?: string
+  courier_image?: string
+}
+
 export type TOrder = {
   uid: string
   order_number: string
   coupon: string | null
-  courier: string
+  courier: TOrderCourier | string
   courier_name?: string
   created_at: string
   order_date: string
@@ -262,6 +270,21 @@ export type TCreateShipmentPayload = {
   payment_reference: string
 }
 
+/** What ShipBubble hands back once the booking is accepted. The quote row the
+ * drawer was built from predates all of this, so the success modal has to read
+ * these off the response rather than off the row. */
+export type TBookedShipment = {
+  shipbubble_order_id?: string
+  delivery_estimate?: string
+  tracking_number?: string
+}
+
+/** Booking details the create drawer hands to the page for its success modal */
+export type TShipmentCreatedDetails = {
+  trackingNumber: string
+  expectedDelivery: string
+}
+
 export type TShipbubbleShipmentResponse = {
   results: TShipbubbleShipment[]
   count: number
@@ -275,13 +298,7 @@ export type TShipmentRow = {
   uid: string
   order_number: string
   customer_name: string
-  courier: {
-    name: string
-    email?: string
-    phone?: string
-    courier_name?: string
-    courier_image?: string
-  } | null
+  courier: TOrderCourier | null
   fee: string | number
   amount: string | number
   date: string

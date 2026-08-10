@@ -2,7 +2,7 @@
   <div>
     <!--  -->
     <router-view />
-    <WalkthroughHost v-if="isStaging" />
+    <WalkthroughHost v-if="isStaging && !skipWalkthrough" />
     <!--  -->
     <ToastContainer />
     <SupportModal />
@@ -38,6 +38,7 @@ import WalkthroughHost from "@modules/announcements/components/WalkthroughHost.v
 import { useSettingsStore } from "@modules/settings/store"
 import { computed } from "vue"
 import { isStaging } from "./utils/others"
+import { useRoute } from "vue-router"
 
 const settingsStore = useSettingsStore()
 
@@ -54,4 +55,17 @@ const onPlanLimitConfirm = () => {
   settingsStore.setPlanLimitModal(false)
   settingsStore.setPlanUpgradeModal(true)
 }
+
+// Pages a tour or the What's New modal must never cover: the changelog is the
+// release archive itself, and the auth screens are pre-login.
+const SKIP_WALKTHROUGH_PAGES = [
+  "/changelog",
+  "/login",
+  "/signup",
+  "/forgot-password",
+  "/reset-password",
+  "/confirm-email",
+]
+const route = useRoute()
+const skipWalkthrough = computed(() => SKIP_WALKTHROUGH_PAGES.includes(route.path))
 </script>

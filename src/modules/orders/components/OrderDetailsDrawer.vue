@@ -283,7 +283,7 @@ const menuItems = computed(() => {
           <span class="text-core-600"
             >VAT ({{ order.tax_rate_used ? `${+order.tax_rate_used * 100}%` : storeVatRate }})</span
           >
-          <span class="font-medium">{{ format(Number(order.tax_amount)) }}</span>
+          <span class="font-medium">{{ format(Number(order.tax_amount), { kobo: true }) }}</span>
         </p>
         <p
           v-if="Number(order.discount_amount) > 0"

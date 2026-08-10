@@ -276,7 +276,12 @@ const formatWithUnit = (item: TRecipe) => {
             :total-items-count="recipes?.count || 0"
             :total-page-count="Math.ceil((recipes?.count || 0) / itemsPerPage) || 1"
             :server-pagination="true"
-            @pagination-change="(d) => (page = d.currentPage)"
+            @pagination-change="
+              (d) => {
+                page = d.currentPage
+                itemsPerPage = d.itemsPerPage
+              }
+            "
             @row-click="(row) => $router.push(`/production/recipes/${row.uid}`)"
           >
             <template #cell:output_item_name="{ item }">

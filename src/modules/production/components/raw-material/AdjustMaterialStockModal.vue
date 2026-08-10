@@ -328,7 +328,7 @@ watch(
         <FormField
           type="date"
           name="expiry_date"
-          label="Expiry Date (optional)"
+          label="Estimated Expiry Date"
           placeholder="Select expiry date"
         />
 

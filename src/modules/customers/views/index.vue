@@ -80,7 +80,12 @@
         :total-items-count="customersData?.data?.count || 0"
         :total-page-count="Math.ceil((customersData?.data?.count || 0) / itemsPerPage) || 1"
         :server-pagination="true"
-        @pagination-change="(d) => (page = d.currentPage)"
+        @pagination-change="
+          (d) => {
+            page = d.currentPage
+            itemsPerPage = d.itemsPerPage
+          }
+        "
         @row-click="handleRowClick"
       >
         <template #cell:name="{ item }">

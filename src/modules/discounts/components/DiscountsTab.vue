@@ -58,13 +58,18 @@
       :data="rows"
       :columns="DISCOUNT_COLUMNS"
       :loading="isFetching"
-      :show-pagination="count > itemsPerPage"
+      :show-pagination="count > 5"
       :items-per-page="itemsPerPage"
       :total-items-count="count"
       :total-page-count="Math.ceil(count / itemsPerPage) || 1"
       :server-pagination="true"
       :row-attrs="rowAttributes"
-      @pagination-change="(d) => (page = d.currentPage)"
+      @pagination-change="
+        (d) => {
+          page = d.currentPage
+          itemsPerPage = d.itemsPerPage
+        }
+      "
       @row-click="handleRowClick"
     >
       <template #cell:type="{ item }">

@@ -145,7 +145,7 @@ export const PICKUP_SHIPMENT_COLUMNS: TableColumn<TShipmentRow>[] = [
 
 export const SHIPMENT_STATUS_COLORS: Record<string, TChipColor> = {
   awaiting_shipment: "warning",
-  awaiting_pickup: "warning",
+  awaiting_pickup: "blue",
   unfulfilled: "warning",
   partially_fulfilled: "warning",
   picked_up: "blue",

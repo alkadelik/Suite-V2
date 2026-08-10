@@ -21,8 +21,8 @@ import ShipmentFiltersDrawer from "../components/shipments/ShipmentFiltersDrawer
 import ShipmentDetailsDrawer from "../components/shipments/ShipmentDetailsDrawer.vue"
 import CreateShipmentDrawer from "../components/shipments/CreateShipmentDrawer.vue"
 import FulfilOrderModal from "../components/FulfilOrderModal.vue"
-import { TShipmentRow } from "../types"
-import { useGetOrders, useGetShipments } from "../api"
+import { TShipmentRow, TOrderCourier, TShipmentCreatedDetails } from "../types"
+import { useGetOrders, useGetShipments, useGetWaybillDocument } from "../api"
 import Icon from "@components/Icon.vue"
 import Chip from "@components/Chip.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
@@ -31,10 +31,13 @@ import { useQueryClient } from "@tanstack/vue-query"
 import { useRouter } from "vue-router"
 import { useWalkthroughStore } from "@modules/announcements/store"
 import { useAuthStore } from "@modules/auth/store"
+import ShipmentSuccessModal from "../components/shipments/ShipmentSuccessModal.vue"
 import {
   buildShipmentTourRow,
   SHIPMENT_TOUR_CREATED_STATUS,
+  SHIPMENT_TOUR_TRACKING_NUMBER,
 } from "../components/shipments/shipmentTourDemo"
+import { displayError } from "@/utils/error-handler"
 
 const pageTabs = [
   { title: "ShipBubble", key: "shipbubble" },
@@ -120,7 +123,7 @@ const baseRows = computed<TShipmentRow[]>(() => {
       uid: shipment.uid,
       order_number: shipment.order?.order_number || "-",
       customer_name: shipment.order?.customer_name || "Unknown Anonymous",
-      courier: shipment.courier || null,
+      courier: (shipment.order?.courier as TOrderCourier) || shipment.courier || null,
       fee: shipment.total_shipping_cost,
       amount: shipment.order?.total_amount ?? 0,
       date: shipment.delivery_estimate || shipment.created_at,
@@ -156,7 +159,26 @@ const selectedShipment = ref<TShipmentRow | null>(null)
 const openFulfil = ref(false)
 const openDetails = ref(false)
 const openCreate = ref(false)
-const previewSuccess = ref(false)
+const showSuccess = ref(false)
+const createdTrackingNumber = ref("")
+const createdExpectedDelivery = ref("")
+
+// Booking succeeded: swap the create drawer for the success modal.
+const handleShipmentCreated = (details: TShipmentCreatedDetails) => {
+  createdTrackingNumber.value = details.trackingNumber
+  createdExpectedDelivery.value = details.expectedDelivery
+  openCreate.value = false
+  showSuccess.value = true
+}
+
+const handleSuccessDone = () => {
+  if (isShipmentTour.value) {
+    walkthrough.report("shipment-success-done")
+    return
+  }
+  showSuccess.value = false
+  handleRefresh()
+}
 
 // --- Shipments walkthrough (non-charging preview) ---
 // The tour drives the drawers/success purely from its step index and operates on
@@ -189,22 +211,24 @@ watch(
     if (idx <= 0) {
       openDetails.value = false
       openCreate.value = false
-      previewSuccess.value = false
+      showSuccess.value = false
     } else if (idx <= 2) {
       openCreate.value = false
-      previewSuccess.value = false
+      showSuccess.value = false
       openDetails.value = true
     } else if (idx <= 4) {
       openDetails.value = false
-      previewSuccess.value = false
+      showSuccess.value = false
       openCreate.value = true
     } else if (idx === 5) {
+      // The real flow closes the drawer behind the success modal — mirror it here.
       openDetails.value = false
-      openCreate.value = true
-      previewSuccess.value = true
+      openCreate.value = false
+      createdTrackingNumber.value = SHIPMENT_TOUR_TRACKING_NUMBER
+      showSuccess.value = true
     } else {
       openCreate.value = false
-      previewSuccess.value = false
+      showSuccess.value = false
       openDetails.value = true
     }
   },
@@ -216,7 +240,9 @@ watch(isShipmentTour, (on, was) => {
   if (was && !on) {
     openDetails.value = false
     openCreate.value = false
-    previewSuccess.value = false
+    showSuccess.value = false
+    createdTrackingNumber.value = ""
+    createdExpectedDelivery.value = ""
     selectedShipment.value = null
   }
 })
@@ -264,6 +290,29 @@ const openExternalLink = (url: string | null | undefined, missingMessage: string
   window.open(url, "_blank", "noopener")
 }
 
+// Mirrors the details drawer: open the cached waybill when there is one, otherwise
+// ask ShipBubble to generate it and open whatever comes back.
+const { mutate: getWaybillDoc } = useGetWaybillDocument()
+
+const handleWaybillDoc = (item: TShipmentRow) => {
+  if (!item.shipment) return
+  if (item.shipment.waybill_document_url) {
+    window.open(item.shipment.waybill_document_url, "_blank")
+    return
+  }
+  getWaybillDoc(item.shipment.uid, {
+    onSuccess: (response) => {
+      const url: string = response.data?.data?.waybill_document_url || ""
+      if (url) {
+        window.open(url, "_blank")
+      } else {
+        toast.info("Waybill document not yet available.")
+      }
+    },
+    onError: displayError,
+  })
+}
+
 const getActionItems = (item: TShipmentRow) => {
   const viewAction = {
     label: "View details",
@@ -272,6 +321,20 @@ const getActionItems = (item: TShipmentRow) => {
   }
 
   if (item.shipment) {
+    // Awaiting shipment = quote booked but not yet paid for, so the create/pay flow
+    // is the only action available — the same rule as the details drawer's CTA.
+    // There's no waybill or tracking link until the shipment is actually booked.
+    if (item.shipment.status === "awaiting_shipment") {
+      return [
+        viewAction,
+        {
+          label: "Create shipment",
+          icon: "box",
+          action: () => createShipment(item),
+        },
+      ]
+    }
+
     return [
       viewAction,
       {
@@ -283,11 +346,7 @@ const getActionItems = (item: TShipmentRow) => {
       {
         label: "View waybill",
         icon: "note-2",
-        action: () =>
-          openExternalLink(
-            item.shipment?.waybill_document_url,
-            "No waybill document for this shipment yet",
-          ),
+        action: () => handleWaybillDoc(item),
       },
     ]
   }
@@ -345,8 +404,8 @@ const emptyStateDescription = computed(() => {
 
     <Tabs v-model="activeTab" :tabs="pageTabs" class="max-w-md" />
 
-    <div class="mt-4 space-y-4 overflow-hidden rounded-xl border-gray-200 md:border md:bg-white">
-      <div class="flex flex-col justify-between md:flex-row md:items-center md:px-4">
+    <div class="space-y-4 overflow-hidden rounded-xl border-gray-200 md:border md:bg-white">
+      <div class="flex flex-col justify-between pt-4 md:flex-row md:items-center md:px-4">
         <h3 class="mb-2 flex items-center gap-1 text-lg font-semibold md:mb-0">
           {{ pageTabs.find((tab) => tab.key === activeTab)?.title }}
           {{ activeTab === "pickup" ? "" : "deliveries" }}
@@ -385,7 +444,12 @@ const emptyStateDescription = computed(() => {
         :total-page-count="Math.ceil(totalCount / itemsPerPage) || 1"
         :server-pagination="true"
         :row-attrs="rowAttrs"
-        @pagination-change="(d) => (page = d.currentPage)"
+        @pagination-change="
+          (d) => {
+            page = d.currentPage
+            itemsPerPage = d.itemsPerPage
+          }
+        "
         @row-click="viewDetails"
         :empty-state="{
           // title: `No ${startCase(activeTab)} ${activeTab === 'pickup' ? 'Order' : 'Shipment'} Found`,
@@ -459,9 +523,18 @@ const emptyStateDescription = computed(() => {
       :open="openCreate"
       :item="selectedShipment"
       :tour-mode="isShipmentTour"
-      :preview-success="previewSuccess"
       @close="openCreate = false"
       @refresh="handleRefresh"
+      @created="handleShipmentCreated"
+    />
+
+    <ShipmentSuccessModal
+      v-if="selectedShipment"
+      :open="showSuccess"
+      :item="selectedShipment"
+      :tracking-number="createdTrackingNumber"
+      :expected-delivery="createdExpectedDelivery"
+      @done="handleSuccessDone"
     />
 
     <FulfilOrderModal

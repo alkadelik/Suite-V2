@@ -72,6 +72,11 @@ export const BATCHES_COLUMN: TableColumn<TBatch>[] = [
     },
   },
   { header: "Source", accessor: "source" },
+  {
+    header: "Est. Expiry Date ",
+    accessor: "expiry_date",
+    cell: ({ value }) => (value ? formatDate(String(value)) : "-"),
+  },
 ]
 
 export const USAGE_HISTORY_COLUMN: TableColumn<TMovement>[] = [

@@ -6,7 +6,12 @@ import Icon from "@components/Icon.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import type { TExpense } from "../types"
 import { formatDate } from "@/utils/formatDate"
-import { EXPENSE_CATEGORY_ICON, getExpenseStatusColor, isTaxLikeSubcategory } from "../constants"
+import {
+  EXPENSE_CATEGORY_ICON,
+  getExpenseStatusColor,
+  isTaxLikeSubcategory,
+  isTaxCategory,
+} from "../constants"
 
 const props = withDefaults(
   defineProps<{
@@ -33,6 +38,7 @@ const emit = defineEmits(["click", "toggle", "edit", "delete", "void", "markPaid
 const { format } = useFormatCurrency()
 
 const menuItems = computed(() => {
+  const item = props.expense
   return props.customActions?.length
     ? props.customActions
     : [
@@ -46,7 +52,8 @@ const menuItems = computed(() => {
               },
               { divider: true },
             ]),
-        ...(props.expense.status !== "paid" && props.expense.entry_type === "manual"
+        ...(item.status !== "paid" &&
+        (item.entry_type === "manual" || isTaxCategory(item.category_name))
           ? [
               {
                 label: "Mark as paid",

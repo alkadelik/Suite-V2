@@ -25,6 +25,7 @@ import {
   EXPENSE_CATEGORY_ICON,
   EXPENSE_COLUMN,
   getExpenseStatusColor,
+  isTaxCategory,
   isTaxLikeSubcategory,
 } from "../constants"
 import { useRoute } from "vue-router"
@@ -164,11 +165,13 @@ const computedParams = computed(() => {
   return params
 })
 
-// Switching tabs restarts pagination and drops filters, search and selection
+// Switching tabs restarts pagination and drops filters, search and selection.
+// The table owns the checkboxes, so clear there and let it emit the empty selection.
 watch(activeTab, () => {
   page.value = 1
   activeFilters.value = {}
   searchQuery.value = ""
+  dataTableRef.value?.clearRowSelection()
   selectedPayables.value = []
 })
 
@@ -185,7 +188,7 @@ const { mutate: bulkCompleteExpenses, isPending: isBulkCompleting } = useBulkCom
 const handleBulkMarkPaid = () => {
   const count = selectedPayables.value.length
   bulkCompleteExpenses(
-    { items: selectedPayables.value.map((expense) => expense.uid) },
+    { expense_uids: selectedPayables.value.map((expense) => expense.uid) },
     {
       onSuccess: () => {
         toast.success(`${count} expense${count === 1 ? "" : "s"} marked as paid`)
@@ -226,7 +229,9 @@ const getActionItems = (item: TExpense) => [
         },
         { divider: true },
       ]),
-  ...(item.status !== "paid" && item.entry_type === "manual"
+  // Manual expenses can always be settled by hand; auto entries can't, except for
+  // taxes, which are remitted outside the app and still need marking.
+  ...(item.status !== "paid" && (item.entry_type === "manual" || isTaxCategory(item.category_name))
     ? [
         {
           label: "Mark as paid",
@@ -486,7 +491,12 @@ watch(
             :total-items-count="expenses?.count || 0"
             :total-page-count="Math.ceil((expenses?.count || 0) / itemsPerPage) || 1"
             :server-pagination="true"
-            @pagination-change="(d) => (page = d.currentPage)"
+            @pagination-change="
+              (d) => {
+                page = d.currentPage
+                itemsPerPage = d.itemsPerPage
+              }
+            "
             @row-click="
               (row) => {
                 selectedExpense = row

@@ -1,6 +1,6 @@
 import { formatError } from "@/utils/error-handler"
 import { useAuthStore } from "@modules/auth/store"
-import { useQuery } from "@tanstack/vue-query"
+import { keepPreviousData as keepPreviousDataFn, useQuery } from "@tanstack/vue-query"
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from "axios"
 import { useSettingsStore } from "@modules/settings/store"
 import { toValue, MaybeRefOrGetter, computed } from "vue"
@@ -123,6 +123,12 @@ export type TQueryArg = {
   key: MaybeRefOrGetter<string>
   selectData?: boolean
   refetchOnWindowFocus?: boolean
+  /**
+   * Hold on to the previous page's data while a new one loads. `params` are part
+   * of the query key, so paginated lists otherwise fall back to `undefined` on
+   * every page / per-page change, unmounting the table mid-interaction.
+   */
+  keepPreviousData?: boolean
 }
 export const useApiQuery = <T>({
   url,
@@ -131,9 +137,11 @@ export const useApiQuery = <T>({
   key,
   selectData,
   refetchOnWindowFocus = false,
+  keepPreviousData = false,
 }: TQueryArg) => {
   return useQuery<T>({
     queryKey: computed(() => [toValue(key), toValue(params)]),
+    placeholderData: keepPreviousData ? keepPreviousDataFn : undefined,
     queryFn: async () => {
       // Use toValue to handle both reactive and non-reactive values
       const urlValue = toValue(url)
