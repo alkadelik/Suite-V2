@@ -16,7 +16,7 @@ import TaskCardFlat from "./TaskCardFlat.vue"
 import type { ITask, ITaskResolveEvent } from "./types"
 
 withDefaults(defineProps<{ task: ITask; expanded?: boolean; loadingIds?: string[] }>(), {
-  expanded: true,
+  expanded: false,
   loadingIds: () => [],
 })
 

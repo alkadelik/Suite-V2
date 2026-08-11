@@ -69,12 +69,12 @@ withDefaults(
 
 const { loadingIds, resolve } = useTaskActions()
 
-// Aggregate cards default to expanded; we track only the CLOSED set so the
-// expansion state survives a background refetch (DASH-23).
-const closed = reactive(new Set<string>())
-const isExpanded = (id: string) => !closed.has(id)
+// Aggregate cards default to collapsed (first 3 rows); we track the EXPANDED set
+// so the state survives a background refetch (DASH-23).
+const expandedSet = reactive(new Set<string>())
+const isExpanded = (id: string) => expandedSet.has(id)
 function toggle(id: string) {
-  if (closed.has(id)) closed.delete(id)
-  else closed.add(id)
+  if (expandedSet.has(id)) expandedSet.delete(id)
+  else expandedSet.add(id)
 }
 </script>

@@ -21,6 +21,7 @@
       </div>
 
       <button
+        v-if="hasToggle"
         type="button"
         class="text-core-700 flex shrink-0 items-center gap-1 text-sm font-medium"
         :aria-expanded="expanded"
@@ -37,10 +38,10 @@
       </button>
     </div>
 
-    <!-- rows -->
-    <div v-show="expanded" :id="bodyId" class="space-y-3 bg-white p-3 md:p-4">
+    <!-- rows: up to 3 by default, all when expanded -->
+    <div :id="bodyId" class="space-y-3 bg-white p-3 md:p-4">
       <TaskRow
-        v-for="row in task.rows"
+        v-for="row in visibleRows"
         :key="row.id"
         :row="row"
         :loading="loadingIds.includes(row.id)"
@@ -71,7 +72,7 @@ import type { TChipColor } from "@modules/shared/types"
 
 const props = withDefaults(
   defineProps<{ task: ITask; expanded?: boolean; loadingIds?: string[] }>(),
-  { expanded: true, loadingIds: () => [] },
+  { expanded: false, loadingIds: () => [] },
 )
 
 const emit = defineEmits<{
@@ -81,14 +82,34 @@ const emit = defineEmits<{
 
 const bodyId = computed(() => `worklist-body-${props.task.id}`)
 
-const borderClass = computed(() =>
-  props.task.tone === "danger" ? "border-error-200" : "border-warning-300",
+/** Collapsed cards show the first 3 rows; the toggle only appears beyond that. */
+const COLLAPSED_COUNT = 3
+const allRows = computed(() => props.task.rows ?? [])
+const hasToggle = computed(() => allRows.value.length > COLLAPSED_COUNT)
+const visibleRows = computed(() =>
+  props.expanded ? allRows.value : allRows.value.slice(0, COLLAPSED_COUNT),
 )
-const headerBgClass = computed(() =>
-  props.task.tone === "danger"
-    ? "bg-error-50 border-error-200"
-    : "bg-warning-50 border-warning-300",
-)
+
+const borderClass = computed(() => {
+  switch (props.task.tone) {
+    case "danger":
+      return "border-error-200"
+    case "warning":
+      return "border-warning-300"
+    default:
+      return "border-gray-200"
+  }
+})
+const headerBgClass = computed(() => {
+  switch (props.task.tone) {
+    case "danger":
+      return "bg-error-50 border-error-200"
+    case "warning":
+      return "bg-warning-50 border-warning-300"
+    default:
+      return "bg-gray-50 border-gray-200"
+  }
+})
 
 function onRowAction(row: ITaskRow) {
   emit("resolve", { action: row.action, targetId: row.id })

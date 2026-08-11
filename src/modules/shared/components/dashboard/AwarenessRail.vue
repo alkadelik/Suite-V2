@@ -12,10 +12,14 @@
 
       <template v-else-if="rail">
         <ReceivablesPanel :data="rail.receivables" />
-        <hr class="my-5 border-t border-dashed border-gray-200" />
-        <OrdersInFlightPanel :data="rail.ordersInFlight" />
-        <hr class="my-5 border-t border-dashed border-gray-200" />
-        <PopupsPanel :popups="rail.popups" />
+        <template v-if="rail.ordersInFlight">
+          <hr class="my-5 border-t border-dashed border-gray-200" />
+          <OrdersInFlightPanel :data="rail.ordersInFlight" />
+        </template>
+        <template v-if="rail.popups.length">
+          <hr class="my-5 border-t border-dashed border-gray-200" />
+          <PopupsPanel :popups="rail.popups" />
+        </template>
       </template>
     </div>
   </aside>

@@ -1,9 +1,12 @@
 // ============================================================================
-// Command/Health Center dashboard — API contract (DASH-19…25)
+// Command/Health Center dashboard types.
 //
-// These types mirror the (not-yet-deployed) backend contract. The client only
-// RENDERS server-provided, preformatted strings — it never computes exposure,
-// ranking, or summary text (DASH-20/22). See fixtures.ts for the mock payloads.
+// Two layers:
+//  1. UI view types (IHealthVital, ITask, IReceivablesPanel, …) — what the
+//     components render. Produced either from fixtures (mock mode) or by
+//     mapping the live API responses (see mappers.ts).
+//  2. Raw API response types (I*ApiData) — the exact shapes returned by the
+//     live /health-center/* endpoints. See docs/…/health-center-samples.json.
 // ============================================================================
 
 // ---- Health vitals (DASH-21) ----
@@ -141,7 +144,8 @@ export interface IPopupStatus {
 
 export interface IAwarenessRail {
   receivables: IReceivablesPanel
-  ordersInFlight: IOrdersInFlight
+  /** null when the backend has no orders-in-flight data yet (panel hidden). */
+  ordersInFlight: IOrdersInFlight | null
   popups: IPopupStatus[]
 }
 
@@ -153,4 +157,109 @@ export interface ITaskResolveEvent {
   targetId: string
   /** For bulk actions: the row ids being resolved together. */
   rowIds?: string[]
+}
+
+// ============================================================================
+// Raw live API response shapes — GET /api/v2/health-center/* (all JWT-scoped).
+// Every endpoint wraps its payload in { error, message, data }.
+// ============================================================================
+export interface IApiEnvelope<T> {
+  error: unknown
+  message: string
+  data: T
+}
+
+/** GET /health-center/health/ */
+export interface IHealthApiData {
+  sales: {
+    today: string
+    order_count_today: number
+    avg_revenue_7d: string | null
+    avg_order_count_7d: number | null
+    baseline_available: boolean
+  }
+  low_stock: { product_count: number; material_count: number; total_count: number }
+  credit: { total_outstanding: string; aged_subtotal: string }
+}
+
+/** GET /health-center/summary/ */
+export interface ISummaryApiData {
+  task_count: number
+  total_exposure: string
+  top_item: { type: string; value: number; label: string } | null
+  summary_line: string
+}
+
+/** GET /health-center/health/credit/ */
+export interface ICreditRow {
+  order_uid: string
+  order_number: string
+  customer_name: string
+  order_date: string
+  age_days: number
+  outstanding: string
+  is_aged: boolean
+}
+export interface ICreditApiData {
+  total_outstanding: string
+  aged_subtotal: string
+  customer_count: number
+  rows: ICreditRow[]
+}
+
+/** A per-order row inside an aggregate task. */
+export interface IApiTaskDetailRow {
+  order_uid: string
+  order_number: string
+  customer_name: string
+  age_days: number
+  order_value: number
+}
+
+/** The popup object attached to a close_popup task. */
+export interface IApiTaskPopup {
+  uid: string
+  name: string
+  end_date: string
+  days_overdue: number
+  stranded_qty: number
+  stranded_value: number
+}
+
+/** GET /health-center/tasks/{fulfillment,popups} — one task (aggregate or flat). */
+export interface IApiTask {
+  task_type: string
+  family: string
+  severity: string | null
+  title_inputs: Record<string, string | number>
+  condition_inputs: Record<string, string | number>
+  resolving_action: string
+  ranking_inputs: { age_days: number; money_at_risk: string | null }
+  rank: number
+  detail_rows: IApiTaskDetailRow[] | null
+  batch: unknown
+  popup: IApiTaskPopup | null
+  item: unknown
+}
+export interface IApiTasksData {
+  tasks: IApiTask[]
+  task_count: number
+}
+
+/**
+ * GET /health-center/tasks/restock — products + materials to replenish.
+ * Shape unverified: this store returned empty arrays, so fields are best-effort
+ * and read defensively in the mapper. Refine once a store with restock data exists.
+ */
+export interface IApiRestockItem {
+  uid?: string
+  name?: string
+  available_stock?: number | string
+  reorder_threshold?: number | string
+  type?: string
+}
+export interface IApiRestockData {
+  products: IApiRestockItem[]
+  materials: IApiRestockItem[]
+  task_count: number
 }
