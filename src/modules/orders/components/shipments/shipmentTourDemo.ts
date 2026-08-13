@@ -92,7 +92,7 @@ export function buildShipmentTourRow(status = "awaiting_shipment"): TShipmentRow
     last_status_update: null,
     quote_expires_at: "2026-02-05T09:00:00Z",
     quote_status: "active",
-    quote_hours_remaining: "5:23:45:53",
+    quote_hours_remaining: 149,
     is_suite_order: true,
     pickup_date: "2026-01-31T09:00:00Z",
     delivery_estimate: "2026-01-31T09:00:00Z",
@@ -110,5 +110,6 @@ export function buildShipmentTourRow(status = "awaiting_shipment"): TShipmentRow
     status,
     order,
     shipment,
+    delivery_estimate: shipment.delivery_estimate || null,
   }
 }

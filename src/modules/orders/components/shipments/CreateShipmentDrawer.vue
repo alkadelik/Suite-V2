@@ -6,7 +6,7 @@ import AppButton from "@components/AppButton.vue"
 import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
-import { formatDate, checkIfDateIsPast } from "@/utils/formatDate"
+import { formatDate, checkIfDateIsPast, formatHoursRemaining } from "@/utils/formatDate"
 import { displayError } from "@/utils/error-handler"
 import { useCreateShipbubbleShipment } from "../../api"
 import { handlePayStackPayment, loadPaystackScript } from "../../utilities"
@@ -49,7 +49,7 @@ const isQuoteExpired = computed(() => {
 const quoteChip = computed(() => {
   if (!shipment.value) return null
   if (isQuoteExpired.value) return { label: "Quote expired", color: "error" as const }
-  const remaining = shipment.value.quote_hours_remaining
+  const remaining = formatHoursRemaining(shipment.value.quote_hours_remaining)
   return {
     label: remaining ? `Expires in ${remaining}` : "Quote active",
     color: "warning" as const,

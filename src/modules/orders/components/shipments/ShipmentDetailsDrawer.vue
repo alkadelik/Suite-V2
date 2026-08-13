@@ -6,7 +6,7 @@ import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
 import InfoBox from "@components/InfoBox.vue"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
-import { formatDate, checkIfDateIsPast } from "@/utils/formatDate"
+import { formatDate, checkIfDateIsPast, formatHoursRemaining } from "@/utils/formatDate"
 import { startCase } from "@/utils/format-strings"
 import { clipboardCopy } from "@/utils/others"
 import { displayError } from "@/utils/error-handler"
@@ -52,7 +52,7 @@ const isQuoteExpired = computed(() => {
 const quoteChip = computed(() => {
   if (!shipment.value || shipment.value.status !== "awaiting_shipment") return null
   if (isQuoteExpired.value) return { label: "Quote expired", color: "error" as const }
-  const remaining = shipment.value.quote_hours_remaining
+  const remaining = formatHoursRemaining(shipment.value.quote_hours_remaining)
   return {
     label: remaining ? `Expires in ${remaining}` : "Quote active",
     color: "warning" as const,

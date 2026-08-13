@@ -130,6 +130,7 @@ const baseRows = computed<TShipmentRow[]>(() => {
       status: shipment.status,
       order: shipment.order,
       shipment,
+      delivery_estimate: shipment.delivery_estimate || null,
     }))
   }
 
@@ -144,6 +145,7 @@ const baseRows = computed<TShipmentRow[]>(() => {
     status: order.fulfilment_status,
     order,
     shipment: null,
+    delivery_estimate: null,
   }))
 })
 
