@@ -19,16 +19,17 @@ import { toast } from "@/composables/useToast"
 import ShipmentCard from "../components/shipments/ShipmentCard.vue"
 import ShipmentFiltersDrawer from "../components/shipments/ShipmentFiltersDrawer.vue"
 import ShipmentDetailsDrawer from "../components/shipments/ShipmentDetailsDrawer.vue"
-import CreateShipmentDrawer from "../components/shipments/CreateShipmentDrawer.vue"
+import ConfirmShipmentPaymentModal from "../components/shipments/ConfirmShipmentPaymentModal.vue"
 import FulfilOrderModal from "../components/FulfilOrderModal.vue"
-import { TShipmentRow, TOrderCourier, TShipmentCreatedDetails } from "../types"
+import { TShipmentRow, TShipmentCreatedDetails } from "../types"
+import { toShipmentRow } from "../utilities"
+import OrderDetailsDrawer from "../components/OrderDetailsDrawer.vue"
 import { useGetOrders, useGetShipments, useGetWaybillDocument } from "../api"
 import Icon from "@components/Icon.vue"
 import Chip from "@components/Chip.vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import type { TChipColor } from "@modules/shared/types"
 import { useQueryClient } from "@tanstack/vue-query"
-import { useRouter } from "vue-router"
 import { useWalkthroughStore } from "@modules/announcements/store"
 import { useAuthStore } from "@modules/auth/store"
 import ShipmentSuccessModal from "../components/shipments/ShipmentSuccessModal.vue"
@@ -119,18 +120,8 @@ const totalCount = computed(() =>
 // Normalize both sources into a single row shape so all tabs share one table
 const baseRows = computed<TShipmentRow[]>(() => {
   if (isShipbubbleTab.value) {
-    return (shipments.value?.results ?? []).map((shipment) => ({
-      uid: shipment.uid,
-      order_number: shipment.order?.order_number || "-",
-      customer_name: shipment.order?.customer_name || "Unknown Anonymous",
-      courier: (shipment.order?.courier as TOrderCourier) || shipment.courier || null,
-      fee: shipment.total_shipping_cost,
-      amount: shipment.order?.total_amount ?? 0,
-      date: shipment.delivery_estimate || shipment.created_at,
-      status: shipment.status,
-      order: shipment.order,
-      shipment,
-    }))
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    return (shipments.value?.results ?? []).map(toShipmentRow)
   }
 
   return (orders.value?.results ?? []).map((order) => ({
@@ -144,6 +135,7 @@ const baseRows = computed<TShipmentRow[]>(() => {
     status: order.fulfilment_status,
     order,
     shipment: null,
+    delivery_estimate: null,
   }))
 })
 
@@ -158,16 +150,18 @@ const statusColor = (status: string): TChipColor => SHIPMENT_STATUS_COLORS[statu
 const selectedShipment = ref<TShipmentRow | null>(null)
 const openFulfil = ref(false)
 const openDetails = ref(false)
-const openCreate = ref(false)
+const openPayConfirm = ref(false)
 const showSuccess = ref(false)
 const createdTrackingNumber = ref("")
 const createdExpectedDelivery = ref("")
 
-// Booking succeeded: swap the create drawer for the success modal.
+// Booking succeeded: drop the payment confirmation (and the details drawer behind
+// it, when that's where the flow started) for the success modal.
 const handleShipmentCreated = (details: TShipmentCreatedDetails) => {
   createdTrackingNumber.value = details.trackingNumber
   createdExpectedDelivery.value = details.expectedDelivery
-  openCreate.value = false
+  openPayConfirm.value = false
+  openDetails.value = false
   showSuccess.value = true
 }
 
@@ -189,7 +183,7 @@ const tourStepIndex = computed(() =>
 )
 const tourRow = computed(() =>
   buildShipmentTourRow(
-    tourStepIndex.value >= 6 ? SHIPMENT_TOUR_CREATED_STATUS : "awaiting_shipment",
+    tourStepIndex.value >= 5 ? SHIPMENT_TOUR_CREATED_STATUS : "awaiting_shipment",
   ),
 )
 
@@ -210,24 +204,25 @@ watch(
     openFulfil.value = false
     if (idx <= 0) {
       openDetails.value = false
-      openCreate.value = false
+      openPayConfirm.value = false
       showSuccess.value = false
     } else if (idx <= 2) {
-      openCreate.value = false
+      openPayConfirm.value = false
       showSuccess.value = false
       openDetails.value = true
-    } else if (idx <= 4) {
-      openDetails.value = false
+    } else if (idx === 3) {
+      // The payment confirmation sits on top of the details drawer, as it does live.
       showSuccess.value = false
-      openCreate.value = true
-    } else if (idx === 5) {
-      // The real flow closes the drawer behind the success modal — mirror it here.
+      openDetails.value = true
+      openPayConfirm.value = true
+    } else if (idx === 4) {
+      // The real flow closes both behind the success modal — mirror it here.
       openDetails.value = false
-      openCreate.value = false
+      openPayConfirm.value = false
       createdTrackingNumber.value = SHIPMENT_TOUR_TRACKING_NUMBER
       showSuccess.value = true
     } else {
-      openCreate.value = false
+      openPayConfirm.value = false
       showSuccess.value = false
       openDetails.value = true
     }
@@ -239,7 +234,7 @@ watch(
 watch(isShipmentTour, (on, was) => {
   if (was && !on) {
     openDetails.value = false
-    openCreate.value = false
+    openPayConfirm.value = false
     showSuccess.value = false
     createdTrackingNumber.value = ""
     createdExpectedDelivery.value = ""
@@ -257,17 +252,16 @@ const rowAttrs = (row: TShipmentRow) =>
     ? { "data-walkthrough": "shipment-row" }
     : {}
 
+// Creating a shipment is just the shipping-fee payment now — from the row actions or
+// the details drawer, the confirmation goes straight up, no review drawer in between.
 const createShipment = (item: TShipmentRow) => {
   if (isShipmentTour.value) {
     walkthrough.report("shipment-create-opened")
     return
   }
   selectedShipment.value = item
-  openDetails.value = false
-  openCreate.value = true
+  openPayConfirm.value = true
 }
-
-const router = useRouter()
 
 const viewDetails = (item: TShipmentRow) => {
   if (isShipmentTour.value) {
@@ -278,8 +272,20 @@ const viewDetails = (item: TShipmentRow) => {
   openDetails.value = true
 }
 
+// The order behind a shipment opens right here instead of routing to the orders page.
+const openOrderDetails = ref(false)
+
 const viewOrder = (item: TShipmentRow) => {
-  router.push({ name: "Orders", query: { order_id: item.order.uid } })
+  if (isShipmentTour.value) return
+  selectedShipment.value = item
+  openDetails.value = false
+  openOrderDetails.value = true
+}
+
+// Closing the order drawer steps back to the shipment it was opened from.
+const handleCloseOrderDetails = () => {
+  openOrderDetails.value = false
+  if (selectedShipment.value) openDetails.value = true
 }
 
 const openExternalLink = (url: string | null | undefined, missingMessage: string) => {
@@ -518,13 +524,22 @@ const emptyStateDescription = computed(() => {
       "
     />
 
-    <CreateShipmentDrawer
+    <OrderDetailsDrawer
       v-if="selectedShipment"
-      :open="openCreate"
+      :open="openOrderDetails"
+      :order="selectedShipment.order"
+      hide-actions
+      hide-pending-shipment-hint
+      @close="handleCloseOrderDetails"
+      @view-shipment="handleCloseOrderDetails"
+    />
+
+    <ConfirmShipmentPaymentModal
+      v-if="selectedShipment"
+      :open="openPayConfirm"
       :item="selectedShipment"
       :tour-mode="isShipmentTour"
-      @close="openCreate = false"
-      @refresh="handleRefresh"
+      @close="openPayConfirm = false"
       @created="handleShipmentCreated"
     />
 

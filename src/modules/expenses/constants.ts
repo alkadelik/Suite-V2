@@ -25,6 +25,12 @@ export const EXPENSE_COLUMN: TableColumn<TExpense>[] = [
   { header: "", accessor: "actions" },
 ]
 
+/**
+ * What the Payables tab counts as outstanding. Sent as repeated query params
+ * (`?status=pending&status=unpaid`) — see the serializer note in `baseApi`.
+ */
+export const PAYABLE_STATUSES = ["pending", "unpaid"]
+
 export const getExpenseStatusColor = (status: string): TChipColor => {
   switch (status) {
     case "paid":
@@ -69,6 +75,27 @@ export const EXPENSE_CATEGORY_ICON: Record<string, string> = {
  */
 export const isTaxCategory = (value?: string | null): boolean =>
   !!value && value.toLowerCase().includes("tax")
+
+/**
+ * Shipping payables aren't a category of their own — they're the "Shipping and
+ * handling" sub-category under Sales Expenses.
+ */
+export const isShippingSubcategory = (value?: string | null): boolean =>
+  !!value && value.toLowerCase().includes("shipping and handling")
+
+/** Payables is segmented by what the money is owed for, not by status. */
+export const PAYABLE_SUB_TABS = [
+  { title: "All", key: "all" },
+  { title: "Taxes", key: "taxes" },
+  { title: "Shipping", key: "shipping" },
+]
+
+/** Plural noun each payables sub-tab counts, for headings and confirmations */
+export const PAYABLE_SUB_TAB_NOUN: Record<string, string> = {
+  all: "payables",
+  taxes: "taxes",
+  shipping: "shipping payables",
+}
 
 export const isTaxLikeSubcategory = (value?: string | null) => {
   if (!value) return false

@@ -23,22 +23,27 @@ export function useCreateExpense() {
 }
 
 /** Fetch expenses */
-export function useGetExpenses(params?: TQueryArg["params"]) {
+export function useGetExpenses(params?: TQueryArg["params"], enabled?: TQueryArg["enabled"]) {
   return useApiQuery<TExpenseResponse>({
     url: "/expenses/",
     params,
     key: "expenses",
     selectData: true,
+    enabled,
   })
 }
 
 /** Fetch expense statistics */
-export function useGetExpenseDashboard(params?: TQueryArg["params"]) {
+export function useGetExpenseDashboard(
+  params?: TQueryArg["params"],
+  enabled?: TQueryArg["enabled"],
+) {
   return useApiQuery<ExpenseDashboardStats>({
     url: `/expenses/stats/`,
     params,
     key: `expenses-stats`,
     selectData: true,
+    enabled,
   })
 }
 

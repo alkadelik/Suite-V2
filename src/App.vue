@@ -2,7 +2,7 @@
   <div>
     <!--  -->
     <router-view />
-    <WalkthroughHost v-if="!skipWalkthrough" />
+    <WalkthroughHost v-if="isStaging && !skipWalkthrough" />
     <!--  -->
     <ToastContainer />
     <SupportModal />
@@ -37,6 +37,7 @@ import PlansModal from "@modules/settings/components/PlansModal.vue"
 import WalkthroughHost from "@modules/announcements/components/WalkthroughHost.vue"
 import { useSettingsStore } from "@modules/settings/store"
 import { computed } from "vue"
+import { isStaging } from "./utils/others"
 import { useRoute } from "vue-router"
 
 const settingsStore = useSettingsStore()

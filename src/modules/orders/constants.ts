@@ -109,8 +109,9 @@ const shipmentCurrencyCell = ({ value }: { value: unknown }) => {
   return format(Number(value), { kobo: true })
 }
 
-const shipmentDateCell = ({ value }: { value: unknown }) =>
-  getSmartDateLabel(typeof value === "string" ? value : "")
+const shipmentDateCell = ({ value }: { value: unknown }) => {
+  return value ? getSmartDateLabel(value as string) : "--"
+}
 
 const SHIPMENT_BASE_COLUMNS: TableColumn<TShipmentRow>[] = [
   { header: "Order ID", accessor: "order_number" },
@@ -121,7 +122,7 @@ export const SHIPBUBBLE_SHIPMENT_COLUMNS: TableColumn<TShipmentRow>[] = [
   ...SHIPMENT_BASE_COLUMNS,
   { header: "Courier", accessor: "courier_name" },
   { header: "Shipping Cost", accessor: "order.delivery_fee", cell: shipmentCurrencyCell },
-  { header: "Delivery Estimate", accessor: "date", cell: shipmentDateCell },
+  { header: "Order Date", accessor: "date", cell: shipmentDateCell },
   { header: "Status", accessor: "status" },
   { header: "", accessor: "actions" },
 ]

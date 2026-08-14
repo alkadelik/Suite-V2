@@ -9,13 +9,16 @@ import { useMediaQuery } from "@vueuse/core"
 import { computed, ref, watch } from "vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import Chip from "@components/Chip.vue"
-import { TOrder } from "../types"
+import { TOrder, TShipmentRow } from "../types"
+import { toShipmentRow } from "../utilities"
+import ShipmentDetailsDrawer from "../components/shipments/ShipmentDetailsDrawer.vue"
 import CreateOrderDrawer from "../components/CreateOrderDrawer.vue"
 import VoidDeleteOrder from "../components/VoidDeleteOrder.vue"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
 import {
   useCancelOrder,
   useDeleteOrder,
+  useFindOrderShipment,
   useGenerateInvoice,
   useGenerateReceipt,
   useGetOrderDashboard,
@@ -558,6 +561,36 @@ const handleDetailsMarkAsPaid = () => {
   openDetails.value = false
   openMarkPaid.value = true
 }
+
+// --- Shipment details, opened in place from the order drawer ---
+const openShipmentDetails = ref(false)
+const shipmentRow = ref<TShipmentRow | null>(null)
+const { mutate: findOrderShipment, isPending: isFindingShipment } = useFindOrderShipment()
+
+const handleDetailsViewShipment = () => {
+  const order = selectedOrder.value
+  if (!order) return
+  findOrderShipment(order.order_number, {
+    onSuccess: (response) => {
+      // Search is fuzzy, so match the order back by uid rather than trusting the first row
+      const shipment = (response.data?.data?.results ?? []).find((s) => s.order?.uid === order.uid)
+      if (!shipment) {
+        toast.info("Shipment details are not available for this order.")
+        return
+      }
+      shipmentRow.value = toShipmentRow(shipment)
+      openDetails.value = false
+      openShipmentDetails.value = true
+    },
+    onError: displayError,
+  })
+}
+
+// Closing the shipment drawer steps back to the order it was opened from.
+const handleCloseShipmentDetails = () => {
+  openShipmentDetails.value = false
+  if (selectedOrder.value) openDetails.value = true
+}
 </script>
 
 <template>
@@ -842,7 +875,9 @@ const handleDetailsMarkAsPaid = () => {
           router.replace({ query: { ...route.query, order_id: undefined } })
         }
       "
+      :loading-shipment="isFindingShipment"
       @view-memos="handleDetailsViewMemos"
+      @view-shipment="handleDetailsViewShipment"
       @mark-as-paid="handleDetailsMarkAsPaid"
       @share-receipt="handleDetailsShareReceipt"
       @share-invoice="handleDetailsShareInvoice"
@@ -851,6 +886,16 @@ const handleDetailsMarkAsPaid = () => {
       @fulfill="handleDetailsFulfill"
       @void-order="handleDetailsVoidOrder"
       @delete-order="handleDetailsDeleteOrder"
+    />
+
+    <ShipmentDetailsDrawer
+      v-if="shipmentRow"
+      :open="openShipmentDetails"
+      :item="shipmentRow"
+      readonly
+      @close="handleCloseShipmentDetails"
+      @refresh="handleRefresh"
+      @view-order="handleCloseShipmentDetails"
     />
 
     <OrderFiltersDrawer

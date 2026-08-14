@@ -255,7 +255,8 @@ export type TShipbubbleShipment = {
   last_status_update: string | null
   quote_expires_at: string | null
   quote_status: string | null
-  quote_hours_remaining: string | null
+  /** Hours until the quote expires, e.g. 149 */
+  quote_hours_remaining: number | null
   is_suite_order: boolean
   pickup_date: string | null
   delivery_estimate: string | null
@@ -305,4 +306,5 @@ export type TShipmentRow = {
   status: string
   order: TOrder
   shipment: TShipbubbleShipment | null
+  delivery_estimate: string | null
 }
