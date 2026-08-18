@@ -25,35 +25,35 @@ defineProps<{ data: IEODReport | null }>()
         <div class="flex flex-wrap items-center justify-around px-4 py-6">
           <div>
             <p class="font-sato! mb-2 text-3xl font-semibold">
-              {{ (data?.inventory_flow?.opening_stock ?? 0).toLocaleString() }}
+              {{ (data?.inventory_flow?.opening_stock ?? 0)?.toLocaleString() }}
             </p>
             <p class="text-core-600 text-xs">Opening</p>
           </div>
           <Icon name="arrow-right" class="text-core-400" />
           <div>
             <p class="text-error-600 font-sato! mb-2 text-3xl font-semibold">
-              {{ (data?.inventory_flow?.units_sold ?? 0).toLocaleString() }}
+              {{ (data?.inventory_flow?.units_sold ?? 0)?.toLocaleString() }}
             </p>
             <p class="text-core-600 text-xs">Sold</p>
           </div>
           <Icon name="arrow-right" class="text-core-400" />
           <div>
             <p class="font-sato! mb-2 text-3xl font-semibold text-green-600">
-              {{ (data?.inventory_flow?.units_returned ?? 0).toLocaleString() }}
+              {{ (data?.inventory_flow?.units_returned ?? 0)?.toLocaleString() }}
             </p>
             <p class="text-core-600 text-xs">Returned</p>
           </div>
           <Icon name="arrow-right" class="text-core-400" />
           <div>
             <p class="font-sato! mb-2 text-3xl font-semibold text-blue-600">
-              {{ (data?.inventory_flow?.units_restocked ?? 0).toLocaleString() }}
+              {{ (data?.inventory_flow?.units_restocked ?? 0)?.toLocaleString() }}
             </p>
             <p class="text-core-600 text-xs">Restocked</p>
           </div>
           <Icon name="arrow-right" class="text-core-400" />
           <div>
             <p class="font-sato! mb-2 text-3xl font-semibold">
-              {{ (data?.inventory_flow?.closing_stock ?? 0).toLocaleString() }}
+              {{ (data?.inventory_flow?.closing_stock ?? 0)?.toLocaleString() }}
             </p>
             <p class="text-core-600 text-xs">Closing</p>
           </div>
@@ -79,7 +79,7 @@ defineProps<{ data: IEODReport | null }>()
           >
             <p class="text-sm font-medium">{{ low.product_name }}</p>
             <p class="text-error-600 text-xs">
-              {{ low.current_stock.toLocaleString() }} left &bull; {{ low.status }}
+              {{ (low.current_stock ?? 0)?.toLocaleString() }} left &bull; {{ low.status }}
             </p>
           </div>
         </div>

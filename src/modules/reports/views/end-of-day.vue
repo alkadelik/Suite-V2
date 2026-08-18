@@ -22,9 +22,21 @@ import Tabs from "@components/Tabs.vue"
 import ReportInsightCard from "../components/ReportInsightCard.vue"
 import { useGenerateEODReport, useGetLatestEODReport } from "../api"
 import { useReportsStore } from "../store"
-import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
+import ReportGeneratingSteps from "../components/ReportGeneratingSteps.vue"
+import { useReportProgress } from "../composables/useReportProgress"
 // import { toast } from "@/composables/useToast"
+
+/** Safety net for a missed websocket notification while a report is generating. */
+const POLL_INTERVAL = 15_000
+
+const STEPS = [
+  { label: "Reviewing daily transactions...", icon: "trend-up" },
+  { label: "Analyzing Payment Methods...", icon: "wallet-money" },
+  { label: "Evaluating Order Fulfillment...", icon: "box-filled" },
+  { label: "Checking Inventory Movement...", icon: "box" },
+  { label: "Generating Daily Insights...", icon: "flash" },
+]
 
 const yesterday = new Date()
 yesterday.setDate(yesterday.getDate() - 1)
@@ -42,30 +54,20 @@ const storeCreatedDate = computed(() => {
 
 const { mutate: generateEODReport, isPending: isGenerating } = useGenerateEODReport()
 
-const {
-  data: latestEODReport,
-  isPending,
-  isFetching,
-  refetch: refetchEODReport,
-} = useGetLatestEODReport(activeDate)
-
 // Check if current day's report is generating
 const isCurrentDayGenerating = computed(() => {
   return reportsStore.isEODReportGenerating(activeDate.value)
 })
 
-watch(
-  () => latestEODReport.value,
-  (newReport) => {
-    if (newReport?.period?.date) {
-      const date = newReport.period.date
-      if (reportsStore.isEODReportGenerating(date)) {
-        reportsStore.removeGeneratingEODReport(date)
-      }
-    }
-  },
-  { immediate: true },
-)
+const {
+  data: latestEODReport,
+  isPending,
+  isFetching,
+  refetch: refetchEODReport,
+} = useGetLatestEODReport(activeDate, {
+  // Poll while generating so the report still appears if the websocket message is missed.
+  refetchInterval: computed(() => (isCurrentDayGenerating.value ? POLL_INTERVAL : false)),
+})
 
 const reportData = computed(() => {
   if (!latestEODReport.value) return null
@@ -73,6 +75,29 @@ const reportData = computed(() => {
   if (typeof latestEODReport.value === "object" && "detail" in latestEODReport.value) return null
   return latestEODReport.value
 })
+
+const isReportReady = computed(() => Boolean(reportData.value) && !isCurrentDayGenerating.value)
+
+const { stepStates, progress, isOverdue, finish } = useReportProgress(
+  STEPS,
+  isCurrentDayGenerating,
+  { startedAt: () => reportsStore.getGeneratingEODReport(activeDate.value)?.startedAt },
+)
+
+// The report can land from a poll or from the websocket invalidating this query. Either
+// way: tick the checklist to complete, then swap the view in — no manual reload.
+watch(
+  () => reportData.value,
+  async (newReport) => {
+    if (!newReport || !isCurrentDayGenerating.value) return
+    await finish()
+    // The query is keyed by `activeDate`, so that is the flag this report resolves —
+    // clearing by the report's own date too, in case the API formats it differently.
+    reportsStore.removeGeneratingEODReport(activeDate.value)
+    if (newReport.period?.date) reportsStore.removeGeneratingEODReport(newReport.period.date)
+  },
+  { immediate: true },
+)
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
 const storeName = computed(() => useSettingsStore().storeDetails?.name || "Store")
@@ -125,6 +150,13 @@ onMounted(() => {
   nextTick(setupSectionObserver)
 })
 
+// The sections only exist once the report is on screen — re-observe whenever it is
+// revealed (first load, a date change, or a generation finishing while we watch).
+watch(isReportReady, (ready) => {
+  if (ready) nextTick(setupSectionObserver)
+  else sectionObserver?.disconnect()
+})
+
 onBeforeUnmount(() => {
   sectionObserver?.disconnect()
 })
@@ -163,14 +195,6 @@ const handleGenerateReport = () => {
     },
   )
 }
-
-const STEPS = computed(() => [
-  { label: "Reviewing daily transactions...", icon: "trend-up" },
-  { label: "Analyzing Payment Methods...", icon: "wallet" },
-  { label: "Evaluating Order Fulfillment...", icon: "box-filled" },
-  { label: "Checking Inventory Movement...", icon: "box" },
-  { label: "Generating Daily Insights...", icon: "bulb" },
-])
 </script>
 
 <template>
@@ -199,7 +223,7 @@ const STEPS = computed(() => [
     </div>
 
     <EmptyState
-      v-if="!reportData || isCurrentDayGenerating || isPending || isFetching"
+      v-if="!isReportReady"
       :title="`${fullDate.split(', ')[1]} Report`"
       :description="
         isCurrentDayGenerating
@@ -207,40 +231,22 @@ const STEPS = computed(() => [
           : `Get a complete breakdown of your revenue, customers, products and profit — with actionable recommendations.`
       "
       class="mt-4"
-      :loading="isPending || isFetching"
+      :loading="isPending && !isCurrentDayGenerating"
     >
       <template #image>
         <img src="@/assets/images/empty-report.svg?url" class="mx-auto mb-4" />
       </template>
 
       <template #action>
-        <div v-if="isCurrentDayGenerating">
-          <div
-            class="w-full divide-y divide-gray-200 rounded-xl border border-gray-100 bg-gray-50 px-4"
-          >
-            <p
-              v-for="step in STEPS"
-              :key="step.label"
-              class="text-core-600 flex items-center gap-4 py-3 text-sm"
-            >
-              <Icon :name="step.icon" size="16" />
-              <span>{{ step.label }}</span>
-              <span class="ml-auto">
-                <Icon
-                  v-if="step.icon == 'trend-up'"
-                  name="check-circle"
-                  size="18"
-                  class="text-primary-600"
-                />
-                <Icon v-else name="loader" size="16" class="text-core-600 animate-spin" />
-              </span>
-            </p>
-          </div>
-
-          <p class="text-core-600 mt-6 text-center text-sm">
-            You can leave this page. We'll notify you when it's ready.
-          </p>
-        </div>
+        <ReportGeneratingSteps
+          v-if="isCurrentDayGenerating"
+          :steps="STEPS"
+          :states="stepStates"
+          :progress="progress"
+          :is-overdue="isOverdue"
+          :is-refreshing="isFetching"
+          @refresh="refetchEODReport()"
+        />
 
         <AppButton
           v-else
