@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Chip from "@components/Chip.vue"
 import EmptyState from "@components/EmptyState.vue"
 import Icon from "@components/Icon.vue"
 import { IEODReport } from "@modules/reports/types"
@@ -38,15 +39,38 @@ defineProps<{ data: IEODReport | null }>()
               />
             </span>
             <div class="flex-1">
-              <h3 class="text-core-800 text-sm font-semibold">
-                {{ issue.type }}
-              </h3>
+              <div class="flex items-center gap-2">
+                <h3 class="text-core-800 text-sm font-semibold capitalize">
+                  {{ issue.title }}
+                </h3>
+                <Chip
+                  :label="issue.priority"
+                  :color="
+                    issue.priority === 'high'
+                      ? 'error'
+                      : issue.priority === 'medium'
+                        ? 'warning'
+                        : 'blue'
+                  "
+                  class="!capitalize"
+                />
+              </div>
               <p class="text-core-700 text-xs">
-                {{ issue.details }}
+                {{ issue.description }}
               </p>
             </div>
-            <span class="text-xs text-gray-600">{{ issue.count }}</span>
-            <!-- TODO: should be time not issue.count -->
+            <span class="text-xs text-gray-600">
+              {{
+                new Date(issue.timestamp).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: true,
+                })
+              }}
+            </span>
           </div>
         </div>
         <EmptyState
