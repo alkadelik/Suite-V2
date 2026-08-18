@@ -59,18 +59,22 @@ defineProps<{ data: IEODReport | null }>()
                 {{ issue.description }}
               </p>
             </div>
-            <span class="text-xs text-gray-600">
-              {{
-                new Date(issue.timestamp).toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  hour12: true,
-                })
-              }}
-            </span>
+            <div>
+              <span class="text-xs text-gray-600">
+                {{
+                  new Date(issue.timestamp).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: true,
+                  })
+                }}
+              </span>
+              <br />
+              <span class="text-sm font-medium"> #{{ issue.order_number }} </span>
+            </div>
           </div>
         </div>
         <EmptyState

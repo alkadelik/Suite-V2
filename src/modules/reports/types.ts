@@ -251,6 +251,7 @@ export interface IEODUnresolvedIssue {
   timestamp: string
   description: string
   priority: "high" | "medium" | "low"
+  order_number: string | null
 }
 
 export interface IEODNarratives {
