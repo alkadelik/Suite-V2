@@ -12,6 +12,9 @@ const baseURL = import.meta.env.VITE_API_BASE_URL as string
 const baseApi = axios.create({
   baseURL: baseURL + "/api/v2",
   headers: { "Content-Type": "application/json" },
+  // Multi-value filters repeat the key (`?status=pending&status=unpaid`), which is
+  // what DRF's `getlist` reads. Axios would otherwise emit `status[]=pending`.
+  paramsSerializer: { indexes: null },
 })
 
 baseApi.interceptors.request.use((config) => {
@@ -118,7 +121,7 @@ baseApi.interceptors.response.use(
 
 export type TQueryArg = {
   url: MaybeRefOrGetter<string>
-  params?: MaybeRefOrGetter<Record<string, string | number | boolean> | undefined>
+  params?: MaybeRefOrGetter<Record<string, string | number | boolean | string[]> | undefined>
   enabled?: MaybeRefOrGetter<boolean>
   key: MaybeRefOrGetter<string>
   selectData?: boolean

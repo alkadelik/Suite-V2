@@ -58,6 +58,18 @@ export function useGetShipments(
   })
 }
 
+/**
+ * Look up the ShipBubble shipment attached to a single order. There is no by-order
+ * endpoint, so the shipments list is searched by order number — the caller still has
+ * to match on the order uid since search is fuzzy.
+ */
+export function useFindOrderShipment() {
+  return useMutation({
+    mutationFn: (orderNumber: string): Promise<{ data: { data?: TShipbubbleShipmentResponse } }> =>
+      baseApi.get(`/shipping/orders/`, { params: { search: orderNumber, limit: 10 } }),
+  })
+}
+
 /** Get Waybill document for a ShipBubble shipment */
 export function useGetWaybillDocument() {
   return useMutation({

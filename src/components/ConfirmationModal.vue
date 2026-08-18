@@ -39,6 +39,8 @@
         variant="filled"
         :class="actionButtonClasses"
         :loading="loading"
+        :disabled="actionDisabled"
+        v-bind="actionAttrs"
         @click="emit('confirm')"
       />
     </div>
@@ -60,6 +62,12 @@ export interface ConfirmationModalProps {
   paragraph?: string
   /** Loading state for the action button */
   loading?: boolean
+
+  /** Disable the action button while the modal stays open (e.g. an expired quote) */
+  actionDisabled?: boolean
+
+  /** Extra attributes for the action button, e.g. a `data-walkthrough` anchor */
+  actionAttrs?: Record<string, string>
   /**
    * The modal variant affecting colors and styling
    * - warning: Yellow/orange color scheme for warnings (default)

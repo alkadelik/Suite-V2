@@ -10,6 +10,7 @@ import { useRouter } from "vue-router"
 import {
   convertNumToPurchaseUnit,
   convertNumToUsageUnit,
+  getMaterialWarnings,
   getPurchaseUnit,
 } from "@modules/production/utils"
 import { floatDecimal } from "@/utils/others"
@@ -22,6 +23,8 @@ const { format } = useFormatCurrency()
 const router = useRouter()
 
 const materialSingular = computed(() => useProductionStore().componentSingular)
+
+const warnings = computed(() => getMaterialWarnings(props.material, materialSingular.value))
 
 const actionMenus = computed(() => [
   {
@@ -77,9 +80,12 @@ const actionMenus = computed(() => [
       <Chip v-if="material.is_sub_assembly" label="Sub-assembly" color="purple" />
       <span class="ml-auto" />
       <Icon
-        v-if="material.low_stock"
+        v-for="warning in warnings"
+        :key="warning.key"
         name="danger"
-        :class="material.low_stock ? 'text-warning-500' : 'text-error-25'"
+        v-tooltip="{ content: warning.tooltip, popperClass: 'text-xs max-w-56' }"
+        :class="['shrink-0', warning.class]"
+        @click.stop
       />
       <DropdownMenu :items="actionMenus" @toggle="emit('toggle')" />
     </div>
