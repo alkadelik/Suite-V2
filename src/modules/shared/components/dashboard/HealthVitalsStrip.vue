@@ -1,16 +1,5 @@
 <template>
   <section>
-    <div class="mb-3 flex items-center justify-between">
-      <h2 class="text-core-800 font-sato text-base font-semibold">
-        <span class="hidden md:inline">Today at a glance</span>
-        <span class="md:hidden">Today's Metrics</span>
-      </h2>
-      <button class="text-core-600 flex items-center gap-1 text-sm md:hidden" type="button">
-        View All
-        <Icon name="chevron-down" size="16" />
-      </button>
-    </div>
-
     <!-- error: compact inline, does not blank the page -->
     <div v-if="error" class="rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-500">
       Couldn't load your metrics right now.
@@ -42,7 +31,6 @@
 </template>
 
 <script setup lang="ts">
-import Icon from "@components/Icon.vue"
 import HealthVitalCard from "./HealthVitalCard.vue"
 import type { IHealthVital } from "./types"
 

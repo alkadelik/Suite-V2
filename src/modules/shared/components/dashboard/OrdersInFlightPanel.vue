@@ -1,7 +1,7 @@
 <template>
   <section>
     <h3 class="text-core-800 font-sato mb-3 text-base font-semibold">Orders in flight</h3>
-    <div class="space-y-3">
+    <div class="space-y-3 rounded-xl border border-gray-200 bg-gray-50 p-3">
       <div
         v-for="item in items"
         :key="item.label"

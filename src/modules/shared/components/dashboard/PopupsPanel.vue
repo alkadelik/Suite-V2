@@ -1,9 +1,12 @@
 <template>
   <section>
-    <h3 class="text-core-800 font-sato mb-3 text-base font-semibold">Popups</h3>
-    <div class="space-y-3">
+    <div class="mb-3 flex items-center justify-between gap-2">
+      <h3 class="text-core-800 font-sato text-base font-semibold">Popups</h3>
+      <SeeAllToggle v-if="hasToggle" :expanded="expanded" @toggle="toggle" />
+    </div>
+    <div class="space-y-3 rounded-xl border border-gray-200 bg-gray-50 p-3">
       <div
-        v-for="popup in popups"
+        v-for="popup in visible"
         :key="popup.id"
         class="flex items-center justify-between rounded-xl border border-gray-100 bg-white px-4 py-3"
       >
@@ -21,7 +24,10 @@
 </template>
 
 <script setup lang="ts">
+import SeeAllToggle from "./SeeAllToggle.vue"
+import { useSeeAll } from "./useSeeAll"
 import type { IPopupStatus } from "./types"
 
-defineProps<{ popups: IPopupStatus[] }>()
+const props = defineProps<{ popups: IPopupStatus[] }>()
+const { visible, hasToggle, expanded, toggle } = useSeeAll(() => props.popups)
 </script>
