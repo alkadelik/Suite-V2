@@ -88,6 +88,11 @@ const settingsRoutes: RouteRecordRaw[] = [
         component: () => import("./views/production.vue"),
       },
       {
+        path: "api-key",
+        name: "ApiKey",
+        component: () => import("./views/api-key.vue"),
+      },
+      {
         path: "domains",
         name: "Domains",
         component: () => import("./views/domains.vue"),
