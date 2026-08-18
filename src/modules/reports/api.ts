@@ -25,9 +25,17 @@ export function useGenerateEODReport() {
   })
 }
 
-/** Get latest End of Day (EOD) report */
-export function useGetLatestEODReport(date?: MaybeRefOrGetter<string>) {
+/**
+ * Get latest End of Day (EOD) report.
+ * `refetchInterval` lets the view poll while a report is generating, so the screen
+ * still fills in if the websocket "ready" notification never lands.
+ */
+export function useGetLatestEODReport(
+  date?: MaybeRefOrGetter<string>,
+  options?: { refetchInterval?: MaybeRefOrGetter<number | false> },
+) {
   return useApiQuery<IEODReport | null>({
+    refetchInterval: options?.refetchInterval,
     key: computed(() => {
       const d = toValue(date)
       return d ? `latestEODReport-${d}` : "latestEODReport"
@@ -55,8 +63,10 @@ export function useGenerateMonthlyReport() {
 /** Get latest Monthly report */
 export function useGetLatestMonthlyReport(
   params?: MaybeRefOrGetter<{ year?: number; month?: number }>,
+  options?: { refetchInterval?: MaybeRefOrGetter<number | false> },
 ) {
   return useApiQuery<IMonthlyReport | null>({
+    refetchInterval: options?.refetchInterval,
     key: computed(() => {
       const p = toValue(params)
       return p?.year && p?.month

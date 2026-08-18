@@ -15,10 +15,22 @@ import MonthlyOperations from "../components/monthly/MonthlyOperations.vue"
 import ReportInsightCard from "../components/ReportInsightCard.vue"
 import { useGenerateMonthlyReport, useGetLatestMonthlyReport } from "../api"
 import { useReportsStore } from "../store"
-import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
 import { useSettingsStore } from "@modules/settings/store"
+import ReportGeneratingSteps from "../components/ReportGeneratingSteps.vue"
+import { useReportProgress } from "../composables/useReportProgress"
 // import { toast } from "@/composables/useToast"
+
+/** Safety net for a missed websocket notification while a report is generating. */
+const POLL_INTERVAL = 15_000
+
+const STEPS = [
+  { label: "Reviewing revenue trends...", icon: "trend-up" },
+  { label: "Analyzing Product Performance...", icon: "box-filled" },
+  { label: "Evaluating Customer Activity...", icon: "user-octagon" },
+  { label: "Identifying Growth Opportunities...", icon: "chart-breakout-square" },
+  { label: "Generating Insights...", icon: "flash" },
+]
 
 const now = new Date()
 const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
@@ -41,37 +53,56 @@ const activeDateParts = computed(() => {
   return { year, month }
 })
 
-const {
-  data: latestMonthlyReport,
-  isPending,
-  isFetching,
-  refetch: refetchSpecificReport,
-} = useGetLatestMonthlyReport(activeDateParts)
-
 // Check if current month's report is generating
 const isCurrentMonthGenerating = computed(() => {
   const { year, month } = activeDateParts.value
   return reportsStore.isReportGenerating(year, month)
 })
 
-watch(
-  () => latestMonthlyReport.value,
-  (newReport) => {
-    if (newReport?.period) {
-      const { year, month } = newReport.period
-      if (reportsStore.isReportGenerating(year, month)) {
-        reportsStore.removeGeneratingReport(year, month)
-      }
-    }
-  },
-  { immediate: true },
-)
+const {
+  data: latestMonthlyReport,
+  isPending,
+  isFetching,
+  refetch: refetchSpecificReport,
+} = useGetLatestMonthlyReport(activeDateParts, {
+  // Poll while generating so the report still appears if the websocket message is missed.
+  refetchInterval: computed(() => (isCurrentMonthGenerating.value ? POLL_INTERVAL : false)),
+})
 
 const reportData = computed(() => {
   if (!latestMonthlyReport.value) return null
   if (latestMonthlyReport.value.detail) return null
   return latestMonthlyReport.value
 })
+
+const isReportReady = computed(() => Boolean(reportData.value) && !isCurrentMonthGenerating.value)
+
+const { stepStates, progress, isOverdue, finish } = useReportProgress(
+  STEPS,
+  isCurrentMonthGenerating,
+  {
+    startedAt: () => {
+      const { year, month } = activeDateParts.value
+      return reportsStore.getGeneratingReport(year, month)?.startedAt
+    },
+  },
+)
+
+// The report can land from a poll or from the websocket invalidating this query. Either
+// way: tick the checklist to complete, then swap the view in — no manual reload.
+watch(
+  () => reportData.value,
+  async (newReport) => {
+    if (!newReport || !isCurrentMonthGenerating.value) return
+    await finish()
+    // The query is keyed by `activeDateParts`, so that is the flag this report resolves.
+    reportsStore.removeGeneratingReport(activeDateParts.value.year, activeDateParts.value.month)
+    if (newReport.period?.year) {
+      reportsStore.removeGeneratingReport(newReport.period.year, newReport.period.month)
+    }
+  },
+  { immediate: true },
+)
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
 const fullMonth = computed(() =>
@@ -127,14 +158,6 @@ const handleGenerate = () => {
     },
   )
 }
-
-const STEPS = computed(() => [
-  { label: "Reviewing revenue trends...", icon: "trend-up" },
-  { label: "Analyzing Product Performance...", icon: "box-filled" },
-  { label: "Evaluating Customer Activity...", icon: "user-octagon" },
-  { label: "Identifying Growth Opportunities...", icon: "box-filled" },
-  { label: "Generating Insights...", icon: "box-filled" },
-])
 </script>
 
 <template>
@@ -163,7 +186,7 @@ const STEPS = computed(() => [
     </div>
 
     <EmptyState
-      v-if="!reportData || isCurrentMonthGenerating || isPending || isFetching"
+      v-if="!isReportReady"
       :title="`${fullMonth} Sales Report`"
       :description="
         isCurrentMonthGenerating
@@ -171,40 +194,22 @@ const STEPS = computed(() => [
           : `Get a complete breakdown of your revenue, customers, products and profit — with actionable recommendations.`
       "
       class="mt-4"
-      :loading="isPending || isFetching"
+      :loading="isPending && !isCurrentMonthGenerating"
     >
       <template #image>
         <img src="@/assets/images/empty-report.svg?url" class="mx-auto mb-4" />
       </template>
 
       <template #action>
-        <div v-if="isCurrentMonthGenerating">
-          <div
-            class="w-full divide-y divide-gray-200 rounded-xl border border-gray-100 bg-gray-50 px-4"
-          >
-            <p
-              v-for="step in STEPS"
-              :key="step.label"
-              class="text-core-600 flex items-center gap-4 py-3 text-sm"
-            >
-              <Icon :name="step.icon" size="16" />
-              <span>{{ step.label }}</span>
-              <span class="ml-auto">
-                <Icon
-                  v-if="step.icon == 'trend-up'"
-                  name="check-circle"
-                  size="18"
-                  class="text-primary-600"
-                />
-                <Icon v-else name="loader" size="16" class="text-core-600 animate-spin" />
-              </span>
-            </p>
-          </div>
-
-          <p class="text-core-600 mt-6 text-center text-sm">
-            You can leave this page. We'll notify you when it's ready.
-          </p>
-        </div>
+        <ReportGeneratingSteps
+          v-if="isCurrentMonthGenerating"
+          :steps="STEPS"
+          :states="stepStates"
+          :progress="progress"
+          :is-overdue="isOverdue"
+          :is-refreshing="isFetching"
+          @refresh="refetchSpecificReport()"
+        />
 
         <AppButton
           v-else
