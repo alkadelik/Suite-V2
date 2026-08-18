@@ -270,3 +270,11 @@ export const MOCK_DNS_RECORDS: TDnsRecord[] = [
   { host: "www", type: "CNAME", value: "shop.your-domain.com", status: "not_found" },
   { host: "@", type: "TXT", value: "leyyow-verify=abc123", status: "not_found" },
 ]
+
+// --- API keys ---
+
+/** Support inbox surfaced when a merchant suspects their API key is compromised. */
+export const SUPPORT_EMAIL = "support@leyyow.com"
+
+/** Prefix the backend is expected to use for live Public API keys. */
+export const API_KEY_PREFIX = "lyw_live"

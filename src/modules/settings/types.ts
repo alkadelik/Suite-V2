@@ -345,3 +345,16 @@ export type TCustomDomain = {
   created_at: string
   updated_at: string
 }
+
+// --- API keys ---
+
+/**
+ * Public API key issued to a store. The backend endpoint does not exist yet, so
+ * this mirrors the shape the UI needs; adjust the field names in `api-key.vue`
+ * once the real payload lands.
+ */
+export type TApiKey = {
+  uid: string
+  key: string
+  created_at: string
+}

@@ -52,6 +52,7 @@ export const SETTINGS_NAVIGATION_LINKS: readonly SettingsNavigationLink[] = [
     path: "/settings/delivery-options",
     icon: "truck-fast-outline",
   },
+  { label: "API Key", path: "/settings/api-key", icon: "key" },
   { label: "Production", path: "/settings/production", icon: "building-outline" },
 ]
 
