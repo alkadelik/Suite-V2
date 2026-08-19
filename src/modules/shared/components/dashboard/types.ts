@@ -170,6 +170,14 @@ export interface IApiEnvelope<T> {
 }
 
 /** GET /health-center/health/ */
+export interface IApiActivePopup {
+  uid: string
+  name: string
+  end_date: string
+  /** "active" | "ended" (or similar). */
+  status: string
+}
+
 export interface IHealthApiData {
   sales: {
     today: string
@@ -179,6 +187,19 @@ export interface IHealthApiData {
     baseline_available: boolean
   }
   low_stock: { product_count: number; material_count: number; total_count: number }
+  deliveries_in_flight: { total: number; failed_count: number; severity: string | null }
+  orders_in_flight: {
+    out_for_delivery: number
+    waiting_to_be_collected: number
+    delivered_today: number
+  }
+  expiry: {
+    batch_count: number
+    value_at_risk: string
+    soonest_days: number | null
+    severity: string | null
+  }
+  active_popups: IApiActivePopup[]
   credit: { total_outstanding: string; aged_subtotal: string }
 }
 
@@ -231,6 +252,8 @@ export interface IApiTask {
   task_type: string
   family: string
   severity: string | null
+  /** "manual" | "shipbubble" | null — drives the delivery-method tag. */
+  delivery_method: string | null
   title_inputs: Record<string, string | number>
   condition_inputs: Record<string, string | number>
   resolving_action: string

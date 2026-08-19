@@ -14,9 +14,10 @@ import type {
   IWorklistResponse,
 } from "./types"
 import {
+  mapActivePopups,
   mapCreditToReceivables,
   mapHealthToVitals,
-  mapPopupsToStatus,
+  mapOrdersInFlight,
   mapRestock,
   mapSummary,
   mapTask,
@@ -98,20 +99,23 @@ export function useGetWorklist() {
   })
 }
 
-/** Awareness rail: receivables + popups (orders-in-flight has no endpoint yet). */
+/**
+ * Awareness rail: receivables (credit/) + orders-in-flight and active popups
+ * (both now on health/).
+ */
 export function useGetAwarenessRail() {
   return useQuery<IAwarenessRail>({
     queryKey: ["dashboard", "rail"],
     queryFn: async () => {
       if (USE_MOCK) return mockResolve(AWARENESS_RAIL_FIXTURE, 450)
-      const [credit, popups] = await Promise.all([
+      const [credit, health] = await Promise.all([
         getData<ICreditApiData>("/health-center/health/credit/"),
-        getData<IApiTasksData>("/health-center/tasks/popups/"),
+        getData<IHealthApiData>("/health-center/health/"),
       ])
       return {
         receivables: mapCreditToReceivables(credit),
-        ordersInFlight: null, // no orders-in-flight endpoint yet
-        popups: mapPopupsToStatus(popups.tasks),
+        ordersInFlight: mapOrdersInFlight(health),
+        popups: mapActivePopups(health),
       }
     },
     refetchOnWindowFocus: false,

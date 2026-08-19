@@ -4,7 +4,7 @@
     <PageHeader title="Home" />
 
     <div class="p-4 pt-5 md:pt-4">
-      <div class="space-y-6">
+      <div class="mx-auto mt-6 max-w-[1400px] space-y-6">
         <!-- Full-width top section -->
         <DashboardGreeting
           :first-name="worklist?.firstName"

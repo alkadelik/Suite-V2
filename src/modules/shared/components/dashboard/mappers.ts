@@ -15,13 +15,16 @@ import type {
   ICreditApiData,
   IHealthApiData,
   IHealthVital,
+  IOrdersInFlight,
   IPopupStatus,
+  ITaskTag,
   IReceivablesPanel,
   ISummaryApiData,
   ITask,
   TaskTone,
   TaskAction,
   UrgencyLevel,
+  VitalStatus,
 } from "./types"
 
 /** Format a naira amount (string or number), guarding against NaN. */
@@ -43,10 +46,21 @@ function urgencyFromAge(age: number): UrgencyLevel {
   return "low"
 }
 
-// ---- Health vitals (GET /health-center/health/) ----
-// The endpoint supplies 4 of the design's 6 vitals. "Deliveries in Flight" and
-// "Nearing Expiry" have no data source yet, so they render in their design
-// positions as 0 placeholders until the backend provides them.
+/** Backend task/vital severity → the vital status colour. */
+function severityToStatus(severity: string | null): VitalStatus {
+  switch (severity) {
+    case "high":
+      return "critical"
+    case "medium":
+      return "warning"
+    case "low":
+      return "positive"
+    default:
+      return "neutral"
+  }
+}
+
+// ---- Health vitals (GET /health-center/health/) — all 6 from live data ----
 export function mapHealthToVitals(h: IHealthApiData): IHealthVital[] {
   const salesToday = parseFloat(h.sales.today)
   const avgRevenue = h.sales.avg_revenue_7d != null ? parseFloat(h.sales.avg_revenue_7d) : null
@@ -85,12 +99,17 @@ export function mapHealthToVitals(h: IHealthApiData): IHealthVital[] {
       trendUp: ordersDelta != null && ordersDelta > 0,
     },
     {
-      // Placeholder — no deliveries-in-flight data source yet.
       key: "deliveries_in_flight",
       label: "Deliveries in Flight",
-      value: "0",
-      status: "neutral",
-      detail: null,
+      value: String(h.deliveries_in_flight.total),
+      status:
+        h.deliveries_in_flight.failed_count > 0
+          ? "critical"
+          : severityToStatus(h.deliveries_in_flight.severity),
+      detail:
+        h.deliveries_in_flight.failed_count > 0
+          ? `${h.deliveries_in_flight.failed_count} failed, needs redelivery`
+          : null,
     },
     {
       key: "low_stock",
@@ -103,12 +122,23 @@ export function mapHealthToVitals(h: IHealthApiData): IHealthVital[] {
           : null,
     },
     {
-      // Placeholder — no nearing-expiry data source yet.
       key: "nearing_expiry",
       label: "Nearing Expiry",
-      value: "₦0",
-      status: "neutral",
-      detail: null,
+      value: money(h.expiry.value_at_risk),
+      status:
+        h.expiry.batch_count > 0
+          ? severityToStatus(h.expiry.severity) === "neutral"
+            ? "warning"
+            : severityToStatus(h.expiry.severity)
+          : "neutral",
+      detail:
+        h.expiry.batch_count > 0
+          ? `${h.expiry.batch_count} ${h.expiry.batch_count === 1 ? "batch" : "batches"}${
+              h.expiry.soonest_days != null
+                ? `, ${h.expiry.soonest_days} ${pluralize("day", h.expiry.soonest_days)} left`
+                : ""
+            }`
+          : null,
     },
     {
       key: "owed_to_you",
@@ -118,6 +148,27 @@ export function mapHealthToVitals(h: IHealthApiData): IHealthVital[] {
       detail: aged > 0 ? `${money(h.credit.aged_subtotal)} over 30 days` : null,
     },
   ]
+}
+
+// ---- Rail: orders in flight + active popups (both on GET /health-center/health/) ----
+export function mapOrdersInFlight(h: IHealthApiData): IOrdersInFlight {
+  return {
+    outForDelivery: h.orders_in_flight.out_for_delivery,
+    waitingToBeCollected: h.orders_in_flight.waiting_to_be_collected,
+    deliveredToday: h.orders_in_flight.delivered_today,
+  }
+}
+
+export function mapActivePopups(h: IHealthApiData): IPopupStatus[] {
+  return h.active_popups.map((p) => {
+    const active = p.status === "active"
+    return {
+      id: p.uid,
+      name: p.name,
+      statusLabel: `${active ? "ends" : "ended"} ${formatDate(p.end_date)}`,
+      active,
+    }
+  })
 }
 
 // ---- Summary line (GET /health-center/summary/) ----
@@ -194,6 +245,18 @@ function fallbackAction(resolving: string): { action: TaskAction; label: string 
   return ACTION_MAP[resolving] ?? { action: "mark_sent", label: "Resolve" }
 }
 
+/** delivery_method → the leading "Manual Delivery" / "Shipbubble" chip. */
+function deliveryTags(task: IApiTask): ITaskTag[] {
+  switch (task.delivery_method) {
+    case "manual":
+      return [{ label: "Manual Delivery", color: "error", dot: true }]
+    case "shipbubble":
+      return [{ label: "Shipbubble", color: "warning", dot: true }]
+    default:
+      return []
+  }
+}
+
 export function mapTask(task: IApiTask): ITask {
   const meta = TASK_TYPE_META[task.task_type]
   const act = fallbackAction(task.resolving_action)
@@ -230,7 +293,7 @@ export function mapTask(task: IApiTask): ITask {
       variant: "aggregate",
       title,
       subtitle: `${rows.length} ${pluralize("order", rows.length)}  •  ${money(total)} across them`,
-      tags: [],
+      tags: deliveryTags(task),
       tone,
       bulkActionLabel: null,
       rows: rows.map((r) => ({
