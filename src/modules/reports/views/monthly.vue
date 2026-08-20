@@ -13,12 +13,17 @@ import MonthlyCustomer from "../components/monthly/MonthlyCustomer.vue"
 import MonthlyProducts from "../components/monthly/MonthlyProducts.vue"
 import MonthlyOperations from "../components/monthly/MonthlyOperations.vue"
 import ReportInsightCard from "../components/ReportInsightCard.vue"
-import { useGenerateMonthlyReport, useGetLatestMonthlyReport } from "../api"
+import {
+  useGenerateMonthlyReport,
+  useGetLatestMonthlyReport,
+  useGetMonthlyReportById,
+} from "../api"
 import { useReportsStore } from "../store"
 import AppButton from "@components/AppButton.vue"
 import { useSettingsStore } from "@modules/settings/store"
 import ReportGeneratingSteps from "../components/ReportGeneratingSteps.vue"
 import { useReportProgress } from "../composables/useReportProgress"
+import { useRoute, useRouter } from "vue-router"
 // import { toast } from "@/composables/useToast"
 
 /** Safety net for a missed websocket notification while a report is generating. */
@@ -39,6 +44,12 @@ const activeDate = ref(lastMonthStr)
 
 const reportsStore = useReportsStore()
 const settingsStore = useSettingsStore()
+const route = useRoute()
+const router = useRouter()
+
+// `?id=` (e.g. from a notification link) points at one specific report. Its month is
+// unknown until it loads, so that report — not the month picker — drives the screen.
+const reportId = computed(() => (route.query.id ? String(route.query.id) : ""))
 
 const storeCreatedDate = computed(() => {
   if (!settingsStore.storeDetails?.created_at) return undefined
@@ -61,19 +72,53 @@ const isCurrentMonthGenerating = computed(() => {
 
 const {
   data: latestMonthlyReport,
-  isPending,
+  isPending: isPendingLatest,
   isFetching,
   refetch: refetchSpecificReport,
 } = useGetLatestMonthlyReport(activeDateParts, {
   // Poll while generating so the report still appears if the websocket message is missed.
   refetchInterval: computed(() => (isCurrentMonthGenerating.value ? POLL_INTERVAL : false)),
+  enabled: computed(() => !reportId.value),
 })
 
+const { data: monthlyReportById, isPending: isPendingById } = useGetMonthlyReportById(reportId)
+
+const isPending = computed(() => (reportId.value ? isPendingById.value : isPendingLatest.value))
+
 const reportData = computed(() => {
-  if (!latestMonthlyReport.value) return null
-  if (latestMonthlyReport.value.detail) return null
-  return latestMonthlyReport.value
+  const report = reportId.value ? monthlyReportById.value : latestMonthlyReport.value
+  if (!report) return null
+  if (report.detail) return null
+  return report
 })
+
+// The month picker is meaningless until we know which month the report covers, so it
+// stays hidden while a report fetched by id is still in flight. It comes back once the
+// fetch settles — including on failure, so a bad id does not strand the user.
+const isResolvingReportId = computed(() => Boolean(reportId.value) && isPendingById.value)
+const showDateSelector = computed(() => !isResolvingReportId.value)
+
+// Follow the loaded report's own month, so the header and any later month change start
+// from the right period.
+watch(
+  () => monthlyReportById.value,
+  (report) => {
+    const period = report && !report.detail ? report.period : undefined
+    if (period?.year && period?.month) {
+      activeDate.value = `${period.year}-${String(period.month).padStart(2, "0")}`
+    }
+  },
+)
+
+// Picking a month drops the pinned report and goes back to the latest-for-that-month query.
+const onChangeDate = (value: string) => {
+  activeDate.value = value
+  if (reportId.value) {
+    const query = { ...route.query }
+    delete query.id
+    router.replace({ query })
+  }
+}
 
 const isReportReady = computed(() => Boolean(reportData.value) && !isCurrentMonthGenerating.value)
 
@@ -117,6 +162,12 @@ const dateRange = computed(() => {
   const lastMonthName = lastDay.toLocaleDateString("en-US", { month: "long" })
   return `${monthName} 1 - ${lastMonthName} ${lastDay.getDate()}, ${year}`
 })
+
+// While `?id=` is resolving the month is not known yet — do not show a placeholder one.
+const title = computed(() =>
+  isResolvingReportId.value ? "Monthly Sales Report" : `${fullMonth.value} Sales Report`,
+)
+const subtitle = computed(() => (isResolvingReportId.value ? "" : dateRange.value))
 
 const activeSection = ref("summary")
 
@@ -162,26 +213,29 @@ const handleGenerate = () => {
 
 <template>
   <div class="p-4">
-    <PageHeader v-if="isMobile" :title="`${fullMonth} Sales Report`" />
-    <SectionHeader v-else :title="`${fullMonth} Sales Report`" :subtitle="dateRange">
+    <PageHeader v-if="isMobile" :title="title" />
+    <SectionHeader v-else :title="title" :subtitle="subtitle">
       <template #action>
         <TextField
+          v-if="showDateSelector"
           type="month"
           size="sm"
-          v-model="activeDate"
+          :model-value="activeDate"
           :max="lastMonthStr"
           :min="storeCreatedDate"
+          @update:model-value="onChangeDate"
         />
       </template>
     </SectionHeader>
 
-    <div v-if="isMobile" class="flex justify-end pt-4">
+    <div v-if="isMobile && showDateSelector" class="flex justify-end pt-4">
       <TextField
         type="month"
         size="sm"
-        v-model="activeDate"
+        :model-value="activeDate"
         :max="lastMonthStr"
         :min="storeCreatedDate"
+        @update:model-value="onChangeDate"
       />
     </div>
 
