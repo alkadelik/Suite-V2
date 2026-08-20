@@ -276,5 +276,11 @@ export const MOCK_DNS_RECORDS: TDnsRecord[] = [
 /** Support inbox surfaced when a merchant suspects their API key is compromised. */
 export const SUPPORT_EMAIL = "support@leyyow.com"
 
-/** Prefix the backend is expected to use for live Public API keys. */
-export const API_KEY_PREFIX = "lyw_live"
+/** Prefix the backend uses for Public API keys (verified: `lyw_k5hl3TA3BoJ5…`). */
+export const API_KEY_PREFIX = "lyw_"
+
+/**
+ * The design exposes no name field, but the API accepts (and rotate preserves)
+ * one, so every key we create gets this label.
+ */
+export const DEFAULT_API_KEY_NAME = "Storefront key"

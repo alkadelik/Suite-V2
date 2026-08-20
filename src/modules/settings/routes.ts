@@ -1,4 +1,6 @@
 import type { RouteRecordRaw } from "vue-router"
+import { useUserRoles } from "@/composables/useUserRoles"
+import { useSettingsStore } from "./store"
 
 const settingsRoutes: RouteRecordRaw[] = [
   {
@@ -91,6 +93,14 @@ const settingsRoutes: RouteRecordRaw[] = [
         path: "api-key",
         name: "ApiKey",
         component: () => import("./views/api-key.vue"),
+        // Owner-only, HQ-only. The nav link is hidden for everyone else, but a
+        // hidden link is not access control — this stops a typed URL reaching a
+        // page whose every request the backend would reject anyway.
+        beforeEnter: () => {
+          const { isOwner } = useUserRoles()
+          const isHq = Boolean(useSettingsStore().activeLocation?.is_hq)
+          return isOwner.value && isHq ? true : { path: "/settings" }
+        },
       },
       {
         path: "domains",
