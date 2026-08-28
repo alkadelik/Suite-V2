@@ -51,6 +51,8 @@ export type TOrder = {
   location: string
   location_name: string
   memos_count: number
+  /** Count of memos still open on the order */
+  open_memos_count?: number
   outstanding_balance: number
   payment_status: "unpaid" | "paid" | "partially_paid"
   payment_source?: string
@@ -145,12 +147,24 @@ export type TOrderResponse = {
   previous: string | null
 }
 
+/** Party a memo was resolved by */
+export type TMemoParty = "merchant" | "customer"
+
+/** Party a memo is awaiting action from */
+export type TMemoAwaiting = TMemoParty | "nobody"
+
 export type TOrderMemo = {
   uid: string
   title?: string
-  status: "merchant-action" | "customer-action"
+  awaiting: TMemoAwaiting
+  status: "open" | "resolved"
   severity: "low" | "medium" | "high"
   content: string
+  /** Optional note recorded when the memo was resolved */
+  resolution_note: string | null
+  resolved_at: string | null
+  resolved_by: TMemoParty | null
+  resolved_by_name: string | null
   author: string
   author_name: string
   author_email: string
@@ -196,9 +210,14 @@ export interface IPaymentPayload {
 
 export interface IMemoPayload {
   title: string
-  status: string
+  awaiting: TMemoAwaiting
   severity: "low" | "medium" | "high"
   content: string
+}
+
+export interface IResolveMemoPayload {
+  resolved_by: TMemoParty
+  note?: string
 }
 
 export interface OrderDashboardStats {
