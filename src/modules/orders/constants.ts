@@ -1,5 +1,6 @@
 import type { TCustomer } from "@modules/customers/types"
 import type {
+  TMemoParty,
   TOrder,
   TOrderChannel,
   TOrderPaymentMethod,
@@ -164,4 +165,12 @@ export const SHIPMENT_STATUS_OPTIONS: { label: string; value: string }[] = [
   { label: "In Transit", value: "in_transit" },
   { label: "Delivered", value: "delivered" },
   { label: "Cancelled", value: "cancelled" },
+]
+
+export type TMemoPartyOption = { label: string; value: TMemoParty }
+
+/** Parties a memo can be resolved by — shared by the memo card select and the resolve modal */
+export const MEMO_PARTY_OPTIONS: TMemoPartyOption[] = [
+  { label: "Merchant", value: "merchant" },
+  { label: "Customer", value: "customer" },
 ]

@@ -10,6 +10,7 @@ import { computed, ref, watch } from "vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import Chip from "@components/Chip.vue"
 import { TOrder, TShipmentRow } from "../types"
+import { TableColumn } from "@components/DataTable.vue"
 import { toShipmentRow } from "../utilities"
 import ShipmentDetailsDrawer from "../components/shipments/ShipmentDetailsDrawer.vue"
 import CreateOrderDrawer from "../components/CreateOrderDrawer.vue"
@@ -64,6 +65,21 @@ const openCancel = ref(false)
 const markPaidMethod = ref(ORDER_PAYMENT_METHODS[0])
 const selectedOrder = ref<TOrder | null>(null)
 const status = ref(ORDER_STATUS_TAB[0].key)
+
+/** Open-memo flag sits in its own unlabelled column, just before Actions */
+const orderColumns = computed(() => {
+  const columns = ORDER_COLUMNS.filter((v) =>
+    status.value === "voided" ? v.accessor !== "actions" : true,
+  )
+  const actionsIndex = columns.findIndex((v) => v.accessor === "actions")
+  const memoColumn: TableColumn<TOrder> = { header: "", accessor: "open_memos" }
+
+  return actionsIndex === -1
+    ? [...columns, memoColumn]
+    : [...columns.slice(0, actionsIndex), memoColumn, ...columns.slice(actionsIndex)]
+})
+
+const openMemoCount = (order: TOrder) => order.open_memos_count ?? 0
 
 const { format } = useFormatCurrency()
 const queryClient = useQueryClient()
@@ -672,9 +688,7 @@ const handleCloseShipmentDetails = () => {
         <DataTable
           :key="status"
           :data="orders?.results ?? []"
-          :columns="
-            ORDER_COLUMNS.filter((v) => (status === 'voided' ? v.accessor !== 'actions' : true))
-          "
+          :columns="orderColumns"
           fix-last-column
           :loading="isFetching"
           :enable-row-selection="false"
@@ -715,6 +729,9 @@ const handleCloseShipmentDetails = () => {
               />
               <Icon v-if="item.memos_count" name="note-2" size="20" class="text-primary-600" />
             </div>
+          </template>
+          <template #cell:open_memos="{ item }">
+            <Chip v-if="openMemoCount(item)" :label="`${openMemoCount(item)} open`" color="blue" />
           </template>
           <template #cell:fulfilment_status="{ item }">
             <Chip

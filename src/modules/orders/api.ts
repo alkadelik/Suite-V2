@@ -3,6 +3,7 @@ import {
   IMemoPayload,
   IPaymentHistory,
   IPaymentPayload,
+  IResolveMemoPayload,
   OrderDashboardStats,
   OrderPayload,
   TBookedShipment,
@@ -141,6 +142,22 @@ export function useGetOrderMemos(id: MaybeRefOrGetter<string>) {
     url: computed(() => `/orders/${toValue(id)}/memos/`),
     key: computed(() => `orderMemos_${toValue(id)}`),
     selectData: true,
+  })
+}
+
+/** Resolve an open order memo, optionally recording how it was resolved */
+export function useResolveOrderMemo() {
+  return useMutation({
+    mutationFn: ({ id, memoId, body }: { id: string; memoId: string; body: IResolveMemoPayload }) =>
+      baseApi.post(`/orders/${id}/memos/${memoId}/resolve/`, body),
+  })
+}
+
+/** Reopen a resolved order memo, clearing its resolution state */
+export function useReopenOrderMemo() {
+  return useMutation({
+    mutationFn: ({ id, memoId }: { id: string; memoId: string }) =>
+      baseApi.post(`/orders/${id}/memos/${memoId}/reopen/`, {}),
   })
 }
 

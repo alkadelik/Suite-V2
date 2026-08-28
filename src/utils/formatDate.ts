@@ -161,3 +161,23 @@ export function calculateDateRange(rangeType: DateRangeType): DateRangeResult {
 function formatDateToYYYYMMDD(date: Date): string {
   return date.toLocaleDateString("en-CA") // Format as YYYY-MM-DD
 }
+
+/**
+ * Compact relative time label, e.g. "today", "1d ago", "6d ago", "3w ago"
+ * Falls back to an absolute date beyond a month.
+ */
+export const getRelativeTimeLabel = (inputDate: string | number | Date): string => {
+  const date = new Date(inputDate)
+  if (isNaN(date.getTime())) return ""
+
+  const oneDay = 1000 * 60 * 60 * 24
+  const diffInDays = Math.floor(
+    (new Date().setHours(0, 0, 0, 0) - new Date(date).setHours(0, 0, 0, 0)) / oneDay,
+  )
+
+  if (diffInDays <= 0) return "today"
+  if (diffInDays < 7) return `${diffInDays}d ago`
+  if (diffInDays < 30) return `${Math.floor(diffInDays / 7)}w ago`
+
+  return formatDate(date)
+}
