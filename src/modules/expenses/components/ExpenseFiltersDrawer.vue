@@ -5,34 +5,25 @@ import Drawer from "@components/Drawer.vue"
 import SelectField from "@components/form/SelectField.vue"
 import TextField from "@components/form/TextField.vue"
 import { computed, ref, watch } from "vue"
-import { useGetExpenseCategories } from "../api"
-import { useExpenseStore } from "../store"
+import { useExpenseCategories } from "../composables"
 import type { TChipColor } from "@modules/shared/types"
-import RadioInputField from "@components/form/RadioInputField.vue"
+import type { TExpenseFilters } from "../types"
 
-defineProps<{ open: boolean }>()
+const props = defineProps<{
+  open: boolean
+  /** Payables fixes the status itself, so the facet would only contradict the tab */
+  hideStatus?: boolean
+  /** A payables bucket (Taxes/Shipping) already is a category filter — only amount is left */
+  hideCategories?: boolean
+}>()
 const emit = defineEmits<{
   close: []
-  apply: [filters: Record<string, string>]
+  apply: [filters: TExpenseFilters]
 }>()
 
-const expenseStore = useExpenseStore()
-const { data: apiCategories } = useGetExpenseCategories(
-  computed(() => !expenseStore.hasCategories()),
-)
-const expCategories = computed(() => {
-  if (expenseStore.categories && expenseStore.categories.length > 0) {
-    return expenseStore.categories
-  }
-  return apiCategories.value?.results || []
-})
-watch(
-  () => apiCategories.value,
-  (data) => {
-    if (data?.results && data.results.length > 0) expenseStore.setCategories(data.results)
-  },
-  { immediate: true },
-)
+type TOption = { label: string; value: string }
+
+const { categories: expCategories } = useExpenseCategories()
 
 const STATUS_OPTIONS: { value: string; label: string; color: TChipColor }[] = [
   { value: "pending", label: "Pending", color: "primary" },
@@ -41,13 +32,16 @@ const STATUS_OPTIONS: { value: string; label: string; color: TChipColor }[] = [
   { value: "void", label: "Void", color: "warning" },
 ]
 
-const selectedStatus = ref<string | null>(null)
+const selectedStatuses = ref<string[]>([])
 
 const toggleStatus = (value: string) => {
-  selectedStatus.value = selectedStatus.value === value ? null : value
+  const index = selectedStatuses.value.indexOf(value)
+  if (index === -1) selectedStatuses.value.push(value)
+  else selectedStatuses.value.splice(index, 1)
 }
-const selectedCategory = ref<{ label: string; value: string } | null>(null)
-const selectedSubCategory = ref<{ label: string; value: string } | null>(null)
+
+const selectedCategories = ref<TOption[]>([])
+const selectedSubCategories = ref<TOption[]>([])
 const minAmount = ref("")
 const maxAmount = ref("")
 
@@ -55,35 +49,64 @@ const categoriesOptions = computed(() =>
   expCategories.value.map((cat) => ({ label: cat.name, value: cat.uid })),
 )
 
+// Sub-categories belong to exactly one parent, so `category=A&category=B&sub_category=X`
+// would silently collapse to A's X only. Sub-category filtering is therefore offered
+// only while a single category is picked — pick more and the field switches off.
+const singleCategory = computed(() =>
+  selectedCategories.value.length === 1 ? selectedCategories.value[0] : null,
+)
+
 const subCategoriesOptions = computed(() => {
-  if (!selectedCategory.value?.value) return []
-  const cat = expCategories.value.find((c) => c.uid === selectedCategory.value!.value)
+  if (!singleCategory.value) return []
+  const cat = expCategories.value.find((c) => c.uid === singleCategory.value!.value)
   return cat?.sub_categories?.map((s) => ({ label: s.name, value: s.uid })) || []
 })
 
 const hasSubCategories = computed(() => subCategoriesOptions.value.length > 0)
 
-watch(selectedCategory, (newVal, oldVal) => {
-  if (oldVal?.value && newVal?.value !== oldVal?.value) {
-    selectedSubCategory.value = null
-  }
+const subCategoryHint = computed(() => {
+  if (selectedCategories.value.length > 1) return "Available when a single category is selected."
+  if (!selectedCategories.value.length) return "Select a category first."
+  if (!hasSubCategories.value) return "This category has no sub-categories."
+  return undefined
 })
 
-const activeFilterCount = computed(() => {
-  let count = 0
-  if (selectedStatus.value) count++
-  if (selectedCategory.value?.value) count++
-  if (selectedSubCategory.value?.value) count++
-  if (minAmount.value) count++
-  if (maxAmount.value) count++
-  return count
+// Leaving single-category mode (or switching which one it is) invalidates any picked
+// sub-categories, so drop them rather than keep an unreachable filter around.
+watch(singleCategory, (category, previous) => {
+  if (category?.value !== previous?.value) selectedSubCategories.value = []
 })
+
+// A hidden facet must stop counting and stop being applied, or the tab would carry an
+// invisible filter the merchant can't see or clear.
+watch(
+  () => props.hideCategories,
+  (hidden) => {
+    if (!hidden) return
+    selectedCategories.value = []
+    selectedSubCategories.value = []
+  },
+  { immediate: true },
+)
+
+const activeFilterCount = computed(
+  () =>
+    (props.hideStatus ? 0 : selectedStatuses.value.length) +
+    (props.hideCategories
+      ? 0
+      : selectedCategories.value.length + selectedSubCategories.value.length) +
+    (minAmount.value ? 1 : 0) +
+    (maxAmount.value ? 1 : 0),
+)
 
 const applyFilters = () => {
-  const filters: Record<string, string> = {}
-  if (selectedStatus.value) filters.status = selectedStatus.value
-  if (selectedCategory.value?.value) filters.category = selectedCategory.value.value
-  if (selectedSubCategory.value?.value) filters.sub_category = selectedSubCategory.value.value
+  const filters: TExpenseFilters = {}
+  if (!props.hideStatus && selectedStatuses.value.length)
+    filters.status = [...selectedStatuses.value]
+  if (!props.hideCategories && selectedCategories.value.length)
+    filters.category = selectedCategories.value.map((c) => c.value)
+  if (!props.hideCategories && selectedSubCategories.value.length)
+    filters.sub_category = selectedSubCategories.value.map((s) => s.value)
   if (minAmount.value) filters.min_amount = minAmount.value
   if (maxAmount.value) filters.max_amount = maxAmount.value
   emit("apply", filters)
@@ -91,9 +114,9 @@ const applyFilters = () => {
 }
 
 const clearFilters = () => {
-  selectedStatus.value = null
-  selectedCategory.value = null
-  selectedSubCategory.value = null
+  selectedStatuses.value = []
+  selectedCategories.value = []
+  selectedSubCategories.value = []
   minAmount.value = ""
   maxAmount.value = ""
   emit("apply", {})
@@ -105,59 +128,68 @@ const clearFilters = () => {
   <Drawer :open="open" title="Filter Expenses" max-width="lg" @close="emit('close')">
     <div class="space-y-6">
       <!-- Status -->
-      <div>
+      <div v-if="!hideStatus">
         <h3 class="text-core-700 mb-3 text-sm font-semibold">Status</h3>
-        <RadioInputField
-          :model-value="selectedStatus ?? ''"
-          :options="STATUS_OPTIONS"
-          options-container-class="grid! grid-cols-2!"
-          @update:model-value="(v) => toggleStatus(v as string)"
-        >
-          <template #content="{ option }">
+        <div class="grid grid-cols-2 gap-4">
+          <button
+            v-for="option in STATUS_OPTIONS"
+            :key="option.value"
+            type="button"
+            :class="[
+              'flex w-full items-center rounded-xl border px-4 py-3 transition-all',
+              selectedStatuses.includes(option.value)
+                ? 'border-primary-700 bg-primary-25'
+                : 'border-gray-400 bg-gray-50 hover:border-gray-500',
+            ]"
+            @click="toggleStatus(option.value)"
+          >
             <Chip
               :label="option.label"
               :color="option.color as TChipColor"
-              :variant="selectedStatus === option.value ? 'filled' : 'outlined'"
+              :variant="selectedStatuses.includes(option.value) ? 'filled' : 'outlined'"
               show-dot
               size="sm"
               class="pointer-events-none w-full justify-center"
             />
-          </template>
-        </RadioInputField>
+          </button>
+        </div>
       </div>
 
-      <div class="border-b border-gray-100" />
+      <div v-if="!hideStatus" class="border-b border-gray-100" />
 
       <!-- Category -->
-      <div>
+      <div v-if="!hideCategories">
         <h3 class="text-core-700 mb-3 text-sm font-semibold">Category</h3>
         <SelectField
-          v-model="selectedCategory"
-          placeholder="Select a category"
+          v-model="selectedCategories"
+          placeholder="Select categories"
           :options="categoriesOptions"
           value-key="value"
           label-key="label"
+          multiple
           clearable
           searchable
         />
       </div>
 
       <!-- Sub-category -->
-      <div>
+      <div v-if="!hideCategories">
         <h3 class="text-core-700 mb-3 text-sm font-semibold">Sub-category</h3>
         <SelectField
-          v-model="selectedSubCategory"
-          placeholder="Select a sub-category"
+          v-model="selectedSubCategories"
+          placeholder="Select sub-categories"
           :options="subCategoriesOptions"
           value-key="value"
           label-key="label"
+          multiple
           clearable
           searchable
           :disabled="!hasSubCategories"
+          :hint="subCategoryHint"
         />
       </div>
 
-      <div class="border-b border-gray-100" />
+      <div v-if="!hideCategories" class="border-b border-gray-100" />
 
       <!-- Amount Range -->
       <div>

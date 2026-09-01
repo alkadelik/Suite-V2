@@ -260,7 +260,7 @@ export function useVariantValidation(options: IVariantValidationOptions) {
        * field is actually editable — the edit drawer disables cost price in most modes, and
        * requiring a disabled field would make the drawer impossible to submit.
        */
-      requireCostPrice: boolean
+      requireCostPrice?: boolean
     },
     variantsToValidate: IProductVariant[] = variants.value,
   ): ICurrentProductStepValidation => {
@@ -307,19 +307,20 @@ export function useVariantValidation(options: IVariantValidationOptions) {
         firstErrorTarget ??= `variant-opening-stock-${index}`
       }
 
-      // Cost price rules, in precedence order: a hard requirement (requireCost) errors on any
-      // missing/invalid value; otherwise a present value must parse; otherwise, where enabled
-      // (requireCostPrice), a variant that carries stock must have one. Simple products validate
-      // here too — they are represented as a single variant — so this covers both simple and
-      // variable products.
-      if (config.requireCost && !isValidNonNegativeNumber(variant.cost_price)) {
-        errors.variants[index].cost_price = "Enter a valid cost price."
-        firstErrorTarget ??= `variant-cost-price-${index}`
-      } else if (variant.cost_price && variant.cost_price.trim() !== "") {
+      // Cost-price rules (reconciled across branches):
+      //  - If a cost price is entered, it must be a valid non-negative number.
+      //  - If it's missing, it's required either when the field is always mandatory
+      //    (requireCost, e.g. the new-variant pricing step) or when the variant
+      //    carries stock (requireCostPrice — simple products validate here too, as a
+      //    single variant, covering both simple and variable products).
+      if (variant.cost_price && variant.cost_price.trim() !== "") {
         if (!isValidNonNegativeNumber(variant.cost_price)) {
           errors.variants[index].cost_price = "Enter a valid cost price."
           firstErrorTarget ??= `variant-cost-price-${index}`
         }
+      } else if (config.requireCost) {
+        errors.variants[index].cost_price = "Enter a valid cost price."
+        firstErrorTarget ??= `variant-cost-price-${index}`
       } else if (config.requireCostPrice && hasStockQuantity(variant.opening_stock)) {
         errors.variants[index].cost_price = "Enter a cost price for items with stock."
         firstErrorTarget ??= `variant-cost-price-${index}`

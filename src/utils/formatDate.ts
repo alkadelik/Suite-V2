@@ -77,6 +77,26 @@ export const checkIfDateIsPast = (date: CheckIfDateIsPastParams["date"]): boolea
   return new Date(date) < today
 }
 
+/**
+ * Turns an hour count into a coarse countdown label — "6 days", "23 hours",
+ * "45 mins". Rounds down so an "expires in" label never over-promises.
+ */
+export const formatHoursRemaining = (hours: number | string | null | undefined): string => {
+  const value = Number(hours)
+  if (!Number.isFinite(value) || value <= 0) return ""
+
+  if (value >= 24) {
+    const days = Math.floor(value / 24)
+    return `${days} ${days === 1 ? "day" : "days"}`
+  }
+  if (value >= 1) {
+    const whole = Math.floor(value)
+    return `${whole} ${whole === 1 ? "hour" : "hours"}`
+  }
+  const mins = Math.max(1, Math.floor(value * 60))
+  return `${mins} ${mins === 1 ? "min" : "mins"}`
+}
+
 export type DateRangeType =
   | "last_7_days"
   | "this_month"
@@ -140,4 +160,24 @@ export function calculateDateRange(rangeType: DateRangeType): DateRangeResult {
  */
 function formatDateToYYYYMMDD(date: Date): string {
   return date.toLocaleDateString("en-CA") // Format as YYYY-MM-DD
+}
+
+/**
+ * Compact relative time label, e.g. "today", "1d ago", "6d ago", "3w ago"
+ * Falls back to an absolute date beyond a month.
+ */
+export const getRelativeTimeLabel = (inputDate: string | number | Date): string => {
+  const date = new Date(inputDate)
+  if (isNaN(date.getTime())) return ""
+
+  const oneDay = 1000 * 60 * 60 * 24
+  const diffInDays = Math.floor(
+    (new Date().setHours(0, 0, 0, 0) - new Date(date).setHours(0, 0, 0, 0)) / oneDay,
+  )
+
+  if (diffInDays <= 0) return "today"
+  if (diffInDays < 7) return `${diffInDays}d ago`
+  if (diffInDays < 30) return `${Math.floor(diffInDays / 7)}w ago`
+
+  return formatDate(date)
 }

@@ -164,7 +164,7 @@
           }
         ],
         "walkthrough": {
-          "version": "shipments-v1",
+          "version": "shipments-v2",
           "backdrop": false,
           "steps": [
             {
@@ -216,28 +216,14 @@
               "advanceOn": "shipment-create-opened"
             },
             {
-              "id": "shipment-review",
-              "route": "/shipments",
-              "anchor": "shipment-review",
-              "placement": "left",
-              "mobileDock": "bottom",
-              "title": "Review shipment details",
-              "body": "Confirm the shipping information before creating the shipment. We've pre-filled this example so you can focus on understanding the process.",
-              "highlight": {
-                "mode": "spotlight",
-                "padding": 4,
-                "radius": "target"
-              }
-            },
-            {
               "id": "shipment-confirm",
               "route": "/shipments",
               "anchor": "shipment-submit-btn",
               "placement": "top",
               "mobileDock": "above-target",
-              "title": "Create the shipment",
-              "body": "Everything looks good. Create the shipment to start tracking its delivery.",
-              "instruction": "Click the \"Create Shipment\" button to continue.",
+              "title": "Pay the shipping fee",
+              "body": "Shipping fees are settled when the shipment is created. Continue to payment to book this shipment and start tracking its delivery.",
+              "instruction": "Click the \"Continue to Payment\" button to continue.",
               "highlight": {
                 "mode": "outline",
                 "color": "#F9B324",
