@@ -151,7 +151,12 @@
           :total-page-count="Math.ceil((products?.data?.count || 0) / itemsPerPage) || 1"
           :server-pagination="true"
           @row-click="handleRowClick"
-          @pagination-change="(d) => (page = d.currentPage)"
+          @pagination-change="
+            (d) => {
+              page = d.currentPage
+              itemsPerPage = d.itemsPerPage
+            }
+          "
         >
           <template #cell:name="{ item }">
             <div class="flex min-w-0 items-center gap-2">

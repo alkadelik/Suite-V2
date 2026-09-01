@@ -25,6 +25,7 @@ import {
   useDeleteRawMaterial,
 } from "@modules/production/api"
 import { componentOptions, RAW_MATERIALS_COLUMN } from "@modules/production/constant"
+import { getMaterialWarnings } from "@modules/production/utils"
 import RawMaterialCard from "@modules/production/components/raw-material/RawMaterialCard.vue"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
 import { displayError } from "@/utils/error-handler"
@@ -304,7 +305,12 @@ const handleDelete = () => {
             :total-items-count="rawMaterials?.count || 0"
             :total-page-count="Math.ceil((rawMaterials?.count || 0) / itemsPerPage) || 1"
             :server-pagination="true"
-            @pagination-change="(d) => (page = d.currentPage)"
+            @pagination-change="
+              (d) => {
+                page = d.currentPage
+                itemsPerPage = d.itemsPerPage
+              }
+            "
             @row-click="(row) => $router.push(`/production/raw-materials/${row.uid}`)"
           >
             <template #cell:name="{ item }">
@@ -317,8 +323,18 @@ const handleDelete = () => {
                 <h4 class="!font-outfit truncate text-left text-sm font-medium capitalize">
                   {{ item.name }}
                 </h4>
-                <Icon v-if="item.low_stock" name="danger" :class="'text-warning-500'" />
-                <Chip v-else-if="item.is_sub_assembly" color="purple" label="Sub-assembly" />
+                <Icon
+                  v-for="warning in getMaterialWarnings(item, materialSingular)"
+                  :key="warning.key"
+                  name="danger"
+                  v-tooltip="{ content: warning.tooltip, popperClass: 'text-xs max-w-56' }"
+                  :class="['shrink-0 cursor-pointer', warning.class]"
+                />
+                <Chip
+                  v-if="!getMaterialWarnings(item).length && item.is_sub_assembly"
+                  color="purple"
+                  label="Sub-assembly"
+                />
               </div>
             </template>
 

@@ -186,7 +186,12 @@ const handleExport = () => {
             :total-items-count="subscribers?.count || 0"
             :total-page-count="Math.ceil((subscribers?.count || 0) / itemsPerPage) || 1"
             :server-pagination="true"
-            @pagination-change="(d) => (page = d.currentPage)"
+            @pagination-change="
+              (d) => {
+                page = d.currentPage
+                itemsPerPage = d.itemsPerPage
+              }
+            "
           >
             <template #cell:email="{ item }">
               <div class="flex items-center gap-3">

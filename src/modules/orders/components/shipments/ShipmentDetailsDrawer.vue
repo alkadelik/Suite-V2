@@ -6,17 +6,24 @@ import Chip from "@components/Chip.vue"
 import Icon from "@components/Icon.vue"
 import InfoBox from "@components/InfoBox.vue"
 import { useFormatCurrency } from "@/composables/useFormatCurrency"
-import { formatDate, checkIfDateIsPast } from "@/utils/formatDate"
+import { formatDate, checkIfDateIsPast, formatHoursRemaining } from "@/utils/formatDate"
 import { startCase } from "@/utils/format-strings"
 import { clipboardCopy } from "@/utils/others"
 import { displayError } from "@/utils/error-handler"
 import { useGetWaybillDocument } from "../../api"
 import { SHIPMENT_STATUS_COLORS } from "../../constants"
 import { TShipmentRow } from "../../types"
+import { toast } from "@/composables/useToast"
 
 const props = defineProps<{
   open: boolean
   item: TShipmentRow
+  /**
+   * Drop the CTAs whose flows live on the shipments page (create shipment, fulfil),
+   * for callers that open this drawer purely to show a booked shipment. Tracking and
+   * the waybill are self-contained, so they stay.
+   */
+  readonly?: boolean
 }>()
 const emit = defineEmits<{
   close: []
@@ -51,7 +58,7 @@ const isQuoteExpired = computed(() => {
 const quoteChip = computed(() => {
   if (!shipment.value || shipment.value.status !== "awaiting_shipment") return null
   if (isQuoteExpired.value) return { label: "Quote expired", color: "error" as const }
-  const remaining = shipment.value.quote_hours_remaining
+  const remaining = formatHoursRemaining(shipment.value.quote_hours_remaining)
   return {
     label: remaining ? `Expires in ${remaining}` : "Quote active",
     color: "warning" as const,
@@ -77,6 +84,13 @@ const shipbubbleAction = computed<"create" | "waybill" | "track" | null>(() => {
   if (shipment.value.status === "delivered" || shipment.value.status === "cancelled")
     return "waybill"
   return "track"
+})
+
+/** The single CTA the footer renders, if any */
+const footerAction = computed<"fulfil" | "create" | "waybill" | "track" | null>(() => {
+  if (canFulfil.value) return props.readonly ? null : "fulfil"
+  if (shipbubbleAction.value === "create") return props.readonly ? null : "create"
+  return shipbubbleAction.value
 })
 
 // Timeline for ShipBubble shipments
@@ -178,11 +192,11 @@ const handleGetWaybillDoc = () => {
   }
   getWaybillDoc(shipment.value.uid, {
     onSuccess: (response) => {
-      const url: string = response.data?.data?.waybill_url || ""
+      const url: string = response.data?.data?.waybill_document_url || ""
       if (url) {
         window.open(url, "_blank")
       } else {
-        displayError("Waybill document not available.")
+        toast.info("Waybill document not yet available.")
       }
     },
     onError: displayError,
@@ -308,6 +322,18 @@ const handleGetWaybillDoc = () => {
               />
             </div>
           </div>
+
+          <!-- Opens the order drawer in place — no trip to the orders page -->
+          <div class="border-core-300 border-t border-dashed pt-3">
+            <button
+              type="button"
+              class="text-primary-600 flex items-center gap-1 text-sm font-medium underline underline-offset-2"
+              @click="emit('view-order')"
+            >
+              View order details
+              <Icon name="arrow-right" size="14" />
+            </button>
+          </div>
         </div>
 
         <!-- Timeline (ShipBubble only) -->
@@ -359,16 +385,16 @@ const handleGetWaybillDoc = () => {
         </div>
       </div>
 
-      <template v-if="canFulfil || shipbubbleAction" #footer>
+      <template v-if="footerAction" #footer>
         <AppButton
-          v-if="canFulfil"
+          v-if="footerAction === 'fulfil'"
           label="Fulfill Shipment"
           class="w-full"
           @click="emit('fulfil')"
         />
 
         <AppButton
-          v-else-if="shipbubbleAction === 'create'"
+          v-else-if="footerAction === 'create'"
           label="Create Shipment"
           class="w-full"
           data-walkthrough="shipment-create-btn"
@@ -376,14 +402,14 @@ const handleGetWaybillDoc = () => {
         />
 
         <AppButton
-          v-else-if="shipbubbleAction === 'waybill'"
+          v-else-if="footerAction === 'waybill'"
           label="Get Waybill Doc"
           class="w-full"
           :loading="isGettingWaybillDoc"
           @click="handleGetWaybillDoc"
         />
 
-        <div v-else-if="shipbubbleAction === 'track'" class="flex w-full gap-4">
+        <div v-else-if="footerAction === 'track'" class="flex w-full gap-4">
           <AppButton
             label="Get Waybill Doc"
             class="w-full"

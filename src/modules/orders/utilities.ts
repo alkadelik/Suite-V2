@@ -1,6 +1,7 @@
 // import { toast } from "@/composables/useToast"
 import { toast } from "@/composables/useToast"
 import { TCustomer } from "@modules/customers/types"
+import { TOrder, TOrderCourier, TShipbubbleShipment, TShipmentRow } from "./types"
 
 export const createOrderRef = (storeId: number, cartItemCount: number, refType = 2) => {
   // const refType = "2"; // '1' for purchase by customer, '2' for sale added by merchant
@@ -93,6 +94,36 @@ export const loadPaystackScript = () => {
     document.head.appendChild(script)
   })
 }
+
+/**
+ * Normalize a ShipBubble shipment into the row shape the shipments table and the
+ * shipment details drawer both read. Shared so the orders page can open the same
+ * drawer from a plain order without duplicating the mapping.
+ */
+export const toShipmentRow = (shipment: TShipbubbleShipment): TShipmentRow => ({
+  uid: shipment.uid,
+  order_number: shipment.order?.order_number || "-",
+  customer_name: shipment.order?.customer_name || "Unknown Anonymous",
+  courier: (shipment.order?.courier as TOrderCourier) || shipment.courier || null,
+  fee: shipment.total_shipping_cost,
+  amount: shipment.order?.total_amount ?? 0,
+  date: shipment.delivery_estimate || shipment.created_at,
+  status: shipment.status,
+  order: shipment.order,
+  shipment,
+  delivery_estimate: shipment.delivery_estimate || null,
+})
+
+/** The order is set to ship with ShipBubble, booked or not */
+export const isShipbubbleOrder = (order: TOrder | null | undefined) =>
+  order?.delivery_method === "shipbubble"
+
+/**
+ * The shipment has actually been booked with ShipBubble — until then the order only
+ * carries a quote, and there is no shipment record to open.
+ */
+export const isShipmentBooked = (order: TOrder | null | undefined) =>
+  !!order?.shipping_details?.shipbubble_order_id
 
 export const getCustomerName = (
   customer: TCustomer | null | undefined,

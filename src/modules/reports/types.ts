@@ -209,8 +209,8 @@ export interface IEODSummaryComparison {
 
 export interface IEODExpensesByCategory {
   amount: number
-  category: string
-  percent_of_revenue?: number
+  category_name: string
+  percent_of_total?: number
 }
 
 export interface IEODExpensesOverview {
@@ -247,9 +247,11 @@ export interface IEODLowStockAlert {
 }
 
 export interface IEODUnresolvedIssue {
-  type: string
-  count: number
-  details: string
+  title: string
+  timestamp: string
+  description: string
+  priority: "high" | "medium" | "low"
+  order_number: string | null
 }
 
 export interface IEODNarratives {

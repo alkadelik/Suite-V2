@@ -51,6 +51,8 @@ export type TOrder = {
   location: string
   location_name: string
   memos_count: number
+  /** Count of memos still open on the order */
+  open_memos_count?: number
   outstanding_balance: number
   payment_status: "unpaid" | "paid" | "partially_paid"
   payment_source?: string
@@ -145,12 +147,24 @@ export type TOrderResponse = {
   previous: string | null
 }
 
+/** Party a memo was resolved by */
+export type TMemoParty = "merchant" | "customer"
+
+/** Party a memo is awaiting action from */
+export type TMemoAwaiting = TMemoParty | "nobody"
+
 export type TOrderMemo = {
   uid: string
   title?: string
-  status: "merchant-action" | "customer-action"
+  awaiting: TMemoAwaiting
+  status: "open" | "resolved"
   severity: "low" | "medium" | "high"
   content: string
+  /** Optional note recorded when the memo was resolved */
+  resolution_note: string | null
+  resolved_at: string | null
+  resolved_by: TMemoParty | null
+  resolved_by_name: string | null
   author: string
   author_name: string
   author_email: string
@@ -196,9 +210,14 @@ export interface IPaymentPayload {
 
 export interface IMemoPayload {
   title: string
-  status: string
+  awaiting: TMemoAwaiting
   severity: "low" | "medium" | "high"
   content: string
+}
+
+export interface IResolveMemoPayload {
+  resolved_by: TMemoParty
+  note?: string
 }
 
 export interface OrderDashboardStats {
@@ -255,7 +274,8 @@ export type TShipbubbleShipment = {
   last_status_update: string | null
   quote_expires_at: string | null
   quote_status: string | null
-  quote_hours_remaining: string | null
+  /** Hours until the quote expires, e.g. 149 */
+  quote_hours_remaining: number | null
   is_suite_order: boolean
   pickup_date: string | null
   delivery_estimate: string | null
@@ -268,6 +288,21 @@ export type TCreateShipmentPayload = {
   rate: string
   courier: string
   payment_reference: string
+}
+
+/** What ShipBubble hands back once the booking is accepted. The quote row the
+ * drawer was built from predates all of this, so the success modal has to read
+ * these off the response rather than off the row. */
+export type TBookedShipment = {
+  shipbubble_order_id?: string
+  delivery_estimate?: string
+  tracking_number?: string
+}
+
+/** Booking details the create drawer hands to the page for its success modal */
+export type TShipmentCreatedDetails = {
+  trackingNumber: string
+  expectedDelivery: string
 }
 
 export type TShipbubbleShipmentResponse = {
@@ -290,4 +325,5 @@ export type TShipmentRow = {
   status: string
   order: TOrder
   shipment: TShipbubbleShipment | null
+  delivery_estimate: string | null
 }

@@ -3,8 +3,10 @@ import {
   IMemoPayload,
   IPaymentHistory,
   IPaymentPayload,
+  IResolveMemoPayload,
   OrderDashboardStats,
   OrderPayload,
+  TBookedShipment,
   TCreateShipmentPayload,
   TOrder,
   TOrderMemo,
@@ -38,9 +40,7 @@ export function useGetOrders(
 /** Book a ShipBubble shipment from its quote (shipping fee is paid via Paystack first) */
 export function useCreateShipbubbleShipment() {
   return useMutation({
-    mutationFn: (
-      body: TCreateShipmentPayload,
-    ): Promise<{ data: { data?: { tracking_number?: string } } }> =>
+    mutationFn: (body: TCreateShipmentPayload): Promise<{ data: { data?: TBookedShipment } }> =>
       baseApi.post(`/shipping/orders/`, body),
   })
 }
@@ -59,10 +59,22 @@ export function useGetShipments(
   })
 }
 
+/**
+ * Look up the ShipBubble shipment attached to a single order. There is no by-order
+ * endpoint, so the shipments list is searched by order number — the caller still has
+ * to match on the order uid since search is fuzzy.
+ */
+export function useFindOrderShipment() {
+  return useMutation({
+    mutationFn: (orderNumber: string): Promise<{ data: { data?: TShipbubbleShipmentResponse } }> =>
+      baseApi.get(`/shipping/orders/`, { params: { search: orderNumber, limit: 10 } }),
+  })
+}
+
 /** Get Waybill document for a ShipBubble shipment */
 export function useGetWaybillDocument() {
   return useMutation({
-    mutationFn: (uid: string): Promise<{ data: { data?: { waybill_url?: string } } }> =>
+    mutationFn: (uid: string): Promise<{ data: { data?: { waybill_document_url?: string } } }> =>
       baseApi.get(`/shipping/orders/${uid}/waybill/`),
   })
 }
@@ -130,6 +142,22 @@ export function useGetOrderMemos(id: MaybeRefOrGetter<string>) {
     url: computed(() => `/orders/${toValue(id)}/memos/`),
     key: computed(() => `orderMemos_${toValue(id)}`),
     selectData: true,
+  })
+}
+
+/** Resolve an open order memo, optionally recording how it was resolved */
+export function useResolveOrderMemo() {
+  return useMutation({
+    mutationFn: ({ id, memoId, body }: { id: string; memoId: string; body: IResolveMemoPayload }) =>
+      baseApi.post(`/orders/${id}/memos/${memoId}/resolve/`, body),
+  })
+}
+
+/** Reopen a resolved order memo, clearing its resolution state */
+export function useReopenOrderMemo() {
+  return useMutation({
+    mutationFn: ({ id, memoId }: { id: string; memoId: string }) =>
+      baseApi.post(`/orders/${id}/memos/${memoId}/reopen/`, {}),
   })
 }
 

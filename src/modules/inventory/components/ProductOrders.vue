@@ -40,13 +40,18 @@
         :data="orders"
         :columns="orderColumns"
         :loading="loading"
-        :show-pagination="ordersCount > itemsPerPage"
+        :show-pagination="ordersCount > 5"
         :server-pagination="true"
         :items-per-page="itemsPerPage"
         :current-page="page"
         :total-items-count="ordersCount"
         :total-page-count="Math.ceil(ordersCount / itemsPerPage) || 1"
-        @pagination-change="(d) => (page = d.currentPage)"
+        @pagination-change="
+          (d) => {
+            page = d.currentPage
+            itemsPerPage = d.itemsPerPage
+          }
+        "
         :empty-state="{
           title: 'No results match this filter',
           description: 'Try adjusting or clearing your filters.',
