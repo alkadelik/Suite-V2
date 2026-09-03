@@ -15,6 +15,7 @@ import {
   ThemeSection,
   IVersionHistory,
   TCustomDomain,
+  TApiKey,
   IPickupSchedule,
   IUpdatePickupSchedulePayload,
 } from "./types"
@@ -504,6 +505,65 @@ export function useDeleteCustomDomain() {
     mutationFn: (uid: string) => baseApi.delete(`/storefront/custom-domain/${uid}/`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["custom-domains"] })
+    },
+  })
+}
+
+// --- API keys ---
+
+/**
+ * List the store's API keys.
+ *
+ * The endpoint returns a flat array inside the standard envelope — it is NOT
+ * paginated, despite what the OpenAPI schema says.
+ *
+ * Deliberately does NOT pass `?reveal=true`: the raw secret is shown once, at
+ * create/rotate time, from those responses. Every later read stays masked.
+ */
+export function useGetApiKeys(enabled = true) {
+  return useApiQuery<TApiKey[]>({
+    url: "/stores/api-keys/",
+    key: "api-keys",
+    selectData: true,
+    enabled,
+  })
+}
+
+/** Issue the store's first key. Responds 201 with the raw `key`. */
+export function useCreateApiKey() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { name: string }) =>
+      baseApi.post<{ data: TApiKey }>("/stores/api-keys/", body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["api-keys"] })
+    },
+  })
+}
+
+/**
+ * Atomically revoke the current key and issue a replacement with the same name.
+ * Responds 201 (not 200) and the new key carries a NEW uid — callers must read
+ * the uid back off the response rather than reusing the one they passed in.
+ */
+export function useRotateApiKey() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (uid: string) =>
+      baseApi.post<{ data: TApiKey }>(`/stores/api-keys/${uid}/rotate/`, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["api-keys"] })
+    },
+  })
+}
+
+/** Revoke without replacing. Responds 204. The record remains in the list as a tombstone. */
+export function useRevokeApiKey() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (uid: string) => baseApi.delete(`/stores/api-keys/${uid}/revoke/`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["api-keys"] })
     },
   })
 }
