@@ -13,12 +13,29 @@ import MonthlyCustomer from "../components/monthly/MonthlyCustomer.vue"
 import MonthlyProducts from "../components/monthly/MonthlyProducts.vue"
 import MonthlyOperations from "../components/monthly/MonthlyOperations.vue"
 import ReportInsightCard from "../components/ReportInsightCard.vue"
-import { useGenerateMonthlyReport, useGetLatestMonthlyReport } from "../api"
+import {
+  useGenerateMonthlyReport,
+  useGetLatestMonthlyReport,
+  useGetMonthlyReportById,
+} from "../api"
 import { useReportsStore } from "../store"
-import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
 import { useSettingsStore } from "@modules/settings/store"
+import ReportGeneratingSteps from "../components/ReportGeneratingSteps.vue"
+import { useReportProgress } from "../composables/useReportProgress"
+import { useRoute, useRouter } from "vue-router"
 // import { toast } from "@/composables/useToast"
+
+/** Safety net for a missed websocket notification while a report is generating. */
+const POLL_INTERVAL = 15_000
+
+const STEPS = [
+  { label: "Reviewing revenue trends...", icon: "trend-up" },
+  { label: "Analyzing Product Performance...", icon: "box-filled" },
+  { label: "Evaluating Customer Activity...", icon: "user-octagon" },
+  { label: "Identifying Growth Opportunities...", icon: "chart-breakout-square" },
+  { label: "Generating Insights...", icon: "flash" },
+]
 
 const now = new Date()
 const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
@@ -27,6 +44,12 @@ const activeDate = ref(lastMonthStr)
 
 const reportsStore = useReportsStore()
 const settingsStore = useSettingsStore()
+const route = useRoute()
+const router = useRouter()
+
+// `?id=` (e.g. from a notification link) points at one specific report. Its month is
+// unknown until it loads, so that report — not the month picker — drives the screen.
+const reportId = computed(() => (route.query.id ? String(route.query.id) : ""))
 
 const storeCreatedDate = computed(() => {
   if (!settingsStore.storeDetails?.created_at) return undefined
@@ -41,37 +64,90 @@ const activeDateParts = computed(() => {
   return { year, month }
 })
 
-const {
-  data: latestMonthlyReport,
-  isPending,
-  isFetching,
-  refetch: refetchSpecificReport,
-} = useGetLatestMonthlyReport(activeDateParts)
-
 // Check if current month's report is generating
 const isCurrentMonthGenerating = computed(() => {
   const { year, month } = activeDateParts.value
   return reportsStore.isReportGenerating(year, month)
 })
 
+const {
+  data: latestMonthlyReport,
+  isPending: isPendingLatest,
+  isFetching,
+  refetch: refetchSpecificReport,
+} = useGetLatestMonthlyReport(activeDateParts, {
+  // Poll while generating so the report still appears if the websocket message is missed.
+  refetchInterval: computed(() => (isCurrentMonthGenerating.value ? POLL_INTERVAL : false)),
+  enabled: computed(() => !reportId.value),
+})
+
+const { data: monthlyReportById, isPending: isPendingById } = useGetMonthlyReportById(reportId)
+
+const isPending = computed(() => (reportId.value ? isPendingById.value : isPendingLatest.value))
+
+const reportData = computed(() => {
+  const report = reportId.value ? monthlyReportById.value : latestMonthlyReport.value
+  if (!report) return null
+  if (report.detail) return null
+  return report
+})
+
+// The month picker is meaningless until we know which month the report covers, so it
+// stays hidden while a report fetched by id is still in flight. It comes back once the
+// fetch settles — including on failure, so a bad id does not strand the user.
+const isResolvingReportId = computed(() => Boolean(reportId.value) && isPendingById.value)
+const showDateSelector = computed(() => !isResolvingReportId.value)
+
+// Follow the loaded report's own month, so the header and any later month change start
+// from the right period.
 watch(
-  () => latestMonthlyReport.value,
-  (newReport) => {
-    if (newReport?.period) {
-      const { year, month } = newReport.period
-      if (reportsStore.isReportGenerating(year, month)) {
-        reportsStore.removeGeneratingReport(year, month)
-      }
+  () => monthlyReportById.value,
+  (report) => {
+    const period = report && !report.detail ? report.period : undefined
+    if (period?.year && period?.month) {
+      activeDate.value = `${period.year}-${String(period.month).padStart(2, "0")}`
+    }
+  },
+)
+
+// Picking a month drops the pinned report and goes back to the latest-for-that-month query.
+const onChangeDate = (value: string) => {
+  activeDate.value = value
+  if (reportId.value) {
+    const query = { ...route.query }
+    delete query.id
+    router.replace({ query })
+  }
+}
+
+const isReportReady = computed(() => Boolean(reportData.value) && !isCurrentMonthGenerating.value)
+
+const { stepStates, progress, isOverdue, finish } = useReportProgress(
+  STEPS,
+  isCurrentMonthGenerating,
+  {
+    startedAt: () => {
+      const { year, month } = activeDateParts.value
+      return reportsStore.getGeneratingReport(year, month)?.startedAt
+    },
+  },
+)
+
+// The report can land from a poll or from the websocket invalidating this query. Either
+// way: tick the checklist to complete, then swap the view in — no manual reload.
+watch(
+  () => reportData.value,
+  async (newReport) => {
+    if (!newReport || !isCurrentMonthGenerating.value) return
+    await finish()
+    // The query is keyed by `activeDateParts`, so that is the flag this report resolves.
+    reportsStore.removeGeneratingReport(activeDateParts.value.year, activeDateParts.value.month)
+    if (newReport.period?.year) {
+      reportsStore.removeGeneratingReport(newReport.period.year, newReport.period.month)
     }
   },
   { immediate: true },
 )
-
-const reportData = computed(() => {
-  if (!latestMonthlyReport.value) return null
-  if (latestMonthlyReport.value.detail) return null
-  return latestMonthlyReport.value
-})
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
 const fullMonth = computed(() =>
@@ -86,6 +162,12 @@ const dateRange = computed(() => {
   const lastMonthName = lastDay.toLocaleDateString("en-US", { month: "long" })
   return `${monthName} 1 - ${lastMonthName} ${lastDay.getDate()}, ${year}`
 })
+
+// While `?id=` is resolving the month is not known yet — do not show a placeholder one.
+const title = computed(() =>
+  isResolvingReportId.value ? "Monthly Sales Report" : `${fullMonth.value} Sales Report`,
+)
+const subtitle = computed(() => (isResolvingReportId.value ? "" : dateRange.value))
 
 const activeSection = ref("summary")
 
@@ -127,43 +209,38 @@ const handleGenerate = () => {
     },
   )
 }
-
-const STEPS = computed(() => [
-  { label: "Reviewing revenue trends...", icon: "trend-up" },
-  { label: "Analyzing Product Performance...", icon: "box-filled" },
-  { label: "Evaluating Customer Activity...", icon: "user-octagon" },
-  { label: "Identifying Growth Opportunities...", icon: "box-filled" },
-  { label: "Generating Insights...", icon: "box-filled" },
-])
 </script>
 
 <template>
   <div class="p-4">
-    <PageHeader v-if="isMobile" :title="`${fullMonth} Sales Report`" />
-    <SectionHeader v-else :title="`${fullMonth} Sales Report`" :subtitle="dateRange">
+    <PageHeader v-if="isMobile" :title="title" />
+    <SectionHeader v-else :title="title" :subtitle="subtitle">
       <template #action>
         <TextField
+          v-if="showDateSelector"
           type="month"
           size="sm"
-          v-model="activeDate"
+          :model-value="activeDate"
           :max="lastMonthStr"
           :min="storeCreatedDate"
+          @update:model-value="onChangeDate"
         />
       </template>
     </SectionHeader>
 
-    <div v-if="isMobile" class="flex justify-end pt-4">
+    <div v-if="isMobile && showDateSelector" class="flex justify-end pt-4">
       <TextField
         type="month"
         size="sm"
-        v-model="activeDate"
+        :model-value="activeDate"
         :max="lastMonthStr"
         :min="storeCreatedDate"
+        @update:model-value="onChangeDate"
       />
     </div>
 
     <EmptyState
-      v-if="!reportData || isCurrentMonthGenerating || isPending || isFetching"
+      v-if="!isReportReady"
       :title="`${fullMonth} Sales Report`"
       :description="
         isCurrentMonthGenerating
@@ -171,40 +248,22 @@ const STEPS = computed(() => [
           : `Get a complete breakdown of your revenue, customers, products and profit — with actionable recommendations.`
       "
       class="mt-4"
-      :loading="isPending || isFetching"
+      :loading="isPending && !isCurrentMonthGenerating"
     >
       <template #image>
         <img src="@/assets/images/empty-report.svg?url" class="mx-auto mb-4" />
       </template>
 
       <template #action>
-        <div v-if="isCurrentMonthGenerating">
-          <div
-            class="w-full divide-y divide-gray-200 rounded-xl border border-gray-100 bg-gray-50 px-4"
-          >
-            <p
-              v-for="step in STEPS"
-              :key="step.label"
-              class="text-core-600 flex items-center gap-4 py-3 text-sm"
-            >
-              <Icon :name="step.icon" size="16" />
-              <span>{{ step.label }}</span>
-              <span class="ml-auto">
-                <Icon
-                  v-if="step.icon == 'trend-up'"
-                  name="check-circle"
-                  size="18"
-                  class="text-primary-600"
-                />
-                <Icon v-else name="loader" size="16" class="text-core-600 animate-spin" />
-              </span>
-            </p>
-          </div>
-
-          <p class="text-core-600 mt-6 text-center text-sm">
-            You can leave this page. We'll notify you when it's ready.
-          </p>
-        </div>
+        <ReportGeneratingSteps
+          v-if="isCurrentMonthGenerating"
+          :steps="STEPS"
+          :states="stepStates"
+          :progress="progress"
+          :is-overdue="isOverdue"
+          :is-refreshing="isFetching"
+          @refresh="refetchSpecificReport()"
+        />
 
         <AppButton
           v-else

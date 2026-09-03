@@ -20,11 +20,24 @@ import EodOrders from "../components/eod/EodOrders.vue"
 import { EOD_REPORT_SECTIONS } from "../constants"
 import Tabs from "@components/Tabs.vue"
 import ReportInsightCard from "../components/ReportInsightCard.vue"
-import { useGenerateEODReport, useGetLatestEODReport } from "../api"
+import { useGenerateEODReport, useGetEODReportById, useGetLatestEODReport } from "../api"
 import { useReportsStore } from "../store"
-import Icon from "@components/Icon.vue"
 import AppButton from "@components/AppButton.vue"
+import ReportGeneratingSteps from "../components/ReportGeneratingSteps.vue"
+import { useReportProgress } from "../composables/useReportProgress"
+import { useRoute, useRouter } from "vue-router"
 // import { toast } from "@/composables/useToast"
+
+/** Safety net for a missed websocket notification while a report is generating. */
+const POLL_INTERVAL = 15_000
+
+const STEPS = [
+  { label: "Reviewing daily transactions...", icon: "trend-up" },
+  { label: "Analyzing Payment Methods...", icon: "wallet-money" },
+  { label: "Evaluating Order Fulfillment...", icon: "box-filled" },
+  { label: "Checking Inventory Movement...", icon: "box" },
+  { label: "Generating Daily Insights...", icon: "flash" },
+]
 
 const yesterday = new Date()
 yesterday.setDate(yesterday.getDate() - 1)
@@ -34,6 +47,12 @@ const isScrolling = ref(false)
 
 const reportsStore = useReportsStore()
 const settingsStore = useSettingsStore()
+const route = useRoute()
+const router = useRouter()
+
+// `?id=` (e.g. from a notification link) points at one specific report. Its date is
+// unknown until it loads, so that report — not the date picker — drives the screen.
+const reportId = computed(() => (route.query.id ? String(route.query.id) : ""))
 
 const storeCreatedDate = computed(() => {
   if (!settingsStore.storeDetails?.created_at) return undefined
@@ -42,37 +61,82 @@ const storeCreatedDate = computed(() => {
 
 const { mutate: generateEODReport, isPending: isGenerating } = useGenerateEODReport()
 
-const {
-  data: latestEODReport,
-  isPending,
-  isFetching,
-  refetch: refetchEODReport,
-} = useGetLatestEODReport(activeDate)
-
 // Check if current day's report is generating
 const isCurrentDayGenerating = computed(() => {
   return reportsStore.isEODReportGenerating(activeDate.value)
 })
 
+const {
+  data: latestEODReport,
+  isPending: isPendingLatest,
+  isFetching,
+  refetch: refetchEODReport,
+} = useGetLatestEODReport(activeDate, {
+  // Poll while generating so the report still appears if the websocket message is missed.
+  refetchInterval: computed(() => (isCurrentDayGenerating.value ? POLL_INTERVAL : false)),
+  enabled: computed(() => !reportId.value),
+})
+
+const { data: eodReportById, isPending: isPendingById } = useGetEODReportById(reportId)
+
+const isPending = computed(() => (reportId.value ? isPendingById.value : isPendingLatest.value))
+
+const reportData = computed(() => {
+  const report = reportId.value ? eodReportById.value : latestEODReport.value
+  if (!report) return null
+  // Check if response is an error detail message
+  if (typeof report === "object" && "detail" in report) return null
+  return report
+})
+
+// The date picker is meaningless until we know which day the report covers, so it
+// stays hidden while a report fetched by id is still in flight. It comes back once the
+// fetch settles — including on failure, so a bad id does not strand the user.
+const isResolvingReportId = computed(() => Boolean(reportId.value) && isPendingById.value)
+const showDateSelector = computed(() => !isResolvingReportId.value)
+
+// Follow the loaded report's own date, so the header and any later date change start
+// from the right day.
 watch(
-  () => latestEODReport.value,
-  (newReport) => {
-    if (newReport?.period?.date) {
-      const date = newReport.period.date
-      if (reportsStore.isEODReportGenerating(date)) {
-        reportsStore.removeGeneratingEODReport(date)
-      }
-    }
+  () => eodReportById.value,
+  (report) => {
+    const date = report && !("detail" in report) ? report.period?.date : undefined
+    if (date) activeDate.value = date.slice(0, 10)
+  },
+)
+
+// Picking a date drops the pinned report and goes back to the latest-for-that-date query.
+const onChangeDate = (value: string) => {
+  activeDate.value = value
+  if (reportId.value) {
+    const query = { ...route.query }
+    delete query.id
+    router.replace({ query })
+  }
+}
+
+const isReportReady = computed(() => Boolean(reportData.value) && !isCurrentDayGenerating.value)
+
+const { stepStates, progress, isOverdue, finish } = useReportProgress(
+  STEPS,
+  isCurrentDayGenerating,
+  { startedAt: () => reportsStore.getGeneratingEODReport(activeDate.value)?.startedAt },
+)
+
+// The report can land from a poll or from the websocket invalidating this query. Either
+// way: tick the checklist to complete, then swap the view in — no manual reload.
+watch(
+  () => reportData.value,
+  async (newReport) => {
+    if (!newReport || !isCurrentDayGenerating.value) return
+    await finish()
+    // The query is keyed by `activeDate`, so that is the flag this report resolves —
+    // clearing by the report's own date too, in case the API formats it differently.
+    reportsStore.removeGeneratingEODReport(activeDate.value)
+    if (newReport.period?.date) reportsStore.removeGeneratingEODReport(newReport.period.date)
   },
   { immediate: true },
 )
-
-const reportData = computed(() => {
-  if (!latestEODReport.value) return null
-  // Check if response is an error detail message
-  if (typeof latestEODReport.value === "object" && "detail" in latestEODReport.value) return null
-  return latestEODReport.value
-})
 
 const isMobile = useMediaQuery("(max-width: 1024px)")
 const storeName = computed(() => useSettingsStore().storeDetails?.name || "Store")
@@ -82,6 +146,8 @@ const fullDate = computed(() =>
 )
 
 const subtitle = computed(() => {
+  // The date is not known yet while resolving `?id=` — do not show a placeholder one.
+  if (isResolvingReportId.value) return ""
   if (isMobile.value) return fullDate.value
   return `${storeName.value} (${activeLocation.value}) - ${fullDate.value}`
 })
@@ -125,6 +191,13 @@ onMounted(() => {
   nextTick(setupSectionObserver)
 })
 
+// The sections only exist once the report is on screen — re-observe whenever it is
+// revealed (first load, a date change, or a generation finishing while we watch).
+watch(isReportReady, (ready) => {
+  if (ready) nextTick(setupSectionObserver)
+  else sectionObserver?.disconnect()
+})
+
 onBeforeUnmount(() => {
   sectionObserver?.disconnect()
 })
@@ -163,14 +236,6 @@ const handleGenerateReport = () => {
     },
   )
 }
-
-const STEPS = computed(() => [
-  { label: "Reviewing daily transactions...", icon: "trend-up" },
-  { label: "Analyzing Payment Methods...", icon: "wallet" },
-  { label: "Evaluating Order Fulfillment...", icon: "box-filled" },
-  { label: "Checking Inventory Movement...", icon: "box" },
-  { label: "Generating Daily Insights...", icon: "bulb" },
-])
 </script>
 
 <template>
@@ -179,27 +244,30 @@ const STEPS = computed(() => [
     <SectionHeader v-else title="End of Day Report" :subtitle="subtitle">
       <template #action>
         <TextField
+          v-if="showDateSelector"
           type="date"
           size="sm"
-          v-model="activeDate"
+          :model-value="activeDate"
           :max="yesterday.toISOString().slice(0, 10)"
           :min="storeCreatedDate"
+          @update:model-value="onChangeDate"
         />
       </template>
     </SectionHeader>
 
-    <div v-if="isMobile" class="flex justify-end pt-4">
+    <div v-if="isMobile && showDateSelector" class="flex justify-end pt-4">
       <TextField
         type="date"
         size="sm"
-        v-model="activeDate"
+        :model-value="activeDate"
         :max="yesterday.toISOString().slice(0, 10)"
         :min="storeCreatedDate"
+        @update:model-value="onChangeDate"
       />
     </div>
 
     <EmptyState
-      v-if="!reportData || isCurrentDayGenerating || isPending || isFetching"
+      v-if="!isReportReady"
       :title="`${fullDate.split(', ')[1]} Report`"
       :description="
         isCurrentDayGenerating
@@ -207,40 +275,22 @@ const STEPS = computed(() => [
           : `Get a complete breakdown of your revenue, customers, products and profit — with actionable recommendations.`
       "
       class="mt-4"
-      :loading="isPending || isFetching"
+      :loading="isPending && !isCurrentDayGenerating"
     >
       <template #image>
         <img src="@/assets/images/empty-report.svg?url" class="mx-auto mb-4" />
       </template>
 
       <template #action>
-        <div v-if="isCurrentDayGenerating">
-          <div
-            class="w-full divide-y divide-gray-200 rounded-xl border border-gray-100 bg-gray-50 px-4"
-          >
-            <p
-              v-for="step in STEPS"
-              :key="step.label"
-              class="text-core-600 flex items-center gap-4 py-3 text-sm"
-            >
-              <Icon :name="step.icon" size="16" />
-              <span>{{ step.label }}</span>
-              <span class="ml-auto">
-                <Icon
-                  v-if="step.icon == 'trend-up'"
-                  name="check-circle"
-                  size="18"
-                  class="text-primary-600"
-                />
-                <Icon v-else name="loader" size="16" class="text-core-600 animate-spin" />
-              </span>
-            </p>
-          </div>
-
-          <p class="text-core-600 mt-6 text-center text-sm">
-            You can leave this page. We'll notify you when it's ready.
-          </p>
-        </div>
+        <ReportGeneratingSteps
+          v-if="isCurrentDayGenerating"
+          :steps="STEPS"
+          :states="stepStates"
+          :progress="progress"
+          :is-overdue="isOverdue"
+          :is-refreshing="isFetching"
+          @refresh="refetchEODReport()"
+        />
 
         <AppButton
           v-else

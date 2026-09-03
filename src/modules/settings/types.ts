@@ -345,3 +345,27 @@ export type TCustomDomain = {
   created_at: string
   updated_at: string
 }
+
+// --- API keys ---
+
+/** Lowercase to match APIKeyListStatusEnum on the wire. */
+export type TApiKeyStatus = "active" | "revoked"
+
+/**
+ * Merchant Public API key, as returned by /stores/api-keys/.
+ *
+ * `key` is masked (prefix + bullets) unless the request passes `?reveal=true`;
+ * create and rotate always return it raw. `last_used_at` is absent from the
+ * create/rotate responses even though the schema marks it required, hence the
+ * optional marker.
+ */
+export type TApiKey = {
+  uid: string
+  name: string
+  /** First 16 chars, safe to display without revealing the secret. */
+  key_prefix: string
+  key: string
+  status: TApiKeyStatus
+  last_used_at?: string | null
+  created_at: string
+}

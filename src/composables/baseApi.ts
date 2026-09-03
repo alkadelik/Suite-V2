@@ -132,6 +132,8 @@ export type TQueryArg = {
    * every page / per-page change, unmounting the table mid-interaction.
    */
   keepPreviousData?: boolean
+  /** Poll while the value is a number; `false` disables polling. */
+  refetchInterval?: MaybeRefOrGetter<number | false>
 }
 export const useApiQuery = <T>({
   url,
@@ -141,6 +143,7 @@ export const useApiQuery = <T>({
   selectData,
   refetchOnWindowFocus = false,
   keepPreviousData = false,
+  refetchInterval,
 }: TQueryArg) => {
   return useQuery<T>({
     queryKey: computed(() => [toValue(key), toValue(params)]),
@@ -154,6 +157,8 @@ export const useApiQuery = <T>({
     },
     retry: false,
     refetchOnWindowFocus,
+    refetchInterval:
+      refetchInterval !== undefined ? computed(() => toValue(refetchInterval)) : undefined,
     enabled: enabled !== undefined ? computed(() => toValue(enabled)) : undefined,
     select: selectData
       ? (response: T) => {
