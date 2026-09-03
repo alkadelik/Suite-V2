@@ -109,7 +109,7 @@
     <div v-if="isSingleVariant" class="space-y-6">
       <!-- Cost Price Section -->
       <TextField
-        v-if="!props.hidePrice"
+        v-if="!props.hidePrice && !props.hideCostPrice"
         :model-value="singleVariantForm.cost_price"
         name="variant-cost-price-0"
         @update:model-value="updateSingleVariantField('cost_price', removeLeadingZeros($event))"
@@ -190,7 +190,7 @@
         <div v-if="!props.hideStock" class="w-24 text-center">
           <h3 class="text-sm font-medium text-gray-900">Quantity</h3>
         </div>
-        <div v-if="!props.hidePrice" class="w-24 text-center">
+        <div v-if="!props.hidePrice && !props.hideCostPrice" class="w-24 text-center">
           <h3 class="text-sm font-medium text-gray-900">Cost Price ({{ currency }})</h3>
         </div>
         <div v-if="!props.hidePrice" class="w-24 text-center">
@@ -252,7 +252,7 @@
           </div>
 
           <!-- Cost Price Input -->
-          <div v-if="!props.hidePrice" class="w-28">
+          <div v-if="!props.hidePrice && !props.hideCostPrice" class="w-28">
             <TextField
               :model-value="variant.cost_price"
               :name="`variant-cost-price-${index}`"
@@ -373,7 +373,7 @@
           </div>
 
           <!-- Cost Price -->
-          <div v-if="!props.hidePrice">
+          <div v-if="!props.hidePrice && !props.hideCostPrice">
             <TextField
               :model-value="variant.cost_price"
               :name="`variant-cost-price-${index}`"
@@ -466,6 +466,8 @@ interface Props {
   disablePrice?: boolean
   /** Disable the cost price field (for edit mode - keep it prefilled but not editable) */
   disableCostPrice?: boolean
+  /** Hide the cost price field entirely (for the Edit Price & Weight form) */
+  hideCostPrice?: boolean
   /** Hide the price field entirely (for variants edit mode) */
   hidePrice?: boolean
   /** Hide the weight section (for variants edit mode) */
