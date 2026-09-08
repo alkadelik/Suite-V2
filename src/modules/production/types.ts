@@ -63,7 +63,10 @@ export type TRawMaterial = {
   avg_cost: number
   last_cost: number
   last_cost_date?: string
+  // shows a warning icon on the table
   low_stock: boolean
+  has_expired_items: boolean
+
   created_at: string
   updated_at?: string
   suppliers?: TSupplier[]

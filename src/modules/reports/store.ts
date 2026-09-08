@@ -1,12 +1,21 @@
 import { defineStore } from "pinia"
 import { ref } from "vue"
 
+/**
+ * A generation flag is only trusted for this long. The websocket "ready" message can
+ * be missed (tab closed, socket down), and without an expiry the checklist would
+ * greet the user forever on a report that finished — or failed — hours ago.
+ */
+const MAX_GENERATING_AGE = 30 * 60 * 1000 // 30 minutes
+
 type GeneratingMonthlyReport = {
   uid: string
   year: number
   month: number
   status: "generating"
   generatedAt: string | null
+  /** Epoch ms the request was fired — drives the progress checklist across remounts. */
+  startedAt: number
 }
 
 type GeneratingEODReport = {
@@ -14,123 +23,130 @@ type GeneratingEODReport = {
   date: string
   status: "generating"
   generatedAt: string | null
+  startedAt: number
 }
 
-export const useReportsStore = defineStore("reports", () => {
-  // Track which months are currently generating reports
-  const generatingReports = ref<Map<string, GeneratingMonthlyReport>>(new Map())
-  // Track which dates are currently generating EOD reports
-  const generatingEODReports = ref<Map<string, GeneratingEODReport>>(new Map())
+const isFresh = (startedAt: number) => Date.now() - startedAt < MAX_GENERATING_AGE
 
-  const getReportKey = (year: number, month: number) => `${year}-${String(month).padStart(2, "0")}`
+const MONTH_NAMES = [
+  "january",
+  "february",
+  "march",
+  "april",
+  "may",
+  "june",
+  "july",
+  "august",
+  "september",
+  "october",
+  "november",
+  "december",
+]
 
-  const setGeneratingReport = (report: GeneratingMonthlyReport) => {
-    const key = getReportKey(report.year, report.month)
-    generatingReports.value.set(key, report)
-  }
+const monthFromName = (name: string) => MONTH_NAMES.indexOf(name.toLowerCase()) + 1
 
-  const getGeneratingReport = (year: number, month: number) => {
-    const key = getReportKey(year, month)
-    return generatingReports.value.get(key)
-  }
+export const useReportsStore = defineStore(
+  "reports",
+  () => {
+    // Track which months are currently generating reports. Plain objects (not Maps)
+    // so the state can be persisted and survive a page reload mid-generation.
+    const generatingReports = ref<Record<string, GeneratingMonthlyReport>>({})
+    // Track which dates are currently generating EOD reports
+    const generatingEODReports = ref<Record<string, GeneratingEODReport>>({})
 
-  const removeGeneratingReport = (year: number, month: number) => {
-    const key = getReportKey(year, month)
-    generatingReports.value.delete(key)
-  }
+    const getReportKey = (year: number, month: number) =>
+      `${year}-${String(month).padStart(2, "0")}`
 
-  const isReportGenerating = (year: number, month: number) => {
-    const key = getReportKey(year, month)
-    return generatingReports.value.has(key)
-  }
-
-  const parseMonthYearFromMessage = (message: string): { year: number; month: number } | null => {
-    // Parse message like "Your monthly report for August, 2025 is ready."
-    const match = message.match(
-      /(January|February|March|April|May|June|July|August|September|October|November|December),?\s+(\d{4})/i,
-    )
-    if (!match) return null
-
-    const monthName = match[1]
-    const year = parseInt(match[2], 10)
-    const monthMap: Record<string, number> = {
-      january: 1,
-      february: 2,
-      march: 3,
-      april: 4,
-      may: 5,
-      june: 6,
-      july: 7,
-      august: 8,
-      september: 9,
-      october: 10,
-      november: 11,
-      december: 12,
+    const setGeneratingReport = (
+      report: Omit<GeneratingMonthlyReport, "startedAt"> & { startedAt?: number },
+    ) => {
+      const key = getReportKey(report.year, report.month)
+      generatingReports.value[key] = { ...report, startedAt: report.startedAt ?? Date.now() }
     }
-    const month = monthMap[monthName.toLowerCase()]
-    return month ? { year, month } : null
-  }
 
-  // EOD Report methods
-  const setGeneratingEODReport = (report: GeneratingEODReport) => {
-    generatingEODReports.value.set(report.date, report)
-  }
-
-  const getGeneratingEODReport = (date: string) => {
-    return generatingEODReports.value.get(date)
-  }
-
-  const removeGeneratingEODReport = (date: string) => {
-    generatingEODReports.value.delete(date)
-  }
-
-  const isEODReportGenerating = (date: string) => {
-    return generatingEODReports.value.has(date)
-  }
-
-  const parseDateFromMessage = (message: string): string | null => {
-    // Parse message like "Your end of day report for March 10, 2026 is ready."
-    const match = message.match(
-      /(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(\d{4})/i,
-    )
-    if (!match) return null
-
-    const monthName = match[1]
-    const day = parseInt(match[2], 10)
-    const year = parseInt(match[3], 10)
-    const monthMap: Record<string, number> = {
-      january: 1,
-      february: 2,
-      march: 3,
-      april: 4,
-      may: 5,
-      june: 6,
-      july: 7,
-      august: 8,
-      september: 9,
-      october: 10,
-      november: 11,
-      december: 12,
+    const getGeneratingReport = (year: number, month: number) => {
+      const entry = generatingReports.value[getReportKey(year, month)]
+      return entry && isFresh(entry.startedAt) ? entry : undefined
     }
-    const month = monthMap[monthName.toLowerCase()]
-    if (!month) return null
 
-    // Format as YYYY-MM-DD to avoid timezone issues
-    return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`
-  }
+    const removeGeneratingReport = (year: number, month: number) => {
+      delete generatingReports.value[getReportKey(year, month)]
+    }
 
-  return {
-    generatingReports,
-    setGeneratingReport,
-    getGeneratingReport,
-    removeGeneratingReport,
-    isReportGenerating,
-    parseMonthYearFromMessage,
-    generatingEODReports,
-    setGeneratingEODReport,
-    getGeneratingEODReport,
-    removeGeneratingEODReport,
-    isEODReportGenerating,
-    parseDateFromMessage,
-  }
-})
+    const isReportGenerating = (year: number, month: number) =>
+      Boolean(getGeneratingReport(year, month))
+
+    const clearGeneratingReports = () => {
+      generatingReports.value = {}
+    }
+
+    const parseMonthYearFromMessage = (message: string): { year: number; month: number } | null => {
+      // Parse message like "Your monthly report for August, 2025 is ready."
+      const match = message.match(
+        /(January|February|March|April|May|June|July|August|September|October|November|December),?\s+(\d{4})/i,
+      )
+      if (!match) return null
+
+      const month = monthFromName(match[1])
+      return month ? { year: parseInt(match[2], 10), month } : null
+    }
+
+    // EOD Report methods
+    const setGeneratingEODReport = (
+      report: Omit<GeneratingEODReport, "startedAt"> & { startedAt?: number },
+    ) => {
+      generatingEODReports.value[report.date] = {
+        ...report,
+        startedAt: report.startedAt ?? Date.now(),
+      }
+    }
+
+    const getGeneratingEODReport = (date: string) => {
+      const entry = generatingEODReports.value[date]
+      return entry && isFresh(entry.startedAt) ? entry : undefined
+    }
+
+    const removeGeneratingEODReport = (date: string) => {
+      delete generatingEODReports.value[date]
+    }
+
+    const isEODReportGenerating = (date: string) => Boolean(getGeneratingEODReport(date))
+
+    const clearGeneratingEODReports = () => {
+      generatingEODReports.value = {}
+    }
+
+    const parseDateFromMessage = (message: string): string | null => {
+      // Parse message like "Your end of day report for March 10, 2026 is ready."
+      const match = message.match(
+        /(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(\d{4})/i,
+      )
+      if (!match) return null
+
+      const month = monthFromName(match[1])
+      if (!month) return null
+
+      const day = parseInt(match[2], 10)
+      // Format as YYYY-MM-DD to avoid timezone issues
+      return `${match[3]}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+    }
+
+    return {
+      generatingReports,
+      setGeneratingReport,
+      getGeneratingReport,
+      removeGeneratingReport,
+      isReportGenerating,
+      clearGeneratingReports,
+      parseMonthYearFromMessage,
+      generatingEODReports,
+      setGeneratingEODReport,
+      getGeneratingEODReport,
+      removeGeneratingEODReport,
+      isEODReportGenerating,
+      clearGeneratingEODReports,
+      parseDateFromMessage,
+    }
+  },
+  { persist: true },
+)

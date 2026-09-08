@@ -1,5 +1,6 @@
 import type { TCustomer } from "@modules/customers/types"
 import type {
+  TMemoParty,
   TOrder,
   TOrderChannel,
   TOrderPaymentMethod,
@@ -109,8 +110,9 @@ const shipmentCurrencyCell = ({ value }: { value: unknown }) => {
   return format(Number(value), { kobo: true })
 }
 
-const shipmentDateCell = ({ value }: { value: unknown }) =>
-  getSmartDateLabel(typeof value === "string" ? value : "")
+const shipmentDateCell = ({ value }: { value: unknown }) => {
+  return value ? getSmartDateLabel(value as string) : "--"
+}
 
 const SHIPMENT_BASE_COLUMNS: TableColumn<TShipmentRow>[] = [
   { header: "Order ID", accessor: "order_number" },
@@ -121,7 +123,7 @@ export const SHIPBUBBLE_SHIPMENT_COLUMNS: TableColumn<TShipmentRow>[] = [
   ...SHIPMENT_BASE_COLUMNS,
   { header: "Courier", accessor: "courier_name" },
   { header: "Shipping Cost", accessor: "order.delivery_fee", cell: shipmentCurrencyCell },
-  { header: "Delivery Estimate", accessor: "date", cell: shipmentDateCell },
+  { header: "Order Date", accessor: "date", cell: shipmentDateCell },
   { header: "Status", accessor: "status" },
   { header: "", accessor: "actions" },
 ]
@@ -163,4 +165,12 @@ export const SHIPMENT_STATUS_OPTIONS: { label: string; value: string }[] = [
   { label: "In Transit", value: "in_transit" },
   { label: "Delivered", value: "delivered" },
   { label: "Cancelled", value: "cancelled" },
+]
+
+export type TMemoPartyOption = { label: string; value: TMemoParty }
+
+/** Parties a memo can be resolved by — shared by the memo card select and the resolve modal */
+export const MEMO_PARTY_OPTIONS: TMemoPartyOption[] = [
+  { label: "Merchant", value: "merchant" },
+  { label: "Customer", value: "customer" },
 ]

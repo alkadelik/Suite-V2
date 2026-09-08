@@ -51,6 +51,8 @@ export type TOrder = {
   location: string
   location_name: string
   memos_count: number
+  /** Count of memos still open on the order */
+  open_memos_count?: number
   outstanding_balance: number
   payment_status: "unpaid" | "paid" | "partially_paid"
   payment_source?: string
@@ -145,12 +147,24 @@ export type TOrderResponse = {
   previous: string | null
 }
 
+/** Party a memo was resolved by */
+export type TMemoParty = "merchant" | "customer"
+
+/** Party a memo is awaiting action from */
+export type TMemoAwaiting = TMemoParty | "nobody"
+
 export type TOrderMemo = {
   uid: string
   title?: string
-  status: "merchant-action" | "customer-action"
+  awaiting: TMemoAwaiting
+  status: "open" | "resolved"
   severity: "low" | "medium" | "high"
   content: string
+  /** Optional note recorded when the memo was resolved */
+  resolution_note: string | null
+  resolved_at: string | null
+  resolved_by: TMemoParty | null
+  resolved_by_name: string | null
   author: string
   author_name: string
   author_email: string
@@ -196,9 +210,14 @@ export interface IPaymentPayload {
 
 export interface IMemoPayload {
   title: string
-  status: string
+  awaiting: TMemoAwaiting
   severity: "low" | "medium" | "high"
   content: string
+}
+
+export interface IResolveMemoPayload {
+  resolved_by: TMemoParty
+  note?: string
 }
 
 export interface OrderDashboardStats {
@@ -255,11 +274,30 @@ export type TShipbubbleShipment = {
   last_status_update: string | null
   quote_expires_at: string | null
   quote_status: string | null
-  quote_hours_remaining: string | null
+  /** Hours until the quote expires, e.g. 149 */
+  quote_hours_remaining: number | null
   is_suite_order: boolean
   pickup_date: string | null
   delivery_estimate: string | null
   created_at: string
+}
+
+/**
+ * Fresh ShipBubble quotes for an existing suite order, from
+ * POST /shipping/orders/{uid}/get-suite-quote/ — used to re-quote a shipment whose
+ * quote has expired. `request_token` and the chosen courier id replace the rate and
+ * courier stored on the order when the shipment is finally booked.
+ */
+export type TSuiteQuote = {
+  request_token: string
+  couriers: IShippingCourier[]
+  fastest_courier?: IShippingCourier
+  cheapest_courier?: IShippingCourier
+}
+
+/** The re-quote response payload — the quote sits under `quotes` */
+export type TSuiteQuoteResponse = {
+  quotes?: TSuiteQuote
 }
 
 /** Body for POST /shipping/orders/{uid}/create/ — payment_reference comes from Paystack */
@@ -305,4 +343,5 @@ export type TShipmentRow = {
   status: string
   order: TOrder
   shipment: TShipbubbleShipment | null
+  delivery_estimate: string | null
 }

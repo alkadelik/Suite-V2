@@ -1,274 +1,85 @@
 <template>
-  <div class="px-4 py-4 md:p-4">
-    <SectionHeader
-      size="lg"
-      :title="`${greetings}, ${user?.first_name} 👋`"
-      subtitle="What would you like to do today?"
-    />
+  <div>
+    <!-- Mobile page header (reuses the app-wide PageHeader like Inventory et al.) -->
+    <PageHeader title="Home" />
 
-    <div class="my-4 rounded-xl bg-white px-0 pb-2 md:my-6 md:p-4">
-      <!-- <h2 class="md:text-md mb-3 text-sm font-semibold">Quick Actions</h2> -->
+    <div class="p-4 pt-5 md:pt-4">
+      <div class="mx-auto mt-6 max-w-[1400px] space-y-6">
+        <!-- Full-width top section -->
+        <DashboardGreeting
+          :first-name="worklist?.firstName"
+          :count="worklist?.count ?? 0"
+          :loading="worklistQuery.isPending.value"
+        />
 
-      <div class="grid grid-cols-3 gap-3 md:gap-4 xl:grid-cols-5">
-        <div
-          v-for="action in quickActions.slice(0, isMobile ? 3 : 5)"
-          :key="action.label"
-          class="cursor-pointer rounded-2xl border px-2 py-3 text-center md:border-0 md:p-4 md:text-left"
-          :class="action.color"
-          @click="action.action && action.action()"
-        >
-          <div class="mb-1 flex items-center justify-between md:mb-4">
-            <div
-              class="border-core-200 mx-auto flex size-10 items-center justify-center rounded-xl border bg-white p-2 md:mx-0"
-            >
-              <Icon :name="action.icon" size="28" />
-            </div>
+        <!-- Quick Overview now opens in a modal -->
+        <div class="flex justify-center">
+          <button
+            type="button"
+            class="bg-primary-50 border-primary-200 text-primary-700 flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium"
+            @click="showOverview = true"
+          >
+            View Quick Overview
+            <Icon name="arrow-right" size="16" />
+          </button>
+        </div>
 
-            <Icon v-if="!isMobile" name="arrow-right" />
+        <HealthVitalsStrip
+          :vitals="health?.vitals ?? []"
+          :loading="healthQuery.isPending.value"
+          :error="healthQuery.isError.value"
+        />
+
+        <hr class="border-gray-200" />
+
+        <QuickActionRow />
+
+        <!-- Two-column split: worklist + rail -->
+        <div class="flex flex-col gap-6 xl:flex-row xl:items-start">
+          <div class="min-w-0 flex-1 space-y-6">
+            <Worklist
+              :tasks="worklist?.tasks ?? []"
+              :count="worklist?.count ?? 0"
+              :loading="worklistQuery.isPending.value"
+              :error="worklistQuery.isError.value"
+            />
+            <!-- Awareness rail renders BELOW the worklist on mobile (DASH-25) -->
+            <AwarenessRail class="xl:hidden" />
           </div>
-          <span class="text-xs font-medium md:text-base">{{ action.label }}</span>
+
+          <!-- Desktop rail: ~30% width, sticky so it stays in view while the worklist scrolls -->
+          <AwarenessRail
+            class="hidden shrink-0 xl:sticky xl:top-4 xl:block xl:max-h-[calc(100vh-6rem)] xl:w-[32%] xl:overflow-y-auto"
+          />
         </div>
       </div>
     </div>
 
-    <SectionHeader
-      size="md"
-      title="Your store at a glance"
-      subtitle="Here’s what’s happening in your store this week."
-      class="mb-4"
-    />
-
-    <div
-      v-if="orders?.results?.length"
-      class="space-y-4 overflow-hidden rounded-xl border-gray-200 md:border md:bg-white"
-    >
-      <DataTable
-        :data="orders?.results ?? []"
-        :columns="ORDER_COLUMNS.filter((col) => col.accessor !== 'actions')"
-        :loading="isPending"
-        :show-pagination="false"
-        :enable-row-selection="false"
-        :empty-state="{
-          title: 'You don’t have any sales data yet!',
-          description: `Once you start adding products and recording orders, your performance will show up here.`,
-        }"
-        @row-click="
-          (row) => {
-            selectedOrder = row
-            openDetails = true
-          }
-        "
-      >
-        <template #cell:items="{ item }">
-          <ProductAvatar
-            :name="item.items?.[0].product_name"
-            :url="undefined"
-            :variants-count="item.items.length > 1 ? item.items.length : undefined"
-            :variants-count-text="`+ ${item.items.length - 1}`"
-            shape="rounded"
-            class="!gap-2 capitalize"
-            max-width="100px"
-          />
-        </template>
-        <template #cell:fulfilment_status="{ item }">
-          <Chip
-            :color="item.fulfilment_status === 'fulfilled' ? 'success' : 'primary'"
-            :label="item.fulfilment_status === 'fulfilled' ? 'Yes' : 'No'"
-          />
-        </template>
-        <!--  -->
-        <template #cell:payment_status="{ item }">
-          <Chip
-            :icon="item.payment_status === 'paid' ? 'card-tick' : 'card-pos'"
-            :label="startCase(item.payment_status)"
-            :color="
-              item.payment_status === 'paid'
-                ? 'success'
-                : item.payment_status === 'partially_paid'
-                  ? 'warning'
-                  : 'error'
-            "
-          />
-        </template>
-        <!--  -->
-        <template #cell:customer_info="{ item }">
-          <span>
-            {{ item.customer_name || anonymousCustomer.full_name }}
-          </span>
-        </template>
-        <template #mobile="{ item }">
-          <OrderCard
-            :order="item"
-            @click="
-              () => {
-                selectedOrder = item
-                openDetails = true
-              }
-            "
-            :show-actions="false"
-          />
-        </template>
-      </DataTable>
-    </div>
-
-    <EmptyState
-      v-else
-      title="You don’t have any sales data yet!"
-      description="Once you start adding products and recording orders, your performance will show up here."
-      class="!min-h-[50vh]"
-      :loading="isPending"
-    />
-
-    <!--  -->
-    <WelcomeToTeamModal v-model="openModal" />
-
-    <SuccessModal
-      v-model="showSubscriptionSuccess"
-      title="Subscription successful"
-      subtitle="Your subscription payment was completed successfully. We’ll refresh your dashboard to apply your new plan."
-      button-text="Continue"
-      @update:model-value="onSubscriptionModalClose"
-    />
-
-    <OrderDetailsDrawer
-      v-if="selectedOrder"
-      :open="openDetails"
-      @close="openDetails = false"
-      :order="selectedOrder"
+    <QuickOverviewModal
+      :open="showOverview"
+      :line="worklist?.summaryLine"
+      @close="showOverview = false"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import SectionHeader from "@components/SectionHeader.vue"
-import { useAuthStore } from "@modules/auth/store"
-import { useSettingsStore } from "@modules/settings/store"
-import WelcomeToTeamModal from "../components/WelcomeToTeamModal.vue"
-import { computed, ref, watch } from "vue"
+import { computed, ref } from "vue"
+import PageHeader from "@components/PageHeader.vue"
 import Icon from "@components/Icon.vue"
-import EmptyState from "@components/EmptyState.vue"
-import SuccessModal from "@components/SuccessModal.vue"
-import { useMediaQuery } from "@vueuse/core"
-import { useRoute, useRouter } from "vue-router"
-import { usePremiumAccess } from "@/composables/usePremiumAccess"
-import { useGetOrders } from "@modules/orders/api"
-import { startCase } from "@/utils/format-strings"
-import Chip from "@components/Chip.vue"
-import { anonymousCustomer, ORDER_COLUMNS } from "@modules/orders/constants"
-import DataTable from "@components/DataTable.vue"
-import OrderCard from "@modules/orders/components/OrderCard.vue"
-// import { formatError } from "@/utils/error-handler"
-import OrderDetailsDrawer from "@modules/orders/components/OrderDetailsDrawer.vue"
-import { TOrder } from "@modules/orders/types"
-import ProductAvatar from "@components/ProductAvatar.vue"
+import { useGetDashboardHealth, useGetWorklist } from "../components/dashboard/api"
+import DashboardGreeting from "../components/dashboard/DashboardGreeting.vue"
+import QuickOverviewModal from "../components/dashboard/QuickOverviewModal.vue"
+import HealthVitalsStrip from "../components/dashboard/HealthVitalsStrip.vue"
+import QuickActionRow from "../components/dashboard/QuickActionRow.vue"
+import Worklist from "../components/dashboard/Worklist.vue"
+import AwarenessRail from "../components/dashboard/AwarenessRail.vue"
 
-const { user } = useAuthStore()
-const openModal = ref(false)
-const router = useRouter()
-const route = useRoute()
-const { checkPremiumAccess } = usePremiumAccess()
+// Independent fetches: a slow worklist never blocks the health strip (DASH-19).
+const healthQuery = useGetDashboardHealth()
+const worklistQuery = useGetWorklist()
+const health = computed(() => healthQuery.data.value)
+const worklist = computed(() => worklistQuery.data.value)
 
-// Paystack redirects back with `trxref` & `reference` query params after a
-// successful subscription payment. Detect that and confirm to the user.
-const showSubscriptionSuccess = ref(false)
-
-watch(
-  () => route.query,
-  (query) => {
-    if (query.trxref) {
-      showSubscriptionSuccess.value = true
-    }
-  },
-  { immediate: true },
-)
-
-// Hard refresh (so all endpoints re-run with the new plan) and drop the
-// Paystack query params from the URL.
-const onSubscriptionModalClose = (value: boolean) => {
-  if (value) return
-  window.location.assign(route.path)
-}
-
-const isMobile = useMediaQuery("(max-width: 768px)")
-const openDetails = ref(false)
-const selectedOrder = ref<TOrder | null>(null)
-
-const greetings = computed(() => {
-  const hour = new Date().getHours()
-  if (hour < 12) return "Good morning"
-  if (hour < 18) return "Good afternoon"
-  return "Good evening"
-})
-
-const isHQ = computed(() => useSettingsStore().activeLocation?.is_hq ?? true)
-const {
-  data: orders,
-  isPending,
-  //  isError, error
-} = useGetOrders()
-
-// // Reload page if location ID error occurs
-// // This can happen if the user switches to a location but state still has the previous location ID
-// watch(isError, (newVal) => {
-//   if (newVal) {
-//     const errMsg = formatError(error.value)?.toLowerCase()
-//     if (errMsg?.includes("location") && errMsg?.includes("id")) {
-//       window.location.reload()
-//     }
-//   }
-// })
-
-const quickActions = computed(() => {
-  const allActions = [
-    {
-      label: "Add a product",
-      icon: "box",
-      color: "bg-blue-50 text-blue-700",
-      action: () => {
-        if (!checkPremiumAccess()) return
-        router.push("/inventory?create=true")
-      },
-      hqOnly: true,
-    },
-    {
-      label: "Add Order",
-      icon: "bag",
-      color: "bg-green-50 text-green-700",
-      action: () => {
-        if (!checkPremiumAccess()) return
-        router.push("/orders?create=true")
-      },
-    },
-    {
-      label: "Create popup",
-      icon: "calendar-tick",
-      color: "bg-purple-50 text-purple-700",
-      action: () => {
-        if (!checkPremiumAccess()) return
-        router.push("/popups?create=true")
-      },
-      hqOnly: true,
-    },
-    {
-      label: "Add a customer",
-      icon: "profile-add",
-      color: "bg-primary-50 text-primary-700",
-      action: () => {
-        if (!checkPremiumAccess()) return
-        router.push("/customers?create=true")
-      },
-    },
-    {
-      label: "Record expense",
-      icon: "receipt-add",
-      color: "bg-pink-50 text-pink-700",
-      action: () => {
-        if (!checkPremiumAccess()) return
-        router.push("/expenses?create=true")
-      },
-    },
-  ]
-
-  return allActions.filter((action) => !action.hqOnly || isHQ.value)
-})
+const showOverview = ref(false)
 </script>

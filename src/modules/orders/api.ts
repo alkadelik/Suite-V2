@@ -3,6 +3,7 @@ import {
   IMemoPayload,
   IPaymentHistory,
   IPaymentPayload,
+  IResolveMemoPayload,
   OrderDashboardStats,
   OrderPayload,
   TBookedShipment,
@@ -11,6 +12,7 @@ import {
   TOrderMemo,
   TOrderResponse,
   TShipbubbleShipmentResponse,
+  TSuiteQuoteResponse,
 } from "./types"
 import baseApi, { TPaginatedResponse, useApiQuery } from "@/composables/baseApi"
 import { MaybeRefOrGetter, computed, toValue } from "vue"
@@ -55,6 +57,29 @@ export function useGetShipments(
     key: "shipments",
     selectData: true,
     enabled,
+  })
+}
+
+/**
+ * Look up the ShipBubble shipment attached to a single order. There is no by-order
+ * endpoint, so the shipments list is searched by order number — the caller still has
+ * to match on the order uid since search is fuzzy.
+ */
+export function useFindOrderShipment() {
+  return useMutation({
+    mutationFn: (orderNumber: string): Promise<{ data: { data?: TShipbubbleShipmentResponse } }> =>
+      baseApi.get(`/shipping/orders/`, { params: { search: orderNumber, limit: 10 } }),
+  })
+}
+
+/**
+ * Re-quote a suite shipment with ShipBubble. Quotes expire after a few days, so an
+ * unbooked shipment needs a fresh token and courier list before it can be paid for.
+ */
+export function useGetSuiteOrderQuote() {
+  return useMutation({
+    mutationFn: (uid: string): Promise<{ data: { data?: TSuiteQuoteResponse } }> =>
+      baseApi.post(`/shipping/orders/${uid}/get-suite-quote/`),
   })
 }
 
@@ -129,6 +154,22 @@ export function useGetOrderMemos(id: MaybeRefOrGetter<string>) {
     url: computed(() => `/orders/${toValue(id)}/memos/`),
     key: computed(() => `orderMemos_${toValue(id)}`),
     selectData: true,
+  })
+}
+
+/** Resolve an open order memo, optionally recording how it was resolved */
+export function useResolveOrderMemo() {
+  return useMutation({
+    mutationFn: ({ id, memoId, body }: { id: string; memoId: string; body: IResolveMemoPayload }) =>
+      baseApi.post(`/orders/${id}/memos/${memoId}/resolve/`, body),
+  })
+}
+
+/** Reopen a resolved order memo, clearing its resolution state */
+export function useReopenOrderMemo() {
+  return useMutation({
+    mutationFn: ({ id, memoId }: { id: string; memoId: string }) =>
+      baseApi.post(`/orders/${id}/memos/${memoId}/reopen/`, {}),
   })
 }
 

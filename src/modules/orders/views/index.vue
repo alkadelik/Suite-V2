@@ -9,13 +9,17 @@ import { useMediaQuery } from "@vueuse/core"
 import { computed, ref, watch } from "vue"
 import DropdownMenu from "@components/DropdownMenu.vue"
 import Chip from "@components/Chip.vue"
-import { TOrder } from "../types"
+import { TOrder, TShipmentRow } from "../types"
+import { TableColumn } from "@components/DataTable.vue"
+import { toShipmentRow } from "../utilities"
+import ShipmentDetailsDrawer from "../components/shipments/ShipmentDetailsDrawer.vue"
 import CreateOrderDrawer from "../components/CreateOrderDrawer.vue"
 import VoidDeleteOrder from "../components/VoidDeleteOrder.vue"
 import ConfirmationModal from "@components/ConfirmationModal.vue"
 import {
   useCancelOrder,
   useDeleteOrder,
+  useFindOrderShipment,
   useGenerateInvoice,
   useGenerateReceipt,
   useGetOrderDashboard,
@@ -61,6 +65,21 @@ const openCancel = ref(false)
 const markPaidMethod = ref(ORDER_PAYMENT_METHODS[0])
 const selectedOrder = ref<TOrder | null>(null)
 const status = ref(ORDER_STATUS_TAB[0].key)
+
+/** Open-memo flag sits in its own unlabelled column, just before Actions */
+const orderColumns = computed(() => {
+  const columns = ORDER_COLUMNS.filter((v) =>
+    status.value === "voided" ? v.accessor !== "actions" : true,
+  )
+  const actionsIndex = columns.findIndex((v) => v.accessor === "actions")
+  const memoColumn: TableColumn<TOrder> = { header: "", accessor: "open_memos" }
+
+  return actionsIndex === -1
+    ? [...columns, memoColumn]
+    : [...columns.slice(0, actionsIndex), memoColumn, ...columns.slice(actionsIndex)]
+})
+
+const openMemoCount = (order: TOrder) => order.open_memos_count ?? 0
 
 const { format } = useFormatCurrency()
 const queryClient = useQueryClient()
@@ -558,6 +577,36 @@ const handleDetailsMarkAsPaid = () => {
   openDetails.value = false
   openMarkPaid.value = true
 }
+
+// --- Shipment details, opened in place from the order drawer ---
+const openShipmentDetails = ref(false)
+const shipmentRow = ref<TShipmentRow | null>(null)
+const { mutate: findOrderShipment, isPending: isFindingShipment } = useFindOrderShipment()
+
+const handleDetailsViewShipment = () => {
+  const order = selectedOrder.value
+  if (!order) return
+  findOrderShipment(order.order_number, {
+    onSuccess: (response) => {
+      // Search is fuzzy, so match the order back by uid rather than trusting the first row
+      const shipment = (response.data?.data?.results ?? []).find((s) => s.order?.uid === order.uid)
+      if (!shipment) {
+        toast.info("Shipment details are not available for this order.")
+        return
+      }
+      shipmentRow.value = toShipmentRow(shipment)
+      openDetails.value = false
+      openShipmentDetails.value = true
+    },
+    onError: displayError,
+  })
+}
+
+// Closing the shipment drawer steps back to the order it was opened from.
+const handleCloseShipmentDetails = () => {
+  openShipmentDetails.value = false
+  if (selectedOrder.value) openDetails.value = true
+}
 </script>
 
 <template>
@@ -639,9 +688,7 @@ const handleDetailsMarkAsPaid = () => {
         <DataTable
           :key="status"
           :data="orders?.results ?? []"
-          :columns="
-            ORDER_COLUMNS.filter((v) => (status === 'voided' ? v.accessor !== 'actions' : true))
-          "
+          :columns="orderColumns"
           fix-last-column
           :loading="isFetching"
           :enable-row-selection="false"
@@ -682,6 +729,9 @@ const handleDetailsMarkAsPaid = () => {
               />
               <Icon v-if="item.memos_count" name="note-2" size="20" class="text-primary-600" />
             </div>
+          </template>
+          <template #cell:open_memos="{ item }">
+            <Chip v-if="openMemoCount(item)" :label="`${openMemoCount(item)} open`" color="blue" />
           </template>
           <template #cell:fulfilment_status="{ item }">
             <Chip
@@ -842,7 +892,9 @@ const handleDetailsMarkAsPaid = () => {
           router.replace({ query: { ...route.query, order_id: undefined } })
         }
       "
+      :loading-shipment="isFindingShipment"
       @view-memos="handleDetailsViewMemos"
+      @view-shipment="handleDetailsViewShipment"
       @mark-as-paid="handleDetailsMarkAsPaid"
       @share-receipt="handleDetailsShareReceipt"
       @share-invoice="handleDetailsShareInvoice"
@@ -851,6 +903,16 @@ const handleDetailsMarkAsPaid = () => {
       @fulfill="handleDetailsFulfill"
       @void-order="handleDetailsVoidOrder"
       @delete-order="handleDetailsDeleteOrder"
+    />
+
+    <ShipmentDetailsDrawer
+      v-if="shipmentRow"
+      :open="openShipmentDetails"
+      :item="shipmentRow"
+      readonly
+      @close="handleCloseShipmentDetails"
+      @refresh="handleRefresh"
+      @view-order="handleCloseShipmentDetails"
     />
 
     <OrderFiltersDrawer

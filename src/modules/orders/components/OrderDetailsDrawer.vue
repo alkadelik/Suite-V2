@@ -10,6 +10,9 @@ import { computed } from "vue"
 import { useSettingsStore } from "@modules/settings/store"
 import { clipboardCopy } from "@/utils/others"
 import AppButton from "@components/AppButton.vue"
+import InfoBox from "@components/InfoBox.vue"
+import { RouterLink } from "vue-router"
+import { isShipbubbleOrder, isShipmentBooked } from "../utilities"
 
 const props = defineProps<{
   open: boolean
@@ -22,11 +25,18 @@ const props = defineProps<{
     iconClass?: string
     divider?: boolean
   }>
+  /** Hide the "Manage Order" menu — used where the drawer is opened for reference only */
+  hideActions?: boolean
+  /** Drop the "create it on the shipments page" hint for callers already on that page */
+  hidePendingShipmentHint?: boolean
+  /** The shipment lookup behind "View shipment details" is in flight */
+  loadingShipment?: boolean
 }>()
 const emit = defineEmits([
   "close",
   "refresh",
   "view-memos",
+  "view-shipment",
   "mark-as-paid",
   "share-receipt",
   "share-invoice",
@@ -43,9 +53,21 @@ const customerName = computed(() => {
   return props.order.customer_name || "Unknown Customer"
 })
 
+const orderItems = computed(() => props.order.items ?? [])
+
 const itemsCount = computed(() => {
-  return props.order.items.reduce((sum, item) => sum + item.quantity, 0)
+  return orderItems.value.reduce((sum, item) => sum + item.quantity, 0)
 })
+
+// A booked ShipBubble order has a shipment record the drawer can open in place. One
+// still on a quote has nothing to show, so it gets pointed at the shipments page.
+const showShipmentLink = computed(() => isShipmentBooked(props.order))
+const showPendingShipmentHint = computed(
+  () =>
+    !props.hidePendingShipmentHint &&
+    isShipbubbleOrder(props.order) &&
+    !isShipmentBooked(props.order),
+)
 
 const hasDiscount = (item: TOrderItem) => {
   const original = Number(item.original_price)
@@ -173,7 +195,7 @@ const menuItems = computed(() => {
       </div>
     </template>
 
-    <div v-if="order.fulfilment_status !== 'voided'" class="mb-4 flex justify-end">
+    <div v-if="order.fulfilment_status !== 'voided' && !hideActions" class="mb-4 flex justify-end">
       <DropdownMenu :items="menuItems" size="sm">
         <template #trigger>
           <AppButton icon="settings-02" label="Manage Order" variant="outlined" size="sm" />
@@ -200,9 +222,12 @@ const menuItems = computed(() => {
     <div class="space-y-4">
       <!-- Order Items -->
 
-      <div class="border-core-300 bg-core-25 my-6 space-y-4 rounded-xl border p-4">
+      <div
+        v-if="orderItems.length"
+        class="border-core-300 bg-core-25 my-6 space-y-4 rounded-xl border p-4"
+      >
         <div
-          v-for="(item, idx) in order.items"
+          v-for="(item, idx) in orderItems"
           :key="`${item.uid}-${idx}`"
           class="flex items-center justify-between"
         >
@@ -390,6 +415,32 @@ const menuItems = computed(() => {
               @click="clipboardCopy(order.shipping_details?.tracking_url)"
             />
           </div>
+        </div>
+
+        <div
+          v-if="showShipmentLink || showPendingShipmentHint"
+          class="border-core-200 border-t border-dashed pt-3"
+        >
+          <AppButton
+            v-if="showShipmentLink"
+            label="View shipment details"
+            variant="text"
+            size="sm"
+            icon="arrow-right"
+            icon-placement="right"
+            class="!px-0"
+            :loading="loadingShipment"
+            @click="emit('view-shipment')"
+          />
+
+          <InfoBox v-else title="No shipment yet" message="">
+            <p class="text-xs font-semibold md:text-sm">
+              A shipment hasn't been created for this order yet. Go to the
+              <RouterLink :to="{ name: 'Shipments' }" class="underline underline-offset-2">
+                shipments page </RouterLink
+              >to create one.
+            </p>
+          </InfoBox>
         </div>
       </div>
     </div>

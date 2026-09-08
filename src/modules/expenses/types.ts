@@ -117,6 +117,12 @@ export interface TExpenseCategory {
   created_at: string
 }
 
+/**
+ * Query params emitted by the filter drawer. Multi-value facets are arrays and get
+ * serialised as repeated keys (`?status=pending&status=unpaid`).
+ */
+export type TExpenseFilters = Record<string, string | string[]>
+
 export interface TExpenseCategoryResponse {
   results: TExpenseCategory[]
   count: number

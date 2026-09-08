@@ -327,7 +327,6 @@ const onCreateOrder = () => {
       } else if (delivery_method === "shipbubble") {
         deliveryFields.rate = shippingInfo.value.shipping_rate_token
         deliveryFields.courier = shippingInfo.value.courier
-        delete deliveryFields.delivery_address
       } else if (delivery_method === "custom") {
         deliveryFields.delivery_fee = shippingInfo.value.delivery_fee
         deliveryFields.courier = shippingInfo.value.courier

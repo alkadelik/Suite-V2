@@ -42,7 +42,7 @@ const { format } = useFormatCurrency()
       </span>
       <DropdownMenu :items="actions" @toggle="emit('toggle')" />
     </div>
-    <div class="grid grid-cols-3 gap-3 p-3">
+    <div class="grid grid-cols-2 gap-3 p-3">
       <div v-if="item.courier" class="min-w-0">
         <p class="text-core-500 text-xs">Courier</p>
         <p class="truncate text-sm font-medium">
@@ -50,10 +50,10 @@ const { format } = useFormatCurrency()
         </p>
       </div>
       <div>
-        <p class="text-core-500 text-xs">
-          {{ item.shipment ? "Delivery Estimate" : "Order Date" }}
+        <p class="text-core-500 text-xs">Order Date</p>
+        <p class="text-sm font-medium">
+          {{ getSmartDateLabel(item.date) }}
         </p>
-        <p class="text-sm font-medium">{{ getSmartDateLabel(item.date) }}</p>
       </div>
 
       <div class="min-w-0">

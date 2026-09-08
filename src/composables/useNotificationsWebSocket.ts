@@ -35,6 +35,53 @@ export function useNotificationsWebSocket(options?: UseNotificationsWebSocketOpt
 
   const canConnect = computed(() => Boolean(user.value && accessToken.value))
 
+  /**
+   * Refetch every cached query for a report family. Keyed on the prefix rather than an
+   * exact date because the view may be showing any date — and because a mismatch
+   * between the notification's date and the query key used to leave the page stale
+   * until the user reloaded by hand.
+   */
+  const invalidateReportQueries = (prefix: string) =>
+    queryClient.invalidateQueries({
+      predicate: (query) => {
+        const key = query.queryKey[0]
+        return typeof key === "string" && key.startsWith(prefix)
+      },
+    })
+
+  /**
+   * Clear the "generating" flag for the report the notification refers to and pull the
+   * fresh report in, so an open reports page swaps itself over without a reload.
+   * `extras` is trusted first; the message text is only a fallback.
+   */
+  const handleReportReady = (notification: INotification) => {
+    const extras = notification.extras || {}
+    const reportType = typeof extras.report_type === "string" ? extras.report_type : null
+
+    if (reportType !== "eod") {
+      const year = Number(extras.year)
+      const month = Number(extras.month)
+      const parsed =
+        year && month
+          ? { year, month }
+          : reportsStore.parseMonthYearFromMessage(notification.message)
+      if (parsed) reportsStore.removeGeneratingReport(parsed.year, parsed.month)
+    }
+
+    if (reportType !== "monthly") {
+      const rawDate = extras.date ?? extras.report_date
+      const date =
+        typeof rawDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(rawDate)
+          ? rawDate
+          : reportsStore.parseDateFromMessage(notification.message)
+      if (date) reportsStore.removeGeneratingEODReport(date)
+    }
+
+    // Unknown report_type: refresh both families rather than guess.
+    if (reportType !== "eod") invalidateReportQueries("latestMonthlyReport")
+    if (reportType !== "monthly") invalidateReportQueries("latestEODReport")
+  }
+
   const connect = () => {
     // Don't connect if no user or token
     if (!canConnect.value) return
@@ -80,35 +127,7 @@ export function useNotificationsWebSocket(options?: UseNotificationsWebSocketOpt
 
           if (notification.type === "report") {
             toast.success(notification.message, { title: notification.title, persistent: true })
-
-            // Handle monthly report completion
-            if (notification.extras?.report_type === "monthly") {
-              const parsedDate = reportsStore.parseMonthYearFromMessage(notification.message)
-              if (parsedDate) {
-                const { year, month } = parsedDate
-                // Remove from generating reports
-                reportsStore.removeGeneratingReport(year, month)
-                // Invalidate the query to refetch the report
-                queryClient.invalidateQueries({
-                  queryKey: [`latestMonthlyReport-${year}-${month}`],
-                })
-                console.log(`Invalidated monthly report query for ${year}-${month}`)
-              }
-            }
-
-            // Handle EOD report completion
-            if (notification.extras?.report_type === "eod") {
-              const parsedDate = reportsStore.parseDateFromMessage(notification.message)
-              if (parsedDate) {
-                // Remove from generating reports
-                reportsStore.removeGeneratingEODReport(parsedDate)
-                // Invalidate the query to refetch the report
-                queryClient.invalidateQueries({
-                  queryKey: [`latestEODReport-${parsedDate}`],
-                })
-                console.log(`Invalidated EOD report query for ${parsedDate}`)
-              }
-            }
+            handleReportReady(notification)
           }
 
           // Call the callback if provided

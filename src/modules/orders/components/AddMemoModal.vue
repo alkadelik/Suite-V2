@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue"
 import { useCreateOrderMemo } from "../api"
+import { TMemoAwaiting } from "../types"
 import { displayError } from "@/utils/error-handler"
 import { toast } from "@/composables/useToast"
 import RadioInputField from "@components/form/RadioInputField.vue"
@@ -14,14 +15,15 @@ const props = defineProps<{ open: boolean; orderId: string }>()
 
 const emit = defineEmits<{ close: []; refresh: [] }>()
 
-const statusOptions = [
-  { label: "Merchant Action Required", value: "merchant-action" },
-  { label: "Customer Action Required", value: "customer-action" },
+const awaitingOptions: { label: string; value: TMemoAwaiting }[] = [
+  { label: "Merchant", value: "merchant" },
+  { label: "Customer", value: "customer" },
+  { label: "Nobody", value: "nobody" },
 ]
 
 const emptyForm = () => ({
   title: "",
-  status: statusOptions[0],
+  awaiting: awaitingOptions[0],
   severity: "low" as "low" | "medium" | "high",
   content: "",
 })
@@ -32,7 +34,7 @@ const { mutate: createMemo, isPending } = useCreateOrderMemo()
 
 const onSubmit = () => {
   createMemo(
-    { id: props.orderId, body: { ...memoForm.value, status: memoForm.value.status.value } },
+    { id: props.orderId, body: { ...memoForm.value, awaiting: memoForm.value.awaiting.value } },
     {
       onSuccess: () => {
         memoForm.value = emptyForm()
@@ -68,8 +70,8 @@ const handleClose = () => {
         required
       />
 
-      <!-- Status -->
-      <SelectField v-model="memoForm.status" label="Status" :options="statusOptions" />
+      <!-- Awaiting -->
+      <SelectField v-model="memoForm.awaiting" label="Awaiting" :options="awaitingOptions" />
 
       <!-- Severity -->
       <RadioInputField

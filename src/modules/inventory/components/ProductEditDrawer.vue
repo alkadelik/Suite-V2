@@ -31,7 +31,7 @@
           v-model="variants"
           :product-name="form.name"
           :hide-stock="true"
-          :disable-cost-price="true"
+          :hide-cost-price="true"
           :errors="submitAttempted ? currentStepValidation.inventoryErrors : undefined"
         />
 

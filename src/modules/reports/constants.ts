@@ -169,11 +169,15 @@ export const EOD_ABANDONED_COLUMNS: TableColumn<TEodAbandoned>[] = [
   {
     header: "Items",
     accessor: "items",
-    cell: ({ value }) => (value as string[]).join(", "),
+    cell: ({ value }) => {
+      if (Array.isArray(value) && value) return value.join(", ")
+      else if (typeof value === "string") return value
+      return ""
+    },
   },
   {
     header: "Amount",
-    accessor: "amount",
+    accessor: "cart_value",
     cell: ({ value }) => {
       const { format } = useFormatCurrency()
       return format(Number(value), { kobo: true })
@@ -181,13 +185,8 @@ export const EOD_ABANDONED_COLUMNS: TableColumn<TEodAbandoned>[] = [
   },
   {
     header: "Drop-off Point",
-    accessor: "drop_off",
-    cell: ({ value }) =>
-      startCase(
-        String(value)
-          .replace("shipping_info", "Shipping Info")
-          .replace("payment_page", "Payment Page"),
-      ),
+    accessor: "drop_off_point",
+    cell: ({ value }) => startCase(String(value)).replaceAll("_", " "),
   },
 ]
 

@@ -330,6 +330,7 @@ watch(
           name="expiry_date"
           label="Estimated Expiry Date"
           placeholder="Select expiry date"
+          :hint="`Leave empty if this ${materialSingular} does not expire`"
         />
 
         <RecordExpenseToggle

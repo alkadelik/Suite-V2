@@ -59,6 +59,15 @@ const onRowClick = (batch: TBatch) => {
           <Chip v-if="item.source_type" :label="startCase(item.source_type)" color="blue" />
           <span v-else>N/A</span>
         </template>
+        <template #cell:expiry_date="{ value, item }">
+          {{
+            value
+              ? formatDate(String(value))
+              : item.source_type === "opening_balance" && material.expiry_date
+                ? formatDate(material.expiry_date)
+                : "-"
+          }}
+        </template>
         <template #mobile="{ item }">
           <RMBatchCard
             @click="

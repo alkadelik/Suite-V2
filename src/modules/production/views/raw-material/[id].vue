@@ -25,8 +25,10 @@ import { toast } from "@/composables/useToast"
 import {
   convertNumToPurchaseUnit,
   convertNumToUsageUnit,
+  getMaterialWarnings,
   getPurchaseUnit,
 } from "@modules/production/utils"
+import Icon from "@components/Icon.vue"
 import { UNITS_OF_MEASURE } from "@modules/production/constant"
 import { removeUnderscores, startCase } from "@/utils/format-strings"
 import { floatDecimal } from "@/utils/others"
@@ -83,6 +85,10 @@ const actionMenus = computed(() => [
     action: () => (showDelete.value = true),
   },
 ])
+
+const warnings = computed(() =>
+  material.value ? getMaterialWarnings(material.value, materialSingular.value) : [],
+)
 
 const materialStats = computed(() => {
   const item = material.value
@@ -154,7 +160,17 @@ const getUnitLabel = computed(() => {
     <div v-else>
       <section class="mb-6 flex justify-between gap-4">
         <div>
-          <h2 class="mb-4 text-2xl font-semibold capitalize">{{ material.name }}</h2>
+          <h2 class="mb-4 flex items-center gap-1.5 text-2xl font-semibold capitalize">
+            {{ material.name }}
+            <Icon
+              v-for="warning in warnings"
+              :key="warning.key"
+              name="danger"
+              :size="20"
+              v-tooltip="{ content: warning.tooltip, popperClass: 'text-xs max-w-56' }"
+              :class="['shrink-0 cursor-pointer', warning.class]"
+            />
+          </h2>
           <div class="flex gap-1">
             <Chip v-if="material.is_sub_assembly" label="Sub-assembly" color="purple" />
             <Chip :label="getUnitLabel" color="blue" />

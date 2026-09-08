@@ -31,7 +31,7 @@ describe("walkthrough registry", () => {
       "pickup-save",
     ])
     expect(WALKTHROUGHS.discounts.steps).toHaveLength(6)
-    expect(WALKTHROUGHS.shipments.steps).toHaveLength(7)
+    expect(WALKTHROUGHS.shipments.steps).toHaveLength(6)
     for (const definition of Object.values(WALKTHROUGHS)) {
       expect(new Set(definition.steps.map((step) => step.anchor)).size).toBe(
         definition.steps.length,

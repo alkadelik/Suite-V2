@@ -53,8 +53,8 @@ const COLUMNS: TableColumn<TExpense>[] = [
 
 const EXPENSE_ROWS = computed(() => {
   return (props.data?.expenses_by_category ?? []).map((expense) => ({
-    category_name: startCase(expense.category),
-    percentage: expense.percent_of_revenue ?? 0,
+    category_name: startCase(expense.category_name || ""),
+    percentage: expense.percent_of_total ?? 0,
     amount: expense.amount,
   }))
 })
