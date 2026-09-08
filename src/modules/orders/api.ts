@@ -12,6 +12,7 @@ import {
   TOrderMemo,
   TOrderResponse,
   TShipbubbleShipmentResponse,
+  TSuiteQuoteResponse,
 } from "./types"
 import baseApi, { TPaginatedResponse, useApiQuery } from "@/composables/baseApi"
 import { MaybeRefOrGetter, computed, toValue } from "vue"
@@ -68,6 +69,17 @@ export function useFindOrderShipment() {
   return useMutation({
     mutationFn: (orderNumber: string): Promise<{ data: { data?: TShipbubbleShipmentResponse } }> =>
       baseApi.get(`/shipping/orders/`, { params: { search: orderNumber, limit: 10 } }),
+  })
+}
+
+/**
+ * Re-quote a suite shipment with ShipBubble. Quotes expire after a few days, so an
+ * unbooked shipment needs a fresh token and courier list before it can be paid for.
+ */
+export function useGetSuiteOrderQuote() {
+  return useMutation({
+    mutationFn: (uid: string): Promise<{ data: { data?: TSuiteQuoteResponse } }> =>
+      baseApi.post(`/shipping/orders/${uid}/get-suite-quote/`),
   })
 }
 

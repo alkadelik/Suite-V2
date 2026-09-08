@@ -540,6 +540,7 @@ const emptyStateDescription = computed(() => {
       :item="selectedShipment"
       :tour-mode="isShipmentTour"
       @close="openPayConfirm = false"
+      @refresh="handleRefresh"
       @created="handleShipmentCreated"
     />
 

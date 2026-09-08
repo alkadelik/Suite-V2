@@ -236,6 +236,8 @@ export interface IShippingCourier {
   ratings: number
   votes: number
   estimated_days?: string
+  /** Human-readable delivery window, e.g. "Within 35 hrs" */
+  delivery_eta?: string
 }
 
 export interface IShippingRatesResponse {
