@@ -7,6 +7,7 @@ import LogoutModal from "@components/core/LogoutModal.vue"
 import { clipboardCopy } from "@/utils/others"
 import { useSettingsStore } from "../store"
 import { getSettingsNavigationLinks } from "../navigation"
+import { useUserRoles } from "@/composables/useUserRoles"
 
 const router = useRouter()
 
@@ -20,10 +21,13 @@ onMounted(() => {
 
 const isInternational = computed(() => useSettingsStore().isInternational)
 
+const { isOwner } = useUserRoles()
+
 const settingsLinks = computed(() =>
   getSettingsNavigationLinks({
     isHq: Boolean(useSettingsStore().activeLocation?.is_hq),
     isInternational: isInternational.value,
+    isOwner: isOwner.value,
     surface: "mobile",
   }),
 )

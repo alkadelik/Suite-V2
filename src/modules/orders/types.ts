@@ -282,6 +282,24 @@ export type TShipbubbleShipment = {
   created_at: string
 }
 
+/**
+ * Fresh ShipBubble quotes for an existing suite order, from
+ * POST /shipping/orders/{uid}/get-suite-quote/ — used to re-quote a shipment whose
+ * quote has expired. `request_token` and the chosen courier id replace the rate and
+ * courier stored on the order when the shipment is finally booked.
+ */
+export type TSuiteQuote = {
+  request_token: string
+  couriers: IShippingCourier[]
+  fastest_courier?: IShippingCourier
+  cheapest_courier?: IShippingCourier
+}
+
+/** The re-quote response payload — the quote sits under `quotes` */
+export type TSuiteQuoteResponse = {
+  quotes?: TSuiteQuote
+}
+
 /** Body for POST /shipping/orders/{uid}/create/ — payment_reference comes from Paystack */
 export type TCreateShipmentPayload = {
   order: string

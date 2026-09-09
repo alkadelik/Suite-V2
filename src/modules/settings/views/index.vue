@@ -93,6 +93,7 @@ import Icon from "@components/Icon.vue"
 import { useAuthStore } from "@modules/auth/store"
 import LogoutModal from "@components/core/LogoutModal.vue"
 import { getSettingsNavigationLinks } from "../navigation"
+import { useUserRoles } from "@/composables/useUserRoles"
 
 const route = useRoute()
 const { data: rolesData } = useGetRoles()
@@ -120,10 +121,13 @@ watch(
 
 const isInternational = computed(() => useSettingsStore().isInternational)
 
+const { isOwner } = useUserRoles()
+
 const LINKS = computed(() =>
   getSettingsNavigationLinks({
     isHq: Boolean(useSettingsStore().activeLocation?.is_hq),
     isInternational: isInternational.value,
+    isOwner: isOwner.value,
     surface: "desktop",
   }),
 )
