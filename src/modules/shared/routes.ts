@@ -5,7 +5,7 @@ const sharedRoutes: RouteRecordRaw[] = [
     path: "/dashboard",
     name: "Dashboard",
     component: () => import("./views/dashboard.vue"),
-    meta: { requiresAuth: true, hideAppHeader: true },
+    meta: { requiresAuth: true },
   },
   {
     path: "/onboarding",
