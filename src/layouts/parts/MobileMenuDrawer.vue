@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { toast } from "@/composables/useToast"
 import { clipboardCopy } from "@/utils/others"
 import Chip from "@components/Chip.vue"
 import Drawer from "@components/Drawer.vue"
@@ -52,11 +51,7 @@ const quickActionGroups = computed<ActionGroup[]>(() => {
         { label: "Inventory", icon: "folder", to: "/inventory" },
         { label: "Customers", icon: "people", to: "/customers" },
         { label: "Popups", icon: "calendar-tick", to: "/popups", hqOnly: true },
-        {
-          label: "Discounts",
-          icon: "tag-3",
-          action: () => toast.info("This module is coming soon!", { title: "Discounts" }),
-        },
+        { label: "Discounts", icon: "tag-3", to: "/discounts" },
         { label: "Expenses", icon: "receipt-text", to: "/expenses" },
         { label: "Email List", icon: "sms", to: "/email-list", hqOnly: true },
         {
