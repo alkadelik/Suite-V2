@@ -1,8 +1,5 @@
 <template>
   <div>
-    <!-- Mobile page header (reuses the app-wide PageHeader like Inventory et al.) -->
-    <PageHeader title="Home" />
-
     <div class="p-4 pt-5 md:pt-4">
       <div class="mx-auto mt-6 max-w-[1400px] space-y-6">
         <!-- Full-width top section -->
@@ -65,7 +62,6 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue"
-import PageHeader from "@components/PageHeader.vue"
 import Icon from "@components/Icon.vue"
 import { useGetDashboardHealth, useGetWorklist } from "../components/dashboard/api"
 import DashboardGreeting from "../components/dashboard/DashboardGreeting.vue"
